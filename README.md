@@ -1,10 +1,10 @@
-# pyNance-Lab
+# pyNance-Dash
 
-**pyNance-Lab** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
+**pyNance-Dash** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
 
 ## Project Overview
 
-The goal of pyNance-Lab is to provide a streamlined way to manage personal finances by:
+The goal of pyNance-Dash is to provide a streamlined way to manage personal finances by:
 - Using the **Plaid API** to connect with financial institutions and fetch data on **transactions**, **accounts**, and **balances**.
 - Processing the fetched data using Python.
 - Sending financial data to **Google Sheets and/or Excel** for visualization and analysis via the `gspread` library.
@@ -48,8 +48,8 @@ PORT=8000
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pyNance-Lab.git
-   cd pyNance-Lab
+   git clone https://github.com/yourusername/pyNance-Dash.git
+   cd pyNance-Dash
    ```
 
 2. Set up the backend:
@@ -70,7 +70,7 @@ The backend should run on `http://localhost:8000` and the frontend on `http://lo
 
 ## Usage
 - **Link Accounts**: Use the frontend to link your financial accounts via Plaid.
-- **View Transactions**: Once linked, transactions and account information will be available in the dashboard.
+- **View Transactions**: Once linked, transactions and account information will be avaiDashle in the dashboard.
 - **Export to Google Sheets and/or Excel**: Automatically append transactions to your Google Sheets and/or Excel for analysis.
 
 ## Deployment
