@@ -1,5 +1,41 @@
 # pyNance-Lab
 
+Before diving into the documentation, if anybody is *only* here for the quickstart and not the *true* nourishment of community and shared knowledge:
+
+**Quickstart** - just take your start and leave...
+1. Clone this repo to your disk, navigate to /python/
+2. Create a python virtual environment in the main python dir
+3. Activate the venv and install dependencies from requirements.txt
+4. Start the Python server at pyNance-Lab/python/dev-server.py
+5. Then run `npm ci` to start the frontend
+
+**Quickstart - Extended**
+6. Build a production server using npm
+7. All CLI commands so far:
+
+```
+git clone https://github.com/braydio/pyNance-Dash.git
+
+cd python
+python -m venv .venv
+pip install -r requirements.txt
+```
+If using Windows, activate with the Windows command, otherwise use the Not-windows one.
+```
+.venv/Scripts/activate
+source .venv/bin/activate
+
+npm run build
+```
+This is about as far as I'm comfortable atm but will update when after below:
+```
+npm install -g server
+
+server -s build
+```
+[Learn more about deployment here!](https://cra.link/deployment)
+
+
 **pyNance-Lab** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets for easy visualization and tracking.
 
 ## Project Overview
