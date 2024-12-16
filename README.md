@@ -36,27 +36,27 @@ server -s build
 [Learn more about deployment here!](https://cra.link/deployment)
 
 
-**pyNance-Lab** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets for easy visualization and tracking.
+**pyNance-Dash** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
 
 ## Project Overview
 
-The goal of pyNance-Lab is to provide a streamlined way to manage personal finances by:
+The goal of pyNance-Dash is to provide a streamlined way to manage personal finances by:
 - Using the **Plaid API** to connect with financial institutions and fetch data on **transactions**, **accounts**, and **balances**.
 - Processing the fetched data using Python.
-- Sending financial data to **Google Sheets** for visualization and analysis via the `gspread` library.
+- Sending financial data to **Google Sheets and/or Excel** for visualization and analysis via the `gspread` library.
 
 This project is designed to help individuals automate the management of their personal finances by providing easy access to real-time data.
 
 ## Features
 - **Account Linking**: Securely connect financial institutions using the Plaid API.
 - **Transaction Syncing**: Fetch and track transactions, balances, and account details.
-- **Google Sheets Integration**: Append financial data to Google Sheets for easy analysis and record-keeping.
+- **Google Sheets and/or Excel Integration**: Append financial data to Google Sheets and/or Excel for easy analysis and record-keeping.
 - **React Frontend**: User-friendly interface to visualize and interact with your financial data.
 
 ## Technologies Used
 - **Backend**: Python (Flask), Plaid API
 - **Frontend**: React
-- **Data Storage**: Google Sheets (via `gspread`)
+- **Data Storage**: Google Sheets and/or Excel (via `gspread`)
 - **Deployment**: Waitress (production WSGI server for Python)
 
 ## Getting Started
@@ -84,8 +84,8 @@ PORT=8000
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pyNance-Lab.git
-   cd pyNance-Lab
+   git clone https://github.com/yourusername/pyNance-Dash.git
+   cd pyNance-Dash
    ```
 
 2. Set up the backend:
@@ -106,8 +106,8 @@ The backend should run on `http://localhost:8000` and the frontend on `http://lo
 
 ## Usage
 - **Link Accounts**: Use the frontend to link your financial accounts via Plaid.
-- **View Transactions**: Once linked, transactions and account information will be available in the dashboard.
-- **Export to Google Sheets**: Automatically append transactions to your Google Sheets for analysis.
+- **View Transactions**: Once linked, transactions and account information will be avaiDashle in the dashboard.
+- **Export to Google Sheets and/or Excel**: Automatically append transactions to your Google Sheets and/or Excel for analysis.
 
 ## Deployment
 For production, use the Waitress WSGI server for the backend:
@@ -124,5 +124,5 @@ Feel free to open issues or submit pull requests if you have suggestions for imp
 
 ## Acknowledgments
 - **Plaid** for providing easy-to-use financial data APIs.
-- **Google Sheets** for helping manage and visualize financial data.
+- **Google Sheets and/or Excel** for helping manage and visualize financial data.
 
