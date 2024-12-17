@@ -25,6 +25,9 @@ If using Windows, activate with the Windows command, otherwise use the Not-windo
 .venv/Scripts/activate
 source .venv/bin/activate
 
+python server.py
+
+cd frontend
 npm run build
 ```
 This is about as far as I'm comfortable atm but will update when after below:
