@@ -1,46 +1,14 @@
 version: "3.5"
 x-environment:
-  &QUICKSTART_ENVIRONMENT # These are read from .env file. The values in the .env file maybe overriden by shell envvars
+  &QUICKSTART_ENVIRONMENT
   PLAID_CLIENT_ID: ${PLAID_CLIENT_ID}
   PLAID_SECRET: ${PLAID_SECRET}
   PLAID_PRODUCTS: ${PLAID_PRODUCTS}
   PLAID_COUNTRY_CODES: ${PLAID_COUNTRY_CODES}
   PLAID_REDIRECT_URI: ${PLAID_REDIRECT_URI}
   PLAID_ENV: ${PLAID_ENV}
+
 services:
-  go:
-    networks:
-      - "quickstart"
-    depends_on:
-      - "frontend"
-    build:
-      context: .
-      dockerfile: ./go/Dockerfile
-    ports: ["8000:8000"]
-    environment:
-      <<: *QUICKSTART_ENVIRONMENT
-  java:
-    networks:
-      - "quickstart"
-    depends_on:
-      - "frontend"
-    build:
-      context: .
-      dockerfile: ./java/Dockerfile
-    ports: ["8000:8000"]
-    environment:
-      <<: *QUICKSTART_ENVIRONMENT
-  node:
-    networks:
-      - "quickstart"
-    depends_on:
-      - "frontend"
-    build:
-      context: .
-      dockerfile: ./node/Dockerfile
-    ports: ["8000:8000"]
-    environment:
-      <<: *QUICKSTART_ENVIRONMENT
   python:
     networks:
       - "quickstart"
@@ -52,26 +20,17 @@ services:
     ports: ["8000:8000"]
     environment:
       <<: *QUICKSTART_ENVIRONMENT
-  ruby:
-    networks:
-      - "quickstart"
-    depends_on:
-      - "frontend"
-    build:
-      context: .
-      dockerfile: ./ruby/Dockerfile
-    ports: ["8000:8000"]
-    environment:
-      <<: *QUICKSTART_ENVIRONMENT
+
   frontend:
     environment:
-      - REACT_APP_API_HOST
+      - REACT_APP_API_HOST=http://python:8000 # Pointing frontend to the backend
     networks:
       - "quickstart"
     build:
       context: .
       dockerfile: ./frontend/Dockerfile
     ports: ["3000:3000"]
+
 networks:
   quickstart:
     name: quickstart
