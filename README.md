@@ -2,46 +2,48 @@
 
 Before diving into the documentation, if anybody is *only* here for the quickstart and not the *true* nourishment of community and shared knowledge:
 
-**Quickstart** - just take your start and leave...
-1. Clone this repo to your disk, navigate to /python/
-2. Create a python virtual environment in the main python dir
-3. Activate the venv and install dependencies from requirements.txt
-4. Start the Python server at pyNance-Lab/python/dev-server.py
-5. Then run `npm ci` to start the frontend
+## Quickstart
+just take your start and leave...
+1. Clone [the Plaid Quickstart Repo on GitHub](https://github.com/plaid/quickstart) to your disk.
+2. Download [this docker-compose.yml file](https://github.com/braydio/pyNance-Dash/blob/main/docker-compose.yml) to your main /quickstart/
+  - This will be over-writing the docker-compose.yml file that was there initially.
+  - The docker-compose.yml contains all the details needed for your machine to build out the required container.
+  - The local docker container will host both front- and back-ends of the server and allow you to fetch your link token.
+3. Create a .env from a copy of example.env and save your Client ID, Key, and redirect URI
 
-**Quickstart - Extended**
-6. Build a production server using npm
-7. All CLI commands so far:
+> [!Note]
+> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
+
+**Setup / Building / Spin-Up:**
 
 ```
-git clone https://github.com/braydio/pyNance-Dash.git
-
-cd python
-python -m venv .venv
-pip install -r requirements.txt
+git clone -c core.symlinks=true https://github.com/plaid/quickstart
+cd quickstart
+cp .env.example .env
 ```
-If using Windows, activate with the Windows command, otherwise use the Not-windows one.
+Fill out .env and save
+Download docker-compose.yml and build
 ```
-.venv/Scripts/activate
-source .venv/bin/activate
-
-python server.py
-
-cd frontend
-npm run build
+docker-compose up --build
+docker-compose down
 ```
-This is about as far as I'm comfortable atm but will update when after below:
-```
-npm install -g server
+- The **Python backend** will be available at `http://localhost:8000`.
+- The **React frontend** will be available at `http://localhost:3000`.
+`docker-compose up`
+Then navigate to `http://localhost:3000` and initiate the link to get your link token.
 
-server -s build
-```
-[Learn more about deployment here!](https://cra.link/deployment)
-
+> [!Note]
+> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
 
 **pyNance-Dash** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
 
-## Project Overview
+## Prerequisites
+
+- Docker: [Install Docker](https://docs.docker.com/get-docker/)
+- Docker Compose: [Install Docker Compose](https://docs.docker.com/compose/install/)
+
+
+# Project Overview (Slowstart)
 
 The goal of pyNance-Dash is to provide a streamlined way to manage personal finances by:
 - Using the **Plaid API** to connect with financial institutions and fetch data on **transactions**, **accounts**, and **balances**.
