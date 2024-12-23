@@ -53,20 +53,9 @@ The goal of pyNance-Dash is to provide a streamlined way to manage personal fina
 
 This project is designed to help individuals automate the management of their personal finances by providing easy access to real-time data.
 
-## Features
-- **Account Linking**: Securely connect financial institutions using the Plaid API.
-- **Transaction Syncing**: Fetch and track transactions, balances, and account details.
-- **Google Sheets and/or Excel Integration**: Append financial data to Google Sheets and/or Excel for easy analysis and record-keeping.
-- **React Frontend**: User-friendly interface to visualize and interact with your financial data.
-
-## Technologies Used
-- **Backend**: Python (Flask), Plaid API
-- **Frontend**: React
-- **Data Storage**: Google Sheets and/or Excel (via `gspread`)
-- **Deployment**: Waitress (production WSGI server for Python)
 
 ## Getting Started
-
+      - WIP
 ### Prerequisites
 - **Python 3.8+**
 - **Node.js** for frontend
@@ -74,7 +63,7 @@ This project is designed to help individuals automate the management of their pe
 - **Plaid Account**: Sign up at [Plaid](https://plaid.com) and obtain your API keys.
 
 ### Environment Variables
-Create a `.env` file based on `.env.example` and populate it with the required Plaid credentials:
+Create a `.env` file based on `.env.sandbox` or `.env.prod` and populate it with the required Plaid credentials:
 
 ```
 PLAID_CLIENT_ID=your_production_client_id
@@ -82,31 +71,18 @@ PLAID_SECRET=your_production_secret
 PLAID_ENV=production
 PLAID_PRODUCTS=transactions,auth,enrich
 PLAID_COUNTRY_CODES=US
-PLAID_REDIRECT_URI=http://localhost:3000
-PORT=8000
+PLAID_REDIRECT_URI=
 ```
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pyNance-Dash.git
-   cd pyNance-Dash
+   git clone https://github.com/braydio/pyNance-Dash.git
+   cd quickstart
    ```
 
-2. Set up the backend:
-   ```bash
-   cd python
-   pip install -r requirements.txt
-   ./start.sh
-   ```
-
-3. Set up the frontend:
-   ```bash
-   cd ../frontend
-   npm ci
-   npm start
-   ```
+2. Use the .env.sandbox template to spin up a test server using your sandbox key
 
 The backend should run on `http://localhost:8000` and the frontend on `http://localhost:3000`.
 
@@ -121,6 +97,58 @@ For production, use the Waitress WSGI server for the backend:
 python3 prod-server.py
 ```
 Ensure the environment is set to `production` in your `.env` file.
+
+
+# Plaid Products Quick Reference for Personal Finance Dashboard
+
+## Recommended Products
+
+1. **`transactions`** (Key for Spending Insights)
+   - Fetch categorized transaction data.
+   - **Use Cases**:
+     - Track expenses.
+     - Categorize spending habits.
+     - Visualize cash flow.
+
+2. **`balances`** (Key for Current Finances)
+   - Retrieve real-time account balances.
+   - **Use Cases**:
+     - Show available cash.
+     - Monitor account balances.
+     - Calculate net worth.
+
+3. **`auth`** (Optional for Bank Transfers)
+   - Provides routing and account numbers.
+   - **Use Cases**:
+     - Enable ACH payments.
+     - Automate bill payments.
+
+4. **`identity`** (Optional for Account Details)
+   - Returns account holder information (e.g., name, email).
+   - **Use Cases**:
+     - Verify account ownership.
+     - Improve security for linked accounts.
+
+5. **`assets`** (Optional for Net Worth Analysis)
+   - Provides detailed reports on balances, transactions, and income.
+   - **Use Cases**:
+     - Generate detailed financial reports.
+     - Track long-term trends in accounts.
+
+---
+
+## Suggested Configuration for `.env`
+
+Start with these essential products:
+```plaintext
+PLAID_PRODUCTS=transactions,balances
+```
+
+## Features
+- **Account Linking**: Securely connect financial institutions using the Plaid API.
+- **Transaction Syncing**: Fetch and track transactions, balances, and account details.
+- **Google Sheets and/or Excel Integration**: Append financial data to Google Sheets and/or Excel for easy analysis and record-keeping.
+- **React Frontend**: User-friendly interface to visualize and interact with your financial data.
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
