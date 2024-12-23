@@ -6,13 +6,15 @@ Before diving into the documentation, if anybody is *only* here for the quicksta
 just take your start and leave...
 1. Clone [the Plaid Quickstart Repo on GitHub](https://github.com/plaid/quickstart) to your disk.
 2. Download [this docker-compose.yml file](https://github.com/braydio/pyNance-Dash/blob/main/docker-compose.yml) to your main /quickstart/
+
+> [!Note]
+> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
+
   - This will be over-writing the docker-compose.yml file that was there initially.
   - The docker-compose.yml contains all the details needed for your machine to build out the required container.
   - The local docker container will host both front- and back-ends of the server and allow you to fetch your link token.
 3. Create a .env from a copy of example.env and save your Client ID, Key, and redirect URI
 
-> [!Note]
-> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
 
 **Setup / Building / Spin-Up:**
 
@@ -27,13 +29,12 @@ Download docker-compose.yml and build
 docker-compose up --build
 docker-compose down
 ```
+You now have a local Docker Container that is able to host your local server. 
 - The **Python backend** will be available at `http://localhost:8000`.
 - The **React frontend** will be available at `http://localhost:3000`.
-`docker-compose up`
+Spin it back up with:
+```docker-compose up```
 Then navigate to `http://localhost:3000` and initiate the link to get your link token.
-
-> [!Note]
-> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
 
 **pyNance-Dash** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
 
