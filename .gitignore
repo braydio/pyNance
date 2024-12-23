@@ -58,3 +58,6 @@ python/venv/*
 
 # Dev
 dev*
+
+# Creds
+creds
