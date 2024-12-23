@@ -158,5 +158,8 @@ Feel free to open issues or submit pull requests if you have suggestions for imp
 
 ## Acknowledgments
 - **Plaid** for providing easy-to-use financial data APIs.
-- **Google Sheets and/or Excel** for helping manage and visualize financial data.
+- **Google Sheets** for helping manage and visualize financial data.
 
+## Reference
+- https://github.com/williamlmao/plaid-to-gsheets
+- https://dashboard.plaid.com/developers/keys
