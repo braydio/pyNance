@@ -4,15 +4,20 @@ Before diving into the documentation, if anybody is *only* here for the quicksta
 
 ## Quickstart
 just take your start and leave...
-1. Clone [the Plaid Quickstart Repo on GitHub](https://github.com/plaid/quickstart) to your disk.
-> [!Note]
-> To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
+1. Clone this repo to your disk:
+> [!NOTE]  - This includes key files from [the Plaid Quickstart Repo on GitHub](https://github.com/plaid/quickstart)
+```
+git clone https://github.com/braydio/pyNance
+```
 
-2. Download [this docker-compose.yml file](https://github.com/braydio/pyNance-Dash/blob/main/docker-compose.yml) to your main /quickstart/
+ To get your access link tokens, you will build a Docker container with the required specs to run both the front- and back-ends of the server.
+
+2. Save [this docker-compose.yml file](https://github.com/braydio/pyNance/blob/main/docker-compose.yml) to quickstart/
 
   - This will be over-writing the docker-compose.yml file that was there initially.
-  - The docker-compose.yml contains all the details needed for your machine to build out the required container.
+  - The docker-compose.yml contains all the details needed for your machine to build out the container.
   - The local docker container will host both front- and back-ends of the server and allow you to fetch your link token.
+  
 3. Create a .env from a copy of example.env and save your Client ID, Key, and redirect URI
 
 
