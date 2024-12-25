@@ -23,23 +23,38 @@ git clone https://github.com/braydio/pyNance
 
 **Setup / Building / Spin-Up:**
 
+Clone this repo, copy in the new .env and docker-compose
 ```
-git clone -c core.symlinks=true https://github.com/plaid/quickstart
+git clone https://github.com/braydio/pyNance
+cd pyNance
+cp docker-compose.yml quickstart/docker-compose.yml
+cp example_sandox.env quickstart/.env
 cd quickstart
-cp .env.example .env
 ```
 Fill out .env and save
-Download docker-compose.yml and build
+Build the docker container from the new docker-compose.yml
 ```
 docker-compose up --build
 docker-compose down
 ```
 You now have a local Docker Container that is able to host your local server. 
-- The **Python backend** will be available at `http://localhost:8000`.
-- The **React frontend** will be available at `http://localhost:3000`.
+- The **Python backend** will be available at `http://localhost:8000`
+- The **React frontend** will be available at `http://localhost:3000`
+
 Spin it back up with:
 ```docker-compose up```
 Then navigate to `http://localhost:3000` and initiate the link to get your link token.
+
+>[!NOTE]
+>Don't forget to set your allowed redirect URIs in the [Plaid Developer Dashboard](https://dashboard.plaid.com/developers/api)
+
+### Work in Progress: 
+
+The get-link.py script in the root directory will ideally be used to get link tokens based on user specifications. 
+
+I haven't tried it out yet, if you do please let me know how it goes.
+
+kthxbye
 
 **pyNance-Dash** is a personal finance dashboard built using Python, leveraging the Plaid API to fetch and manage financial data, and integrating with Google Sheets and/or Excel for easy visualization and tracking.
 
@@ -54,9 +69,8 @@ Then navigate to `http://localhost:3000` and initiate the link to get your link 
 The goal of pyNance-Dash is to provide a streamlined way to manage personal finances by:
 - Using the **Plaid API** to connect with financial institutions and fetch data on **transactions**, **accounts**, and **balances**.
 - Processing the fetched data using Python.
-- Sending financial data to **Google Sheets and/or Excel** for visualization and analysis via the `gspread` library.
-
-This project is designed to help individuals automate the management of their personal finances by providing easy access to real-time data.
+>[!WIP]
+>Sending financial data to **Google Sheets and/or Excel** for visualization and analysis via the `gspread` library.
 
 
 ## Getting Started
@@ -78,31 +92,6 @@ PLAID_PRODUCTS=transactions,auth,enrich
 PLAID_COUNTRY_CODES=US
 PLAID_REDIRECT_URI=
 ```
-
-### Installation
-
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/braydio/pyNance-Dash.git
-   cd quickstart
-   ```
-
-2. Use the .env.sandbox template to spin up a test server using your sandbox key
-
-The backend should run on `http://localhost:8000` and the frontend on `http://localhost:3000`.
-
-## Usage
-- **Link Accounts**: Use the frontend to link your financial accounts via Plaid.
-- **View Transactions**: Once linked, transactions and account information will be avaiDashle in the dashboard.
-- **Export to Google Sheets and/or Excel**: Automatically append transactions to your Google Sheets and/or Excel for analysis.
-
-## Deployment
-For production, use the Waitress WSGI server for the backend:
-```bash
-python3 prod-server.py
-```
-Ensure the environment is set to `production` in your `.env` file.
-
 
 # Plaid Products Quick Reference for Personal Finance Dashboard
 
@@ -148,12 +137,6 @@ Start with these essential products:
 ```plaintext
 PLAID_PRODUCTS=transactions,balances
 ```
-
-## Features
-- **Account Linking**: Securely connect financial institutions using the Plaid API.
-- **Transaction Syncing**: Fetch and track transactions, balances, and account details.
-- **Google Sheets and/or Excel Integration**: Append financial data to Google Sheets and/or Excel for easy analysis and record-keeping.
-- **React Frontend**: User-friendly interface to visualize and interact with your financial data.
 
 ## License
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
