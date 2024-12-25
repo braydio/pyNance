@@ -1,4 +1,4 @@
-# pyNance-Lab
+# pyNance-Dash
 
 Before diving into the documentation, if anybody is *only* here for the quickstart and not the *true* nourishment of community and shared knowledge:
 
