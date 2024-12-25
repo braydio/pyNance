@@ -55,6 +55,7 @@ docker-compose.local*.yml
 
 #Python virtual nv
 python/venv/*
+*.env
 
 # Dev
 dev*
