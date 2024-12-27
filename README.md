@@ -50,9 +50,7 @@ Then navigate to `http://localhost:3000` and initiate the link to get your link 
 
 ### Work in Progress: 
 
-The get-link.py script in the root directory will ideally be used to get link tokens based on user specifications. 
-
-I haven't tried it out yet, if you do please let me know how it goes.
+Link tokens generation WIP in Dash/plaid_api/
 
 kthxbye
 
