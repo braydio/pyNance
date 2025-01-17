@@ -149,7 +149,7 @@ def process_plaid_logs(log_file_path):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Process Plaid API logs and save output to JSON.')
-    parser.add_argument('--log_file', type=str, required=True, help='Path to the Plaid API log file')
+    parser.add_argument('-l', '--log-file', type=str, required=True, help='Path to the Plaid API log file')
     args = parser.parse_args()
 
     process_plaid_logs(args.log_file)
