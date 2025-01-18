@@ -6,6 +6,6 @@ dev/
 .env
 token/
 *.log
-logs/
+
 .venv
 public_token.txt
