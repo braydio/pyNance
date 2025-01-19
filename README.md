@@ -5,6 +5,8 @@
 
 Currently the account link process happens in Plaid. So for the sake of file paths etc. cd into pyNance/Plaid before running link scripts.
 
+    I believe I copied deploy to Plaid. I added CheckLinks.py to Plaid/data. cd into Plaid/data and run 'python CheckLinks.py' to see active Plaid Link Items
+
     Actually immedate state is in pyNance/Plaid/deploy, but will copy deploy to Plaid.
 
 ## Quickstart
