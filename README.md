@@ -24,7 +24,7 @@ This starts a Flask server at localhost:5000
 
 Use a web browser to navigate to the ip address listed in the terminal and finish linking your account in your web browser.
 
-
+## End Quickstart
 
 ### Current Development State (1/20) 
 - Should be able to run from pyNance/Plaid
