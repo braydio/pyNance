@@ -1,5 +1,12 @@
 # pyNance-Dash
 
+### Current Development State (1/20) 
+- Should be able to run from pyNance/Plaid
+
+    Create python .venv at pyNance/Plaid using Plaid/requirements.txt
+    Make a .env and fill out per example.env
+    Run LinkPlaid.py to initiate the Plaid Link
+
 ### Current Development State (1/18) 
 - Developing Plaid Link in pyNance/Plaid/deploy
 
