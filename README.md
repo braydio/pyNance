@@ -8,7 +8,7 @@ git clone https://github.com/braydio/pyNance.git
 cd pyNance/Plaid
 cp example.env .env
 
--- Set up python environment
+# Set up python environment
 python -m venv .venv
 
 .venv/Scripts/activate # Windows
@@ -16,8 +16,8 @@ source .venv/bin/activate # virgin-ized
 
 pip install -r requirements.txt
 
--- Run the script to generate a link token:
-python Plaid/pylinkPlaid.py
+@ Run the script to generate a link token:
+python LinkPlaid.py
 ```
 
 This starts a Flask server at localhost:5000
