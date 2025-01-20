@@ -5,7 +5,7 @@
 ```
 # Clone into project and duplicate example.env to .env
 git clone https://github.com/braydio/pyNance.git
-cd pyNance
+cd pyNance/Plaid
 cp example.env .env
 
 -- Set up python environment
