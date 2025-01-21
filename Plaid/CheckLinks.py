@@ -23,8 +23,8 @@ def save_results_to_file(file_path, content):
         print(f"Error saving to {file_path}: {e}")
 
 # Load data from LinkAccounts.json and LinkItems.json
-link_accounts = load_json('LinkAccounts.json')
-link_items = load_json('LinkItems.json')
+link_accounts = load_json('data/LinkAccounts.json')
+link_items = load_json('data/LinkItems.json')
 
 # First File: Institution Name and Billed Products
 institution_name = link_items.get("item", {}).get("institution_name", "Unknown Institution")
