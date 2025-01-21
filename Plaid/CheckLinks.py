@@ -31,7 +31,7 @@ institution_name = link_items.get("item", {}).get("institution_name", "Unknown I
 billed_products = link_items.get("item", {}).get("billed_products", [])
 
 first_file_content = f"Institution: {institution_name}\nBilled Products: {', '.join(billed_products)}\n"
-save_results_to_file(r"C:\Users\chaff\Projects\pyNance\Plaid\deploy\data\CheckedInstitutions.txt", first_file_content)
+save_results_to_file('data/CheckedInstitutions.txt', first_file_content)
 
 # Second File: Enhanced Output with last_successful_update
 output = []
@@ -61,4 +61,4 @@ output.append("Done.")
 
 # Save to file
 results_str = "\n".join(output)
-save_results_to_file(r"C:\Users\chaff\Projects\pyNance\Plaid\deploy\data\CheckedAccounts.txt", results_str)
+save_results_to_file('data/CheckedAccounts.txt', results_str)
