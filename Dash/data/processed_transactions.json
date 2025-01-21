@@ -1,0 +1,93 @@
+[
+    {
+        "date": "2024-12-30",
+        "name": "Auth : Uber * Pending",
+        "amount": -30.91,
+        "category": "Travel",
+        "merchant_name": "Uber",
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-30",
+        "name": "Auth : Uber * Pending",
+        "amount": -22.99,
+        "category": "Travel",
+        "merchant_name": "Uber",
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-30",
+        "name": "Auth : Uber * Pending",
+        "amount": -22.94,
+        "category": "Travel",
+        "merchant_name": "Uber",
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-18",
+        "name": "Interest Charge On Purchases",
+        "amount": 16.52,
+        "category": "Interest",
+        "merchant_name": null,
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-16",
+        "name": "Payment Thank You",
+        "amount": -40,
+        "category": "Payment",
+        "merchant_name": null,
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-10",
+        "name": "Hlu*huluplus Hulu.com/bill",
+        "amount": 38.5,
+        "category": "Service",
+        "merchant_name": "Hulu",
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    },
+    {
+        "date": "2024-12-02",
+        "name": "Spotify",
+        "amount": 12.86,
+        "category": "Service",
+        "merchant_name": "Spotify",
+        "account_name": "Unknown Account",
+        "account_type": "Unknown",
+        "account_subtype": "Unknown",
+        "available_balance": "Unknown",
+        "current_balance": "Unknown",
+        "currency": "Unknown"
+    }
+]
