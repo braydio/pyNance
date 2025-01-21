@@ -1,8 +1,5 @@
-# Checks LinkAccounts.json and LinkItems.json to provide a summary
-# Of the currently active Plaid items and saves to 
-# CheckedAccounts.txt and CheckedInstitutions.txt
-
 import json
+import os
 
 def load_json(file_path):
     """Utility function to load JSON data from a file."""
@@ -16,6 +13,7 @@ def load_json(file_path):
 def save_results_to_file(file_path, content):
     """Save the processed results to a text file."""
     try:
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
         with open(file_path, 'w') as f:
             f.write(content)
         print(f"Results saved to {file_path}")
@@ -26,39 +24,43 @@ def save_results_to_file(file_path, content):
 link_accounts = load_json('data/LinkAccounts.json')
 link_items = load_json('data/LinkItems.json')
 
-# First File: Institution Name and Billed Products
-institution_name = link_items.get("item", {}).get("institution_name", "Unknown Institution")
-billed_products = link_items.get("item", {}).get("billed_products", [])
+# Generate CheckedInstitutions.txt
+institutions_output = ["Checked Institutions Summary", "=" * 40]
+for item_id, item_details in link_items.items():
+    institution_name = item_details.get("institution_name", "Unknown Institution")
+    billed_products = item_details.get("products", [])
+    last_successful_update = item_details.get("status", {}).get("transactions", {}).get("last_successful_update", "N/A")
+    institutions_output.append(f"Institution: {institution_name}")
+    institutions_output.append(f"  - Billed Products: {', '.join(billed_products)}")
+    institutions_output.append(f"  - Last Successful Update: {last_successful_update}")
+    institutions_output.append("-" * 40)
 
-first_file_content = f"Institution: {institution_name}\nBilled Products: {', '.join(billed_products)}\n"
-save_results_to_file('data/CheckedInstitutions.txt', first_file_content)
+save_results_to_file("data/CheckedInstitutions.txt", "\n".join(institutions_output))
 
-# Second File: Enhanced Output with last_successful_update
-output = []
-output.append("Linked Banks and Accounts:")
-output.append("=" * 40)
+# Generate CheckedAccounts.txt
+accounts_output = ["Checked Accounts Summary", "=" * 40]
+accounts_by_item = {}
 
-institution_items = {}  # Store institution details by item_id
-last_successful_update = link_items.get("status", {}).get("transactions", {}).get("last_successful_update", "N/A")
-
-# Extract institution information from LinkItems
-if "item" in link_items:
-    institution_items[link_items["item"]["item_id"]] = link_items["item"]["institution_name"]
-
-# Display linked accounts grouped by institution
+# Group accounts by item_id
 for account_id, account_details in link_accounts.items():
-    item_id = account_details.get("item_id")
-    institution_name = institution_items.get(item_id, "Unknown Institution")
-    
-    output.append(f"Institution: {institution_name}")
-    output.append(f"  - Account Name: {account_details['account_name']}")
-    output.append(f"    Type: {account_details['type']} ({account_details['subtype']})")
-    output.append(f"    Current Balance: {account_details['balances']['current']} {account_details['balances'].get('iso_currency_code', 'Unknown Currency')}")
-    output.append(f"    Last Successful Update: {last_successful_update}")
-    output.append("-" * 40)
+    item_id = account_details.get("item_id", "unknown")
+    if item_id not in accounts_by_item:
+        accounts_by_item[item_id] = []
+    accounts_by_item[item_id].append(account_details)
 
-output.append("Done.")
+# Create summary for each institution's accounts
+for item_id, accounts in accounts_by_item.items():
+    institution_name = link_items.get(item_id, {}).get("institution_name", "Unknown Institution")
+    accounts_output.append(f"Institution: {institution_name}")
+    for account in accounts:
+        account_name = account.get("account_name", "Unknown")
+        account_type = account.get("type", "Unknown")
+        account_subtype = account.get("subtype", "Unknown")
+        current_balance = account.get("balances", {}).get("current", "N/A")
+        currency = account.get("balances", {}).get("iso_currency_code", "Unknown Currency")
+        accounts_output.append(f"  - Account Name: {account_name}")
+        accounts_output.append(f"    Type: {account_type} ({account_subtype})")
+        accounts_output.append(f"    Current Balance: {current_balance} {currency}")
+    accounts_output.append("-" * 40)
 
-# Save to file
-results_str = "\n".join(output)
-save_results_to_file('data/CheckedAccounts.txt', results_str)
+save_results_to_file("data/CheckedAccounts.txt", "\n".join(accounts_output))
