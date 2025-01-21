@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashroad</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "JetBrains Mono", monospace;
+            color: #e6e6e6;
+            background: #121212;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            color: #ff7f11;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 4px #000000;
+        }
+
+        table {
+            width: 90%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            background: #1e1e1e;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        thead {
+            background: #2c2c2c;
+        }
+
+        thead th {
+            padding: 1rem;
+            font-weight: bold;
+            color: #ff7f11;
+            text-align: left;
+            border-bottom: 2px solid #ff7f11;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #171717;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #1e1e1e;
+        }
+
+        tbody td {
+            padding: 0.75rem 1rem;
+            color: #e6e6e6;
+        }
+
+        tbody td:nth-child(3) {
+            font-weight: bold;
+        }
+
+        button {
+            background: #ff7f11;
+            color: #121212;
+            padding: 0.8rem 1.6rem;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        button:hover {
+            background: #ff9f43;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 10px rgba(0, 0, 0, 0.6);
+        }
+
+        button:active {
+            background: #ff6000;
+            transform: translateY(0);
+        }
+
+        button:focus {
+            outline: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Finance Dashroad</h1>
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody id="transactions-table">
+            <tr>
+                <td colspan="3" style="text-align: center; color: #999;">No data available</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button onclick="processTransactions()">Process Transactions</button>
+
+    <script>
+        function fetchTransactions() {
+            fetch('/get_transactions')
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('transactions-table');
+                    tableBody.innerHTML = ""; // Clear previous rows
+                    if (data.status === "success") {
+                        data.data.forEach(transaction => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${transaction.date}</td>
+                                <td>${transaction.name}</td>
+                                <td style="color: ${transaction.amount < 0 ? '#ff4b4b' : '#ff7f11'};">${transaction.amount.toFixed(2)}</td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        console.error("Error fetching transactions:", data.message);
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+        }
+
+        function processTransactions() {
+            fetch('/process_transactions', {
+                method: 'POST',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    console.log("Transactions processed:", data.message);
+                    alert("Transactions processed successfully!");
+                    fetchTransactions();
+                } else {
+                    console.error("Error processing transactions:", data.message);
+                    alert("Error processing transactions.");
+                }
+            })
+            .catch(error => console.error("Fetch error:", error));
+        }
+
+        document.addEventListener('DOMContentLoaded', fetchTransactions);
+    </script>
+</body>
+</html>
