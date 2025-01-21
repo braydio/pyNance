@@ -6,5 +6,5 @@ temp/
 .env
 token/
 *.log
-
+data/
 .venv
