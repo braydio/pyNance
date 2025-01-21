@@ -61,13 +61,52 @@ def ensure_file_exists(file_path, default_content=None):
             else:
                 file.write("")
 
-app = Flask(__name__, template_folder='./templates')
+def save_and_parse_response(response, file_path):
+    """
+    Save a JSON response to a file and parse it.
+
+    Args:
+        response (requests.Response): Response object from an API call.
+        file_path (str): Path to save the JSON file.
+
+    Returns:
+        dict: Parsed JSON content from the file.
+    """
+    ensure_directory_exists(os.path.dirname(file_path))
+    
+    # Save response JSON to file
+    with open(file_path, "w") as temp_file:
+        json.dump(response.json(), temp_file, indent=2)
+    
+    # Parse the saved file
+    return load_json(file_path)
+
+def load_json(file_path):
+    """
+    Load JSON content from a file.
+
+    Args:
+        file_path (str): Path to the JSON file.
+
+    Returns:
+        dict: Parsed JSON content from the file.
+    """
+    with open(file_path, "r") as temp_file:
+        return json.load(temp_file)
+
+app = Flask(__name__, template_folder='/templates')
+
+# Route to serve the link.html file
+@app.route('/')
+def serve_link_html():
+    logger.debug("Serving link.html to user")
+    return send_from_directory('.', 'link.html')
 
 @app.route('/link_status', methods=['GET'])
 def link_status():
     """Check the current status of the link session."""
     try:
-        with open("./data/link_session.json", "r") as f:
+        with open("/temp/link_session.json", "r") as f:
             session_data = json.load(f)
         return jsonify(session_data), 200
     except FileNotFoundError:
@@ -91,12 +130,6 @@ def get_link_token():
         logger.error("Failed to create link token")
         return jsonify({"error": "Failed to create link token"}), 400
 
-# Route to serve the link.html file
-@app.route('/')
-def serve_link_html():
-    logger.debug("Serving link.html to user")
-    return send_from_directory('.', 'link.html')
-
 # Route to save the public token and exchange it for an access token
 @app.route('/save_public_token', methods=['POST'])
 def save_public_token():
@@ -110,10 +143,10 @@ def save_public_token():
 
         public_token = data.get("public_token")
         if public_token:
-            data_dir = "./data"
-            ensure_directory_exists(data_dir)  # Ensure the directory exists
+            temp_dir = "/temp"
+            ensure_directory_exists(temp_dir)  # Ensure the directory exists
 
-            with open(os.path.join(data_dir, "public_token.txt"), "w") as f:
+            with open(os.path.join(temp_dir, "public_token.txt"), "w") as f:
                 f.write(public_token)
             logger.info("Public token saved to file")
 
@@ -143,7 +176,6 @@ def save_public_token():
         return jsonify({"error": "Server error while processing public token", "details": str(e)}), 500
 
 def exchange_public_token(public_token):
-    """ Function to exchange public token for access token """
     url = f"https://{PLAID_ENV}.plaid.com/item/public_token/exchange"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -151,19 +183,21 @@ def exchange_public_token(public_token):
         "secret": SECRET_KEY,
         "public_token": public_token
     }
+
+    masked_payload = payload.copy()
+    masked_payload["client_id"] = "****"
+    masked_payload["secret"] = "****"
+
     logger.info(f"POST {url} with payload: See debug log for payload.")
-    logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
+    logger.debug(f"Payload: {json.dumps(masked_payload, indent=2)}")
 
     try:
         response = requests.post(url, json=payload, headers=headers)
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            data = response.json()
-            access_token = data.get("access_token")
+            access_token = save_and_parse_response(response, "/temp/exchange_response.json").get("access_token")
             logger.info(f"Access token generated: {access_token}")
-            with open("./data/access_token.txt", "w") as f:
-                f.write(access_token)
             return access_token
         else:
             logger.error(f"Error exchanging token: {response.json()}")
@@ -173,7 +207,9 @@ def exchange_public_token(public_token):
         return None
 
 def get_item_info(access_token):
-    """ Fetches metadata for the linked item (institution) """
+    """
+    Fetches metadata for the linked item (institution) and parses institution_name.
+    """
     url = f"https://{PLAID_ENV}.plaid.com/item/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -181,19 +217,42 @@ def get_item_info(access_token):
         "secret": SECRET_KEY,
         "access_token": access_token
     }
-    logger.debug(f"POST {url} with payload: {json.dumps(payload, indent=2)}")
+
+    masked_payload = payload.copy()
+    masked_payload["client_id"] = "****"
+    masked_payload["secret"] = "****"
+    logger.debug(f"POST {url} with payload: {json.dumps(masked_payload, indent=2)}")
 
     try:
         response = requests.post(url, json=payload, headers=headers)
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            item_data = response.json()
-            institution_name = item_data.get("institution_name", "Unknown Institution")
-            item_id = item_data.get("item", {}).get("item_id")
-            logger.info(f"Linked institution: {institution_name} (Item ID: {item_id})")
+            # Save and parse the response
+            item_data = save_and_parse_response(response, "./temp/item_get_response.json")
+
+            # Correctly retrieve institution_name directly from the top level of "item"
+            institution_name = item_data["item"].get("institution_name", "Unknown Institution")
+            item_id = item_data["item"].get("item_id")
+
+            logger.info(f"Extracted institution_name: {institution_name}")
+
+            # Save item metadata to LinkItems.json
+            ensure_file_exists("./data/LinkItems.json", default_content={})
+            with open("./data/LinkItems.json", "r") as f:
+                existing_data = json.load(f)
+
+            existing_data[item_id] = {
+                "institution_name": institution_name,
+                "item_id": item_id,
+                "products": item_data["item"].get("products", []),
+                "status": item_data.get("status", {})
+            }
+
             with open("./data/LinkItems.json", "w") as f:
-                json.dump(item_data, f, indent=2)
+                json.dump(existing_data, f, indent=2)
+
+            logger.info(f"Linked to {institution_name} successfully with item ID: {item_id}")
             return item_id, institution_name
         else:
             logger.error(f"Error fetching item data: {response.json()}")
@@ -201,9 +260,14 @@ def get_item_info(access_token):
     except requests.RequestException as re:
         logger.error(f"Request exception during item info retrieval: {str(re)}")
         return None, None
+    except KeyError as ke:
+        logger.error(f"Key error: {ke}")
+        return None, None
 
 def save_initial_account_data(access_token, item_id):
-    """ Fetches and saves account info after initial link """
+    """
+    Fetches and saves account data associated with the given access token and item ID.
+    """
     url = f"https://{PLAID_ENV}.plaid.com/accounts/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -211,14 +275,23 @@ def save_initial_account_data(access_token, item_id):
         "secret": SECRET_KEY,
         "access_token": access_token
     }
-    logger.info(f"POST {url} with payload: {json.dumps(payload, indent=2)}")
+
+    masked_payload = payload.copy()
+    masked_payload["client_id"] = "****"
+    masked_payload["secret"] = "****"
+    logger.info(f"POST {url} with payload: See debug log for payload.")
+    logger.debug(f"Payload: {json.dumps(masked_payload, indent=2)}")
 
     try:
         response = requests.post(url, json=payload, headers=headers)
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            account_data = response.json()
+            account_data = save_and_parse_response(response, "./temp/accounts_get_response.json")
+
+            # Extract institution_name from item object
+            institution_name = account_data["item"].get("institution_name", "Unknown Institution")
+
             ensure_file_exists("./data/LinkAccounts.json", default_content={})
             with open("./data/LinkAccounts.json", "r") as f:
                 data = json.load(f)
@@ -227,14 +300,13 @@ def save_initial_account_data(access_token, item_id):
                 account_id = account["account_id"]
                 data[account_id] = {
                     "item_id": item_id,
+                    "institution_name": institution_name,
                     "account_name": account["name"],
                     "type": account["type"],
                     "subtype": account["subtype"],
                     "balances": account.get("balances", {})
                 }
-
-            if not os.path.exists("./data"):
-                os.makedirs("./data")
+                logger.info(f"Linked account {account['name']} for institution {institution_name}")
 
             with open("./data/LinkAccounts.json", "w") as f:
                 json.dump(data, f, indent=2)
@@ -244,6 +316,8 @@ def save_initial_account_data(access_token, item_id):
             logger.error(f"Error fetching account data: {response.json()}")
     except requests.RequestException as re:
         logger.error(f"Request exception during account data retrieval: {str(re)}")
+    except KeyError as ke:
+        logger.error(f"Key error: {ke}")
 
 if __name__ == "__main__":
     logger.info("Starting Flask application for Plaid integration")
