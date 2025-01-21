@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from create_token import generate_link_token
+from Plaid.LinkMake import generate_link_token
 import requests
 from dotenv import load_dotenv
 
@@ -228,16 +228,16 @@ def get_item_info(access_token):
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            # Parse response and save to temp file
+            # Save and parse the response
             item_data = save_and_parse_response(response, "./temp/item_get_response.json")
 
-            # Correctly retrieve institution_name
-            institution_name = item_data.get("item", {}).get("institution_name", "Unknown Institution")
-            item_id = item_data.get("item", {}).get("item_id")
+            # Correctly retrieve institution_name directly from the top level of "item"
+            institution_name = item_data["item"].get("institution_name", "Unknown Institution")
+            item_id = item_data["item"].get("item_id")
 
             logger.info(f"Extracted institution_name: {institution_name}")
 
-            # Save the metadata to LinkItems.json
+            # Save item metadata to LinkItems.json
             ensure_file_exists("./data/LinkItems.json", default_content={})
             with open("./data/LinkItems.json", "r") as f:
                 existing_data = json.load(f)
@@ -245,7 +245,7 @@ def get_item_info(access_token):
             existing_data[item_id] = {
                 "institution_name": institution_name,
                 "item_id": item_id,
-                "products": item_data.get("products", []),
+                "products": item_data["item"].get("products", []),
                 "status": item_data.get("status", {})
             }
 
@@ -260,8 +260,14 @@ def get_item_info(access_token):
     except requests.RequestException as re:
         logger.error(f"Request exception during item info retrieval: {str(re)}")
         return None, None
+    except KeyError as ke:
+        logger.error(f"Key error: {ke}")
+        return None, None
 
 def save_initial_account_data(access_token, item_id):
+    """
+    Fetches and saves account data associated with the given access token and item ID.
+    """
     url = f"https://{PLAID_ENV}.plaid.com/accounts/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -281,7 +287,11 @@ def save_initial_account_data(access_token, item_id):
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            account_data = save_and_parse_response(response, "/temp/accounts_get_response.json")
+            account_data = save_and_parse_response(response, "./temp/accounts_get_response.json")
+
+            # Extract institution_name from item object
+            institution_name = account_data["item"].get("institution_name", "Unknown Institution")
+
             ensure_file_exists("./data/LinkAccounts.json", default_content={})
             with open("./data/LinkAccounts.json", "r") as f:
                 data = json.load(f)
@@ -290,13 +300,13 @@ def save_initial_account_data(access_token, item_id):
                 account_id = account["account_id"]
                 data[account_id] = {
                     "item_id": item_id,
-                    "institution_name": account["institution_name"],
+                    "institution_name": institution_name,
                     "account_name": account["name"],
                     "type": account["type"],
                     "subtype": account["subtype"],
                     "balances": account.get("balances", {})
                 }
-                print(f"Linked account {account["name"]} for inst {account["institution_name"]}")
+                logger.info(f"Linked account {account['name']} for institution {institution_name}")
 
             with open("./data/LinkAccounts.json", "w") as f:
                 json.dump(data, f, indent=2)
@@ -306,6 +316,8 @@ def save_initial_account_data(access_token, item_id):
             logger.error(f"Error fetching account data: {response.json()}")
     except requests.RequestException as re:
         logger.error(f"Request exception during account data retrieval: {str(re)}")
+    except KeyError as ke:
+        logger.error(f"Key error: {ke}")
 
 if __name__ == "__main__":
     logger.info("Starting Flask application for Plaid integration")
