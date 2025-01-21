@@ -8,4 +8,3 @@ token/
 *.log
 
 .venv
-public_token.txt
