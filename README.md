@@ -3,18 +3,21 @@
 ## Quickstart
 
 ```
-# Clone into project and duplicate example.env to .env
+# Clone project
 git clone https://github.com/braydio/pyNance.git
-cd pyNance/Plaid
-cp example.env .env
 
-# Set up python environment
+# Set up python environment at /pyNance/.venv
 python -m venv .venv
 
 .venv/Scripts/activate # Windows
 source .venv/bin/activate # virgin-ized
 
 pip install -r requirements.txt
+
+# CD into Plaid and duplicate example.env to .env, fill API keys etc.
+
+cd pyNance/Plaid
+cp example.env .env
 
 @ Run the script to generate a link token:
 python LinkPlaid.py
