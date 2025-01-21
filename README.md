@@ -29,6 +29,11 @@ Use a web browser to navigate to the ip address listed in the terminal and finis
 
 ## End Quickstart
 
+### Current Development State (1/21) 
+- Plaid Link is ready. Saves account link tokens to data/
+- Run python CheckLinks.py to consolidate all link tokens to a text file
+- Time for the dashroad
+
 ### Current Development State (1/20) 
 - Should be able to run from pyNance/Plaid
 
