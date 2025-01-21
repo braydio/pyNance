@@ -1,9 +1,10 @@
 __pycache__
-
+Plaid/templates
+Plaid/data
 dev/
 temp/
 .env
 token/
 *.log
-data/
+
 .venv
