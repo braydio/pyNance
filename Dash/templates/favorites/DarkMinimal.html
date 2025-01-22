@@ -9,9 +9,9 @@
   <style>
     /* General Styles */
     body {
-      background-color: #0f0f0f;
-      font-family: "Roboto", sans-serif;
-      color: #e8e8e8;
+      background-color: #101010; /* Darker Gunmetal */
+      font-family: "JetBrains Mono", monospace;
+      color: #dcdcdc; /* Soft metallic gray */
       margin: 0;
       padding: 0;
       display: grid;
@@ -21,53 +21,59 @@
     }
 
     header {
-      background-color: #232323;
-      color: #ffffff;
-      padding: 1rem;
-      text-align: center;
-      font-size: 2rem;
-      font-weight: bold;
+      background-color: #181818;
+      color: #76c7c0; /* Aqua green for contrast */
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 1.5rem;
+      border-bottom: 2px solid #76c7c0;
+    }
+
+    .menu {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .menu button {
+      background: none;
+      color: #76c7c0;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .menu button:hover {
+      color: #a8dfd3;
     }
 
     main {
+      padding: 2rem;
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 2rem;
+      justify-content: flex-start;
     }
 
     footer {
-      background-color: #232323;
-      color: #999;
+      background-color: #181818;
+      color: #666;
       text-align: center;
       padding: 1rem;
       font-size: 0.875rem;
-    }
-
-    button {
-      background-color: #00796b;
-      color: #ffffff;
-      border: none;
-      padding: 1rem 2rem;
-      margin: 1rem 0;
-      font-size: 1.2rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-
-    button:hover {
-      background-color: #004d40;
+      border-top: 2px solid #76c7c0;
     }
 
     .transactions {
-      width: 80%;
+      width: 90%;
       max-width: 1200px;
       overflow-x: auto;
       background-color: #1a1a1a;
       border-radius: 8px;
       padding: 1rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
     }
 
     table {
@@ -82,13 +88,13 @@
     }
 
     th {
-      background-color: #333333;
-      color: #ffffff;
+      background-color: #2a2a2a;
+      color: #76c7c0;
       font-weight: bold;
     }
 
     td {
-      color: #e8e8e8;
+      color: #dcdcdc;
     }
 
     .error {
@@ -98,12 +104,39 @@
     .success {
       color: #43a047;
     }
+
+    button {
+      background: none;
+      color: #76c7c0;
+      border: 2px solid #76c7c0;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    button:hover {
+      background-color: #76c7c0;
+      color: #101010;
+    }
+
+    button:active {
+      background-color: #5bb9ae;
+    }
   </style>
 </head>
 <body>
-  <header>Finance Dashroad</header>
+  <header>
+    <span>Finance Dashroad</span>
+    <nav class="menu">
+      <button onclick="window.location.href='/get_transactions'">Transactions</button>
+      <button onclick="window.location.href='/themes'">Themes</button>
+      <button onclick="window.location.href='/spending_by_category'">Spending</button>
+      <button onclick="window.location.href='/get_accounts'">Accounts</button>
+    </nav>
+  </header>
   <main>
-    <button id="link-button">Link Bank Account</button>
     <p id="status"></p>
 
     <div class="transactions">
@@ -123,9 +156,10 @@
       </table>
     </div>
 
+    <button id="link-button">Link Bank Account</button>
     <button onclick="processTransactions()">Process Transactions</button>
   </main>
-  <footer>&copy; 2025 Finance Dashroad</footer>
+  <footer>&copy; Theme: Hyprland Archlinux Minimalist | 2025 Finance Dashroad</footer>
 
   <script>
     fetch('/get_link_token')

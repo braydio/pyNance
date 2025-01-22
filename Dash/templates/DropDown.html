@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Dashboard</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "JetBrains Mono", monospace;
+            color: #ffffff;
+            background: #1e1e2e;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #f38ba8;
+            text-transform: uppercase;
+        }
+
+        select, button {
+            margin: 0.5rem;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        select {
+            width: 300px;
+        }
+
+        button {
+            background: #f38ba8;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Finance Dashboard</h1>
+    
+    <select id="linked-accounts-dropdown">
+        <option value="">Select an Account</option>
+    </select>
+    
+    <button onclick="fetchTransactions()">Fetch Transactions</button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Amount</th>
+            </tr>
+        </thead>
+        <tbody id="transactions-table"></tbody>
+    </table>
+
+    <script>
+        function loadLinkedAccounts() {
+            fetch('/get_linked_accounts')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.status === "success") {
+                        const dropdown = document.getElementById('linked-accounts-dropdown');
+                        data.data.forEach(account => {
+                            const option = document.createElement('option');
+                            option.value = account.account_id;
+                            option.textContent = `${account.account_name} (${account.institution_name})`;
+                            dropdown.appendChild(option);
+                        });
+                    } else {
+                        console.error("Failed to load linked accounts:", data.message);
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+        }
+
+        function fetchTransactions() {
+            const dropdown = document.getElementById('linked-accounts-dropdown');
+            const accountId = dropdown.value;
+
+            if (!accountId) {
+                alert("Please select an account.");
+                return;
+            }
+
+            fetch('/fetch_transactions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ account_id: accountId })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    const tableBody = document.getElementById('transactions-table');
+                    tableBody.innerHTML = "";
+                    if (data.status === "success") {
+                        data.data.forEach(transaction => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${transaction.date}</td>
+                                <td>${transaction.name}</td>
+                                <td style="color: ${transaction.amount < 0 ? '#f38ba8' : '#a6e3a1'};">${transaction.amount.toFixed(2)}</td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    } else {
+                        console.error("Failed to fetch transactions:", data.message);
+                    }
+                })
+                .catch(error => console.error("Fetch error:", error));
+        }
+
+        document.addEventListener('DOMContentLoaded', loadLinkedAccounts);
+    </script>
+</body>
+</html>
