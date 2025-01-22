@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brayden Chaffee's Finance Dashroad</title>
+  <link href="https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap" rel="stylesheet">
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    body {
+      background-color: #1a1a1a;
+      font-family: "Allerta Stencil", sans-serif;
+      color: #e0e0e0;
+      margin: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      grid-template-columns: 100%;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #242424;
+      color: #76c7c0;
+      padding: 1rem 2rem;
+      font-size: 1.8rem;
+      border-bottom: 3px solid #76c7c0;
+    }
+
+    .menu {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .menu a {
+      color: #76c7c0;
+      text-decoration: none;
+      font-size: 1rem;
+      padding: 0.5rem 1rem;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      transition: all 0.3s ease;
+    }
+
+    .menu a:hover {
+      background-color: #76c7c0;
+      color: #121212;
+    }
+
+    main {
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 2rem;
+    }
+
+    .transactions {
+      width: 90%;
+      max-width: 1300px;
+      overflow-x: auto;
+      background-color: #202020;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    .account-refresh, .theme-selector {
+      width: 90%;
+      max-width: 1300px;
+      background-color: #202020;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background-color: #2a2a2a;
+      color: #76c7c0;
+    }
+
+    td {
+      color: #e0e0e0;
+    }
+
+    footer {
+      background-color: #242424;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: #999;
+      border-top: 3px solid #76c7c0;
+    }
+
+    button {
+      background-color: #76c7c0;
+      color: #121212;
+      border: none;
+      padding: 1rem 2rem;
+      margin: 0.5rem;
+      font-size: 1.2rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #55a89c;
+    }
+
+    select {
+      padding: 0.5rem;
+      font-size: 1rem;
+      border-radius: 5px;
+      border: 1px solid #333;
+      background-color: #2a2a2a;
+      color: #e0e0e0;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span>Brayden Chaffee's Finance Dashroad</span>
+    <nav class="menu">
+      <a href="#">Transactions</a>
+      <a href="#">Trends</a>
+      <a href="#">Net Worth</a>
+      <a href="#">Budget</a>
+      <a href="#">Reports</a>
+    </nav>
+  </header>
+  <main>
+    <div class="transactions">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-table">
+          <tr>
+            <td colspan="3">No transactions available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="account-refresh">
+      <h3>Select Account to Refresh</h3>
+      <select id="account-selector">
+        <option value="account1">Account 1</option>
+        <option value="account2">Account 2</option>
+        <option value="account3">Account 3</option>
+      </select>
+      <button onclick="refreshAccount()">Refresh</button>
+    </div>
+
+    <div class="theme-selector">
+      <h3>Choose Theme/Layout</h3>
+      <select id="theme-selector">
+        <option value="dark">Dark Mode</option>
+        <option value="light">Light Mode</option>
+        <option value="hypr">Hyprland Inspired</option>
+        <option value="minimal">Minimalist</option>
+      </select>
+      <button onclick="applyTheme()">Apply</button>
+    </div>
+
+    <div style="display: flex; justify-content: center;">
+      <button id="link-button">Link Bank Account</button>
+      <button onclick="processTransactions()">Process Transactions</button>
+    </div>
+  </main>
+  <footer>&copy; Theme: Aquamarine | 2025 Brayden Chaffee's Finance Dashroad</footer>
+
+  <script>
+    fetch('/get_link_token')
+      .then(response => response.json())
+      .then(data => {
+        if (data.link_token) {
+          const handler = Plaid.create({
+            token: data.link_token,
+            onSuccess: function(public_token) {
+              fetch('/save_public_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ public_token })
+              }).then(() => {
+                document.getElementById('status').textContent = 'Access token received!';
+                document.getElementById('status').classList.add('success');
+              });
+            },
+            onExit: function() {
+              document.getElementById('status').textContent = 'User exited without linking.';
+              document.getElementById('status').classList.add('error');
+            }
+          });
+
+          document.getElementById('link-button').addEventListener('click', () => handler.open());
+        }
+      });
+
+    function processTransactions() {
+      fetch('/process_transactions', { method: 'POST' })
+        .then(response => response.json())
+        .then(() => alert('Transactions processed successfully!'));
+    }
+
+    function refreshAccount() {
+      const selectedAccount = document.getElementById('account-selector').value;
+      alert(`Refreshing ${selectedAccount}`);
+    }
+
+    function applyTheme() {
+      const selectedTheme = document.getElementById('theme-selector').value;
+      alert(`Applying ${selectedTheme} theme`);
+    }
+  </script>
+</body>
+</html>

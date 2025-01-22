@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Finance Dashroad</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    /* Gruvbox Hyprland Theme */
+    body {
+      background-color: #282828; /* Gruvbox Dark Background */
+      color: #ebdbb2; /* Gruvbox Light Text */
+      font-family: "JetBrains Mono", monospace;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #fabd2f; /* Gruvbox Yellow */
+      text-transform: uppercase;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      margin-bottom: 2rem;
+      color: #83a598; /* Gruvbox Aqua */
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    /* Table Styles */
+    table {
+      width: 90%;
+      border-collapse: collapse;
+      margin-bottom: 1.5rem;
+      background: #3c3836; /* Gruvbox Medium Gray */
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+    }
+
+    thead {
+      background: #504945; /* Gruvbox Darker Gray */
+    }
+
+    thead th {
+      padding: 1rem;
+      font-weight: bold;
+      color: #ebdbb2; /* Gruvbox Light Text */
+      text-align: left;
+    }
+
+    tbody tr:nth-child(odd) {
+      background: #282828; /* Gruvbox Dark */
+    }
+
+    tbody tr:nth-child(even) {
+      background: #3c3836; /* Gruvbox Medium Gray */
+    }
+
+    tbody td {
+      padding: 0.75rem 1rem;
+      color: #d5c4a1; /* Gruvbox Tan */
+    }
+
+    tbody td.negative {
+      color: #fb4934; /* Gruvbox Red */
+    }
+
+    tbody td.positive {
+      color: #b8bb26; /* Gruvbox Bright Green */
+    }
+
+    /* Button Styles */
+    button {
+      background-color: #458588; /* Gruvbox Aqua */
+      color: #282828; /* Gruvbox Dark */
+      padding: 0.75rem 1.5rem;
+      border: 1px solid #83a598; /* Gruvbox Aqua Border */
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1rem;
+      text-transform: uppercase;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    button:hover {
+      background-color: #83a598; /* Lighter Gruvbox Aqua */
+      border-color: #d5c4a1; /* Gruvbox Tan Border */
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.5);
+    }
+
+    button:active {
+      background-color: #8ec07c; /* Gruvbox Greenish Aqua */
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    #status.success {
+      color: #b8bb26; /* Gruvbox Bright Green */
+    }
+
+    #status.error {
+      color: #fb4934; /* Gruvbox Bright Red */
+    }
+  </style>
+</head>
+<body>
+  <h1>Finance Dashroad</h1>
+  <h2>Link Your Bank Account</h2>
+  <button id="link-button">Link Account</button>
+  <p id="status"></p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Description</th>
+        <th>Amount</th>
+      </tr>
+    </thead>
+    <tbody id="transactions-table">
+      <tr>
+        <td colspan="3" style="text-align: center; color: #928374;">No data available</td> <!-- Gruvbox Muted Gray -->
+      </tr>
+    </tbody>
+  </table>
+
+  <button onclick="processTransactions()">Process Transactions</button>
+
+  <script>
+    // Fetch the link token from the Flask backend
+    fetch('/get_link_token')
+      .then(response => response.json())
+      .then(data => {
+        if (data.link_token) {
+          const handler = Plaid.create({
+            token: data.link_token,
+            onSuccess: function(public_token, metadata) {
+              console.log("Public Token:", public_token);
+
+              // Save the public token and automatically get the access token
+              fetch('/save_public_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ public_token: public_token })
+              }).then(response => response.json())
+                .then(data => {
+                  const status = document.getElementById("status");
+                  if (data.access_token) {
+                    console.log("Access Token:", data.access_token);
+                    status.textContent = "Access token received!";
+                    status.classList.add("success");
+                  } else {
+                    console.error("Error:", data.error);
+                    status.textContent = "Failed to get access token.";
+                    status.classList.add("error");
+                  }
+                });
+            },
+            onExit: function(err, metadata) {
+              const status = document.getElementById("status");
+              if (err) {
+                console.error("Error during exit:", err);
+                status.textContent = "User exited with an error.";
+                status.classList.add("error");
+              } else {
+                console.log("User exited without error.");
+                status.textContent = "User exited without error.";
+                status.classList.add("success");
+              }
+            }
+          });
+
+          document.getElementById("link-button").onclick = function() {
+            handler.open();
+          };
+
+        } else {
+          const status = document.getElementById("status");
+          status.textContent = "Error fetching link token: " + data.error;
+          status.classList.add("error");
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching link token:", error);
+        const status = document.getElementById("status");
+        status.textContent = "Error fetching link token.";
+        status.classList.add("error");
+      });
+
+    // Fetch transactions and populate the table
+    function fetchTransactions() {
+      fetch('/get_transactions')
+        .then(response => response.json())
+        .then(data => {
+          const tableBody = document.getElementById('transactions-table');
+          tableBody.innerHTML = ""; // Clear previous rows
+          if (data.status === "success") {
+            data.data.forEach(transaction => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${transaction.date}</td>
+                <td>${transaction.name}</td>
+                <td class="${transaction.amount < 0 ? 'negative' : 'positive'}">
+                  ${transaction.amount.toFixed(2)}
+                </td>
+              `;
+              tableBody.appendChild(row);
+            });
+          } else {
+            console.error("Error fetching transactions:", data.message);
+          }
+        })
+        .catch(error => console.error("Fetch error:", error));
+    }
+
+    // Process transactions
+    function processTransactions() {
+      fetch('/process_transactions', {
+        method: 'POST',
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === "success") {
+            console.log("Transactions processed:", data.message);
+            alert("Transactions processed successfully!");
+            fetchTransactions();
+          } else {
+            console.error("Error processing transactions:", data.message);
+            alert("Error processing transactions.");
+          }
+        })
+        .catch(error => console.error("Fetch error:", error));
+    }
+
+    // Automatically fetch transactions on page load
+    document.addEventListener('DOMContentLoaded', fetchTransactions);
+  </script>
+</body>
+</html>

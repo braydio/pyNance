@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brayden Chaffee's Finance Dashroad</title>
+  <link href="https://fonts.googleapis.com/css2?family=Allerta+Stencil&display=swap" rel="stylesheet">
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+  <style>
+    body {
+      background-color: #121212;
+      font-family: "Allerta Stencil", sans-serif;
+      color: #e0e0e0;
+      margin: 0;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      grid-template-columns: 100%;
+      height: 100vh;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1f1f1f;
+      color: #8be9fd;
+      padding: 0.5rem 1rem;
+      font-size: 1.5rem;
+      border-bottom: 3px solid #8be9fd;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .header-left span {
+      font-size: 1.2rem;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .menu a, .menu button {
+      color: #8be9fd;
+      background: none;
+      border: none;
+      font-size: 0.9rem;
+      padding: 0.25rem 0.5rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.3s ease;
+    }
+
+    .menu a:hover, .menu button:hover {
+      color: #50b1d9;
+    }
+
+    main {
+      padding: 1rem;
+      display: grid;
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr;
+      gap: 2rem;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .transactions, .trends {
+      width: 90%;
+      max-width: 1300px;
+      overflow-x: auto;
+      background-color: #1e1e1e;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.75rem;
+      text-align: left;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background-color: #333;
+      color: #8be9fd;
+    }
+
+    td {
+      color: #e0e0e0;
+    }
+
+    footer {
+      background-color: #1f1f1f;
+      text-align: center;
+      padding: 1rem;
+      font-size: 0.875rem;
+      color: #999;
+      border-top: 3px solid #8be9fd;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <span>Brayden Chaffee's Finance Dashroad</span>
+      <span id="current-date">Jan 21, 2025</span>
+    </div>
+    <div class="header-right menu">
+      <a href="#transactions">Transactions</a>
+      <a href="#trends">Trends</a>
+      <button onclick="window.location.href='/refresh-accounts'">Refresh Accounts</button>
+      <button onclick="window.location.href='/themes'">Themes</button>
+    </div>
+  </header>
+  <main>
+    <div id="transactions" class="transactions">
+      <h2>Transactions</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Description</th>
+            <th>Amount</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-table">
+          <tr>
+            <td colspan="3">No transactions available</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="trends" class="trends">
+      <h2>Trends</h2>
+      <p style="color: #ccc;">Trends visualization coming soon...</p>
+    </div>
+  </main>
+  <footer>&copy; 2025 Brayden Chaffee's Finance Dashroad</footer>
+
+  <script>
+    fetch('/get_link_token')
+      .then(response => response.json())
+      .then(data => {
+        if (data.link_token) {
+          const handler = Plaid.create({
+            token: data.link_token,
+            onSuccess: function(public_token) {
+              fetch('/save_public_token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ public_token })
+              }).then(() => {
+                document.getElementById('status').textContent = 'Access token received!';
+                document.getElementById('status').classList.add('success');
+              });
+            },
+            onExit: function() {
+              document.getElementById('status').textContent = 'User exited without linking.';
+              document.getElementById('status').classList.add('error');
+            }
+          });
+
+          document.getElementById('link-button').addEventListener('click', () => handler.open());
+        }
+      });
+
+    function processTransactions() {
+      fetch('/process_transactions', { method: 'POST' })
+        .then(response => response.json())
+        .then(() => alert('Transactions processed successfully!'));
+    }
+
+    function refreshAccount() {
+      const selectedAccount = document.getElementById('account-selector').value;
+      alert(`Refreshing ${selectedAccount}`);
+    }
+
+    function applyTheme() {
+      const selectedTheme = document.getElementById('theme-selector').value;
+      alert(`Applying ${selectedTheme} theme`);
+    }
+  </script>
+</body>
+</html>
