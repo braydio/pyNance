@@ -1,9 +1,13 @@
 import os
 import json
-import logging
 from flask import Flask, render_template, request, jsonify
 from dotenv import load_dotenv
 import requests
+
+from utils.helper_utils import logger, save_json, load_json
+from utils.plaid_utils import generate_link_token
+
+from routes import get_available_themes, process_transactions
 
 # Load environment variables
 load_dotenv()
@@ -15,41 +19,7 @@ PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 # Configure Flask
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-# Set up logging to both file and terminal
-logger = logging.getLogger(__name__)
-if not logger.hasHandlers():
-    logger.setLevel(logging.DEBUG)
-
-    file_handler = logging.FileHandler('Plaid/logs/plaid_api.log')
-    file_handler.setLevel(logging.DEBUG)
-
-    console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.DEBUG)
-
-    formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-    file_handler.setFormatter(formatter)
-    console_handler.setFormatter(formatter)
-
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
-
-# Utility Functions
-def ensure_directory_exists(directory_path):
-    """Ensures a directory exists."""
-    os.makedirs(directory_path, exist_ok=True)
-
-def save_json(file_path, data):
-    """Save data to a JSON file."""
-    ensure_directory_exists(os.path.dirname(file_path))
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-
-def load_json(file_path):
-    """Load data from a JSON file."""
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            return json.load(f)
-    return {}
+logger.debug(f"Initialized log. PlaiDash running, user in {os.getcwd()}")
 
 # Routes
 @app.route("/")
@@ -57,17 +27,35 @@ def dashboard():
     """Render the main dashboard."""
     return render_template("dashboard.html")
 
-@app.route("/get_link_token", methods=["GET"])
-def get_link_token():
-    """Generate and return a Plaid link token."""
+# Link session info
+@app.route("/link_session")
+def link_status():
+    """Check the current status of the link session."""
     try:
-        # Simulate generating a link token (replace with Plaid API call in production)
-        link_token = "mock_link_token_123"
-        return jsonify({"link_token": link_token})
-    except Exception as e:
-        logger.error(f"Error generating link token: {e}")
-        return jsonify({"error": str(e)}), 500
+        with open("Dash/temp/link_session.json", "r") as f:
+            session_data = json.load(f)
+        return jsonify(session_data), 200
+    except FileNotFoundError:
+        return jsonify({"status": "no_session"}), 404
 
+# Route to generate and return a link token
+@app.route('/get_link_token', methods=['GET'])
+def get_link_token():
+    products_param = request.args.get("products")
+    if products_param:
+        products = products_param.split(",")
+    else:
+        products = PRODUCTS
+
+    logger.debug(f"Generating link token for products: {products}")
+    link_token = generate_link_token(products)
+    if link_token:
+        logger.info(f"Successfully generated link token with products: {products}")
+        return jsonify({"link_token": link_token})
+    else:
+        logger.error("Failed to create link token")
+        return jsonify({"error": "Failed to create link token"}), 400
+    
 @app.route("/save_public_token", methods=["POST"])
 def save_public_token():
     """Save the public token and exchange it for an access token."""
@@ -143,19 +131,6 @@ def refresh_transactions(account_id):
         logger.error(f"Error refreshing transactions for {account_id}: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@app.route("/themes", methods=["GET", "POST"])
-def themes():
-    """Get or set the current theme."""
-    theme_file = "Dash/data/theme.json"
-    if request.method == "GET":
-        theme = load_json(theme_file).get("theme", "default")
-        return jsonify({"theme": theme})
-    elif request.method == "POST":
-        data = request.get_json()
-        new_theme = data.get("theme", "default")
-        save_json(theme_file, {"theme": new_theme})
-        return jsonify({"message": "Theme updated!", "theme": new_theme})
-
 @app.route("/spending_by_category", methods=["GET"])
 def spending_by_category():
     """Display spending by category."""
@@ -169,6 +144,35 @@ def spending_by_category():
     except Exception as e:
         logger.error(f"Error calculating spending by category: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# Endpoint to set a selected theme
+@app.route('/set_theme', methods=['POST'])
+def set_theme():
+    data = request.json
+    selected_theme = data.get('theme', 'default.css')
+    if selected_theme not in get_available_themes():
+        return jsonify({"error": "Theme not found"}), 404
+
+    # Save the selected theme to a session or cookie (simplified here)
+    # This example uses a file to store the theme for simplicity.
+    with open('current_theme.txt', 'w') as f:
+        f.write(selected_theme)
+
+    return jsonify({"success": True, "theme": selected_theme})
+
+# Get a list of available themes
+@app.route("/themes", methods=["GET", "POST"])
+def themes():
+    """Get or set the current theme."""
+    theme_file = "static/themes/current_theme.txt"
+    if request.method == "GET":
+        theme = load_json(theme_file).get("theme", "default")
+        return jsonify({"theme": theme})
+    elif request.method == "POST":
+        data = request.get_json()
+        new_theme = data.get("theme", "default")
+        save_json(theme_file, {"theme": new_theme})
+        return jsonify({"message": "Theme updated!", "theme": new_theme})
 
 @app.route("/debug")
 def debug():
