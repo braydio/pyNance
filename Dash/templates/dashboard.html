@@ -4,142 +4,27 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Finance Dashroad</title>
-  <link rel="stylesheet" href="/static/style.css">
-  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-  <style>
-    /* General Styles */
-    body {
-      background-color: #101010; /* Darker Gunmetal */
-      font-family: "JetBrains Mono", monospace;
-      color: #dcdcdc; /* Soft metallic gray */
-      margin: 0;
-      padding: 0;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      grid-template-columns: 1fr;
-      height: 100vh;
-    }
-
-    header {
-      background-color: #181818;
-      color: #76c7c0; /* Aqua green for contrast */
-      padding: 1rem 2rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 1.5rem;
-      border-bottom: 2px solid #76c7c0;
-    }
-
-    .menu {
-      display: flex;
-      gap: 1rem;
-    }
-
-    .menu button {
-      background: none;
-      color: #76c7c0;
-      border: none;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: color 0.3s ease;
-    }
-
-    .menu button:hover {
-      color: #a8dfd3;
-    }
-
-    main {
-      padding: 2rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: flex-start;
-    }
-
-    footer {
-      background-color: #181818;
-      color: #666;
-      text-align: center;
-      padding: 1rem;
-      font-size: 0.875rem;
-      border-top: 2px solid #76c7c0;
-    }
-
-    .transactions {
-      width: 90%;
-      max-width: 1200px;
-      overflow-x: auto;
-      background-color: #1a1a1a;
-      border-radius: 8px;
-      padding: 1rem;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    th, td {
-      padding: 0.75rem;
-      text-align: left;
-      border-bottom: 1px solid #333;
-    }
-
-    th {
-      background-color: #2a2a2a;
-      color: #76c7c0;
-      font-weight: bold;
-    }
-
-    td {
-      color: #dcdcdc;
-    }
-
-    .error {
-      color: #e53935;
-    }
-
-    .success {
-      color: #43a047;
-    }
-
-    button {
-      background: none;
-      color: #76c7c0;
-      border: 2px solid #76c7c0;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s, color 0.3s;
-    }
-
-    button:hover {
-      background-color: #76c7c0;
-      color: #101010;
-    }
-
-    button:active {
-      background-color: #5bb9ae;
-    }
-  </style>
+  <link rel="stylesheet" id="theme-stylesheet" href="/static/themes/darkminimal.css">
 </head>
 <body>
   <header>
-    <span>Finance Dashroad</span>
+    <span>Brayden's Finance Dashroad</span>
     <nav class="menu">
-      <button onclick="window.location.href='/get_transactions'">Transactions</button>
-      <button onclick="window.location.href='/themes'">Themes</button>
-      <button onclick="window.location.href='/spending_by_category'">Spending</button>
       <button onclick="window.location.href='/get_accounts'">Accounts</button>
+      <button onclick="window.location.href='/get_transactions'">Transactions</button>
+      <button onclick="window.location.href='/spending_by_category'">Trends</button>
+      <button onclick="window.location.href='/reports'">Reports</button>
+      <button onclick="window.location.href='/themes'">Themes</button>
     </nav>
   </header>
   <main>
-    <p id="status"></p>
+    <div class="visualization">
+      <h2>Spending Visualization</h2>
+      <p>Charts and graphs will be displayed here.</p>
+    </div>
 
     <div class="transactions">
+      <h2>Transactions</h2>
       <table>
         <thead>
           <tr>
@@ -154,45 +39,28 @@
           </tr>
         </tbody>
       </table>
+    </table>
     </div>
 
-    <button id="link-button">Link Bank Account</button>
-    <button onclick="processTransactions()">Process Transactions</button>
+    <div class="reminders">
+      <h2>Reminders</h2>
+      <p>Upcoming payment reminders or important notes can go here.</p>
+    </div>
+
+    <div class="budget">
+      <h2>Budget</h2>
+      <p>Budget allocation and tracking can go here.</p>
+    </div>
   </main>
-  <footer>&copy; Theme: Hyprland Archlinux Minimalist | 2025 Finance Dashroad</footer>
-
+  <footer>&copy;</footer>
   <script>
-    fetch('/get_link_token')
-      .then(response => response.json())
-      .then(data => {
-        if (data.link_token) {
-          const handler = Plaid.create({
-            token: data.link_token,
-            onSuccess: function(public_token) {
-              fetch('/save_public_token', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ public_token })
-              }).then(() => {
-                document.getElementById('status').textContent = 'Access token received!';
-                document.getElementById('status').classList.add('success');
-              });
-            },
-            onExit: function() {
-              document.getElementById('status').textContent = 'User exited without linking.';
-              document.getElementById('status').classList.add('error');
-            }
-          });
-
-          document.getElementById('link-button').addEventListener('click', () => handler.open());
-        }
-      });
-
-    function processTransactions() {
-      fetch('/process_transactions', { method: 'POST' })
-        .then(response => response.json())
-        .then(() => alert('Transactions processed successfully!'));
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+      const footer = document.querySelector("footer");
+      const htmlFileName = location.pathname.split("/").pop() || "dashboard.html";
+      const themeFileName = document.getElementById("theme-stylesheet").getAttribute("href").split("/").pop();
+      footer.innerHTML = `&copy; HTML File: ${htmlFileName} | Theme: ${themeFileName}`;
+    });
   </script>
+  <script src="/static/scripts/finance-dashroad.js"></script>
 </body>
 </html>
