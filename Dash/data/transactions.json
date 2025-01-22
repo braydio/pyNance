@@ -1,0 +1,517 @@
+{
+  "accounts": [
+    {
+      "account_id": "1DNJXzPjD8cg9oB448rzF0ZY5VE865u16wyRy",
+      "balances": {
+        "available": 2400,
+        "current": 0,
+        "iso_currency_code": "USD",
+        "limit": 2400,
+        "unofficial_currency_code": null
+      },
+      "mask": "1451",
+      "name": "Credit Card - 1451",
+      "official_name": "Credit Card",
+      "subtype": "credit card",
+      "type": "credit"
+    },
+    {
+      "account_id": "DZvRpQB3Zeuo5ZAjj4d0IZJoQMKavQsoOP4nx",
+      "balances": {
+        "available": 1160.63,
+        "current": 839.37,
+        "iso_currency_code": "USD",
+        "limit": 2000,
+        "unofficial_currency_code": null
+      },
+      "mask": "4341",
+
+      "name": "Credit Card - 4341",
+      "official_name": "Credit Card",
+      "subtype": "credit card",
+      "type": "credit"
+    },
+    {
+      "account_id": "LOdRNmjrOeSeyDdbbRBgtyKxqMPN1qfYR1yA9",
+      "balances": {
+        "available": 921.12,
+        "current": 78.88,
+        "iso_currency_code": "USD",
+        "limit": 1000,
+        "unofficial_currency_code": null
+      },
+      "mask": "7372",
+      "name": "HT Card - 7372",
+      "official_name": "HT Card",
+      "subtype": "credit card",
+      "type": "credit"
+    }
+  ],
+  "item": {
+    "available_products": [
+      "assets",
+      "auth",
+      "balance",
+      "income_verification",
+      "investments",
+      "liabilities",
+      "recurring_transactions"
+    ],
+    "billed_products": [
+      "transactions"
+    ],
+    "consent_expiration_time": null,
+    "consented_products": [
+      "income_verification",
+      "transactions"
+    ],
+    "error": null,
+    "institution_id": "ins_127990",
+    "institution_name": "U.S. Bank",
+    "item_id": "E5ARpJmy5efq3oQXXawpURXo3YEMM0HpNgK7k",
+    "products": [
+      "transactions"
+    ],
+    "update_type": "background",
+    "webhook": ""
+  },
+  "request_id": "bHrxj0h0Ayx2DT8",
+  "total_transactions": 7,
+  "transactions": [
+    {
+      "account_id": "LOdRNmjrOeSeyDdbbRBgtyKxqMPN1qfYR1yA9",
+      "account_owner": null,
+      "amount": -30.91,
+      "authorized_date": "2024-12-30",
+      "authorized_datetime": "2024-12-30T00:00:00Z",
+      "category": [
+        "Travel",
+        "Taxi"
+      ],
+      "category_id": "22016000",
+      "check_number": null,
+      "counterparties": [
+        {
+          "confidence_level": "VERY_HIGH",
+          "entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+          "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+          "name": "Uber",
+          "phone_number": null,
+          "type": "merchant",
+          "website": "uber.com"
+        }
+      ],
+      "date": "2024-12-30",
+      "datetime": "2024-12-30T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": null,
+        "store_number": null
+      },
+      "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+      "merchant_entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+      "merchant_name": "Uber",
+      "name": "Auth : Uber * Pending",
+      "payment_channel": "other",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": true,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
+        "primary": "TRANSPORTATION"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_TRANSPORTATION.png",
+      "transaction_code": null,
+      "transaction_id": "xpBXb97MpYcjeL744bpNfN57qz55QvUpqLXPJn",
+      "transaction_type": "special",
+      "unofficial_currency_code": null,
+      "website": "uber.com"
+    },
+    {
+      "account_id": "LOdRNmjrOeSeyDdbbRBgtyKxqMPN1qfYR1yA9",
+      "account_owner": null,
+      "amount": -22.99,
+      "authorized_date": "2024-12-30",
+      "authorized_datetime": "2024-12-30T00:00:00Z",
+      "category": [
+        "Travel",
+        "Taxi"
+      ],
+      "category_id": "22016000",
+      "check_number": null,
+      "counterparties": [
+        {
+          "confidence_level": "VERY_HIGH",
+          "entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+          "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+          "name": "Uber",
+          "phone_number": null,
+          "type": "merchant",
+          "website": "uber.com"
+        }
+      ],
+      "date": "2024-12-30",
+      "datetime": "2024-12-30T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": null,
+        "store_number": null
+      },
+      "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+      "merchant_entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+      "merchant_name": "Uber",
+      "name": "Auth : Uber * Pending",
+      "payment_channel": "other",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": true,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
+        "primary": "TRANSPORTATION"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_TRANSPORTATION.png",
+      "transaction_code": null,
+      "transaction_id": "J9ARpOv09eFo1kyQQBPdIMpanqppV9C3PgdNXZ",
+      "transaction_type": "special",
+      "unofficial_currency_code": null,
+      "website": "uber.com"
+    },
+    {
+      "account_id": "LOdRNmjrOeSeyDdbbRBgtyKxqMPN1qfYR1yA9",
+      "account_owner": null,
+      "amount": -22.94,
+      "authorized_date": "2024-12-30",
+      "authorized_datetime": "2024-12-30T00:00:00Z",
+      "category": [
+        "Travel",
+        "Taxi"
+      ],
+      "category_id": "22016000",
+      "check_number": null,
+      "counterparties": [
+        {
+          "confidence_level": "VERY_HIGH",
+          "entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+          "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+          "name": "Uber",
+          "phone_number": null,
+          "type": "merchant",
+          "website": "uber.com"
+        }
+      ],
+      "date": "2024-12-30",
+      "datetime": "2024-12-30T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": null,
+        "store_number": null
+      },
+      "logo_url": "https://plaid-merchant-logos.plaid.com/uber_1060.png",
+      "merchant_entity_id": "eyg8o776k0QmNgVpAmaQj4WgzW9Qzo6O51gdd",
+      "merchant_name": "Uber",
+      "name": "Auth : Uber * Pending",
+      "payment_channel": "other",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": true,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "TRANSPORTATION_TAXIS_AND_RIDE_SHARES",
+        "primary": "TRANSPORTATION"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_TRANSPORTATION.png",
+      "transaction_code": null,
+      "transaction_id": "qVYpbw8MV5SNbg8BBx3wuwz8r0zzePs59apgBw",
+      "transaction_type": "special",
+      "unofficial_currency_code": null,
+      "website": "uber.com"
+    },
+    {
+      "account_id": "DZvRpQB3Zeuo5ZAjj4d0IZJoQMKavQsoOP4nx",
+      "account_owner": null,
+      "amount": 16.52,
+      "authorized_date": "2024-12-18",
+      "authorized_datetime": "2024-12-18T00:00:00Z",
+      "category": [
+        "Interest",
+        "Interest Charged"
+      ],
+      "category_id": "15002000",
+      "check_number": null,
+      "counterparties": [],
+      "date": "2024-12-18",
+      "datetime": "2024-12-18T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": null,
+        "store_number": null
+      },
+      "logo_url": null,
+      "merchant_entity_id": null,
+      "merchant_name": null,
+      "name": "Interest Charge On Purchases",
+      "payment_channel": "other",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": false,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "HIGH",
+        "detailed": "BANK_FEES_INTEREST_CHARGE",
+        "primary": "BANK_FEES"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_BANK_FEES.png",
+      "transaction_code": null,
+      "transaction_id": "KV5NY90jVeS1mZ6xx0nXHE5Ywk55Z8IK4Zwq1Z",
+      "transaction_type": "special",
+      "unofficial_currency_code": null,
+      "website": null
+    },
+    {
+      "account_id": "DZvRpQB3Zeuo5ZAjj4d0IZJoQMKavQsoOP4nx",
+      "account_owner": null,
+      "amount": -40,
+      "authorized_date": "2024-12-16",
+      "authorized_datetime": "2024-12-16T00:00:00Z",
+      "category": [
+        "Payment",
+        "Credit Card"
+      ],
+      "category_id": "16001000",
+      "check_number": null,
+      "counterparties": [],
+      "date": "2024-12-16",
+      "datetime": "2024-12-16T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": null,
+        "store_number": null
+      },
+      "logo_url": null,
+      "merchant_entity_id": null,
+      "merchant_name": null,
+      "name": "Payment Thank You",
+      "payment_channel": "other",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": false,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT",
+        "primary": "LOAN_PAYMENTS"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_LOAN_PAYMENTS.png",
+      "transaction_code": null,
+      "transaction_id": "k50pOwAE54fJxRjAABL7SOqQo4qq76fZN4Oy39",
+      "transaction_type": "special",
+      "unofficial_currency_code": null,
+      "website": null
+    },
+    {
+      "account_id": "DZvRpQB3Zeuo5ZAjj4d0IZJoQMKavQsoOP4nx",
+      "account_owner": null,
+      "amount": 38.5,
+      "authorized_date": "2024-12-09",
+      "authorized_datetime": "2024-12-09T00:00:00Z",
+      "category": [
+        "Service",
+        "Subscription"
+      ],
+      "category_id": "18061000",
+      "check_number": null,
+      "counterparties": [
+        {
+          "confidence_level": "VERY_HIGH",
+          "entity_id": "ZzO1V6gJ8KbO926KrNYONbQqobXpgjWnA28nR",
+          "logo_url": "https://plaid-merchant-logos.plaid.com/hulu_504.png",
+          "name": "Hulu",
+          "phone_number": null,
+          "type": "merchant",
+          "website": "hulu.com"
+        }
+      ],
+      "date": "2024-12-10",
+      "datetime": "2024-12-10T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": "CA",
+        "store_number": null
+      },
+      "logo_url": "https://plaid-merchant-logos.plaid.com/hulu_504.png",
+      "merchant_entity_id": "ZzO1V6gJ8KbO926KrNYONbQqobXpgjWnA28nR",
+      "merchant_name": "Hulu",
+      "name": "Hlu*huluplus Hulu.com/bill",
+      "payment_channel": "online",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": false,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "ENTERTAINMENT_TV_AND_MOVIES",
+        "primary": "ENTERTAINMENT"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_ENTERTAINMENT.png",
+      "transaction_code": null,
+      "transaction_id": "AxB0Xm1PxeuyKZX88BN0HJp387ppMYFx3kDPb6",
+      "transaction_type": "place",
+      "unofficial_currency_code": null,
+      "website": "hulu.com"
+    },
+    {
+      "account_id": "DZvRpQB3Zeuo5ZAjj4d0IZJoQMKavQsoOP4nx",
+      "account_owner": null,
+      "amount": 12.86,
+      "authorized_date": "2024-12-01",
+      "authorized_datetime": "2024-12-01T00:00:00Z",
+      "category": [
+        "Service",
+        "Subscription"
+      ],
+      "category_id": "18061000",
+      "check_number": null,
+      "counterparties": [
+        {
+          "confidence_level": "VERY_HIGH",
+          "entity_id": "2373QOZJ18DqqK0KWvgpng3nmVDLMvDvy05RN",
+          "logo_url": "https://plaid-merchant-logos.plaid.com/spotify_947.png",
+          "name": "Spotify",
+          "phone_number": null,
+          "type": "merchant",
+          "website": "spotify.com"
+        }
+      ],
+      "date": "2024-12-02",
+      "datetime": "2024-12-02T00:00:00Z",
+      "iso_currency_code": "USD",
+      "location": {
+        "address": null,
+        "city": null,
+        "country": null,
+        "lat": null,
+        "lon": null,
+        "postal_code": null,
+        "region": "NY",
+        "store_number": null
+      },
+      "logo_url": "https://plaid-merchant-logos.plaid.com/spotify_947.png",
+      "merchant_entity_id": "2373QOZJ18DqqK0KWvgpng3nmVDLMvDvy05RN",
+      "merchant_name": "Spotify",
+      "name": "Spotify",
+      "payment_channel": "online",
+      "payment_meta": {
+        "by_order_of": null,
+        "payee": null,
+        "payer": null,
+        "payment_method": null,
+        "payment_processor": null,
+        "ppd_id": null,
+        "reason": null,
+        "reference_number": null
+      },
+      "pending": false,
+      "pending_transaction_id": null,
+      "personal_finance_category": {
+        "confidence_level": "VERY_HIGH",
+        "detailed": "ENTERTAINMENT_MUSIC_AND_AUDIO",
+        "primary": "ENTERTAINMENT"
+      },
+      "personal_finance_category_icon_url": "https://plaid-category-icons.plaid.com/PFC_ENTERTAINMENT.png",
+      "transaction_code": null,
+      "transaction_id": "ydopb78MdYiVbDpggkrETEKrgAbp0ac37KQKP",
+      "transaction_type": "place",
+      "unofficial_currency_code": null,
+      "website": "spotify.com"
+    }
+  ]
+}

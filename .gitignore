@@ -1,6 +1,12 @@
 __pycache__
-Plaid/templates
-Plaid/data
+
+themes/
+!themes/default.css
+
+templates/
+!dashboard.html
+!landing.html
+
 dev/
 temp/
 .env
