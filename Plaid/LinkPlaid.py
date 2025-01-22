@@ -2,7 +2,7 @@ import os
 import json
 import logging
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from Plaid.LinkMake import generate_link_token
+from LinkMake import generate_link_token
 import requests
 from dotenv import load_dotenv
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
     logger.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler('./logs/plaid_api.log')
+    file_handler = logging.FileHandler('Plaid/logs/plaid_api.log')
     file_handler.setLevel(logging.DEBUG)
 
     console_handler = logging.StreamHandler()
@@ -92,21 +92,21 @@ def load_json(file_path):
         dict: Parsed JSON content from the file.
     """
     with open(file_path, "r") as temp_file:
-        return json.load(temp_file)
+        app.run(debug=True, port=5001)
 
-app = Flask(__name__, template_folder='/templates')
+app = Flask(__name__, template_folder='templates')
 
 # Route to serve the link.html file
 @app.route('/')
 def serve_link_html():
-    logger.debug("Serving link.html to user")
-    return send_from_directory('.', 'link.html')
+    logger.debug("Serving link.html to user")   
+    return render_template('landing.html')
 
 @app.route('/link_status', methods=['GET'])
 def link_status():
     """Check the current status of the link session."""
     try:
-        with open("/temp/link_session.json", "r") as f:
+        with open("Plaid/temp/link_session.json", "r") as f:
             session_data = json.load(f)
         return jsonify(session_data), 200
     except FileNotFoundError:
@@ -143,7 +143,7 @@ def save_public_token():
 
         public_token = data.get("public_token")
         if public_token:
-            temp_dir = "/temp"
+            temp_dir = "Plaid/temp"
             ensure_directory_exists(temp_dir)  # Ensure the directory exists
 
             with open(os.path.join(temp_dir, "public_token.txt"), "w") as f:
@@ -196,7 +196,7 @@ def exchange_public_token(public_token):
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            access_token = save_and_parse_response(response, "/temp/exchange_response.json").get("access_token")
+            access_token = save_and_parse_response(response, "Plaid/temp/exchange_response.json").get("access_token")
             logger.info(f"Access token generated: {access_token}")
             return access_token
         else:
@@ -319,7 +319,8 @@ def save_initial_account_data(access_token, item_id):
     except KeyError as ke:
         logger.error(f"Key error: {ke}")
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     logger.info("Starting Flask application for Plaid integration")
-    app.run(debug=True)
-
+    print("Current working directory:", os.getcwd())
+    print("Template folder:", app.template_folder)
+    app.run(debug=True, port=5001)
