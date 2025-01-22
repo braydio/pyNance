@@ -1,6 +1,12 @@
 import json
 import os
 
+# Directory to store themes
+THEMES_DIR = 'static/themes'
+DEFAULT_THEME = 'brayden_dashroad.css'
+
+
+# Process transactions for visuals
 def process_transactions(transactions_file, accounts_file, link_accounts_file, output_file):
     """
     Reads transactions, accounts, and LinkAccounts JSON files, processes the data, and saves the enriched data.
@@ -54,3 +60,18 @@ def process_transactions(transactions_file, accounts_file, link_accounts_file, o
         }
     except Exception as e:
         return {"status": "error", "message": str(e)}
+
+# Themes
+def get_available_themes():
+    try:
+        themes = [f for f in os.listdir(THEMES_DIR) if f.endswith('.css')]
+        return themes
+    except FileNotFoundError:
+        return []
+    
+def inject_theme():
+    try:
+        with open('current_theme.txt', 'r') as f:
+            current_theme = f.read().strip()
+    except FileNotFoundError:
+        current_theme = DEFAULT_THEME
