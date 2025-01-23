@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transactions</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
+</head>
+<body>
+    <header>
+        <h1>Latest Transactions</h1>
+        <nav>
+            <button onclick="window.location.href='/'">Dashboard</button>
+            <button onclick="window.location.href='/accounts'">Accounts</button>
+            <button onclick="window.location.href='/settings'">Settings</button>
+        </nav>
+    </header>
+    <main>
+        <table id="transactions-table" class="display">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Transaction Name</th>
+                    <th>Merchant</th>
+                    <th>Category</th>
+                    <th>Amount (USD)</th>
+                    <th>Institution</th>
+                    <th>Account Name</th>
+                    <th>Account Type</th>
+                    <th>Last Update</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.date }}</td>
+                    <td>{{ transaction.name }}</td>
+                    <td>{{ transaction.merchant_name }}</td>
+                    <td>{{ transaction.category }}</td>
+                    <td>{{ transaction.amount }}</td>
+                    <td>{{ transaction.institution_name }}</td>
+                    <td>{{ transaction.account_name }}</td>
+                    <td>{{ transaction.account_type }} - {{ transaction.account_subtype }}</td>
+                    <td>{{ transaction.last_successful_update }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+    <footer>&copy; Brayden's Finance Dashroad</footer>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Initialize DataTable with options
+            $('#transactions-table').DataTable({
+                pageLength: 10, // Number of rows per page
+                ordering: true, // Enable column sorting
+                searching: true, // Enable search
+                language: {
+                    search: "Filter records:", // Customize search placeholder
+                },
+            });
+        });
+    </script>
+</body>
+</html>

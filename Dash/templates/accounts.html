@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accounts</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+</head>
+<body>
+    <header>
+        <h1>Accounts</h1>
+        <nav>
+            <button onclick="window.location.href='/'">Dashboard</button>
+            <button onclick="window.location.href='/settings'">Settings</button>
+        </nav>
+    </header>
+    <main>
+        <div class="controls">
+            <!-- Link New Account Button -->
+            <button id="link-button">Link New Account</button>
+            
+            <!-- Refresh All Linked Accounts Button -->
+            <button id="refresh-accounts" onclick="refreshAllLinkedAccounts()">Refresh All Linked Accounts</button>
+            
+            <p id="status"></p>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Account Name</th>
+                    <th>Institution</th>
+                    <th>Type</th>
+                    <th>Subtype</th>
+                    <th>Available Balance</th>
+                    <th>Current Balance</th>
+                    <th>Last Update</th>
+                    <th>Products</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for account in accounts %}
+                <tr>
+                    <td>{{ account.account_name }}</td>
+                    <td>{{ account.institution_name }}</td>
+                    <td>{{ account.type }}</td>
+                    <td>{{ account.subtype }}</td>
+                    <td>{{ account.balances.available or 'N/A' }}</td>
+                    <td>{{ account.balances.current or 'N/A' }}</td>
+                    <td>{{ account.last_successful_update or 'N/A' }}</td>
+                    <td>{{ account.products | join(', ') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </main>
+    <footer>&copy; Brayden's Finance Dashroad</footer>
+    <script src="{{ url_for('static', filename='js/accounts.js') }}"></script>
+</body>
+</html>
