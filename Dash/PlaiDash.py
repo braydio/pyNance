@@ -6,8 +6,7 @@ import requests
 from pathlib import Path
 import logging
 
-from utils.helper_utils import save_json, load_json, ensure_directory_exists
-from utils.plaid_utils import generate_link_token, refresh_plaid_data, ensure_directory_exists, ensure_file_exists, save_and_parse_response, refresh_accounts_by_access_token
+from utils.plaid_utils import generate_link_token, refresh_plaid_data, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
 
 
 logger = logging.getLogger(__name__)
@@ -36,10 +35,22 @@ PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
+# Define directories
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+TEMP_DIR = BASE_DIR / "temp"
+
+LINKED_ACCOUNTS = DATA_DIR / "LinkAccounts.json"
+LINKED_ITEMS = DATA_DIR / "LinkItems.json"
+LATEST_TRANSACTIONS = DATA_DIR / "Transactions.json"
+
+logger.debug(f"Files loaded in data: {LINKED_ACCOUNTS} {LINKED_ITEMS} {LATEST_TRANSACTIONS}")
+
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+
 THEMES_DIR = Path('Dash/static/themes')
 DEFAULT_THEME = 'Dash/static/themes/default.css'
-DATA_DIR = Path('Dash/data')
-TEMP_DIR = Path('Dash/temp')
 
 logger.debug(f"DEFAULT THEME: {DEFAULT_THEME}")
 logger.debug(f"THEMES DIR: {THEMES_DIR}")
@@ -55,8 +66,6 @@ for dir_path in [THEMES_DIR, DATA_DIR, TEMP_DIR]:
 # Configure Flask
 app = Flask(__name__, template_folder="templates", static_folder="static")
 
-logging.debug(f"Initialized log. PlaiDash running, user in {Path.cwd()}")
-
 # Utility to get available themes
 def get_available_themes():
     try:
@@ -68,7 +77,6 @@ def get_available_themes():
         return []
 
 # Plaid functions
-
 def exchange_public_token(public_token):
     url = f"https://{PLAID_ENV}.plaid.com/item/public_token/exchange"
     headers = {'Content-Type': 'application/json'}
@@ -90,7 +98,8 @@ def exchange_public_token(public_token):
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            access_token = save_and_parse_response(response, "Plaid/temp/exchange_response.json").get("access_token")
+            # Save the response to TEMP_DIR
+            access_token = save_and_parse_response(response, TEMP_DIR / "exchange_response.json").get("access_token")
             logger.info(f"Access token generated: {access_token}")
             return access_token
         else:
@@ -99,6 +108,44 @@ def exchange_public_token(public_token):
     except requests.RequestException as re:
         logger.error(f"Request exception during exchange: {str(re)}")
         return None
+
+def save_and_parse_response(response, file_path):
+    """
+    Save a JSON response to a file and parse it.
+
+    Args:
+        response (requests.Response): Response object from an API call.
+        file_path (str): Path to save the JSON file.
+
+    Returns:
+        dict: Parsed JSON content from the file.
+    """
+    ensure_directory_exists(os.path.dirname(file_path))
+    
+    # Save response JSON to file
+    with open(file_path, "w") as temp_file:
+        json.dump(response.json(), temp_file, indent=2)
+        resolved_path = Path(file_path).resolve()
+        logger.debug(f"Saving to {resolved_path}")
+    
+    # Parse the saved file
+    return load_json(file_path)
+
+def save_json(file_path, data):
+    """Save data to a JSON file."""
+    ensure_directory_exists(os.path.dirname(file_path))
+    with open(file_path, "w") as f:
+        json.dump(data, f, indent=4)
+        logger.debug(f"Saved to {file_path}")
+
+def load_json(file_path):
+    """Load data from a JSON file."""
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            resolved_path = Path(file_path).resolve()
+            logger.debug(f"Loaded from {resolved_path}")
+            return json.load(f)
+    return {}
 
 def get_item_info(access_token):
     """
@@ -123,7 +170,8 @@ def get_item_info(access_token):
 
         if response.status_code == 200:
             # Save and parse the response
-            item_data = save_and_parse_response(response, "./temp/item_get_response.json")
+            RESPONSE_PATH = TEMP_DIR / "item_get_response.json"
+            item_data = save_and_parse_response(response, RESPONSE_PATH)
 
             # Correctly retrieve institution_name directly from the top level of "item"
             institution_name = item_data["item"].get("institution_name", "Unknown Institution")
@@ -132,8 +180,9 @@ def get_item_info(access_token):
             logger.info(f"Extracted institution_name: {institution_name}")
 
             # Save item metadata to LinkItems.json
-            ensure_file_exists("./data/LinkItems.json", default_content={})
-            with open("./data/LinkItems.json", "r") as f:
+            LINK_ITEMS_FILE = DATA_DIR / "LinkItems.json"
+            ensure_file_exists(LINK_ITEMS_FILE, default_content={})
+            with open(LINK_ITEMS_FILE, "r") as f:
                 existing_data = json.load(f)
 
             existing_data[item_id] = {
@@ -143,7 +192,7 @@ def get_item_info(access_token):
                 "status": item_data.get("status", {})
             }
 
-            with open("./data/LinkItems.json", "w") as f:
+            with open(LINK_ITEMS_FILE, "w") as f:
                 json.dump(existing_data, f, indent=2)
 
             logger.info(f"Linked to {institution_name} successfully with item ID: {item_id}")
@@ -181,12 +230,14 @@ def save_initial_account_data(access_token, item_id):
         logger.debug(f"Response: {response.status_code} - {response.text}")
 
         if response.status_code == 200:
-            account_data = save_and_parse_response(response, "./temp/accounts_get_response.json")
+            RESPONSE_PATH = TEMP_DIR / "item_get_response.json"
+            account_data = save_and_parse_response(response, RESPONSE_PATH)
 
             # Extract institution_name from item object
             institution_name = account_data["item"].get("institution_name", "Unknown Institution")
-
-            ensure_file_exists("./data/LinkAccounts.json", default_content={})
+            
+            LINK_ACCOUNT_PATH = DATA_DIR / "LinkAccounts.json"
+            ensure_file_exists(LINK_ACCOUNT_PATH, default_content={})
             with open("./data/LinkAccounts.json", "r") as f:
                 data = json.load(f)
 
@@ -202,7 +253,7 @@ def save_initial_account_data(access_token, item_id):
                 }
                 logger.info(f"Linked account {account['name']} for institution {institution_name}")
 
-            with open("./data/LinkAccounts.json", "w") as f:
+            with open(LINK_ACCOUNT_PATH, "w") as f:
                 json.dump(data, f, indent=2)
 
             logger.info(f"Account data saved successfully for item_id {item_id}.")
@@ -212,8 +263,6 @@ def save_initial_account_data(access_token, item_id):
         logger.error(f"Request exception during account data retrieval: {str(re)}")
     except KeyError as ke:
         logger.error(f"Key error: {ke}")
-
-
 
 # Main flask app
 @app.route("/")
@@ -226,9 +275,9 @@ def dashboard():
 def accounts_page():
     try:
         # Load accounts and items data
-        with open('Dash/data/LinkAccounts.json') as f:
+        with open(LINKED_ACCOUNTS) as f:
             link_accounts = json.load(f)
-        with open('Dash/data/LinkItems.json') as f:
+        with open(LINKED_ITEMS) as f:
             link_items = json.load(f)
         
         # Merge relevant details for the page
@@ -288,7 +337,7 @@ def transactions_page():
         return render_template('error.html', error="Failed to load transactions data.")
 
 @app.route('/refresh_account', methods=['POST'])
-def refresh_account():
+def refresh_data():
     """
     Refresh account transactions using the Plaid API.
     """
@@ -354,6 +403,32 @@ def refresh_all_accounts():
     except Exception as e:
         return jsonify({"status": "error", "error": str(e)}), 500
 
+@app.route('/save_group', methods=['POST'])
+def save_group():
+    group = request.json
+    try:
+        # Save group to a file or database
+        with open('custom_groups.json', 'a') as f:
+            json.dump(group, f)
+            f.write('\n')
+        return jsonify({"status": "success", "message": "Group saved!"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+@app.route('/api/cash_flow', methods=['GET'])
+def get_cash_flow():
+    """Placeholder for cash flow data."""
+    # Mock data for demonstration
+    cash_flow_data = {
+        "status": "success",
+        "data": [
+            {"month": "January 2025", "income": 4500.00, "expenses": 3200.00},
+            {"month": "February 2025", "income": 4700.00, "expenses": 3400.00},
+            {"month": "March 2025", "income": 4800.00, "expenses": 3500.00},
+            {"month": "April 2025", "income": 4900.00, "expenses": 3600.00},
+        ]
+    }
+    return jsonify(cash_flow_data)
 
 # Link token routes
 @app.route('/save_public_token', methods=['POST'])
@@ -368,10 +443,9 @@ def save_public_token():
 
         public_token = data.get("public_token")
         if public_token:
-            temp_dir = "Plaid/temp"
-            ensure_directory_exists(temp_dir)  # Ensure the directory exists
+            ensure_directory_exists(TEMP_DIR)  # Ensure the directory exists
 
-            with open(os.path.join(temp_dir, "public_token.txt"), "w") as f:
+            with open(os.path.join(TEMP_DIR, "public_token.txt"), "w") as f:
                 f.write(public_token)
             logger.info("Public token saved to file")
 
@@ -426,6 +500,38 @@ def get_link_token():
         logging.error("Failed to create link token")
         return jsonify({"error": "Failed to create link token"}), 400
 
+@app.route('/get_institutions', methods=['GET'])
+def get_institutions():
+    try:
+        # Load LinkItems.json and LinkAccounts.json
+        with open('Dash/data/LinkItems.json') as f:
+            link_items = json.load(f)
+        with open('Dash/data/LinkAccounts.json') as f:
+            link_accounts = json.load(f)
+
+        # Aggregate data by institution
+        institutions = {}
+        for item_id, item_data in link_items.items():
+            institution_name = item_data.get('institution_name', 'Unknown Institution')
+            if institution_name not in institutions:
+                institutions[institution_name] = {
+                    'item_id': item_id,
+                    'products': item_data.get('products', []),
+                    'status': item_data.get('status', {}),
+                    'accounts': []
+                }
+
+            # Add accounts linked to this item_id
+            for account_id, account_data in link_accounts.items():
+                if account_data.get('item_id') == item_id:
+                    institutions[institution_name]['accounts'].append(account_data)
+
+        return jsonify({"status": "success", "institutions": institutions}), 200
+    except Exception as e:
+        logging.error(f"Error fetching institutions: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/get_transactions", methods=["GET"])
 def get_transactions():
     """Retrieve processed transactions."""
@@ -448,7 +554,6 @@ def get_accounts():
         for key, data in accounts.items()
     ]
     return jsonify(account_options)
-
 
 # Endpoint to fetch themes
 @app.route('/themes', methods=['GET'])
