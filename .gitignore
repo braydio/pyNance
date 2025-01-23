@@ -1,9 +1,9 @@
 __pycache__
 
-themes/
+
 !themes/default.css
 
-templates/
+
 !dashboard.html
 !landing.html
 
