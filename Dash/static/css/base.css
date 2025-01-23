@@ -1,0 +1,59 @@
+/* Global Reset and Base Styling */
+body {
+    background: linear-gradient(135deg, #1e1e1e, #2b2b2b);
+    background-attachment: fixed;
+    color: #dcdcdc;
+    font-family: "JetBrains Mono", monospace;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  header {
+    background-color: #181818;
+    color: #76c7c0;
+    padding: 1rem 3rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #76c7c0;
+  }
+  
+  main {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin: 0;
+  }
+  
+  footer {
+    background-color: #181818;
+    color: #666;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.875rem;
+    border-top: 2px solid #76c7c0;
+    box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+  }
+  
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #76c7c0;
+    border-radius: 8px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #5bb9ae;
+  }
+  

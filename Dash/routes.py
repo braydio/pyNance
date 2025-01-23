@@ -1,9 +1,13 @@
 import json
 import os
+import flask
+
+from utils.helper_utils import logger
 
 # Directory to store themes
 THEMES_DIR = 'static/themes'
 DEFAULT_THEME = 'brayden_dashroad.css'
+
 
 
 # Process transactions for visuals
