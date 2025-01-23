@@ -29,7 +29,6 @@ def ensure_directory_exists(directory_path):
     """Ensures a directory exists."""
     os.makedirs(directory_path, exist_ok=True)
 
-
 # json Functions
 def save_json(file_path, data):
     """Save data to a JSON file."""
@@ -46,10 +45,3 @@ def load_json(file_path):
             return json.load(f)
     return {}
 
-# Themes
-def get_available_themes():
-    try:
-        themes = [f for f in os.listdir(THEMES_DIR) if f.endswith('.css')]
-        return themes
-    except FileNotFoundError:
-        return []
