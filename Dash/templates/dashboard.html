@@ -30,23 +30,13 @@
   </header>
   <main>
     <div class="visualization">
-      <h2>Spending Visualization</h2>
-      <p>Charts and graphs will be displayed here.</p>
+      <div class="monthly-comparison">
+        <h2>Monthly Income vs Spending</h2>
+        <canvas id="incomeSpendingChart"></canvas>
+      </div>
+      
     </div>
-    
-    <div class="refresh-section">
-      <h2>Refresh Account Data</h2>
-      <form id="refresh-form">
-        <label for="account-select">Select Account:</label>
-        <select id="account-select" name="account">
-          <option value="" disabled selected>Choose an account</option>
-          <!-- Options will be populated dynamically -->
-        </select>
-        <button type="submit">Refresh</button>
-      </form>
-      <p id="refresh-status"></p>
-    </div>   
-    
+      
     <div class="transactions">
       <h2>Transactions</h2>
       <table>
@@ -64,6 +54,12 @@
         </tbody>
       </table>
     </div>
+
+    <div class="cash-flow">
+      <h2>Cash Flow</h2>
+      <canvas id="cashFlowChart"></canvas>
+    </div>
+    
 
     <div class="reminders">
       <h2>Reminders</h2>
