@@ -5,55 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accounts</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+    <style>
+        .hidden { display: none; }
+        .institution-row { cursor: pointer; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin: 1em 0; }
+        table, th, td { border: 1px solid #504945; }
+        th, td { padding: 8px; text-align: left; }
+    </style>
 </head>
 <body>
     <header>
-        <h1>Accounts</h1>
-        <nav>
+        <div>
+            <h1>Accounts</h1>
+        </div>
+        <nav class="menu">
             <button onclick="window.location.href='/'">Dashboard</button>
+            <button onclick="window.location.href='/transactions'">Transactions</button>
+            <button onclick="window.location.href='/spending_by_category'">Trends</button>
+            <button onclick="window.location.href='/reports'">Reports</button>
             <button onclick="window.location.href='/settings'">Settings</button>
         </nav>
     </header>
-    <main>
-        <div class="controls">
-            <!-- Link New Account Button -->
-            <button id="link-button">Link New Account</button>
-            
-            <!-- Refresh All Linked Accounts Button -->
-            <button id="refresh-accounts" onclick="refreshAllLinkedAccounts()">Refresh All Linked Accounts</button>
-            
-            <p id="status"></p>
+    <main>    <div class="controls">
+        <!-- Search Bar -->
+        <input type="text" id="search-bar" placeholder="Search institutions..." onkeyup="filterInstitutions()" />
+
+        <!-- Institution Multi-Select Dropdown -->
+        <select id="institution-select" multiple>
+            <!-- Options will be dynamically populated -->
+        </select>
+
+        <!-- Refresh Buttons -->
+        <button id="refresh-selected" onclick="refreshSelectedInstitutions()">Refresh Selected Institutions</button>
+        <button id="refresh-accounts" onclick="refreshAllLinkedAccounts()">Refresh All Linked Accounts</button>
+
+        <p id="status"></p>
+
+    <!-- Section for creating and saving custom groups -->
+    <section>
+        <h2>Custom Groups</h2>
+        <div>
+            <input type="text" id="group-name" placeholder="Group name" />
+            <button id="save-group" onclick="saveCustomGroup()">Save Group</button>
         </div>
-        <table>
-            <thead>
-                <tr>
-                    <th>Account Name</th>
-                    <th>Institution</th>
-                    <th>Type</th>
-                    <th>Subtype</th>
-                    <th>Available Balance</th>
-                    <th>Current Balance</th>
-                    <th>Last Update</th>
-                    <th>Products</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for account in accounts %}
-                <tr>
-                    <td>{{ account.account_name }}</td>
-                    <td>{{ account.institution_name }}</td>
-                    <td>{{ account.type }}</td>
-                    <td>{{ account.subtype }}</td>
-                    <td>{{ account.balances.available or 'N/A' }}</td>
-                    <td>{{ account.balances.current or 'N/A' }}</td>
-                    <td>{{ account.last_successful_update or 'N/A' }}</td>
-                    <td>{{ account.products | join(', ') }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div id="custom-groups-container">
+            <!-- Custom groups will be displayed here -->
+        </div>
+    </section>
+
+    <section>
+        <h2>Link a New Account</h2>
+        <button id="link-account-button">Link Account</button>
+        <p id="link-status"></p>
+    </section>
+
+    <div id="institutions-container">
+        <!-- Institutions and accounts will be dynamically loaded here -->
+    </div>
+
     </main>
+    
     <footer>&copy; Brayden's Finance Dashroad</footer>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
 </body>
 </html>
