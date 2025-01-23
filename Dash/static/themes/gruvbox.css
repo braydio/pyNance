@@ -1,0 +1,168 @@
+/* Gruvbox-Inspired Theme */
+body {
+    background-color: #282828; /* Gruvbox dark background */
+    font-family: "JetBrains Mono", monospace;
+    color: #ebdbb2; /* Light text */
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 1fr;
+    height: 100vh;
+}
+
+header {
+    background-color: #3c3836; /* Gruvbox medium dark */
+    color: #fabd2f; /* Bright yellow */
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.5rem;
+    border-bottom: 2px solid #fabd2f;
+}
+
+.menu {
+    display: flex;
+    gap: .8rem;
+}
+
+.menu button {
+    background: none;
+    color: #fabd2f;
+    border: 1px solid #fabd2f;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+.menu button:hover {
+    background-color: #fabd2f;
+    color: #282828;
+}
+
+.menu button:active {
+    background-color: #d79921; /* Slightly darker yellow */
+}
+
+main {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 2rem;
+    margin: 0;
+}
+
+.visualization, .reminders, .budget {
+    background-color: #3c3836; /* Medium background */
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    color: #ebdbb2;
+    margin: 1rem;
+}
+
+.visualization {
+    grid-column: 1 / -1;
+    height: 300px;
+}
+
+footer {
+    background-color: #3c3836;
+    color: #928374; /* Neutral gray */
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.875rem;
+    border-top: 2px solid #fabd2f;
+}
+
+.transactions {
+    width: 100%;
+    overflow-x: auto;
+    background-color: #3c3836;
+    border-radius: 8px;
+    padding: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #504945;
+}
+
+th {
+    background-color: #665c54;
+    color: #fabd2f;
+    font-weight: bold;
+}
+
+td {
+    color: #ebdbb2;
+}
+
+.error {
+    color: #cc241d; /* Red */
+}
+
+.success {
+    color: #98971a; /* Green */
+}
+
+button {
+    background: none;
+    color: #fabd2f;
+    border: 1px solid #fabd2f;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+
+button:hover {
+    background-color: #fabd2f;
+    color: #282828;
+}
+
+button:active {
+    background-color: #d79921; /* Slightly darker yellow */
+}
+
+/* Dropdown Styling */
+#theme-select {
+    background-color: #3c3836; /* Gruvbox medium background */
+    color: #ebdbb2; /* Light text */
+    border: 1px solid #665c54; /* Subtle outline */
+    padding: 0.5rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    outline: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+#theme-select:hover {
+    border-color: #fabd2f; /* Bright yellow */
+}
+
+#theme-select:focus {
+    border-color: #b8bb26; /* Bright green */
+}
+
+#theme-form button {
+    margin-top: 1rem;
+}
+
+#theme-status {
+    margin-top: 1rem;
+    color: #b8bb26; /* Green text for status */
+}
