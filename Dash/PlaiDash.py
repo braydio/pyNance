@@ -7,7 +7,8 @@ from pathlib import Path
 import logging
 
 from utils.helper_utils import save_json, load_json, ensure_directory_exists
-from utils.plaid_utils import generate_link_token, refresh_plaid_data
+from utils.plaid_utils import generate_link_token, refresh_plaid_data, ensure_directory_exists, ensure_file_exists, save_and_parse_response, refresh_accounts_by_access_token
+
 
 logger = logging.getLogger(__name__)
 
@@ -29,10 +30,11 @@ if not logger.hasHandlers():
 
 # Load environment variables
 load_dotenv()
-CLIENT_ID = os.getenv("CLIENT_ID")
-SECRET_KEY = os.getenv("SECRET_KEY")
+PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
+PLAID_SECRET = os.getenv("SECRET_KEY")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
+PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
 THEMES_DIR = Path('Dash/static/themes')
 DEFAULT_THEME = 'Dash/static/themes/default.css'
@@ -71,8 +73,8 @@ def exchange_public_token(public_token):
     url = f"https://{PLAID_ENV}.plaid.com/item/public_token/exchange"
     headers = {'Content-Type': 'application/json'}
     payload = {
-        "client_id": CLIENT_ID,
-        "secret": SECRET_KEY,
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
         "public_token": public_token
     }
 
@@ -105,8 +107,8 @@ def get_item_info(access_token):
     url = f"https://{PLAID_ENV}.plaid.com/item/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
-        "client_id": CLIENT_ID,
-        "secret": SECRET_KEY,
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
         "access_token": access_token
     }
 
@@ -163,8 +165,8 @@ def save_initial_account_data(access_token, item_id):
     url = f"https://{PLAID_ENV}.plaid.com/accounts/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
-        "client_id": CLIENT_ID,
-        "secret": SECRET_KEY,
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
         "access_token": access_token
     }
 
@@ -211,6 +213,8 @@ def save_initial_account_data(access_token, item_id):
     except KeyError as ke:
         logger.error(f"Key error: {ke}")
 
+
+
 # Main flask app
 @app.route("/")
 def dashboard():
@@ -218,17 +222,138 @@ def dashboard():
     logging.debug("Rendering dashboard.html")
     return render_template("dashboard.html")
 
-@app.route('/refresh_data', methods=['POST'])
-def refresh_data():
-    selected_group = request.json.get('account_group')
-    if not selected_group:
-        return jsonify({"error": "No account group selected"}), 400
-    
+@app.route('/accounts', methods=['GET'])
+def accounts_page():
     try:
-        result = refresh_plaid_data(selected_group)
-        return jsonify({"message": "Data refreshed successfully", "result": result}), 200
+        # Load accounts and items data
+        with open('Dash/data/LinkAccounts.json') as f:
+            link_accounts = json.load(f)
+        with open('Dash/data/LinkItems.json') as f:
+            link_items = json.load(f)
+        
+        # Merge relevant details for the page
+        accounts_data = []
+        for account_id, account in link_accounts.items():
+            item_data = link_items.get(account.get("item_id"), {})
+            accounts_data.append({
+                "account_id": account_id,
+                "account_name": account.get("account_name"),
+                "institution_name": account.get("institution_name"),
+                "type": account.get("type"),
+                "subtype": account.get("subtype"),
+                "balances": account.get("balances"),
+                "last_successful_update": item_data.get("status", {}).get("transactions", {}).get("last_successful_update"),
+                "products": item_data.get("products", []),
+            })
+        
+        return render_template('accounts.html', accounts=accounts_data)
     except Exception as e:
+        logger.error(f"Error loading accounts page: {e}")
+        return render_template('error.html', error="Failed to load accounts data.")
+
+@app.route('/transactions', methods=['GET'])
+def transactions_page():
+    try:
+        # Load transactions, accounts, and items data
+        with open('Dash/data/Transactions.json') as tf:
+            transactions_data = json.load(tf)
+        with open('Dash/data/LinkAccounts.json') as af:
+            link_accounts = json.load(af)
+        with open('Dash/data/LinkItems.json') as lf:
+            link_items = json.load(lf)
+        
+        # Enrich transactions with account and item details
+        enriched_transactions = []
+        for transaction in transactions_data.get("transactions", []):
+            account_id = transaction["account_id"]
+            account_info = link_accounts.get(account_id, {})
+            item_info = link_items.get(account_info.get("item_id", ""), {})
+            
+            enriched_transactions.append({
+                "date": transaction["date"],
+                "name": transaction["name"],
+                "amount": transaction["amount"],
+                "category": transaction.get("category", ["Unknown"])[-1],
+                "merchant_name": transaction.get("merchant_name", "Unknown"),
+                "institution_name": account_info.get("institution_name", "Unknown"),
+                "account_name": account_info.get("account_name", "Unknown Account"),
+                "account_type": account_info.get("type", "Unknown"),
+                "account_subtype": account_info.get("subtype", "Unknown"),
+                "last_successful_update": item_info.get("status", {}).get("transactions", {}).get("last_successful_update", "N/A"),
+            })
+        
+        return render_template('transactions.html', transactions=enriched_transactions)
+    except Exception as e:
+        logging.error(f"Error loading transactions page: {e}")
+        return render_template('error.html', error="Failed to load transactions data.")
+
+@app.route('/refresh_account', methods=['POST'])
+def refresh_account():
+    """
+    Refresh account transactions using the Plaid API.
+    """
+    data = request.json
+    access_token = data.get("access_token")
+    start_date = data.get("start_date", "2023-01-01")  # Default start date
+    end_date = data.get("end_date", "2023-12-31")      # Default end date
+
+    if not access_token:
+        return jsonify({"error": "Missing access token"}), 400
+
+    # Payload for the Plaid API request
+    payload = {
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
+        "access_token": access_token,
+        "start_date": start_date,
+        "end_date": end_date
+    }
+
+    url = f"{PLAID_BASE_URL}/transactions/get"
+
+    try:
+        logging.info(f"Requesting Plaid API: {url}")
+        response = requests.post(url, json=payload, timeout=10)
+        response.raise_for_status()
+
+        # Parse response
+        transactions_data = response.json()
+        transactions = transactions_data.get("transactions", [])
+        total_transactions = transactions_data.get("total_transactions", 0)
+
+        # Logging
+        logging.info(f"Fetched {len(transactions)} transactions (Total: {total_transactions})")
+        for txn in transactions:
+            logging.info(f"- {txn['date']} | {txn['name']} | ${txn['amount']}")
+
+        # Return success response
+        return jsonify({
+            "status": "success",
+            "transactions": transactions,
+            "total_transactions": total_transactions
+        }), 200
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error refreshing account: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/refresh_all_accounts', methods=['POST'])
+def refresh_all_accounts():
+    try:
+        data = request.json
+        access_token = data.get("access_token")
+
+        if not access_token:
+            return jsonify({"status": "error", "error": "Access token is required"}), 400
+
+        # Logic to refresh all accounts linked by this access token
+        refreshed_accounts = refresh_accounts_by_access_token(access_token)
+
+        return jsonify({"status": "success", "details": refreshed_accounts}), 200
+
+    except Exception as e:
+        return jsonify({"status": "error", "error": str(e)}), 500
+
 
 # Link token routes
 @app.route('/save_public_token', methods=['POST'])
@@ -301,26 +426,6 @@ def get_link_token():
         logging.error("Failed to create link token")
         return jsonify({"error": "Failed to create link token"}), 400
 
-@app.route("/save_public_token", methods=["POST"])
-def save_public_token():
-    """Save the public token and exchange it for an access token."""
-    try:
-        data = request.get_json()
-        public_token = data.get("public_token")
-
-        if not public_token:
-            return jsonify({"error": "Public token is required."}), 400
-
-        access_token = f"access_token_for_{public_token}"
-        access_token_file = DATA_DIR / "access_tokens.json"
-        save_json(access_token_file, {"access_token": access_token})
-
-        logging.debug(f"Access token saved to {access_token_file}")
-        return jsonify({"message": "Access token saved!", "access_token": access_token})
-    except Exception as e:
-        logging.error(f"Error saving public token: {e}")
-        return jsonify({"error": str(e)}), 500
-
 @app.route("/get_transactions", methods=["GET"])
 def get_transactions():
     """Retrieve processed transactions."""
@@ -332,6 +437,18 @@ def get_transactions():
     except Exception as e:
         logging.error(f"Error retrieving transactions: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# Load info from data/
+@app.route('/get_accounts', methods=['GET'])
+def get_accounts():
+    with open('Dash/data/LinkAccounts.json') as f:
+        accounts = json.load(f)
+    account_options = [
+        {"id": key, "name": f"{data['institution_name']} - {data['account_name']}"}
+        for key, data in accounts.items()
+    ]
+    return jsonify(account_options)
+
 
 # Endpoint to fetch themes
 @app.route('/themes', methods=['GET'])
