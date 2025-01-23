@@ -75,3 +75,11 @@ def inject_theme():
             current_theme = f.read().strip()
     except FileNotFoundError:
         current_theme = DEFAULT_THEME
+
+# Themes
+def get_available_themes():
+    try:
+        themes = [f for f in os.listdir(THEMES_DIR) if f.endswith('.css')]
+        return themes
+    except FileNotFoundError:
+        return []
