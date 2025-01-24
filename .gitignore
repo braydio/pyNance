@@ -1,19 +1,13 @@
 __pycache__
 
 *.bak
+*.json
+*.log
+.env
 
-!themes/default.css
+.venv
+venv
 
-
-!dashboard.html
-!landing.html
-
-Plaid/data/
 
 dev/
 temp/
-.env
-token/
-*.log
-
-.venv
