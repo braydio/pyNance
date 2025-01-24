@@ -9,6 +9,19 @@ from datetime import datetime, timedelta
 
 from utils.plaid_utils import generate_link_token, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
 
+# Define directories
+BASE_DIR = Path(__file__).resolve().parent
+DATA_DIR = BASE_DIR / "data"
+TEMP_DIR = BASE_DIR / "temp"
+LOGS_DIR = BASE_DIR / "logs"
+THEMES_DIR = Path('Dash/static/themes')
+
+# Make DIRs if not exist
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR.mkdir(parents=True, exist_ok=True)
+LOGS_DIR.mkdir(parents=True, exist_ok=True)
+THEMES_DIR.mkdir(parents=True, exist_ok=True)
+
 logger = logging.getLogger(__name__)
 
 if not logger.hasHandlers():
@@ -35,32 +48,28 @@ PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
-# Define directories
-BASE_DIR = Path(__file__).resolve().parent
-DATA_DIR = BASE_DIR / "data"
-TEMP_DIR = BASE_DIR / "temp"
-
+# Define required json files (and css)
 LINKED_ACCOUNTS = DATA_DIR / "LinkAccounts.json"
 LINKED_ITEMS = DATA_DIR / "LinkItems.json"
 LATEST_TRANSACTIONS = DATA_DIR / "Transactions.json"
 LATEST_RESPONSE = TEMP_DIR / "ResponseTransactions.json"
 TRANSACTION_REFRESH_FILE = TEMP_DIR /"TransactionRefresh.json"
+DEFAULT_THEME = THEMES_DIR / "default.css"
 
-logger.debug(f"Files loaded in data: {LINKED_ACCOUNTS} {LINKED_ITEMS} {LATEST_TRANSACTIONS} {LATEST_RESPONSE}")
-
-TEMP_DIR.mkdir(parents=True, exist_ok=True)
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-
-THEMES_DIR = Path('Dash/static/themes')
-DEFAULT_THEME = 'Dash/static/themes/default.css'
-
-logger.debug(f"DEFAULT THEME: {DEFAULT_THEME}")
-logger.debug(f"THEMES DIR: {THEMES_DIR}")
-logger.debug(f"DATA DIR: {DATA_DIR}")
-logger.debug(f"TEMP DIR: {TEMP_DIR}")
+logger.debug(f"Files loaded in /data: ")
+logger.debug(f"{LINKED_ITEMS}")
+logger.debug(f"{LINKED_ACCOUNTS}")
+logger.debug(f"{LATEST_TRANSACTIONS}")
+logger.debug(f"Temp files in /temp: ")
+logger.debug(f"{LATEST_RESPONSE}")
+logger.debug(f"{TRANSACTION_REFRESH_FILE}")
+logger.debug(f"Static elements in /static: ")
+logger.debug(f"{DEFAULT_THEME}")
+logger.debug(f"Logging info to")
+logger.debug(f"{LOGS_DIR}")
 
 # Ensure directories exist
-for dir_path in [THEMES_DIR, DATA_DIR, TEMP_DIR]:
+for dir_path in [THEMES_DIR, DATA_DIR, TEMP_DIR, LOGS_DIR]:
     if not dir_path.exists():
         logging.warning(f"Directory {dir_path} does not exist. Creating it...")
         dir_path.mkdir(parents=True, exist_ok=True)
