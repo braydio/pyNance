@@ -8,8 +8,8 @@ import logging
 from datetime import datetime, timedelta
 
 # All paths & files defined in helper_utils.py
-from utils.config_utils import *
-from utils.plaid_utils import generate_link_token, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
+from config_utils import *
+from plaid_utils import generate_link_token, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
 
 # Utility to get available themes
 def get_available_themes():

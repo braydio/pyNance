@@ -1,0 +1,128 @@
+import os
+import argparse
+import json
+from dotenv import load_dotenv
+from plaid.api import plaid_api
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.products import Products
+from plaid.model.country_code import CountryCode
+from plaid.configuration import Configuration
+from plaid.api_client import ApiClient
+
+# Load environment variables
+load_dotenv()
+PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
+PLAID_SECRET = os.getenv("SECRET_KEY")
+PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
+PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
+PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
+
+def generate_link_token(products_list):
+    logger.debug(f"Current Working Dir: {os.getcwd()}")
+
+    # Configure Plaid API client
+    configuration = Configuration(
+        host=f"https://{PLAID_ENV}.plaid.com",
+        api_key={
+            'clientId': PLAID_CLIENT_ID,
+            'secret': PLAID_SECRET
+        }
+    )
+    logger.debug(f"Configuration: {configuration}")
+
+    api_client = ApiClient(configuration)
+    client = plaid_api.PlaidApi(api_client)
+    logger.debug("Plaid API client configured")
+
+    # Convert product strings to Products() objects
+    products = [Products(product) for product in products_list]
+    logger.debug(f"Products: {products}")
+
+    # Build request
+    request = LinkTokenCreateRequest(
+        user=LinkTokenCreateRequestUser(client_user_id='user-unique-id'),
+        client_name='My Finance Dashboard',
+        products=products,
+        country_codes=[CountryCode('US')],
+        language='en',
+        webhook='https://sample-web-hook.com',
+        redirect_uri='https://localhost/callback'
+    )
+    logger.debug(f"LinkTokenCreateRequest: {request}")
+
+    # Create link token
+    try:
+        response = client.link_token_create(request)
+        link_token = response['link_token']
+        logger.info(f"Link token created: {link_token}")
+        return link_token
+    except Exception as e:
+        logger.error(f"Error creating link token: {e}")
+        return None
+
+# Utility functions
+def ensure_directory_exists(directory_path):
+    """
+    Ensures that the given directory exists. Creates it if it doesn't.
+    
+    Args:
+        directory_path (str): Path to the directory.
+    """
+    os.makedirs(directory_path, exist_ok=True)
+
+def ensure_file_exists(file_path, default_content=None):
+    """
+    Ensures that the given file exists. Creates it if it doesn't, with optional default content.
+
+    Args:
+        file_path (str): Path to the file.
+        default_content (str, dict, list, optional): Content to write to the file if it's created. Default is None.
+    """
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as file:
+            if default_content is not None:
+                if isinstance(default_content, (dict, list)):
+                    import json
+                    json.dump(default_content, file, indent=2)
+                else:
+                    file.write(default_content)
+            else:
+                file.write("")
+
+
+def refresh_accounts_by_access_token(access_token):
+    client = ApiClient(client_id='your_client_id', secret='your_secret', environment='sandbox')
+
+    # Refresh linked accounts via Plaid API
+    response = client.Transactions.refresh(access_token)
+
+    return response
+
+
+
+def refresh_plaid_data(account_group):
+    # Plaid client initialization
+    client = ApiClient(client_id='your_client_id', secret='your_secret', environment='sandbox')
+
+    # Fetch accounts/items based on the account group
+    # (You'll need to map `account_group` to the corresponding Plaid items or accounts)
+    item_id = get_item_id_for_group(account_group)  # Replace with actual mapping logic
+
+    # Trigger a data refresh
+    response = client.Item.refresh(item_id)
+
+    return response
+
+
+if __name__ == "__main__":
+    # Command-line argument parsing
+    parser = argparse.ArgumentParser(description='Generate a Plaid Link Token')
+    parser.add_argument(
+        '--products', nargs='+', help='List of products (e.g., transactions balance enrich)', required=True)
+    args = parser.parse_args()
+
+    # Generate link token with specified products
+    generate_link_token(args.products)
+
