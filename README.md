@@ -28,6 +28,9 @@ Use a web browser to navigate to the ip address listed in the terminal and check
 
 ## End Quickstart
 
+### Current Development State (1/24)
+- Deleting /Plaid/ (or removing everything in it for now) since the app is fully contained in /Dash/
+
 ### Current Development State (1/21) 
 - Plaid Link is ready. Saves account link tokens to data/
 - Run python CheckLinks.py to consolidate all link tokens to a text file
