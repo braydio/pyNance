@@ -44,6 +44,7 @@ LINKED_ACCOUNTS = DATA_DIR / "LinkAccounts.json"
 LINKED_ITEMS = DATA_DIR / "LinkItems.json"
 LATEST_TRANSACTIONS = DATA_DIR / "Transactions.json"
 LATEST_RESPONSE = TEMP_DIR / "ResponseTransactions.json"
+TRANSACTION_REFRESH_FILE = TEMP_DIR /"TransactionRefresh.json"
 
 logger.debug(f"Files loaded in data: {LINKED_ACCOUNTS} {LINKED_ITEMS} {LATEST_TRANSACTIONS} {LATEST_RESPONSE}")
 
@@ -464,13 +465,13 @@ def get_accounts():
         logger.error(f"Error loading accounts: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+from datetime import datetime, timedelta
+
 @app.route('/refresh_account', methods=['POST'])
 def refresh_data():
     data = request.json
     item_id = data.get("item_id")
-    start_date = data.get("start_date", "2023-01-01")
-    end_date = data.get("end_date", "2023-12-31")
-
+    
     if not item_id:
         return jsonify({"error": "Missing item_id"}), 400
 
@@ -487,7 +488,22 @@ def refresh_data():
     if not item:
         return jsonify({"error": f"Item with ID {item_id} not found"}), 404
 
-    # Load LinkAccounts.json
+    # Determine start_date
+    last_successful_update = item.get("status", {}).get("transactions", {}).get("last_successful_update")
+    if last_successful_update:
+        # Use the last successful update date
+        start_date = last_successful_update.split("T")[0]
+        logging.debug(f"Using start_date of {start_date}")
+    else:
+        # Default to 60 days ago
+        start_date = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
+        logging.debug(f"Using start_date of {start_date}")
+
+    # Use today's date as the end_date
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    logging.info(f"End date using: {end_date}")
+
+    # Load LinkAccounts.json to fetch the access_token
     try:
         with open(LINKED_ACCOUNTS, "r") as f:
             linked_accounts = json.load(f)
@@ -505,6 +521,7 @@ def refresh_data():
     if not access_token:
         return jsonify({"error": f"No access token found for item ID {item_id}"}), 400
 
+    # Payload for the Plaid API request
     payload = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
@@ -523,19 +540,23 @@ def refresh_data():
         transactions = transactions_data.get("transactions", [])
         total_transactions = transactions_data.get("total_transactions", 0)
 
+        logging.info(f"Fetched {len(transactions)} transactions (Total: {total_transactions})")
+
         # Save transactions to a file
         refreshed_data = {
             "item_id": item_id,
+            "start_date": start_date,
+            "end_date": end_date,
             "transactions": transactions,
             "total_transactions": total_transactions,
         }
         with open("refreshed_transactions.json", "w") as f:
             json.dump(refreshed_data, f, indent=4)
 
-        logging.info(f"Saved {len(transactions)} transactions to refreshed_transactions.json")
-
         return jsonify({
             "status": "success",
+            "start_date": start_date,
+            "end_date": end_date,
             "transactions": transactions,
             "total_transactions": total_transactions
         }), 200
@@ -543,6 +564,7 @@ def refresh_data():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error refreshing account: {str(e)}")
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/refresh_all_accounts', methods=['POST'])
 def refresh_all_accounts():
