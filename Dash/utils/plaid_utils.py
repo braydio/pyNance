@@ -12,27 +12,37 @@ from plaid.api_client import ApiClient
 
 from utils.helper_utils import logger
 
-# Load .env variables
+# Load environment variables
 load_dotenv()
-CLIENT_ID = os.getenv("CLIENT_ID")
-SECRET_KEY = os.getenv("SECRET_KEY")
-PLAID_ENV = os.getenv("PLAID_ENV")
+PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
+PLAID_SECRET = os.getenv("SECRET_KEY")
+PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
+PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
+PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
+
+logger.debug(f"plaid_utils using {PLAID_BASE_URL}, {PRODUCTS}, {PLAID_ENV}")
+logger.debug(f"plaid_utils using API {PLAID_SECRET} {PLAID_CLIENT_ID}")
 
 def generate_link_token(products_list):
     logger.debug(f"Current Working Dir: {os.getcwd()}")
+
     # Configure Plaid API client
     configuration = Configuration(
         host=f"https://{PLAID_ENV}.plaid.com",
         api_key={
-            'clientId': CLIENT_ID,
-            'secret': SECRET_KEY
+            'clientId': PLAID_CLIENT_ID,
+            'secret': PLAID_SECRET
         }
     )
+    logger.debug(f"Configuration: {configuration}")
+
     api_client = ApiClient(configuration)
     client = plaid_api.PlaidApi(api_client)
+    logger.debug("Plaid API client configured")
 
     # Convert product strings to Products() objects
     products = [Products(product) for product in products_list]
+    logger.debug(f"Products: {products}")
 
     # Build request
     request = LinkTokenCreateRequest(
@@ -44,15 +54,16 @@ def generate_link_token(products_list):
         webhook='https://sample-web-hook.com',
         redirect_uri='https://localhost/callback'
     )
+    logger.debug(f"LinkTokenCreateRequest: {request}")
 
     # Create link token
     try:
         response = client.link_token_create(request)
         link_token = response['link_token']
-        print(f"Link token created: {link_token}")
+        logger.info(f"Link token created: {link_token}")
         return link_token
     except Exception as e:
-        print(f"Error creating link token: {e}")
+        logger.error(f"Error creating link token: {e}")
         return None
 
 # Utility functions
@@ -85,38 +96,7 @@ def ensure_file_exists(file_path, default_content=None):
             else:
                 file.write("")
 
-def save_and_parse_response(response, file_path):
-    """
-    Save a JSON response to a file and parse it.
 
-    Args:
-        response (requests.Response): Response object from an API call.
-        file_path (str): Path to save the JSON file.
-
-    Returns:
-        dict: Parsed JSON content from the file.
-    """
-    ensure_directory_exists(os.path.dirname(file_path))
-    
-    # Save response JSON to file
-    with open(file_path, "w") as temp_file:
-        json.dump(response.json(), temp_file, indent=2)
-    
-    # Parse the saved file
-    return load_json(file_path)
-
-def load_json(file_path):
-    """
-    Load JSON content from a file.
-
-    Args:
-        file_path (str): Path to the JSON file.
-
-    Returns:
-        dict: Parsed JSON content from the file.
-    """
-    with open(file_path, "r") as temp_file:
-        app.run(debug=True, port=5001)
 
 def refresh_accounts_by_access_token(access_token):
     client = ApiClient(client_id='your_client_id', secret='your_secret', environment='sandbox')

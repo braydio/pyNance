@@ -1,165 +1,110 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const linkAccountButton = document.getElementById("link-account-button");
-  const linkStatus = document.getElementById("link-status");
-  const searchBar = document.getElementById("search-bar");
   const institutionsContainer = document.getElementById("institutions-container");
-  const institutionSelect = document.getElementById("institution-select");
-  const customGroupsContainer = document.getElementById("custom-groups-container");
+  const searchBar = document.getElementById("search-bar");
+  const linkButton = document.getElementById("link-button");
+  const statusContainer = document.getElementById("status");
 
-  // Utility: Fetch data from an endpoint
+  // Utility to fetch data from an endpoint
   function fetchData(url, options = {}) {
     return fetch(url, options)
-      .then(response => response.json())
-      .catch(error => {
+      .then((response) => response.json())
+      .catch((error) => {
         console.error(`Error fetching data from ${url}:`, error);
         throw error;
       });
   }
 
-  // Utility: Display loading indicator
-  function toggleLoading(show) {
-    const loadingIndicator = document.getElementById("loading-indicator");
-    if (loadingIndicator) {
-      loadingIndicator.style.display = show ? "block" : "none";
-    }
+  // Plaid Link functionality
+  function initializePlaidLink() {
+    fetchData("/get_link_token")
+      .then((data) => {
+        if (data.link_token) {
+          const handler = Plaid.create({
+            token: data.link_token,
+            onSuccess: function (public_token, metadata) {
+              console.log("Public Token:", public_token);
+              alert("Public Token: " + public_token);
+
+              // Save the public token and fetch access token
+              fetchData("/save_public_token", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ public_token: public_token }),
+              })
+                .then((response) => {
+                  if (response.access_token) {
+                    console.log("Access Token:", response.access_token);
+                    statusContainer.textContent = "Access token received!";
+                  } else {
+                    console.error("Error saving public token:", response.error);
+                    statusContainer.textContent = "Failed to save public token.";
+                  }
+                })
+                .catch((error) => {
+                  console.error("Error saving public token:", error);
+                  statusContainer.textContent = "An error occurred during the linking process.";
+                });
+            },
+            onExit: function (err, metadata) {
+              if (err) {
+                console.error("Plaid Link error:", err);
+                statusContainer.textContent = "User exited with an error.";
+              } else {
+                statusContainer.textContent = "User exited without error.";
+              }
+            },
+          });
+
+          linkButton.onclick = () => handler.open();
+        } else {
+          console.error("Error fetching link token:", data.error);
+          statusContainer.textContent = "Error fetching link token.";
+        }
+      })
+      .catch((error) => {
+        console.error("Error initializing Plaid Link:", error);
+        statusContainer.textContent = "Error initializing Plaid Link.";
+      });
   }
 
-  // Fetch institutions and populate the dropdown
-  fetchData("/get_accounts")
-    .then(data => {
-      data.groups.forEach(group => {
-        const option = document.createElement("option");
-        option.value = group.id;
-        option.textContent = group.name;
-        institutionSelect.appendChild(option);
-      });
-    })
-    .catch(error => console.error("Error fetching account groups:", error));
-
-  // Refresh all linked accounts
-  window.refreshAllLinkedAccounts = () => {
-    toggleLoading(true);
-    fetchData("/refresh_data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh_all: true })
-    })
-      .then(data => {
-        if (data.error) {
-          alert(`Error: ${data.error}`);
-        } else {
-          alert("All accounts refreshed successfully!");
-        }
-      })
-      .finally(() => toggleLoading(false))
-      .catch(error => console.error("Error refreshing all accounts:", error));
-  };
-
-  // Refresh selected institutions
-  window.refreshSelectedInstitutions = () => {
-    const selectedInstitutions = Array.from(institutionSelect.selectedOptions).map(option => option.value);
-
-    if (selectedInstitutions.length === 0) {
-      alert("Please select at least one institution to refresh.");
-      return;
-    }
-
-    toggleLoading(true);
-    fetchData("/refresh_data", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ institutions: selectedInstitutions })
-    })
-      .then(data => {
-        if (data.error) {
-          alert(`Error: ${data.error}`);
-        } else {
-          alert("Selected institutions refreshed successfully!");
-        }
-      })
-      .finally(() => toggleLoading(false))
-      .catch(error => console.error("Error refreshing selected institutions:", error));
-  };
-
-  // Save custom groups
-  window.saveCustomGroup = () => {
-    const groupName = document.getElementById("group-name").value;
-    const selectedInstitutions = Array.from(institutionSelect.selectedOptions).map(option => ({
-      id: option.value,
-      name: option.textContent,
-    }));
-
-    if (!groupName || selectedInstitutions.length === 0) {
-      alert("Please provide a group name and select at least one institution.");
-      return;
-    }
-
-    const customGroup = { name: groupName, institutions: selectedInstitutions };
-
-    toggleLoading(true);
-    fetchData("/save_group", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(customGroup)
-    })
-      .then(data => {
-        if (data.error) {
-          alert(`Error: ${data.error}`);
-        } else {
-          alert(`Group "${groupName}" saved successfully!`);
-          displayCustomGroup(customGroup);
-        }
-      })
-      .finally(() => toggleLoading(false))
-      .catch(error => console.error("Error saving group:", error));
-  };
-
-  // Display saved custom groups
-  const displayCustomGroup = group => {
-    const groupDiv = document.createElement("div");
-    groupDiv.className = "custom-group";
-
-    const groupTitle = document.createElement("h3");
-    groupTitle.textContent = group.name;
-
-    const groupList = document.createElement("ul");
-    group.institutions.forEach(inst => {
-      const listItem = document.createElement("li");
-      listItem.textContent = inst.name;
-      groupList.appendChild(listItem);
-    });
-
-    groupDiv.appendChild(groupTitle);
-    groupDiv.appendChild(groupList);
-    customGroupsContainer.appendChild(groupDiv);
-  };
-
-  // Fetch and render institutions
-  function fetchInstitutions() {
+  // Fetch institutions and render them
+  function fetchAndRenderInstitutions() {
     fetchData("/get_institutions")
-      .then(data => {
+      .then((data) => {
         if (data.status === "success") {
           renderInstitutions(data.institutions);
         } else {
-          console.error("Error fetching institutions:", data.message);
-          alert("Failed to fetch institutions.");
+          institutionsContainer.innerHTML = `<p>Error loading institutions: ${data.message}</p>`;
         }
       })
-      .catch(error => console.error("Error fetching institutions:", error));
+      .catch((error) => {
+        institutionsContainer.innerHTML = `<p>Error loading institutions: ${error.message}</p>`;
+      });
   }
 
+  // Render institutions as aggregates with dropdowns for accounts
   function renderInstitutions(institutions) {
-    institutionsContainer.innerHTML = ""; // Clear previous content
+    institutionsContainer.innerHTML = ""; // Clear existing content
 
-    Object.keys(institutions).forEach(institutionName => {
+    Object.keys(institutions).forEach((institutionName) => {
       const institution = institutions[institutionName];
-      const institutionRow = document.createElement("div");
-      institutionRow.classList.add("institution-row");
-      institutionRow.textContent = `${institutionName} (${institution.accounts.length} accounts)`;
-      institutionRow.onclick = () => toggleAccounts(institutionName);
 
+      // Create the institution container
+      const institutionDiv = document.createElement("div");
+      institutionDiv.className = "institution";
+
+      // Institution header
+      const institutionHeader = document.createElement("div");
+      institutionHeader.className = "institution-row";
+      institutionHeader.innerHTML = `
+        <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
+        <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
+      `;
+      institutionHeader.addEventListener("click", () => toggleAccountsTable(institutionName));
+
+      // Accounts table (initially hidden)
       const accountsTable = document.createElement("table");
-      accountsTable.classList.add("hidden");
+      accountsTable.className = "hidden";
       accountsTable.id = `accounts-${institutionName}`;
       accountsTable.innerHTML = `
         <thead>
@@ -172,103 +117,87 @@ document.addEventListener("DOMContentLoaded", () => {
           </tr>
         </thead>
         <tbody>
-          ${institution.accounts.map(account => `
+          ${institution.accounts
+            .map(
+              (account) => `
             <tr>
               <td>${account.account_name}</td>
               <td>${account.type}</td>
               <td>${account.subtype}</td>
-              <td>${account.balances.available || 'N/A'}</td>
-              <td>${account.balances.current || 'N/A'}</td>
+              <td>${account.balances.available || "N/A"}</td>
+              <td>${account.balances.current || "N/A"}</td>
             </tr>
-          `).join('')}
+          `
+            )
+            .join("")}
         </tbody>
       `;
 
-      institutionsContainer.appendChild(institutionRow);
-      institutionsContainer.appendChild(accountsTable);
+      institutionDiv.appendChild(institutionHeader);
+      institutionDiv.appendChild(accountsTable);
+      institutionsContainer.appendChild(institutionDiv);
+
+      // Attach event listener for the refresh button
+      const refreshButton = institutionHeader.querySelector(".refresh-institution");
+      refreshButton.addEventListener("click", (event) => {
+        event.stopPropagation(); // Prevent toggling the table
+        refreshInstitution(institution.item_id, institutionName);
+      });
     });
   }
 
-  function toggleAccounts(institutionName) {
+  // Toggle the accounts table for an institution
+  function toggleAccountsTable(institutionName) {
     const table = document.getElementById(`accounts-${institutionName}`);
     if (table) {
       table.classList.toggle("hidden");
     }
   }
 
-  // Filter institutions
+  // Refresh an institution's data
+  function refreshInstitution(institutionId, institutionName) {
+    const refreshButton = document.querySelector(`button[data-institution-id="${institutionId}"]`);
+    refreshButton.disabled = true;
+    refreshButton.textContent = "Refreshing...";
+
+    fetchData("/refresh_account", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        item_id: institutionId,
+        start_date: "2023-01-01",
+        end_date: "2023-12-31",
+      }),
+    })
+      .then((response) => {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh";
+        if (response.status === "success") {
+          alert(`Institution "${institutionName}" refreshed successfully!`);
+        } else {
+          alert(`Error refreshing "${institutionName}": ${response.error}`);
+        }
+      })
+      .catch((error) => {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh";
+        alert(`Error refreshing "${institutionName}": ${error.message}`);
+      });
+  }
+
+  // Filter institutions based on search input
   function filterInstitutions() {
     const query = searchBar.value.toLowerCase();
-    const rows = document.querySelectorAll(".institution-row");
+    const institutionRows = document.querySelectorAll(".institution");
 
-    rows.forEach(row => {
-      const institutionName = row.textContent.toLowerCase();
+    institutionRows.forEach((row) => {
+      const institutionName = row.querySelector("h3").textContent.toLowerCase();
       row.style.display = institutionName.includes(query) ? "" : "none";
     });
   }
 
-  // Fetch link token and initialize Plaid Link
-  function fetchLinkToken() {
-    fetchData("/get_link_token")
-      .then(data => {
-        if (data.link_token) {
-          const handler = Plaid.create({
-            token: data.link_token,
-            onSuccess: (public_token, metadata) => {
-              console.log("Public Token:", public_token);
-              savePublicToken(public_token);
-            },
-            onExit: (err, metadata) => {
-              if (err) {
-                console.error("Plaid Link error:", err);
-                updateStatus(linkStatus, "Error during account linking.", "error");
-              } else {
-                updateStatus(linkStatus, "Account linking process was exited.", "info");
-              }
-            },
-          });
-
-          if (linkAccountButton) {
-            linkAccountButton.onclick = () => handler.open();
-          }
-        } else {
-          updateStatus(linkStatus, `Failed to fetch link token: ${data.error}`, "error");
-        }
-      })
-      .catch(error => {
-        console.error("Error fetching link token:", error);
-        updateStatus(linkStatus, "Error fetching link token.", "error");
-      });
-  }
-
-  // Save public token to the backend
-  function savePublicToken(public_token) {
-    fetchData("/save_public_token", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ public_token }),
-    })
-      .then(data => {
-        if (data.access_token) {
-          updateStatus(linkStatus, "Account linked successfully!", "success");
-        } else {
-          updateStatus(linkStatus, "Failed to link account.", "error");
-        }
-      })
-      .catch(err => {
-        console.error("Error saving public token:", err);
-        updateStatus(linkStatus, "An error occurred while linking the account.", "error");
-      });
-  }
-
-  // Update status message
-  function updateStatus(element, message, statusClass) {
-    element.textContent = message;
-    element.className = statusClass;
-  }
-
   // Initialize
-  if (linkAccountButton) fetchLinkToken();
+  if (linkButton) initializePlaidLink();
   if (searchBar) searchBar.addEventListener("input", filterInstitutions);
-  if (institutionsContainer) fetchInstitutions();
+  if (institutionsContainer) fetchAndRenderInstitutions();
 });
