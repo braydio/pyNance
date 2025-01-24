@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # All paths & files defined in helper_utils.py
 from config_utils import *
-from plaid_utils import generate_link_token, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
+from plaid_utils import generate_link_token
 
 # Utility to get available themes
 def get_available_themes():
@@ -21,7 +21,7 @@ def get_available_themes():
         logging.error(f"Error accessing themes directory: {e}")
         return []
 
-# Other utility functions
+# Misc utility functions
 def load_json(file_path):
     """Load data from a JSON file."""
     if os.path.exists(file_path):
@@ -59,6 +59,36 @@ def save_json_with_backup(file_path, data):
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         raise e
+
+def ensure_directory_exists(directory_path):
+    """
+    Ensures that the given directory exists. Creates it if it doesn't.
+    
+    Args:
+        directory_path (str): Path to the directory.
+    """
+    os.makedirs(directory_path, exist_ok=True)
+
+def ensure_file_exists(file_path, default_content=None):
+    """
+    Ensures that the given file exists. Creates it if it doesn't, with optional default content.
+
+    Args:
+        file_path (str): Path to the file.
+        default_content (str, dict, list, optional): Content to write to the file if it's created. Default is None.
+    """
+    if not os.path.exists(file_path):
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        with open(file_path, "w") as file:
+            if default_content is not None:
+                if isinstance(default_content, (dict, list)):
+                    import json
+                    json.dump(default_content, file, indent=2)
+                else:
+                    file.write(default_content)
+            else:
+                file.write("")
+
 
 # Plaid Link & Refresh Functions
 
@@ -500,23 +530,6 @@ def refresh_data():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error refreshing account: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
-@app.route('/refresh_all_accounts', methods=['POST'])
-def refresh_all_accounts():
-    try:
-        data = request.json
-        access_token = data.get("access_token")
-
-        if not access_token:
-            return jsonify({"status": "error", "error": "Access token is required"}), 400
-
-        # Logic to refresh all accounts linked by this access token
-        refreshed_accounts = refresh_accounts_by_access_token(access_token)
-
-        return jsonify({"status": "success", "details": refreshed_accounts}), 200
-
-    except Exception as e:
-        return jsonify({"status": "error", "error": str(e)}), 500
 
 @app.route('/transactions', methods=['GET'])
 def transactions_page():
