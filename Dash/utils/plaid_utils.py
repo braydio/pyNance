@@ -10,8 +10,6 @@ from plaid.model.country_code import CountryCode
 from plaid.configuration import Configuration
 from plaid.api_client import ApiClient
 
-from utils.helper_utils import logger
-
 # Load environment variables
 load_dotenv()
 PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
@@ -19,9 +17,6 @@ PLAID_SECRET = os.getenv("SECRET_KEY")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
-
-logger.debug(f"plaid_utils using {PLAID_BASE_URL}, {PRODUCTS}, {PLAID_ENV}")
-logger.debug(f"plaid_utils using API {PLAID_SECRET} {PLAID_CLIENT_ID}")
 
 def generate_link_token(products_list):
     logger.debug(f"Current Working Dir: {os.getcwd()}")
@@ -95,7 +90,6 @@ def ensure_file_exists(file_path, default_content=None):
                     file.write(default_content)
             else:
                 file.write("")
-
 
 
 def refresh_accounts_by_access_token(access_token):
