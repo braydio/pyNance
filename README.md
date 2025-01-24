@@ -66,7 +66,7 @@ This project is a Flask-based API for integrating with the Plaid API to manage a
 
 ---
 
-## Quickstart
+## Slower Quickstart
 
 ### Prerequisites
 - Python 3.8+
@@ -79,8 +79,8 @@ This project is a Flask-based API for integrating with the Plaid API to manage a
 
 1. Clone the repository:
    ```bash
-   git clone <repo-url>
-   cd plaid-financial-dashboard
+   git clone http://github.com/braydio/pyNance.git
+   cd pyNance
    ```
 
 2. Install dependencies:
@@ -94,19 +94,17 @@ This project is a Flask-based API for integrating with the Plaid API to manage a
    PLAID_CLIENT_ID=<your-client-id>
    PLAID_SECRET=<your-secret>
    PLAID_BASE_URL=https://sandbox.plaid.com  # Use Sandbox, Development, or Production URL
-   LINKED_ITEMS=linked_items.json
-   LINKED_ACCOUNTS=linked_accounts.json
    ```
 
 4. Run the Flask server:
    ```bash
-   flask run
+   python pyNance/MainDash.py
    ```
 
 5. (Optional) Run the server with Docker:
    ```bash
-   docker build -t plaid-dashboard .
-   docker run -p 5000:5000 plaid-dashboard
+   docker compose up --build -d
+   docker run -p 
    ```
 
 ---
