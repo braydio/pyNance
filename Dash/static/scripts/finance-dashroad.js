@@ -125,8 +125,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (refreshForm) {
     refreshForm.addEventListener('submit', event => {
       event.preventDefault();
+  
+      if (!accountGroupSelect) {
+        console.error('Account group dropdown is missing from the DOM.');
+        return;
+      }
+  
       const selectedGroup = accountGroupSelect.value;
-
+      if (!selectedGroup) {
+        alert('Please select a valid account group before refreshing.');
+        return;
+      }
+  
       fetch('/refresh_data', {
         method: 'POST',
         headers: {
@@ -134,7 +144,12 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         body: JSON.stringify({ account_group: selectedGroup }),
       })
-        .then(response => response.json())
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then(data => {
           if (data.error) {
             alert(`Error: ${data.error}`);

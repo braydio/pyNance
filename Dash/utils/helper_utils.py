@@ -30,18 +30,5 @@ def ensure_directory_exists(directory_path):
     os.makedirs(directory_path, exist_ok=True)
 
 # json Functions
-def save_json(file_path, data):
-    """Save data to a JSON file."""
-    ensure_directory_exists(os.path.dirname(file_path))
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-        logger.debug(f"Saved to {file_path}")
 
-def load_json(file_path):
-    """Load data from a JSON file."""
-    if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            logger.debug(f"Loaded from {file_path}")
-            return json.load(f)
-    return {}
 

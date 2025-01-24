@@ -8,7 +8,7 @@ from utils.helper_utils import logger
 THEMES_DIR = 'static/themes'
 DEFAULT_THEME = 'brayden_dashroad.css'
 
-
+# Refresh accounts
 
 # Process transactions for visuals
 def process_transactions(transactions_file, accounts_file, link_accounts_file, output_file):

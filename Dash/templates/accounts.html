@@ -26,48 +26,30 @@
             <button onclick="window.location.href='/settings'">Settings</button>
         </nav>
     </header>
-    <main>    <div class="controls">
-        <!-- Search Bar -->
-        <input type="text" id="search-bar" placeholder="Search institutions..." onkeyup="filterInstitutions()" />
+    <main>
+        <div class="controls">
+            <!-- Search Bar -->
+            <input type="text" id="search-bar" placeholder="Search institutions..." onkeyup="filterInstitutions()" />
 
-        <!-- Institution Multi-Select Dropdown -->
-        <select id="institution-select" multiple>
-            <!-- Options will be dynamically populated -->
-        </select>
+            <!-- Link New Account Button -->
+            <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
 
-        <!-- Refresh Buttons -->
-        <button id="refresh-selected" onclick="refreshSelectedInstitutions()">Refresh Selected Institutions</button>
-        <button id="refresh-accounts" onclick="refreshAllLinkedAccounts()">Refresh All Linked Accounts</button>
+            <!-- Refresh All Linked Accounts Button -->
+            <button id="refresh-accounts" onclick="refreshAccount()">Refresh All Linked Accounts</button>
 
-        <p id="status"></p>
-
-    <!-- Section for creating and saving custom groups -->
-    <section>
-        <h2>Custom Groups</h2>
-        <div>
-            <input type="text" id="group-name" placeholder="Group name" />
-            <button id="save-group" onclick="saveCustomGroup()">Save Group</button>
+            <p id="status"></p>
         </div>
-        <div id="custom-groups-container">
-            <!-- Custom groups will be displayed here -->
+        <div id="institutions-container">
+            <!-- Institutions and accounts will be dynamically loaded here -->
         </div>
-    </section>
-
-    <section>
-        <h2>Link a New Account</h2>
-        <button id="link-account-button">Link Account</button>
-        <p id="link-status"></p>
-    </section>
-
-    <div id="institutions-container">
-        <!-- Institutions and accounts will be dynamically loaded here -->
-    </div>
-
     </main>
-    
     <footer>&copy; Brayden's Finance Dashroad</footer>
+
+    <!-- Plaid JavaScript -->
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <!-- Sortable for organizing items -->
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
+    <!-- Accounts JavaScript -->
     <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
 </body>
 </html>

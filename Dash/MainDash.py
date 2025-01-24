@@ -5,6 +5,7 @@ import os
 import requests
 from pathlib import Path
 import logging
+from datetime import datetime, timedelta
 
 from utils.plaid_utils import generate_link_token, refresh_plaid_data, ensure_directory_exists, ensure_file_exists, refresh_accounts_by_access_token
 
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 if not logger.hasHandlers():
     logger.setLevel(logging.DEBUG)
 
-    file_handler = logging.FileHandler('Plaid/logs/testing.log')
+    file_handler = logging.FileHandler('Dash/logs/testing.log')
     file_handler.setLevel(logging.DEBUG)
 
     console_handler = logging.StreamHandler()
@@ -43,8 +44,9 @@ TEMP_DIR = BASE_DIR / "temp"
 LINKED_ACCOUNTS = DATA_DIR / "LinkAccounts.json"
 LINKED_ITEMS = DATA_DIR / "LinkItems.json"
 LATEST_TRANSACTIONS = DATA_DIR / "Transactions.json"
+LATEST_RESPONSE = TEMP_DIR / "ResponseTransactions.json"
 
-logger.debug(f"Files loaded in data: {LINKED_ACCOUNTS} {LINKED_ITEMS} {LATEST_TRANSACTIONS}")
+logger.debug(f"Files loaded in data: {LINKED_ACCOUNTS} {LINKED_ITEMS} {LATEST_TRANSACTIONS} {LATEST_RESPONSE}")
 
 TEMP_DIR.mkdir(parents=True, exist_ok=True)
 DATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -147,10 +149,41 @@ def load_json(file_path):
             return json.load(f)
     return {}
 
+import os
+import json
+import logging
+
+def save_json_with_backup(file_path, data):
+    try:
+        backup_path = f"{file_path}.bak"
+
+        # Create a backup of the existing file, if it exists
+        if os.path.exists(file_path):
+            if os.path.exists(backup_path):
+                logging.info(f"Overwriting stale backup: {backup_path}")
+                os.remove(backup_path)
+            os.rename(file_path, backup_path)
+
+        # Save the new JSON data to the file
+        with open(file_path, "w") as f:
+            json.dump(data, f, indent=4)
+
+        logging.info(f"Data successfully saved to {file_path}. Backup created at {backup_path}.")
+
+    except OSError as e:
+        logging.error(f"File operation failed: {e}")
+        raise e
+
+    except json.JSONDecodeError as e:
+        logging.error(f"JSON encoding error: {e}")
+        raise e
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        raise e
+
+
 def get_item_info(access_token):
-    """
-    Fetches metadata for the linked item (institution) and parses institution_name.
-    """
     url = f"https://{PLAID_ENV}.plaid.com/item/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -159,58 +192,36 @@ def get_item_info(access_token):
         "access_token": access_token
     }
 
-    masked_payload = payload.copy()
-    masked_payload["client_id"] = "****"
-    masked_payload["secret"] = "****"
-    logger.debug(f"POST {url} with payload: {json.dumps(masked_payload, indent=2)}")
-
     try:
         response = requests.post(url, json=payload, headers=headers)
-        logger.debug(f"Response: {response.status_code} - {response.text}")
+        response.raise_for_status()
 
-        if response.status_code == 200:
-            # Save and parse the response
-            RESPONSE_PATH = TEMP_DIR / "item_get_response.json"
-            item_data = save_and_parse_response(response, RESPONSE_PATH)
+        item_data = response.json()
+        institution_name = item_data["item"].get("institution_name", "Unknown Institution")
+        item_id = item_data["item"].get("item_id")
 
-            # Correctly retrieve institution_name directly from the top level of "item"
-            institution_name = item_data["item"].get("institution_name", "Unknown Institution")
-            item_id = item_data["item"].get("item_id")
+        LINK_ITEMS_FILE = DATA_DIR / "LinkItems.json"
+        ensure_file_exists(LINK_ITEMS_FILE, default_content={})
 
-            logger.info(f"Extracted institution_name: {institution_name}")
+        with open(LINK_ITEMS_FILE, "r") as f:
+            existing_data = json.load(f)
 
-            # Save item metadata to LinkItems.json
-            LINK_ITEMS_FILE = DATA_DIR / "LinkItems.json"
-            ensure_file_exists(LINK_ITEMS_FILE, default_content={})
-            with open(LINK_ITEMS_FILE, "r") as f:
-                existing_data = json.load(f)
+        existing_data[item_id] = {
+            "institution_name": institution_name,
+            "item_id": item_id,
+            "products": item_data["item"].get("products", []),
+            "status": item_data.get("status", {})
+        }
 
-            existing_data[item_id] = {
-                "institution_name": institution_name,
-                "item_id": item_id,
-                "products": item_data["item"].get("products", []),
-                "status": item_data.get("status", {})
-            }
+        save_json_with_backup(LINK_ITEMS_FILE, existing_data)
 
-            with open(LINK_ITEMS_FILE, "w") as f:
-                json.dump(existing_data, f, indent=2)
-
-            logger.info(f"Linked to {institution_name} successfully with item ID: {item_id}")
-            return item_id, institution_name
-        else:
-            logger.error(f"Error fetching item data: {response.json()}")
-            return None, None
-    except requests.RequestException as re:
-        logger.error(f"Request exception during item info retrieval: {str(re)}")
-        return None, None
-    except KeyError as ke:
-        logger.error(f"Key error: {ke}")
+        logger.info(f"Linked to {institution_name} successfully with item ID: {item_id}")
+        return item_id, institution_name
+    except Exception as e:
+        logger.error(f"Error in get_item_info: {e}")
         return None, None
 
 def save_initial_account_data(access_token, item_id):
-    """
-    Fetches and saves account data associated with the given access token and item ID.
-    """
     url = f"https://{PLAID_ENV}.plaid.com/accounts/get"
     headers = {'Content-Type': 'application/json'}
     payload = {
@@ -219,50 +230,36 @@ def save_initial_account_data(access_token, item_id):
         "access_token": access_token
     }
 
-    masked_payload = payload.copy()
-    masked_payload["client_id"] = "****"
-    masked_payload["secret"] = "****"
-    logger.info(f"POST {url} with payload: See debug log for payload.")
-    logger.debug(f"Payload: {json.dumps(masked_payload, indent=2)}")
-
     try:
         response = requests.post(url, json=payload, headers=headers)
-        logger.debug(f"Response: {response.status_code} - {response.text}")
+        response.raise_for_status()
 
-        if response.status_code == 200:
-            RESPONSE_PATH = TEMP_DIR / "item_get_response.json"
-            account_data = save_and_parse_response(response, RESPONSE_PATH)
+        account_data = response.json()
 
-            # Extract institution_name from item object
-            institution_name = account_data["item"].get("institution_name", "Unknown Institution")
-            
-            LINK_ACCOUNT_PATH = DATA_DIR / "LinkAccounts.json"
-            ensure_file_exists(LINK_ACCOUNT_PATH, default_content={})
-            with open("./data/LinkAccounts.json", "r") as f:
-                data = json.load(f)
+        LINK_ACCOUNT_PATH = DATA_DIR / "LinkAccounts.json"
+        ensure_file_exists(LINK_ACCOUNT_PATH, default_content={})
 
-            for account in account_data["accounts"]:
-                account_id = account["account_id"]
-                data[account_id] = {
-                    "item_id": item_id,
-                    "institution_name": institution_name,
-                    "account_name": account["name"],
-                    "type": account["type"],
-                    "subtype": account["subtype"],
-                    "balances": account.get("balances", {})
-                }
-                logger.info(f"Linked account {account['name']} for institution {institution_name}")
+        # Merge new account data
+        with open(LINK_ACCOUNT_PATH, "r") as f:
+            existing_data = json.load(f)
 
-            with open(LINK_ACCOUNT_PATH, "w") as f:
-                json.dump(data, f, indent=2)
+        for account in account_data["accounts"]:
+            account_id = account["account_id"]
+            existing_data[account_id] = {
+                "item_id": item_id,
+                "institution_name": account_data["item"]["institution_name"],
+                "access_token": access_token,
+                "account_name": account["name"],
+                "type": account["type"],
+                "subtype": account["subtype"],
+                "balances": account.get("balances", {})
+            }
 
-            logger.info(f"Account data saved successfully for item_id {item_id}.")
-        else:
-            logger.error(f"Error fetching account data: {response.json()}")
-    except requests.RequestException as re:
-        logger.error(f"Request exception during account data retrieval: {str(re)}")
-    except KeyError as ke:
-        logger.error(f"Key error: {ke}")
+        save_json_with_backup(LINK_ACCOUNT_PATH, existing_data)
+
+        logger.info(f"Account data saved successfully for item_id {item_id}.")
+    except Exception as e:
+        logger.error(f"Error in save_initial_account_data: {e}")
 
 # Main flask app
 @app.route("/")
@@ -338,18 +335,45 @@ def transactions_page():
 
 @app.route('/refresh_account', methods=['POST'])
 def refresh_data():
-    """
-    Refresh account transactions using the Plaid API.
-    """
     data = request.json
-    access_token = data.get("access_token")
-    start_date = data.get("start_date", "2023-01-01")  # Default start date
-    end_date = data.get("end_date", "2023-12-31")      # Default end date
+    item_id = data.get("item_id")
+    start_date = data.get("start_date", "2023-01-01")
+    end_date = data.get("end_date", "2023-12-31")
+
+    if not item_id:
+        return jsonify({"error": "Missing item_id"}), 400
+
+    # Load LinkedItems.json
+    try:
+        with open(LINKED_ITEMS, "r") as f:
+            linked_items = json.load(f)
+    except FileNotFoundError:
+        return jsonify({"error": "LinkedItems.json not found"}), 404
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error parsing LinkedItems.json"}), 500
+
+    item = linked_items.get(item_id)
+    if not item:
+        return jsonify({"error": f"Item with ID {item_id} not found"}), 404
+
+    # Load LinkAccounts.json
+    try:
+        with open(LINKED_ACCOUNTS, "r") as f:
+            linked_accounts = json.load(f)
+    except FileNotFoundError:
+        return jsonify({"error": "LinkAccounts.json not found"}), 404
+    except json.JSONDecodeError:
+        return jsonify({"error": "Error parsing LinkAccounts.json"}), 500
+
+    access_token = None
+    for account_id, account_data in linked_accounts.items():
+        if account_data.get("item_id") == item_id:
+            access_token = account_data.get("access_token")
+            break
 
     if not access_token:
-        return jsonify({"error": "Missing access token"}), 400
+        return jsonify({"error": f"No access token found for item ID {item_id}"}), 400
 
-    # Payload for the Plaid API request
     payload = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
@@ -361,21 +385,24 @@ def refresh_data():
     url = f"{PLAID_BASE_URL}/transactions/get"
 
     try:
-        logging.info(f"Requesting Plaid API: {url}")
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
 
-        # Parse response
         transactions_data = response.json()
         transactions = transactions_data.get("transactions", [])
         total_transactions = transactions_data.get("total_transactions", 0)
 
-        # Logging
-        logging.info(f"Fetched {len(transactions)} transactions (Total: {total_transactions})")
-        for txn in transactions:
-            logging.info(f"- {txn['date']} | {txn['name']} | ${txn['amount']}")
+        # Save transactions to a file
+        refreshed_data = {
+            "item_id": item_id,
+            "transactions": transactions,
+            "total_transactions": total_transactions,
+        }
+        with open("refreshed_transactions.json", "w") as f:
+            json.dump(refreshed_data, f, indent=4)
 
-        # Return success response
+        logging.info(f"Saved {len(transactions)} transactions to refreshed_transactions.json")
+
         return jsonify({
             "status": "success",
             "transactions": transactions,
@@ -473,6 +500,51 @@ def save_public_token():
         logger.error(f"Error processing public token: {str(e)}")
         return jsonify({"error": "Server error while processing public token", "details": str(e)}), 500
 
+def process_access_token(public_token):
+    """
+    Processes the public token to exchange it for an access token, retrieves
+    the item_id and institution_name, and saves them to the relevant files.
+    """
+    try:
+        # Step 1: Exchange public token for access token
+        access_token = exchange_public_token(public_token)
+        if not access_token:
+            return {"error": "Failed to exchange public token for access token."}, 400
+
+        # Step 2: Get item information (item_id and institution_name)
+        item_id, institution_name = get_item_info(access_token)
+        if not item_id:
+            return {"error": "Failed to retrieve item metadata."}, 400
+
+        # Step 3: Save initial account data
+        save_initial_account_data(access_token, item_id)
+
+        # Step 4: Save to LinkItems.json
+        link_items_file = DATA_DIR / "LinkItems.json"
+        ensure_file_exists(link_items_file, default_content={})
+
+        with open(link_items_file, "r") as f:
+            existing_items = json.load(f)
+
+        existing_items[item_id] = {
+            "institution_name": institution_name,
+            "item_id": item_id,
+            "access_token": access_token,  # Save securely for server-side use
+            "linked_at": datetime.now().isoformat(),
+        }
+
+        save_json_with_backup(link_items_file, existing_items)
+        logger.info(f"Saved item_id {item_id} for institution '{institution_name}' to LinkItems.json.")
+
+        # Return a success response
+        return {"message": "Access token processed successfully.", "item_id": item_id, "institution_name": institution_name}, 200
+
+    except Exception as e:
+        logger.error(f"Error processing access token: {str(e)}")
+        return {"error": str(e)}, 500
+
+
+
 @app.route("/link_session")
 def link_status():
     """Check the current status of the link session."""
@@ -531,29 +603,90 @@ def get_institutions():
         logging.error(f"Error fetching institutions: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@app.route('/refresh_account', methods=['POST'])
+def refresh_account():
+    """
+    Refresh a specific account using its account ID.
+    """
+    data = request.json
+    account_id = data.get("account_id")
 
-@app.route("/get_transactions", methods=["GET"])
-def get_transactions():
-    """Retrieve processed transactions."""
-    transactions_file = DATA_DIR / "transactions.json"
+    if not account_id:
+        return jsonify({"error": "Account ID is required"}), 400
+
+    # Load the linked accounts data
     try:
-        transactions = load_json(transactions_file).get("transactions", [])
-        logging.debug(f"Retrieved transactions from {transactions_file}")
-        return jsonify({"status": "success", "data": transactions})
+        with open(LINKED_ACCOUNTS, "r") as f:
+            accounts_data = json.load(f)
     except Exception as e:
-        logging.error(f"Error retrieving transactions: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
+        logger.error(f"Error loading accounts data: {e}")
+        return jsonify({"error": "Could not load account data"}), 500
 
-# Load info from data/
+    # Get the access token for the account
+    account_info = accounts_data.get(account_id)
+    if not account_info:
+        return jsonify({"error": f"No account found with ID: {account_id}"}), 404
+
+    access_token = account_info.get("access_token")
+    if not access_token:
+        return jsonify({"error": "Access token not found for the account"}), 500
+
+    # Define the Plaid API payload
+    start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    end_date = datetime.now().strftime("%Y-%m-%d")
+
+    payload = {
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
+        "access_token": access_token,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+    # Send request to Plaid
+    try:
+        url = f"{PLAID_BASE_URL}/transactions/get"
+        response = requests.post(url, json=payload)
+        response.raise_for_status()
+        transactions = response.json().get("transactions", [])
+
+        # Save the transactions to Transactions.json
+        with open(LATEST_RESPONSE, "r+") as f:
+            existing_data = json.load(f)
+            existing_data["transactions"] = transactions
+            f.seek(0)
+            json.dump(existing_data, f, indent=4)
+            f.truncate()
+
+        return jsonify({"status": "success", "transactions": transactions}), 200
+    except requests.RequestException as e:
+        logger.error(f"Error refreshing account {account_id}: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/get_accounts', methods=['GET'])
 def get_accounts():
-    with open('Dash/data/LinkAccounts.json') as f:
-        accounts = json.load(f)
-    account_options = [
-        {"id": key, "name": f"{data['institution_name']} - {data['account_name']}"}
-        for key, data in accounts.items()
-    ]
-    return jsonify(account_options)
+    try:
+        with open(LINKED_ACCOUNTS) as f:
+            accounts_data = json.load(f)
+
+        accounts = []
+        for account_id, account in accounts_data.items():
+            accounts.append({
+                "id": account_id,
+                "name": account.get("account_name", "Unknown Account"),
+                "institution": account.get("institution_name", "Unknown Institution"),
+                "masked_access_token": "****" + account_id[-4:],  # Example masking
+                "balances": {
+                    "available": account.get("balances", {}).get("available"),
+                    "current": account.get("balances", {}).get("current"),
+                },
+            })
+
+        return jsonify(accounts), 200
+    except Exception as e:
+        logger.error(f"Error loading accounts: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # Endpoint to fetch themes
 @app.route('/themes', methods=['GET'])
