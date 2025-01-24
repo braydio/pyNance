@@ -76,13 +76,6 @@ def get_available_themes():
         return []
 
 # Other utility functions
-def save_json(file_path, data):
-    """Save data to a JSON file."""
-    ensure_directory_exists(os.path.dirname(file_path))
-    with open(file_path, "w") as f:
-        json.dump(data, f, indent=4)
-        logger.debug(f"Saved to {file_path}")
-
 def load_json(file_path):
     """Load data from a JSON file."""
     if os.path.exists(file_path):
@@ -465,8 +458,6 @@ def get_accounts():
         logger.error(f"Error loading accounts: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
 
-from datetime import datetime, timedelta
-
 @app.route('/refresh_account', methods=['POST'])
 def refresh_data():
     data = request.json
@@ -564,7 +555,6 @@ def refresh_data():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error refreshing account: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/refresh_all_accounts', methods=['POST'])
 def refresh_all_accounts():
@@ -719,4 +709,4 @@ def debug():
 
 if __name__ == "__main__":
     logging.info("Starting Flask application")
-    app.run(debug=True, port=5006)
+    app.run(host="0.0.0.0", port=5006, debug=True)
