@@ -6,7 +6,7 @@
 # Clone project
 git clone https://github.com/braydio/pyNance.git
 
-# Set up python environment at /pyNance/.venv
+# Set up python environment at root: /pyNance/.venv
 python -m venv .venv
 
 .venv/Scripts/activate # Windows
@@ -14,18 +14,17 @@ source .venv/bin/activate # virgin-ized
 
 pip install -r requirements.txt
 
-# CD into Plaid and duplicate example.env to .env, fill API keys etc.
+# Everything will be run from the root dir pyNance/. for the time being
 
-cd pyNance/Plaid
-cp example.env .env
+cp Dash/example.env Dash/.env
 
-@ Run the script to generate a link token:
-python LinkPlaid.py
+@ Run the script to start Flask server:
+python Dash/MainDash.py
 ```
 
-This starts a Flask server at localhost:5000
+This starts a Flask server at localhost:5006. You can change the port at the bottom of MainDash.py
 
-Use a web browser to navigate to the ip address listed in the terminal and finish linking your account in your web browser.
+Use a web browser to navigate to the ip address listed in the terminal and check out my sick website.
 
 ## End Quickstart
 
