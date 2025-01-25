@@ -2,6 +2,8 @@ __pycache__
 
 *.bak
 *.json
+!ExampleItems.json
+!ExampleAccounts.json
 *.log
 .env
 
