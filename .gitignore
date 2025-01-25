@@ -1,16 +1,13 @@
 __pycache__
 
 *.bak
+*.log
 *.json
 !ExampleItems.json
 !ExampleAccounts.json
-*.log
 .env
-
 .venv
 venv
-
-
 dev/
 temp/
 logs/
