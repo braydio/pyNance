@@ -1,11 +1,7 @@
 import logging
 import os
-from dotenv import load_dotenv
 from pathlib import Path
 
-import os
-import logging
-from pathlib import Path
 from dotenv import load_dotenv
 
 # Define directories
@@ -20,6 +16,7 @@ DIRECTORIES = {
 # Ensure directories exist
 for name, path in DIRECTORIES.items():
     path.mkdir(parents=True, exist_ok=True)
+
 
 # Set up logging
 def setup_logger():
@@ -37,7 +34,7 @@ def setup_logger():
         console_handler.setLevel(logging.DEBUG)
 
         # Formatter
-        formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
 

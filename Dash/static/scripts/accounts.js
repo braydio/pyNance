@@ -153,34 +153,34 @@ document.addEventListener("DOMContentLoaded", () => {
       table.classList.toggle("hidden");
     }
   }
-// Refresh an institution's data
-function refreshInstitution(institutionId, institutionName) {
-  const refreshButton = document.querySelector(`button[data-institution-id="${institutionId}"]`);
-  refreshButton.disabled = true;
-  refreshButton.textContent = "Refreshing...";
+  // Refresh an institution's data
+  function refreshInstitution(institutionId, institutionName) {
+    const refreshButton = document.querySelector(`button[data-institution-id="${institutionId}"]`);
+    refreshButton.disabled = true;
+    refreshButton.textContent = "Refreshing...";
 
-  fetchData("/refresh_account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-          item_id: institutionId, // Only send the item ID
-      }),
-  })
-      .then((response) => {
-          refreshButton.disabled = false;
-          refreshButton.textContent = "Refresh";
-          if (response.status === "success") {
-              alert(`Institution "${institutionName}" refreshed successfully!`);
-          } else {
-              alert(`Error refreshing "${institutionName}": ${response.error}`);
-          }
-      })
-      .catch((error) => {
-          refreshButton.disabled = false;
-          refreshButton.textContent = "Refresh";
-          alert(`Error refreshing "${institutionName}": ${error.message}`);
-      });
-}
+    fetchData("/refresh_account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            item_id: institutionId, // Only send the item ID
+        }),
+    })
+        .then((response) => {
+            refreshButton.disabled = false;
+            refreshButton.textContent = "Refresh";
+            if (response.status === "success") {
+                alert(`Institution "${institutionName}" refreshed successfully!`);
+            } else {
+                alert(`Error refreshing "${institutionName}": ${response.error}`);
+            }
+        })
+        .catch((error) => {
+            refreshButton.disabled = false;
+            refreshButton.textContent = "Refresh";
+            alert(`Error refreshing "${institutionName}": ${error.message}`);
+        });
+  }
 
   // Filter institutions based on search input
   function filterInstitutions() {
