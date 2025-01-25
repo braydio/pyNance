@@ -7,9 +7,18 @@ from pathlib import Path
 import logging
 from datetime import datetime, timedelta
 
-# All paths & files defined in helper_utils.py
-from config_utils import *
+# All paths & files defined in config
+from config import FILES, DIRECTORIES, logger, PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV, PLAID_BASE_URL, PRODUCTS
 from plaid_utils import generate_link_token
+
+DATA_DIR = DIRECTORIES["DATA_DIR"]
+TEMP_DIR = DIRECTORIES["TEMP_DIR"]
+LOGS_DIR = DIRECTORIES["LOGS_DIR"]
+THEMES_DIR = DIRECTORIES["THEMES_DIR"]
+LINKED_ITEMS = FILES["LINKED_ITEMS"]
+LINKED_ACCOUNTS = FILES["LINKED_ACCOUNTS"]
+DEFAULT_THEME = FILES["DEFAULT_THEME"]
+
 
 # Utility to get available themes
 def get_available_themes():
@@ -446,13 +455,17 @@ def refresh_data():
         with open(LINKED_ITEMS, "r") as f:
             linked_items = json.load(f)
     except FileNotFoundError:
-        return jsonify({"error": "LinkedItems.json not found"}), 404
+        logging.error("LinkedItems.json not found.")
+        return render_template('error.html', error="LinkedItems.json not found"), 404
     except json.JSONDecodeError:
-        return jsonify({"error": "Error parsing LinkedItems.json"}), 500
+        logging.error("Error parsing LinkedItems.json.")
+        return render_template('error.html', error="Error parsing LinkedItems.json"), 500
 
     item = linked_items.get(item_id)
     if not item:
-        return jsonify({"error": f"Item with ID {item_id} not found"}), 404
+        logging.error(f"Item with ID {item_id} not found.")
+        return render_template('error.html', error=f"Item with ID {item_id} not found"), 404
+
 
     # Determine start_date
     last_successful_update = item.get("status", {}).get("transactions", {}).get("last_successful_update")
@@ -474,9 +487,11 @@ def refresh_data():
         with open(LINKED_ACCOUNTS, "r") as f:
             linked_accounts = json.load(f)
     except FileNotFoundError:
-        return jsonify({"error": "LinkAccounts.json not found"}), 404
+        logging.error("LinkAccounts.json not found.")
+        return render_template('error.html', error="LinkAccounts.json not found"), 404
     except json.JSONDecodeError:
-        return jsonify({"error": "Error parsing LinkAccounts.json"}), 500
+        logging.error("Error parsing LinkAccounts.json.")
+        return render_template('error.html', error="Error parsing LinkAccounts.json"), 500
 
     access_token = None
     for account_id, account_data in linked_accounts.items():
@@ -485,7 +500,8 @@ def refresh_data():
             break
 
     if not access_token:
-        return jsonify({"error": f"No access token found for item ID {item_id}"}), 400
+        logging.error(f"No access token found for item ID {item_id}.")
+        return render_template('error.html', error=f"No access token found for item ID {item_id}"), 400
 
     # Payload for the Plaid API request
     payload = {
@@ -529,7 +545,7 @@ def refresh_data():
 
     except requests.exceptions.RequestException as e:
         logging.error(f"Error refreshing account: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        return render_template('error.html', error="Failed to fetch transactions. Please try again later."), 500
 
 @app.route('/transactions', methods=['GET'])
 def transactions_page():

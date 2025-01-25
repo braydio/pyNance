@@ -10,15 +10,7 @@ from plaid.model.country_code import CountryCode
 from plaid.configuration import Configuration
 from plaid.api_client import ApiClient
 
-from config_utils import logger
-
-# Load environment variables
-load_dotenv()
-PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
-PLAID_SECRET = os.getenv("SECRET_KEY")
-PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
-PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
-PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
+from config import logger, PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV, PRODUCTS, PLAID_BASE_URL
 
 def generate_link_token(products_list):
     logger.debug(f"Current Working Dir: {os.getcwd()}")

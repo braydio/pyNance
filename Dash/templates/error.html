@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>No Accounts Linked</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
+        header, footer { background-color: #f4f4f4; padding: 10px; text-align: center; }
+        main { padding: 20px; text-align: center; }
+        button { padding: 10px 15px; margin: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>No Accounts Linked</h1>
+    </header>
+    <main>
+        <p>It looks like you haven’t linked any accounts yet.</p>
+
+        <!-- Link New Account Button -->
+        <button id="link-button" onclick="fetchLinkToken()">Link Your First Account</button>
+
+        <p>Alternatively, load example accounts:</p>
+        <button onclick="loadExampleAccounts()">Load Example Accounts</button>
+
+        <p id="status"></p>
+
+        <div id="example-container" style="display: none;">
+            <h2>Example Accounts Loaded</h2>
+            <p>Here’s a preview of example data:</p>
+            <pre id="example-data" style="text-align: left; margin: 0 auto; width: 80%; border: 1px solid #ccc; padding: 10px; overflow: auto; background-color: #f9f9f9;"></pre>
+        </div>
+    </main>
+    <footer>&copy; Brayden's Finance Dashroad</footer>
+
+    <!-- Plaid JavaScript -->
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script>
+        async function fetchLinkToken() {
+            // Replace with your logic for generating a Plaid link token
+            window.location.href = '/plaid/link';
+        }
+
+        async function loadExampleAccounts() {
+            try {
+                const accountsResponse = await fetch('/static/data/ExampleAccounts.json');
+                const itemsResponse = await fetch('/static/data/ExampleItems.json');
+
+                if (accountsResponse.ok && itemsResponse.ok) {
+                    const accountsData = await accountsResponse.json();
+                    const itemsData = await itemsResponse.json();
+
+                    document.getElementById('example-data').textContent = JSON.stringify({
+                        accounts: accountsData,
+                        items: itemsData
+                    }, null, 2);
+
+                    document.getElementById('example-container').style.display = 'block';
+                } else {
+                    document.getElementById('status').textContent = 'Error loading example accounts.';
+                }
+            } catch (error) {
+                document.getElementById('status').textContent = 'Failed to load example data. Please try again.';
+            }
+        }
+    </script>
+</body>
+</html>
