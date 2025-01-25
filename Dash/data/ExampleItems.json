@@ -1,0 +1,16 @@
+{
+    "vZKpprr8mRClQgkx6bpvHN5d5xbpwDCWWLBEm": {
+        "institution_name": "Chime",
+        "item_id": "vZKpprr8mRClQgkx6bpvHN5d5xbpwDCWWLBEm",
+        "products": [
+            "transactions"
+        ],
+        "status": {
+            "last_webhook": null,
+            "transactions": {
+                "last_failed_update": null,
+                "last_successful_update": "2025-01-24T15:04:23.648Z"
+            }
+        }
+    }
+}
