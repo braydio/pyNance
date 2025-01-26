@@ -14,9 +14,7 @@ header {
   background-color: #282828; /* Gruvbox medium dark */
   color: #fabd2f; /* Gruvbox yellow */
   padding: 1rem 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  text-align: center;
   border-bottom: 2px solid #fabd2f;
 }
 
@@ -27,7 +25,9 @@ header h1 {
 
 .menu {
   display: flex;
+  justify-content: center;
   gap: 1rem;
+  margin-top: 1rem;
 }
 
 .menu button {
@@ -46,26 +46,45 @@ header h1 {
   color: #1d2021;
 }
 
-/* Main Styling */
+/* Main Content Styling */
 main {
   padding: 2rem;
   max-width: 1200px;
   margin: 0 auto;
-}
-
-.controls {
-  margin-bottom: 2rem;
   background-color: #3c3836; /* Gruvbox brownish-gray */
-  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-.controls input[type="text"], .controls select {
-  width: 100%;
-  max-width: 400px;
-  padding: 0.6rem;
+main p {
+  font-size: 1.2rem;
+  margin-bottom: 1.5rem;
+  color: #ebdbb2;
+}
+
+main h2 {
+  font-size: 1.5rem;
   margin-bottom: 1rem;
+  color: #b8bb26; /* Gruvbox green */
+}
+
+/* Controls Styling */
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  background-color: #504945; /* Gruvbox medium dark */
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.controls input[type="text"] {
+  width: 100%;
+  max-width: 300px;
+  padding: 0.6rem;
   background-color: #3c3836;
   border: 1px solid #665c54; /* Gruvbox subtle brown */
   border-radius: 4px;
@@ -75,7 +94,7 @@ main {
   transition: border-color 0.3s;
 }
 
-.controls input[type="text"]:focus, .controls select:focus {
+.controls input[type="text"]:focus {
   border-color: #fabd2f; /* Gruvbox yellow focus */
 }
 
@@ -83,7 +102,7 @@ main {
   background: none;
   color: #83a598; /* Gruvbox cyan */
   border: 1px solid #83a598;
-  padding: 0.6rem 1.2rem;
+  padding: 0.8rem 1.2rem;
   font-size: 1rem;
   border-radius: 6px;
   cursor: pointer;
@@ -95,34 +114,32 @@ main {
   color: #1d2021;
 }
 
-/* Section Styling */
-section {
-  margin-bottom: 2rem;
-  background-color: #3c3836;
+/* Grid Layout for Institutions and Tables */
+#institutions-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.institution {
+  background-color: #282828; /* Gruvbox medium dark */
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-section h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #b8bb26; /* Gruvbox green */
-}
-
-section button {
-  background-color: #b8bb26;
-  color: #1d2021;
-  border: none;
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
-  border-radius: 6px;
+.institution-row {
   cursor: pointer;
-  transition: background-color 0.3s;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
 
-section button:hover {
-  background-color: #98971a; /* Darker green for hover */
+.institution-row input[type="checkbox"] {
+  transform: scale(1.2);
 }
 
 /* Table Styling */
@@ -130,6 +147,10 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
+}
+
+table.hidden {
+  display: none;
 }
 
 th {
@@ -149,49 +170,51 @@ table, th, td {
   border: 1px solid #665c54;
 }
 
-.institution-row {
-  cursor: pointer;
-  font-weight: bold;
-  margin: 1rem 0;
-  padding: 0.6rem;
-  background-color: #282828;
-  color: #fabd2f;
-  border-radius: 6px;
-  transition: background-color 0.3s;
+/* Grouping Section Styling */
+#group-management {
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background-color: #3c3836;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-.institution-row:hover {
-  background-color: #805d77;
+#group-management input[type="text"] {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.6rem;
+  background-color: #282828;
+  border: 1px solid #665c54;
+  border-radius: 4px;
+  color: #ebdbb2;
+  font-size: 1rem;
+  outline: none;
+  margin-bottom: 1rem; /* Added margin for spacing */
+}
+
+#group-management input[type="text"]:focus {
+  border-color: #fabd2f;
+}
+
+#group-management button {
+  background: none;
+  color: #83a598;
+  border: 1px solid #83a598;
+  padding: 0.8rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+#group-management button:hover {
+  background-color: #83a598;
   color: #1d2021;
 }
 
-/* Custom Groups */
-.custom-group {
-  margin-bottom: 1rem;
-  padding: 1rem;
-  background-color: #3c3836;
-  border: 3px solid #665c54;
-  border-radius: 6px;
-}
 
-.custom-group h3 {
-  margin-bottom: 0.5rem;
-  color: #fabd2f;
-  font-size: 1.2rem;
-}
-
-.custom-group ul {
-  margin: 0;
-  padding: 0;
-  list-style-type: none;
-}
-
-.custom-group ul li {
-  margin-bottom: 0.5rem;
-  padding: 0.4rem;
-  background-color: #282828;
-  color: #ebdbb2;
-  border-radius: 4px;
+.hidden {
+  display: none;
 }
 
 /* Footer Styling */
@@ -204,23 +227,14 @@ footer {
   border-top: 2px solid #fabd2f;
 }
 
-/* Media Queries */
+/* Media Queries for Responsiveness */
 @media (max-width: 768px) {
-  main {
-      padding: 1rem;
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  .controls input[type="text"], .controls select {
-      max-width: 100%;
-  }
-
-  .menu {
-      flex-direction: column;
-      gap: 0.5rem;
-  }
-
-  .menu button {
-      padding: 0.8rem;
-      font-size: 1rem;
+  #institutions-container {
+    grid-template-columns: 1fr;
   }
 }
