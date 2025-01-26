@@ -721,6 +721,37 @@ def refresh_data():
         return jsonify({"error": f"Error fetching transactions: {str(e)}"}), 500
 
 
+@app.route("/save_group", methods=["POST"])
+def save_group():
+    try:
+        data = request.json
+        group_name = data.get("groupName")
+        account_ids = data.get("accountIds")
+
+        if not group_name or not account_ids:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Group name and accounts are required.",
+                    }
+                ),
+                400,
+            )
+
+        # Example: Save the group data to a file or database
+        group_data = {"name": group_name, "accounts": account_ids}
+        with open("groups.json", "a") as f:
+            f.write(json.dumps(group_data) + "\n")
+
+        return (
+            jsonify({"status": "success", "message": "Group saved successfully!"}),
+            200,
+        )
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @app.route("/transactions", methods=["GET"])
 def transactions_page():
     try:
@@ -760,19 +791,6 @@ def transactions_page():
     except Exception as e:
         logger.error(f"Error loading transactions page: {e}")
         return render_template("error.html", error="Failed to load transactions data.")
-
-
-@app.route("/save_group", methods=["POST"])
-def save_group():
-    group = request.json
-    try:
-        # Save group to a file or database
-        with open("custom_groups.json", "a") as f:
-            json.dump(group, f)
-            f.write("\n")
-        return jsonify({"status": "success", "message": "Group saved!"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # Main Dashboard Visuals
