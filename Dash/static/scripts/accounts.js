@@ -86,110 +86,111 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Render institutions with checkboxes and toggleable tables
   function renderInstitutions(institutions) {
-    institutionsContainer.innerHTML = ""; // Clear existing content
+  institutionsContainer.innerHTML = ""; // Clear existing content
 
-    Object.keys(institutions).forEach((institutionName) => {
-      const institution = institutions[institutionName];
+  Object.keys(institutions).forEach((institutionName) => {
+    const institution = institutions[institutionName];
 
-      const institutionDiv = document.createElement("div");
-      institutionDiv.className = "institution";
+    // Create the container for each institution
+    const institutionDiv = document.createElement("div");
+    institutionDiv.className = "institution";
 
-      const institutionHeader = document.createElement("div");
-      institutionHeader.className = "institution-row";
-      institutionHeader.innerHTML = `
-        <input type="checkbox" class="institution-checkbox" data-item-id="${institution.item_id}" />
-        <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
-        <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
-      `;
+    // Create the header for the institution
+    const institutionHeader = document.createElement("div");
+    institutionHeader.className = "institution-row";
+    institutionHeader.innerHTML = `
+      <input type="checkbox" class="institution-checkbox" data-item-id="${institution.item_id}" />
+      <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
+      <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
+    `;
 
-      // Add toggle functionality to the header
-      institutionHeader.addEventListener("click", (event) => {
-        if (!event.target.classList.contains("institution-checkbox")) {
-          toggleAccountsTable(institutionName);
-        }
-      });
-
-      const accountsTable = document.createElement("table");
-      accountsTable.className = "hidden"; // Initially hidden
-      accountsTable.id = `accounts-${institutionName}`;
-      accountsTable.innerHTML = `
-        <thead>
-          <tr>
-            <th>Select</th>
-            <th>Account Name</th>
-            <th>Type</th>
-            <th>Subtype</th>
-            <th>Balance</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${institution.accounts
-            .map((account) => {
-              const balance = account.balances.current || 0;
-              const balanceClass = balance < 0 ? "negative" : "positive";
-              return `
-                <tr>
-                  <td><input type="checkbox" class="account-checkbox" data-account-id="${account.account_id}" /></td>
-                  <td>${account.account_name}</td>
-                  <td>${account.type}</td>
-                  <td>${account.subtype}</td>
-                  <td class="${balanceClass}">${balance.toLocaleString("en-US", {
-                style: "currency",
-                currency: "USD",
-              })}</td>
-                </tr>
-              `;
-            })
-            .join("")}
-        </tbody>
-      `;
-
-      institutionDiv.appendChild(institutionHeader);
-      institutionDiv.appendChild(accountsTable);
-      institutionsContainer.appendChild(institutionDiv);
-
-      const refreshButton = institutionHeader.querySelector(".refresh-institution");
-      refreshButton.addEventListener("click", (event) => {
-        event.stopPropagation(); // Prevent toggling the table
-        refreshInstitution(institution.item_id, institutionName);
-      });
+    // Add toggle functionality to the header
+    institutionHeader.addEventListener("click", (event) => {
+      if (!event.target.classList.contains("institution-checkbox")) {
+        toggleAccountsTable(institutionName); // Toggle accounts table when clicking the header
+      }
     });
+
+    // Create the table for accounts
+    const accountsTable = document.createElement("table");
+    accountsTable.className = "hidden"; // Initially hidden
+    accountsTable.id = `accounts-${institutionName}`;
+    accountsTable.innerHTML = `
+      <thead>
+        <tr>
+          <th>Account Name</th>
+          <th>Subtype</th>
+          <th>Balance</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${institution.accounts
+          .map((account) => {
+            const balance = account.balances.current || 0;
+            const balanceClass = balance < 0 ? "negative" : "positive";
+            return `
+              <tr>
+                <td>${account.account_name}</td>
+                <td>${account.subtype}</td>
+                <td class="${balanceClass}">${balance.toLocaleString("en-US", {
+              style: "currency",
+              currency: "USD",
+            })}</td>
+              </tr>
+            `;
+          })
+          .join("")}
+      </tbody>
+    `;
+
+    // Append the institution header and accounts table
+    institutionDiv.appendChild(institutionHeader);
+    institutionDiv.appendChild(accountsTable);
+    institutionsContainer.appendChild(institutionDiv);
+
+    // Add refresh button functionality
+    const refreshButton = institutionHeader.querySelector(".refresh-institution");
+    refreshButton.addEventListener("click", (event) => {
+      event.stopPropagation(); // Prevent toggle when clicking refresh
+      refreshInstitution(institution.item_id, institutionName);
+    });
+  });
   }
 
-    // Save a group based on selected institutions
-    function saveGroup() {
-      const groupName = groupNameInput.value.trim();
-      if (!groupName) {
-        groupStatus.textContent = "Please enter a group name.";
-        return;
-      }
-  
-      const selectedInstitutions = Array.from(document.querySelectorAll(".institution-checkbox:checked"))
-        .map((checkbox) => checkbox.dataset.itemId);
-  
-      if (selectedInstitutions.length === 0) {
-        groupStatus.textContent = "Please select at least one institution.";
-        return;
-      }
-  
-      // Send group data to the backend
-      fetchData("/save_group", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ groupName, itemIds: selectedInstitutions }),
-      })
-        .then((response) => {
-          if (response.status === "success") {
-            groupStatus.textContent = `Group "${groupName}" saved successfully!`;
-          } else {
-            groupStatus.textContent = `Failed to save group: ${response.message}`;
-          }
-        })
-        .catch((error) => {
-          groupStatus.textContent = "An error occurred while saving the group.";
-          console.error("Error saving group:", error);
-        });
+  // Save a group based on selected institutions
+  function saveGroup() {
+    const groupName = groupNameInput.value.trim();
+    if (!groupName) {
+      groupStatus.textContent = "Please enter a group name.";
+      return;
     }
+
+    const selectedInstitutions = Array.from(document.querySelectorAll(".institution-checkbox:checked"))
+      .map((checkbox) => checkbox.dataset.itemId);
+
+    if (selectedInstitutions.length === 0) {
+      groupStatus.textContent = "Please select at least one institution.";
+      return;
+    }
+
+    // Send group data to the backend
+    fetchData("/save_group", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupName, itemIds: selectedInstitutions }),
+    })
+      .then((response) => {
+        if (response.status === "success") {
+          groupStatus.textContent = `Group "${groupName}" saved successfully!`;
+        } else {
+          groupStatus.textContent = `Failed to save group: ${response.message}`;
+        }
+      })
+      .catch((error) => {
+        groupStatus.textContent = "An error occurred while saving the group.";
+        console.error("Error saving group:", error);
+      });
+  }
 
   // Toggle accounts table
   function toggleAccountsTable(institutionName) {
