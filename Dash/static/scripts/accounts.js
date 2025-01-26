@@ -1,18 +1,24 @@
 document.addEventListener("DOMContentLoaded", () => {
   const institutionsContainer = document.getElementById("institutions-container");
-  const searchBar = document.getElementById("search-bar");
   const linkButton = document.getElementById("link-button");
   const statusContainer = document.getElementById("status");
-  const lastRefreshElement = document.getElementById("last-refresh-time");
+  const groupNameInput = document.getElementById("group-name");
+  const saveGroupButton = document.getElementById("save-group");
+  const groupStatus = document.getElementById("group-status");
 
   // Utility to fetch data from an endpoint
   function fetchData(url, options = {}) {
-      return fetch(url, options)
-          .then((response) => response.json())
-          .catch((error) => {
-              console.error(`Error fetching data from ${url}:`, error);
-              throw error;
-          });
+    return fetch(url, options)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .catch((error) => {
+        console.error(`Error fetching data from ${url}:`, error);
+        throw error;
+      });
   }
 
   // Plaid Link functionality
@@ -24,17 +30,14 @@ document.addEventListener("DOMContentLoaded", () => {
             token: data.link_token,
             onSuccess: function (public_token, metadata) {
               console.log("Public Token:", public_token);
-              alert("Public Token: " + public_token);
 
-              // Save the public token and fetch access token
               fetchData("/save_public_token", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ public_token: public_token }),
+                body: JSON.stringify({ public_token }),
               })
                 .then((response) => {
                   if (response.access_token) {
-                    console.log("Access Token:", response.access_token);
                     statusContainer.textContent = "Access token received!";
                   } else {
                     console.error("Error saving public token:", response.error);
@@ -43,12 +46,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 })
                 .catch((error) => {
                   console.error("Error saving public token:", error);
-                  statusContainer.textContent = "An error occurred during the linking process.";
+                  statusContainer.textContent = "An error occurred.";
                 });
             },
             onExit: function (err, metadata) {
               if (err) {
-                console.error("Plaid Link error:", err);
                 statusContainer.textContent = "User exited with an error.";
               } else {
                 statusContainer.textContent = "User exited without error.";
@@ -58,92 +60,62 @@ document.addEventListener("DOMContentLoaded", () => {
 
           linkButton.onclick = () => handler.open();
         } else {
-          console.error("Error fetching link token:", data.error);
           statusContainer.textContent = "Error fetching link token.";
         }
       })
       .catch((error) => {
-        console.error("Error initializing Plaid Link:", error);
         statusContainer.textContent = "Error initializing Plaid Link.";
       });
   }
 
-  // Fetch institutions and render them
+  // Fetch institutions and render them with institution-level checkboxes
   function fetchAndRenderInstitutions() {
     fetchData("/get_institutions")
       .then((data) => {
         if (data.status === "success") {
           renderInstitutions(data.institutions);
-
-          // Find the most recent refresh time across all institutions
-          const mostRecentRefresh = Object.values(data.institutions).reduce(
-            (latest, institution) => {
-              const lastUpdate = institution.last_successful_update;
-
-              // Check if the last update is a valid date
-              if (lastUpdate && lastUpdate !== "Never refreshed") {
-                const parsedDate = new Date(lastUpdate);
-                return !isNaN(parsedDate) && parsedDate > latest ? parsedDate : latest;
-              }
-              return latest;
-            },
-            new Date(0) // Default to the earliest possible date
-          );
-
-          // Update the last refresh time in the UI
-          lastRefreshElement.textContent =
-            mostRecentRefresh > new Date(0)
-              ? `Most Recent Refresh: ${mostRecentRefresh.toLocaleString()}`
-              : "Never refreshed";
         } else {
           institutionsContainer.innerHTML = `<p>Error loading institutions: ${data.message}</p>`;
-          lastRefreshElement.textContent = "Not available";
         }
       })
       .catch((error) => {
-        institutionsContainer.innerHTML = `<p>Error loading institutions: ${error.message}</p>`;
-        lastRefreshElement.textContent = "Error fetching last refresh time";
+        institutionsContainer.innerHTML = `<p>Error loading institutions.</p>`;
         console.error("Error:", error);
       });
   }
 
-  // Render institutions as aggregates with dropdowns for accounts
+  // Render institutions with checkboxes and toggleable tables
   function renderInstitutions(institutions) {
     institutionsContainer.innerHTML = ""; // Clear existing content
 
     Object.keys(institutions).forEach((institutionName) => {
       const institution = institutions[institutionName];
 
-      // Create the institution container
       const institutionDiv = document.createElement("div");
       institutionDiv.className = "institution";
 
-      // Institution header
       const institutionHeader = document.createElement("div");
       institutionHeader.className = "institution-row";
-
-      // Format the refresh time
-      const formattedRefreshTime =
-        institution.last_successful_update && institution.last_successful_update !== "Never refreshed"
-          ? new Date(institution.last_successful_update).toLocaleString()
-          : "Never refreshed";
-
       institutionHeader.innerHTML = `
+        <input type="checkbox" class="institution-checkbox" data-item-id="${institution.item_id}" />
         <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
         <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
-        <p>Last Refreshed: ${formattedRefreshTime}}</p>
       `;
-      institutionHeader.addEventListener("click", () =>
-        toggleAccountsTable(institutionName)
-      );
 
-      // Accounts table (initially hidden)
+      // Add toggle functionality to the header
+      institutionHeader.addEventListener("click", (event) => {
+        if (!event.target.classList.contains("institution-checkbox")) {
+          toggleAccountsTable(institutionName);
+        }
+      });
+
       const accountsTable = document.createElement("table");
-      accountsTable.className = "hidden";
+      accountsTable.className = "hidden"; // Initially hidden
       accountsTable.id = `accounts-${institutionName}`;
       accountsTable.innerHTML = `
         <thead>
           <tr>
+            <th>Select</th>
             <th>Account Name</th>
             <th>Type</th>
             <th>Subtype</th>
@@ -153,19 +125,20 @@ document.addEventListener("DOMContentLoaded", () => {
         <tbody>
           ${institution.accounts
             .map((account) => {
-              const balanceClass =
-                account.balances.current < 0 ? "negative" : "positive";
+              const balance = account.balances.current || 0;
+              const balanceClass = balance < 0 ? "negative" : "positive";
               return `
-              <tr>
-                <td>${account.account_name}</td>
-                <td>${account.type}</td>
-                <td>${account.subtype}</td>
-                <td class="${balanceClass}">${account.balances.current.toLocaleString(
-                "en-US",
-                { style: "currency", currency: "USD" }
-              )}</td>
-              </tr>
-            `;
+                <tr>
+                  <td><input type="checkbox" class="account-checkbox" data-account-id="${account.account_id}" /></td>
+                  <td>${account.account_name}</td>
+                  <td>${account.type}</td>
+                  <td>${account.subtype}</td>
+                  <td class="${balanceClass}">${balance.toLocaleString("en-US", {
+                style: "currency",
+                currency: "USD",
+              })}</td>
+                </tr>
+              `;
             })
             .join("")}
         </tbody>
@@ -175,10 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
       institutionDiv.appendChild(accountsTable);
       institutionsContainer.appendChild(institutionDiv);
 
-      // Attach event listener for the refresh button
-      const refreshButton = institutionHeader.querySelector(
-        ".refresh-institution"
-      );
+      const refreshButton = institutionHeader.querySelector(".refresh-institution");
       refreshButton.addEventListener("click", (event) => {
         event.stopPropagation(); // Prevent toggling the table
         refreshInstitution(institution.item_id, institutionName);
@@ -186,7 +156,42 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Toggle the accounts table for an institution
+    // Save a group based on selected institutions
+    function saveGroup() {
+      const groupName = groupNameInput.value.trim();
+      if (!groupName) {
+        groupStatus.textContent = "Please enter a group name.";
+        return;
+      }
+  
+      const selectedInstitutions = Array.from(document.querySelectorAll(".institution-checkbox:checked"))
+        .map((checkbox) => checkbox.dataset.itemId);
+  
+      if (selectedInstitutions.length === 0) {
+        groupStatus.textContent = "Please select at least one institution.";
+        return;
+      }
+  
+      // Send group data to the backend
+      fetchData("/save_group", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupName, itemIds: selectedInstitutions }),
+      })
+        .then((response) => {
+          if (response.status === "success") {
+            groupStatus.textContent = `Group "${groupName}" saved successfully!`;
+          } else {
+            groupStatus.textContent = `Failed to save group: ${response.message}`;
+          }
+        })
+        .catch((error) => {
+          groupStatus.textContent = "An error occurred while saving the group.";
+          console.error("Error saving group:", error);
+        });
+    }
+
+  // Toggle accounts table
   function toggleAccountsTable(institutionName) {
     const table = document.getElementById(`accounts-${institutionName}`);
     if (table) {
@@ -205,22 +210,16 @@ document.addEventListener("DOMContentLoaded", () => {
     fetchData("/refresh_account", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        item_id: institutionId, // Only send the item ID
-      }),
+      body: JSON.stringify({ item_id: institutionId }),
     })
       .then((response) => {
         refreshButton.disabled = false;
         refreshButton.textContent = "Refresh";
         if (response.status === "success") {
           alert(`Institution "${institutionName}" refreshed successfully!`);
-
-          // Update the institutions and refresh time
           fetchAndRenderInstitutions();
         } else {
-          alert(
-            `Error refreshing "${institutionName}": ${response.error || "Unknown error"}`
-          );
+          alert(`Error refreshing "${institutionName}": ${response.error}`);
         }
       })
       .catch((error) => {
@@ -230,21 +229,8 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // Filter institutions based on search input
-  function filterInstitutions() {
-    const query = searchBar.value.toLowerCase();
-    const institutionRows = document.querySelectorAll(".institution");
-
-    institutionRows.forEach((row) => {
-      const institutionName = row
-        .querySelector("h3")
-        .textContent.toLowerCase();
-      row.style.display = institutionName.includes(query) ? "" : "none";
-    });
-  }
-
   // Initialize
   if (linkButton) initializePlaidLink();
-  if (searchBar) searchBar.addEventListener("input", filterInstitutions);
+  if (saveGroupButton) saveGroupButton.addEventListener("click", saveGroup);
   if (institutionsContainer) fetchAndRenderInstitutions();
 });

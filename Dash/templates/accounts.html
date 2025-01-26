@@ -6,12 +6,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme)}}">
     <style>
         .hidden { display: none; }
-        .institution-row { cursor: pointer; font-weight: bold; }
+        .institution-row { cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 10px; }
         table { width: 100%; border-collapse: collapse; margin: 1em 0; }
         table, th, td { border: 1px solid #504945; }
         th, td { padding: 8px; text-align: left; }
-        #last-refresh { margin: 1em 0; font-size: 1.1em; color: #333; }
+        #group-management { margin-bottom: 1.5em; }
+        #group-management h2 { margin: 0.5em 0; }
     </style>
+    <title>Accounts Management</title>
 </head>
 <body>
     <header>
@@ -31,23 +33,24 @@
             <!-- Section Header -->
             <div id="account-management-header">
                 <h2>Account Management</h2>
-                <p>View and manage your accounts by institution. You can refresh account data, view balances, and link new accounts.</p>
+                <p>View and manage your accounts by institution. You can refresh account data, view balances, and create groups.</p>
             </div>
-    
-            <!-- Search Bar -->
-            <input
-                type="text"
-                id="search-bar"
-                placeholder="Search institutions..."
-                onkeyup="filterInstitutions()" 
-            />
-    
+
+            <!-- Group Management -->
+            <div id="group-management">
+                <h2>Create a Group</h2>
+                <p>Select institutions to add them to a group:</p>
+                <input type="text" id="group-name" placeholder="Enter group name" />
+                <button id="save-group" onclick="saveGroup()">Save Group</button>
+                <p id="group-status"></p>
+            </div>
+
             <!-- Link New Account Button -->
             <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
-    
+
             <!-- Refresh All Linked Accounts Button -->
             <button id="refresh-accounts" onclick="refreshAccount()">Refresh All Linked Accounts</button>
-    
+
             <p id="status"></p>
         </div>    
         <div id="institutions-container">
@@ -58,8 +61,6 @@
 
     <!-- Plaid JavaScript -->
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-    <!-- Sortable for organizing items -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
     <!-- Accounts JavaScript -->
     <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
 </body>
