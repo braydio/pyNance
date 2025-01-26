@@ -1,321 +1,226 @@
-/* Global Reset and Base Styling */
-/* Enhanced Visuals for Body */
-body {
-  background: linear-gradient(135deg, #1e1e1e, #2b2b2b); /* Subtle gradient background */
-  background-attachment: fixed; /* Fixed background for smooth scrolling */
-  color: #dcdcdc;
-  font-family: "JetBrains Mono", monospace;
+/* General Reset */
+body, html {
   margin: 0;
   padding: 0;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  grid-template-columns: 1fr;
-  height: 100vh;
-  overflow: hidden;
+  font-family: "Roboto", sans-serif;
+  background-color: #1d2021; /* Gruvbox dark theme */
+  color: #ebdbb2; /* Gruvbox light beige */
+  overflow-y: auto;
+  line-height: 1.6;
 }
 
-/* Animated Background Elements */
-body::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1%, transparent 50%);
-  animation: background-shift 10s infinite linear;
-  z-index: -1;
-}
-
-/* Decorative Borders for Headers */
-header h1 {
-  background: linear-gradient(90deg, #76c7c0, #5bb9ae);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  font-size: 2.5rem;
-  text-transform: uppercase;
-  text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
-}
-/* Header */
+/* Header Styling */
 header {
-  background-color: #181818;
-  color: #76c7c0; /* Aqua green for contrast */
-  padding: 1rem 3rem;
+  background-color: #282828; /* Gruvbox medium dark */
+  color: #fabd2f; /* Gruvbox yellow */
+  padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 1.5rem;
-  border-bottom: 2px solid #76c7c0;
+  border-bottom: 2px solid #fabd2f;
 }
 
-
-/* Navigation Menu */
-.menu {
-  display: flex;
-  gap: 2rem;
-}
-/* Glowing Buttons */
-.menu button, form button {
-  background: none;
-  color: #76c7c0;
-  border: 2px solid #76c7c0;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s, box-shadow 0.3s;
-}
-/* Glowing Buttons */
-.menu button, form button {
-  background: none;
-  color: #76c7c0;
-  border: 2px solid #76c7c0;
-  padding: 0.75rem 1.5rem;
-  font-size: 1.2rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s, box-shadow 0.3s;
-}
-
-.menu button:hover, form button:hover {
-  background-color: #76c7c0;
-  color: #101010;
-  box-shadow: 0 0 15px #76c7c0;
-}
-
-.menu button:active {
-  background-color: #5bb9ae;
-}
-
-/* Main Section */
-main {
-  padding: 2rem;
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 2rem;
+header h1 {
+  font-size: 1.8rem;
   margin: 0;
 }
 
-/* Visualization, Reminders, and Budget Boxes */
-.visualization, .reminders, .budget {
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  color: #dcdcdc;
-  margin: 1rem;
-}
-
-.visualization {
-  grid-column: 1 / -1;
-  height: 300px;
-}
-
-.reminders, .budget {
+.menu {
   display: flex;
-  flex-direction: column;
   gap: 1rem;
 }
 
-/* Transactions Table */
-.transactions {
-  width: 100%;
-  overflow-x: auto;
-  background-color: #1a1a1a;
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-
-/* Card Hover Effects for Sections */
-.visualization, .transactions, .reminders, .budget, .refresh-section {
-  position: relative;
-  background: rgba(26, 26, 26, 0.9);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-
-.viualization:hover, .transactions:hover, .reminders:hover, .budget:hover, .refresh-section:hover {
-  trsansform: translateY(-10px);
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th, td {
-  padding: 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid #333;
-}
-
-th {
-  background-color: #2a2a2a;
-  color: #76c7c0;
-  font-weight: bold;
-}
-
-td {
-  color: #dcdcdc;
-}
-
-/* Feedback Messages */
-.error {
-  color: #e53935; /* Red for errors */
-}
-
-.success {
-  color: #43a047; /* Green for success */
-}
-
-/* Buttons */
-button {
+.menu button {
   background: none;
-  color: #76c7c0;
-  border: 2px solid #76c7c0;
-  padding: 0.75rem 1.5rem;
+  color: #fabd2f;
+  border: 1px solid #fabd2f;
+  padding: 0.6rem 1rem;
   font-size: 1rem;
   border-radius: 8px;
   cursor: pointer;
   transition: background-color 0.3s, color 0.3s;
 }
 
-button:hover {
-  background-color: #76c7c0;
-  color: #101010;
+.menu button:hover {
+  background-color: #fabd2f;
+  color: #1d2021;
 }
 
-button:active {
-  background-color: #5bb9ae;
+/* Main Styling */
+main {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
-/* Footer */
-footer {
-  background-color: #181818;
-  color: #666;
-  text-align: center;
+.controls {
+  margin-bottom: 2rem;
+  background-color: #3c3836; /* Gruvbox brownish-gray */
   padding: 1rem;
-  font-size: 0.875rem;
-  border-top: 2px solid #76c7c0;
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-/* Forms */
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-form label {
-  font-size: 1rem;
-  color: #dcdcdc;
-}
-
-form input, form select {
+.controls input[type="text"], .controls select {
   width: 100%;
-  padding: 0.75rem;
-  border: 2px solid #76c7c0;
-  border-radius: 8px;
-  background-color: #101010;
-  color: #dcdcdc;
+  max-width: 400px;
+  padding: 0.6rem;
+  margin-bottom: 1rem;
+  background-color: #3c3836;
+  border: 1px solid #665c54; /* Gruvbox subtle brown */
+  border-radius: 4px;
+  color: #ebdbb2;
   font-size: 1rem;
-  transition: border-color 0.3s ease;
-}
-
-form input:focus, form select:focus {
-  border-color: #5bb9ae;
   outline: none;
+  transition: border-color 0.3s;
 }
 
-form button {
-  align-self: flex-start;
-  background-color: #76c7c0;
-  color: #101010;
-  border: none;
+.controls input[type="text"]:focus, .controls select:focus {
+  border-color: #fabd2f; /* Gruvbox yellow focus */
+}
+
+.controls button {
+  background: none;
+  color: #83a598; /* Gruvbox cyan */
+  border: 1px solid #83a598;
+  padding: 0.6rem 1.2rem;
   font-size: 1rem;
-  border-radius: 8px;
-  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s, color 0.3s;
 }
 
-form button:hover {
-  background-color: #5bb9ae;
+.controls button:hover {
+  background-color: #83a598;
+  color: #1d2021;
 }
 
-/* Scrollbars */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background-color: #76c7c0;
+/* Section Styling */
+section {
+  margin-bottom: 2rem;
+  background-color: #3c3836;
+  padding: 1rem;
   border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background-color: #5bb9ae;
+section h2 {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  color: #b8bb26; /* Gruvbox green */
 }
 
-/* Responsive Grids for Main Content */
-main > div {
-  min-height: 200px;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Additional Styles for Interactive Elements */
-select {
-  background-color: #181818;
-  color: #dcdcdc;
-  padding: 0.75rem;
-  border-radius: 8px;
+section button {
+  background-color: #b8bb26;
+  color: #1d2021;
+  border: none;
+  padding: 0.6rem 1rem;
   font-size: 1rem;
-  border: 2px solid #76c7c0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s;
 }
 
-select:hover {
-  border-color: #5bb9ae;
+section button:hover {
+  background-color: #98971a; /* Darker green for hover */
 }
 
-/* Floating Visual Element */
-body::after {
-  content: '';
-  position: absolute;
-  bottom: -100px;
-  right: -150px;
-  width: 300px;
-  height: 300px;
-  background: radial-gradient(circle, #76c7c0 0%, transparent 80%);
-  filter: blur(75px);
-  z-index: -1;
+/* Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
 }
 
-/* Footer Highlight */
+th {
+  background-color: #504945;
+  color: #fabd2f;
+  font-weight: bold;
+  padding: 0.8rem;
+}
+
+td {
+  background-color: #3c3836;
+  color: #ebdbb2;
+  padding: 0.8rem;
+}
+
+table, th, td {
+  border: 1px solid #665c54;
+}
+
+.institution-row {
+  cursor: pointer;
+  font-weight: bold;
+  margin: 1rem 0;
+  padding: 0.6rem;
+  background-color: #282828;
+  color: #fabd2f;
+  border-radius: 6px;
+  transition: background-color 0.3s;
+}
+
+.institution-row:hover {
+  background-color: #805d77;
+  color: #1d2021;
+}
+
+/* Custom Groups */
+.custom-group {
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background-color: #3c3836;
+  border: 3px solid #665c54;
+  border-radius: 6px;
+}
+
+.custom-group h3 {
+  margin-bottom: 0.5rem;
+  color: #fabd2f;
+  font-size: 1.2rem;
+}
+
+.custom-group ul {
+  margin: 0;
+  padding: 0;
+  list-style-type: none;
+}
+
+.custom-group ul li {
+  margin-bottom: 0.5rem;
+  padding: 0.4rem;
+  background-color: #282828;
+  color: #ebdbb2;
+  border-radius: 4px;
+}
+
+/* Footer Styling */
 footer {
-  background-color: #181818;
-  color: #666;
+  background-color: #282828;
+  color: #928374;
   text-align: center;
   padding: 1rem;
   font-size: 0.875rem;
-  border-top: 2px solid #76c7c0;
-  box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.3);
+  border-top: 2px solid #fabd2f;
 }
 
-@keyframes background-shift {
-  0% {
-    transform: scale(1) translateX(0);
+/* Media Queries */
+@media (max-width: 768px) {
+  main {
+      padding: 1rem;
   }
-  50% {
-    transform: scale(1.5) translateX(50px);
+
+  .controls input[type="text"], .controls select {
+      max-width: 100%;
   }
-  100% {
-    transform: scale(1) translateX(0);
+
+  .menu {
+      flex-direction: column;
+      gap: 0.5rem;
+  }
+
+  .menu button {
+      padding: 0.8rem;
+      font-size: 1rem;
   }
 }
