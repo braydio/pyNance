@@ -18,7 +18,7 @@ from config import (
 )
 from flask import Flask, jsonify, render_template, request
 from plaid_utils import generate_link_token
-from sql_utils import save_transactions_to_db
+from sql_utils import init_db, save_transactions_to_db
 
 DATA_DIR = DIRECTORIES["DATA_DIR"]
 TEMP_DIR = DIRECTORIES["TEMP_DIR"]
@@ -624,7 +624,7 @@ def get_accounts():
 
 # Refresh account with access token
 @app.route("/refresh_account", methods=["POST"])
-def refresh_data():
+def refresh_account():
     data = request.json
     item_id = data.get("item_id")
 
@@ -635,39 +635,33 @@ def refresh_data():
     try:
         with open(LINKED_ITEMS, "r") as f:
             linked_items = json.load(f)
-    except FileNotFoundError:
-        logger.error("LinkedItems.json not found.")
-        return jsonify({"error": "LinkedItems.json not found"}), 404
-    except json.JSONDecodeError:
-        logger.error("Error parsing LinkedItems.json.")
-        return jsonify({"error": "Error parsing LinkedItems.json"}), 500
+    except (FileNotFoundError, json.JSONDecodeError):
+        logger.error("LinkedItems.json missing or invalid.")
+        return jsonify({"error": "LinkedItems.json not found or invalid."}), 500
 
     item = linked_items.get(item_id)
     if not item:
-        logger.error(f"Item with ID {item_id} not found.")
-        return jsonify({"error": f"Item with ID {item_id} not found"}), 404
+        logger.error(f"Item ID {item_id} not found in LinkedItems.json.")
+        return jsonify({"error": f"Item ID {item_id} not found."}), 404
 
     # Determine start_date and end_date
-    last_successful_update = (
+    last_update = (
         item.get("status", {}).get("transactions", {}).get("last_successful_update")
     )
     start_date = (
-        last_successful_update.split("T")[0]
-        if last_successful_update
+        last_update.split("T")[0]
+        if last_update
         else (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
     )
     end_date = datetime.now().strftime("%Y-%m-%d")
 
-    # Load LinkAccounts.json to fetch the access_token
+    # Load LinkedAccounts.json for access_token
     try:
         with open(LINKED_ACCOUNTS, "r") as f:
             linked_accounts = json.load(f)
-    except FileNotFoundError:
-        logger.error("LinkAccounts.json not found.")
-        return jsonify({"error": "LinkAccounts.json not found"}), 404
-    except json.JSONDecodeError:
-        logger.error("Error parsing LinkAccounts.json.")
-        return jsonify({"error": "Error parsing LinkAccounts.json"}), 500
+    except (FileNotFoundError, json.JSONDecodeError):
+        logger.error("LinkedAccounts.json missing or invalid.")
+        return jsonify({"error": "LinkedAccounts.json not found or invalid."}), 500
 
     access_token = next(
         (
@@ -678,10 +672,10 @@ def refresh_data():
         None,
     )
     if not access_token:
-        logger.error(f"No access token found for item ID {item_id}.")
-        return jsonify({"error": f"No access token found for item ID {item_id}"}), 400
+        logger.error(f"No access token for item ID {item_id}.")
+        return jsonify({"error": f"No access token for item ID {item_id}."}), 400
 
-    # Fetch transactions from Plaid
+    # Fetch transactions from Plaid API
     payload = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
@@ -694,31 +688,35 @@ def refresh_data():
     try:
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
-
         transactions_data = response.json()
         transactions = transactions_data.get("transactions", [])
-
-        # Update the last_successful_update field
-        item["status"]["transactions"][
-            "last_successful_update"
-        ] = datetime.now().isoformat()
-        linked_items[item_id] = item
-
-        # Save updated LinkedItems.json
-        with open(LINKED_ITEMS, "w") as f:
-            json.dump(linked_items, f, indent=4)
-
-        # Save transactions to the database
-        save_transactions_to_db(transactions, linked_accounts)
-
-        logger.info(
-            f"Fetched and saved {len(transactions)} transactions for item ID {item_id}."
-        )
-        return jsonify({"status": "success", "transactions": len(transactions)}), 200
-
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error refreshing account: {str(e)}")
-        return jsonify({"error": f"Error fetching transactions: {str(e)}"}), 500
+        logger.error(f"Plaid API error: {str(e)}")
+        return jsonify({"error": f"Failed to fetch transactions: {str(e)}"}), 500
+
+    # Update last_successful_update in LinkedItems.json
+    item["status"]["transactions"][
+        "last_successful_update"
+    ] = datetime.now().isoformat()
+    linked_items[item_id] = item
+    with open(LINKED_ITEMS, "w") as f:
+        json.dump(linked_items, f, indent=4)
+
+    # Save transactions to the database
+    save_transactions_to_db(transactions, linked_accounts)
+
+    # Save transactions to a JSON file
+    latest_transactions_file = FILES["LATEST_TRANSACTIONS"]
+    with open(latest_transactions_file, "w") as f:
+        json.dump(transactions_data, f, indent=4)
+
+    logger.info(
+        f"Refreshed account {item_id}. Fetched and saved {len(transactions)} transactions."
+    )
+    return (
+        jsonify({"status": "success", "transactions_fetched": len(transactions)}),
+        200,
+    )
 
 
 @app.route("/save_group", methods=["POST"])
@@ -919,5 +917,6 @@ def debug():
 
 
 if __name__ == "__main__":
-    logger.info("Starting Flask application")
+    logger.info("Starting Flask application, initializing SQL Database.")
+    init_db()
     app.run(host="0.0.0.0", port=5000, debug=True)
