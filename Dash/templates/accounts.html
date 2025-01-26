@@ -5,13 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme)}}">
     <style>
-        .hidden { display: none; }
-        .institution-row { cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 10px; }
-        table { width: 100%; border-collapse: collapse; margin: 1em 0; }
-        table, th, td { border: 1px solid #504945; }
-        th, td { padding: 8px; text-align: left; }
-        #group-management { margin-bottom: 1.5em; }
-        #group-management h2 { margin: 0.5em 0; }
+        /* Basic Page Layout */
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: "Roboto", sans-serif;
+        }
+        header {
+            background-color: #282828;
+            color: #fabd2f;
+            text-align: center;
+            padding: 1rem;
+        }
+        .menu {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .menu button {
+            padding: 0.6rem 1rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        main {
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+        }
+        #institutions-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+        }
+        .institution {
+            background: #282828;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            border: 1px solid #504945;
+            padding: 8px;
+            text-align: left;
+        }
     </style>
     <title>Accounts Management</title>
 </head>
@@ -23,8 +65,8 @@
         <nav class="menu">
             <button onclick="window.location.href='/'">Dashboard</button>
             <button onclick="window.location.href='/transactions'">Transactions</button>
-            <button onclick="window.location.href='/spending_by_category'">Trends</button>
-            <button onclick="window.location.href='/reports'">Reports</button>
+            <button onclick="window.location.href='/accounts'">Trends</button>
+            <button onclick="window.location.href='/accounts'">Reports</button>
             <button onclick="window.location.href='/settings'">Settings</button>
         </nav>
     </header>
@@ -34,22 +76,20 @@
             <div id="account-management-header">
                 <h2>Account Management</h2>
                 <p>View and manage your accounts by institution. You can refresh account data, view balances, and create groups.</p>
+                <!-- Link New Account Button -->
+                <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
             </div>
 
             <!-- Group Management -->
             <div id="group-management">
                 <h2>Create a Group</h2>
-                <p>Select institutions to add them to a group:</p>
+                <p>Select institutions to add them to a refresh group:</p>
                 <input type="text" id="group-name" placeholder="Enter group name" />
                 <button id="save-group" onclick="saveGroup()">Save Group</button>
+                <!-- Refresh selected accounts -->
+                <button id="refresh-accounts" onclick="refreshAccount()">Refresh Selected Accounts</button>
                 <p id="group-status"></p>
             </div>
-
-            <!-- Link New Account Button -->
-            <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
-
-            <!-- Refresh All Linked Accounts Button -->
-            <button id="refresh-accounts" onclick="refreshAccount()">Refresh All Linked Accounts</button>
 
             <p id="status"></p>
         </div>    
