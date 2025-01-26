@@ -98,15 +98,8 @@ This project is a Flask-based API for integrating with the Plaid API to manage a
 
 4. Run the Flask server:
    ```bash
-   python pyNance/MainDash.py
+   python Dash/MainDash.py
    ```
-
-5. (Optional) Run the server with Docker:
-   ```bash
-   docker compose up --build -d
-   docker run -p 
-   ```
-
 ---
 
 ## API Endpoints
@@ -140,26 +133,58 @@ This project is a Flask-based API for integrating with the Plaid API to manage a
 
 ```plaintext
 Dash
-├── app.py                 # Main Flask application.
-├── helper_utils.py        # Utility functions for file and JSON handling.
-├── plaid_utils.py         # Helper functions for interacting with the Plaid API.
-├── routes.py              # API route handlers.
-├── templates/
-│   ├── dashboard.html     # HTML for the dashboard view.
-│   ├── accounts.html      # HTML for accounts view.
-│   ├── transactions.html  # HTML for transactions view.
-│   └── settings.html      # HTML for settings page.
-├── static/
-│   ├── finance-dashroad.js # JavaScript for dynamic frontend interactions.
-│   ├── accounts.js         # JavaScript for account management.
-│   └── settings.js         # JavaScript for app settings.
-├── .env                   # Environment variables (not committed to version control).
-├── Dockerfile             # Configuration for containerized deployment.
-├── requirements.txt       # Python dependencies.
-├── linked_items.json      # Storage for linked Plaid items.
-├── linked_accounts.json   # Storage for account details and access tokens.
-├── refreshed_transactions.json # Output file for refreshed transaction data.
-└── README.md              # Project documentation.
+├── .pre-commit-config.yaml        # Configuration for pre-commit hooks to enforce code formatting and linting.
+├── .env                           # Contains environment variables such as API keys and database configurations.
+├── example.env                    # Example environment configuration for local setup.
+├── config.py                      # Configuration file for global settings and reusable constants.
+├── MainDash.py                    # Main application script for handling routes and core application logic. 
+├── plaid_utils.py                 # Utilities for interacting with the Plaid API.
+├── sql_utils.py                   # Utilities for handling SQL database operations.
+│
+├── data                           # Directory for application data and backups.
+│   ├── ExampleAccounts.json            # Sample data file for accounts, used for testing or demos.
+│   ├── ExampleItems.json               # Sample data file for items, used for testing or demos.
+│   ├── LinkAccounts.json               # Stores linked account data.
+│   ├── LinkAccounts.json.bak           # Backup file for linked account data.
+│   ├── LinkItems.json                  # Stores linked item data.
+│   ├── LinkItems.json.bak              # Backup file for linked item data.
+│   └── Transactions.json               # Stores transaction data to be loaded in.
+│
+├── templates                      # HTML templates for the application's frontend.
+│    ├── accounts.html                  # HTML template for the accounts page.
+│    ├── dashboard.html                 # HTML template for the main dashboard.
+│    ├── error.html                     # HTML template for displaying error messages.
+│    ├── settings.html                  # HTML template for the settings page.
+│    └── transactions.html              # HTML template for displaying transactions.
+
+├── static                         # Static assets for the frontend (CSS, JS, themes).
+│   ├── css                             # Directory for CSS stylesheets.
+│   │   ├── base.css                    # Base styles applied across the application.
+│   │   ├── forms.css                   # Styles for forms and input elements.
+│   │   ├── header.css                  # Styles for the header section.
+│   │   ├── sections.css                # Styles for main content sections.
+│   │   └── visuals.css                 # Styles for visual elements and charts.
+│   ├── scripts                    # Directory for JavaScript files.
+│   │   ├── accounts.js                 # JavaScript for account management functionality.
+│   │   ├── finance-dashroad.js         # Core JavaScript for the dashboard functionality.
+│   │   ├── link.js                     # JavaScript for managing Plaid Link integration.
+│   │   └── settings.js                 # JavaScript for handling theme and settings interactions.
+│   └── themes                     # Directory for theme-specific CSS files.
+│       ├── current_theme.txt           # Tracks the currently active theme.
+│       └── default.css                 # Default application theme.
+│
+├── logs                           # Directory for log files and debugging information.
+│   ├── dashroad.log                    # Main log file for the application.
+│   ├── logs_init                       # Log initialization files or additional logs.
+│   ├── testing.log                     # Log file for testing-related output.
+│   └── testing copy.log                # Backup or copy of testing logs.
+│
+└── temp                           # Directory for temporary files and API responses.
+    ├── exchange_response.json          # Temporary storage for API exchange responses.
+    ├── item_get_response.json          # Temporary storage for item retrieval responses.
+    ├── link_session.json               # Stores temporary session data for linking accounts.
+    └── public_token.txt                # Stores temporary public tokens for API interactions.
+
 ```
 
 ---
