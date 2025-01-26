@@ -5,12 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>No Accounts Linked</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; }
-        header, footer { background-color: #f4f4f4; padding: 10px; text-align: center; }
-        main { padding: 20px; text-align: center; }
-        button { padding: 10px 15px; margin: 10px; cursor: pointer; }
-    </style>
 </head>
 <body>
     <header>
@@ -22,8 +16,8 @@
         <!-- Link New Account Button -->
         <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
 
-        <p>Alternatively, load example accounts:</p>
-        <button onclick="loadExampleAccounts()">Load Example Accounts</button>
+        <p>Back to home page:</p>
+        <button onclick="window.location.href='/'">Dashboard</button>
 
         <p id="status"></p>
 
