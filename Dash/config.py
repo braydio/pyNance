@@ -63,6 +63,7 @@ FILES = {
     "LATEST_RESPONSE": DIRECTORIES["TEMP_DIR"] / "ResponseTransactions.json",
     "TRANSACTION_REFRESH_FILE": DIRECTORIES["TEMP_DIR"] / "TransactionRefresh.json",
     "DEFAULT_THEME": DIRECTORIES["THEMES_DIR"] / "default.css",
+    "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
 }
 
 # Log directory and file setup
