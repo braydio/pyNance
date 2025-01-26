@@ -3,15 +3,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const searchBar = document.getElementById("search-bar");
   const linkButton = document.getElementById("link-button");
   const statusContainer = document.getElementById("status");
+  const lastRefreshElement = document.getElementById("last-refresh-time");
 
   // Utility to fetch data from an endpoint
   function fetchData(url, options = {}) {
-    return fetch(url, options)
-      .then((response) => response.json())
-      .catch((error) => {
-        console.error(`Error fetching data from ${url}:`, error);
-        throw error;
-      });
+      return fetch(url, options)
+          .then((response) => response.json())
+          .catch((error) => {
+              console.error(`Error fetching data from ${url}:`, error);
+              throw error;
+          });
   }
 
   // Plaid Link functionality
@@ -73,12 +74,36 @@ document.addEventListener("DOMContentLoaded", () => {
       .then((data) => {
         if (data.status === "success") {
           renderInstitutions(data.institutions);
+
+          // Find the most recent refresh time across all institutions
+          const mostRecentRefresh = Object.values(data.institutions).reduce(
+            (latest, institution) => {
+              const lastUpdate = institution.last_successful_update;
+
+              // Check if the last update is a valid date
+              if (lastUpdate && lastUpdate !== "Never refreshed") {
+                const parsedDate = new Date(lastUpdate);
+                return !isNaN(parsedDate) && parsedDate > latest ? parsedDate : latest;
+              }
+              return latest;
+            },
+            new Date(0) // Default to the earliest possible date
+          );
+
+          // Update the last refresh time in the UI
+          lastRefreshElement.textContent =
+            mostRecentRefresh > new Date(0)
+              ? `Most Recent Refresh: ${mostRecentRefresh.toLocaleString()}`
+              : "Never refreshed";
         } else {
           institutionsContainer.innerHTML = `<p>Error loading institutions: ${data.message}</p>`;
+          lastRefreshElement.textContent = "Not available";
         }
       })
       .catch((error) => {
         institutionsContainer.innerHTML = `<p>Error loading institutions: ${error.message}</p>`;
+        lastRefreshElement.textContent = "Error fetching last refresh time";
+        console.error("Error:", error);
       });
   }
 
@@ -96,11 +121,21 @@ document.addEventListener("DOMContentLoaded", () => {
       // Institution header
       const institutionHeader = document.createElement("div");
       institutionHeader.className = "institution-row";
+
+      // Format the refresh time
+      const formattedRefreshTime =
+        institution.last_successful_update && institution.last_successful_update !== "Never refreshed"
+          ? new Date(institution.last_successful_update).toLocaleString()
+          : "Never refreshed";
+
       institutionHeader.innerHTML = `
         <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
         <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
+        <p>Last Refreshed: ${formattedRefreshTime}}</p>
       `;
-      institutionHeader.addEventListener("click", () => toggleAccountsTable(institutionName));
+      institutionHeader.addEventListener("click", () =>
+        toggleAccountsTable(institutionName)
+      );
 
       // Accounts table (initially hidden)
       const accountsTable = document.createElement("table");
@@ -112,23 +147,26 @@ document.addEventListener("DOMContentLoaded", () => {
             <th>Account Name</th>
             <th>Type</th>
             <th>Subtype</th>
-            <th>Available Balance</th>
-            <th>Current Balance</th>
+            <th>Balance</th>
           </tr>
         </thead>
         <tbody>
           ${institution.accounts
-            .map(
-              (account) => `
-            <tr>
-              <td>${account.account_name}</td>
-              <td>${account.type}</td>
-              <td>${account.subtype}</td>
-              <td>${account.balances.available || "N/A"}</td>
-              <td>${account.balances.current || "N/A"}</td>
-            </tr>
-          `
-            )
+            .map((account) => {
+              const balanceClass =
+                account.balances.current < 0 ? "negative" : "positive";
+              return `
+              <tr>
+                <td>${account.account_name}</td>
+                <td>${account.type}</td>
+                <td>${account.subtype}</td>
+                <td class="${balanceClass}">${account.balances.current.toLocaleString(
+                "en-US",
+                { style: "currency", currency: "USD" }
+              )}</td>
+              </tr>
+            `;
+            })
             .join("")}
         </tbody>
       `;
@@ -138,7 +176,9 @@ document.addEventListener("DOMContentLoaded", () => {
       institutionsContainer.appendChild(institutionDiv);
 
       // Attach event listener for the refresh button
-      const refreshButton = institutionHeader.querySelector(".refresh-institution");
+      const refreshButton = institutionHeader.querySelector(
+        ".refresh-institution"
+      );
       refreshButton.addEventListener("click", (event) => {
         event.stopPropagation(); // Prevent toggling the table
         refreshInstitution(institution.item_id, institutionName);
@@ -153,33 +193,41 @@ document.addEventListener("DOMContentLoaded", () => {
       table.classList.toggle("hidden");
     }
   }
+
   // Refresh an institution's data
   function refreshInstitution(institutionId, institutionName) {
-    const refreshButton = document.querySelector(`button[data-institution-id="${institutionId}"]`);
+    const refreshButton = document.querySelector(
+      `button[data-institution-id="${institutionId}"]`
+    );
     refreshButton.disabled = true;
     refreshButton.textContent = "Refreshing...";
 
     fetchData("/refresh_account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            item_id: institutionId, // Only send the item ID
-        }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        item_id: institutionId, // Only send the item ID
+      }),
     })
-        .then((response) => {
-            refreshButton.disabled = false;
-            refreshButton.textContent = "Refresh";
-            if (response.status === "success") {
-                alert(`Institution "${institutionName}" refreshed successfully!`);
-            } else {
-                alert(`Error refreshing "${institutionName}": ${response.error}`);
-            }
-        })
-        .catch((error) => {
-            refreshButton.disabled = false;
-            refreshButton.textContent = "Refresh";
-            alert(`Error refreshing "${institutionName}": ${error.message}`);
-        });
+      .then((response) => {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh";
+        if (response.status === "success") {
+          alert(`Institution "${institutionName}" refreshed successfully!`);
+
+          // Update the institutions and refresh time
+          fetchAndRenderInstitutions();
+        } else {
+          alert(
+            `Error refreshing "${institutionName}": ${response.error || "Unknown error"}`
+          );
+        }
+      })
+      .catch((error) => {
+        refreshButton.disabled = false;
+        refreshButton.textContent = "Refresh";
+        alert(`Error refreshing "${institutionName}": ${error.message}`);
+      });
   }
 
   // Filter institutions based on search input
@@ -188,7 +236,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const institutionRows = document.querySelectorAll(".institution");
 
     institutionRows.forEach((row) => {
-      const institutionName = row.querySelector("h3").textContent.toLowerCase();
+      const institutionName = row
+        .querySelector("h3")
+        .textContent.toLowerCase();
       row.style.display = institutionName.includes(query) ? "" : "none";
     });
   }

@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Accounts</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme)}}">
     <style>
         .hidden { display: none; }
         .institution-row { cursor: pointer; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin: 1em 0; }
         table, th, td { border: 1px solid #504945; }
         th, td { padding: 8px; text-align: left; }
+        #last-refresh { margin: 1em 0; font-size: 1.1em; color: #333; }
     </style>
 </head>
 <body>
@@ -28,17 +28,28 @@
     </header>
     <main>
         <div class="controls">
+            <!-- Section Header -->
+            <div id="account-management-header">
+                <h2>Account Management</h2>
+                <p>View and manage your accounts by institution. You can refresh account data, view balances, and link new accounts.</p>
+            </div>
+    
             <!-- Search Bar -->
-            <input type="text" id="search-bar" placeholder="Search institutions..." onkeyup="filterInstitutions()" />
-
+            <input
+                type="text"
+                id="search-bar"
+                placeholder="Search institutions..."
+                onkeyup="filterInstitutions()" 
+            />
+    
             <!-- Link New Account Button -->
             <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
-
+    
             <!-- Refresh All Linked Accounts Button -->
             <button id="refresh-accounts" onclick="refreshAccount()">Refresh All Linked Accounts</button>
-
+    
             <p id="status"></p>
-        </div>
+        </div>    
         <div id="institutions-container">
             <!-- Institutions and accounts will be dynamically loaded here -->
         </div>
