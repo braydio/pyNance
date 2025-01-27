@@ -26,6 +26,8 @@ LOGS_DIR = DIRECTORIES["LOGS_DIR"]
 THEMES_DIR = DIRECTORIES["THEMES_DIR"]
 LINKED_ITEMS = FILES["LINKED_ITEMS"]
 LINKED_ACCOUNTS = FILES["LINKED_ACCOUNTS"]
+LATEST_TRANSACTIONS = FILES["LATEST_TRANSACTIONS"]
+TRANSACTION_REFRESH_FILE = FILES["TRANSACTION_REFRESH_FILE"]
 DEFAULT_THEME = FILES["DEFAULT_THEME"]
 CURRENT_THEME = FILES["CURRENT_THEME"]
 
@@ -622,7 +624,6 @@ def get_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# Refresh account with access token
 @app.route("/refresh_account", methods=["POST"])
 def refresh_account():
     data = request.json
@@ -644,10 +645,26 @@ def refresh_account():
         logger.error(f"Item ID {item_id} not found in LinkedItems.json.")
         return jsonify({"error": f"Item ID {item_id} not found."}), 404
 
-    # Determine start_date and end_date
+    # Check the last successful refresh time
     last_update = (
         item.get("status", {}).get("transactions", {}).get("last_successful_update")
     )
+    if last_update:
+        last_update_time = datetime.fromisoformat(last_update)
+        time_since_last_update = datetime.now() - last_update_time
+        if time_since_last_update < timedelta(hours=24):
+            time_remaining = timedelta(hours=24) - time_since_last_update
+            return (
+                jsonify(
+                    {
+                        "status": "waiting",
+                        "message": f"Last refresh was {time_since_last_update.seconds // 3600} hours ago. Please wait {time_remaining.seconds // 3600} hours before refreshing again.",
+                    }
+                ),
+                200,
+            )
+
+    # Determine start_date and end_date
     start_date = (
         last_update.split("T")[0]
         if last_update
@@ -706,8 +723,8 @@ def refresh_account():
     save_transactions_to_db(transactions, linked_accounts)
 
     # Save transactions to a JSON file
-    latest_transactions_file = FILES["LATEST_TRANSACTIONS"]
-    with open(latest_transactions_file, "w") as f:
+    transaction_refresh = TRANSACTION_REFRESH_FILE
+    with open(transaction_refresh, "w") as f:
         json.dump(transactions_data, f, indent=4)
 
     logger.info(
@@ -750,18 +767,19 @@ def save_group():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@app.route("/transactions", methods=["GET"])
-def transactions_page():
+@app.route("/process_transactions", methods=["POST"])
+def process_transactions():
     try:
-        # Load transactions, accounts, and items data
-        with open("Dash/data/Transactions.json") as tf:
+        # Load the temporary transaction file
+        with open(TRANSACTION_REFRESH_FILE, "r") as tf:
             transactions_data = json.load(tf)
-        with open(LINKED_ACCOUNTS) as af:
+        # Load linked accounts and linked items
+        with open(LINKED_ACCOUNTS, "r") as af:
             link_accounts = json.load(af)
-        with open(LINKED_ITEMS) as lf:
+        with open(LINKED_ITEMS, "r") as lf:
             link_items = json.load(lf)
 
-        # Enrich transactions with account and item details
+        # Enrich transactions with additional details
         enriched_transactions = []
         for transaction in transactions_data.get("transactions", []):
             account_id = transaction["account_id"]
@@ -785,10 +803,32 @@ def transactions_page():
                 }
             )
 
-        return render_template("transactions.html", transactions=enriched_transactions)
+        # Save the enriched transactions to the data file
+        with open(LATEST_TRANSACTIONS, "w") as lf:
+            json.dump({"transactions": enriched_transactions}, lf, indent=4)
+
+        logger.info(
+            "Transactions successfully processed and saved to LATEST_TRANSACTIONS."
+        )
+        return (
+            jsonify(
+                {"status": "success", "message": "Transactions processed successfully."}
+            ),
+            200,
+        )
+
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {e}")
+        return jsonify({"error": f"File not found: {e}"}), 404
+    except json.JSONDecodeError as e:
+        logger.error(f"Error decoding JSON: {e}")
+        return jsonify({"error": f"Invalid JSON format: {e}"}), 400
     except Exception as e:
-        logger.error(f"Error loading transactions page: {e}")
-        return render_template("error.html", error="Failed to load transactions data.")
+        logger.error(f"Unexpected error: {e}")
+        return (
+            jsonify({"error": "An error occurred while processing transactions."}),
+            500,
+        )
 
 
 # Main Dashboard Visuals
