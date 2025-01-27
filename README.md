@@ -1,57 +1,17 @@
 # pyNance-Dash
+> Quickstart moved to end
 
-## Quickstart
+### Current Development State (1/26)
+- Plaid Link is fully integrated. SQL Server initialized. 
+    - I'm using DB Browser for SQL DB Mgmt
+    - Currently all API responses are saved as JSON files in Dash/data where they are loaded by the handlers.
+        - See the MainDash.py backend for the account refresh and account link logic - it's easier to follow IMO.
+    - TO-DO includes finish polished the Account Refresh logic, passing the data correctly to the DB.
+        - Not sure if we want to use SQL and ditch the JSON logic, or use JSON for the recent activity and SQL for older transactions.
 
-```
-# Clone project
-git clone https://github.com/braydio/pyNance.git
+We could probably work on a more robust workflow. I'll make a second markdown file with version notes / working notes in the root dir. Probably call it something like README_DevNotes.md
 
-# Set up python environment at root: /pyNance/.venv
-python -m venv .venv
-
-.venv/Scripts/activate # Windows
-source .venv/bin/activate # virgin-ized
-
-pip install -r requirements.txt
-
-# Everything will be run from the root dir pyNance/. for the time being
-
-cp Dash/example.env Dash/.env
-
-@ Run the script to start Flask server:
-python Dash/MainDash.py
-```
-
-This starts a Flask server at localhost:5006. You can change the port at the bottom of MainDash.py
-
-Use a web browser to navigate to the ip address listed in the terminal and check out my sick website.
-
-## End Quickstart
-
-### Current Development State (1/24)
-- Deleting /Plaid/ (or removing everything in it for now) since the app is fully contained in /Dash/
-
-### Current Development State (1/21) 
-- Plaid Link is ready. Saves account link tokens to data/
-- Run python CheckLinks.py to consolidate all link tokens to a text file
-- Time for the dashroad
-
-### Current Development State (1/20) 
-- Should be able to run from pyNance/Plaid
-
-    Create python .venv at pyNance/Plaid using Plaid/requirements.txt
-    Make a .env and fill out per example.env
-    Run LinkPlaid.py to initiate the Plaid Link
-
-### Current Development State (1/18) 
-- Developing Plaid Link in pyNance/Plaid/deploy
-
-Currently the account link process happens in Plaid. So for the sake of file paths etc. cd into pyNance/Plaid before running link scripts.
-
-    I believe I copied deploy to Plaid. I added CheckLinks.py to Plaid/data. cd into Plaid/data and run 'python CheckLinks.py' to see active Plaid Link Items
-
-    Actually immedate state is in pyNance/Plaid/deploy, but will copy deploy to Plaid.
-
+---
 # Finance Dashboard Project
 
 ## Overview
@@ -123,23 +83,21 @@ Install Python packages:
 pip install -r requirements.txt
 ```
 
-Install Node.js dependencies if required for the frontend:
-```bash
-npm install
-```
-
 ### 3. Database Initialization
-Run the following command to initialize the SQLite database:
-```bash
-python -c "from sql_utils import init_db; init_db()"
+The SQLite Database is initialized in sql_utils.py, and imported to the main python module. 
+```python
+if __name__ == "__main__":
+    logger.info("Starting Flask application, initializing SQL Database.")
+    init_db()
+    app.run(host="0.0.0.0", port=5000, debug=True)
 ```
 
 ### 4. Running the Application
 Start the Flask server:
 ```bash
-python MainDash.py
+python Dash/MainDash.py
 ```
-Access the application at `http://localhost:5000`.
+Access the application at the Local IP Address of you host machine port :5000
 
 ---
 
@@ -276,41 +234,171 @@ Dash
 
 ---
 
-## JavaScript Integration
+# Some example code from the real life code: 
 
-The frontend communicates with the backend via the `/refresh_account` endpoint. Below is an example function for refreshing institution data:
+``` HTML
+                <!-- Link New Account Button The --> 
+                <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
+            </div>
+```
+
+### JavaScript Integration
+- The frontend communicates with the backend via the `/refresh_account` endpoint. Below is a JS (front end) example for handling to Plaid Link functionality:
 
 ```javascript
-function refreshInstitution(institutionId, institutionName) {
-    const refreshButton = document.querySelector(`button[data-institution-id="${institutionId}"]`);
-    refreshButton.disabled = true;
-    refreshButton.textContent = "Refreshing...";
+// Plaid Link functionality
+function initializePlaidLink() {
+    // Fetch a link token from the backend
+    fetchData("/get_link_token")
+        .then((data) => {
+            // Check if the link token was successfully received
+            if (data.link_token) {
+                // Create the Plaid Link handler using the received link token
+                const handler = Plaid.create({
+                    token: data.link_token, // The link token obtained from the backend
 
-    fetchData("/refresh_account", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            item_id: institutionId,
-        }),
-    })
-        .then((response) => {
-            refreshButton.disabled = false;
-            refreshButton.textContent = "Refresh";
-            if (response.status === "success") {
-                alert(`Institution "${institutionName}" refreshed successfully!`);
+                    // Callback triggered upon successful account linking
+                    onSuccess: function (public_token, metadata) {
+                        // Log the public token received from Plaid
+                        console.log("Public Token:", public_token);
+
+                        // Send the public token to the backend to exchange it for an access token
+                        fetchData("/save_public_token", {
+                            method: "POST", // HTTP method for sending the data
+                            headers: { "Content-Type": "application/json" }, // Set the request headers
+                            body: JSON.stringify({ public_token }), // Include the public token in the request body
+                        })
+                            .then((response) => {
+                                // Check if an access token was successfully received
+                                if (response.access_token) {
+                                    // Update the status in the UI to indicate success
+                                    statusContainer.textContent = "Access token received!";
+                                } else {
+                                    // Log the error if the access token wasn't saved successfully
+                                    console.error("Error saving public token:", response.error);
+                                    // Update the status in the UI to indicate failure
+                                    statusContainer.textContent = "Failed to save public token.";
+                                }
+                            })
+                            .catch((error) => {
+                                // Handle any errors that occur during the save public token request
+                                console.error("Error saving public token:", error);
+                                statusContainer.textContent = "An error occurred.";
+                            });
+                    },
+
+                    // Callback triggered when the user exits the Plaid Link flow
+                    onExit: function (err, metadata) {
+                        // Check if the user exited due to an error
+                        if (err) {
+                            // Update the status in the UI to indicate an error
+                            statusContainer.textContent = "User exited with an error.";
+                        } else {
+                            // Update the status in the UI to indicate a normal exit
+                            statusContainer.textContent = "User exited without error.";
+                        }
+                    },
+                });
+
+                // Attach the Plaid Link handler to a button for user interaction
+                linkButton.onclick = () => handler.open();
             } else {
-                alert(`Error refreshing "${institutionName}": ${response.error}`);
+                // Handle the case where the link token couldn't be fetched
+                statusContainer.textContent = "Error fetching link token.";
             }
         })
         .catch((error) => {
-            refreshButton.disabled = false;
-            refreshButton.textContent = "Refresh";
-            alert(`Error refreshing "${institutionName}": ${error.message}`);
+            // Handle any errors that occur while fetching the link token
+            statusContainer.textContent = "Error initializing Plaid Link.";
         });
 }
+
 ```
 
 ---
+
+### Python Flask
+- The Flask app in MainDash.py handles the back end routes.
+
+```python
+# Link token routes
+@app.route("/save_public_token", methods=["POST"])
+def save_public_token():
+    try:
+        # Check if the request contains JSON data
+        if not request.is_json:
+            logger.error("Invalid request: Content-Type must be application/json")
+            return (
+                jsonify({"error": "Invalid Content-Type. Must be application/json."}),
+                400,
+            )
+
+        # Parse the JSON payload from the request
+        data = request.get_json()
+        logger.debug(f"Received POST data: {json.dumps(data, indent=2)}")
+
+        # Extract the public token from the request data
+        public_token = data.get("public_token")
+        if public_token:
+            # Ensure the temporary directory exists
+            ensure_directory_exists(TEMP_DIR)
+
+            # Save the public token to a file for temporary storage
+            with open(os.path.join(TEMP_DIR, "public_token.txt"), "w") as f:
+                f.write(public_token)
+            logger.info("Public token saved to file")
+
+            # Exchange the public token for an access token
+            access_token = exchange_public_token(public_token)
+            if access_token:
+                # Retrieve item metadata using the access token
+                item_id, institution_name = get_item_info(access_token)
+                if item_id:
+                    # Save initial account data to the database or files
+                    save_initial_account_data(access_token, item_id)
+                    logger.info(
+                        f"Linked to {institution_name} successfully with item ID: {item_id}"
+                    )
+
+                    # Return a success response with the access token and institution details
+                    return (
+                        jsonify(
+                            {
+                                "message": f"Linked to {institution_name} successfully",
+                                "access_token": access_token,
+                            }
+                        ),
+                        200,
+                    )
+                else:
+                    # Log and return an error if item metadata retrieval fails
+                    logger.error("Failed to retrieve item metadata")
+                    return jsonify({"error": "Failed to retrieve item metadata"}), 400
+
+            else:
+                # Log and return an error if public token exchange fails
+                logger.error("No public token provided")
+                return jsonify({"error": "No public token provided"}), 400
+
+    except json.JSONDecodeError as jde:
+        # Handle JSON decoding errors and log the details
+        logger.error(f"JSON decode error: {str(jde)}")
+        return jsonify({"error": "Invalid JSON payload", "details": str(jde)}), 400
+
+    except Exception as e:
+        # Handle unexpected errors and log the details
+        logger.error(f"Error processing public token: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": "Server error while processing public token",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
+```
+
 
 ## Troubleshooting
 
@@ -329,3 +417,30 @@ function refreshInstitution(institutionId, institutionName) {
 ## License
 This project is licensed under the MIT License. See the LICENSE file for details.
 
+## Quickstart
+
+```
+# Clone project
+git clone https://github.com/braydio/pyNance.git
+
+# Set up python environment at root: /pyNance/.venv
+python -m venv .venv
+
+.venv/Scripts/activate # Windows
+source .venv/bin/activate # virgin-ized
+
+pip install -r requirements.txt
+
+# Everything will be run from the root dir pyNance/. for the time being
+
+cp Dash/example.env Dash/.env
+
+# Run the script to start Flask server:
+python Dash/MainDash.py
+```
+
+This starts a Flask server at localhost:5000. You can change the port at the bottom of MainDash.py
+
+Use a web browser to navigate to the ip address listed in the terminal and to see the riced out website.
+
+## End Quickstart
