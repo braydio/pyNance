@@ -43,61 +43,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     },
   };
 
-  // 1. Render Cash Flow Chart
-  const cashFlowCtx = document.getElementById("cashFlowChart")?.getContext("2d");
-  if (cashFlowCtx) {
-    try {
-      const { status, data } = await fetchData("/api/cash_flow");
-      if (status === "success") {
-        const labels = data.map(entry => entry.month);
-        const incomeData = data.map(entry => Math.round(entry.income));
-        const spendingData = data.map(entry => Math.round(entry.expenses));
-        const netData = data.map(entry => Math.round(entry.income - entry.expenses));
-
-        renderChart(
-          cashFlowCtx,
-          "bar", // Bar chart type
-          labels,
-          [
-            { label: "Income", data: incomeData, backgroundColor: "#4BC0C0" },
-            { label: "Spending", data: spendingData, backgroundColor: "#FF6384" },
-            { label: "Net", data: netData, backgroundColor: "#FFCE56" },
-          ],
-          {
-            ...baseChartOptions,
-            plugins: {
-              ...baseChartOptions.plugins,
-              tooltip: {
-                callbacks: {
-                  label: context => {
-                    const datasetLabel = context.dataset.label;
-                    const value = context.raw || 0;
-
-                    if (datasetLabel === "Net") {
-                      // Tooltip for Net Bar
-                      const income = incomeData[context.dataIndex];
-                      const spending = spendingData[context.dataIndex];
-                      return [
-                        `Net: $${value.toLocaleString()}`,
-                        `Income: $${income.toLocaleString()}`,
-                        `Spending: $${spending.toLocaleString()}`,
-                      ];
-                    }
-
-                    // Tooltip for Income or Spending
-                    return `${datasetLabel}: $${value.toLocaleString()}`;
-                  },
-                },
-              },
-            },
-          }
-        );
-      }
-    } catch (error) {
-      console.error("Error rendering cash flow chart:", error);
-    }
-  }
-
   // 2. Render Category Breakdown Chart
   const categoryCtx = document.getElementById("categoryBreakdownChart")?.getContext("2d");
   if (categoryCtx) {
