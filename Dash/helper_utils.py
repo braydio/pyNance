@@ -2,21 +2,14 @@ import json
 import os
 from pathlib import Path
 
-from config import DIRECTORIES, logger
+from config import DIRECTORIES, FILES, logger
 
 THEMES_DIR = DIRECTORIES["THEMES_DIR"]
+CURRENT_THEME = FILES["CURRENT_THEME"]
+DEFAULT_THEME = FILES["DEFAULT_THEME"]
 
 
-def get_available_themes():
-    try:
-        themes = [f.name for f in THEMES_DIR.glob("*.css")]
-        logger.debug(f"Available themes: {themes}")
-        return themes
-    except Exception as e:
-        logger.error(f"Error accessing themes directory: {e}")
-        return []
-
-
+# Misc helper functions
 def load_json(file_path):
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
@@ -59,3 +52,41 @@ def ensure_file_exists(file_path, default_content=None):
                     file.write(default_content)
             else:
                 file.write("")
+
+
+# Functions for /settings routes and theme handling
+def get_available_themes():
+    try:
+        themes = [f.name for f in THEMES_DIR.glob("*.css")]
+        logger.debug(f"Available themes: {themes}")
+        return themes
+    except Exception as e:
+        logger.error(f"Error accessing themes directory: {e}")
+        return []
+
+
+def get_current_theme():
+    """Get the currently active theme."""
+    try:
+        if CURRENT_THEME.exists():
+            with open(CURRENT_THEME, "r") as f:
+                return f.read().strip()
+        logger.info("No current theme file found. Using default theme.")
+        return DEFAULT_THEME.name
+    except Exception as e:
+        logger.error(f"Error reading current theme: {e}")
+        return DEFAULT_THEME.name
+
+
+def set_theme(theme_name):
+    """Set the active theme."""
+    if theme_name not in get_available_themes():
+        raise ValueError(f"Theme '{theme_name}' is not available.")
+    try:
+        with open(CURRENT_THEME, "w") as f:
+            f.write(theme_name)
+        logger.info(f"Theme updated to: {theme_name}")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating theme: {e}")
+        return False
