@@ -208,19 +208,28 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshButton.disabled = true;
     refreshButton.textContent = "Refreshing...";
 
-    fetchData("/refresh_account", {
+    fetch("/refresh_account", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ item_id: institutionId }),
     })
       .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json(); // Parse JSON response
+      })
+      .then((data) => {
         refreshButton.disabled = false;
         refreshButton.textContent = "Refresh";
-        if (response.status === "success") {
+
+        if (data.status === "success") {
           alert(`Institution "${institutionName}" refreshed successfully!`);
-          fetchAndRenderInstitutions();
+          fetchAndRenderInstitutions(); // Re-render the institutions
+        } else if (data.status === "waiting") {
+          alert(data.message); // Display the "please wait" message
         } else {
-          alert(`Error refreshing "${institutionName}": ${response.error}`);
+          alert(`Error refreshing "${institutionName}": ${data.error}`);
         }
       })
       .catch((error) => {
