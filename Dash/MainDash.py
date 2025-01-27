@@ -21,8 +21,10 @@ from helper_utils import (
     ensure_directory_exists,
     ensure_file_exists,
     get_available_themes,
+    get_current_theme,
     load_json,
     save_json_with_backup,
+    set_theme,
 )
 from plaid_utils import generate_link_token
 from sql_utils import init_db, save_transactions_to_db
@@ -35,7 +37,7 @@ LOGS_DIR = DIRECTORIES["LOGS_DIR"]
 THEMES_DIR = DIRECTORIES["THEMES_DIR"]
 LINKED_ITEMS = FILES["LINKED_ITEMS"]
 LINKED_ACCOUNTS = FILES["LINKED_ACCOUNTS"]
-LATEST_TRANSACTIONS = FILES["LATEST_TRANSACTIONS"]
+TRANSACTIONS_LIVE = FILES["TRANSACTIONS_LIVE"]
 TRANSACTION_REFRESH_FILE = FILES["TRANSACTION_REFRESH_FILE"]
 DEFAULT_THEME = FILES["DEFAULT_THEME"]
 CURRENT_THEME = FILES["CURRENT_THEME"]
@@ -280,204 +282,6 @@ def accounts_page():
         return render_template("error.html", error="Failed to load accounts data.")
 
 
-# Link token routes
-@app.route("/save_public_token", methods=["POST"])
-def save_public_token():
-    try:
-        if not request.is_json:
-            logger.error("Invalid request: Content-Type must be application/json")
-            return (
-                jsonify({"error": "Invalid Content-Type. Must be application/json."}),
-                400,
-            )
-
-        data = request.get_json()
-        logger.debug(f"Received POST data: {json.dumps(data, indent=2)}")
-
-        public_token = data.get("public_token")
-        if public_token:
-            ensure_directory_exists(TEMP_DIR)  # Ensure the directory exists
-
-            with open(os.path.join(TEMP_DIR, "public_token.txt"), "w") as f:
-                f.write(public_token)
-            logger.info("Public token saved to file")
-
-            # Exchange the public token for an access token
-            access_token = exchange_public_token(public_token)
-            if access_token:
-                # Get item metadata
-                item_id, institution_name = get_item_info(access_token)
-                if item_id:
-                    # Get and save initial account data
-                    save_initial_account_data(access_token, item_id)
-                    logger.info(
-                        f"Linked to {institution_name} successfully with item ID: {item_id}"
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "message": f"Linked to {institution_name} successfully",
-                                "access_token": access_token,
-                            }
-                        ),
-                        200,
-                    )
-                else:
-                    logger.error("Failed to retrieve item metadata")
-                    return jsonify({"error": "Failed to retrieve item metadata"}), 400
-
-            else:
-                logger.error("No public token provided")
-                return jsonify({"error": "No public token provided"}), 400
-    except json.JSONDecodeError as jde:
-        logger.error(f"JSON decode error: {str(jde)}")
-        return jsonify({"error": "Invalid JSON payload", "details": str(jde)}), 400
-    except Exception as e:
-        logger.error(f"Error processing public token: {str(e)}")
-        return (
-            jsonify(
-                {
-                    "error": "Server error while processing public token",
-                    "details": str(e),
-                }
-            ),
-            500,
-        )
-
-
-@app.route("/get_link_token", methods=["GET"])
-def get_link_token():
-    products_param = request.args.get("products")
-    products = products_param.split(",") if products_param else PRODUCTS
-
-    logger.debug(f"Generating link token for products: {products}")
-    link_token = generate_link_token(products)
-    if link_token:
-        logger.info(f"Successfully generated link token with products: {products}")
-        return jsonify({"link_token": link_token})
-    else:
-        logger.error("Failed to create link token")
-        return jsonify({"error": "Failed to create link token"}), 400
-
-
-# Account displays on /accounts route
-@app.route("/get_institutions", methods=["GET"])
-def get_institutions():
-    try:
-        logger.info("Fetching institutions and accounts data...")
-
-        # Load LinkedItems.json
-        try:
-            with open(LINKED_ITEMS) as f:
-                link_items = json.load(f)
-            logger.info(f"Loaded {len(link_items)} items from LinkedItems.json.")
-        except FileNotFoundError:
-            logger.error("LinkedItems.json file not found.")
-            return (
-                jsonify({"status": "error", "message": "LinkedItems.json not found"}),
-                404,
-            )
-        except json.JSONDecodeError as e:
-            logger.error(f"Error decoding LinkedItems.json: {e}")
-            return (
-                jsonify(
-                    {"status": "error", "message": "Error decoding LinkedItems.json"}
-                ),
-                500,
-            )
-
-        # Load LinkedAccounts.json
-        try:
-            with open(LINKED_ACCOUNTS) as f:
-                link_accounts = json.load(f)
-            logger.info(
-                f"Loaded {len(link_accounts)} accounts from LinkedAccounts.json."
-            )
-        except FileNotFoundError:
-            logger.error("LinkedAccounts.json file not found.")
-            return (
-                jsonify(
-                    {"status": "error", "message": "LinkedAccounts.json not found"}
-                ),
-                404,
-            )
-        except json.JSONDecodeError as e:
-            logger.error(f"Error decoding LinkedAccounts.json: {e}")
-            return (
-                jsonify(
-                    {"status": "error", "message": "Error decoding LinkedAccounts.json"}
-                ),
-                500,
-            )
-
-        # Aggregate data by institution
-        logger.info("Aggregating data by institution...")
-        institutions = {}
-
-        for item_id, item_data in link_items.items():
-            institution_name = item_data.get("institution_name", "Unknown Institution")
-            last_successful_update = (
-                item_data.get("status", {})
-                .get("transactions", {})
-                .get("last_successful_update")
-            )
-
-            # Set "Never refreshed" if last_successful_update is null or empty
-            last_successful_update = last_successful_update or "Never refreshed"
-
-            if institution_name not in institutions:
-                institutions[institution_name] = {
-                    "item_id": item_id,
-                    "products": item_data.get("products", []),
-                    "status": item_data.get("status", {}),
-                    "accounts": [],
-                    "last_successful_update": last_successful_update,  # Per institution
-                }
-                logger.debug(
-                    f"Added institution: {institution_name} with last refresh: {last_successful_update}"
-                )
-
-            # Link accounts to institutions with balance adjustment for liabilities
-            linked_accounts = []
-            for account_id, account_data in link_accounts.items():
-                if account_data.get("item_id") == item_id:
-                    balance = account_data.get("balances", {}).get("current", 0)
-                    if account_data.get("type") == "credit":
-                        balance *= -1  # Negate balance for liabilities
-
-                    linked_accounts.append(
-                        {
-                            "account_id": account_id,
-                            "account_name": account_data.get(
-                                "account_name", "Unknown Account"
-                            ),
-                            "type": account_data.get("type", "Unknown"),
-                            "subtype": account_data.get("subtype", "Unknown"),
-                            "balances": {"current": balance},
-                        }
-                    )
-
-            institutions[institution_name]["accounts"].extend(linked_accounts)
-            logger.debug(
-                f"{len(linked_accounts)} accounts linked to {institution_name}"
-            )
-
-        logger.info("Returning aggregated institution data.")
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "institutions": institutions,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error fetching institutions: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-
 @app.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
@@ -687,14 +491,237 @@ def save_group():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+# Link token routes
+@app.route("/save_public_token", methods=["POST"])
+def save_public_token():
+    try:
+        if not request.is_json:
+            logger.error("Invalid request: Content-Type must be application/json")
+            return (
+                jsonify({"error": "Invalid Content-Type. Must be application/json."}),
+                400,
+            )
+
+        data = request.get_json()
+        logger.debug(f"Received POST data: {json.dumps(data, indent=2)}")
+
+        public_token = data.get("public_token")
+        if public_token:
+            ensure_directory_exists(TEMP_DIR)  # Ensure the directory exists
+
+            with open(os.path.join(TEMP_DIR, "public_token.txt"), "w") as f:
+                f.write(public_token)
+            logger.info("Public token saved to file")
+
+            # Exchange the public token for an access token
+            access_token = exchange_public_token(public_token)
+            if access_token:
+                # Get item metadata
+                item_id, institution_name = get_item_info(access_token)
+                if item_id:
+                    # Get and save initial account data
+                    save_initial_account_data(access_token, item_id)
+                    logger.info(
+                        f"Linked to {institution_name} successfully with item ID: {item_id}"
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "message": f"Linked to {institution_name} successfully",
+                                "access_token": access_token,
+                            }
+                        ),
+                        200,
+                    )
+                else:
+                    logger.error("Failed to retrieve item metadata")
+                    return jsonify({"error": "Failed to retrieve item metadata"}), 400
+
+            else:
+                logger.error("No public token provided")
+                return jsonify({"error": "No public token provided"}), 400
+    except json.JSONDecodeError as jde:
+        logger.error(f"JSON decode error: {str(jde)}")
+        return jsonify({"error": "Invalid JSON payload", "details": str(jde)}), 400
+    except Exception as e:
+        logger.error(f"Error processing public token: {str(e)}")
+        return (
+            jsonify(
+                {
+                    "error": "Server error while processing public token",
+                    "details": str(e),
+                }
+            ),
+            500,
+        )
+
+
+@app.route("/get_link_token", methods=["GET"])
+def get_link_token():
+    products_param = request.args.get("products")
+    products = products_param.split(",") if products_param else PRODUCTS
+
+    logger.debug(f"Generating link token for products: {products}")
+    link_token = generate_link_token(products)
+    if link_token:
+        logger.info(f"Successfully generated link token with products: {products}")
+        return jsonify({"link_token": link_token})
+    else:
+        logger.error("Failed to create link token")
+        return jsonify({"error": "Failed to create link token"}), 400
+
+
+# Get institution level aggregate view
+@app.route("/get_institutions", methods=["GET"])
+def get_institutions():
+    try:
+        logger.info("Fetching institutions and accounts data...")
+
+        # Load LinkedItems.json
+        try:
+            with open(LINKED_ITEMS) as f:
+                link_items = json.load(f)
+            logger.info(f"Loaded {len(link_items)} items from LinkedItems.json.")
+        except FileNotFoundError:
+            logger.error("LinkedItems.json file not found.")
+            return (
+                jsonify({"status": "error", "message": "LinkedItems.json not found"}),
+                404,
+            )
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding LinkedItems.json: {e}")
+            return (
+                jsonify(
+                    {"status": "error", "message": "Error decoding LinkedItems.json"}
+                ),
+                500,
+            )
+
+        # Load LinkedAccounts.json
+        try:
+            with open(LINKED_ACCOUNTS) as f:
+                link_accounts = json.load(f)
+            logger.info(
+                f"Loaded {len(link_accounts)} accounts from LinkedAccounts.json."
+            )
+        except FileNotFoundError:
+            logger.error("LinkedAccounts.json file not found.")
+            return (
+                jsonify(
+                    {"status": "error", "message": "LinkedAccounts.json not found"}
+                ),
+                404,
+            )
+        except json.JSONDecodeError as e:
+            logger.error(f"Error decoding LinkedAccounts.json: {e}")
+            return (
+                jsonify(
+                    {"status": "error", "message": "Error decoding LinkedAccounts.json"}
+                ),
+                500,
+            )
+
+        # Aggregate data by institution
+        logger.info("Aggregating data by institution...")
+        institutions = {}
+
+        for item_id, item_data in link_items.items():
+            institution_name = item_data.get("institution_name", "Unknown Institution")
+            last_successful_update = (
+                item_data.get("status", {})
+                .get("transactions", {})
+                .get("last_successful_update")
+            )
+
+            # Set "Never refreshed" if last_successful_update is null or empty
+            last_successful_update = last_successful_update or "Never refreshed"
+
+            if institution_name not in institutions:
+                institutions[institution_name] = {
+                    "item_id": item_id,
+                    "products": item_data.get("products", []),
+                    "status": item_data.get("status", {}),
+                    "accounts": [],
+                    "last_successful_update": last_successful_update,  # Per institution
+                }
+                logger.debug(
+                    f"Added institution: {institution_name} with last refresh: {last_successful_update}"
+                )
+
+            # Link accounts to institutions with balance adjustment for liabilities
+            linked_accounts = []
+            for account_id, account_data in link_accounts.items():
+                if account_data.get("item_id") == item_id:
+                    balance = account_data.get("balances", {}).get("current", 0)
+                    if account_data.get("type") == "credit":
+                        balance *= -1  # Negate balance for liabilities
+
+                    linked_accounts.append(
+                        {
+                            "account_id": account_id,
+                            "account_name": account_data.get(
+                                "account_name", "Unknown Account"
+                            ),
+                            "type": account_data.get("type", "Unknown"),
+                            "subtype": account_data.get("subtype", "Unknown"),
+                            "balances": {"current": balance},
+                        }
+                    )
+
+            institutions[institution_name]["accounts"].extend(linked_accounts)
+            logger.debug(
+                f"{len(linked_accounts)} accounts linked to {institution_name}"
+            )
+
+        logger.info("Returning aggregated institution data.")
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "institutions": institutions,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error fetching institutions: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+def load_transactions_json(file):
+    return load_json(file).get("transactions", [])
+
+
+def validate_transaction(tx):
+    required_keys = ["transaction_id", "date", "amount"]
+    return all(key in tx for key in required_keys)
+
+
+def enrich_transaction(transaction, accounts, items):
+    account_info = accounts.get(transaction["account_id"], {})
+    item_info = items.get(account_info.get("item_id", ""), {})
+    return {
+        "transaction_id": transaction["transaction_id"],
+        "date": transaction["date"],
+        "name": transaction["name"],
+        "amount": transaction["amount"],
+        "category": transaction.get("category", ["Unknown"])[-1],
+        "merchant_name": transaction.get("merchant_name", "Unknown"),
+        "institution_name": account_info.get("institution_name", "Unknown"),
+        "account_name": account_info.get("account_name", "Unknown Account"),
+        "account_type": account_info.get("type", "Unknown"),
+        "account_subtype": account_info.get("subtype", "Unknown"),
+        "last_successful_update": item_info.get("status", {})
+        .get("transactions", {})
+        .get("last_successful_update", "N/A"),
+    }
+
+
 @app.route("/transactions", methods=["GET"])
 def transactions_page():
     try:
-        # Load transactions data from the database or JSON file
-        with open(LATEST_TRANSACTIONS, "r") as f:
-            transactions_data = json.load(f).get("transactions", [])
-
-        # Format transactions for the HTML table
+        transactions = load_transactions_json(TRANSACTIONS_LIVE)
         formatted_transactions = [
             {
                 "date": datetime.strptime(tx["date"], "%Y-%m-%d").strftime("%b %d, %Y"),
@@ -707,101 +734,61 @@ def transactions_page():
                 "account_name": tx.get("account_name", "Unknown Account"),
                 "institution_name": tx.get("institution_name", "Unknown Institution"),
             }
-            for tx in transactions_data
+            for tx in transactions
         ]
-
-        # Render the transactions page
         return render_template("transactions.html", transactions=formatted_transactions)
 
-    except FileNotFoundError:
-        logger.error("LATEST_TRANSACTIONS file not found.")
-        return render_template("error.html", error="Transactions data not available.")
-
-    except json.JSONDecodeError:
-        logger.error("Error decoding LATEST_TRANSACTIONS.")
-        return render_template("error.html", error="Invalid transactions data.")
-
+    except FileNotFoundError as e:
+        logger.error(f"File not found: {str(e)}")
+        return jsonify({"error": f"File not found: {str(e)}"}), 404
+    except json.JSONDecodeError as e:
+        logger.error(f"Invalid JSON format: {str(e)}")
+        return jsonify({"error": f"Invalid JSON format: {str(e)}"}), 400
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        return render_template("error.html", error="An error occurred.")
+        return jsonify({"error": "An unexpected error occurred."}), 500
+
+
+@app.route("/get_transactions", methods=["GET"])
+def load_transactions():
+    try:
+        transactions = load_transactions_json(TRANSACTIONS_LIVE)
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 50))
+        start = (page - 1) * page_size
+        end = start + page_size
+        paginated_transactions = transactions[start:end]
+        return jsonify(
+            {"transactions": paginated_transactions, "total": len(transactions)}
+        )
+    except Exception as e:
+        logger.error(f"Error fetching transactions: {str(e)}")
+        return jsonify({"transactions": [], "total": 0}), 500
 
 
 @app.route("/process_transactions", methods=["POST"])
 def process_transactions():
     try:
-        # Load the temporary transaction file
-        with open(TRANSACTION_REFRESH_FILE, "r") as tf:
-            transactions_data = json.load(tf)
+        existing_transactions = load_transactions_json(TRANSACTIONS_LIVE)
+        transactions = load_transactions_json(TRANSACTION_REFRESH_FILE)
+        accounts = load_json(LINKED_ACCOUNTS)
+        items = load_json(LINKED_ITEMS)
 
-        # Load linked accounts and linked items
-        with open(LINKED_ACCOUNTS, "r") as af:
-            link_accounts = json.load(af)
-        with open(LINKED_ITEMS, "r") as lf:
-            link_items = json.load(lf)
-
-        # Enrich transactions with additional details
-        enriched_transactions = []
-        for transaction in transactions_data.get("transactions", []):
-            account_id = transaction["account_id"]
-            account_info = link_accounts.get(account_id, {})
-            item_info = link_items.get(account_info.get("item_id", ""), {})
-
-            if not account_info:
-                logger.warning(
-                    f"Account ID {account_id} not found in LinkAccounts.json."
-                )
-            if not item_info:
-                logger.warning(
-                    f"Item ID {account_info.get('item_id', 'Unknown')} not found in LinkItems.json."
-                )
-
-            enriched_transactions.append(
-                {
-                    "transaction_id": transaction["transaction_id"],
-                    "date": transaction["date"],
-                    "name": transaction["name"],
-                    "amount": transaction["amount"],
-                    "category": transaction.get("category", ["Unknown"])[-1],
-                    "merchant_name": transaction.get("merchant_name", "Unknown"),
-                    "institution_name": account_info.get("institution_name", "Unknown"),
-                    "account_name": account_info.get("account_name", "Unknown Account"),
-                    "account_type": account_info.get("type", "Unknown"),
-                    "account_subtype": account_info.get("subtype", "Unknown"),
-                    "last_successful_update": item_info.get("status", {})
-                    .get("transactions", {})
-                    .get("last_successful_update", "N/A"),
-                }
-            )
-
-        # Load existing transactions and deduplicate
-        try:
-            with open(LATEST_TRANSACTIONS, "r") as lf:
-                existing_data = json.load(lf)
-                existing_transactions = existing_data.get("transactions", [])
-        except (FileNotFoundError, json.JSONDecodeError):
-            existing_transactions = []
+        enriched_transactions = [
+            enrich_transaction(tx, accounts, items)
+            for tx in transactions
+            if validate_transaction(tx)
+        ]
 
         unique_transactions = {
             tx["transaction_id"]: tx
             for tx in existing_transactions + enriched_transactions
         }
-
-        # Save the combined transactions to the data file
-        with open(LATEST_TRANSACTIONS, "w") as lf:
-            json.dump(
-                {"transactions": list(unique_transactions.values())}, lf, indent=4
-            )
-
-        # Archive the processed transaction file
-        archive_file = (
-            f"{TRANSACTION_REFRESH_FILE}.{datetime.now().strftime('%Y%m%d%H%M%S')}"
+        save_json_with_backup(
+            TRANSACTIONS_LIVE, {"transactions": list(unique_transactions.values())}
         )
-        os.rename(TRANSACTION_REFRESH_FILE, archive_file)
 
-        logger.info(
-            f"Processed {len(enriched_transactions)} transactions. "
-            f"Total transactions now: {len(unique_transactions)}."
-        )
+        logger.info(f"Processed {len(enriched_transactions)} transactions.")
         return (
             jsonify(
                 {"status": "success", "message": "Transactions processed successfully."}
@@ -809,107 +796,6 @@ def process_transactions():
             200,
         )
 
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {e}")
-        return jsonify({"error": f"File not found: {e}"}), 404
-    except json.JSONDecodeError as e:
-        logger.error(f"Error decoding JSON: {e}")
-        return jsonify({"error": f"Invalid JSON format: {e}"}), 400
-    except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return (
-            jsonify({"error": "An error occurred while processing transactions."}),
-            500,
-        )
-
-    # Main Dashboard Visuals
-    try:
-        # Load the temporary transaction file
-        with open(TRANSACTION_REFRESH_FILE, "r") as tf:
-            transactions_data = json.load(tf)
-
-        # Load linked accounts and linked items
-        with open(LINKED_ACCOUNTS, "r") as af:
-            link_accounts = json.load(af)
-        with open(LINKED_ITEMS, "r") as lf:
-            link_items = json.load(lf)
-
-        # Enrich transactions with additional details
-        enriched_transactions = []
-        for transaction in transactions_data.get("transactions", []):
-            account_id = transaction["account_id"]
-            account_info = link_accounts.get(account_id, {})
-            item_info = link_items.get(account_info.get("item_id", ""), {})
-
-            if not account_info:
-                logger.warning(
-                    f"Account ID {account_id} not found in LinkAccounts.json."
-                )
-            if not item_info:
-                logger.warning(
-                    f"Item ID {account_info.get('item_id', 'Unknown')} not found in LinkItems.json."
-                )
-
-            enriched_transactions.append(
-                {
-                    "transaction_id": transaction["transaction_id"],
-                    "date": transaction["date"],
-                    "name": transaction["name"],
-                    "amount": transaction["amount"],
-                    "category": transaction.get("category", ["Unknown"])[-1],
-                    "merchant_name": transaction.get("merchant_name", "Unknown"),
-                    "institution_name": account_info.get("institution_name", "Unknown"),
-                    "account_name": account_info.get("account_name", "Unknown Account"),
-                    "account_type": account_info.get("type", "Unknown"),
-                    "account_subtype": account_info.get("subtype", "Unknown"),
-                    "last_successful_update": item_info.get("status", {})
-                    .get("transactions", {})
-                    .get("last_successful_update", "N/A"),
-                }
-            )
-
-        # Load existing transactions and deduplicate
-        try:
-            with open(LATEST_TRANSACTIONS, "r") as lf:
-                existing_data = json.load(lf)
-                existing_transactions = existing_data.get("transactions", [])
-        except (FileNotFoundError, json.JSONDecodeError):
-            existing_transactions = []
-
-        unique_transactions = {
-            tx["transaction_id"]: tx
-            for tx in existing_transactions + enriched_transactions
-        }
-
-        # Save the combined transactions to the data file
-        with open(LATEST_TRANSACTIONS, "w") as lf:
-            json.dump(
-                {"transactions": list(unique_transactions.values())}, lf, indent=4
-            )
-
-        # Archive the processed transaction file
-        archive_file = (
-            f"{TRANSACTION_REFRESH_FILE}.{datetime.now().strftime('%Y%m%d%H%M%S')}"
-        )
-        os.rename(TRANSACTION_REFRESH_FILE, archive_file)
-
-        logger.info(
-            f"Processed {len(enriched_transactions)} transactions. "
-            f"Total transactions now: {len(unique_transactions)}."
-        )
-        return (
-            jsonify(
-                {"status": "success", "message": "Transactions processed successfully."}
-            ),
-            200,
-        )
-
-    except FileNotFoundError as e:
-        logger.error(f"File not found: {e}")
-        return jsonify({"error": f"File not found: {e}"}), 404
-    except json.JSONDecodeError as e:
-        logger.error(f"Error decoding JSON: {e}")
-        return jsonify({"error": f"Invalid JSON format: {e}"}), 400
     except Exception as e:
         logger.error(f"Unexpected error: {e}")
         return (
@@ -919,50 +805,11 @@ def process_transactions():
 
 
 # Main Dashboard Visuals
-@app.route("/get_new_transactions", methods=["GET"])
-def load_transactions():
-    try:
-        # Load transactions data from the database or JSON file
-        with open(LATEST_TRANSACTIONS, "r") as f:
-            transactions_data = json.load(f).get("transactions", [])
-
-        # Format transactions for the HTML table
-        formatted_transactions = [
-            {
-                "date": datetime.strptime(tx["date"], "%Y-%m-%d").strftime("%b %d, %Y"),
-                "name": tx.get("name", "N/A"),
-                "amount": f"${abs(tx['amount']):,.2f}"
-                if tx["amount"] < 0
-                else f"${tx['amount']:,.2f}",
-                "category": tx.get("category", ["Uncategorized"])[-1],
-                "merchant_name": tx.get("merchant_name", "Unknown"),
-                "account_name": tx.get("account_name", "Unknown Account"),
-                "institution_name": tx.get("institution_name", "Unknown Institution"),
-            }
-            for tx in transactions_data
-        ]
-
-        # Render the transactions page
-        return render_template("transactions.html", transactions=formatted_transactions)
-
-    except FileNotFoundError:
-        logger.error("LATEST_TRANSACTIONS file not found.")
-        return render_template("error.html", error="Transactions data not available.")
-
-    except json.JSONDecodeError:
-        logger.error("Error decoding LATEST_TRANSACTIONS.")
-        return render_template("error.html", error="Invalid transactions data.")
-
-    except Exception as e:
-        logger.error(f"Unexpected error: {str(e)}")
-        return render_template("error.html", error="An error occurred.")
-
-
 @app.route("/api/cash_flow", methods=["GET"])
 def get_cash_flow():
     try:
         # Load transactions from the JSON file
-        transactions = load_json(LATEST_TRANSACTIONS).get("transactions", [])
+        transactions = load_json(TRANSACTIONS_LIVE).get("transactions", [])
 
         # Aggregate income and expenses by month
         monthly_cash_flow = {}
@@ -989,7 +836,10 @@ def get_cash_flow():
         # Prepare data for the frontend
         data = [
             {"month": month, **values}
-            for month, values in sorted(monthly_cash_flow.items())
+            for month, values in sorted(
+                monthly_cash_flow.items(),
+                key=lambda x: datetime.strptime(x[0], "%B %Y"),
+            )
         ]
 
         # Calculate total income and expenses (optional metadata for analytics)
@@ -1011,14 +861,14 @@ def get_cash_flow():
         )
 
     except FileNotFoundError:
-        logger.error("LATEST_TRANSACTIONS file not found.")
+        logger.error("TRANSACTIONS_LIVE file not found.")
         return (
             jsonify({"status": "error", "message": "Transactions file not found."}),
             404,
         )
 
     except json.JSONDecodeError:
-        logger.error("Error decoding LATEST_TRANSACTIONS.")
+        logger.error("Error decoding TRANSACTIONS_LIVE.")
         return (
             jsonify(
                 {"status": "error", "message": "Invalid transactions file format."}
@@ -1031,7 +881,7 @@ def get_cash_flow():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# --- Route for settings.html
+# --- Route for settings and themes -- FOLD HERE
 @app.route("/settings")
 def settings():
     """Render the settings page for selecting themes."""
@@ -1042,85 +892,36 @@ def settings():
 @app.route("/themes", methods=["GET"])
 def fetch_themes():
     """Fetch available themes and the current theme."""
-    themes = get_available_themes()
-    current_theme_file = CURRENT_THEME
-    default_theme_string = str(DEFAULT_THEME)
     try:
-        current_theme = current_theme_file.read_text().strip()
-        logger.debug(f"Current active theme: {default_theme_string}")
-    except FileNotFoundError:
-        logger.debug(
-            f"{current_theme_file} not found, defaulting to {default_theme_string}"
-        )
-        current_theme = default_theme_string
-
-    if themes:
-        logger.debug(f"Found themes at {current_theme_file}")
+        themes = get_available_themes()
+        current_theme = get_current_theme()
         return jsonify({"themes": themes, "current_theme": current_theme}), 200
-    else:
-        return (
-            jsonify({"error": "No themes available", "current_theme": current_theme}),
-            404,
-        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/set_theme", methods=["POST"])
-def set_theme():
-    """Set the selected theme."""
+def change_theme():
+    """Set a new theme."""
     data = request.json
-    selected_theme = data.get("theme")
+    theme_name = data.get("theme")
 
-    if not selected_theme:
+    if not theme_name:
         return jsonify({"error": "No theme provided"}), 400
 
-    if selected_theme not in get_available_themes():
-        return jsonify({"error": f"Theme '{selected_theme}' not found"}), 404
-
-    current_theme_file = CURRENT_THEME
     try:
-        current_theme_file.write_text(selected_theme)
-        logger.debug(f"Theme updated to: {selected_theme}")
-        return jsonify({"success": True, "theme": selected_theme}), 200
-    except Exception as e:
-        logger.error(f"Error updating theme: {e}")
-        return jsonify({"error": str(e)}), 500
+        if set_theme(theme_name):
+            return jsonify({"success": True, "theme": theme_name}), 200
+        else:
+            return jsonify({"error": "Failed to set theme"}), 500
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 404
 
 
 @app.context_processor
 def inject_theme():
-    """
-    Determines the current theme to use based on the following order:
-    1. A user-specified theme in the CURRENT_THEME file.
-    2. A page-specific theme (e.g., 'dashboard.css').
-    3. The default theme ('default.css').
-
-    Returns:
-        dict: A dictionary containing the 'current_theme' key.
-    """
-    try:
-        # Step 1: Attempt to read the user-specified theme
-        if CURRENT_THEME.exists():
-            with open(CURRENT_THEME, "r") as f:
-                current_theme = f.read().strip()
-            theme_path = THEMES_DIR / current_theme
-            if theme_path.exists():
-                return {"current_theme": current_theme}
-
-        # Step 2: Determine the page-specific theme
-        current_page = request.path.split("/")[-1] or "dashboard"
-        page_name = current_page.split(".")[0]  # Extract base name (e.g., 'dashboard')
-        page_theme = f"{page_name}.css"
-        page_theme_path = THEMES_DIR / page_theme
-
-        if page_theme_path.exists():
-            return {"current_theme": page_theme}
-
-        # Step 3: Fallback to the default theme
-        return {"current_theme": DEFAULT_THEME.name}
-
-    except Exception as e:
-        logger.error(f"Error determining theme: {e}")
-        return {"current_theme": DEFAULT_THEME.name}
+    """Inject the current theme into the template context."""
+    return {"current_theme": get_current_theme()}
 
 
 # Debugging route
