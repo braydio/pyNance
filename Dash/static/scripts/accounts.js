@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
-  // Fetch institutions and render them with institution-level checkboxes
+  // Fetch institutions and render them aggregate at the institution-level
   function fetchAndRenderInstitutions() {
     fetchData("/get_institutions")
       .then((data) => {
