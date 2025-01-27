@@ -11,6 +11,7 @@ DIRECTORIES = {
     "TEMP_DIR": BASE_DIR / "temp",
     "LOGS_DIR": BASE_DIR / "logs",
     "THEMES_DIR": BASE_DIR / "static/themes",
+    "ARCHIVE_DIR": BASE_DIR / "archive",
 }
 
 # Ensure directories exist
@@ -59,11 +60,12 @@ PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 FILES = {
     "LINKED_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkAccounts.json",
     "LINKED_ITEMS": DIRECTORIES["DATA_DIR"] / "LinkItems.json",
-    "LATEST_TRANSACTIONS": DIRECTORIES["DATA_DIR"] / "Transactions.json",
+    "TRANSACTIONS_LIVE": DIRECTORIES["DATA_DIR"] / "Transactions.json",
     "LATEST_RESPONSE": DIRECTORIES["TEMP_DIR"] / "ResponseTransactions.json",
     "TRANSACTION_REFRESH_FILE": DIRECTORIES["TEMP_DIR"] / "TransactionRefresh.json",
     "DEFAULT_THEME": DIRECTORIES["THEMES_DIR"] / "default.css",
     "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
+    "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
 }
 
 # Log directory and file setup
