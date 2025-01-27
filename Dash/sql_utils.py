@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from config import logging
 from sqlalchemy import JSON, Column, Date, Float, Integer, String, create_engine
 from sqlalchemy.exc import IntegrityError
@@ -11,7 +13,9 @@ Base = declarative_base()
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True, autoincrement=True)
-    transaction_id = Column(String, unique=True, nullable=False)
+    transaction_id = Column(
+        String, unique=True, nullable=False
+    )  # Prevent duplicate transactions
     account_id = Column(String, nullable=False)
     date = Column(Date, nullable=False)
     name = Column(String, nullable=False)
@@ -19,7 +23,9 @@ class Transaction(Base):
     category = Column(String, nullable=True)
     merchant_name = Column(String, nullable=True)
     institution_name = Column(String, nullable=True)
-    raw_data = Column(JSON, nullable=True)  # Optional raw API response
+    raw_data = Column(
+        JSON, nullable=True
+    )  # Store raw API response (optional for debugging)
 
 
 # Define the RecentRefresh model
@@ -30,7 +36,7 @@ class RecentRefresh(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     total_transactions = Column(Integer, nullable=False)
-    raw_data = Column(JSON, nullable=True)  # Optional raw API response
+    raw_data = Column(JSON, nullable=True)  # Optional raw API response for debugging
 
 
 # Database setup
@@ -56,22 +62,25 @@ def save_transactions_to_db(transactions, linked_accounts):
     """
     for transaction in transactions:
         try:
+            # Convert the date string to a datetime.date object
+            transaction_date = datetime.strptime(transaction["date"], "%Y-%m-%d").date()
+
             # Create a new transaction object
             new_transaction = Transaction(
                 transaction_id=transaction["transaction_id"],
                 account_id=transaction["account_id"],
-                date=transaction["date"],
+                date=transaction_date,  # Use the converted date object
                 name=transaction["name"],
                 amount=transaction["amount"],
                 category=transaction.get("category", ["Unknown"])[-1],
                 merchant_name=transaction.get("merchant_name", "Unknown"),
-                institution_name=linked_accounts[transaction["account_id"]].get(
+                institution_name=linked_accounts.get(transaction["account_id"], {}).get(
                     "institution_name", "Unknown"
                 ),
                 raw_data=transaction,  # Store raw data for debugging or extensibility
             )
 
-            # Add to session
+            # Add to session and commit
             session.add(new_transaction)
             session.commit()
 
@@ -114,7 +123,7 @@ def save_recent_refresh_to_db(
             raw_data=raw_data,
         )
 
-        # Add to session
+        # Add to session and commit
         session.add(recent_refresh)
         session.commit()
 
