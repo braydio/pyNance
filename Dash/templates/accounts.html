@@ -4,70 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme)}}">
-    <style>
-        /* Custom CSS for Accounts Page */
-        body, html {
-            margin: 0;
-            padding: 0;
-            font-family: "Roboto", sans-serif;
-        }
-        header {
-            background-color: #282828;
-            color: #fabd2f;
-            text-align: center;
-            padding: 1rem;
-        }
-        .menu {
-            display: flex;
-            justify-content: center;
-            gap: 1rem;
-            margin-top: 1rem;
-        }
-        .menu button {
-            padding: 0.6rem 1rem;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-        }
-        main {
-            padding: 2rem;
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 1rem;
-        }
-        #institutions-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-        .institution {
-            background: #282828;
-            padding: 1rem;
-            border-radius: 6px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #504945;
-            padding: 8px;
-            text-align: left;
-        }
-    </style>
-    <title>Accounts Management</title>
+    <title>Dashroading</title>
 </head>
 <body>
     <header>
         <div>
             <h1>Accounts</h1>
+            <h3>dot Brayden.com</h3>
         </div>
         <nav class="menu">
-            <button onclick="window.location.href='/'">Dashboard</button>
-            <button onclick="window.location.href='/transactions'">Transactions</button>
-            <button onclick="window.location.href='/accounts'">Trends</button>
-            <button onclick="window.location.href='/accounts'">Reports</button>
-            <button onclick="window.location.href='/settings'">Settings</button>
+            <nav class="menu">
+                <button onclick="window.location.href='/'">Dashboard</button>
+                <button onclick="window.location.href='/accounts'">Accounts</button>
+                <button onclick="window.location.href='/transactions'">Transactions</button>
+                <button onclick="window.location.href='/settings'">Settings</button>
+            </nav>
+            <style>
+            </style>
         </nav>
     </header>
     <main>
@@ -92,7 +45,7 @@
             </div>
 
             <p id="status"></p>
-        </div>    
+        </div>
         <div id="institutions-container">
             <!-- Institutions and accounts will be dynamically loaded here -->
         </div>
@@ -103,5 +56,8 @@
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <!-- Accounts JavaScript -->
     <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
+    <!-- Chart JavaScript-->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </body>
 </html>

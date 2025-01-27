@@ -7,47 +7,80 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
+    <style>
+        /* Compact table styles */
+        table {
+            font-size: 12px; /* Smaller font size for compact layout */
+        }
+    </style>
 </head>
 <body>
     <header>
-        <h1>Latest Transactions</h1>
+        <div>
+            <h1>Transactions</h1>
+            <h3>and more transactions</h3>
+        </div>
+    </div>
         <nav class="menu">
-            <button onclick="window.location.href='/'">Dashboard</button>
-            <button onclick="window.location.href='/accounts'">Accounts</button>
-            <button onclick="window.location.href='/spending_by_category'">Trends</button>
-            <button onclick="window.location.href='/reports'">Reports</button>
-            <button onclick="window.location.href='/settings'">Settings</button>
-          </nav>
+                <button onclick="window.location.href='/'">Dashboard</button>
+                <button onclick="window.location.href='/accounts'">Accounts</button>
+                <button onclick="window.location.href='/transactions'">Transactions</button>
+                <button onclick="window.location.href='/settings'">Settings</button>
+        </nav>
     </header>
     <main>
-        <table id="transactions-table" class="display">
+        <div class="controls">
+            <!-- Section Header -->
+            <div id="transactions-management-header">
+                <h2>With a Sidebar Area</h2>
+                <p>There will be buttons here and filters. This will allow for advanced functionalities. They will be very advanced and functional.</p>
+                <!-- Link New Account Button -->
+                <button id="side-button" onclick="">No Button</button>
+            </div>
+
+            <!-- Group Management -->
+            <div id="group-management">
+                <h2>Do A Thing</h2>
+                <p>This text field will do something eventually, and when it does you will want to know about it.</p>
+                <input type="text" id="group-name" placeholder="Enter group name" />
+                <button id="lower-side-button" onclick="">Do Not Click</button>
+                <!-- Refresh selected accounts -->
+                <button id="lower-side-button2" onclick="">No click</button>
+                <p id="group-status"></p>
+            </div>
+
+            <p id="status"></p>
+        </div>
+        <table id="transactions-table" class="display compact">
             <thead>
                 <tr>
                     <th>Date</th>
+                    <th>Amount</th>
                     <th>Transaction Name</th>
-                    <th>Merchant</th>
                     <th>Category</th>
-                    <th>Amount (USD)</th>
-                    <th>Institution</th>
+                    <th>Merchant</th>
                     <th>Account Name</th>
-                    <th>Account Type</th>
-                    <th>Last Update</th>
+                    <th>Institution</th>
                 </tr>
             </thead>
             <tbody>
-                {% for transaction in transactions %}
-                <tr>
-                    <td>{{ transaction.date }}</td>
-                    <td>{{ transaction.name }}</td>
-                    <td>{{ transaction.merchant_name }}</td>
-                    <td>{{ transaction.category }}</td>
-                    <td>{{ transaction.amount }}</td>
-                    <td>{{ transaction.institution_name }}</td>
-                    <td>{{ transaction.account_name }}</td>
-                    <td>{{ transaction.account_type }} - {{ transaction.account_subtype }}</td>
-                    <td>{{ transaction.last_successful_update }}</td>
-                </tr>
-                {% endfor %}
+                {% if transactions %}
+                    {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date }}</td>
+                        <td class="{% if transaction.amount.startswith('(') %}negative{% endif %}">{{ transaction.amount }}</td>
+                        <td>{{ transaction.name }}</td>
+                        <td>{{ transaction.category }}</td>
+                        <td>{{ transaction.merchant_name }}</td>
+                        <td>{{ transaction.account_name }}</td>
+                        <td>{{ transaction.institution_name }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="7" style="text-align: center;">No transactions available.</td>
+                    </tr>
+                {% endif %}
             </tbody>
         </table>
     </main>
@@ -59,14 +92,19 @@
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
     <script>
         $(document).ready(function () {
-            // Initialize DataTable with options
             $('#transactions-table').DataTable({
-                pageLength: 10, // Number of rows per page
+                pageLength: 20, // Show 20 rows per page
                 ordering: true, // Enable column sorting
-                searching: true, // Enable search
+                order: [[0, 'desc']], // Default sort by Date column (descending)
+                columnDefs: [
+                    { type: 'num', targets: 4 } // Enable numeric sorting for Amount column
+                ],
                 language: {
-                    search: "Filter records:", // Customize search placeholder
+                    search: "Filter transactions:", // Custom search text
+                    emptyTable: "No transactions to display." // Custom empty table message
                 },
+                scrollY: "60vh", // Enable vertical scrolling for large datasets
+                scrollCollapse: true, // Collapse the table to fit the container
             });
         });
     </script>

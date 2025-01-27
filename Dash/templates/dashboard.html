@@ -6,7 +6,6 @@
   <title>Finance Dashroad</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Road+Rage&family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
 </head>
 <body>
@@ -16,24 +15,29 @@
       <h3>finance</h3>
     </div>
     <nav class="menu">
+      <button onclick="window.location.href='/'">Dashboard</button>
       <button onclick="window.location.href='/accounts'">Accounts</button>
       <button onclick="window.location.href='/transactions'">Transactions</button>
-      <button onclick="window.location.href='/'">Trends</button>
-      <button onclick="window.location.href='/'">Reports</button>
       <button onclick="window.location.href='/settings'">Settings</button>
     </nav>
   </header>
   <main>
     <div class="visualization">
-      <div class="monthly-comparison">
-        <h2>Monthly Income vs Spending</h2>
-        <canvas id="incomeSpendingChart"></canvas>
+      <div class="net-income-vs-spending">
+        <h2>Net Income vs Spending</h2>
+        <canvas id="netIncomeSpendingChart"></canvas>
       </div>
-      
-    </div>
-      
+      <div class="category-breakdown">
+        <h2>Spending by Category</h2>
+        <canvas id="categoryBreakdownChart"></canvas>
+      </div>
+      <div class="income-spending-trends">
+        <h2>Income & Spending Trends</h2>
+        <canvas id="incomeSpendingTrendsChart"></canvas>
+      </div>
+   </div>
     <div class="transactions">
-      <h2>Transactions</h2>
+      <h3>Transactions</h3>
       <table>
         <thead>
           <tr>
@@ -72,9 +76,14 @@
       const footer = document.querySelector("footer");
       const htmlFileName = location.pathname.split("/").pop() || "dashboard.html";
       const themeFileName = document.getElementById("theme-stylesheet").getAttribute("href").split("/").pop();
-      footer.innerHTML = `&copy; HTML File: ${htmlFileName} | Theme: ${themeFileName}`;
+
     });
   </script>
   <script src="/static/scripts/finance-dashroad.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <link id="current-theme" rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+
+
 </body>
 </html>

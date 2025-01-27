@@ -182,6 +182,16 @@ footer {
   background: #191724;
 }
 
+.positive {
+  color: green;
+  font-weight: bold;
+}
+
+.negative {
+  color: red;
+  font-weight: bold;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
   header {

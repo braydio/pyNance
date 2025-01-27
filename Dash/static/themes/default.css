@@ -1,240 +1,200 @@
 /* General Reset */
-body, html {
-  margin: 0;
-  padding: 0;
-  font-family: "Roboto", sans-serif;
-  background-color: #1d2021; /* Gruvbox dark theme */
-  color: #ebdbb2; /* Gruvbox light beige */
-  overflow-y: auto;
-  line-height: 1.6;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* Header Styling */
+/* Body and HTML */
+html, body {
+    font-family: "Inter", sans-serif;
+    background-color: #181818; /* Muted dark gray background */
+    color: #d1d5db; /* Soft gray text */
+    line-height: 1.6;
+    height: 100%;
+}
+
+/* Header */
 header {
-  background-color: #282828; /* Gruvbox medium dark */
-  color: #fabd2f; /* Gruvbox yellow */
-  padding: 1rem 2rem;
-  text-align: center;
-  border-bottom: 2px solid #fabd2f;
+    background-color: #1f1f1f; /* Darker muted gray */
+    color: #e5e7eb; /* Light muted gray */
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #3f3f3f; /* Subtle darker border */
 }
 
 header h1 {
-  font-size: 1.8rem;
-  margin: 0;
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
 .menu {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-top: 1rem;
+    display: flex;
+    gap: 1rem;
 }
 
 .menu button {
-  background: none;
-  color: #fabd2f;
-  border: 1px solid #fabd2f;
-  padding: 0.6rem 1rem;
-  font-size: 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
+    background: none;
+    color: #9ca3af; /* Muted light gray */
+    border: 1px solid #4b5563; /* Dark muted border */
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
 }
 
 .menu button:hover {
-  background-color: #fabd2f;
-  color: #1d2021;
+    background-color: #374151; /* Subtle hover highlight */
+    color: #f9fafb; /* Brighter hover text */
 }
 
-/* Main Content Styling */
+/* Main Layout */
 main {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  background-color: #3c3836; /* Gruvbox brownish-gray */
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 3fr; /* Sidebar and main content */
+    gap: 2rem;
 }
 
-main p {
-  font-size: 1.2rem;
-  margin-bottom: 1.5rem;
-  color: #ebdbb2;
-}
-
-main h2 {
-  font-size: 1.5rem;
-  margin-bottom: 1rem;
-  color: #b8bb26; /* Gruvbox green */
-}
-
-/* Controls Styling */
+/* Sidebar Styling */
 .controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  background-color: #504945; /* Gruvbox medium dark */
-  padding: 1rem;
-  border-radius: 8px;
+    background-color: #1f1f1f;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #2c2c2c;
 }
 
-.controls input[type="text"] {
-  width: 100%;
-  max-width: 300px;
-  padding: 0.6rem;
-  background-color: #3c3836;
-  border: 1px solid #665c54; /* Gruvbox subtle brown */
-  border-radius: 4px;
-  color: #ebdbb2;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.3s;
+.controls input[type="text"], .controls select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    background-color: #111827; /* Muted dark input background */
+    color: #e5e7eb; /* Soft muted text */
+    border: 1px solid #4b5563; /* Dark border */
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
-.controls input[type="text"]:focus {
-  border-color: #fabd2f; /* Gruvbox yellow focus */
+.controls input[type="text"]:focus, .controls select:focus {
+    border-color: #9ca3af; /* Highlighted border */
+    box-shadow: 0 0 6px rgba(156, 163, 175, 0.5); /* Soft glow */
 }
 
 .controls button {
-  background: none;
-  color: #83a598; /* Gruvbox cyan */
-  border: 1px solid #83a598;
-  padding: 0.8rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
+    background-color: #4b5563; /* Neutral muted button */
+    color: #f9fafb; /* Light text */
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
 
 .controls button:hover {
-  background-color: #83a598;
-  color: #1d2021;
+    background-color: #6b7280; /* Slightly lighter hover */
+    box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);
 }
 
-/* Grid Layout for Institutions and Tables */
-#institutions-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: 1.5rem;
+/* Visualization Section */
+.visualization, .cash-flow, .budget, .reminders {
+    background-color: #1f1f1f; /* Match controls */
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #2c2c2c;
 }
 
-.institution {
-  background-color: #282828; /* Gruvbox medium dark */
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
+.visualization h2, .cash-flow h2, .budget h2, .reminders h2 {
+    font-size: 1.5rem;
+    color: #9ca3af; /* Subtle gray */
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3f3f3f; /* Muted border */
+    padding-bottom: 0.5rem;
 }
 
-.institution-row {
-  cursor: pointer;
-  font-weight: bold;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-
-.institution-row input[type="checkbox"] {
-  transform: scale(1.2);
-}
-
-/* Table Styling */
+/* Tables */
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: #1f1f1f;
 }
 
-table.hidden {
-  display: none;
+table th, table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #2c2c2c;
+    color: #d1d5db;
 }
 
-th {
-  background-color: #504945;
-  color: #fabd2f;
-  font-weight: bold;
-  padding: 0.8rem;
+table th {
+    background-color: #2c2c2c;
+    color: #9ca3af; /* Softer gray */
+    font-weight: bold;
 }
 
-td {
-  background-color: #3c3836;
-  color: #ebdbb2;
-  padding: 0.8rem;
+table tr:nth-child(even) {
+    background-color: #111827; /* Slight row alternation */
 }
 
-table, th, td {
-  border: 1px solid #665c54;
+table tr:hover {
+    background-color: #374151; /* Highlight row hover */
+    color: #f9fafb; /* Brighter text on hover */
 }
 
-/* Grouping Section Styling */
-#group-management {
-  margin-bottom: 2rem;
-  padding: 1rem;
-  background-color: #3c3836;
-  border-radius: 8px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-}
-
-#group-management input[type="text"] {
-  width: 100%;
-  max-width: 400px;
-  padding: 0.6rem;
-  background-color: #282828;
-  border: 1px solid #665c54;
-  border-radius: 4px;
-  color: #ebdbb2;
-  font-size: 1rem;
-  outline: none;
-  margin-bottom: 1rem; /* Added margin for spacing */
-}
-
-#group-management input[type="text"]:focus {
-  border-color: #fabd2f;
-}
-
-#group-management button {
-  background: none;
-  color: #83a598;
-  border: 1px solid #83a598;
-  padding: 0.8rem 1.2rem;
-  font-size: 1rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background-color 0.3s, color 0.3s;
-}
-
-#group-management button:hover {
-  background-color: #83a598;
-  color: #1d2021;
-}
-
-
-.hidden {
-  display: none;
-}
-
-/* Footer Styling */
+/* Footer */
 footer {
-  background-color: #282828;
-  color: #928374;
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.875rem;
-  border-top: 2px solid #fabd2f;
+    background-color: #1f1f1f;
+    color: #9ca3af;
+    text-align: center;
+    padding: 1rem;
+    border-top: 2px solid #3f3f3f;
+    font-size: 0.875rem;
 }
 
-/* Media Queries for Responsiveness */
-@media (max-width: 768px) {
-  .controls {
-    flex-direction: column;
-    align-items: stretch;
-  }
+/* ID Styles */
+#cashFlowChart, #incomeSpendingChart {
+    background-color: #181818;
+    border: 1px solid #2c2c2c;
+    border-radius: 8px;
+}
 
-  #institutions-container {
-    grid-template-columns: 1fr;
-  }
+/* Class Styles */
+.transactions {
+    margin-top: 2rem;
+}
+
+.transactions h2 {
+    color: #bc9fa5; /* Muted red for emphasis */
+}
+
+/* Hover and Transition Effects */
+.institution-row:hover {
+    background-color: #374151;
+    color: #f9fafb;
+    cursor: pointer;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    main {
+        grid-template-columns: 1fr; /* Single column layout for smaller screens */
+    }
+
+    .menu {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu button {
+        padding: 0.8rem;
+    }
 }
