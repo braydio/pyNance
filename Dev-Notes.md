@@ -17,17 +17,21 @@ Oh good, you found it.
 
 # Latest - Brayden - Processing API Response for Transactions
 
-### Process Transactions Function
+# Process Transactions Function
 
 ## Overview
-The `process_transactions` function processes transaction data from the temporary file (`TRANSACTION_REFRESH_FILE`), enriches it with account and item details, and saves the enriched data to the permanent file (`LATEST_TRANSACTIONS`).
+The `process_transactions` function processes transaction data from the temporary file (`TRANSACTION_REFRESH_FILE`), enriches it with account and item details, and saves the enriched data to the permanent file (`LATEST_TRANSACTIONS`). It includes a 24-hour cooldown to prevent frequent refreshes.
 
 ## Workflow
 1. **File Loading**:
    - Reads raw transaction data from `TRANSACTION_REFRESH_FILE`.
    - Loads `LINKED_ACCOUNTS` and `LINKED_ITEMS` for enriching transactions.
 
-2. **Data Enrichment**:
+2. **24-Hour Cooldown**:
+   - Checks the `last_successful_update` from `LINKED_ITEMS` to determine the time since the last refresh.
+   - If the last refresh was less than 24 hours ago, the function returns a message indicating the remaining cooldown time.
+
+3. **Data Enrichment**:
    - Adds the following details to each transaction:
      - `institution_name`
      - `account_name`
@@ -35,26 +39,45 @@ The `process_transactions` function processes transaction data from the temporar
      - `account_subtype`
      - `last_successful_update`
 
-3. **Data Saving**:
+4. **Data Saving**:
    - Saves enriched transactions to `LATEST_TRANSACTIONS` in JSON format.
+   - Updates the `last_successful_update` field in `LINKED_ITEMS` with the current timestamp.
 
-4. **Error Handling**:
+5. **Error Handling**:
    - Handles missing files, invalid JSON formats, and unexpected errors with detailed logs and meaningful API responses.
 
 ## API Endpoint
 - **Route**: `/process_transactions`
 - **Method**: `POST`
+- **Behavior**:
+  - Checks for a 24-hour cooldown before proceeding.
+  - Processes and saves transactions if the cooldown period has elapsed.
 - **Response**:
   - Success: 
     ```json
     { "status": "success", "message": "Transactions processed successfully." }
     ```
+  - Cooldown: 
+    ```json
+    {
+      "status": "waiting",
+      "message": "Last refresh was X hours ago. Please wait Y hours before refreshing again."
+    }
+    ```
   - Errors: Returns appropriate error messages for missing files or invalid JSON.
 
-## Example Usage
-1. Trigger the function via a POST request after fetching/refreshing transactions.
-2. The enriched data is saved to `LATEST_TRANSACTIONS` for rendering on the transactions page or further processing.
+## Example Workflow
+1. **Trigger the Function**:
+   - Send a POST request after refreshing transactions to process and save them.
+2. **Cooldown Check**:
+   - If the last refresh occurred less than 24 hours ago, the function returns the remaining wait time.
+3. **Data Enrichment**:
+   - Enriches transactions with details from `LINKED_ACCOUNTS` and `LINKED_ITEMS`.
+4. **Data Persistence**:
+   - Saves enriched transactions to `LATEST_TRANSACTIONS`.
+   - Updates the `last_successful_update` timestamp in `LINKED_ITEMS`.
 
 ## Notes
-- Ensure the `TRANSACTION_REFRESH_FILE` is updated with the latest raw transactions before calling this endpoint.
-- This function is designed to streamline transaction enrichment and storage.
+- Ensure the `TRANSACTION_REFRESH_FILE` contains the latest raw transactions before invoking this endpoint.
+- This function prevents overuse of API calls through its 24-hour cooldown mechanism, ensuring optimized refresh workflows.
+- The cooldown message includes clear feedback about how much time remains before the next refresh is allowed.
