@@ -1,7 +1,0 @@
-New requirements:
-    - sqlalchemy
-
-    After activating your .venv, run (from the root dir; pyNance/) 
-
-        `pip install -r requirements.txt`
-
