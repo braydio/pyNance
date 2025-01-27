@@ -1,23 +1,8 @@
-We can update this file with development notes - process improvement idease - new functionalities ideas etc. Copying in the latest dev notes from the README. Also see the guide for the dev-tools below.
-
-### Current Development State (1/26)
-- Plaid Link is fully integrated. SQL Server initialized. 
-    - I'm using DB Browser for SQL DB Mgmt
-    - Currently all API responses are saved as JSON files in Dash/data where they are loaded by the handlers.
-        - See the MainDash.py backend for the account refresh and account link logic - it's easier to follow IMO.
-    - TO-DO includes finish polished the Account Refresh logic, passing the data correctly to the DB.
-        - Not sure if we want to use SQL and ditch the JSON logic, or use JSON for the recent activity and SQL for older transactions.
-
-We could probably work on a more robust workflow. I'll make a second markdown file with version notes / working notes.
-
-Okay I made it. It's Called READevNotes.md.
-
-Oh good, you found it.
 
 
 # Development Tools User Guide
 
-Overview of dev tools for extracting and analyzing content from HTML, JavaScript, and Python files,
+Overview of dev tools (HTMLy.py | JSFynder.py | PYFynder.py) for extracting and analyzing content from HTML, JavaScript, and Python files,
 
 ---
 
