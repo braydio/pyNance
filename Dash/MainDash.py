@@ -18,13 +18,16 @@ from config import (
 )
 from flask import Flask, jsonify, render_template, request
 from helper_utils import (
+    enrich_transaction,
     ensure_directory_exists,
     ensure_file_exists,
     get_available_themes,
     get_current_theme,
     load_json,
+    load_transactions_json,
     save_json_with_backup,
     set_theme,
+    validate_transaction,
 )
 from plaid_utils import generate_link_token
 from sql_utils import init_db, save_transactions_to_db
@@ -38,7 +41,8 @@ THEMES_DIR = DIRECTORIES["THEMES_DIR"]
 LINKED_ITEMS = FILES["LINKED_ITEMS"]
 LINKED_ACCOUNTS = FILES["LINKED_ACCOUNTS"]
 TRANSACTIONS_LIVE = FILES["TRANSACTIONS_LIVE"]
-TRANSACTION_REFRESH_FILE = FILES["TRANSACTION_REFRESH_FILE"]
+TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
+TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 DEFAULT_THEME = FILES["DEFAULT_THEME"]
 CURRENT_THEME = FILES["CURRENT_THEME"]
 
@@ -357,28 +361,8 @@ def refresh_account():
         logger.error(f"Item ID {item_id} not found in LinkedItems.json.")
         return jsonify({"error": f"Item ID {item_id} not found."}), 404
 
-    # Check the last successful refresh time
-    last_update = (
-        item.get("status", {}).get("transactions", {}).get("last_successful_update")
-    )
-    if last_update:
-        last_update_time = datetime.fromisoformat(last_update)
-        time_since_last_update = datetime.now() - last_update_time
-        if time_since_last_update < timedelta(hours=24):
-            time_remaining = timedelta(hours=24) - time_since_last_update
-            message = (
-                f"Last refresh was {time_since_last_update.seconds // 3600} hours ago. "
-                f"Please wait {time_remaining.seconds // 3600} hours before refreshing again."
-            )
-            logger.info(f"Refresh request denied. {message}")
-            return jsonify({"status": "waiting", "message": message}), 200
-
     # Determine start_date and end_date
-    start_date = (
-        last_update.split("T")[0]
-        if last_update
-        else (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
-    )
+    start_date = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
     end_date = datetime.now().strftime("%Y-%m-%d")
 
     # Load LinkedAccounts.json for access_token
@@ -415,9 +399,20 @@ def refresh_account():
         response = requests.post(url, json=payload, timeout=10)
         response.raise_for_status()
         transactions_data = response.json()
+        logger.debug(f"Plaid API response: {transactions_data}")
+
     except requests.exceptions.RequestException as e:
         logger.error(f"Plaid API error: {str(e)}")
         return jsonify({"error": f"Failed to fetch transactions: {str(e)}"}), 500
+
+    # Save transactions to RawTransactions.json
+    with open(TRANSACTIONS_RAW, "w") as f:
+        json.dump(
+            {"transactions": transactions_data.get("transactions", [])}, f, indent=4
+        )
+    logger.info(
+        f"Saved {len(transactions_data.get('transactions', []))} transactions to {TRANSACTIONS_RAW}."
+    )
 
     # Update balances in LinkAccounts.json
     for account in transactions_data.get("accounts", []):
@@ -436,15 +431,13 @@ def refresh_account():
     with open(LINKED_ITEMS, "w") as f:
         json.dump(linked_items, f, indent=4)
 
-    # Save transactions to the database and archive full response
+    # Save transactions to the database
     save_transactions_to_db(transactions_data.get("transactions", []), linked_accounts)
-    archive_file = (
-        f"{TRANSACTION_REFRESH_FILE}.{datetime.now().strftime('%Y%m%d%H%M%S')}"
-    )
-    with open(archive_file, "w") as f:
-        json.dump(transactions_data, f, indent=4)
 
+    # Log before processing transactions
+    logger.info("Calling process_transactions() to update live transactions...")
     process_transactions()
+    logger.info("process_transactions() completed.")
 
     logger.info(
         f"Refreshed account {item_id}. Fetched and saved {len(transactions_data.get('transactions', []))} transactions."
@@ -689,35 +682,7 @@ def get_institutions():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-def load_transactions_json(file):
-    return load_json(file).get("transactions", [])
-
-
-def validate_transaction(tx):
-    required_keys = ["transaction_id", "date", "amount"]
-    return all(key in tx for key in required_keys)
-
-
-def enrich_transaction(transaction, accounts, items):
-    account_info = accounts.get(transaction["account_id"], {})
-    item_info = items.get(account_info.get("item_id", ""), {})
-    return {
-        "transaction_id": transaction["transaction_id"],
-        "date": transaction["date"],
-        "name": transaction["name"],
-        "amount": transaction["amount"],
-        "category": transaction.get("category", ["Unknown"])[-1],
-        "merchant_name": transaction.get("merchant_name", "Unknown"),
-        "institution_name": account_info.get("institution_name", "Unknown"),
-        "account_name": account_info.get("account_name", "Unknown Account"),
-        "account_type": account_info.get("type", "Unknown"),
-        "account_subtype": account_info.get("subtype", "Unknown"),
-        "last_successful_update": item_info.get("status", {})
-        .get("transactions", {})
-        .get("last_successful_update", "N/A"),
-    }
-
-
+# Transaction handling routes
 @app.route("/transactions", methods=["GET"])
 def transactions_page():
     try:
@@ -729,7 +694,7 @@ def transactions_page():
                 "amount": f"${abs(tx['amount']):,.2f}"
                 if tx["amount"] < 0
                 else f"${tx['amount']:,.2f}",
-                "category": tx.get("category", ["Uncategorized"])[-1],
+                "category": tx.get("category", ["Uncategorized"]),
                 "merchant_name": tx.get("merchant_name", "Unknown"),
                 "account_name": tx.get("account_name", "Unknown Account"),
                 "institution_name": tx.get("institution_name", "Unknown Institution"),
@@ -752,12 +717,14 @@ def transactions_page():
 @app.route("/get_transactions", methods=["GET"])
 def load_transactions():
     try:
+        # Load live transactions
         transactions = load_transactions_json(TRANSACTIONS_LIVE)
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 50))
         start = (page - 1) * page_size
         end = start + page_size
         paginated_transactions = transactions[start:end]
+
         return jsonify(
             {"transactions": paginated_transactions, "total": len(transactions)}
         )
@@ -768,40 +735,107 @@ def load_transactions():
 
 @app.route("/process_transactions", methods=["POST"])
 def process_transactions():
+    """Processes raw transactions, enriches them, and updates live data."""
+
+    # Load raw transactions into memory buffer
+    transactions = load_transactions_json(TRANSACTIONS_RAW)
+    logger.debug(f"Loaded {len(transactions)} raw transactions.")
+
+    # Load accounts and items
     try:
-        existing_transactions = load_transactions_json(TRANSACTIONS_LIVE)
-        transactions = load_transactions_json(TRANSACTION_REFRESH_FILE)
         accounts = load_json(LINKED_ACCOUNTS)
         items = load_json(LINKED_ITEMS)
+        logger.debug(f"Loaded {len(accounts)} accounts, {len(items)} items.")
+    except Exception as e:
+        logger.error(f"Error loading accounts or items: {e}")
+        return jsonify({"error": "Failed to load accounts or items."}), 500
 
-        enriched_transactions = [
-            enrich_transaction(tx, accounts, items)
-            for tx in transactions
-            if validate_transaction(tx)
+    # Process transactions in-memory buffer
+    enriched_transactions = []
+    for tx in transactions:
+        if not validate_transaction(tx):
+            logger.warning(f"Skipping invalid transaction: {tx}")
+            continue
+
+        try:
+            enriched_tx = enrich_transaction(tx, accounts, items)
+            enriched_transactions.append(enriched_tx)
+            logger.debug(f"Enriched transaction: {enriched_tx}")
+        except Exception as e:
+            logger.error(f"Error enriching transaction: {tx}, error: {e}")
+
+    logger.info(f"Enriched {len(enriched_transactions)} transactions.")
+
+    # Load existing transactions into memory (small buffer)
+    existing_transactions = load_transactions_json(TRANSACTIONS_LIVE)
+    logger.debug(
+        f"Loaded {len(existing_transactions)} existing transactions from TRANSACTIONS_LIVE."
+    )
+
+    # Deduplicate transactions in-memory (no extra file writes)
+    unique_transactions = {
+        tx["transaction_id"]: tx for tx in existing_transactions + enriched_transactions
+    }
+
+    # Save final transactions **once** instead of multiple times
+    save_json_with_backup(
+        TRANSACTIONS_LIVE, {"transactions": list(unique_transactions.values())}
+    )
+    logger.info(
+        f"Updated TRANSACTIONS_LIVE with {len(unique_transactions)} transactions."
+    )
+
+    return (
+        jsonify(
+            {"status": "success", "message": "Transactions processed successfully."}
+        ),
+        200,
+    )
+
+
+@app.route("/api/category_breakdown", methods=["GET"])
+def get_category_breakdown():
+    try:
+        transactions = load_json(TRANSACTIONS_LIVE).get("transactions", [])
+
+        category_data = {}
+        for tx in transactions:
+            category = tx.get("category", ["Uncategorized"])
+            if (
+                isinstance(category, list) and category
+            ):  # Ensure it's a list and not empty
+                category = category[0]  # Use the first category
+
+            amount = tx.get("amount")
+            if amount is not None and isinstance(amount, (int, float)) and amount < 0:
+                category_data[category] = category_data.get(category, 0) + abs(amount)
+
+        category_breakdown = [
+            {"category": cat, "amount": round(amt, 2)}
+            for cat, amt in category_data.items()
         ]
 
-        unique_transactions = {
-            tx["transaction_id"]: tx
-            for tx in existing_transactions + enriched_transactions
-        }
-        save_json_with_backup(
-            TRANSACTIONS_LIVE, {"transactions": list(unique_transactions.values())}
+        return jsonify({"status": "success", "data": category_breakdown}), 200
+
+    except FileNotFoundError:
+        logger.error("TRANSACTIONS_LIVE file not found.")
+        return (
+            jsonify({"status": "error", "message": "Transactions file not found."}),
+            404,
         )
 
-        logger.info(f"Processed {len(enriched_transactions)} transactions.")
+    except json.JSONDecodeError:
+        logger.error("Error decoding TRANSACTIONS_LIVE.")
         return (
             jsonify(
-                {"status": "success", "message": "Transactions processed successfully."}
+                {"status": "error", "message": "Invalid transactions file format."}
             ),
-            200,
+            400,
         )
 
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        return (
-            jsonify({"error": "An error occurred while processing transactions."}),
-            500,
-        )
+        logger.error(f"Error in category breakdown: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 # Main Dashboard Visuals
@@ -881,7 +915,7 @@ def get_cash_flow():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-# --- Route for settings and themes -- FOLD HERE
+# --- Route for settings and themes
 @app.route("/settings")
 def settings():
     """Render the settings page for selecting themes."""
