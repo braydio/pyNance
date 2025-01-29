@@ -9,6 +9,14 @@
     id="current-theme"
     href="{{ url_for('static', filename='themes/' + current_theme) }}"
   />
+  <style>
+    table td {
+        text-align: left; /* Align text in cells */
+        font-size: 12px; /* Smaller font size for compact layout */
+        word-wrap: break-word; /* Ensure long text wraps */
+        white-space: normal; /* Allow text to break into multiple lines */
+    }
+</style>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 </head>
