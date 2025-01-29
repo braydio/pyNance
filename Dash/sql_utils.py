@@ -19,6 +19,20 @@ from sqlalchemy.orm import relationship, sessionmaker
 
 Base = declarative_base()
 
+from config import DIRECTORIES, FILES, logger
+
+DATA_DIR = DIRECTORIES["DATA_DIR"]
+TEMP_DIR = DIRECTORIES["TEMP_DIR"]
+LOGS_DIR = DIRECTORIES["LOGS_DIR"]
+THEMES_DIR = DIRECTORIES["THEMES_DIR"]
+LINKED_ITEMS = FILES["LINKED_ITEMS"]
+LINKED_ACCOUNTS = FILES["LINKED_ACCOUNTS"]
+TRANSACTIONS_LIVE = FILES["TRANSACTIONS_LIVE"]
+TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
+TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
+DEFAULT_THEME = FILES["DEFAULT_THEME"]
+CURRENT_THEME = FILES["CURRENT_THEME"]
+
 
 # ---------------------------------------------------------------------
 # INSTITUTIONS TABLE
@@ -142,7 +156,7 @@ def init_db():
 # ---------------------------------------------------------------------
 # SAVE/UPDATE FUNCTIONS
 # ---------------------------------------------------------------------
-def save_transactions_to_db(transactions, linked_accounts):
+def save_transactions_to_db(transactions, linked_accounts=LINKED_ACCOUNTS):
     """
     Save Plaid transactions to the database, creating or linking related records:
       - Institution
@@ -253,3 +267,101 @@ def save_recent_refresh_to_db(
     except Exception as e:
         session.rollback()
         logging.error(f"Error saving recent refresh for item {item_id}: {str(e)}")
+
+
+def save_accounts_to_db(accounts, item_id):
+    """
+    Saves newly linked accounts to the database, ensuring the associated institution is created first.
+    """
+    try:
+        # Get institution name from the first account
+        institution_name = accounts[0].get("institution_name", "Unknown Institution")
+
+        # 🔹 Step 1: Check if Institution exists, create if necessary
+        institution = (
+            session.query(Institution).filter_by(name=institution_name).first()
+        )
+        if not institution:
+            institution = Institution(
+                plaid_institution_id=item_id,  # Store Plaid's unique ID
+                name=institution_name,
+            )
+            session.add(institution)
+            session.commit()
+            logger.info(f"Created new institution: {institution_name}")
+
+        # 🔹 Step 2: Loop through all accounts and save them to the DB
+        for account in accounts:
+            plaid_account_id = account["account_id"]
+
+            # Check if account already exists
+            existing_account = (
+                session.query(Account)
+                .filter_by(plaid_account_id=plaid_account_id)
+                .first()
+            )
+            if not existing_account:
+                new_account = Account(
+                    plaid_account_id=plaid_account_id,
+                    institution_id=institution.id,  # Link to institution
+                    name=account["name"],
+                    account_type=account["type"],  # Checking, savings, etc.
+                )
+                session.add(new_account)
+                logger.info(f"Added new account: {account['name']}")
+
+        session.commit()
+        logger.info(f"Saved {len(accounts)} accounts to the database.")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error saving accounts to database: {str(e)}")
+
+
+def save_initial_db(accounts, item_id):
+    """
+    Saves newly linked accounts to the database, ensuring the associated institution is created first.
+    """
+    try:
+        # Get institution name from the first account
+        institution_name = accounts[0].get("institution_name", "Unknown Institution")
+
+        # 🔹 Step 1: Check if Institution exists, if not, create it
+        institution = (
+            session.query(Institution).filter_by(name=institution_name).first()
+        )
+        if not institution:
+            institution = Institution(
+                plaid_institution_id=item_id,  # Store Plaid's unique ID
+                name=institution_name,
+            )
+            session.add(institution)
+            session.commit()
+            logger.info(f"Created new institution: {institution_name}")
+
+        # 🔹 Step 2: Loop through all accounts and save them to the DB
+        for account in accounts:
+            plaid_account_id = account["account_id"]
+
+            # Check if account already exists
+            existing_account = (
+                session.query(Account)
+                .filter_by(plaid_account_id=plaid_account_id)
+                .first()
+            )
+            if not existing_account:
+                new_account = Account(
+                    plaid_account_id=plaid_account_id,
+                    institution_id=institution.id,  # Link to institution
+                    name=account["name"],
+                    account_type=account["type"],  # Checking, savings, etc.
+                )
+                session.add(new_account)
+                logger.info(f"Added new account: {account['name']}")
+
+        session.commit()
+        logger.info(f"Saved {len(accounts)} accounts to the database.")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error saving accounts to database: {str(e)}")

@@ -31,7 +31,13 @@ from helper_utils import (
     validate_transaction,
 )
 from plaid_utils import generate_link_token
-from sql_utils import init_db, save_transactions_to_db
+from sql_utils import (
+    init_db,
+    save_accounts_to_db,
+    save_initial_db,
+    save_recent_refresh_to_db,
+    save_transactions_to_db,
+)
 
 logger = setup_logger()
 
@@ -235,6 +241,9 @@ def save_initial_account_data(access_token, item_id):
 
         save_json_with_backup(LINKED_ACCOUNTS, existing_data)
 
+        save_initial_db(account_data["accounts"], item_id)
+        save_accounts_to_db(account_data["accounts"], item_id)
+
         logger.info(f"Account data saved successfully for item_id {item_id}.")
     except Exception as e:
         logger.error(f"Error in save_initial_account_data: {e}")
@@ -437,19 +446,30 @@ def refresh_account():
     # Save transactions to the database
     save_transactions_to_db(transactions_data.get("transactions", []), linked_accounts)
 
+    # Save recent refresh details to the database
+    total_transactions = len(transactions_data.get("transactions", []))
+    save_recent_refresh_to_db(
+        item_id=item_id,
+        start_date=start_date,
+        end_date=end_date,
+        total_transactions=total_transactions,
+        raw_data=transactions_data,
+    )
+    logger.info("Saved recent refresh details to the database.")
+
     # Log before processing transactions
     logger.info("Calling process_transactions() to update live transactions...")
     process_transactions()
     logger.info("process_transactions() completed.")
 
     logger.info(
-        f"Refreshed account {item_id}. Fetched and saved {len(transactions_data.get('transactions', []))} transactions."
+        f"Refreshed account {item_id}. Fetched and saved {total_transactions} transactions."
     )
     return (
         jsonify(
             {
                 "status": "success",
-                "transactions_fetched": len(transactions_data.get("transactions", [])),
+                "transactions_fetched": total_transactions,
             }
         ),
         200,
@@ -686,7 +706,6 @@ def get_institutions():
 
 
 # Transaction handling routes
-@app.route("/transactions", methods=["GET"])
 def transactions_page():
     try:
         transactions = load_transactions_json(TRANSACTIONS_LIVE)
@@ -717,7 +736,6 @@ def transactions_page():
         return jsonify({"error": "An unexpected error occurred."}), 500
 
 
-@app.route("/get_transactions", methods=["GET"])
 def load_transactions():
     try:
         # Load live transactions
@@ -736,64 +754,107 @@ def load_transactions():
         return jsonify({"transactions": [], "total": 0}), 500
 
 
+@app.route("/get_transactions", methods=["GET"])
+def get_transactions():
+    try:
+        # 1. Load transactions
+        transactions = load_transactions_json(TRANSACTIONS_LIVE)
+
+        # (Optional) pagination logic:
+        # page = int(request.args.get("page", 1))
+        # page_size = int(request.args.get("page_size", 50))
+        # start = (page - 1) * page_size
+        # end = start + page_size
+        # paginated_tx = transactions[start:end]
+
+        # 2. Return the JSON with "status" and nested "data"
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": {"transactions": transactions},  # or paginated_tx
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        # If any error, return something that won't break your front-end
+        return (
+            jsonify(
+                {"status": "error", "message": str(e), "data": {"transactions": []}}
+            ),
+            500,
+        )
+
+
 @app.route("/process_transactions", methods=["POST"])
 def process_transactions():
-    """Processes raw transactions, enriches them, and updates live data."""
-
-    # Load raw transactions into memory buffer
-    transactions = load_transactions_json(TRANSACTIONS_RAW)
-    logger.debug(f"Loaded {len(transactions)} raw transactions.")
-
-    # Load accounts and items
+    """Processes raw transactions, enriches them, saves them to SQL, and updates live data JSON."""
     try:
+        # 1) Load raw transactions
+        transactions = load_transactions_json(TRANSACTIONS_RAW)
+        logger.debug(f"Loaded {len(transactions)} raw transactions.")
+
+        # 2) Load accounts (linked_accounts) and items
         accounts = load_json(LINKED_ACCOUNTS)
         items = load_json(LINKED_ITEMS)
         logger.debug(f"Loaded {len(accounts)} accounts, {len(items)} items.")
+
+        # 3) Validate + enrich
+        enriched_transactions = []
+        for tx in transactions:
+            if not validate_transaction(tx):
+                logger.warning(f"Skipping invalid transaction: {tx}")
+                continue
+            try:
+                enriched_tx = enrich_transaction(tx, accounts, items)
+                enriched_transactions.append(enriched_tx)
+                logger.debug(f"Enriched transaction: {enriched_tx}")
+            except Exception as e:
+                logger.error(f"Error enriching transaction: {tx}, error: {e}")
+
+        logger.info(f"Enriched {len(enriched_transactions)} transactions.")
+
+        # 4) Load existing from JSON
+        existing_transactions = load_transactions_json(TRANSACTIONS_LIVE)
+        logger.debug(
+            f"Loaded {len(existing_transactions)} existing from TRANSACTIONS_LIVE."
+        )
+
+        # 5) Deduplicate in memory
+        unique_transactions = {
+            tx["transaction_id"]: tx
+            for tx in (existing_transactions + enriched_transactions)
+        }
+        final_transactions = list(unique_transactions.values())
+
+        # 6) OPTIONAL: Save to SQL
+        #    This is where you call your SQLAlchemy function to store in DB
+        #    Make sure 'accounts' is the second argument, because your function
+        #    signature is (transactions, linked_accounts).
+        logger.info("Saving final transactions to the SQL database...")
+        save_transactions_to_db(final_transactions, accounts)
+        # If you want to also record a refresh entry:
+        # save_recent_refresh_to_db(item_id=..., start_date=..., end_date=..., total_transactions=..., raw_data=...)
+
+        # 7) Save final deduplicated transactions back to JSON for local backup
+        save_json_with_backup(TRANSACTIONS_LIVE, {"transactions": final_transactions})
+        logger.info(
+            f"Updated TRANSACTIONS_LIVE with {len(final_transactions)} transactions."
+        )
+
+        # 8) Return success
+        return (
+            jsonify(
+                {"status": "success", "message": "Transactions processed successfully."}
+            ),
+            200,
+        )
+
     except Exception as e:
-        logger.error(f"Error loading accounts or items: {e}")
-        return jsonify({"error": "Failed to load accounts or items."}), 500
-
-    # Process transactions in-memory buffer
-    enriched_transactions = []
-    for tx in transactions:
-        if not validate_transaction(tx):
-            logger.warning(f"Skipping invalid transaction: {tx}")
-            continue
-
-        try:
-            enriched_tx = enrich_transaction(tx, accounts, items)
-            enriched_transactions.append(enriched_tx)
-            logger.debug(f"Enriched transaction: {enriched_tx}")
-        except Exception as e:
-            logger.error(f"Error enriching transaction: {tx}, error: {e}")
-
-    logger.info(f"Enriched {len(enriched_transactions)} transactions.")
-
-    # Load existing transactions into memory (small buffer)
-    existing_transactions = load_transactions_json(TRANSACTIONS_LIVE)
-    logger.debug(
-        f"Loaded {len(existing_transactions)} existing transactions from TRANSACTIONS_LIVE."
-    )
-
-    # Deduplicate transactions in-memory (no extra file writes)
-    unique_transactions = {
-        tx["transaction_id"]: tx for tx in existing_transactions + enriched_transactions
-    }
-
-    # Save final transactions **once** instead of multiple times
-    save_json_with_backup(
-        TRANSACTIONS_LIVE, {"transactions": list(unique_transactions.values())}
-    )
-    logger.info(
-        f"Updated TRANSACTIONS_LIVE with {len(unique_transactions)} transactions."
-    )
-
-    return (
-        jsonify(
-            {"status": "success", "message": "Transactions processed successfully."}
-        ),
-        200,
-    )
+        logger.error(f"Error in /process_transactions: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @app.route("/api/category_breakdown", methods=["GET"])
