@@ -10,6 +10,10 @@ DEFAULT_THEME = FILES["DEFAULT_THEME"]
 
 
 # Misc helper functions
+def ensure_directory_exists(directory_path):
+    os.makedirs(directory_path, exist_ok=True)
+
+
 def load_json(file_path):
     if os.path.exists(file_path):
         with open(file_path, "r") as f:
@@ -37,10 +41,6 @@ def save_json_with_backup(file_path, data):
         raise e
 
 
-def ensure_directory_exists(directory_path):
-    os.makedirs(directory_path, exist_ok=True)
-
-
 def ensure_file_exists(file_path, default_content=None):
     if not os.path.exists(file_path):
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
@@ -52,6 +52,46 @@ def ensure_file_exists(file_path, default_content=None):
                     file.write(default_content)
             else:
                 file.write("")
+
+
+# Transactions helper functions
+def load_transactions_json(file):
+    return load_json(file).get("transactions", [])
+
+
+def validate_transaction(tx):
+    required_keys = ["transaction_id", "date", "amount"]
+    return all(key in tx for key in required_keys)
+
+
+def enrich_transaction(transaction, accounts, items):
+    account_info = accounts.get(transaction["account_id"], {})
+    item_info = items.get(account_info.get("item_id", ""), {})
+
+    account_type = account_info.get("type", "Unknown")
+    amount = transaction["amount"]  # Get transaction amount
+
+    # Adjust amount for credit accounts
+    if account_type == "credit" and amount > 0:
+        amount = -amount  # Flip positive transactions (expenses) to negative
+
+    return {
+        "transaction_id": transaction["transaction_id"],
+        "date": transaction["date"],
+        "name": transaction["name"],
+        "amount": amount,  # Use adjusted amount
+        "category": transaction.get("category", ["Unknown"])[
+            -1
+        ],  # Use the last category in the list
+        "merchant_name": transaction.get("merchant_name", "Unknown"),
+        "institution_name": account_info.get("institution_name", "Unknown"),
+        "account_name": account_info.get("account_name", "Unknown Account"),
+        "account_type": account_type,
+        "account_subtype": account_info.get("subtype", "Unknown"),
+        "last_successful_update": item_info.get("status", {})
+        .get("transactions", {})
+        .get("last_successful_update", "N/A"),
+    }
 
 
 # Functions for /settings routes and theme handling
