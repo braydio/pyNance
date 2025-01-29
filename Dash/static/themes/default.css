@@ -104,7 +104,16 @@ main {
 }
 
 /* Visualization Section */
+
+/* Make sure tooltips aren't clipped */
+canvas {
+    display: block;
+    position: relative;
+    z-index: 1; /* Ensure the chart and tooltips stay above other elements */
+}
 .visualization, .cash-flow, .budget, .reminders {
+    position: relative; /* Relative position ensures contained elements position correctly */
+    overflow: visible; /* Allow tooltips to overflow outside the container */
     background-color: #1f1f1f; /* Match controls */
     border-radius: 8px;
     padding: 1.5rem;

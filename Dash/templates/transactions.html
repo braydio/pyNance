@@ -8,10 +8,14 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.1/css/jquery.dataTables.min.css">
     <style>
-        /* Compact table styles */
-        table {
-            font-size: 12px; /* Smaller font size for compact layout */
-        }
+    table td {
+        text-align: left; /* Align text in cells */
+        font-size: 12px; /* Smaller font size for compact layout */
+        word-wrap: break-word; /* Ensure long text wraps */
+        white-space: normal; /* Allow text to break into multiple lines */
+    }
+</style>
+
     </style>
 </head>
 <body>
@@ -70,7 +74,7 @@
                         <td>{{ transaction.date }}</td>
                         <td class="{% if transaction.amount.startswith('(') %}negative{% endif %}">{{ transaction.amount }}</td>
                         <td>{{ transaction.name }}</td>
-                        <td>{{ transaction.category }}</td>
+                        <td>{{ transaction.category | e }}</td> <!-- Escape special characters -->
                         <td>{{ transaction.merchant_name }}</td>
                         <td>{{ transaction.account_name }}</td>
                         <td>{{ transaction.institution_name }}</td>
@@ -90,23 +94,7 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#transactions-table').DataTable({
-                pageLength: 20, // Show 20 rows per page
-                ordering: true, // Enable column sorting
-                order: [[0, 'desc']], // Default sort by Date column (descending)
-                columnDefs: [
-                    { type: 'num', targets: 4 } // Enable numeric sorting for Amount column
-                ],
-                language: {
-                    search: "Filter transactions:", // Custom search text
-                    emptyTable: "No transactions to display." // Custom empty table message
-                },
-                scrollY: "60vh", // Enable vertical scrolling for large datasets
-                scrollCollapse: true, // Collapse the table to fit the container
-            });
-        });
-    </script>
+    <!-- Local JS -->
+    <script src="{{ url_for('static', filename='scripts/transactions.js') }}"></script>
 </body>
 </html>
