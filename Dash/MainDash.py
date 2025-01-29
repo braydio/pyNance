@@ -1,5 +1,6 @@
 import json
 import os
+import random
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -244,6 +245,8 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 
 
 # Main flask app
+
+
 @app.route("/")
 def dashboard():
     """Render the main dashboard."""
@@ -913,6 +916,52 @@ def get_cash_flow():
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/net_worth", methods=["GET"])
+def get_net_worth():
+    """
+    Mock endpoint to return net worth data. This example:
+    1. Reads the 'balances' from LinkedAccounts.json.
+    2. Sums all current balances (treating credit accounts as negative if needed).
+    3. Generates a small monthly timeseries for the past 6 months + current.
+    """
+    try:
+        # 1. Load accounts data
+        with open(LINKED_ACCOUNTS, "r") as f:
+            linked_accounts = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        logger.error("LinkedAccounts.json missing or invalid.")
+        return jsonify({"status": "error", "message": "No accounts found."}), 404
+
+    # 2. Calculate the most recent net worth by summing all 'current' balances.
+    #    If you'd like to treat credit card balances as negative, you can do so.
+    current_net_worth = 0
+    for account_id, account_data in linked_accounts.items():
+        bal = account_data.get("balances", {}).get("current", 0)
+        # If it is a credit account, we can treat it as liability by negating.
+        if account_data.get("type") == "credit":
+            bal *= -1
+        current_net_worth += bal
+
+    # 3. Generate a timeseries of net worth for the last 6 months, plus this month.
+    #    For demo, we start from (current_net_worth - some random offset) and move forward.
+    data = []
+    base_date = datetime.now().replace(day=1)
+    running_value = current_net_worth - random.randint(500, 5000)  # example baseline
+
+    for months_ago in range(6, -1, -1):
+        date_obj = base_date - timedelta(days=30 * months_ago)
+        variation = random.randint(-2000, 3000)
+        running_value += variation
+        # If it's the final iteration (this month), set net worth to the actual current_net_worth
+        if months_ago == 0:
+            running_value = current_net_worth
+        data.append(
+            {"date": date_obj.strftime("%Y-%m-%d"), "netWorth": round(running_value, 2)}
+        )
+
+    return jsonify({"status": "success", "data": data}), 200
 
 
 # --- Route for settings and themes
