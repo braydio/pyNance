@@ -374,7 +374,7 @@ def refresh_account():
         return jsonify({"error": f"Item ID {item_id} not found."}), 404
 
     # Determine start_date and end_date
-    start_date = (datetime.now() - timedelta(days=60)).strftime("%Y-%m-%d")
+    start_date = (datetime.now() - timedelta(days=365)).strftime("%Y-%m-%d")
     end_date = datetime.now().strftime("%Y-%m-%d")
 
     # Load LinkedAccounts.json for access_token
