@@ -1,246 +1,273 @@
+/**
+ * accounts.js
+ * A single, unified script for the /accounts page
+ */
+
+// References to DOM elements
+let institutionsContainer,
+  linkButton,
+  statusContainer,
+  groupNameInput,
+  saveGroupButton,
+  groupStatus;
+
+// One-time on DOM ready
 document.addEventListener("DOMContentLoaded", () => {
-  const institutionsContainer = document.getElementById("institutions-container");
-  const linkButton = document.getElementById("link-button");
-  const statusContainer = document.getElementById("status");
-  const groupNameInput = document.getElementById("group-name");
-  const saveGroupButton = document.getElementById("save-group");
-  const groupStatus = document.getElementById("group-status");
+  console.log("DOM fully loaded. Initializing app...");
+  init();
+});
 
-  // Utility to fetch data from an endpoint
-  function fetchData(url, options = {}) {
-    return fetch(url, options)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .catch((error) => {
-        console.error(`Error fetching data from ${url}:`, error);
-        throw error;
-      });
+/**
+ * Main initialization function
+ */
+function init() {
+  // 1) Grab references to DOM elements
+  institutionsContainer = document.getElementById("institutions-container");
+  linkButton = document.getElementById("link-button");
+  statusContainer = document.getElementById("status");
+  groupNameInput = document.getElementById("group-name");
+  saveGroupButton = document.getElementById("save-group");
+  groupStatus = document.getElementById("group-status");
+
+  // 2) Set up event listeners
+  if (linkButton) {
+    // Initialize Plaid link when user clicks
+    linkButton.addEventListener("click", initializePlaidLink);
+  }
+  if (saveGroupButton) {
+    saveGroupButton.addEventListener("click", saveGroup);
   }
 
-  // Plaid Link functionality
-  function initializePlaidLink() {
-    fetchData("/get_link_token")
-      .then((data) => {
-        if (data.link_token) {
-          const handler = Plaid.create({
-            token: data.link_token,
-            onSuccess: function (public_token, metadata) {
-              console.log("Public Token:", public_token);
+  // 3) Fetch institutions to populate UI
+  if (institutionsContainer) {
+    fetchAndRenderInstitutions();
+  }
 
-              fetchData("/save_public_token", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ public_token }),
+  console.log("App init complete");
+}
+
+/**
+ * Fetch utility: returns a Promise resolving to JSON
+ */
+function fetchData(url, options = {}) {
+  return fetch(url, options)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .catch((error) => {
+      console.error(`Error fetching data from ${url}:`, error);
+      throw error;
+    });
+}
+
+/**
+ * Plaid Link initialization
+ */
+function initializePlaidLink() {
+  fetchData("/get_link_token")
+    .then((data) => {
+      if (data.link_token) {
+        const handler = Plaid.create({
+          token: data.link_token,
+          onSuccess: function (public_token, metadata) {
+            console.log("Public Token:", public_token);
+
+            fetchData("/save_public_token", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ public_token }),
+            })
+              .then((response) => {
+                if (response.access_token) {
+                  statusContainer.textContent = "Access token received!";
+                } else {
+                  console.error("Error saving public token:", response.error);
+                  statusContainer.textContent = "Failed to save public token.";
+                }
               })
-                .then((response) => {
-                  if (response.access_token) {
-                    statusContainer.textContent = "Access token received!";
-                  } else {
-                    console.error("Error saving public token:", response.error);
-                    statusContainer.textContent = "Failed to save public token.";
-                  }
-                })
-                .catch((error) => {
-                  console.error("Error saving public token:", error);
-                  statusContainer.textContent = "An error occurred.";
-                });
-            },
-            onExit: function (err, metadata) {
-              if (err) {
-                statusContainer.textContent = "User exited with an error.";
-              } else {
-                statusContainer.textContent = "User exited without error.";
-              }
-            },
-          });
+              .catch((error) => {
+                console.error("Error saving public token:", error);
+                statusContainer.textContent = "An error occurred.";
+              });
+          },
+          onExit: function (err, metadata) {
+            if (err) {
+              statusContainer.textContent = "User exited with an error.";
+            } else {
+              statusContainer.textContent = "User exited without error.";
+            }
+          },
+        });
 
-          linkButton.onclick = () => handler.open();
-        } else {
-          statusContainer.textContent = "Error fetching link token.";
-        }
-      })
-      .catch((error) => {
-        statusContainer.textContent = "Error initializing Plaid Link.";
-      });
-  }
+        // Show Plaid Link on button click
+        handler.open();
+      } else {
+        statusContainer.textContent = "Error fetching link token.";
+      }
+    })
+    .catch((error) => {
+      statusContainer.textContent = "Error initializing Plaid Link.";
+      console.error(error);
+    });
+}
 
-  // Fetch institutions and render them aggregate at the institution-level
-  function fetchAndRenderInstitutions() {
-    fetchData("/get_institutions")
-      .then((data) => {
-        if (data.status === "success") {
-          renderInstitutions(data.institutions);
-        } else {
-          institutionsContainer.innerHTML = `<p>Error loading institutions: ${data.message}</p>`;
-        }
-      })
-      .catch((error) => {
-        institutionsContainer.innerHTML = `<p>Error loading institutions.</p>`;
-        console.error("Error:", error);
-      });
-  }
+/**
+ * Fetch institutions and render them
+ */
+function fetchAndRenderInstitutions() {
+  fetchData("/get_institutions")
+    .then((data) => {
+      if (data.status === "success") {
+        renderInstitutions(data.institutions);
+      } else {
+        institutionsContainer.innerHTML = `<p>Error loading institutions: ${data.message}</p>`;
+      }
+    })
+    .catch((error) => {
+      institutionsContainer.innerHTML = `<p>Error loading institutions.</p>`;
+      console.error("Error:", error);
+    });
+}
 
-  // Render institutions with checkboxes and toggleable tables
-  function renderInstitutions(institutions) {
-  institutionsContainer.innerHTML = ""; // Clear existing content
+/**
+ * Render institutions: displays each institution & accounts
+ */
+function renderInstitutions(institutions) {
+  institutionsContainer.innerHTML = ""; // Clear old content
 
-  Object.keys(institutions).forEach((institutionName) => {
-    const institution = institutions[institutionName];
-
-    // Create the container for each institution
+  Object.entries(institutions).forEach(([institutionName, details]) => {
     const institutionDiv = document.createElement("div");
     institutionDiv.className = "institution";
 
-    // Create the header for the institution
-    const institutionHeader = document.createElement("div");
-    institutionHeader.className = "institution-row";
-    institutionHeader.innerHTML = `
-      <input type="checkbox" class="institution-checkbox" data-item-id="${institution.item_id}" />
-      <h3>${institutionName} (${institution.accounts.length} accounts)</h3>
-      <button class="refresh-institution" data-institution-id="${institution.item_id}">Refresh</button>
-    `;
-
-    // Add toggle functionality to the header
-    institutionHeader.addEventListener("click", (event) => {
-      if (!event.target.classList.contains("institution-checkbox")) {
-        toggleAccountsTable(institutionName); // Toggle accounts table when clicking the header
-      }
-    });
-
-    // Create the table for accounts
-    const accountsTable = document.createElement("table");
-    accountsTable.className = "hidden"; // Initially hidden
-    accountsTable.id = `accounts-${institutionName}`;
-    accountsTable.innerHTML = `
-      <thead>
-        <tr>
-          <th>Account Name</th>
-          <th>Subtype</th>
-          <th>Balance</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${institution.accounts
-          .map((account) => {
-            const balance = account.balances.current || 0;
-            const balanceClass = balance < 0 ? "negative" : "positive";
+    institutionDiv.innerHTML = `
+      <div class="institution-header">
+        <h3>${institutionName} (${details.accounts.length} accounts)</h3>
+        <div>
+          <span class="last-refresh">Last Updated: ${details.last_successful_update || "Unknown"}</span>
+          <button class="refresh-accounts" data-item-id="${details.item_id}">Refresh</button>
+        </div>
+      </div>
+      <div id="accounts-${institutionName}" class="accounts-container">
+        ${details.accounts
+          .map((acc) => {
+            const balance = acc.balances.current || 0;
+            const signClass = balance < 0 ? "negative" : "positive";
             return `
-              <tr>
-                <td>${account.account_name}</td>
-                <td>${account.subtype}</td>
-                <td class="${balanceClass}">${balance.toLocaleString("en-US", {
-              style: "currency",
-              currency: "USD",
-            })}</td>
-              </tr>
+              <div class="account-item">
+                <div class="account-details">
+                  <span>${acc.account_name} (${acc.nickname || "No Nickname"})</span>
+                  <span class="account-balance ${signClass}">$${balance.toLocaleString()}</span>
+                </div>
+                <small>${acc.subtype} - ${acc.type}</small>
+              </div>
             `;
           })
           .join("")}
-      </tbody>
+      </div>
     `;
 
-    // Append the institution header and accounts table
-    institutionDiv.appendChild(institutionHeader);
-    institutionDiv.appendChild(accountsTable);
-    institutionsContainer.appendChild(institutionDiv);
-
-    // Add refresh button functionality
-    const refreshButton = institutionHeader.querySelector(".refresh-institution");
-    refreshButton.addEventListener("click", (event) => {
-      event.stopPropagation(); // Prevent toggle when clicking refresh
-      refreshInstitution(institution.item_id, institutionName);
+    // We'll toggle the accounts on click of the institution header
+    const header = institutionDiv.querySelector(".institution-header");
+    header.addEventListener("click", (e) => {
+      const refreshBtn = header.querySelector(".refresh-accounts");
+      if (e.target === refreshBtn) return; // Avoid toggling if user clicks refresh
+      toggleAccountsTable(institutionName);
     });
+
+    // Attach refresh logic
+    const refreshButton = institutionDiv.querySelector(".refresh-accounts");
+    refreshButton.addEventListener("click", (event) => {
+      event.stopPropagation(); // Don’t toggle accounts if clicking refresh
+      refreshInstitution(details.item_id, institutionName);
+    });
+
+    institutionsContainer.appendChild(institutionDiv);
   });
+}
+
+/**
+ * Toggle the accounts table for a given institution
+ */
+function toggleAccountsTable(institutionName) {
+  const container = document.getElementById(`accounts-${institutionName}`);
+  if (container) {
+    container.style.display = container.style.display === "none" ? "block" : "none";
   }
+}
 
-  // Save a group based on selected institutions
-  function saveGroup() {
-    const groupName = groupNameInput.value.trim();
-    if (!groupName) {
-      groupStatus.textContent = "Please enter a group name.";
-      return;
-    }
+/**
+ * Refresh an institution's data
+ */
+function refreshInstitution(itemId, institutionName) {
+  const button = document.querySelector(`button[data-item-id="${itemId}"]`);
+  if (!button) return;
 
-    const selectedInstitutions = Array.from(document.querySelectorAll(".institution-checkbox:checked"))
-      .map((checkbox) => checkbox.dataset.itemId);
+  button.disabled = true;
+  button.textContent = "Refreshing...";
 
-    if (selectedInstitutions.length === 0) {
-      groupStatus.textContent = "Please select at least one institution.";
-      return;
-    }
-
-    // Send group data to the backend
-    fetchData("/save_group", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupName, itemIds: selectedInstitutions }),
+  fetchData("/refresh_account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ item_id: itemId }),
+  })
+    .then((res) => {
+      // If server returned a success => { status: 'success', transactions_fetched: ... }
+      if (res.status === "success") {
+        alert(
+          `Successfully refreshed ${institutionName}. Fetched ${res.transactions_fetched} transactions.`
+        );
+        fetchAndRenderInstitutions();
+      } else if (res.status === "waiting") {
+        alert(res.message);
+      } else {
+        alert(`Error refreshing account: ${res.error || "Unknown error"}`);
+      }
+      button.disabled = false;
+      button.textContent = "Refresh";
     })
-      .then((response) => {
-        if (response.status === "success") {
-          groupStatus.textContent = `Group "${groupName}" saved successfully!`;
-        } else {
-          groupStatus.textContent = `Failed to save group: ${response.message}`;
-        }
-      })
-      .catch((error) => {
-        groupStatus.textContent = "An error occurred while saving the group.";
-        console.error("Error saving group:", error);
-      });
+    .catch((error) => {
+      console.error("Error refreshing account:", error);
+      alert("Failed to refresh account.");
+      button.disabled = false;
+      button.textContent = "Refresh";
+    });
+}
+
+/**
+ * Save a group based on selected institutions
+ */
+function saveGroup() {
+  const groupName = groupNameInput.value.trim();
+  if (!groupName) {
+    groupStatus.textContent = "Please enter a group name.";
+    return;
   }
 
-  // Toggle accounts table
-  function toggleAccountsTable(institutionName) {
-    const table = document.getElementById(`accounts-${institutionName}`);
-    if (table) {
-      table.classList.toggle("hidden");
-    }
-  }
+  // For this example, if you have any checkboxes for selected institutions:
+  const selectedInstitutions = [];
+  // (If you have them, do something like:)
+  document.querySelectorAll(".institution-checkbox:checked").forEach((chk) => {
+     selectedInstitutions.push(chk.dataset.itemId);
+   });
 
-  // Refresh an institution's data
-  function refreshInstitution(institutionId, institutionName) {
-    const refreshButton = document.querySelector(
-      `button[data-institution-id="${institutionId}"]`
-    );
-    refreshButton.disabled = true;
-    refreshButton.textContent = "Refreshing...";
-
-    fetch("/refresh_account", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ item_id: institutionId }),
+  // POST to /save_group
+  fetchData("/save_group", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ groupName, itemIds: selectedInstitutions }),
+  })
+    .then((response) => {
+      if (response.status === "success") {
+        groupStatus.textContent = `Group "${groupName}" saved successfully!`;
+      } else {
+        groupStatus.textContent = `Failed to save group: ${response.message}`;
+      }
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json(); // Parse JSON response
-      })
-      .then((data) => {
-        refreshButton.disabled = false;
-        refreshButton.textContent = "Refresh";
-
-        if (data.status === "success") {
-          alert(`Institution "${institutionName}" refreshed successfully!`);
-          fetchAndRenderInstitutions(); // Re-render the institutions
-        } else if (data.status === "waiting") {
-          alert(data.message); // Display the "please wait" message
-        } else {
-          alert(`Error refreshing "${institutionName}": ${data.error}`);
-        }
-      })
-      .catch((error) => {
-        refreshButton.disabled = false;
-        refreshButton.textContent = "Refresh";
-        alert(`Error refreshing "${institutionName}": ${error.message}`);
-      });
-  }
-
-  // Initialize
-  if (linkButton) initializePlaidLink();
-  if (saveGroupButton) saveGroupButton.addEventListener("click", saveGroup);
-  if (institutionsContainer) fetchAndRenderInstitutions();
-});
+    .catch((error) => {
+      groupStatus.textContent = "An error occurred while saving the group.";
+      console.error("Error saving group:", error);
+    });
+}
