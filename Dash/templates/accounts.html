@@ -1,151 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
-    <title>Accounts | Dashroad</title>
-    <style>
-        .institution-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #f5f5f5;
-            padding: 10px;
-            cursor: pointer;
-            border-bottom: 1px solid #ddd;
-        }
-
-        .institution-header h3 {
-            margin: 0;
-        }
-
-        .last-refresh {
-            font-size: 0.9em;
-            color: gray;
-        }
-
-        .accounts-container {
-            display: none;
-            padding: 10px;
-            background: white;
-            border-left: 2px solid #ddd;
-            border-right: 2px solid #ddd;
-            border-bottom: 2px solid #ddd;
-        }
-
-        .account-item {
-            padding: 5px;
-            border-bottom: 1px solid #eee;
-        }
-
-        .account-item:last-child {
-            border-bottom: none;
-        }
-
-        .account-details {
-            display: flex;
-            justify-content: space-between;
-        }
-
-        .account-balance {
-            font-weight: bold;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='themes/' + current_theme) }}">
+  <title>Accounts | Dashroad</title>
+  <style>
+    .institution-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #1d1c22;
+      padding: 10px;
+      cursor: pointer;
+      border-bottom: 1px solid #2f2730;
+    }
+    .institution-header h3 {
+      margin: 0;
+    }
+    .last-refresh {
+      font-size: 0.9em;
+      color: gray;
+    }
+    .accounts-container {
+      display: none;
+      padding: 10px;
+      background: rgb(74, 59, 75);
+      border-left: 2px solid #4d3c3c;
+      border-right: 2px solid #4d3c3c;
+      border-bottom: 2px solid #4d3c3c;
+    }
+    .account-item {
+      padding: 5px;
+      border-bottom: 1px solid #4d3c3c;
+    }
+    .account-item:last-child {
+      border-bottom: none;
+    }
+    .account-details {
+      display: flex;
+      justify-content: space-between;
+    }
+    .account-balance {
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <div>
-            <h1>Accounts</h1>
-            <h3>dot Brayden.com</h3>
-        </div>
-        <nav class="menu">
-            <button onclick="window.location.href='/'">Dashboard</button>
-            <button onclick="window.location.href='/accounts'">Accounts</button>
-            <button onclick="window.location.href='/transactions'">Transactions</button>
-            <button onclick="window.location.href='/settings'">Settings</button>
-        </nav>
-    </header>
-    <main>
-        <div class="controls">
-            <div id="account-management-header">
-                <h2>Account Management</h2>
-                <p>View and manage your accounts by institution. You can refresh account data, view balances, and create groups.</p>
-                <button id="link-button" onclick="fetchLinkToken()">Link New Account</button>
-            </div>
+  <header>
+    <div>
+      <h1>Accounts</h1>
+      <h3>dot Brayden.com</h3>
+    </div>
+    <nav class="menu">
+      <button onclick="window.location.href='/'">Dashboard</button>
+      <button onclick="window.location.href='/accounts'">Accounts</button>
+      <button onclick="window.location.href='/transactions'">Transactions</button>
+      <button onclick="window.location.href='/settings'">Settings</button>
+    </nav>
+  </header>
 
-            <div id="group-management">
-                <h2>Create a Group</h2>
-                <p>Select institutions to add them to a refresh group:</p>
-                <input type="text" id="group-name" placeholder="Enter group name" />
-                <button id="save-group" onclick="saveGroup()">Save Group</button>
-                <button id="refresh-accounts" onclick="refreshAccount()">Refresh Selected Accounts</button>
-                <p id="group-status"></p>
-            </div>
+  <main>
+    <div class="controls">
+      <div id="account-management-header">
+        <h2>Account Management</h2>
+        <p>View and manage your accounts by institution. You can refresh account data, view balances, and create groups.</p>
+        <button id="link-button">Link New Account</button>  <!-- No inline onClick. We'll handle in JS -->
+      </div>
 
-            <p id="status"></p>
-        </div>
+      <div id="group-management">
+        <h2>Create a Group</h2>
+        <p>Select institutions to add them to a refresh group:</p>
+        <input type="text" id="group-name" placeholder="Enter group name" />
+        <button id="save-group">Save Group</button>
+        <p id="group-status"></p>
+      </div>
 
-        <div id="institutions-container">
-            <!-- Institutions and accounts will be dynamically inserted here -->
-        </div>
-    </main>
+      <p id="status"></p>
+    </div>
 
-    <footer>&copy; Brayden's Finance Dashroad</footer>
+    <div id="institutions-container">
+      <!-- Institutions and accounts will be dynamically inserted here -->
+    </div>
+  </main>
 
-    <!-- Plaid JavaScript -->
-    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
-    <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
-    <script>
-        document.addEventListener("DOMContentLoaded", async () => {
-            const container = document.getElementById("institutions-container");
+  <footer>&copy; Brayden's Finance Dashroad</footer>
 
-            async function fetchAccounts() {
-                try {
-                    const response = await fetch("/get_institutions");
-                    const data = await response.json();
-                    if (data.status !== "success") throw new Error(data.message);
+  <!-- Plaid JavaScript -->
+  <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
 
-                    renderInstitutions(data.institutions);
-                } catch (error) {
-                    console.error("Error fetching accounts:", error);
-                }
-            }
-
-            function renderInstitutions(institutions) {
-                container.innerHTML = "";
-                Object.entries(institutions).forEach(([institutionName, details]) => {
-                    const institutionDiv = document.createElement("div");
-
-                    institutionDiv.innerHTML = `
-                        <div class="institution-header" onclick="toggleAccounts('${institutionName}')">
-                            <h3>${institutionName} (${details.accounts.length} accounts)</h3>
-                            <span class="last-refresh">Last Updated: ${details.last_successful_update}</span>
-                        </div>
-                        <div id="accounts-${institutionName}" class="accounts-container">
-                            ${details.accounts.map(acc => `
-                                <div class="account-item">
-                                    <div class="account-details">
-                                        <span>${acc.account_name} (${acc.nickname || "No Nickname"})</span>
-                                        <span class="account-balance">$${acc.balances.current.toLocaleString()}</span>
-                                    </div>
-                                    <small>${acc.subtype} - ${acc.type}</small>
-                                </div>
-                            `).join("")}
-                        </div>
-                    `;
-
-                    container.appendChild(institutionDiv);
-                });
-            }
-
-            window.toggleAccounts = (institutionName) => {
-                const accContainer = document.getElementById(`accounts-${institutionName}`);
-                accContainer.style.display = accContainer.style.display === "none" ? "block" : "none";
-            };
-
-            fetchAccounts();
-        });
-    </script>
+  <!-- External JS for Accounts Page -->
+  <script src="{{ url_for('static', filename='scripts/accounts.js') }}"></script>
 </body>
 </html>
