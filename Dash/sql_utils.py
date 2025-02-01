@@ -71,6 +71,26 @@ class Account(Base):
 
 
 # ---------------------------------------------------------------------
+# HISTORICAL BALANCES TABLE
+# ---------------------------------------------------------------------
+class AccountBalance(Base):
+    __tablename__ = "account_balances"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    account_id = Column(Integer, ForeignKey("accounts.id"), nullable=False)
+    date = Column(Date, nullable=False, default=datetime.utcnow)
+    current_balance = Column(Float, nullable=False)
+    available_balance = Column(Float, nullable=True)  # Some banks provide this
+    limit = Column(Float, nullable=True)  # For credit accounts
+    raw_data = Column(JSON, nullable=True)  # Optional for Plaid metadata
+
+    account = relationship("Account", backref="balances")
+
+    def __repr__(self):
+        return f"<AccountBalance(account_id={self.account_id}, date={self.date}, balance={self.current_balance})>"
+
+
+# ---------------------------------------------------------------------
 # CATEGORIES TABLE
 # ---------------------------------------------------------------------
 class Category(Base):
@@ -365,3 +385,40 @@ def save_initial_db(accounts, item_id):
     except Exception as e:
         session.rollback()
         logger.error(f"Error saving accounts to database: {str(e)}")
+
+
+def save_account_balances(accounts):
+    """
+    Saves historical account balances to the database.
+    """
+    try:
+        for account in accounts:
+            plaid_account_id = account["account_id"]
+            account_record = (
+                session.query(Account)
+                .filter_by(plaid_account_id=plaid_account_id)
+                .first()
+            )
+
+            if not account_record:
+                logger.warning(
+                    f"Skipping balance save for unknown account: {plaid_account_id}"
+                )
+                continue
+
+            balance_entry = AccountBalance(
+                account_id=account_record.id,
+                date=datetime.utcnow().date(),
+                current_balance=account["balances"].get("current"),
+                available_balance=account["balances"].get("available"),
+                limit=account["balances"].get("limit"),
+                raw_data=account["balances"],  # Optional metadata
+            )
+            session.add(balance_entry)
+
+        session.commit()
+        logger.info(f"Saved historical balances for {len(accounts)} accounts.")
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error saving account balances: {str(e)}")
