@@ -30,7 +30,8 @@ plaid_transactions = Blueprint("plaid", __name__)
 @plaid_transactions.route("/delete_account", methods=["POST"])
 def delete_account():
     """
-    Delete a linked account.
+    Delete a linked account and, if no other accounts remain for the same institution,
+    delete the institution from the linked items.
     Expects a JSON payload with:
       - account_id: The ID of the account to delete.
     """
@@ -40,8 +41,8 @@ def delete_account():
         logger.error("Missing account_id in delete request.")
         return jsonify({"error": "Missing account_id"}), 400
 
+    # Load the linked accounts JSON.
     try:
-        # Load the linked accounts JSON.
         linked_accounts = load_json(FILES["LINKED_ACCOUNTS"])
     except Exception:
         logger.error("LinkedAccounts.json missing or invalid.")
@@ -51,18 +52,60 @@ def delete_account():
         logger.error(f"Account {account_id} not found in linked accounts.")
         return jsonify({"error": f"Account {account_id} not found."}), 404
 
-    # Delete the account.
+    # Save details of the account to be deleted before removal.
+    deleted_account = linked_accounts[account_id]
+    deleted_item_id = deleted_account.get("item_id")
+    deleted_institution_name = deleted_account.get("institution_name")
+
+    # Delete the account from the linked_accounts.
     del linked_accounts[account_id]
     try:
         save_json_with_backup(FILES["LINKED_ACCOUNTS"], linked_accounts)
         logger.info(f"Deleted account {account_id} from linked accounts.")
-        return (
-            jsonify({"status": "success", "message": f"Account {account_id} deleted."}),
-            200,
-        )
     except Exception as e:
         logger.error(f"Error saving linked accounts after deletion: {e}")
         return jsonify({"error": f"Failed to delete account {account_id}: {e}"}), 500
+
+    # Check if any other accounts remain for the same institution (by item_id).
+    institution_exists = any(
+        acc.get("item_id") == deleted_item_id for acc in linked_accounts.values()
+    )
+
+    # If no accounts remain for that institution, delete the institution from linked items.
+    if not institution_exists:
+        try:
+            linked_items = load_json(FILES["LINKED_ITEMS"])
+        except Exception:
+            logger.error("LinkedItems.json missing or invalid.")
+            return jsonify({"error": "LinkedItems.json not found or invalid."}), 500
+
+        if deleted_item_id in linked_items:
+            del linked_items[deleted_item_id]
+            try:
+                save_json_with_backup(FILES["LINKED_ITEMS"], linked_items)
+                logger.info(
+                    f"Deleted institution '{deleted_institution_name}' (item_id: {deleted_item_id}) from linked items."
+                )
+            except Exception as e:
+                logger.error(f"Error saving linked items after deletion: {e}")
+                return (
+                    jsonify(
+                        {
+                            "error": f"Failed to delete institution for account {account_id}: {e}"
+                        }
+                    ),
+                    500,
+                )
+
+    return (
+        jsonify(
+            {
+                "status": "success",
+                "message": f"Account {account_id} deleted; institution removed if no other accounts remain.",
+            }
+        ),
+        200,
+    )
 
 
 @plaid_transactions.route("/transactions_refresh", methods=["POST"])
