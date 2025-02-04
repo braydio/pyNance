@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Personal Finance - Investments</title>
+  <!-- Minimal inline CSS for basic layout. Remove or replace with your own styles if needed. -->
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f4f4f4;
+    }
+    header, main {
+      max-width: 960px;
+      margin: auto;
+    }
+    header {
+      text-align: center;
+      padding: 10px 0;
+    }
+    section {
+      background: #fff;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h2 {
+      margin-top: 0;
+    }
+    button {
+      background: #3498db;
+      color: #fff;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Accounts</h1>
+      <h3>dot Brayden.com</h3>
+    </div>
+    <nav class="menu">
+      <button onclick="window.location.href='/'">Dashboard</button>
+      <button onclick="window.location.href='/accounts'">Accounts</button>
+      <button onclick="window.location.href='/transactions'">Transactions</button>
+      <button onclick="window.location.href='/settings'">Settings</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Account Details Section -->
+    <!-- This section is responsible for displaying account details such as account names and balances. -->
+    <section id="account-details">
+      <h2>Account Details</h2>
+      <!-- Button to trigger refreshing investment data (hook up with JS as needed) -->
+      <button id="refresh-button">Refresh Investments</button>
+      <!-- This div will display a list or table of account details after data is fetched -->
+      <div id="accounts-list">
+        <!-- Account details will appear here -->
+      </div>
+    </section>
+
+    <!-- Visual Selections Section -->
+    <!-- This section contains the visual displays of your investment data. -->
+    <section id="visuals">
+      <h2>Investment Visuals</h2>
+      <!-- Visual 1: Investment Performance Chart -->
+      <!-- This canvas is used for rendering the investment performance chart (e.g., using Chart.js) -->
+      <div id="performance-chart">
+        <canvas id="investmentChart" width="800" height="400"></canvas>
+      </div>
+      <!-- Additional visuals can be added here, such as asset allocation pie charts, risk analysis graphs, etc. -->
+    </section>
+  </main>
+</body>
+</html>

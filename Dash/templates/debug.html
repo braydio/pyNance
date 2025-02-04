@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Debug Information</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 2rem; }
+    button { padding: 0.5rem 1rem; margin: 0.5rem 0; }
+    pre { background: #151824; padding: 1rem; border: 1px solid #ddd; }
+  </style>
+  <script>
+    // Function to fetch and display debug info when the button is clicked
+    function loadDebugInfo() {
+      fetch('/debug/info')
+        .then(response => response.json())
+        .then(data => {
+          // Pretty-print the JSON in the pre element
+          document.getElementById("debug-data").textContent = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+          console.error("Error fetching debug info:", error);
+          document.getElementById("debug-data").textContent = "Error loading debug info.";
+        });
+    }
+  </script>
+</head>
+<body>
+  <h1>Debug View</h1>
+  <p>Click the button below to load debug information.</p>
+  <button onclick="loadDebugInfo()">Load Debug Info</button>
+  <pre id="debug-data">Debug info will appear here...</pre>
+</body>
+</html>
