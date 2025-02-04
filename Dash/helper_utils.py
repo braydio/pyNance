@@ -1,8 +1,11 @@
+import inspect
 import json
 import os
 from pathlib import Path
 
 from config import DIRECTORIES, FILES, logger
+from flask import jsonify
+from sql_utils import Session, save_transactions_to_db
 
 THEMES_DIR = DIRECTORIES["THEMES_DIR"]
 CURRENT_THEME = FILES["CURRENT_THEME"]
@@ -64,15 +67,128 @@ def validate_transaction(tx):
     return all(key in tx for key in required_keys)
 
 
+def process_transactions(transactions, accounts, items):
+    """Processes raw transactions, enriches them, saves them to SQL, and updates live data JSON."""
+    try:
+        logger.debug("Starting process_transactions")
+        logger.debug(f"Processing {len(transactions)} raw transactions.")
+        logger.debug(f"Loaded {len(accounts)} accounts, {len(items)} items.")
+
+        enriched_transactions = []
+        for tx in transactions:
+            if not validate_transaction(tx):
+                logger.warning(f"Skipping invalid transaction: {tx}")
+                continue
+            try:
+                enriched_tx = enrich_transaction(tx, accounts, items)
+                enriched_transactions.append(enriched_tx)
+                logger.debug(f"Enriched transaction: {enriched_tx}")
+            except Exception as e:
+                logger.error(
+                    f"Error enriching transaction: {tx}, error: {e}", exc_info=True
+                )
+
+        logger.info(f"Enriched {len(enriched_transactions)} transactions.")
+
+        # Log details about FILES before using it
+        logger.debug(f"FILES variable: {FILES} (type: {type(FILES)})")
+        try:
+            # Log the value for TRANSACTIONS_LIVE
+            key_value = (
+                FILES.get("TRANSACTIONS_LIVE") if isinstance(FILES, dict) else None
+            )
+            logger.debug(
+                f"FILES['TRANSACTIONS_LIVE']: {key_value} (type: {type(key_value)})"
+            )
+        except Exception as e:
+            logger.error(
+                f"Error accessing FILES['TRANSACTIONS_LIVE']: {e}", exc_info=True
+            )
+
+        existing_data = load_transactions_json(FILES["TRANSACTIONS_LIVE"])
+        logger.debug(
+            f"Loaded {len(existing_data)} existing transactions from TRANSACTIONS_LIVE."
+        )
+
+        unique_transactions = {
+            tx["transaction_id"]: tx for tx in (existing_data + enriched_transactions)
+        }
+        final_transactions = list(unique_transactions.values())
+        logger.debug(
+            f"Total unique transactions after deduplication: {len(final_transactions)}"
+        )
+
+        logger.info(
+            "Saving enriched, deduplicated transactions json & updating SQL database..."
+        )
+
+        # Add logging before calling save_transactions_to_db
+        logger.debug("Preparing to call save_transactions_to_db.")
+        logger.debug(
+            f"Final transactions: type: {type(final_transactions)}, length: {len(final_transactions)}"
+        )
+        logger.debug(
+            f"Accounts (linked_accounts): type: {type(accounts)}; content: {accounts}"
+        )
+
+        # Log the expected parameters for save_transactions_to_db
+        expected_args = inspect.getfullargspec(save_transactions_to_db).args
+        logger.debug(
+            f"save_transactions_to_db expects the following arguments: {expected_args}"
+        )
+
+        # Here, the call is made with only two arguments.
+        logger.debug(
+            "Calling save_transactions_to_db with two arguments instead of the required three."
+        )
+        try:
+            session = Session()  # Create a new database session
+            # Pass the raw transactions (or you might pass the enriched ones depending on your logic)
+            save_transactions_to_db(
+                session, final_transactions, FILES["LINKED_ACCOUNTS"]
+            )
+            session.commit()
+            logger.info("Transactions saved to the database.")
+        except Exception:
+            logger.info("Saved transactions to SQL database.")
+
+        try:
+            logger.debug(
+                f"About to save JSON backup using key: {FILES['TRANSACTIONS_LIVE']}"
+            )
+            save_json_with_backup(
+                FILES["TRANSACTIONS_LIVE"], {"transactions": final_transactions}
+            )
+            logger.info(
+                f"Updated TRANSACTIONS_LIVE with {len(unique_transactions)} transactions."
+            )
+        except Exception as e:
+            logger.error(f"Error saving JSON backup: {e}", exc_info=True)
+            raise
+
+        return (
+            jsonify(
+                {"status": "success", "message": "Transactions processed successfully."}
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error in process_transactions: {e}", exc_info=True)
+
+
+# Process transactions helper
 def enrich_transaction(transaction, accounts, items):
     account_info = accounts.get(transaction["account_id"], {})
     item_info = items.get(account_info.get("item_id", ""), {})
 
+    # Adjust amount for credit accounts
     account_type = account_info.get("type", "Unknown")
     amount = transaction["amount"]  # Get transaction amount
-
-    # Adjust amount for credit accounts
     if account_type == "credit" and amount > 0:
+        logger.debug(
+            f"Flipped {amount} for expense activity from Account Type: {account_type} on Item ID: {item_info}"
+        )
         amount = -amount  # Flip positive transactions (expenses) to negative
 
     return {
@@ -92,41 +208,3 @@ def enrich_transaction(transaction, accounts, items):
         .get("transactions", {})
         .get("last_successful_update", "N/A"),
     }
-
-
-# Functions for /settings routes and theme handling
-def get_available_themes():
-    try:
-        themes = [f.name for f in THEMES_DIR.glob("*.css")]
-        logger.debug(f"Available themes: {themes}")
-        return themes
-    except Exception as e:
-        logger.error(f"Error accessing themes directory: {e}")
-        return []
-
-
-def get_current_theme():
-    """Get the currently active theme."""
-    try:
-        if CURRENT_THEME.exists():
-            with open(CURRENT_THEME, "r") as f:
-                return f.read().strip()
-        logger.info("No current theme file found. Using default theme.")
-        return DEFAULT_THEME.name
-    except Exception as e:
-        logger.error(f"Error reading current theme: {e}")
-        return DEFAULT_THEME.name
-
-
-def set_theme(theme_name):
-    """Set the active theme."""
-    if theme_name not in get_available_themes():
-        raise ValueError(f"Theme '{theme_name}' is not available.")
-    try:
-        with open(CURRENT_THEME, "w") as f:
-            f.write(theme_name)
-        logger.info(f"Theme updated to: {theme_name}")
-        return True
-    except Exception as e:
-        logger.error(f"Error updating theme: {e}")
-        return False
