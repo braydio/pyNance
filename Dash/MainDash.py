@@ -5,6 +5,7 @@ from charts import charts
 from config import DIRECTORIES, FILES, setup_logger
 from flask import Blueprint, Flask, jsonify, render_template, request
 from plaid_endpoints import plaid_investments, plaid_transactions
+from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
 from transactions import transactions
@@ -146,4 +147,5 @@ def set_theme(theme_name):
 if __name__ == "__main__":
     logger.info("Starting Flask application, initializing SQL Database.")
     init_db()
+    fetch_and_populate_categories()
     app.run(host="0.0.0.0", port=5000, debug=True)
