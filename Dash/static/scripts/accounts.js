@@ -21,14 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
  * Plaid Link initialization
  */
 function initializePlaidLink() {
-  fetchData("/get_link_token")
+  fetchData("/plaid_link_transactions")
     .then((data) => {
       if (data.link_token) {
         const handler = Plaid.create({
           token: data.link_token,
           onSuccess: function (public_token, metadata) {
             console.log("Public Token:", public_token);
-            fetchData("/save_public_token", {
+            fetchData("/public_transactions_token", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ public_token }),
@@ -157,19 +157,19 @@ function renderInstitutions(institutions) {
   institutionsContainer.innerHTML = ""; // Clear old content
 
   Object.entries(institutions).forEach(([institutionName, details]) => {
-    // Optionally sanitize institutionName before using it in an element ID
+    // Sanitize the institution name for an element ID.
     const safeInstitutionName = institutionName.replace(/\s+/g, "-").toLowerCase();
+    const lastUpdatedFormatted = formatDateTime(details.last_successful_update);
 
     const institutionDiv = document.createElement("div");
     institutionDiv.className = "institution";
-    const lastUpdatedFormatted = formatDateTime(details.last_successful_update);
 
     institutionDiv.innerHTML = `
       <div class="institution-header">
         <h3>${institutionName} (${details.accounts.length} accounts)</h3>
         <div>
           <span class="last-refresh">Last Updated: ${lastUpdatedFormatted}</span>
-          <button class="refresh-accounts" data-item-id="${details.item_id}">Refresh</button>
+          <button class="refresh-accounts" data-item-id="${details.item_id}">Refresh Button REAL!</button>
         </div>
       </div>
       <div id="accounts-${safeInstitutionName}" class="accounts-container">
@@ -184,6 +184,7 @@ function renderInstitutions(institutions) {
                   <span class="account-balance ${signClass}">$${balance.toLocaleString()}</span>
                 </div>
                 <small>${acc.subtype} - ${acc.type}</small>
+                <button class="delete-account" data-account-id="${acc.account_id}">Delete</button>
               </div>
             `;
           })
@@ -214,6 +215,18 @@ function renderInstitutions(institutions) {
     institutionsContainer.appendChild(institutionDiv);
   });
 }
+/**
+ * Attach a delegated event listener for delete buttons.
+ * This code listens for clicks on any element with the "delete-account" class.
+ */
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.classList.contains("delete-account")) {
+    const accountId = e.target.getAttribute("data-account-id");
+    if (confirm("Are you sure you want to delete this account?")) {
+      deleteAccount(accountId);
+    }
+  }
+});
 
 /**
  * Generate product buttons for each institution
@@ -234,7 +247,7 @@ function generateProductButtons(itemId, products, institutionDiv) {
  */
 async function refreshProduct(itemId, product) {
   try {
-    const response = await fetch("/refresh_item", {
+    const response = await fetch("/refresh_transactions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -253,6 +266,29 @@ async function refreshProduct(itemId, product) {
     console.error("Error refreshing product:", error);
     alert("Failed to refresh product. Check console for details.");
   }
+}
+
+/**
+ * Delete an account by calling the /delete_account API endpoint.
+ */
+function deleteAccount(accountId) {
+  fetchData("/delete_account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ account_id: accountId }),
+  })
+    .then((data) => {
+      if (data.status === "success") {
+        alert(`Account ${accountId} deleted successfully.`);
+        fetchAndRenderInstitutions(); // Refresh the UI to reflect deletion
+      } else {
+        alert(`Error deleting account: ${data.error}`);
+      }
+    })
+    .catch((error) => {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Check console for details.");
+    });
 }
 
 /**
@@ -275,7 +311,7 @@ function refreshInstitution(itemId, institutionName) {
   button.disabled = true;
   button.textContent = "Refreshing...";
 
-  fetchData("/refresh_account", {
+  fetchData("/transactions_refresh", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item_id: itemId }),
