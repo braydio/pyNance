@@ -17,7 +17,7 @@ from helper_utils import (
     load_json,
     save_json_with_backup,
 )
-from sql_utils import save_account_balances, save_accounts_to_db
+from sql_utils import Category, Session, save_account_balances, save_accounts_to_db
 
 
 # -------------------------
@@ -150,6 +150,122 @@ def save_initial_account_data(access_token: str, item_id: str):
         logger.info(f"Account data saved for item_id {item_id}.")
     except Exception as e:
         logger.error(f"Error in save_initial_account_data: {e}")
+
+
+def fetch_and_populate_categories():
+    """
+    Fetch all Plaid categories from the Plaid API using the Plaid Python client and populate the SQL categories table.
+
+    For each category returned from Plaid:
+      - The first element in the "hierarchy" list is used as the primary category.
+      - The second element (if available) is used as the secondary category.
+      - If the hierarchy contains only one element (or is empty), only the primary category is created.
+
+    This function uses a new SQLAlchemy session (via Session()) to insert into the database.
+    It only runs if the categories table is currently empty.
+    """
+    from plaid.api import plaid_api
+    from plaid.api_client import ApiClient
+    from plaid.configuration import Configuration
+
+    # First, check if the categories table is already populated.
+    session = Session()
+    try:
+        existing_count = session.query(Category).count()
+        if existing_count > 0:
+            logger.info(
+                f"{existing_count} categories already exist in the database. Skipping population."
+            )
+            return
+    except Exception as e:
+        logger.error(f"Error checking existing categories: {e}")
+        return
+    finally:
+        session.close()
+
+    # Set up the Plaid client using the Plaid Python SDK.
+    configuration = Configuration(
+        host=f"https://{PLAID_ENV}.plaid.com",
+        api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET},
+    )
+    api_client = ApiClient(configuration)
+    client = plaid_api.PlaidApi(api_client)
+
+    try:
+        # Make the API call to fetch categories.
+        response = client.categories_get({})
+        categories_list = response["categories"]
+        logger.info(f"Fetched {len(categories_list)} categories from Plaid.")
+    except Exception as e:
+        logger.error(f"Error fetching categories from Plaid using SDK: {e}")
+        return
+
+    # Create a new session for inserting categories.
+    session = Session()
+    try:
+        # Ensure there is a default "Unknown" category available.
+        unknown_category = session.query(Category).filter_by(name="Unknown").first()
+        if not unknown_category:
+            unknown_category = Category(name="Unknown")
+            session.add(unknown_category)
+            session.commit()
+
+        # Loop through the fetched categories.
+        for cat in categories_list:
+            hierarchy = cat.get("hierarchy", [])
+            if hierarchy:
+                primary_name = hierarchy[0]
+                # If there's more than one element, the second is our secondary category.
+                secondary_name = hierarchy[1] if len(hierarchy) > 1 else None
+            else:
+                primary_name = "Unknown"
+                secondary_name = None
+
+            # Lookup (by name) or create the primary category.
+            primary_cat = session.query(Category).filter_by(name=primary_name).first()
+            if not primary_cat:
+                primary_cat = Category(name=primary_name)
+                session.add(primary_cat)
+                session.commit()
+                logger.info(f"Created primary category: {primary_name}")
+            else:
+                logger.debug(f"Reusing existing primary category: {primary_name}")
+
+            # If a secondary category is provided and is different from the primary...
+            if secondary_name and secondary_name != primary_name:
+                secondary_cat = (
+                    session.query(Category).filter_by(name=secondary_name).first()
+                )
+                if not secondary_cat:
+                    secondary_cat = Category(
+                        name=secondary_name, parent_id=primary_cat.id
+                    )
+                    session.add(secondary_cat)
+                    session.commit()
+                    logger.info(
+                        f"Created secondary category: {secondary_name} under {primary_name}"
+                    )
+                else:
+                    # Optionally, update its parent_id if it doesn't match the expected primary.
+                    if secondary_cat.parent_id != primary_cat.id:
+                        secondary_cat.parent_id = primary_cat.id
+                        session.commit()
+                        logger.info(
+                            f"Updated secondary category: {secondary_name} to be under {primary_name}"
+                        )
+                    else:
+                        logger.debug(
+                            f"Reusing existing secondary category: {secondary_name}"
+                        )
+        logger.info(
+            "Plaid categories have been successfully populated into the database."
+        )
+
+    except Exception as e:
+        session.rollback()
+        logger.error(f"Error populating categories: {e}")
+    finally:
+        session.close()
 
 
 # -------------------------
