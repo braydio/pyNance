@@ -8,7 +8,6 @@ from plaid_endpoints import plaid_investments, plaid_transactions
 from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
-from transactions import transactions
 
 logger = setup_logger()
 
@@ -51,7 +50,6 @@ CURRENT_THEME = FILES["CURRENT_THEME"]
 # === Configure Flask ===
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.register_blueprint(accounts)
-app.register_blueprint(transactions)
 app.register_blueprint(plaid_transactions)
 app.register_blueprint(plaid_investments)
 app.register_blueprint(settings)
