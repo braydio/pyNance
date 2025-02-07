@@ -77,6 +77,7 @@ logger.debug("Files initialized:")
 for name, path in FILES.items():
     logger.debug(f"{name}: {path}")
 
+
 __all__ = [
     "BASE_DIR",
     "DIRECTORIES",
