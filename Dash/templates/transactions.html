@@ -15,8 +15,6 @@
         white-space: normal; /* Allow text to break into multiple lines */
     }
 </style>
-
-    </style>
 </head>
 <body>
     <header>
@@ -52,13 +50,12 @@
                 <button id="lower-side-button2" onclick="">No click</button>
                 <p id="group-status"></p>
             </div>
-
-            <p id="status"></p>
         </div>
-    <!-- Transactions Table -->
-    <div class="transactions">
+      <!-- Transactions Table -->
+      <div class="transactions">
         <h3>Transactions</h3>
         <table id="transactions-table" class="display">
+          <p id="currentFilterLabel">Showing: All Categories</p>
           <thead>
             <tr>
               <th>Date</th>
@@ -75,7 +72,12 @@
               <td colspan="7">No transactions available</td>
             </tr>
           </tbody>
-        </table>          
+        </table>
+        <div id="pagination-controls">
+          <button id="prevPage" onclick="changePage(-1)">Previous</button>
+          <span id="pageIndicator">Page 1</span>
+          <button id="nextPage" onclick="changePage(1)">Next</button>
+        </div>                  
       </main>
     <footer>&copy; Brayden's Finance Dashroad</footer>
 
@@ -83,7 +85,9 @@
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <!-- DataTables JS -->
     <script src="https://cdn.datatables.net/1.13.1/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.4/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.3.4/js/buttons.html5.min.js"></script>
     <!-- Local JS -->
-    <script src="{{ url_for('static', filename='scripts/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='scripts/transactions.js') }}"></script>
 </body>
 </html>
