@@ -18,64 +18,17 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 /**
- * Main initialization function
- */
-function init() {
-  // 1) Grab references to DOM elements
-  institutionsContainer = document.getElementById("institutions-container");
-  linkButton = document.getElementById("link-button");
-  statusContainer = document.getElementById("status");
-  groupNameInput = document.getElementById("group-name");
-  saveGroupButton = document.getElementById("save-group");
-  groupStatus = document.getElementById("group-status");
-
-  // 2) Set up event listeners
-  if (linkButton) {
-    // Initialize Plaid link when user clicks
-    linkButton.addEventListener("click", initializePlaidLink);
-  }
-  if (saveGroupButton) {
-    saveGroupButton.addEventListener("click", saveGroup);
-  }
-
-  // 3) Fetch institutions to populate UI
-  if (institutionsContainer) {
-    fetchAndRenderInstitutions();
-  }
-
-  console.log("App init complete");
-}
-
-/**
- * Fetch utility: returns a Promise resolving to JSON
- */
-function fetchData(url, options = {}) {
-  return fetch(url, options)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .catch((error) => {
-      console.error(`Error fetching data from ${url}:`, error);
-      throw error;
-    });
-}
-
-/**
  * Plaid Link initialization
  */
 function initializePlaidLink() {
-  fetchData("/get_link_token")
+  fetchData("/plaid_link_transactions")
     .then((data) => {
       if (data.link_token) {
         const handler = Plaid.create({
           token: data.link_token,
           onSuccess: function (public_token, metadata) {
             console.log("Public Token:", public_token);
-
-            fetchData("/save_public_token", {
+            fetchData("/public_transactions_token", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ public_token }),
@@ -102,7 +55,7 @@ function initializePlaidLink() {
           },
         });
 
-        // Show Plaid Link on button click
+        // Show Plaid Link immediately (or you could open it on button click)
         handler.open();
       } else {
         statusContainer.textContent = "Error fetching link token.";
@@ -111,6 +64,71 @@ function initializePlaidLink() {
     .catch((error) => {
       statusContainer.textContent = "Error initializing Plaid Link.";
       console.error(error);
+    });
+}
+
+/**
+ * Helper function to format date into d/mm/yyyy H:mm AM/PM
+ */
+function formatDateTime(timestamp) {
+  if (!timestamp) return "Unknown"; // Handle cases where timestamp is null or undefined
+
+  const date = new Date(timestamp);
+  const options = {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: true, // Enable AM/PM format
+  };
+
+  return date.toLocaleString("en-GB", options); // Use en-GB to ensure d/mm/yyyy order
+}
+
+/**
+ * Main initialization function
+ */
+function init() {
+  // 1) Grab references to DOM elements
+  institutionsContainer = document.getElementById("institutions-container");
+  statusContainer = document.getElementById("status");
+  groupNameInput = document.getElementById("group-name");
+  saveGroupButton = document.getElementById("save-group");
+  groupStatus = document.getElementById("group-status");
+  linkButton = document.getElementById("link-button");
+
+  if (saveGroupButton) {
+    saveGroupButton.addEventListener("click", saveGroup);
+  }
+
+  // Attach Plaid Link event handler to linkButton if it exists
+  if (linkButton) {
+    linkButton.addEventListener("click", initializePlaidLink);
+  }
+
+  // Fetch institutions to populate UI
+  if (institutionsContainer) {
+    fetchAndRenderInstitutions();
+  }
+
+  console.log("App init complete");
+}
+
+/**
+ * Fetch utility: returns a Promise resolving to JSON
+ */
+function fetchData(url, options = {}) {
+  return fetch(url, options)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .catch((error) => {
+      console.error(`Error fetching data from ${url}:`, error);
+      throw error;
     });
 }
 
@@ -139,6 +157,10 @@ function renderInstitutions(institutions) {
   institutionsContainer.innerHTML = ""; // Clear old content
 
   Object.entries(institutions).forEach(([institutionName, details]) => {
+    // Sanitize the institution name for an element ID.
+    const safeInstitutionName = institutionName.replace(/\s+/g, "-").toLowerCase();
+    const lastUpdatedFormatted = formatDateTime(details.last_successful_update);
+
     const institutionDiv = document.createElement("div");
     institutionDiv.className = "institution";
 
@@ -146,11 +168,11 @@ function renderInstitutions(institutions) {
       <div class="institution-header">
         <h3>${institutionName} (${details.accounts.length} accounts)</h3>
         <div>
-          <span class="last-refresh">Last Updated: ${details.last_successful_update || "Unknown"}</span>
-          <button class="refresh-accounts" data-item-id="${details.item_id}">Refresh</button>
+          <span class="last-refresh">Last Updated: ${lastUpdatedFormatted}</span>
+          <button class="refresh-accounts" data-item-id="${details.item_id}">Refresh Button REAL!</button>
         </div>
       </div>
-      <div id="accounts-${institutionName}" class="accounts-container">
+      <div id="accounts-${safeInstitutionName}" class="accounts-container">
         ${details.accounts
           .map((acc) => {
             const balance = acc.balances.current || 0;
@@ -162,22 +184,28 @@ function renderInstitutions(institutions) {
                   <span class="account-balance ${signClass}">$${balance.toLocaleString()}</span>
                 </div>
                 <small>${acc.subtype} - ${acc.type}</small>
+                <button class="delete-account" data-account-id="${acc.account_id}">Delete</button>
               </div>
             `;
           })
           .join("")}
       </div>
+      <div class="product-buttons" id="products-${details.item_id}">
+      </div>
     `;
 
-    // We'll toggle the accounts on click of the institution header
+    // Generate product buttons for this institution
+    generateProductButtons(details.item_id, details.products, institutionDiv);
+
+    // Toggle the accounts on click of the institution header
     const header = institutionDiv.querySelector(".institution-header");
     header.addEventListener("click", (e) => {
       const refreshBtn = header.querySelector(".refresh-accounts");
       if (e.target === refreshBtn) return; // Avoid toggling if user clicks refresh
-      toggleAccountsTable(institutionName);
+      toggleAccountsTable(safeInstitutionName);
     });
 
-    // Attach refresh logic
+    // Attach refresh logic for the institution
     const refreshButton = institutionDiv.querySelector(".refresh-accounts");
     refreshButton.addEventListener("click", (event) => {
       event.stopPropagation(); // Don’t toggle accounts if clicking refresh
@@ -187,12 +215,87 @@ function renderInstitutions(institutions) {
     institutionsContainer.appendChild(institutionDiv);
   });
 }
+/**
+ * Attach a delegated event listener for delete buttons.
+ * This code listens for clicks on any element with the "delete-account" class.
+ */
+document.addEventListener("click", function (e) {
+  if (e.target && e.target.classList.contains("delete-account")) {
+    const accountId = e.target.getAttribute("data-account-id");
+    if (confirm("Are you sure you want to delete this account?")) {
+      deleteAccount(accountId);
+    }
+  }
+});
+
+/**
+ * Generate product buttons for each institution
+ */
+function generateProductButtons(itemId, products, institutionDiv) {
+  const productContainer = institutionDiv.querySelector(`#products-${itemId}`);
+  products.forEach((product) => {
+    const button = document.createElement("button");
+    button.textContent = `Refresh ${product}`;
+    button.classList.add("refresh-product-button");
+    button.onclick = () => refreshProduct(itemId, product);
+    productContainer.appendChild(button);
+  });
+}
+
+/**
+ * Call Flask API to refresh a specific product for an institution
+ */
+async function refreshProduct(itemId, product) {
+  try {
+    const response = await fetch("/refresh_transactions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ item_id: itemId, product: product }),
+    });
+
+    const data = await response.json();
+    if (data.status === "success") {
+      alert(`${product} successfully refreshed for item ${itemId}`);
+      fetchAndRenderInstitutions(); // Refresh UI after update
+    } else {
+      alert(`Error: ${data.error}`);
+    }
+  } catch (error) {
+    console.error("Error refreshing product:", error);
+    alert("Failed to refresh product. Check console for details.");
+  }
+}
+
+/**
+ * Delete an account by calling the /delete_account API endpoint.
+ */
+function deleteAccount(accountId) {
+  fetchData("/delete_account", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ account_id: accountId }),
+  })
+    .then((data) => {
+      if (data.status === "success") {
+        alert(`Account ${accountId} deleted successfully.`);
+        fetchAndRenderInstitutions(); // Refresh the UI to reflect deletion
+      } else {
+        alert(`Error deleting account: ${data.error}`);
+      }
+    })
+    .catch((error) => {
+      console.error("Error deleting account:", error);
+      alert("Failed to delete account. Check console for details.");
+    });
+}
 
 /**
  * Toggle the accounts table for a given institution
  */
-function toggleAccountsTable(institutionName) {
-  const container = document.getElementById(`accounts-${institutionName}`);
+function toggleAccountsTable(safeInstitutionName) {
+  const container = document.getElementById(`accounts-${safeInstitutionName}`);
   if (container) {
     container.style.display = container.style.display === "none" ? "block" : "none";
   }
@@ -208,13 +311,12 @@ function refreshInstitution(itemId, institutionName) {
   button.disabled = true;
   button.textContent = "Refreshing...";
 
-  fetchData("/refresh_account", {
+  fetchData("/transactions_refresh", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ item_id: itemId }),
   })
     .then((res) => {
-      // If server returned a success => { status: 'success', transactions_fetched: ... }
       if (res.status === "success") {
         alert(
           `Successfully refreshed ${institutionName}. Fetched ${res.transactions_fetched} transactions.`
@@ -248,10 +350,9 @@ function saveGroup() {
 
   // For this example, if you have any checkboxes for selected institutions:
   const selectedInstitutions = [];
-  // (If you have them, do something like:)
   document.querySelectorAll(".institution-checkbox:checked").forEach((chk) => {
-     selectedInstitutions.push(chk.dataset.itemId);
-   });
+    selectedInstitutions.push(chk.dataset.itemId);
+  });
 
   // POST to /save_group
   fetchData("/save_group", {
