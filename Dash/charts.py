@@ -117,8 +117,8 @@ def get_cash_flow():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@charts.route("/api/net_worth", methods=["GET"])
-def get_net_worth():
+@charts.route("/api/net_assets", methods=["GET"])
+def get_net_assets():
     try:
         with open(LINKED_ACCOUNTS, "r") as f:
             linked_accounts = json.load(f)
