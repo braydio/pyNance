@@ -4,15 +4,22 @@ from accounts import accounts
 from charts import charts
 from config import DIRECTORIES, FILES, setup_logger
 from flask import Blueprint, Flask, jsonify, render_template, request
-from plaid_endpoints import plaid_investments, plaid_transactions
+from plaid_endpoints import plaid_core, plaid_investments, plaid_transactions
 from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
+from teller_dot_io import main_teller
 from transactions import transactions
 
 logger = setup_logger()
 
 debug = Blueprint("debug", __name__)
+
+
+@debug.route("/testing")
+def testing_view():
+    """Render the testing.html template."""
+    return render_template("testing.html")
 
 
 @debug.route("/debug")
@@ -54,9 +61,11 @@ app.register_blueprint(accounts)
 app.register_blueprint(transactions)
 app.register_blueprint(plaid_transactions)
 app.register_blueprint(plaid_investments)
+app.register_blueprint(plaid_core)
 app.register_blueprint(settings)
 app.register_blueprint(charts)
 app.register_blueprint(debug)
+app.register_blueprint(main_teller)
 
 
 # === Main Flask App Routes ===
@@ -65,6 +74,11 @@ def dashboard():
     """Render the main dashboard."""
     logger.debug("Rendering dashboard.html")
     return render_template("dashboard.html")
+
+
+@app.route("/teller-dot")
+def teller_dot_homepage():
+    return render_template("teller-dot.html")
 
 
 @app.route("/settings")
