@@ -3,6 +3,7 @@ __pycache__
 *.bak
 *.log
 *.json
+*.pem
 !ExampleItems.json
 !ExampleAccounts.json
 .env
@@ -11,5 +12,5 @@ venv
 dev/
 temp/
 logs/
-
+*secret
 current_theme.txt

@@ -90,9 +90,9 @@ main {
 .controls button {
     background-color: #4b5563; /* Neutral muted button */
     color: #f9fafb; /* Light text */
-    padding: 0.6rem 1rem;
     font-size: 1rem;
-    border: none;
+    border: 1px solid #4b5563; /* Dark muted border */
+    padding: 0.5rem 1rem;
     border-radius: 6px;
     cursor: pointer;
     transition: background-color 0.3s, box-shadow 0.3s;
@@ -102,7 +102,25 @@ main {
     background-color: #6b7280; /* Slightly lighter hover */
     box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);
 }
-
+/* Style for the category suggestions dropdown */
+#category-suggestions {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background: white;
+    border: 1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    width: 200px;
+}
+#category-suggestions li {
+    padding: 5px;
+    cursor: pointer;
+}
+#category-suggestions li:hover {
+    background: #f0f0f0;
+}
 .institution button {
     background-color: #4b5563; /* Neutral muted button */
     color: #f9fafb; /* Light text */
