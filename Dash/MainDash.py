@@ -4,7 +4,7 @@ from accounts import accounts
 from charts import charts
 from config import DIRECTORIES, FILES, setup_logger
 from flask import Blueprint, Flask, jsonify, render_template, request
-from plaid_endpoints import plaid_core, plaid_investments, plaid_transactions
+from plaid_endpoints import plaid_investments, plaid_transactions
 from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
@@ -60,7 +60,6 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.register_blueprint(accounts)
 app.register_blueprint(plaid_transactions)
 app.register_blueprint(plaid_investments)
-app.register_blueprint(plaid_core)
 app.register_blueprint(settings)
 app.register_blueprint(charts)
 app.register_blueprint(debug)
