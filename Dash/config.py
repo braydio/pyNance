@@ -12,6 +12,7 @@ DIRECTORIES = {
     "LOGS_DIR": BASE_DIR / "logs",
     "THEMES_DIR": BASE_DIR / "static/themes",
     "ARCHIVE_DIR": BASE_DIR / "archive",
+    "CONFIG_DIR": BASE_DIR / "config",
 }
 
 # Ensure directories exist
@@ -56,16 +57,23 @@ PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
+TELLER_APP_ID = os.getenv("TELLER_APP_ID")
+
 # Define required files
 FILES = {
     "LINKED_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkAccounts.json",
     "LINKED_ITEMS": DIRECTORIES["DATA_DIR"] / "LinkItems.json",
+    "LINKED_INVESTMENT_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkInvestments.json",
     "TRANSACTIONS_LIVE": DIRECTORIES["DATA_DIR"] / "Transactions.json",
     "TRANSACTIONS_RAW_ENRICHED": DIRECTORIES["TEMP_DIR"] / "RichTransactionsRaw.json",
     "TRANSACTIONS_RAW": DIRECTORIES["TEMP_DIR"] / "RawTransactions.json",
     "DEFAULT_THEME": DIRECTORIES["THEMES_DIR"] / "default.css",
     "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
     "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
+    "TELLER_TOKENS": DIRECTORIES["DATA_DIR"] / "TellerDotTokens.json",
+    "TELLER_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json",
+    "TELLER_DOT_KEY": DIRECTORIES["CONFIG_DIR"] / "private_key.pem",
+    "TELLER_DOT_CERT": DIRECTORIES["CONFIG_DIR"] / "certificate.pem",
 }
 
 # Log directory and file setup
