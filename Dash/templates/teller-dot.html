@@ -1,60 +1,73 @@
 <!DOCTYPE html>
 <html>
-    <body>
-        <header>
-          <div>
-            <h1>Accounts</h1>
-            <h3>dot Brayden.com</h3>
-          </div>
-          <nav class="menu">
-            <button onclick="window.location.href='/'">Dashboard</button>
-            <button onclick="window.location.href='/teller-dot'">Teller.IO</button>
-            <button onclick="window.location.href='/accounts'">Accounts</button>
-            <button onclick="window.location.href='/transactions'">Transactions</button>
-            <button onclick="window.location.href='/settings'">Settings</button>
-          </nav>
-        </header>
-    <body>
-    <!-- Teller Connect Button -->
-    <button id="teller-connect">Connect to your bank</button>
+<head>
+  <title>Teller Connect</title>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Accounts</h1>
+      <h3>dot Brayden.com</h3>
+    </div>
+    <nav class="menu">
+      <button onclick="window.location.href='/'">Dashboard</button>
+      <button onclick="window.location.href='/teller-dot'">Teller.IO</button>
+      <button onclick="window.location.href='/accounts'">Accounts</button>
+      <button onclick="window.location.href='/transactions'">Transactions</button>
+      <button onclick="window.location.href='/settings'">Settings</button>
+    </nav>
+  </header>
 
-    <script>
-        document.addEventListener("DOMContentLoaded", function () {
-            // Teller Connect setup
-            var tellerConnect = TellerConnect.setup({
-                applicationId: "{{ application_id }}", // Passed from Flask
-                products: ["transactions", "balance"],
-                onInit: function () {
-                    console.log("Teller Connect initialized");
-                },
-                onSuccess: function (enrollment) {
-                    console.log("Enrollment successful", enrollment);
-                    // Send the public_token to the backend
-                    fetch("/exchange_public_token", {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ public_token: enrollment.accessToken })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === "success") {
-                            console.log("Access token saved:", data.access_token);
-                        } else {
-                            console.error("Error saving access token:", data.error);
-                        }
-                    })
-                    .catch(error => console.error("Error:", error));
-                },
-                onExit: function () {
-                    console.log("User exited Teller Connect");
-                }
-            });
+  <!-- Teller Connect Button -->
+  <button id="teller-connect">Connect to your bank</button>
 
-            // Add click event to the button
-            document.getElementById("teller-connect").addEventListener("click", function () {
-                tellerConnect.open();
-            });
-        });
-    </script>
+  <!-- Teller Connect Script -->
+  <script src="https://cdn.teller.io/connect/connect.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      var tellerConnect = TellerConnect.setup({
+        applicationId: "app_p9ohmuos5p7om9h4k8000", // Replace with your app ID
+        products: ["transactions", "balance"], // Specify products you need
+        onInit: function () {
+          console.log("Teller Connect has initialized");
+        },
+        onSuccess: function (enrollment) {
+          console.log("User enrolled successfully", enrollment);
+
+          // Send the token to your backend for secure storage
+          fetch("/save_token", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              access_token: enrollment.accessToken,
+              user_id: enrollment.user.id,
+            }),
+          })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.status === "success") {
+              console.log("Token saved successfully");
+            } else {
+              console.error("Error saving token:", data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+        },
+        onExit: function () {
+          console.log("User closed Teller Connect");
+        }
+      });
+
+      // Attach Teller Connect to the button
+      var connectButton = document.getElementById("teller-connect");
+      connectButton.addEventListener("click", function () {
+        tellerConnect.open();
+      });
+    });
+  </script>
 </body>
 </html>
