@@ -17,10 +17,23 @@
       <button onclick="window.location.href='/settings'">Settings</button>
     </nav>
   </header>
-
+<div>
   <!-- Teller Connect Button -->
   <button id="teller-connect">Connect to your bank</button>
-
+</div>
+<table id="linked-accounts">
+    <thead>
+      <tr>
+        <th>Institution</th>
+        <th>Account Name</th>
+        <th>Balance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Dynamic rows will be appended here -->
+    </tbody>
+  </table>
+  
   <!-- Teller Connect Script -->
   <script src="https://cdn.teller.io/connect/connect.js"></script>
   <script>

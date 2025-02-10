@@ -1,65 +1,110 @@
 document.addEventListener("DOMContentLoaded", function () {
-  // Fetch the link token from the backend
-  fetch("/generate_link_token", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
+  var tellerConnect = TellerConnect.setup({
+    applicationId: "app_p9ohmuos5p7om9h4k8000", // Replace with your app ID
+    products: ["transactions", "balance"], // Specify the products you need
+    onInit: function () {
+      console.log("Teller Connect initialized");
     },
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.status === "success") {
-        const linkToken = data.link_token;
+    onSuccess: function (enrollment) {
+      console.log("Enrollment successful", enrollment);
 
-        // Initialize Teller Connect with the link token
-        var tellerConnect = TellerConnect.setup({
-          linkToken: linkToken,
-          products: ["transactions", "balance"],
-          onInit: function () {
-            console.log("Teller Connect has initialized");
-          },
-          onSuccess: function (enrollment) {
-            // Log the enrollment details
-            console.log("User enrolled successfully", enrollment);
-
-            // Send the token to your backend
-            fetch("/save_token", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                access_token: enrollment.accessToken, // Send the token
-                user_id: enrollment.user.id, // Optionally send the user ID
-              }),
-            })
-              .then((response) => response.json())
-              .then((data) => {
-                if (data.status === "success") {
-                  console.log("Token saved successfully");
-                } else {
-                  console.error("Error saving token:", data.error);
-                }
-              })
-              .catch((error) => {
-                console.error("Error:", error);
-              });
-          },
-          onExit: function () {
-            console.log("User closed Teller Connect");
-          },
+      // Send token and user ID to backend
+      fetch("http://127.0.0.1:5000/save_token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          access_token: enrollment.accessToken,
+          user_id: enrollment.user.id,
+        }),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            console.log("Token saved successfully");
+          } else {
+            console.error("Error saving token:", data.message);
+          }
+        })
+        .catch((error) => {
+          console.error("Error:", error);
         });
+    },
+    onExit: function () {
+      console.log("User exited Teller Connect");
+    },
+  });
 
-        // Attach Teller Connect to the button
-        var el = document.getElementById("teller-connect");
-        el.addEventListener("click", function () {
-          tellerConnect.open();
-        });
-      } else {
-        console.error("Failed to fetch link token:", data.message);
-      }
-    })
-    .catch((error) => {
-      console.error("Error fetching link token:", error);
-    });
+  document.getElementById("teller-connect").addEventListener("click", function () {
+    tellerConnect.open();
+  });
 });
+
+fetch("/get_all_accounts", {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.status === "success") {
+      const accounts = data.data;
+      const tableBody = document.querySelector("#linked-accounts tbody");
+
+      // Clear existing rows
+      tableBody.innerHTML = "";
+
+      // Add rows for each account
+      accounts.forEach((account) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${account.institution?.name || "Unknown"}</td>
+          <td>${account.name}</td>
+          <td>${account.balances?.available || "N/A"}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    } else {
+      console.error("Error fetching accounts:", data.message);
+    }
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+  });
+fetch("/get_all_accounts", {
+  method: "GET",
+  headers: {
+    "Content-Type": "application/json",
+  },
+})
+  .then((response) => response.json())
+  .then((data) => {
+    if (data.status === "success") {
+      const accounts = data.data;
+      const tableBody = document.querySelector("#linked-accounts tbody");
+
+      // Clear existing rows
+      tableBody.innerHTML = "";
+
+      // Add rows for each account
+      accounts.forEach((account) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${account.institution?.name || "Unknown"}</td>
+          <td>${account.name}</td>
+          <td>${account.balances?.available || "N/A"}</td>
+        `;
+        tableBody.appendChild(row);
+      });
+    } else {
+      console.error("Error fetching accounts:", data.message);
+    }
+  })
+  .catch((error) => {
+    console.error("Error:", error);
+  });
+
+
+  
