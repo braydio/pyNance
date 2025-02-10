@@ -14,3 +14,5 @@ temp/
 logs/
 *secret
 current_theme.txt
+
+node_modules/
