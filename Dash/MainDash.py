@@ -8,7 +8,7 @@ from plaid_endpoints import plaid_core, plaid_investments, plaid_transactions
 from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
-from teller_dot_io import main_teller
+from teller_dot_io import link_teller, main_teller
 from transactions import transactions
 
 logger = setup_logger()
@@ -66,6 +66,7 @@ app.register_blueprint(settings)
 app.register_blueprint(charts)
 app.register_blueprint(debug)
 app.register_blueprint(main_teller)
+app.register_blueprint(link_teller)
 
 
 # === Main Flask App Routes ===
