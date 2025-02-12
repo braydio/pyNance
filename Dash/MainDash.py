@@ -73,6 +73,9 @@ def dashboard():
     logger.debug("Rendering dashboard.html")
     return render_template("dashboard.html")
 
+@transactions.route("/transactions")
+def transactions_page():
+    return render_template("transactions.html")
 
 @app.route("/teller-dot")
 def teller_dot_homepage():
