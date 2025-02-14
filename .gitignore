@@ -26,9 +26,7 @@ temp/
 *.backup
 
 # Configurations and sensitive data
-config.py
 config/
-app/config.py
 app/config/
 
 # Archive files
