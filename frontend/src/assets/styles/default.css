@@ -1,0 +1,300 @@
+/* General Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Body and HTML */
+html, body {
+    font-family: "Inter", sans-serif;
+    background-color: #181818; /* Muted dark gray background */
+    color: #d1d5db; /* Soft gray text */
+    line-height: 1.6;
+    height: 100%;
+}
+
+/* Header */
+header {
+    background-color: #1f1f1f; /* Darker muted gray */
+    color: #e5e7eb; /* Light muted gray */
+    padding: 1rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid #3f3f3f; /* Subtle darker border */
+}
+
+header h1 {
+    font-size: 1.8rem;
+    font-weight: bold;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.menu {
+    display: flex;
+    gap: 1rem;
+}
+
+.menu button {
+    background: none;
+    color: #9ca3af; /* Muted light gray */
+    border: 1px solid #4b5563; /* Dark muted border */
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.menu button:hover {
+    background-color: #374151; /* Subtle hover highlight */
+    color: #f9fafb; /* Brighter hover text */
+}
+
+/* Main Layout */
+main {
+    padding: 2rem;
+    display: grid;
+    grid-template-columns: 1fr 3fr; /* Sidebar and main content */
+    gap: 2rem;
+}
+
+/* Sidebar Styling */
+.controls {
+    background-color: #1f1f1f;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #2c2c2c;
+}
+
+.controls input[type="text"], .controls select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    background-color: #111827; /* Muted dark input background */
+    color: #e5e7eb; /* Soft muted text */
+    border: 1px solid #4b5563; /* Dark border */
+    border-radius: 6px;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.controls input[type="text"]:focus, .controls select:focus {
+    border-color: #9ca3af; /* Highlighted border */
+    box-shadow: 0 0 6px rgba(156, 163, 175, 0.5); /* Soft glow */
+}
+
+.controls button {
+    background-color: #4b5563; /* Neutral muted button */
+    color: #f9fafb; /* Light text */
+    font-size: 1rem;
+    border: 1px solid #4b5563; /* Dark muted border */
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+
+.controls button:hover {
+    background-color: #6b7280; /* Slightly lighter hover */
+    box-shadow: 0 0 10px rgba(107, 114, 128, 0.3);
+}
+/* Style for the category suggestions dropdown */
+#category-suggestions {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+    background: white;
+    border: 1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    width: 200px;
+}
+#category-suggestions li {
+    padding: 5px;
+    cursor: pointer;
+}
+#category-suggestions li:hover {
+    background: #f0f0f0;
+}
+.institution button {
+    background-color: #4b5563; /* Neutral muted button */
+    color: #f9fafb; /* Light text */
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+.institutions-container {
+    background-color: #1f1f1f;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+/* Accounts Section */
+.institution-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #222;
+    padding: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #3f3f3f;
+    transition: background-color 0.3s ease;
+}
+
+.institution-header:hover {
+    background-color: #2c2c2c;
+}
+
+.institution-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    color: #4d77a1;
+}
+
+.last-refresh {
+    font-size: 0.9em;
+    color: #9ca3af;
+    justify-content: space-around;
+}
+
+/* Dropdown for Accounts */
+.accounts-container {
+    display: none;
+    padding: 10px;
+    background: #2e2424;
+    border-left: 2px solid #2c2c2c;
+    border-right: 2px solid #2c2c2c;
+    border-bottom: 2px solid #2c2c2c;
+}
+
+.account-item {
+    padding: 8px;
+    border-bottom: 1px solid #2c2c2c;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background 0.3s ease;
+}
+
+.account-item:hover {
+    background: #2a2a2a;
+}
+
+.account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.account-balance {
+    font-weight: bold;
+    color: #f9fafb;
+}
+
+/* Visualization Section */
+canvas {
+    display: block;
+    position: relative;
+    z-index: 1;
+}
+
+.visualization, .cash-flow, .budget, .reminders {
+    position: relative;
+    overflow: visible;
+    background-color: #1f1f1f;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    border: 1px solid #2c2c2c;
+}
+
+.visualization h2, .cash-flow h2, .budget h2, .reminders h2 {
+    font-size: 1.5rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #3f3f3f;
+    padding-bottom: 0.5rem;
+}
+.refresh-accounts {
+    background-color: #4b5563; /* Neutral muted button */
+    color: #f9fafb; /* Light text */
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+    border: none;
+    border-radius: 6px;
+    margin-left: 1rem;
+    justify-content: flex-end;
+    cursor: pointer;
+    transition: background-color 0.3s, box-shadow 0.3s;
+}
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background-color: #1f1f1f;
+}
+
+table th, table td {
+    padding: 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid #2c2c2c;
+    color: #d1d5db;
+}
+
+table th {
+    background-color: #2c2c2c;
+    color: #9ca3af;
+    font-weight: bold;
+}
+
+table tr:nth-child(even) {
+    background-color: #111827;
+}
+
+table tr:hover {
+    background-color: #374151;
+    color: #f9fafb;
+}
+
+/* Footer */
+footer {
+    background-color: #1f1f1f;
+    color: #9ca3af;
+    text-align: center;
+    padding: 1rem;
+    border-top: 2px solid #3f3f3f;
+    font-size: 0.875rem;
+}
+
+/* Hover and Transition Effects */
+.institution-header:hover {
+    background-color: #374151;
+    color: #f9fafb;
+    cursor: pointer;
+}
+
+/* Media Queries */
+@media (max-width: 768px) {
+    main {
+        grid-template-columns: 1fr;
+    }
+
+    .menu {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .menu button {
+        padding: 0.8rem;
+    }
+}
