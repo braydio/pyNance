@@ -10,6 +10,7 @@ let isNetAssetsStacked = true; // Net Assets Chart: Default stacked vs. net-only
 
 let cashFlowChart;
 let isStackedView = true; // Cash Flow Chart: default to a stacked chart
+let dailyCashFlowChart; // reference to the daily (expanded) cash flow chart
 
 //----------------------------------------------------
 // A small helper function for fetching data from the server.
@@ -40,16 +41,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     toggleCategoryChartBtn.addEventListener("click", toggleCategoryChart);
   }
 
-  // Cash Flow Chart toggle button
-  const toggleCashFlowChartBtn = document.getElementById("toggleCashFlowChart");
-  if (toggleCashFlowChartBtn) {
-    toggleCashFlowChartBtn.addEventListener("click", toggleCashFlowChart);
+  // Monthly Cash Flow Chart: expand button (replaces toggle)
+  const expandCashFlowChartBtn = document.getElementById("expandCashFlowChart");
+  if (expandCashFlowChartBtn) {
+    expandCashFlowChartBtn.addEventListener("click", expandDailyCashFlowChart);
   }
 
   // Net Assets Chart toggle button
   const toggleNetAssetsBtn = document.getElementById("toggleNetAssetsChart");
   if (toggleNetAssetsBtn) {
     toggleNetAssetsBtn.addEventListener("click", toggleNetAssetsChart);
+  }
+
+  // Close button for expanded daily chart
+  const closeExpandedBtn = document.getElementById("closeExpandedCashFlow");
+  if (closeExpandedBtn) {
+    closeExpandedBtn.addEventListener("click", () => {
+      document.getElementById("expandedCashFlowContainer").style.display = "none";
+    });
   }
 });
 
@@ -67,10 +76,10 @@ async function initTransactionsTable(page = 1, pageSize = 50) {
       renderTransactionTable(allTransactions);
       updateFilterDisplay();
 
-      // Ensure resetButton exists before accessing its style
+      // Hide reset button initially
       const resetButton = document.getElementById("resetFilter");
       if (resetButton) {
-        resetButton.style.display = "none"; // Hide reset button initially
+        resetButton.style.display = "none";
       }
     }
   } catch (error) {
@@ -129,6 +138,24 @@ function filterTransactionsByCategory(category) {
     if (filterLabel) {
       filterLabel.textContent = `Showing: ${category}`;
     }
+  }
+}
+
+// New filtering function: by date (for daily chart clicks)
+function filterTransactionsByDate(date) {
+  // Assumes that tx.date is in the same string format as the chart’s label.
+  const filtered = allTransactions.filter((tx) => tx.date === date);
+  renderTransactionTable(filtered);
+  // Optionally scroll the transactions table into view.
+  document.querySelector(".transactions").scrollIntoView({ behavior: "smooth" });
+  // Show reset filter button.
+  const resetButton = document.getElementById("resetFilter");
+  if (resetButton) {
+    resetButton.style.display = "block";
+    resetButton.onclick = () => {
+      renderTransactionTable(allTransactions);
+      resetButton.style.display = "none";
+    };
   }
 }
 
@@ -224,9 +251,9 @@ function toggleCategoryChart() {
   renderCategoryChart();
 }
 
-//----------------------------------------------------
-// Cash Flow Chart
-//----------------------------------------------------
+// ----------------------------------------------------
+// Monthly Cash Flow Chart (original)
+// ----------------------------------------------------
 async function renderCashFlowChart() {
   const cashFlowCtx = document.getElementById("cashFlowChart")?.getContext("2d");
   if (!cashFlowCtx) return;
@@ -235,13 +262,11 @@ async function renderCashFlowChart() {
     const { status, data } = await fetchData("/api/cash_flow");
     if (status !== "success") return;
 
-    // Prepare data
     const labels = data.map((entry) => entry.month);
     const incomeData = data.map((entry) => Math.round(entry.income));
-    const expenseData = data.map((entry) => -Math.round(entry.expenses)); // negative for expenses
+    const expenseData = data.map((entry) => -Math.round(entry.expenses));
     const netData = incomeData.map((val, idx) => val + expenseData[idx]);
 
-    // Destroy old chart if exists
     if (cashFlowChart) cashFlowChart.destroy();
 
     const datasets = isStackedView
@@ -261,7 +286,9 @@ async function renderCashFlowChart() {
           {
             label: "Net Income",
             data: netData,
-            backgroundColor: netData.map((value) => (value >= 0 ? "#4BC0C0" : "#FF6384")),
+            backgroundColor: netData.map((value) =>
+              value >= 0 ? "#4BC0C0" : "#FF6384"
+            ),
           },
         ];
 
@@ -302,9 +329,100 @@ async function renderCashFlowChart() {
   }
 }
 
-function toggleCashFlowChart() {
-  isStackedView = !isStackedView;
-  renderCashFlowChart();
+// ----------------------------------------------------
+// Expanded Daily Cash Flow Chart (new)
+// ----------------------------------------------------
+async function renderDailyCashFlowChart() {
+  const dailyCtx = document
+    .getElementById("dailyCashFlowChart")
+    .getContext("2d");
+  // Fetch daily data. (Assumes your API will return daily results when ?granularity=daily is set.)
+  try {
+    const { status, data } = await fetchData("/api/cash_flow?granularity=daily");
+    if (status !== "success") return;
+
+    // Assume each data entry has a date, income, and expenses field.
+    const labels = data.map((entry) => entry.date);
+    const incomeData = data.map((entry) => Math.round(entry.income));
+    const expenseData = data.map((entry) => -Math.round(entry.expenses)); // negative so bars extend left
+    const netData = incomeData.map((val, idx) => val + expenseData[idx]);
+
+    if (dailyCashFlowChart) dailyCashFlowChart.destroy();
+
+    dailyCashFlowChart = new Chart(dailyCtx, {
+      data: {
+        labels,
+        datasets: [
+          {
+            type: "bar",
+            label: "Income",
+            data: incomeData,
+            backgroundColor: "#4BC0C0",
+          },
+          {
+            type: "bar",
+            label: "Expenses",
+            data: expenseData,
+            backgroundColor: "#FF6384",
+          },
+          {
+            type: "line",
+            label: "Net Income",
+            data: netData,
+            borderColor: "#000",
+            backgroundColor: "rgba(0,0,0,0.2)",
+            fill: false,
+            tension: 0.1,
+          },
+        ],
+      },
+      options: {
+        // Render as a horizontal bar chart.
+        indexAxis: "y",
+        responsive: true,
+        scales: {
+          x: {
+            beginAtZero: true,
+            // Optionally, you can add grid lines with zero in the center.
+          },
+          y: {
+            ticks: { autoSkip: false },
+          },
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function (context) {
+                let label = context.dataset.label || "";
+                if (label) {
+                  label += ": ";
+                }
+                label += "$" + Math.abs(context.raw).toLocaleString();
+                return label;
+              },
+            },
+          },
+        },
+        // When a day (bar or line point) is clicked, filter transactions.
+        onClick: (event, elements) => {
+          if (elements.length > 0) {
+            const idx = elements[0].index;
+            const selectedDate = labels[idx];
+            filterTransactionsByDate(selectedDate);
+          }
+        },
+      },
+    });
+  } catch (error) {
+    console.error("Error rendering daily cash flow chart:", error);
+  }
+}
+
+function expandDailyCashFlowChart() {
+  // Show the expanded container
+  document.getElementById("expandedCashFlowContainer").style.display = "block";
+  // Optionally, you might hide the monthly chart here if desired.
+  renderDailyCashFlowChart();
 }
 
 //----------------------------------------------------

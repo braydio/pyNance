@@ -74,6 +74,7 @@ FILES = {
     "TELLER_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json",
     "TELLER_DOT_KEY": DIRECTORIES["CONFIG_DIR"] / "private_key.pem",
     "TELLER_DOT_CERT": DIRECTORIES["CONFIG_DIR"] / "certificate.pem",
+    "TELLER_DOT_TX": DIRECTORIES["DATA_DIR"] / "TellerDotRawTx.json",
 }
 
 # Log directory and file setup
