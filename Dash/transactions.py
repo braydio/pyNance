@@ -2,15 +2,15 @@ from config import FILES
 from flask import Blueprint, jsonify, render_template, request
 from helper_utils import load_transactions_json
 
-transact_route = Blueprint("transactions", __name__)
+transact = Blueprint("transactions", __name__)
 
 
-@transact_route.route("/transactions")
+@transact.route("/transactions")
 def transactions_page():
     return render_template("transactions.html")
 
 
-@transact_route.route("/get_transactions", methods=["GET"])
+@transact.route("/get_transactions", methods=["GET"])
 def get_transactions():
     try:
         transactions = load_transactions_json(FILES["TRANSACTIONS_LIVE"]) or []
