@@ -9,7 +9,7 @@ from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
 from teller_dot_io import link_teller, main_teller
-from transactions import transact_route
+from transactions import transact
 
 logger = setup_logger()
 
@@ -60,7 +60,7 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.register_blueprint(accounts)
 app.register_blueprint(plaid_transactions)
 app.register_blueprint(plaid_investments)
-app.register_blueprint(transact_route)
+app.register_blueprint(transact)
 app.register_blueprint(settings)
 app.register_blueprint(charts)
 app.register_blueprint(debug)
@@ -75,7 +75,7 @@ def dashboard():
     logger.debug("Rendering dashboard.html")
     return render_template("dashboard.html")
 
-@transactions.route("/transactions")
+@transact.route("/transactions")
 def transactions_page():
     return render_template("transactions.html")
 
