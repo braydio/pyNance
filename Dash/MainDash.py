@@ -8,8 +8,8 @@ from plaid_endpoints import plaid_investments, plaid_transactions
 from plaid_helpers import fetch_and_populate_categories
 from settings import settings
 from sql_utils import init_db
-from transactions import transactions
-from teller_dot_io import main_teller
+from teller_dot_io import link_teller, main_teller
+from transactions import transact_route
 
 logger = setup_logger()
 
@@ -60,10 +60,13 @@ app = Flask(__name__, template_folder="templates", static_folder="static")
 app.register_blueprint(accounts)
 app.register_blueprint(plaid_transactions)
 app.register_blueprint(plaid_investments)
+app.register_blueprint(transact_route)
+app.register_blueprint(plaid_core)
 app.register_blueprint(settings)
 app.register_blueprint(charts)
 app.register_blueprint(debug)
 app.register_blueprint(main_teller)
+app.register_blueprint(link_teller)
 
 
 # === Main Flask App Routes ===
@@ -96,6 +99,13 @@ def fetch_themes():
         return jsonify({"themes": themes, "current_theme": current_theme}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/")
+def transactions_homepage():
+    """Render the main dashboard."""
+    logger.debug("Rendering dashboard.html")
+    return render_template("transactions.html")
 
 
 @app.route("/set_theme", methods=["POST"])

@@ -1,14 +1,18 @@
-let allTransactions = []; // will hold all transaction data
+let allTransactions = []; // Holds all transactions
+let filteredTransactions = []; // Holds filtered transactions
+let currentPage = 1;
+const pageSize = 15; // 15 items per page
+
 //----------------------------------------------------
-// Transactions Table Setup
+// Initialize Transactions Table on Page Load
 //----------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
     await initTransactionsTable();
-    setupCategoryFilterMenu(); // Initialize the filter menu
+    setupCategoryFilterMenu();
 });
 
 //----------------------------------------------------
-// A small helper function for fetching data from the server.
+// Helper Function to Fetch Data
 //----------------------------------------------------
 async function fetchData(url) {
   try {
@@ -24,7 +28,6 @@ async function fetchData(url) {
   }
 }
 
-
 //----------------------------------------------------
 // Fetch and Render Transactions Table
 //----------------------------------------------------
@@ -34,35 +37,42 @@ async function initTransactionsTable() {
 
   try {
     const { status, data } = await fetchData(`/get_transactions`);
-    if (status === "success") {
+    
+    if (status === "success" && data.transactions.length > 0) {
       allTransactions = data.transactions;
-      currentPage = 1; 
-      renderTransactionTable(allTransactions, currentPage);
-      updatePaginationControls(allTransactions.length, currentPage);
+      filteredTransactions = [...allTransactions]; // Default view is all transactions
+      
+      currentPage = 1;
+      renderTransactionTable(filteredTransactions, currentPage);
+      updatePaginationControls(filteredTransactions.length, currentPage);
       updateFilterDisplay();
 
-      // Apply DataTables.js (Only if transactions exist)
+      // Initialize DataTables.js if necessary
       if ($.fn.DataTable.isDataTable("#transactions-table")) {
         $("#transactions-table").DataTable().clear().destroy();
       }
-      
+
       $("#transactions-table").DataTable({
-        pageLength: pageSize,  // Ensure page size matches pagination
-        ordering: true,  // Enable sorting
-        searching: true, // Enable filtering
-        lengthChange: false, // Hide "Show entries" dropdown
-        destroy: true
+        pageLength: pageSize,
+        ordering: true,
+        searching: false, // Disable DataTables' built-in search to use custom filters
+        lengthChange: false,
+        destroy: true,
       });
+    } else {
+      console.warn("No transactions available.");
+      document.querySelector("#transactions-table tbody").innerHTML = `
+        <tr><td colspan="7" style="text-align:center;">No transactions available</td></tr>
+      `;
     }
   } catch (error) {
     console.error("Error initializing transactions table:", error);
   }
 }
 
-  
-let currentPage = 1;
-const pageSize = 15; // 15 items per page
-
+//----------------------------------------------------
+// Render Transactions Table (Handles Pagination)
+//----------------------------------------------------
 function renderTransactionTable(transactions, page = 1) {
   const transactionsTable = document.querySelector("#transactions-table tbody");
   if (!transactionsTable) return;
@@ -76,9 +86,9 @@ function renderTransactionTable(transactions, page = 1) {
       (tx) => `
         <tr>
           <td>${tx.date || "N/A"}</td>
-          <td>${tx.amount || "N/A"}</td>
+          <td>${tx.amount !== undefined ? `$${parseFloat(tx.amount).toFixed(2)}` : "N/A"}</td>
           <td>${tx.name || "N/A"}</td>
-          <td>${tx.category || "Uncategorized"}</td>
+          <td>${Array.isArray(tx.category) ? tx.category.join(", ") : tx.category || "Uncategorized"}</td>
           <td>${tx.merchant_name || "Unknown"}</td>
           <td>${tx.account_name || "Unknown Account"}</td>
           <td>${tx.institution_name || "Unknown Institution"}</td>
@@ -88,18 +98,24 @@ function renderTransactionTable(transactions, page = 1) {
 
   updatePaginationControls(transactions.length, page);
 }
-  
+
+//----------------------------------------------------
+// Handle Pagination Changes
+//----------------------------------------------------
 function changePage(offset) {
-  const totalPages = Math.ceil(allTransactions.length / pageSize);
+  const totalPages = Math.ceil(filteredTransactions.length / pageSize);
   const newPage = Math.max(1, Math.min(currentPage + offset, totalPages));
 
   if (newPage !== currentPage) {
     currentPage = newPage;
-    renderTransactionTable(allTransactions, currentPage);
-    updatePaginationControls(allTransactions.length, currentPage);
+    renderTransactionTable(filteredTransactions, currentPage);
+    updatePaginationControls(filteredTransactions.length, currentPage);
   }
 }
 
+//----------------------------------------------------
+// Update Pagination Controls
+//----------------------------------------------------
 function updatePaginationControls(totalItems, page) {
   const totalPages = Math.ceil(totalItems / pageSize);
   const pageIndicator = document.getElementById("pageIndicator");
@@ -107,7 +123,7 @@ function updatePaginationControls(totalItems, page) {
   const nextButton = document.getElementById("nextPage");
 
   if (pageIndicator) {
-    pageIndicator.textContent = `Page ${page} of ${totalPages}`;
+    pageIndicator.textContent = totalPages > 0 ? `Page ${page} of ${totalPages}` : "No transactions";
   }
 
   if (prevButton) {
@@ -115,37 +131,52 @@ function updatePaginationControls(totalItems, page) {
   }
   
   if (nextButton) {
-    nextButton.disabled = page === totalPages;
+    nextButton.disabled = page === totalPages || totalPages === 0;
   }
 }
 
-
 //----------------------------------------------------
-// A stub function to update the filter display if needed.
-// Modify this function to suit your UI needs.
+// Filtering Functionality (Category Filtering)
 //----------------------------------------------------
-function updateFilterDisplay() {
-    // For example, update a label to show the current filter.
-    const filterLabel = document.getElementById("currentFilterLabel");
-    if (filterLabel) {
-      filterLabel.textContent = "Showing: All Categories";
-    }
-}
-
-// ----------------------------------------------------
-// Filtering Functionality
-// ----------------------------------------------------
 function filterTransactionsByCategory(category) {
-  let filtered;
-
   if (category === "All") {
-    filtered = allTransactions;
+    filteredTransactions = [...allTransactions];
   } else {
-    filtered = allTransactions.filter((tx) => tx.category === category);
+    filteredTransactions = allTransactions.filter((tx) => {
+      if (Array.isArray(tx.category)) {
+        return tx.category.includes(category); // Handles multi-category transactions
+      }
+      return tx.category === category;
+    });
   }
 
   currentPage = 1; // ✅ Always reset to first page on filter change
-  renderTransactionTable(filtered, currentPage);
-  updatePaginationControls(filtered.length, currentPage);
+  renderTransactionTable(filteredTransactions, currentPage);
+  updatePaginationControls(filteredTransactions.length, currentPage);
 }
 
+//----------------------------------------------------
+// Update Filter Display
+//----------------------------------------------------
+function updateFilterDisplay() {
+  const filterLabel = document.getElementById("currentFilterLabel");
+  if (filterLabel) {
+    filterLabel.textContent = "Showing: All Categories";
+  }
+}
+
+//----------------------------------------------------
+// Setup Category Filter Menu (Event Delegation for Performance)
+//----------------------------------------------------
+function setupCategoryFilterMenu() {
+  const filterMenu = document.getElementById("categoryFilterMenu");
+  if (!filterMenu) return;
+
+  filterMenu.addEventListener("click", (event) => {
+    const selectedCategory = event.target.dataset.category;
+    if (selectedCategory) {
+      filterTransactionsByCategory(selectedCategory);
+      updateFilterDisplay();
+    }
+  });
+}
