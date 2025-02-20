@@ -5,6 +5,7 @@ from app.config import FILES, TELLER_APP_ID, logger
 from app.extensions import db
 from app.models import Account
 from app.sql import account_logic
+from app.sql.account_logic import get_accounts_from_db
 
 from flask import Blueprint, jsonify, request
 
@@ -116,29 +117,9 @@ def get_item_details():
 @link_teller.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
-        accounts = Account.query.all()
-        serialized = []
-        for acc in accounts:
-            serialized.append(
-                {
-                    "id": acc.account_id,
-                    "name": acc.name,
-                    "type": acc.type,
-                    "subtype": acc.subtype,
-                    "status": acc.status,
-                    "institution": {"name": acc.institution_name}
-                    if acc.institution_name
-                    else None,
-                    "balance": acc.balance,
-                    "last_refreshed": acc.last_refreshed.isoformat()
-                    if acc.last_refreshed
-                    else None,
-                    "link_type": acc.link_type,
-                    "user_id": acc.user_id,
-                }
-            )
-        logger.debug(f"Returning {len(serialized)} accounts from DB.")
-        return jsonify({"status": "success", "data": {"accounts": serialized}}), 200
+        accounts = get_accounts_from_db()  # use our helper
+        logger.debug(f"Returning {len(accounts)} accounts from DB.")
+        return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
     except Exception as e:
         logger.error(f"Error fetching accounts from DB: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
