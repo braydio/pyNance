@@ -46,7 +46,7 @@ class Transaction(db.Model):
     transaction_id = db.Column(db.String(64), unique=True, nullable=False)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)
-    date = db.Column(db.String(64))  # In production, consider using DateTime
+    date = db.Column(db.String(64))  # For production, consider DateTime
     description = db.Column(db.String(256))
     category = db.Column(db.String(128), default="Unknown")
     merchant_name = db.Column(db.String(128), default="Unknown")
