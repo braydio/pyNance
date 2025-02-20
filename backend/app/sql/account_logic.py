@@ -107,37 +107,96 @@ def refresh_account_data_for_account(
     updated = False
     now = datetime.utcnow()
 
-    # Refresh balance using Teller's documented endpoint:
+    # --- Refresh Balance ---
     url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
+    logger.debug(
+        f"Requesting balance for account {account.account_id} from {url_balance}"
+    )
     resp_balance = requests.get(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
     if resp_balance.status_code == 200:
-        balance_data = resp_balance.json()
-        new_balance = (
-            balance_data.get("balance", {}).get("current", account.balance) or 0
+        logger.debug(
+            f"Balance response for account {account.account_id}: {resp_balance.text}"
         )
+        balance_json = resp_balance.json()
+        # Try common patterns: either a dict with a "balance" key or a dict with "balances" as a list.
+        if isinstance(balance_json, dict) and "balance" in balance_json:
+            new_balance = (
+                balance_json.get("balance", {}).get("current", account.balance) or 0
+            )
+            logger.debug("Extracted balance using key 'balance'.")
+        elif isinstance(balance_json, dict) and "balances" in balance_json:
+            balances_list = balance_json.get("balances", [])
+            if balances_list:
+                new_balance = balances_list[0].get("current", account.balance) or 0
+                logger.debug(
+                    "Extracted balance from the first element of 'balances' list."
+                )
+            else:
+                logger.warning(
+                    f"'balances' list is empty for account {account.account_id}."
+                )
+                new_balance = account.balance
+        else:
+            logger.warning(
+                f"Unexpected balance response format for account {account.account_id}: {balance_json}"
+            )
+            new_balance = account.balance
+
         if new_balance != account.balance:
             logger.debug(
                 f"Account {account.account_id}: Balance updated from {account.balance} to {new_balance}"
             )
             account.balance = new_balance
             updated = True
+        else:
+            logger.debug(
+                f"Account {account.account_id}: Balance remains unchanged: {account.balance}"
+            )
     else:
         logger.error(
             f"Failed to refresh balance for account {account.account_id}: {resp_balance.text}"
         )
 
-    # Refresh transactions using Teller's documented endpoint:
-    url_txns = f"https://api.teller.io/accounts/{account.account_id}/transactions"
+    # --- Refresh Transactions ---
+    url_txns = f"{teller_api_base_url}/accounts/{account.account_id}/transactions"
+    logger.debug(
+        f"Requesting transactions for account {account.account_id} from {url_txns}"
+    )
     resp_txns = requests.get(
         url_txns, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
     if resp_txns.status_code == 200:
-        txns_data = resp_txns.json()
-        for txn in txns_data:
+        logger.debug(
+            f"Transactions response for account {account.account_id}: {resp_txns.text}"
+        )
+        txns_json = resp_txns.json()
+        # Check if the response is a dict with a "transactions" key.
+        if isinstance(txns_json, dict) and "transactions" in txns_json:
+            txns_list = txns_json.get("transactions", [])
+            logger.debug(
+                f"Extracted {len(txns_list)} transactions from key 'transactions'."
+            )
+        elif isinstance(txns_json, list):
+            txns_list = txns_json
+            logger.debug(
+                f"Response is a list of transactions with {len(txns_list)} items."
+            )
+        else:
+            logger.warning(
+                f"Unexpected transactions format for account {account.account_id}: {txns_json}"
+            )
+            txns_list = []
+
+        for txn in txns_list:
             txn_id = txn.get("id")
-            existing_txn = None
+            if not txn_id:
+                logger.warning(
+                    "Encountered a transaction without an 'id'; skipping this transaction."
+                )
+                continue
+
             try:
                 from app.models import Transaction
 
@@ -145,35 +204,48 @@ def refresh_account_data_for_account(
                     transaction_id=txn_id
                 ).first()
             except Exception as ex:
-                logger.error(f"Error querying transaction {txn_id}: {ex}")
-            # Extract extra fields with defaults:
-        details = txn.get("details", {}) or {}
+                logger.error(
+                    f"Error querying transaction {txn_id}: {ex}", exc_info=True
+                )
+                existing_txn = None
 
-        # Handle category as before.
-        category = details.get("category")
-        if isinstance(category, list) and category:
-            category = category[-1] or "Unknown"
-        else:
-            category = category or "Unknown"
+            # Process transaction details.
+            details = txn.get("details", {}) or {}
+            category = details.get("category")
+            if isinstance(category, list) and category:
+                category = category[-1] or "Unknown"
+            else:
+                category = category or "Unknown"
 
-            # Extract counterparty safely.
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
             merchant_typ = "Unknown"
-
             if isinstance(counterparty, list):
                 if counterparty and isinstance(counterparty[0], dict):
                     merchant_name = counterparty[0].get("name", "Unknown")
                     merchant_typ = counterparty[0].get("type", "Unknown")
+                    logger.debug(
+                        f"Extracted merchant details from list for transaction {txn_id}."
+                    )
+                else:
+                    logger.debug(
+                        f"Counterparty list for transaction {txn_id} is empty or improperly formatted."
+                    )
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
                 merchant_typ = counterparty.get("type", "Unknown")
+                logger.debug(
+                    f"Extracted merchant details from dict for transaction {txn_id}."
+                )
             else:
-                # In case counterparty is None or unexpected type.
-                merchant_name = "Unknown"
-                merchant_typ = "Unknown"
+                logger.debug(
+                    f"Counterparty for transaction {txn_id} is of unexpected type: {type(counterparty)}"
+                )
 
             if existing_txn:
+                logger.debug(
+                    f"Updating existing transaction {txn_id} for account {account.account_id}."
+                )
                 existing_txn.amount = txn.get("amount") or 0
                 existing_txn.date = txn.get("date") or ""
                 existing_txn.description = txn.get("description") or ""
@@ -181,6 +253,9 @@ def refresh_account_data_for_account(
                 existing_txn.merchant_name = merchant_name
                 existing_txn.merchant_typ = merchant_typ
             else:
+                logger.debug(
+                    f"Inserting new transaction {txn_id} for account {account.account_id}."
+                )
                 new_txn = Transaction(
                     transaction_id=txn_id,
                     account_id=account.account_id,
@@ -198,8 +273,8 @@ def refresh_account_data_for_account(
             f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
         )
 
+    # --- Update Last Refreshed and Account History ---
     account.last_refreshed = now
-
     from app.models import AccountHistory
 
     today = date.today()
@@ -207,11 +282,18 @@ def refresh_account_data_for_account(
         account_id=account.account_id, date=today
     ).first()
     if not existing_history:
+        logger.debug(
+            f"Creating new history record for account {account.account_id} for date {today}."
+        )
         history_record = AccountHistory(
             account_id=account.account_id, date=today, balance=account.balance
         )
         db.session.add(history_record)
         updated = True
+    else:
+        logger.debug(
+            f"History record already exists for account {account.account_id} for date {today}."
+        )
 
     return updated
 
