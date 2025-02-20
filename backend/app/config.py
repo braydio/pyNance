@@ -8,6 +8,7 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).resolve().parent
 DIRECTORIES = {
     "DATA_DIR": BASE_DIR / "data",
+    "CERTS_DIR": BASE_DIR / "certs",
     "TEMP_DIR": BASE_DIR / "temp",
     "LOGS_DIR": BASE_DIR / "logs",
     "ARCHIVE_DIR": BASE_DIR / "archive",
@@ -63,8 +64,8 @@ FILES = {
     "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
     "TELLER_TOKENS": DIRECTORIES["DATA_DIR"] / "TellerDotTokens.json",
     "TELLER_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json",
-    "TELLER_DOT_KEY": DIRECTORIES["CONFIG_DIR"] / "private_key.pem",
-    "TELLER_DOT_CERT": DIRECTORIES["CONFIG_DIR"] / "certificate.pem",
+    "TELLER_DOT_CERT": DIRECTORIES["CERTS_DIR"] / "certificate.pem",
+    "TELLER_DOT_KEY": DIRECTORIES["CERTS_DIR"] / "private_key.pem",
 }
 
 # Set the database URI (using SQLite here)
