@@ -1,6 +1,5 @@
 <script setup>
 import Navbar from './components/Navbar.vue';
-import AccountsTable from './components/AccountsTable.vue';
 import { RouterView } from 'vue-router';
 </script>
 
