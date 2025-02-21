@@ -3,7 +3,7 @@ import json
 import requests
 from app.config import FILES, TELLER_APP_ID, logger
 from app.extensions import db
-from app.models import Account
+from app.models import Account, Transaction
 from app.sql import account_logic
 from app.sql.account_logic import get_accounts_from_db
 
@@ -343,6 +343,60 @@ def refresh_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@main_teller.route("/refresh_balances", methods=["POST"])
+def refresh_balances():
+    """
+    For each account in the database, this endpoint calls the Teller API
+    to fetch the latest balances (using the -u style authentication) and then
+    updates the historical balances (AccountHistory) in the DB.
+    """
+    try:
+        accounts = Account.query.all()
+        updated_accounts = []
+        tokens = load_tokens()  # Assumes tokens are stored and retrievable
+
+        for account in accounts:
+            # Find the access token for the account's user.
+            access_token = None
+            for token in tokens:
+                if token.get("user_id") == account.user_id:
+                    access_token = token.get("access_token")
+                    break
+
+            if not access_token:
+                logger.warning(
+                    f"No access token found for account {account.account_id}"
+                )
+                continue
+
+            # Use our existing refresh logic to fetch balances & update history.
+            updated = account_logic.refresh_account_data_for_account(
+                account,
+                access_token,
+                TELLER_DOT_CERT,
+                TELLER_DOT_KEY,
+                TELLER_API_BASE_URL,
+            )
+            if updated:
+                updated_accounts.append(account.account_id)
+
+        db.session.commit()
+        logger.debug(f"Balances refreshed for accounts: {updated_accounts}")
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Balances refreshed",
+                    "updated_accounts": updated_accounts,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error refreshing balances: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @transactions_bp.route("/get_transactions", methods=["GET"])
 def get_transactions():
     try:
@@ -368,6 +422,63 @@ def get_transactions():
         )
     except Exception as e:
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@main_teller.route("/update", methods=["PUT"])
+def update_transaction():
+    """
+    Update a transaction's editable details based on user input.
+    Expected JSON payload:
+      {
+         "transaction_id": "txn_123456",
+         "amount": 123.45,
+         "date": "2025-02-20",
+         "description": "Updated description",
+         "category": "Updated Category",
+         "merchant_name": "Updated Merchant",
+         "merchant_typ": "Updated Type"
+      }
+    Only these fields will be updated; transaction_id (and account_id) are not modified.
+    """
+    try:
+        data = request.json
+        transaction_id = data.get("transaction_id")
+        if not transaction_id:
+            return (
+                jsonify({"status": "error", "message": "Missing transaction_id"}),
+                400,
+            )
+
+        txn = Transaction.query.filter_by(transaction_id=transaction_id).first()
+        if not txn:
+            return jsonify({"status": "error", "message": "Transaction not found"}), 404
+
+        # Update only the allowed fields if they are provided.
+        if "amount" in data:
+            txn.amount = float(data["amount"])
+        if "date" in data:
+            txn.date = data["date"]
+        if "description" in data:
+            txn.description = data["description"]
+        if "category" in data:
+            txn.category = data["category"]
+        if "merchant_name" in data:
+            txn.merchant_name = data["merchant_name"]
+        if "merchant_typ" in data:
+            txn.merchant_typ = data["merchant_typ"]
+
+        db.session.commit()
+        logger.debug(f"Transaction {transaction_id} updated with data: {data}")
+        return (
+            jsonify(
+                {"status": "success", "message": "Transaction updated successfully."}
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error updating transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
