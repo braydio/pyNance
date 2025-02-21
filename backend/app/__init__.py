@@ -18,17 +18,17 @@ def create_app():
     with app.app_context():
         db.create_all()
 
-    # Import blueprints from routes/teller.py
+    # Import blueprints from routes/teller.py and charts
     from app.routes.charts import charts
     from app.routes.teller import link_teller, main_teller, transactions_bp
 
-    # Register blueprints
+    # Register blueprints with appropriate URL prefixes
     app.register_blueprint(link_teller, url_prefix="/api/teller")
     app.register_blueprint(main_teller, url_prefix="/api/teller")
     app.register_blueprint(charts, url_prefix="/api/charts")
-    app.register_blueprint(transactions_bp, url_prefix="/api")
+    app.register_blueprint(transactions_bp, url_prefix="/api/transactions")
 
     logger.debug(
-        "Blueprints registered: link_teller and main_teller under '/api/teller', transactions_bp under '/api'"
+        "Blueprints registered: link_teller and main_teller under '/api/teller', charts under '/api/charts', and transactions_bp under '/api/transactions'"
     )
     return app
