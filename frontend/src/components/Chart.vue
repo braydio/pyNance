@@ -54,8 +54,3 @@ export default {
 };
 </script>
 
-<style scoped>
-.chart-container {
-  margin: 20px 0;
-}
-</style>
