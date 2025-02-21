@@ -1,3 +1,5 @@
+# File: app/sql/account_logic.py
+
 import json
 from datetime import date, datetime
 
@@ -8,6 +10,10 @@ from app.models import Account, AccountDetails, AccountHistory, Transaction
 
 
 def upsert_accounts(user_id, accounts_data, batch_size=100):
+    """
+    Inserts or updates account information from the provided accounts_data.
+    If the account type is credit, the balance sign is reversed.
+    """
     logger.debug(f"Upserting accounts for user {user_id}: {accounts_data}")
     processed_ids = set()
     count = 0
@@ -28,6 +34,12 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
         name = account.get("name") or "Unnamed Account"
         acc_type = account.get("type") or "Unknown"
         balance = account.get("balance", {}).get("current", 0) or 0
+
+        # If account type is credit, reverse the balance sign.
+        if acc_type.lower() == "credit":
+            logger.debug(f"Account {account_id} is credit; reversing balance sign.")
+            balance = -abs(balance)
+
         subtype = account.get("subtype") or "Unknown"
         status = account.get("status") or "Unknown"
         institution = account.get("institution", {}) or {}
@@ -74,7 +86,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
                 link_type=link_type,
             )
             db.session.add(new_account)
-            db.session.flush()  # Ensure new_account gets an ID
+            db.session.flush()  # Ensure new_account gets an ID before adding details.
             details = AccountDetails(
                 account_id=account_id,
                 enrollment_id=enrollment_id,
@@ -82,7 +94,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
             )
             db.session.add(details)
 
-        # Insert a historical record if not already present.
+        # Insert a historical record if not already present for today.
         today = date.today()
         existing_history = AccountHistory.query.filter_by(
             account_id=account_id, date=today
@@ -99,11 +111,16 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
             logger.debug(f"Committed batch of {batch_size} accounts.")
 
     db.session.commit()  # Commit any remaining accounts
+    logger.debug("Finished upserting accounts.")
 
 
 def refresh_account_data_for_account(
     account, access_token, teller_dot_cert, teller_dot_key, teller_api_base_url
 ):
+    """
+    Refreshes account balance and transactions by querying the Teller API.
+    Updates the account balance and adds/updates transactions accordingly.
+    """
     updated = False
     now = datetime.utcnow()
 
@@ -120,12 +137,39 @@ def refresh_account_data_for_account(
             f"Balance response for account {account.account_id}: {resp_balance.text}"
         )
         balance_json = resp_balance.json()
-        # Try common patterns: either a dict with a "balance" key or a dict with "balances" as a list.
-        if isinstance(balance_json, dict) and "balance" in balance_json:
+        new_balance = account.balance  # default fallback
+
+        # If response contains "available", we decide which key to use based on account type.
+        if "available" in balance_json:
+            account_type = account.type.lower() if account.type else ""
+            # For credit or liability accounts, use the "ledger" value.
+            if account_type in ["credit", "liability"]:
+                try:
+                    new_balance = float(balance_json.get("ledger", account.balance))
+                    logger.debug(
+                        "Extracted balance using key 'ledger' for credit/liability account."
+                    )
+                except Exception as e:
+                    logger.error(f"Error parsing 'ledger' balance: {e}", exc_info=True)
+                    new_balance = account.balance
+            else:
+                # For depository accounts, use the "available" value.
+                try:
+                    new_balance = float(balance_json.get("available", account.balance))
+                    logger.debug(
+                        "Extracted balance using key 'available' for depository account."
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error parsing 'available' balance: {e}", exc_info=True
+                    )
+                    new_balance = account.balance
+        # Fallback: existing logic for nested "balance" or "balances" keys.
+        elif isinstance(balance_json, dict) and "balance" in balance_json:
             new_balance = (
                 balance_json.get("balance", {}).get("current", account.balance) or 0
             )
-            logger.debug("Extracted balance using key 'balance'.")
+            logger.debug("Extracted balance using nested 'balance' key.")
         elif isinstance(balance_json, dict) and "balances" in balance_json:
             balances_list = balance_json.get("balances", [])
             if balances_list:
@@ -172,7 +216,6 @@ def refresh_account_data_for_account(
             f"Transactions response for account {account.account_id}: {resp_txns.text}"
         )
         txns_json = resp_txns.json()
-        # Check if the response is a dict with a "transactions" key.
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
             logger.debug(
@@ -198,8 +241,6 @@ def refresh_account_data_for_account(
                 continue
 
             try:
-                from app.models import Transaction
-
                 existing_txn = Transaction.query.filter_by(
                     transaction_id=txn_id
                 ).first()
@@ -275,8 +316,6 @@ def refresh_account_data_for_account(
 
     # --- Update Last Refreshed and Account History ---
     account.last_refreshed = now
-    from app.models import AccountHistory
-
     today = date.today()
     existing_history = AccountHistory.query.filter_by(
         account_id=account.account_id, date=today
@@ -299,7 +338,9 @@ def refresh_account_data_for_account(
 
 
 def get_accounts_from_db():
-    """Fetch all saved accounts from the database and return as a list of dictionaries."""
+    """
+    Fetch all saved accounts from the database and return as a list of dictionaries.
+    """
     accounts = Account.query.all()
     serialized = []
     for acc in accounts:
@@ -325,11 +366,8 @@ def get_accounts_from_db():
 def get_paginated_transactions(page, page_size):
     """
     Returns a tuple (transactions_list, total_count) where each transaction record
-    includes fields from both the Transaction and the associated Account:
-      - Transaction: transaction_id, date, amount, description, category, merchant_name, merchant_typ
-      - Account: name (account name), institution_name, subtype
+    includes fields from both the Transaction and the associated Account.
     """
-    # Join Transaction with Account on account_id.
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
