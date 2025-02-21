@@ -2,6 +2,13 @@
 
 pyNance is a personal finance dashboard application that integrates with the Teller API to fetch and manage account and transaction data. It provides a rich frontend built with Vue 3 and Vite and a Flask backend that stores data in an SQL database. The application features account overviews, transaction management (with inline editing), interactive charts (including daily net and category breakdown charts), and draggable interfaces for reordering accounts—all styled with a Gruvbox/Hyprland-inspired theme.
 
+> Note: I'm not 100% sure the onboarding with the Teller.io link process is fully functional. For now I use the test.py file in backend/test.py. If you have issues with account link, get the account token and user id from backend/app/data/TellerTokens.json (or something like that) and put them in the respective fields in test.py (near the bottom by 'if __main__'). Then cd into the same dir as test.py, and with the .venv active run:
+```
+.venv/Scripts/activate     # If on windows
+source .venv/bin/activate  # If better than windows
+cd pyNance/backend         # Nav to /backend/
+python test.py             # Run logic to save accounts to SQL DB
+```
 ## Table of Contents
 
 - [Features](#features)
