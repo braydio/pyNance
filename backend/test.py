@@ -87,5 +87,8 @@ if __name__ == "__main__":
                 sys.exit(1)
         else:
             # Example token info – replace with valid values for testing.
-            token_info = {"user_id": "", "access_token": ""}
+            token_info = {
+                "user_id": "usr_p9ous8o55p7om9h4k8000",
+                "access_token": "token_6ymn3zolrrnxm2dihv4qnsyccq",
+            }
         dev_write_token_info(token_info)
