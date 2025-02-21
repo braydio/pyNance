@@ -1,41 +1,34 @@
-T<template>
-    <header>
-      <div>
-        <h1>Brayden.com</h1>
-        <h3>Finance</h3>
-      </div>
-      <nav class="menu">
-        <button @click="navigate('/')">Dashboard</button>
-        <button @click="navigate('/teller-dot')">Teller.IO</button>
-        <button @click="navigate('/accounts')">Accounts</button>
-        <button @click="navigate('/transactions')">Transactions</button>
-        <button @click="navigate('/settings')">Settings</button>
-      </nav>
-    </header>
-  </template>
-  
-  <script>
-  export default {
-    methods: {
-      navigate(path) {
-        this.$router.push(path);
-      },
-    },
-  };
-  </script>
-  
-  <style scoped>
-  header {
-    background-color: #4caf50;
-    padding: 20px;
-    color: white;
-    text-align: center;
-  }
-  
-  nav button {
-    margin: 5px;
-    padding: 10px;
-    cursor: pointer;
-  }
-  </style>
-  
+<template>
+  <nav class="menu">
+    <router-link to="/">Dashboard</router-link>
+    <router-link to="/teller-dot">Teller.IO</router-link>
+    <router-link to="/accounts">Accounts</router-link>
+    <router-link to="/transactions">Transactions</router-link>
+    <router-link to="/settings">Settings</router-link>
+  </nav>
+</template>
+
+<script>
+export default {
+  name: "Navbar",
+};
+</script>
+
+<style scoped>
+.menu {
+  background: var(--header-bg);
+  padding: 15px;
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+.menu a {
+  color: var(--text-color);
+  text-decoration: none;
+  font-size: 1rem;
+  transition: color 0.3s;
+}
+.menu a:hover {
+  color: var(--accent-color);
+}
+</style>
