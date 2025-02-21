@@ -1,16 +1,13 @@
 <template>
     <div class="investments-page">
       <header>
-        <div>
-          <h1>Accounts</h1>
-          <h3>dot Brayden.com</h3>
-        </div>
         <nav class="menu">
-          <router-link to="/">Dashboard</router-link>
-          <router-link to="/accounts">Accounts</router-link>
-          <router-link to="/transactions">Transactions</router-link>
-          <router-link to="/settings">Settings</router-link>
-        </nav>
+        <router-link to="/">Dashboard</router-link>
+        <router-link to="/teller-dot">Teller.IO</router-link>
+        <router-link to="/accounts">Accounts</router-link>
+        <router-link to="/transactions">Transactions</router-link>
+        <router-link to="/settings">Settings</router-link>
+      </nav>
       </header>
   
       <main>

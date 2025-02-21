@@ -5,18 +5,27 @@ import axios from "axios";
 const apiClient = axios.create({
   baseURL: process.env.VUE_APP_API_BASE_URL || "http://localhost:5000/api",
   headers: {
-    "Content-Type": "application/json"
-  }
+    "Content-Type": "application/json",
+  },
 });
 
 export default {
-  /**
-   * Fetch transactions with pagination.
-   * @param {number} page - Current page.
-   * @param {number} pageSize - Number of transactions per page.
-   */
+  /** Fetch accounts from DB */
+  async getAccounts() {
+    const response = await apiClient.get("/teller/get_accounts");
+    return response.data;
+  },
+
+  /** Refresh accounts from teller link */
+  async refreshAccounts() {
+    const response = await apiClient.post("/teller/refresh_accounts");
+    return response.data;
+  },
+
   async fetchTransactions(page = 1, pageSize = 50) {
-    const response = await apiClient.get(`/transactions/?page=${page}&page_size=${pageSize}`);
+    const response = await apiClient.get(
+      `/transactions/get_transactions?page=${page}&page_size=${pageSize}`
+    );
     return response.data;
   },
 
@@ -29,15 +38,10 @@ export default {
   },
 
   /**
-   * Fetch cash flow data.
-   * @param {string} granularity - "monthly" or "daily"
+   * Fetch daily net data.
    */
-  async fetchCashFlow(granularity = "monthly") {
-    const url =
-      granularity === "daily"
-        ? "/charts/cash_flow?granularity=daily"
-        : "/charts/cash_flow";
-    const response = await apiClient.get(url);
+  async fetchDailyNet() {
+    const response = await apiClient.get("/charts/daily_net");
     return response.data;
   },
 
@@ -47,5 +51,15 @@ export default {
   async fetchNetAssets() {
     const response = await apiClient.get("/charts/net_assets");
     return response.data;
-  }
+  },
+
+  /**
+   * Update a transaction.
+   * Expects a transaction object with at least:
+   * { transaction_id, amount, date, description, category, merchant_name, merchant_typ }
+   */
+  async updateTransaction(transactionData) {
+    const response = await apiClient.put("/teller/update_account", transactionData);
+    return response.data;
+  },
 };
