@@ -53,3 +53,4 @@ mappied.txt
 *.DS_Store
 *.egg-info/
 *.lock
+fastcat/
