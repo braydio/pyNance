@@ -4,10 +4,11 @@ import json
 from datetime import date, datetime
 
 import requests
-from app.config import logger
+from app.config import logger, FILES
 from app.extensions import db
 from app.models import Account, AccountDetails, AccountHistory, Transaction
 
+TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
 
 def upsert_accounts(user_id, accounts_data, batch_size=100):
     """
@@ -34,11 +35,11 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
         name = account.get("name") or "Unnamed Account"
         acc_type = account.get("type") or "Unknown"
         balance = account.get("balance", {}).get("current", 0) or 0
+        credit_balance = -(balance)
 
-        # If account type is credit, reverse the balance sign.
         if acc_type.lower() == "credit":
-            logger.debug(f"Account {account_id} is credit; reversing balance sign.")
-            balance = -abs(balance)
+            logger.debug(f"Account {account_id} is credit; setting balance {balance} to {credit_balance}.")
+            balance = credit_balance
 
         subtype = account.get("subtype") or "Unknown"
         status = account.get("status") or "Unknown"
@@ -126,9 +127,9 @@ def refresh_account_data_for_account(
 
     # --- Refresh Balance ---
     url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
-    logger.debug(
-        f"Requesting balance for account {account.account_id} from {url_balance}"
-    )
+    # logger.debug(
+    #     f"Requesting balance for account {account.account_id} from {url_balance}"
+    # )
     resp_balance = requests.get(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
@@ -146,19 +147,19 @@ def refresh_account_data_for_account(
             if account_type in ["credit", "liability"]:
                 try:
                     new_balance = float(balance_json.get("ledger", account.balance))
-                    logger.debug(
-                        "Extracted balance using key 'ledger' for credit/liability account."
-                    )
+                    # logger.debug(
+                    #     "Extracted balance using key 'ledger' for credit/liability account."
+                    # )
                 except Exception as e:
                     logger.error(f"Error parsing 'ledger' balance: {e}", exc_info=True)
                     new_balance = account.balance
             else:
                 # For depository accounts, use the "available" value.
                 try:
-                    new_balance = float(balance_json.get("available", account.balance))
-                    logger.debug(
-                        "Extracted balance using key 'available' for depository account."
-                    )
+                    new_balance = float(balance_json.get("ledger", account.balance))
+                    # logger.debug(
+                    #     "Extracted balance using key 'available' for depository account."
+                    # )
                 except Exception as e:
                     logger.error(
                         f"Error parsing 'available' balance: {e}", exc_info=True
@@ -212,24 +213,24 @@ def refresh_account_data_for_account(
         url_txns, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
     if resp_txns.status_code == 200:
-        logger.debug(
-            f"Transactions response for account {account.account_id}: {resp_txns.text}"
-        )
+        logger.debug(f"Transactions response for account {account.account_id}: {resp_txns.text}")
         txns_json = resp_txns.json()
+        with open(TRANSACTIONS_RAW, "w") as f:
+            json.dump(txns_json, f, indent=4)
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
-            logger.debug(
-                f"Extracted {len(txns_list)} transactions from key 'transactions'."
-            )
+            # logger.debug(
+            #     f"Extracted {len(txns_list)} transactions from key 'transactions'."
+            # )
         elif isinstance(txns_json, list):
             txns_list = txns_json
-            logger.debug(
-                f"Response is a list of transactions with {len(txns_list)} items."
-            )
+            # logger.debug(
+            #     f"Response is a list of transactions with {len(txns_list)} items."
+            # )
         else:
-            logger.warning(
-                f"Unexpected transactions format for account {account.account_id}: {txns_json}"
-            )
+            # logger.warning(
+            #     f"Unexpected transactions format for account {account.account_id}: {txns_json}"
+            # )
             txns_list = []
 
         for txn in txns_list:

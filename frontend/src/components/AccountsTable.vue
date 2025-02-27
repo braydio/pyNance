@@ -62,6 +62,8 @@ export default {
       try {
         const response = await axios.get('/api/teller/get_accounts');
         if (response.data && response.data.status === "success") {
+          console.log("Full API Response:", response);
+          console.log("Extracted accounts:", response.data.accounts); 
           this.accounts = response.data.data.accounts;
         } else {
           this.error = "Error fetching accounts.";
