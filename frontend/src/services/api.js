@@ -12,13 +12,13 @@ const apiClient = axios.create({
 export default {
   /** Fetch accounts from DB */
   async getAccounts() {
-    const response = await apiClient.get("/teller/get_accounts");
+    const response = await apiClient.get("/teller/transactions/get_accounts");
     return response.data;
   },
 
   /** Refresh accounts from teller link */
   async refreshAccounts() {
-    const response = await apiClient.post("/teller/refresh_accounts");
+    const response = await apiClient.post("/teller/transactions/refresh_accounts");
     return response.data;
   },
 
@@ -59,7 +59,7 @@ export default {
    * { transaction_id, amount, date, description, category, merchant_name, merchant_typ }
    */
   async updateTransaction(transactionData) {
-    const response = await apiClient.put("/teller/update_account", transactionData);
+    const response = await apiClient.put("/teller/transactions/update", transactionData);
     return response.data;
   },
 };
