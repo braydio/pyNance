@@ -1,9 +1,15 @@
 <template>
   <div class="accounts-page">
     <div class="accounts-overview">
-      <h1>Accounts Overview</h1>
+      <h1>Accounts Management</h1>
       <!-- Render the AccountsTable component -->
+      <div class="accounts-section">
+        <!-- Teller Connect Button -->
+        <button id="new-link-plaid">Plaid Link</button>
+        <button id="new-link-teller">Teller.io</button>
+      
       <AccountsTable />
+    </div>
     </div>
     <div class="accounts-drag">
       <!-- Render the draggable accounts chart -->
@@ -13,7 +19,7 @@
 </template>
 
 <script>
-import AccountsTable from '../components/AccountsTable.vue';
+import AccountsTable from '@/components/AccountsTable.vue';
 import AccountsReorderChart from '@/components/AccountsReorderChart.vue';
 
 export default {
@@ -26,6 +32,23 @@ export default {
 </script>
 
 <style scoped>
+/* =============================================================================
+   Accounts Table Container
+   ============================================================================= */
+/* Removed border since the section container now provides separation */
+.accounts-table {
+  background-color: var(--gruvbox-bg);
+  color: var(--gruvbox-fg);
+  padding: 1rem;
+  border-radius: 4px;
+}
+
+/* Title Styling for Accounts Table */
+.accounts-table h2 {
+  margin-top: 0;
+  color: var(--gruvbox-yl);
+}
+
 .accounts-page {
   padding: 1rem;
 }
