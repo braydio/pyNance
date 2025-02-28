@@ -351,22 +351,26 @@ def refresh_balances():
     updates the historical balances (AccountHistory) in the DB.
     """
     try:
-        accounts = Account.query.all()
+        accounts = get_accounts_from_db()  # Fetch account details
         updated_accounts = []
         tokens = load_tokens()  # Assumes tokens are stored and retrievable
 
-        for account in accounts:
+        for acc in accounts:
+            # Find the corresponding Account object
+            account = Account.query.filter_by(account_id=acc["account_id"]).first()
+            if not account:
+                logger.warning(f"Account {acc['account_id']} not found in DB.")
+                continue
+
             # Find the access token for the account's user.
             access_token = None
             for token in tokens:
-                if token.get("user_id") == account.user_id:
+                if token.get("user_id") == acc["user_id"]:
                     access_token = token.get("access_token")
                     break
 
             if not access_token:
-                logger.warning(
-                    f"No access token found for account {account.account_id}"
-                )
+                logger.warning(f"No access token found for account {acc['account_id']}")
                 continue
 
             # Use our existing refresh logic to fetch balances & update history.
@@ -378,7 +382,7 @@ def refresh_balances():
                 TELLER_API_BASE_URL,
             )
             if updated:
-                updated_accounts.append(account.account_id)
+                updated_accounts.append({"account_name": acc["name"]})
 
         db.session.commit()
         logger.debug(f"Balances refreshed for accounts: {updated_accounts}")
