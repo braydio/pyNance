@@ -1,6 +1,8 @@
 # Legacy directory
 Dash/
 
+*dev
+
 # Byte-compiled / compiled Python files
 *.py[cod]
 __pycache__/

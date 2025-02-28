@@ -1,19 +1,41 @@
-# File: app/sql/account_logic.py
-
 import json
+import time
 from datetime import date, datetime
 
 import requests
-from app.config import logger, FILES
+from app.config import FILES, logger
 from app.extensions import db
-from app.models import Account, AccountDetails, AccountHistory, Transaction
+from app.models import Account, AccountDetails, AccountHistory, PlaidItem, Transaction
 
 TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
+
+
+def save_plaid_item(user_id, item_id, access_token, institution_name, product):
+    """
+    Save or update a PlaidItem record in the database.
+    """
+    item = PlaidItem.query.filter_by(item_id=item_id).first()
+    if item:
+        item.access_token = access_token
+        item.institution_name = institution_name
+        item.updated_at = datetime.utcnow()
+    else:
+        item = PlaidItem(
+            user_id=user_id,
+            item_id=item_id,
+            access_token=access_token,
+            institution_name=institution_name,
+            product=product,
+        )
+        db.session.add(item)
+    db.session.commit()
+    return item
+
 
 def upsert_accounts(user_id, accounts_data, batch_size=100):
     """
     Inserts or updates account information from the provided accounts_data.
-    If the account type is credit, the balance sign is reversed.
+    For liability accounts like credit cards, the balance sign is reversed.
     """
     logger.debug(f"Upserting accounts for user {user_id}: {accounts_data}")
     processed_ids = set()
@@ -34,11 +56,16 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
 
         name = account.get("name") or "Unnamed Account"
         acc_type = account.get("type") or "Unknown"
+        # Normalize the account type to ensure consistent matching
+        normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
-        credit_balance = -(balance)
 
-        if acc_type.lower() == "credit":
-            logger.debug(f"Account {account_id} is credit; setting balance {balance} to {credit_balance}.")
+        # Check if the account type indicates a liability (e.g., credit or credit card)
+        if normalized_type in ["credit", "credit card", "liability"]:
+            credit_balance = -balance
+            logger.debug(
+                f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {credit_balance}."
+            )
             balance = credit_balance
 
         subtype = account.get("subtype") or "Unknown"
@@ -115,6 +142,37 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
     logger.debug("Finished upserting accounts.")
 
 
+def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=1):
+    """
+    Perform a GET request with exponential backoff if we receive a 429 (rate-limit) response.
+
+    :param url: URL to request
+    :param cert: A tuple (cert_file, key_file) or None
+    :param auth: A tuple (username, password) or (token, '')
+    :param max_retries: Maximum number of total attempts before giving up
+    :param initial_delay: How many seconds to wait for the first backoff; doubles each time
+    :return: The final response object (even if not 200 OK)
+    """
+    wait_time = initial_delay
+    for attempt in range(1, max_retries + 1):
+        resp = requests.get(url, cert=cert, auth=auth)
+
+        # If no rate-limit error, return immediately
+        if resp.status_code != 429:
+            return resp
+
+        # Otherwise, handle 429
+        logger.warning(
+            f"Received 429 (rate-limit) on attempt {attempt} for {url}. "
+            f"Sleeping {wait_time} seconds before retry."
+        )
+        time.sleep(wait_time)
+        wait_time *= 2  # Exponential backoff
+
+    # Return the last response after exhausting retries
+    return resp
+
+
 def refresh_account_data_for_account(
     account, access_token, teller_dot_cert, teller_dot_key, teller_api_base_url
 ):
@@ -130,7 +188,7 @@ def refresh_account_data_for_account(
     # logger.debug(
     #     f"Requesting balance for account {account.account_id} from {url_balance}"
     # )
-    resp_balance = requests.get(
+    resp_balance = fetch_url_with_backoff(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
     if resp_balance.status_code == 200:
@@ -209,11 +267,13 @@ def refresh_account_data_for_account(
     logger.debug(
         f"Requesting transactions for account {account.account_id} from {url_txns}"
     )
-    resp_txns = requests.get(
+    resp_txns = fetch_url_with_backoff(
         url_txns, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
     if resp_txns.status_code == 200:
-        logger.debug(f"Transactions response for account {account.account_id}: {resp_txns.text}")
+        logger.debug(
+            f"Transactions response for account {account.account_id}: {resp_txns.text}"
+        )
         txns_json = resp_txns.json()
         with open(TRANSACTIONS_RAW, "w") as f:
             json.dump(txns_json, f, indent=4)
@@ -317,7 +377,7 @@ def refresh_account_data_for_account(
 
     # --- Update Last Refreshed and Account History ---
     account.last_refreshed = now
-    today = date.today()
+    today = datetime.today()
     existing_history = AccountHistory.query.filter_by(
         account_id=account.account_id, date=today
     ).first()
