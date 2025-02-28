@@ -59,7 +59,7 @@ export default {
     async fetchAccounts() {
       console.log("Fetching accounts...");
       try {
-        const response = await axios.get("/api/teller/get_accounts");
+        const response = await axios.get("/api/teller/transactions/get_accounts");
         console.log("Response from /api/teller/get_accounts:", response.data);
         if (response.data && response.data.status === "success") {
           this.accounts = response.data.data.accounts || response.data.data;

@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = "/api/teller";
+const API_URL = "/api/teller_transactions";
 
 export const refreshAccounts = async () => {
     try {
