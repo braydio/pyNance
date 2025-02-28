@@ -31,7 +31,9 @@ def setup_logger():
         file_handler.setLevel(logging.DEBUG)
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+        )
         file_handler.setFormatter(formatter)
         console_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
@@ -72,12 +74,17 @@ FILES = {
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR'] / 'dashroad.db'}"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+logger.debug(f"SQL DB initialized: {SQLALCHEMY_DATABASE_URI}")
+
 logger.debug("Directories initialized:")
 for name, path in DIRECTORIES.items():
     logger.debug(f"{name}: {path}")
 logger.debug("Files initialized:")
 for name, path in FILES.items():
     logger.debug(f"{name}: {path}")
+
+DEBUG = True
+FLASK_ENV = "development"
 
 __all__ = [
     "BASE_DIR",
