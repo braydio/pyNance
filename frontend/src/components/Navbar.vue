@@ -1,10 +1,9 @@
 <template>
   <nav class="menu">
     <router-link to="/">Dashboard</router-link>
-    <router-link to="/teller-dot">Teller.IO</router-link>
     <router-link to="/accounts">Accounts</router-link>
     <router-link to="/transactions">Transactions</router-link>
-    <router-link to="/settings">Settings</router-link>
+    <router-link to="/gallery">Gallery</router-link>
   </nav>
 </template>
 

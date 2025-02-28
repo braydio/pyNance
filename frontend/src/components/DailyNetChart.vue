@@ -1,6 +1,6 @@
 <template>
     <div class="daily-net-chart">
-      <h2>Daily Net Income (30 Day Rolling)</h2>
+      <h2>Daily Net Income</h2>
       <div class="chart-summary">
         <div class="summary-line income">
           Income: ${{ summary.totalIncome.toLocaleString() }}
