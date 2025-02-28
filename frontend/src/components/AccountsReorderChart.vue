@@ -83,7 +83,7 @@ export default {
         .filter((acc) => acc.type && acc.type.toLowerCase() === "credit")
         .map((acc) => ({
           ...acc,
-          adjusted_balance: acc.balance > 0 ? acc.balance : -Math.abs(acc.balance), // ✅ Always negative unless credit
+          adjusted_balance: acc.balance > 0 ? acc.balance : -Math.abs(acc.balance), // Always negative unless credit
         }));
 
       const depository = this.accounts.filter(

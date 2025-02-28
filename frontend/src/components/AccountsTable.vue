@@ -1,4 +1,5 @@
 <template>
+  <div class="accounts-section">
   <div class="accounts-table">
     <h2>Accounts</h2>
 
@@ -12,7 +13,7 @@
       />
       <div class="controls">
         <button @click="fetchAccounts">Refresh Accounts</button>
-        <button @click="refreshBalances">Refresh Account Activity</button>
+        <button @click="refreshAccounts">Refresh Account Activity</button>
       </div>
     </div>
 
@@ -88,6 +89,7 @@
       No accounts found.
     </div>
   </div>
+</div>
 </template>
 
 <script>
@@ -163,7 +165,7 @@ export default {
         this.loading = false;
       }
     },
-    async refreshBalances() {
+    async refreshAccounts() {
       try {
         const response = await axios.post(
           "/api/teller/transactions/refresh_balances"
@@ -215,16 +217,28 @@ export default {
 </script>
 
 <style>
-/* Gruvbox-inspired palette (dark) */
-:root {
-  --gruvbox-bg: #282828;       /* Darkest background */
-  --gruvbox-fg: #ebdbb2;       /* Default text color */
-  --gruvbox-accent: #d65d0e;   /* Orange accent */
-  --gruvbox-border: #3c3836;   /* Dark border */
-  --gruvbox-hover: #b0520c;    /* Darker accent for hover states */
-  --gruvbox-hover-bg: #32302f; /* Slightly lighter than base BG */
+/* =============================================================================
+   Gruvbox-inspired Dark Palette
+   ============================================================================= */
+   :root {
+  /* Base Colors */
+  --gruvbox-bg: #282828;        /* Darkest background */
+  --gruvbox-fg: #ebdbb2;        /* Default text color */
+  --gruvbox-yl: #fabd2f;        /* Gruvbox yellow */
+
+  /* Accent Colors */
+  --gruvbox-accent: #d65d0e;    /* Orange accent */
+  --gruvbox-hover: #b0520c;     /* Darker accent for hover states */
+
+  /* Supporting Colors */
+  --gruvbox-border: #3c3836;    /* Dark border color */
+  --gruvbox-hover-bg: #32302f;  /* Slightly lighter than base background for even rows */
 }
 
+
+/* =============================================================================
+   Accounts Table Container
+   ============================================================================= */
 .accounts-table {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-fg);
@@ -233,19 +247,24 @@ export default {
   border-radius: 4px;
 }
 
-/* Title styling */
+/* Title Styling for Accounts Table */
 .accounts-table h2 {
   margin-top: 0;
-  color: var(--gruvbox-accent);
+  color: var(--gruvbox-yl);
 }
 
-/* Filter + Controls row */
+
+/* =============================================================================
+   Filter and Controls Row
+   ============================================================================= */
 .filter-row {
   display: flex;
   align-items: center;
-  margin-bottom: 1rem;
   gap: 1rem;
+  margin-bottom: 1rem;
 }
+
+/* Filter Input Field */
 .filter-input {
   flex: 1;
   padding: 0.4rem 0.6rem;
@@ -255,40 +274,151 @@ export default {
   color: var(--gruvbox-fg);
   outline: none;
 }
+
+/* Focus State for Filter Input */
 .filter-input:focus {
-  border-color: var(--gruvbox-accent);
+  border-color: var(--gruvbox-yl);
 }
 
-/* Controls block styling */
+
+/* =============================================================================
+   Controls Block (Buttons)
+   ============================================================================= */
 .controls {
   display: flex;
   gap: 0.5rem;
 }
+
+/* Styling for Control Buttons */
 .controls button {
   background-color: var(--gruvbox-accent);
   color: var(--gruvbox-fg);
   border: 1px solid var(--gruvbox-accent);
   padding: 0.5rem 1rem;
+  border-radius: 3px;
   cursor: pointer;
   font-weight: bold;
-  border-radius: 3px;
   transition: background-color 0.2s, color 0.2s, border 0.2s;
 }
+
+/* Hover State for Control Buttons */
 .controls button:hover {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-accent);
   border: 1px solid var(--gruvbox-accent);
 }
 
-/* Table styling */
+
+/* =============================================================================
+   Table Styling
+   ============================================================================= */
+/* =============================================================================
+   Gruvbox-inspired Dark Palette
+   ============================================================================= */
+   :root {
+  /* Base Colors */
+  --gruvbox-bg: #282828;        /* Darkest background */
+  --gruvbox-fg: #ebdbb2;        /* Default text color */
+  --gruvbox-yl: #fabd2f;        /* Gruvbox yellow */
+
+  /* Accent Colors */
+  --gruvbox-accent: #d65d0e;    /* Orange accent */
+  --gruvbox-hover: #b0520c;     /* Darker accent for hover states */
+
+  /* Supporting Colors */
+  --gruvbox-border: #3c3836;    /* Dark border color (used elsewhere) */
+  --gruvbox-hover-bg: #32302f;  /* Slightly lighter than base background for even rows */
+
+  /* New Variable for Section Container */
+  --section-bg: #1d1d1d;        /* Container background, slightly darker than page bg */
+}
+
+
+/* =============================================================================
+   Accounts Section Container
+   ============================================================================= */
+/* This container provides a distinct background for the accounts table */
+.accounts-section {
+  background-color: var(--section-bg);
+  padding: 1.5rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+
+
+
+
+/* =============================================================================
+   Filter and Controls Row
+   ============================================================================= */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Filter Input Field */
+.filter-input {
+  flex: 1;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--gruvbox-border);
+  border-radius: 4px;
+  background-color: #1d2021;
+  color: var(--gruvbox-fg);
+  outline: none;
+}
+
+/* Focus State for Filter Input */
+.filter-input:focus {
+  border-color: var(--gruvbox-yl);
+}
+
+
+/* =============================================================================
+   Controls Block (Buttons)
+   ============================================================================= */
+.controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/* Styling for Control Buttons */
+.controls button {
+  background-color: var(--gruvbox-accent);
+  color: var(--gruvbox-fg);
+  border: 1px solid var(--gruvbox-accent);
+  padding: 0.5rem 1rem;
+  border-radius: 3px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s, color 0.2s, border 0.2s;
+}
+
+/* Hover State for Control Buttons */
+.controls button:hover {
+  background-color: var(--gruvbox-bg);
+  color: var(--gruvbox-accent);
+  border: 1px solid var(--gruvbox-accent);
+}
+
+
+/* =============================================================================
+   Table Styling
+   ============================================================================= */
 table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 0.5rem;
 }
+
+/* Table Head */
 thead {
   background-color: var(--gruvbox-border);
 }
+
+/* Table Cells (Header and Data) */
 th,
 td {
   border: 1px solid var(--gruvbox-border);
@@ -297,38 +427,39 @@ td {
   background-color: var(--gruvbox-bg);
   cursor: default;
 }
+
+/* Table Header Specific Styling */
 th {
   font-weight: bold;
-  user-select: none; /* so text won't get selected when clicking */
-  cursor: pointer;
+  user-select: none; /* Prevent text selection on click */
+  cursor: pointer;   /* Indicates clickable sorting columns */
 }
+
+/* Hover effect for table headers */
+th:hover {
+  background-color: var(--gruvbox-hover);
+}
+
+/* Alternate Row Background for Table Body */
 tbody tr:nth-child(even) {
   background-color: var(--gruvbox-hover-bg);
 }
-th:hover {
-background-color: var(--gruvbox-hover);
-}
-/* Indicate clickable sorting columns on hover */
+
+
+/* =============================================================================
+   Additional Styling for Transactions and General Buttons
+   ============================================================================= */
+
+/* Transactions Section Margin */
 .transactions {
   margin-top: 20px;
 }
 
-th,
-td {
-  border: 1px solid var(--border-color);
-  padding: 8px;
-  text-align: left;
-}
-th {
-  background: var(--secondary-bg);
-  cursor: pointer;
-}
-
+/* General Button Styling */
 button {
   padding: 4px 8px;
   margin-right: 4px;
   font-size: 0.8rem;
 }
 
-  
 </style>
