@@ -8,6 +8,7 @@
   </div>
 </template>
 
+
 <script>
 import axios from 'axios';
 
@@ -16,23 +17,33 @@ export default {
   methods: {
     async linkPlaid() {
       try {
-        // Request a link token for Plaid from the backend
-        const res = await axios.post('/create_link_token', { products: ['transactions'] });
+        // Request a link token for Plaid from the backend.
+        // Adjust the endpoint URL as needed.
+        const res = await axios.post('/api/plaid/transactions/generate_link_token', { 
+          user_id: 'BraydensFinanceDashroad',
+          products: ['transactions']
+        });
         const linkToken = res.data.link_token;
-
-        // Ensure that the Plaid library is loaded
+        if (!linkToken) {
+          console.error("No Plaid link token received");
+          return;
+        }
+        // Ensure the Plaid library is loaded.
         if (!window.Plaid) {
           console.error("Plaid library is not loaded. Please include the Plaid Link script.");
           return;
         }
-
-        // Initialize Plaid Link using the received link token
+        // Initialize Plaid Link using the received token.
         const handler = window.Plaid.create({
           token: linkToken,
           onSuccess: async (public_token, metadata) => {
-            // Exchange the public token for an access token on your backend
-            const exchangeRes = await axios.post('/exchange_public_token', { public_token, provider: 'plaid' });
+            // Exchange the public token for an access token via your backend.
+            const exchangeRes = await axios.post('/api/plaid/transactions/exchange_public_token', {
+              public_token,
+              provider: 'plaid'
+            });
             console.log('Plaid account linked', exchangeRes.data);
+            // Optionally, emit an event or update a parent component to refresh the accounts.
           },
           onExit: (err, metadata) => {
             console.log('Plaid Link exited', err, metadata);
@@ -45,23 +56,33 @@ export default {
     },
     async linkTeller() {
       try {
-        // Request a link token for Teller from the backend
-        const res = await axios.post('/generate_link_token', {});
+        // Request a link token for Teller from the backend.
+        // Adjust the endpoint URL as needed.
+        const res = await axios.post('/api/teller/transactions/generate_link_token', { 
+          user_id: 'user_12345',
+          products: ['transactions', 'balance']
+        });
         const linkToken = res.data.link_token;
-
-        // Ensure that the Teller Connect library is loaded
+        if (!linkToken) {
+          console.error("No Teller link token received");
+          return;
+        }
+        // Ensure the TellerConnect library is loaded.
         if (!window.TellerConnect) {
           console.error("TellerConnect library is not loaded. Please include the Teller Connect script.");
           return;
         }
-
-        // Initialize Teller Connect using the received link token
+        // Initialize Teller Connect using the received token.
         const tellerConnect = window.TellerConnect.setup({
           token: linkToken,
           onSuccess: async (public_token, metadata) => {
-            // Exchange the public token for an access token on your backend
-            const exchangeRes = await axios.post('/exchange_public_token', { public_token, provider: 'teller' });
+            // Exchange the public token for an access token on your backend.
+            const exchangeRes = await axios.post('/api/teller/transactions/exchange_public_token', {
+              public_token,
+              provider: 'teller'
+            });
             console.log('Teller account linked', exchangeRes.data);
+            // Optionally, trigger a refresh of the linked accounts.
           },
           onExit: (err, metadata) => {
             console.log('Teller Link exited', err, metadata);
@@ -77,11 +98,7 @@ export default {
 </script>
 
 <style scoped>
-/* =============================================================================
-   Gruvbox Hyprland Inspired Styling for LinkAccount Component
-   ============================================================================= */
-
-/* Container styling */
+/* Gruvbox Hyprland Inspired Styling for LinkAccount Component */
 .link-account {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-fg);
@@ -91,21 +108,15 @@ export default {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
   text-align: center;
 }
-
-/* Header styling */
 .link-account h2 {
   margin: 0 0 1rem;
   color: var(--gruvbox-yl);
 }
-
-/* Button group set to horizontal layout */
 .button-group {
   display: flex;
   gap: 1rem;
   justify-content: center;
 }
-
-/* Button styling */
 .button-group button {
   background-color: var(--gruvbox-accent);
   color: var(--gruvbox-fg);
@@ -116,8 +127,6 @@ export default {
   cursor: pointer;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
-
-/* Hover state for buttons */
 .button-group button:hover {
   background-color: var(--gruvbox-hover);
   transform: translateY(-2px);
