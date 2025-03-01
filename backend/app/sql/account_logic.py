@@ -61,7 +61,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
         balance = account.get("balance", {}).get("current", 0) or 0
 
         # Check if the account type indicates a liability (e.g., credit or credit card)
-        if normalized_type in ["credit", "credit card", "liability"]:
+        if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
             credit_balance = -balance
             logger.debug(
                 f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {credit_balance}."
@@ -185,9 +185,6 @@ def refresh_account_data_for_account(
 
     # --- Refresh Balance ---
     url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
-    # logger.debug(
-    #     f"Requesting balance for account {account.account_id} from {url_balance}"
-    # )
     resp_balance = fetch_url_with_backoff(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
@@ -198,32 +195,34 @@ def refresh_account_data_for_account(
         balance_json = resp_balance.json()
         new_balance = account.balance  # default fallback
 
-        # If response contains "available", we decide which key to use based on account type.
+        # Check if response contains the "available" key
         if "available" in balance_json:
             account_type = account.type.lower() if account.type else ""
-            # For credit or liability accounts, use the "ledger" value.
+            # For credit/liability accounts: use the ledger value and invert its sign
             if account_type in ["credit", "liability"]:
                 try:
-                    new_balance = float(balance_json.get("ledger", account.balance))
-                    # logger.debug(
-                    #     "Extracted balance using key 'ledger' for credit/liability account."
-                    # )
+                    ledger_value = float(balance_json.get("ledger", account.balance))
+                    new_balance = -ledger_value  # Invert the sign for credit accounts
+                    logger.debug(
+                        f"Inverting ledger balance for credit account {account.account_id}: {ledger_value} -> {new_balance}"
+                    )
                 except Exception as e:
                     logger.error(f"Error parsing 'ledger' balance: {e}", exc_info=True)
                     new_balance = account.balance
             else:
-                # For depository accounts, use the "available" value.
+                # For depository accounts: use the available value
                 try:
-                    new_balance = float(balance_json.get("ledger", account.balance))
-                    # logger.debug(
-                    #     "Extracted balance using key 'available' for depository account."
-                    # )
+                    new_balance = float(balance_json.get("available", account.balance))
+                    logger.debug(
+                        f"Using available balance for depository account {account.account_id}: {new_balance}"
+                    )
                 except Exception as e:
                     logger.error(
                         f"Error parsing 'available' balance: {e}", exc_info=True
                     )
                     new_balance = account.balance
-        # Fallback: existing logic for nested "balance" or "balances" keys.
+
+        # Fallback: Check if response contains a nested "balance" key
         elif isinstance(balance_json, dict) and "balance" in balance_json:
             new_balance = (
                 balance_json.get("balance", {}).get("current", account.balance) or 0
@@ -279,18 +278,9 @@ def refresh_account_data_for_account(
             json.dump(txns_json, f, indent=4)
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
-            # logger.debug(
-            #     f"Extracted {len(txns_list)} transactions from key 'transactions'."
-            # )
         elif isinstance(txns_json, list):
             txns_list = txns_json
-            # logger.debug(
-            #     f"Response is a list of transactions with {len(txns_list)} items."
-            # )
         else:
-            # logger.warning(
-            #     f"Unexpected transactions format for account {account.account_id}: {txns_json}"
-            # )
             txns_list = []
 
         for txn in txns_list:
@@ -326,9 +316,6 @@ def refresh_account_data_for_account(
                 if counterparty and isinstance(counterparty[0], dict):
                     merchant_name = counterparty[0].get("name", "Unknown")
                     merchant_typ = counterparty[0].get("type", "Unknown")
-                    logger.debug(
-                        f"Extracted merchant details from list for transaction {txn_id}."
-                    )
                 else:
                     logger.debug(
                         f"Counterparty list for transaction {txn_id} is empty or improperly formatted."
@@ -336,9 +323,6 @@ def refresh_account_data_for_account(
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
                 merchant_typ = counterparty.get("type", "Unknown")
-                logger.debug(
-                    f"Extracted merchant details from dict for transaction {txn_id}."
-                )
             else:
                 logger.debug(
                     f"Counterparty for transaction {txn_id} is of unexpected type: {type(counterparty)}"
