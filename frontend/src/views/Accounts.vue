@@ -34,6 +34,7 @@
   </div>
 </template>
 
+
 <script>
 import LinkAccount from '@/components/LinkAccount.vue';
 import AccountsTable from '@/components/AccountsTable.vue';

@@ -12,6 +12,7 @@ env/
 venv/
 .venv/
 *.env
+!example.env
 
 # Logs
 *.log
