@@ -1,111 +1,110 @@
 <template>
   <div class="accounts-section">
-  <div class="accounts-table">
-    <h2>Accounts</h2>
+    <div class="accounts-table">
+      <h2>Accounts</h2>
 
-    <!-- Filter & Controls Row -->
-    <div class="filter-row">
-      <input
-        v-model="searchQuery"
-        class="filter-input"
-        type="text"
-        placeholder="Filter accounts..."
-      />
-      <div class="controls">
-        <button @click="fetchAccounts">Refresh Accounts</button>
-        <button @click="refreshAccounts">Refresh Account Activity</button>
+      <!-- Filter & Controls Row -->
+      <div class="filter-row">
+        <input
+          v-model="searchQuery"
+          class="filter-input"
+          type="text"
+          placeholder="Filter accounts..."
+        />
+        <!-- Use the new RefreshControls component -->
+        <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
+      </div>
+
+      <!-- Table -->
+      <table v-if="!loading && sortedAccounts.length">
+        <thead>
+          <tr>
+            <th @click="sortTable('institution_name')">
+              Institution
+              <span v-if="sortKey === 'institution_name'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('name')">
+              Name
+              <span v-if="sortKey === 'name'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('type')">
+              Type
+              <span v-if="sortKey === 'type'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('balance')">
+              Balance
+              <span v-if="sortKey === 'balance'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('subtype')">
+              Subtype
+              <span v-if="sortKey === 'subtype'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('status')">
+              Status
+              <span v-if="sortKey === 'status'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('link_type')">
+              Link Type
+              <span v-if="sortKey === 'link_type'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th @click="sortTable('last_refreshed')">
+              Last Refreshed
+              <span v-if="sortKey === 'last_refreshed'">
+                {{ sortOrder === 1 ? '▲' : '▼' }}
+              </span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="account in sortedAccounts" :key="account.account_id">
+            <td>{{ account.institution_name }}</td>
+            <td>{{ account.name }}</td>
+            <td>{{ account.type }}</td>
+            <td>{{ formatBalance(account.balance) }}</td>
+            <td>{{ account.subtype }}</td>
+            <td>{{ account.status }}</td>
+            <td>{{ account.link_type }}</td>
+            <td>{{ formatDate(account.last_refreshed) }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div v-if="!loading && sortedAccounts.length === 0">
+        No accounts found.
       </div>
     </div>
-
-    <!-- Table -->
-    <table v-if="!loading && sortedAccounts.length">
-      <thead>
-        <tr>
-          <th @click="sortTable('institution_name')">
-            Institution
-            <span v-if="sortKey === 'institution_name'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('name')">
-            Name
-            <span v-if="sortKey === 'name'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('type')">
-            Type
-            <span v-if="sortKey === 'type'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('balance')">
-            Balance
-            <span v-if="sortKey === 'balance'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('subtype')">
-            Subtype
-            <span v-if="sortKey === 'subtype'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('status')">
-            Status
-            <span v-if="sortKey === 'status'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('link_type')">
-            Link Type
-            <span v-if="sortKey === 'link_type'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-          <th @click="sortTable('last_refreshed')">
-            Last Refreshed
-            <span v-if="sortKey === 'last_refreshed'">
-              {{ sortOrder === 1 ? '▲' : '▼' }}
-            </span>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="account in sortedAccounts" :key="account.account_id">
-          <td>{{ account.institution_name }}</td>
-          <td>{{ account.name }}</td>
-          <td>{{ account.type }}</td>
-          <td>{{ formatBalance(account.balance) }}</td>
-          <td>{{ account.subtype }}</td>
-          <td>{{ account.status }}</td>
-          <td>{{ account.link_type }}</td>
-          <td>{{ formatDate(account.last_refreshed) }}</td>
-        </tr>
-      </tbody>
-    </table>
-
-    <div v-if="!loading && sortedAccounts.length === 0">
-      No accounts found.
-    </div>
   </div>
-</div>
 </template>
 
 <script>
 import axios from "axios";
+import RefreshControls from "@/components/RefreshControls.vue";
 
 export default {
   name: "AccountsTable",
+  components: { RefreshControls },
   data() {
     return {
       accounts: [],
       loading: false,
       error: "",
-      // Sorting & filtering
       searchQuery: "",
       sortKey: "",
-      sortOrder: 1, // 1 = ascending, -1 = descending
+      sortOrder: 1,
     };
   },
   computed: {
@@ -121,26 +120,21 @@ export default {
           acc.type,
           acc.subtype,
           acc.status,
-          acc.link_type
+          acc.link_type,
         ].map((val) => (val || "").toString().toLowerCase());
         return fieldsToSearch.some((field) => field.includes(query));
       });
     },
     sortedAccounts() {
-      // Sort the already filtered list
       const sorted = [...this.filteredAccounts];
       if (!this.sortKey) {
         return sorted;
       }
-
       sorted.sort((a, b) => {
         let valA = a[this.sortKey];
         let valB = b[this.sortKey];
-
-        // Convert to lower case if string
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
-
         if (valA < valB) return -1 * this.sortOrder;
         if (valA > valB) return 1 * this.sortOrder;
         return 0;
@@ -167,15 +161,13 @@ export default {
     },
     async refreshAccounts() {
       try {
-        const response = await axios.post(
-          "/api/teller/transactions/refresh_balances"
-        );
+        const response = await axios.post("/api/teller/transactions/refresh_balances");
         if (response.data.status === "success") {
           const accountNames = response.data.updated_accounts.map(
             (acc) => acc.account_name
           );
           alert("Balances refreshed for: " + accountNames.join(", "));
-          // Optionally re-fetch accounts
+          // Optionally, re-fetch accounts after refresh.
           this.fetchAccounts();
         } else {
           alert("Failed to refresh balances: " + response.data.message);
@@ -203,10 +195,10 @@ export default {
     },
     sortTable(key) {
       if (this.sortKey === key) {
-        this.sortOrder = -this.sortOrder; // flip asc/desc
+        this.sortOrder = -this.sortOrder;
       } else {
         this.sortKey = key;
-        this.sortOrder = 1; // reset to ascending
+        this.sortOrder = 1;
       }
     },
   },
@@ -217,28 +209,16 @@ export default {
 </script>
 
 <style>
-/* =============================================================================
-   Gruvbox-inspired Dark Palette
-   ============================================================================= */
-   :root {
-  /* Base Colors */
-  --gruvbox-bg: #282828;        /* Darkest background */
-  --gruvbox-fg: #ebdbb2;        /* Default text color */
-  --gruvbox-yl: #fabd2f;        /* Gruvbox yellow */
-
-  /* Accent Colors */
-  --gruvbox-accent: #d65d0e;    /* Orange accent */
-  --gruvbox-hover: #b0520c;     /* Darker accent for hover states */
-
-  /* Supporting Colors */
-  --gruvbox-border: #3c3836;    /* Dark border color */
-  --gruvbox-hover-bg: #32302f;  /* Slightly lighter than base background for even rows */
+:root {
+  --gruvbox-bg: #282828;
+  --gruvbox-fg: #ebdbb2;
+  --gruvbox-yl: #fabd2f;
+  --gruvbox-accent: #d65d0e;
+  --gruvbox-hover: #b0520c;
+  --gruvbox-border: #3c3836;
+  --gruvbox-hover-bg: #32302f;
 }
 
-
-/* =============================================================================
-   Accounts Table Container
-   ============================================================================= */
 .accounts-table {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-fg);
@@ -246,25 +226,17 @@ export default {
   border: 1px solid var(--gruvbox-border);
   border-radius: 4px;
 }
-
-/* Title Styling for Accounts Table */
 .accounts-table h2 {
   margin-top: 0;
   color: var(--gruvbox-yl);
 }
 
-
-/* =============================================================================
-   Filter and Controls Row
-   ============================================================================= */
 .filter-row {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
 }
-
-/* Filter Input Field */
 .filter-input {
   flex: 1;
   padding: 0.4rem 0.6rem;
@@ -274,188 +246,7 @@ export default {
   color: var(--gruvbox-fg);
   outline: none;
 }
-
-/* Focus State for Filter Input */
 .filter-input:focus {
   border-color: var(--gruvbox-yl);
 }
-
-
-/* =============================================================================
-   Controls Block (Buttons)
-   ============================================================================= */
-.controls {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Styling for Control Buttons */
-.controls button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
-  border: 1px solid var(--gruvbox-accent);
-  padding: 0.5rem 1rem;
-  border-radius: 3px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s, color 0.2s, border 0.2s;
-}
-
-/* Hover State for Control Buttons */
-.controls button:hover {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-accent);
-  border: 1px solid var(--gruvbox-accent);
-}
-
-
-/* =============================================================================
-   Table Styling
-   ============================================================================= */
-/* =============================================================================
-   Gruvbox-inspired Dark Palette
-   ============================================================================= */
-   :root {
-  /* Base Colors */
-  --gruvbox-bg: #282828;        /* Darkest background */
-  --gruvbox-fg: #ebdbb2;        /* Default text color */
-  --gruvbox-yl: #fabd2f;        /* Gruvbox yellow */
-
-  /* Accent Colors */
-  --gruvbox-accent: #d65d0e;    /* Orange accent */
-  --gruvbox-hover: #b0520c;     /* Darker accent for hover states */
-
-  /* Supporting Colors */
-  --gruvbox-border: #3c3836;    /* Dark border color (used elsewhere) */
-  --gruvbox-hover-bg: #32302f;  /* Slightly lighter than base background for even rows */
-
-  /* New Variable for Section Container */
-  --section-bg: #1d1d1d;        /* Container background, slightly darker than page bg */
-}
-
-
-/* =============================================================================
-   Accounts Section Container
-   ============================================================================= */
-/* This container provides a distinct background for the accounts table */
-.accounts-section {
-  background-color: var(--section-bg);
-  padding: 1.5rem;
-  border-radius: 6px;
-  margin-bottom: 1rem;
-}
-
-/* =============================================================================
-   Filter and Controls Row
-   ============================================================================= */
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-
-/* Filter Input Field */
-.filter-input {
-  flex: 1;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--gruvbox-border);
-  border-radius: 4px;
-  background-color: #1d2021;
-  color: var(--gruvbox-fg);
-  outline: none;
-}
-
-/* Focus State for Filter Input */
-.filter-input:focus {
-  border-color: var(--gruvbox-yl);
-}
-
-
-/* =============================================================================
-   Controls Block (Buttons)
-   ============================================================================= */
-.controls {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Styling for Control Buttons */
-.controls button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
-  border: 1px solid var(--gruvbox-accent);
-  padding: 0.5rem 1rem;
-  border-radius: 3px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: background-color 0.2s, color 0.2s, border 0.2s;
-}
-
-/* Hover State for Control Buttons */
-.controls button:hover {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-accent);
-  border: 1px solid var(--gruvbox-accent);
-}
-
-
-/* =============================================================================
-   Table Styling
-   ============================================================================= */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 0.5rem;
-}
-
-/* Table Head */
-thead {
-  background-color: var(--gruvbox-border);
-}
-
-/* Table Cells (Header and Data) */
-th,
-td {
-  border: 1px solid var(--gruvbox-border);
-  padding: 0.5rem;
-  text-align: left;
-  background-color: var(--gruvbox-bg);
-  cursor: default;
-}
-
-/* Table Header Specific Styling */
-th {
-  font-weight: bold;
-  user-select: none; /* Prevent text selection on click */
-  cursor: pointer;   /* Indicates clickable sorting columns */
-}
-
-/* Hover effect for table headers */
-th:hover {
-  background-color: var(--gruvbox-hover);
-}
-
-/* Alternate Row Background for Table Body */
-tbody tr:nth-child(even) {
-  background-color: var(--gruvbox-hover-bg);
-}
-
-
-/* =============================================================================
-   Additional Styling for Transactions and General Buttons
-   ============================================================================= */
-
-/* Transactions Section Margin */
-.transactions {
-  margin-top: 20px;
-}
-
-/* General Button Styling */
-button {
-  padding: 4px 8px;
-  margin-right: 4px;
-  font-size: 0.8rem;
-}
-
 </style>

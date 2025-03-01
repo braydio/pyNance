@@ -8,97 +8,129 @@
   </div>
 </template>
 
-
 <script>
-import axios from 'axios';
+import api from "@/services/api";
 
 export default {
-  name: 'LinkAccount',
+  name: "LinkAccount",
+  data() {
+    return {
+      scriptsLoaded: false,
+      plaidLinkToken: null,
+      tellerConnectInstance: null,
+      // The user ID should be dynamically determined; here it's hard-coded for demonstration.
+      userId: "user_12345",
+      // Teller Application ID from your Teller dashboard; set in your .env as VITE_TELLER_APP_ID.
+      tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
+    };
+  },
   methods: {
-    async linkPlaid() {
+    // Dynamically load an external script.
+    loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = src;
+        // Teller recommends not using async or defer so that the script executes immediately.
+        script.async = false;
+        script.onload = () => resolve();
+        script.onerror = () =>
+          reject(new Error(`Failed to load script: ${src}`));
+        document.body.appendChild(script);
+      });
+    },
+    // Load external libraries for Plaid and Teller Connect.
+    async loadExternalScripts() {
       try {
-        // Request a link token for Plaid from the backend.
-        // Adjust the endpoint URL as needed.
-        const res = await axios.post('/api/plaid/transactions/generate_link_token', { 
-          user_id: 'BraydensFinanceDashroad',
-          products: ['transactions']
-        });
-        const linkToken = res.data.link_token;
-        if (!linkToken) {
-          console.error("No Plaid link token received");
-          return;
-        }
-        // Ensure the Plaid library is loaded.
-        if (!window.Plaid) {
-          console.error("Plaid library is not loaded. Please include the Plaid Link script.");
-          return;
-        }
-        // Initialize Plaid Link using the received token.
-        const handler = window.Plaid.create({
-          token: linkToken,
-          onSuccess: async (public_token, metadata) => {
-            // Exchange the public token for an access token via your backend.
-            const exchangeRes = await axios.post('/api/plaid/transactions/exchange_public_token', {
-              public_token,
-              provider: 'plaid'
-            });
-            console.log('Plaid account linked', exchangeRes.data);
-            // Optionally, emit an event or update a parent component to refresh the accounts.
-          },
-          onExit: (err, metadata) => {
-            console.log('Plaid Link exited', err, metadata);
-          }
-        });
-        handler.open();
-      } catch (err) {
-        console.error('Error linking via Plaid', err);
+        await this.loadScript("https://cdn.plaid.com/link/v2/stable/link-initialize.js");
+        await this.loadScript("https://cdn.teller.io/connect/connect.js");
+        this.scriptsLoaded = true;
+        console.log("External scripts loaded");
+        // Preload Plaid link token once scripts are loaded.
+        await this.preloadPlaidLinkToken();
+      } catch (error) {
+        console.error("Error loading external scripts:", error);
       }
     },
-    async linkTeller() {
+    // Preload the Plaid link token from your backend.
+    async preloadPlaidLinkToken() {
       try {
-        // Request a link token for Teller from the backend.
-        // Adjust the endpoint URL as needed.
-        const res = await axios.post('/api/teller/transactions/generate_link_token', { 
-          user_id: 'user_12345',
-          products: ['transactions', 'balance']
+        const plaidRes = await api.generateLinkToken("plaid", {
+          user_id: this.userId,
+          products: ["transactions"],
         });
-        const linkToken = res.data.link_token;
-        if (!linkToken) {
-          console.error("No Teller link token received");
-          return;
-        }
-        // Ensure the TellerConnect library is loaded.
-        if (!window.TellerConnect) {
-          console.error("TellerConnect library is not loaded. Please include the Teller Connect script.");
-          return;
-        }
-        // Initialize Teller Connect using the received token.
-        const tellerConnect = window.TellerConnect.setup({
-          token: linkToken,
-          onSuccess: async (public_token, metadata) => {
-            // Exchange the public token for an access token on your backend.
-            const exchangeRes = await axios.post('/api/teller/transactions/exchange_public_token', {
-              public_token,
-              provider: 'teller'
-            });
-            console.log('Teller account linked', exchangeRes.data);
-            // Optionally, trigger a refresh of the linked accounts.
+        this.plaidLinkToken = plaidRes.link_token;
+      } catch (err) {
+        console.error("Error generating Plaid link token:", err);
+      }
+    },
+    async linkPlaid() {
+      if (!this.scriptsLoaded) {
+        console.error("External scripts not loaded yet.");
+        return;
+      }
+      if (!this.plaidLinkToken) {
+        console.error("Plaid link token not available.");
+        return;
+      }
+      if (!window.Plaid) {
+        console.error("Plaid library not available. Please check the script inclusion.");
+        return;
+      }
+      // Initialize Plaid Link using the preloaded token.
+      const handler = window.Plaid.create({
+        token: this.plaidLinkToken,
+        onSuccess: async (public_token, metadata) => {
+          console.log("Plaid onSuccess, public_token:", public_token);
+          // Exchange the public token for an access token via your backend.
+          const exchangeRes = await api.exchangePublicToken("plaid", public_token);
+          console.log("Plaid exchange response:", exchangeRes);
+          // Optionally, trigger a refresh of your account list.
+        },
+        onExit: (err, metadata) => {
+          console.log("Plaid Link exited", err, metadata);
+        },
+      });
+      handler.open();
+    },
+    async linkTeller() {
+      if (!this.scriptsLoaded) {
+        console.error("External scripts not loaded yet.");
+        return;
+      }
+      if (!window.TellerConnect) {
+        console.error("TellerConnect library not available. Please check the script inclusion.");
+        return;
+      }
+      // Initialize Teller Connect according to Teller's recommended integration.
+      if (!this.tellerConnectInstance) {
+        this.tellerConnectInstance = window.TellerConnect.setup({
+          applicationId: this.tellerAppId,
+          products: ["transactions", "balance"],
+          onInit: function() {
+            console.log("Teller Connect has initialized");
           },
-          onExit: (err, metadata) => {
-            console.log('Teller Link exited', err, metadata);
+          onSuccess: async function(enrollment) {
+            console.log("User enrolled successfully", enrollment.accessToken);
+            // The enrollment object contains the accessToken.
+            // Optionally, you can send this accessToken to your backend for processing.
+            const exchangeRes = await api.exchangePublicToken("teller", enrollment.accessToken);
+            console.log("Teller exchange response:", exchangeRes);
+          },
+          onExit: function() {
+            console.log("User closed Teller Connect");
           }
         });
-        tellerConnect.open();
-      } catch (err) {
-        console.error('Error linking via Teller', err);
       }
-    }
+      this.tellerConnectInstance.open();
+    },
+  },
+  mounted() {
+    this.loadExternalScripts();
   }
 };
 </script>
 
 <style scoped>
-/* Gruvbox Hyprland Inspired Styling for LinkAccount Component */
 .link-account {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-fg);
