@@ -45,8 +45,8 @@ logger = setup_logger()
 
 # Load environment variables
 load_dotenv()
-PLAID_CLIENT_ID = os.getenv("CLIENT_ID")
-PLAID_SECRET = os.getenv("SECRET_KEY")
+PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
+PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
@@ -82,6 +82,11 @@ for name, path in DIRECTORIES.items():
 logger.debug("Files initialized:")
 for name, path in FILES.items():
     logger.debug(f"{name}: {path}")
+
+logger.debug(f"Plaid Client: {PLAID_CLIENT_ID}")
+logger.debug(f"Plaid URL {PLAID_BASE_URL}")
+logger.debug(f"PLAID SECRET{PLAID_SECRET}")
+logger.debug(f"")
 
 DEBUG = True
 FLASK_ENV = "development"
