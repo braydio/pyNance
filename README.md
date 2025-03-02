@@ -1,6 +1,6 @@
 # pyNance
 
-**pyNance** is a personal finance dashboard that integrates with **Plaid** and **Teller.io** to manage accounts, transactions, and financial insights.
+**pyNance** is a personal finance dashboard that integrates with **Plaid** and **Teller.IO** to manage accounts, transactions, and financial insights.
 
 ## Features
 - **Account Linking**: Connect bank accounts via **Plaid** and **Teller**.
@@ -17,7 +17,7 @@
 - **Python 3.8+**
 - **Node.js & npm**
 - **Plaid API credentials**
-- **Teller API credentials**
+- **teller.ioAPI credentials**
 
 ### Clone the Repository
 ```sh
@@ -135,7 +135,7 @@ This project is licensed under the MIT License.
 ---
 
 ## Notes
-- Ensure **Plaid & Teller API credentials** are valid before running the server.
+- Ensure **Plaid & Teller.IO API credentials** are valid before running the server.
 - Transactions update in **batches** (default batch size: 100).
 - Exponential backoff is implemented for **rate-limited API requests**.
 
