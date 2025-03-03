@@ -1,22 +1,30 @@
 <template>
   <div class="accounts-page">
-    <!-- Header similar to dashboard -->
+    <!-- Header -->
     <header class="accounts-header">
       <h1>Accounts Management</h1>
     </header>
+    <!-- Charts Section -->
     <section class="charts-section">
       <LinkAccount />
       <NetYearComparisonChart />
       <AssetsBarTrended />
     </section>
+    <!-- Accounts Overview -->
     <div class="accounts-overview">
       <div class="accounts-section">
         <AccountsTable />
+        <div class="refresh-buttons">
+          <RefreshTellerControls />
+          <RefreshPlaidControls />
+        </div>
       </div>
     </div>
+    <!-- Drag Section -->
     <div class="accounts-drag">
       <AccountsReorderChart />
     </div>
+    <!-- Footer -->
     <footer class="accounts-footer">
       &copy; good dashroad.
     </footer>
@@ -29,6 +37,8 @@ import AccountsTable from '@/components/AccountsTable.vue';
 import AccountsReorderChart from '@/components/AccountsReorderChart.vue';
 import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue';
 import AssetsBarTrended from '@/components/AssetsBarTrended.vue';
+import RefreshTellerControls from '@/components/RefreshTellerControls.vue';
+import RefreshPlaidControls from '@/components/RefreshPlaidControls.vue';
 
 export default {
   name: "Accounts",
@@ -38,6 +48,8 @@ export default {
     AccountsReorderChart,
     NetYearComparisonChart,
     AssetsBarTrended,
+    RefreshTellerControls,
+    RefreshPlaidControls,
   }
 };
 </script>
@@ -69,6 +81,12 @@ export default {
   padding: 1rem;
   border-radius: 4px;
   margin-bottom: 1rem;
+}
+.refresh-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 1rem;
 }
 .accounts-drag {
   margin-bottom: 1rem;
