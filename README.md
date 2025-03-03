@@ -1,142 +1,145 @@
-# pyNance-Dash
+# pyNance
 
-pyNance is a personal finance dashboard application that integrates with the Teller API to fetch and manage account and transaction data. It provides a rich frontend built with Vue 3 and Vite and a Flask backend that stores data in an SQL database. The application features account overviews, transaction management (with inline editing), interactive charts (including daily net and category breakdown charts), and draggable interfaces for reordering accounts—all styled with a Gruvbox/Hyprland-inspired theme.
-
-> Note: I'm not 100% sure the onboarding with the Teller.io link process is fully functional. For now I use the test.py file in backend/test.py. If you have issues with account link, get the account token and user id from backend/app/data/TellerTokens.json (or something like that) and put them in the respective fields in test.py (near the bottom by 'if __main__'). Then cd into the same dir as test.py, and with the .venv active run:
-```
-.venv/Scripts/activate     # If on windows
-source .venv/bin/activate  # If better than windows
-cd pyNance/backend         # Nav to /backend/
-python test.py             # Run logic to save accounts to SQL DB
-```
-## Table of Contents
-
-- [Features](#features)
-- [Architecture](#architecture)
-- [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-  - [Backend Setup](#backend-setup)
-  - [Frontend Setup](#frontend-setup)
-  - [Teller Certificates](#teller-certificates)
-- [Quickstart](#quickstart)
-- [Configuration](#configuration)
-- [Development](#development)
-  - [Running the Backend](#running-the-backend)
-  - [Running the Frontend](#running-the-frontend)
-  - [Exposing to Other Devices](#exposing-to-other-devices)
-- [Testing](#testing)
-- [Deployment](#deployment)
-- [Project Structure](#project-structure)
-- [Contributing](#contributing)
-- [License](#license)
+**pyNance** is a personal finance dashboard that integrates with **Plaid** and **Teller.IO** to manage accounts, transactions, and financial insights.
 
 ## Features
+- **Account Linking**: Connect bank accounts via **Plaid** and **Teller**.
+- **Transaction Management**: Fetch, categorize, and process financial transactions.
+- **Charts & Insights**: Generate financial charts such as net worth tracking, category breakdowns, and cash flow.
+- **Historical Account Data**: Maintain balance history for trend analysis.
+- **Secure API Handling**: Supports exponential backoff for rate-limited requests.
 
-- **Teller API Integration:** Retrieve account and transaction data from the Teller API.
-- **Account Management:** Refresh and maintain account data with historical records.
-- **Transaction Management:** Inline-edit transactions and save updates to the database.
-- **Interactive Charts:** View daily net income/expenses and category breakdowns.
-- **Draggable Accounts:** Reorder accounts dynamically.
-- **Gruvbox/Hyprland Theme:** A modern, dark-themed UI.
+---
 
-## Architecture
-
-- **Frontend:** Vue 3 with Vite, organized into components, views, composables, services, and assets.
-- **Backend:** Flask with SQLAlchemy, integrating Teller API and database operations.
-
-## Installation
+## Setup & Installation
 
 ### Prerequisites
+- **Python 3.8+**
+- **Node.js & npm**
+- **Plaid API credentials**
+- **teller.ioAPI credentials**
 
-- Node.js (v14+)
-- npm or Yarn
-- Python (v3.7+)
-- pip
-
-### Backend Setup
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/braydio/pyNance.git
-   cd pyNance
-   ```
-2. **Create and activate a virtual environment:**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # Windows: venv\Scripts\activate
-   ```
-3. **Install dependencies:**
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. **Set up environment variables:** Create `.env` in the backend folder:
-   ```ini
-   FLASK_APP=run.py
-   FLASK_ENV=development
-   SECRET_KEY=your_secret_key
-   DATABASE_URL=sqlite:///app.db
-   TELLER_APP_ID=your_teller_app_id
-   TELLER_ENV=sandbox
-   ```
-5. **Obtain Teller Certificates:** Place `certificate.pem` and `private_key.pem` in `backend/app/certs`. Follow Teller's documentation to generate them.
-6. **Run Database Migrations:**
-   ```bash
-   python run.py
-   ```
-
-### Frontend Setup
-
-1. **Navigate to the frontend folder:**
-   ```bash
-   cd frontend
-   ```
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-3. **Set up environment variables:** Create `.env` in the frontend folder:
-   ```ini
-   VUE_APP_API_BASE_URL=http://192.168.1.68:5000/api
-   ```
-
-## Quickstart
-
-### Running the Backend
-```bash
-python run.py
+### Clone the Repository
+```sh
+git clone https://github.com/yourusername/pyNance.git
+cd pyNance
 ```
 
-### Running the Frontend
-```bash
+### Virtual Environment Setup
+Create a virtual environment **in the root directory**:
+```sh
+python -m venv venv
+```
+Activate it:
+- On macOS/Linux:
+  ```sh
+  source venv/bin/activate
+  ```
+- On Windows:
+  ```sh
+  venv\Scripts\activate
+  ```
+
+---
+
+## Backend (Flask API)
+### Navigate to the backend:
+```sh
+cd backend
+```
+### Install Python Dependencies:
+```sh
+pip install -r requirements.txt
+```
+### Set Environment Variables
+Create a `.env` file inside `/backend/` with your API credentials:
+```ini
+PLAID_CLIENT_ID=your_client_id
+PLAID_SECRET=your_secret
+PLAID_ENV=sandbox  # or "development" / "production"
+TELLER_APP_ID=your_teller_app_id
+```
+
+### Run Flask Server
+```sh
+flask run
+```
+This will start the backend API.
+
+---
+
+## Frontend (Vue Dashboard)
+### Navigate to the frontend:
+```sh
+cd ../frontend
+```
+### Install Dependencies:
+```sh
+npm install
+```
+### Run Development Server:
+```sh
 npm run dev
 ```
+This will start the Vue dashboard.
 
-### Exposing to Other Devices
-- **Backend:** Runs at `http://192.168.1.68:5000`.
-- **Frontend:** Ensure `vite.config.js` sets `host: true`.
+---
 
-## Testing
-- **Run Cypress tests:**
-  ```bash
-  npm run test:e2e
-  ```
-- **Run unit tests:** Use your preferred test runner.
+## API Endpoints
 
-## Deployment
-Build the frontend:
-```bash
-npm run build
+### Plaid
+- **Generate Link Token**: `/api/plaid/transactions/generate_link_token` (POST)
+- **Exchange Public Token**: `/api/plaid/transactions/exchange_public_token` (POST)
+- **Fetch Accounts**: `/api/plaid/transactions/get_accounts` (GET)
+- **Refresh Transactions**: `/api/plaid/transactions/refresh_accounts` (POST)
+
+### Teller
+- **Generate Link Token**: `/api/teller/link/generate_link_token` (POST)
+- **Exchange Public Token**: `/api/teller/exchange_public_token` (POST)
+- **Fetch Accounts**: `/api/teller/get_accounts` (GET)
+- **Refresh Transactions**: `/api/teller/refresh_accounts` (POST)
+
+### Charts & Insights
+- **Category Breakdown**: `/api/charts/category_breakdown` (GET)
+- **Cash Flow Analysis**: `/api/charts/cash_flow` (GET)
+- **Net Worth Tracking**: `/api/charts/net_assets` (GET)
+
+---
+
+## Configuration
+
+### Database
+By default, the application uses **SQLite**:
 ```
-Deploy using Gunicorn for Flask and serve static files.
+SQLALCHEMY_DATABASE_URI=sqlite:///data/dashroad.db
+```
+If needed, you can modify `config.py` to use a different database.
 
-## Contributing
+### Logging
+Logs are stored in `logs/testing.log`. Modify `config.py` to change the logging level.
 
-1. Fork the repository.
-2. Create a feature branch (`git checkout -b feature/your-feature`).
-3. Commit changes (`git commit -am 'Add feature'`).
-4. Push and open a Pull Request.
+---
+
+## Contribution & Development
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature-name`)
+3. Commit changes (`git commit -m "Added feature X"`)
+4. Push to your fork (`git push origin feature-name`)
+5. Open a Pull Request
+
+---
 
 ## License
+This project is licensed under the MIT License.
 
-MIT License. See [LICENSE](LICENSE) for details.
+---
+
+## Notes
+- Ensure **Plaid & Teller.IO API credentials** are valid before running the server.
+- Transactions update in **batches** (default batch size: 100).
+- Exponential backoff is implemented for **rate-limited API requests**.
+
+---
+
+Happy tracking!
 
