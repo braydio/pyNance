@@ -37,7 +37,7 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: this.userId,
+          user_id: "Brayden@PlaidLinkuserId",
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
