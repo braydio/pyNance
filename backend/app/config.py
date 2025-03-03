@@ -45,11 +45,19 @@ logger = setup_logger()
 
 # Load environment variables
 load_dotenv()
+
+# Dev Environment Variables - Use in test.py
+VARIABLE_ENV_TOKEN = os.getenv("VARIABLE_ENV_TOKEN")
+VARIABLE_ENV_ID = os.getenv("VARIABLE_ENV_ID")
+
+# Plaid API Env Variables
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
+
+# Teller API Env Variables
 TELLER_APP_ID = os.getenv("TELLER_APP_ID")
 TELLER_API_BASE_URL = "https://api.teller.io"
 
@@ -71,7 +79,7 @@ FILES = {
     "TELLER_DOT_KEY": DIRECTORIES["CERTS_DIR"] / "private_key.pem",
 }
 
-# Set the database URI (using SQLite here)
+# Database URI using SQLite (SQLAlchemy)
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR'] / 'dashroad.db'}"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -84,9 +92,12 @@ logger.debug("Files initialized:")
 for name, path in FILES.items():
     logger.debug(f"{name}: {path}")
 
-logger.debug(f"Plaid Client: {PLAID_CLIENT_ID}")
-logger.debug(f"PLAID SECRET{PLAID_SECRET}")
-logger.debug(f"Plaid URL {PLAID_BASE_URL}")
+logger.warning(f"Don't forget to remove these logs from config.py in {BASE_DIR}")
+logger.debug(f"PLAID CLIENT ID {PLAID_CLIENT_ID}")
+logger.debug(f"PLAID SECRET {PLAID_SECRET}")
+logger.debug(f"PLAID API URL {PLAID_BASE_URL}")
+logger.debug(f"TELLER APP ID {TELLER_APP_ID}")
+logger.debug(f"TELLER API URL {TELLER_API_BASE_URL}")
 
 
 DEBUG = True
@@ -103,4 +114,6 @@ __all__ = [
     "PLAID_BASE_URL",
     "TELLER_APP_ID",
     "TELLER_API_BASE_URL",
+    "VARIABLE_ENV_TOKEN",
+    "VARIABLE_ENV_ID",
 ]

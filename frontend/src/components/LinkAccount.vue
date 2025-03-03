@@ -19,7 +19,7 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      userId: "user_12345", // Replace with dynamic user info as needed
+      userId: "pyNanceDash", // Do not change this
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
     };
   },
@@ -37,7 +37,7 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: "Brayden@PlaidLinkuserId",
+          user_id: "pyNanceDash", // Do not change this
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
