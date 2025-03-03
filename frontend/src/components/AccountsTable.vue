@@ -11,7 +11,7 @@
           type="text"
           placeholder="Filter accounts..."
         />
-        <!-- Use the new RefreshControls component -->
+        <!-- Use the reusable RefreshControls component -->
         <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
       </div>
 
@@ -49,12 +49,6 @@
                 {{ sortOrder === 1 ? '▲' : '▼' }}
               </span>
             </th>
-            <th @click="sortTable('status')">
-              Status
-              <span v-if="sortKey === 'status'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
-              </span>
-            </th>
             <th @click="sortTable('link_type')">
               Link Type
               <span v-if="sortKey === 'link_type'">
@@ -76,7 +70,6 @@
             <td>{{ account.type }}</td>
             <td>{{ formatBalance(account.balance) }}</td>
             <td>{{ account.subtype }}</td>
-            <td>{{ account.status }}</td>
             <td>{{ account.link_type }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
           </tr>
@@ -97,6 +90,13 @@ import RefreshControls from "@/components/RefreshControls.vue";
 export default {
   name: "AccountsTable",
   components: { RefreshControls },
+  props: {
+    // Set the provider: "teller" or "plaid"
+    provider: {
+      type: String,
+      default: "teller",
+    },
+  },
   data() {
     return {
       accounts: [],
@@ -147,7 +147,12 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const response = await axios.get("/api/teller/transactions/get_accounts");
+        let response;
+        if (this.provider === "plaid") {
+          response = await axios.get("/api/plaid/transactions/get_accounts");
+        } else {
+          response = await axios.get("/api/teller/transactions/get_accounts");
+        }
         if (response.data && response.data.status === "success") {
           this.accounts = response.data.data.accounts;
         } else {
@@ -161,13 +166,17 @@ export default {
     },
     async refreshAccounts() {
       try {
-        const response = await axios.post("/api/teller/transactions/refresh_balances");
+        let response;
+        if (this.provider === "plaid") {
+          response = await axios.post("/api/plaid/transactions/refresh_accounts");
+        } else {
+          response = await axios.post("/api/teller/transactions/refresh_balances");
+        }
         if (response.data.status === "success") {
           const accountNames = response.data.updated_accounts.map(
             (acc) => acc.account_name
           );
           alert("Balances refreshed for: " + accountNames.join(", "));
-          // Optionally, re-fetch accounts after refresh.
           this.fetchAccounts();
         } else {
           alert("Failed to refresh balances: " + response.data.message);

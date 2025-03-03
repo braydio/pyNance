@@ -10,6 +10,7 @@
 
 <script>
 import api from "@/services/api";
+import { loadExternalScripts } from "@/utils/externalScripts";
 
 export default {
   name: "LinkAccount",
@@ -18,40 +19,21 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      // The user ID should be dynamically determined; here it's hard-coded for demonstration.
-      userId: "user_12345",
-      // Teller Application ID from your Teller dashboard; set in your .env as VITE_TELLER_APP_ID.
+      userId: "user_12345", // Replace with dynamic user info as needed
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
     };
   },
   methods: {
-    // Dynamically load an external script.
-    loadScript(src) {
-      return new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = src;
-        // Teller recommends not using async or defer so that the script executes immediately.
-        script.async = false;
-        script.onload = () => resolve();
-        script.onerror = () =>
-          reject(new Error(`Failed to load script: ${src}`));
-        document.body.appendChild(script);
-      });
-    },
-    // Load external libraries for Plaid and Teller Connect.
-    async loadExternalScripts() {
+    async initializeScripts() {
       try {
-        await this.loadScript("https://cdn.plaid.com/link/v2/stable/link-initialize.js");
-        await this.loadScript("https://cdn.teller.io/connect/connect.js");
+        await loadExternalScripts();
         this.scriptsLoaded = true;
-        console.log("External scripts loaded");
-        // Preload Plaid link token once scripts are loaded.
+        // Preload Plaid link token after scripts have loaded.
         await this.preloadPlaidLinkToken();
       } catch (error) {
         console.error("Error loading external scripts:", error);
       }
     },
-    // Preload the Plaid link token from your backend.
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
@@ -73,18 +55,16 @@ export default {
         return;
       }
       if (!window.Plaid) {
-        console.error("Plaid library not available. Please check the script inclusion.");
+        console.error("Plaid library not available.");
         return;
       }
-      // Initialize Plaid Link using the preloaded token.
       const handler = window.Plaid.create({
         token: this.plaidLinkToken,
         onSuccess: async (public_token, metadata) => {
           console.log("Plaid onSuccess, public_token:", public_token);
-          // Exchange the public token for an access token via your backend.
           const exchangeRes = await api.exchangePublicToken("plaid", public_token);
           console.log("Plaid exchange response:", exchangeRes);
-          // Optionally, trigger a refresh of your account list.
+          // Optionally, emit an event to refresh your accounts
         },
         onExit: (err, metadata) => {
           console.log("Plaid Link exited", err, metadata);
@@ -98,10 +78,9 @@ export default {
         return;
       }
       if (!window.TellerConnect) {
-        console.error("TellerConnect library not available. Please check the script inclusion.");
+        console.error("TellerConnect library not available.");
         return;
       }
-      // Initialize Teller Connect according to Teller's recommended integration.
       if (!this.tellerConnectInstance) {
         this.tellerConnectInstance = window.TellerConnect.setup({
           applicationId: this.tellerAppId,
@@ -111,8 +90,6 @@ export default {
           },
           onSuccess: async function(enrollment) {
             console.log("User enrolled successfully", enrollment.accessToken);
-            // The enrollment object contains the accessToken.
-            // Optionally, you can send this accessToken to your backend for processing.
             const exchangeRes = await api.exchangePublicToken("teller", enrollment.accessToken);
             console.log("Teller exchange response:", exchangeRes);
           },
@@ -122,11 +99,11 @@ export default {
         });
       }
       this.tellerConnectInstance.open();
-    },
+    }
   },
   mounted() {
-    this.loadExternalScripts();
-  }
+    this.initializeScripts();
+  },
 };
 </script>
 
