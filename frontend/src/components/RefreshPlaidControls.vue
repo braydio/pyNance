@@ -23,11 +23,11 @@ export default {
       this.isRefreshing = true;
       try {
         const response = await axios.post("/api/plaid/transactions/refresh_accounts", {
-          user_id: this.userId
+          user_id: "Brayden@PlaidLink"
         });
         if (response.data.status === "success") {
-          const updatedItems = response.data.updated_items;
-          alert("Plaid accounts refreshed: " + updatedItems.join(", "));
+          const updatedAccounts = response.data.updated_accounts;
+          alert("Plaid accounts refreshed: " + updatedAccounts.join(", "));
         } else {
           alert("Error refreshing Plaid accounts: " + response.data.message);
         }
