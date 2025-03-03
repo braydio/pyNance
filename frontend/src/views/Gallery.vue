@@ -1,10 +1,25 @@
 <template>
   <div class="gallery-container">
-    <h1>Charts Gallery - 600px by 400px Standard - More Specs Here</h1>
+    <h1>Charts Gallery - Testing for Visuals and Pink Floyd</h1>
     </div>
 
     <!-- Example of a 2-column layout; each chart is in its own container -->
     <div class="charts-grid">
+      <div class="chart-item">
+        <h2>Pink Floyd</h2>
+        <div class="video-container">
+          <iframe
+            width="560"
+            height="315"
+            src="https://www.youtube.com/embed/o7VO6_beRRE?si=fbgY_g-JIcSigZq7"
+            title="YouTube video player"
+            frameborder="0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+
       <!-- Daily Net Chart -->
       <div class="chart-item">
         <h2>Daily Net Income</h2>
@@ -26,8 +41,8 @@
         <h2>Net Year Comparison</h2>
         <NetYearComparisonChart />
       </div>
-
     </div>
+
     <footer class="dashboard-footer">
       &copy; good dashroad.
     </footer>
@@ -91,6 +106,21 @@ h2 {
   align-items: center;
   height: 400px;
   width: 600px;
+}
+/* Optional: Style the video container for responsiveness */
+.video-container {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 ratio */
+  padding-top: 25px;
+  height: 400px;
+  width: 100%;
+}
+.video-container iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 500px;
+  height: 400px;
 }
 
 .chart-item h2 {
