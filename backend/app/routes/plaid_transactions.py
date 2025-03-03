@@ -1,5 +1,7 @@
 # File: app/routes/plaid_transactions.py
 
+from datetime import datetime
+
 from app.config import PLAID_BASE_URL, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -81,6 +83,7 @@ def exchange_public_token_endpoint():
                     "balance": {"current": acct.get("balances", {}).get("current", 0)},
                     "status": "active",
                     "institution": {"name": institution_name},
+                    "access_token": access_token,
                     "enrollment_id": "",
                     "links": {},
                     "provider": "Plaid",
@@ -111,17 +114,22 @@ def refresh_plaid_accounts():
     try:
         logger.debug("Refreshing Plaid accounts from database.")
         user_id = request.get_json().get("user_id", "Brayden@PlaidLink")
-        # Query only accounts for the given user.
-        accounts = Account.query.filter_by(user_id=user_id).all()
+        # Query only accounts for the given user that are linked via Plaid.
+        accounts = Account.query.filter_by(user_id=user_id, link_type="Plaid").all()
+        if not accounts:
+            logger.warning(f"No Plaid-linked accounts found for user {user_id}")
         updated_accounts = []
 
         for account in accounts:
-            access_token = account.access_token  # Now stored in the Account record
+            access_token = (
+                account.access_token
+            )  # Access token stored in the Account record
             if not access_token:
                 logger.warning(
                     f"No Plaid access token found for account {account.account_id} (user {account.user_id})"
                 )
                 continue
+
             logger.debug(
                 f"Refreshing Plaid account {account.account_id} using token: {access_token}"
             )
@@ -129,15 +137,15 @@ def refresh_plaid_accounts():
                 account, access_token, PLAID_BASE_URL
             )
             if updated:
-                updated_accounts.append(
-                    {"account_id": account.account_id, "account_name": account.name}
-                )
+                updated_accounts.append(account.name)
+                account.last_refreshed = datetime.utcnow()
         db.session.commit()
+        logger.debug(f"Refresh complete. Updated accounts: {updated_accounts}")
         return (
             jsonify(
                 {
                     "status": "success",
-                    "message": "Plaid account data refreshed",
+                    "message": "Teller account data refreshed",
                     "updated_accounts": updated_accounts,
                 }
             ),
