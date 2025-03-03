@@ -64,6 +64,7 @@ FILES = {
     "DEFAULT_THEME": DIRECTORIES["THEMES_DIR"] / "default.css",
     "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
     "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
+    "PLAID_TOKENS": DIRECTORIES["DATA_DIR"] / "PlaidTokens.json",
     "TELLER_TOKENS": DIRECTORIES["DATA_DIR"] / "TellerDotTokens.json",
     "TELLER_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json",
     "TELLER_DOT_CERT": DIRECTORIES["CERTS_DIR"] / "certificate.pem",
@@ -84,9 +85,9 @@ for name, path in FILES.items():
     logger.debug(f"{name}: {path}")
 
 logger.debug(f"Plaid Client: {PLAID_CLIENT_ID}")
-logger.debug(f"Plaid URL {PLAID_BASE_URL}")
 logger.debug(f"PLAID SECRET{PLAID_SECRET}")
-logger.debug(f"")
+logger.debug(f"Plaid URL {PLAID_BASE_URL}")
+
 
 DEBUG = True
 FLASK_ENV = "development"
