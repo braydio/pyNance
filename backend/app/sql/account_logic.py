@@ -1,13 +1,14 @@
 import json
 import time
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 import requests
-from app.config import FILES, logger
+from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.extensions import db
 from app.models import Account, AccountDetails, AccountHistory, PlaidItem, Transaction
 
 TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
+TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
@@ -186,7 +187,7 @@ def refresh_data_for_teller_account(
     Updates the account balance and adds/updates transactions accordingly.
     """
     updated = False
-    now = datetime.utcnow()
+    datetime.utcnow()
 
     # --- Refresh Balance ---
     url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
@@ -365,7 +366,6 @@ def refresh_data_for_teller_account(
         )
 
     # --- Update Last Refreshed and Account History ---
-    account.last_refreshed = now
     today = datetime.today()
     existing_history = AccountHistory.query.filter_by(
         account_id=account.account_id, date=today
@@ -389,34 +389,184 @@ def refresh_data_for_teller_account(
 
 def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
     """
-    Refreshes a Plaid-linked account by calling Plaid's /accounts/get endpoint.
-    Returns True if the account was updated.
+    Refreshes a Plaid-linked account by querying the Plaid API.
+    It refreshes the account balance and transactions by calling:
+      - /accounts/get to fetch balance information.
+      - /transactions/get to fetch recent transactions.
+    Updates the account record in the SQL database accordingly.
+    Also upserts each transaction in the Transactions table.
+    Returns True if any update occurred.
     """
-    import requests
-    from app.config import PLAID_CLIENT_ID, PLAID_SECRET, logger
+    updated = False
+    now = datetime.utcnow()
 
-    url = f"{plaid_base_url}/accounts/get"
-    payload = {
+    logger.debug(
+        f"Called refresh_data_for_plaid_account for account {account.account_id}"
+    )
+
+    # --- Refresh Balance ---
+    url_balance = f"{plaid_base_url}/accounts/get"
+    payload_balance = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
         "access_token": access_token,
     }
     try:
-        resp = requests.post(url, json=payload)
-        logger.debug(f"Plaid refresh response: {resp.status_code} - {resp.text}")
-        if resp.status_code == 200:
-            resp.json().get("accounts", [])
-            # transformed_accounts = [
-            #     transform_plaid_account(acc) for acc in accounts_data
-            # ]
-        #     upsert_accounts(account.user_id, transformed_accounts, provider="Plaid")
-        #     return True
-        # else:
-        #     logger.error(f"Error refreshing Plaid account: {resp.text}")
-        #     return False
+        resp_balance = requests.post(url_balance, json=payload_balance)
+        logger.debug(
+            f"Plaid balance response for account {account.account_id}: {resp_balance.status_code} - {resp_balance.text}"
+        )
+        if resp_balance.status_code == 200:
+            data = resp_balance.json()
+            # Optional: Save raw response for debugging.
+            with open(TRANSACTIONS_RAW_ENRICHED, "w") as f:
+                json.dump(data, f, indent=4)
+            accounts_list = data.get("accounts", [])
+            plaid_account = next(
+                (
+                    acc
+                    for acc in accounts_list
+                    if acc.get("account_id") == account.account_id
+                ),
+                None,
+            )
+            if plaid_account:
+                try:
+                    new_balance = float(
+                        plaid_account.get("balances", {}).get(
+                            "current", account.balance
+                        )
+                    )
+                except Exception as e:
+                    logger.error(
+                        f"Error parsing Plaid balance for account {account.account_id}: {e}",
+                        exc_info=True,
+                    )
+                    new_balance = account.balance
+
+                if new_balance != account.balance:
+                    logger.debug(
+                        f"Account {account.account_id}: Balance updated from {account.balance} to {new_balance}"
+                    )
+                    account.balance = new_balance
+                    updated = True
+                else:
+                    logger.debug(
+                        f"Account {account.account_id}: Balance remains unchanged: {account.balance}"
+                    )
+            else:
+                logger.warning(
+                    f"Account {account.account_id} not found in Plaid balance response."
+                )
+        else:
+            logger.error(
+                f"Failed to refresh Plaid balance for account {account.account_id}: {resp_balance.text}"
+            )
     except Exception as e:
-        logger.error(f"Exception refreshing Plaid account: {e}", exc_info=True)
-        return False
+        logger.error(
+            f"Exception while refreshing Plaid balance for account {account.account_id}: {e}",
+            exc_info=True,
+        )
+
+    # --- Refresh Transactions ---
+    url_txns = f"{plaid_base_url}/transactions/get"
+    start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
+    end_date = datetime.now().strftime("%Y-%m-%d")
+    payload_txns = {
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
+        "access_token": access_token,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+    try:
+        resp_txns = requests.post(url_txns, json=payload_txns, timeout=10)
+        logger.debug(
+            f"Plaid transactions response for account {account.account_id}: {resp_txns.status_code} - {resp_txns.text}"
+        )
+        if resp_txns.status_code == 200:
+            txns_json = resp_txns.json()
+            # Optional: Save raw transactions response for auditing.
+            with open(TRANSACTIONS_RAW_ENRICHED, "w") as f:
+                json.dump(txns_json, f, indent=4)
+            transactions = txns_json.get("transactions", [])
+            if transactions:
+                for txn in transactions:
+                    txn_id = txn.get("transaction_id")
+                    if not txn_id:
+                        logger.warning(
+                            "Encountered a transaction without a 'transaction_id'; skipping."
+                        )
+                        continue
+
+                    existing_txn = Transaction.query.filter_by(
+                        transaction_id=txn_id
+                    ).first()
+
+                    # Extract common fields
+                    amount = txn.get("amount") or 0
+                    date_str = txn.get("date") or txn.get("authorized_date") or ""
+                    # Use the 'name' field as description if available; fallback to merchant_name.
+                    description = txn.get("name") or txn.get("merchant_name") or ""
+
+                    # Process category: if a list is provided, use the last element.
+                    category_list = txn.get("category")
+                    if isinstance(category_list, list) and category_list:
+                        category = category_list[-1] or "Unknown"
+                    else:
+                        category = "Unknown"
+
+                    # Process merchant details:
+                    merchant_name = txn.get("merchant_name") or "Unknown"
+                    merchant_typ = "Unknown"
+                    counterparties = txn.get("counterparties")
+                    if isinstance(counterparties, list) and counterparties:
+                        merchant_typ = counterparties[0].get("type", "Unknown")
+
+                    if existing_txn:
+                        logger.debug(
+                            f"Updating existing transaction {txn_id} for account {account.account_id}."
+                        )
+                        existing_txn.amount = amount
+                        existing_txn.date = date_str
+                        existing_txn.description = description
+                        existing_txn.category = category
+                        existing_txn.merchant_name = merchant_name
+                        existing_txn.merchant_typ = merchant_typ
+                    else:
+                        logger.debug(
+                            f"Inserting new transaction {txn_id} for account {account.account_id}."
+                        )
+                        new_txn = Transaction(
+                            transaction_id=txn_id,
+                            account_id=account.account_id,
+                            amount=amount,
+                            date=date_str,
+                            description=description,
+                            category=category,
+                            merchant_name=merchant_name,
+                            merchant_typ=merchant_typ,
+                        )
+                        db.session.add(new_txn)
+                updated = True
+            else:
+                logger.debug(
+                    f"No transactions found in Plaid response for account {account.account_id}."
+                )
+        else:
+            logger.error(
+                f"Failed to refresh Plaid transactions for account {account.account_id}: {resp_txns.text}"
+            )
+    except Exception as e:
+        logger.error(
+            f"Exception while refreshing Plaid transactions for account {account.account_id}: {e}",
+            exc_info=True,
+        )
+
+    # --- Update Last Refreshed ---
+    account.last_refreshed = now
+
+    return updated
 
 
 def get_accounts_from_db():
