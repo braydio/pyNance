@@ -1,13 +1,14 @@
-from datetime import datetime, timedelta
+# File: app/routes/plaid_transactions.py
 
-from app.config import logger
+from app.config import PLAID_BASE_URL, logger
+from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
-    get_transactions,
 )
-from app.sql import account_logic  # existing module for upserting accounts
+from app.models import Account
+from app.sql import account_logic  # for upserting accounts and processing transactions
 
 from flask import Blueprint, jsonify, request
 
@@ -18,14 +19,20 @@ plaid_transactions = Blueprint("plaid_transactions", __name__)
 def generate_link_token_endpoint():
     """
     Generate a Plaid link token for the transactions product.
-    Expects JSON payload with "user_id".
+    Expects JSON payload with "user_id" and optionally "products".
     """
     data = request.get_json()
-    user_id = data.get("user_id")
-    if not user_id:
-        return jsonify({"error": "Missing user_id"}), 400
+    user_id = data.get("user_id", "default_user")
+    products = data.get("products", ["transactions"])
     try:
-        token = generate_link_token(user_id, products=["transactions"])
+        token = generate_link_token(products=products, user_id=user_id)
+        if not token:
+            return (
+                jsonify(
+                    {"status": "error", "message": "Failed to generate link token"}
+                ),
+                500,
+            )
         return jsonify({"status": "success", "link_token": token}), 200
     except Exception as e:
         logger.error(f"Error generating link token: {e}", exc_info=True)
@@ -39,85 +46,29 @@ def exchange_public_token_endpoint():
     Expects JSON with "user_id" and "public_token".
     """
     data = request.get_json()
-    user_id = data.get("user_id")
+    user_id = data.get("user_id", "default_user")
     public_token = data.get("public_token")
     if not user_id or not public_token:
         return jsonify({"error": "Missing user_id or public_token"}), 400
     try:
         exchange_resp = exchange_public_token(public_token)
+        if not exchange_resp:
+            return jsonify({"error": "Token exchange failed"}), 500
         access_token = exchange_resp.get("access_token")
         item_id = exchange_resp.get("item_id")
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
-        # Fetch accounts to retrieve institution info
-        accounts_data = account_logic.get_accounts(access_token)
+
+        # Fetch accounts to retrieve institution info using existing SQL logic.
+        accounts_data = get_accounts(access_token)
         institution_name = accounts_data.get("item", {}).get(
             "institution_name", "Unknown"
         )
-        # Save the token in the DB (separate from Teller)
+        # Save the token using your SQL logic.
         account_logic.save_plaid_item(
             user_id, item_id, access_token, institution_name, product="transactions"
         )
-        # Transform Plaid account data for upsert (note: adjust keys as needed)
-        transformed = []
-        for acct in accounts_data.get("accounts", []):
-            transformed.append(
-                {
-                    "id": acct.get("account_id"),
-                    "name": acct.get("name")
-                    or acct.get("official_name", "Unnamed Account"),
-                    "type": acct.get("type") or "Unknown",
-                    "subtype": acct.get("subtype") or "Unknown",
-                    "balance": {"current": acct.get("balances", {}).get("current", 0)},
-                    "status": "active",
-                    "institution": {"name": institution_name},
-                    "enrollment_id": "",
-                    "links": {},
-                    "provider": "Plaid",  # mark this as Plaid-linked
-                }
-            )
-        # Call your existing upsert function (ensure it accepts a provider parameter)
-        account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "item_id": item_id,
-                    "institution_name": institution_name,
-                }
-            ),
-            200,
-        )
-    except Exception as e:
-        logger.error(f"Error exchanging public token: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
-
-
-@plaid_transactions.route("/refresh_accounts", methods=["POST"])
-def refresh_accounts_endpoint():
-    """
-    Refresh linked transactions accounts and transactions.
-    Expects JSON with "user_id" and "item_id".
-    """
-    data = request.get_json()
-    user_id = data.get("user_id")
-    item_id = data.get("item_id")
-    if not user_id or not item_id:
-        return jsonify({"error": "Missing user_id or item_id"}), 400
-    try:
-        # Retrieve the PlaidItem record (you could also query by item_id and user_id)
-        from app.models import PlaidItem
-
-        item = PlaidItem.query.filter_by(
-            item_id=item_id, user_id=user_id, product="transactions"
-        ).first()
-        if not item:
-            return jsonify({"error": "Plaid item not found"}), 404
-        # Refresh accounts data
-        accounts_data = get_accounts(item.access_token)
-        institution_name = accounts_data.get("item", {}).get(
-            "institution_name", "Unknown"
-        )
+        # Transform and upsert accounts.
         transformed = []
         for acct in accounts_data.get("accounts", []):
             transformed.append(
@@ -136,23 +87,62 @@ def refresh_accounts_endpoint():
                 }
             )
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
-        # Refresh transactions (for a default 30-day range)
-        start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-        end_date = datetime.now().strftime("%Y-%m-%d")
-        tx_data = get_transactions(item.access_token, start_date, end_date)
-        transactions = tx_data.get("transactions", [])
-        # Call your transaction-processing logic (assumed to be similar to Teller's)
-        account_logic.process_transactions(user_id, transactions, provider="Plaid")
         return (
             jsonify(
                 {
                     "status": "success",
-                    "accounts_refreshed": len(transformed),
-                    "transactions_refreshed": len(transactions),
+                    "item_id": item_id,
+                    "institution_name": institution_name,
                 }
             ),
             200,
         )
     except Exception as e:
-        logger.error(f"Error refreshing accounts: {e}", exc_info=True)
+        logger.error(f"Error exchanging public token: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+
+@plaid_transactions.route("/refresh_accounts", methods=["POST"])
+def refresh_plaid_accounts():
+    """
+    Refresh Plaid-linked accounts using tokens stored in the Accounts table.
+    Expects JSON payload with "user_id" (optional, defaults to "default_user").
+    """
+    try:
+        logger.debug("Refreshing Plaid accounts from database.")
+        user_id = request.get_json().get("user_id", "default_user")
+        # Query only accounts for the given user.
+        accounts = Account.query.filter_by(user_id=user_id).all()
+        updated_accounts = []
+
+        for account in accounts:
+            access_token = account.access_token  # Now stored in the Account record
+            if not access_token:
+                logger.warning(
+                    f"No Plaid access token found for account {account.account_id} (user {account.user_id})"
+                )
+                continue
+            logger.debug(
+                f"Refreshing Plaid account {account.account_id} using token: {access_token}"
+            )
+            updated = account_logic.refresh_data_for_plaid_account(
+                account, access_token, PLAID_BASE_URL
+            )
+            if updated:
+                updated_accounts.append(
+                    {"account_id": account.account_id, "account_name": account.name}
+                )
+        db.session.commit()
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "Plaid account data refreshed",
+                    "updated_accounts": updated_accounts,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error refreshing Plaid accounts: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500

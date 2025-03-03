@@ -3,6 +3,24 @@ from datetime import datetime
 from app.extensions import db
 
 
+class Account(db.Model):
+    __tablename__ = "accounts"
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.String(64), unique=True, nullable=False)
+    user_id = db.Column(db.String(64), nullable=False)
+    access_token = db.Column((db.String(256)))
+    name = db.Column(db.String(128))
+    type = db.Column(db.String(64))
+    subtype = db.Column(db.String(64))
+    status = db.Column(db.String(64))
+    institution_name = db.Column(db.String(128))
+    balance = db.Column(db.Float, default=0)
+    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
+    link_type = db.Column(db.String(64), default="InsertProvider")
+    details = db.relationship("AccountDetails", backref="account", uselist=False)
+    history = db.relationship("AccountHistory", backref="account", lazy=True)
+
+
 class PlaidItem(db.Model):
     """
     Stores Plaid-specific item metadata and access tokens.
@@ -26,23 +44,6 @@ class PlaidItem(db.Model):
 
     def __repr__(self):
         return f"<PlaidItem(item_id={self.item_id}, institution={self.institution_name}, product={self.product})>"
-
-
-class Account(db.Model):
-    __tablename__ = "accounts"
-    id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String(64), unique=True, nullable=False)
-    user_id = db.Column(db.String(64), nullable=False)
-    name = db.Column(db.String(128))
-    type = db.Column(db.String(64))
-    subtype = db.Column(db.String(64))
-    status = db.Column(db.String(64))
-    institution_name = db.Column(db.String(128))
-    balance = db.Column(db.Float, default=0)
-    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
-    link_type = db.Column(db.String(64), default="Teller")
-    details = db.relationship("AccountDetails", backref="account", uselist=False)
-    history = db.relationship("AccountHistory", backref="account", lazy=True)
 
 
 class AccountDetails(db.Model):

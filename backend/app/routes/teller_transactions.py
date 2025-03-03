@@ -1,16 +1,15 @@
 # File: app/routes/teller_transactions.py
-
 import json
+from datetime import datetime
 
 import requests
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
-from app.models import Account, Transaction
-from app.sql.account_logic import (
-    get_accounts_from_db,
-    get_paginated_transactions,
-    refresh_account_data_for_account,
+from app.models import (  # TellerItem is our new table for Teller-specific data
+    Account,
+    Transaction,
 )
+from app.sql import account_logic
 
 from flask import Blueprint, jsonify, request
 
@@ -102,6 +101,8 @@ def teller_exchange_public_token():
 def teller_refresh_accounts():
     """
     Refresh Teller accounts and transactions.
+    For each account in the database, use the Teller token.
+    Updated data is stored in the Accounts table.
     """
     try:
         logger.debug("Refreshing Teller accounts from database.")
@@ -122,9 +123,9 @@ def teller_refresh_accounts():
                 logger.warning(f"No access token found for user {account.user_id}")
                 continue
             logger.debug(
-                f"Refreshing Teller account {account.account_id} using token: {access_token}"
+                f"Refreshing Teller account {account.name} {account.account_id} using token: {access_token}"
             )
-            updated = refresh_account_data_for_account(
+            updated = account_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 FILES["TELLER_DOT_CERT"],
@@ -132,7 +133,9 @@ def teller_refresh_accounts():
                 TELLER_API_BASE_URL,
             )
             if updated:
-                updated_accounts.append(account.account_id)
+                updated_accounts.append(account.name)
+                # Update the Account record's last_refreshed timestamp
+                account.last_refreshed = datetime.utcnow()
         db.session.commit()
         return (
             jsonify(
@@ -157,7 +160,9 @@ def teller_get_transactions():
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
-        transactions_list, total = get_paginated_transactions(page, page_size)
+        transactions_list, total = account_logic.get_paginated_transactions(
+            page, page_size
+        )
         return (
             jsonify(
                 {
@@ -176,7 +181,7 @@ def teller_get_transactions():
 def get_accounts():
     try:
         logger.debug("Fetching accounts from the database.")
-        accounts = get_accounts_from_db()  # use our helper
+        accounts = account_logic.get_accounts_from_db()  # use our helper
         logger.debug(f"Fetched {len(accounts)} accounts from DB.")
         return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
     except Exception as e:
@@ -192,7 +197,7 @@ def refresh_balances():
     updates the historical balances (AccountHistory) in the DB.
     """
     try:
-        accounts = get_accounts_from_db()  # Fetch account details
+        accounts = account_logic.get_accounts_from_db()  # Fetch account details
         updated_accounts = []
         tokens = load_tokens()  # Assumes tokens are stored and retrievable
 
@@ -215,7 +220,7 @@ def refresh_balances():
                 continue
 
             # Use our existing refresh logic to fetch balances & update history.
-            updated = refresh_account_data_for_account(
+            updated = account_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 TELLER_DOT_CERT,
