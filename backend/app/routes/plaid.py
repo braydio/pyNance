@@ -179,6 +179,7 @@ def refresh_accounts():
     and update the database.
     """
     try:
+        logger.debug("Wrong modules. this is plaid.py")
         tokens_file = FILES.get("PLAID_TOKENS", FILES["TELLER_TOKENS"])
         try:
             with open(tokens_file, "r") as f:
