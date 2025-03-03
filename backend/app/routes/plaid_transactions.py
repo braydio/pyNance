@@ -22,7 +22,7 @@ def generate_link_token_endpoint():
     Expects JSON payload with "user_id" and optionally "products".
     """
     data = request.get_json()
-    user_id = data.get("user_id", "default_user")
+    user_id = data.get("user_id", "Brayden@PlaidLink")
     products = data.get("products", ["transactions"])
     try:
         token = generate_link_token(products=products, user_id=user_id)
@@ -46,7 +46,7 @@ def exchange_public_token_endpoint():
     Expects JSON with "user_id" and "public_token".
     """
     data = request.get_json()
-    user_id = data.get("user_id", "default_user")
+    user_id = data.get("user_id", "Brayden@PlaidLink")
     public_token = data.get("public_token")
     if not user_id or not public_token:
         return jsonify({"error": "Missing user_id or public_token"}), 400
@@ -106,11 +106,11 @@ def exchange_public_token_endpoint():
 def refresh_plaid_accounts():
     """
     Refresh Plaid-linked accounts using tokens stored in the Accounts table.
-    Expects JSON payload with "user_id" (optional, defaults to "default_user").
+    Expects JSON payload with "user_id" (optional, defaults to "Brayden@PlaidLink").
     """
     try:
         logger.debug("Refreshing Plaid accounts from database.")
-        user_id = request.get_json().get("user_id", "default_user")
+        user_id = request.get_json().get("user_id", "Brayden@PlaidLink")
         # Query only accounts for the given user.
         accounts = Account.query.filter_by(user_id=user_id).all()
         updated_accounts = []
