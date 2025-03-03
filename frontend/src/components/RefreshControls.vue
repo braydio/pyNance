@@ -15,7 +15,6 @@
 export default {
   name: "RefreshControls",
   props: {
-    // Callbacks provided by the parent component
     onFetch: {
       type: Function,
       required: true,

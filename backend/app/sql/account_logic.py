@@ -32,7 +32,7 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     return item
 
 
-def upsert_accounts(user_id, accounts_data, batch_size=100):
+def upsert_accounts(user_id, accounts_data, provider, batch_size=100):
     """
     Inserts or updates account information from the provided accounts_data.
     For liability accounts like credit cards, the balance sign is reversed.
@@ -68,27 +68,31 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
             )
             balance = credit_balance
 
-        subtype = account.get("subtype") or "Unknown"
+        unformatted_subtype = account.get("subtype") or "Unknown"
+
+        subtype = unformatted_subtype.capitalize()
+
         status = account.get("status") or "Unknown"
         institution = account.get("institution", {}) or {}
         institution_name = institution.get("name") or "Unknown"
         enrollment_id = account.get("enrollment_id") or ""
         refresh_links = account.get("links") or {}
-        link_type = "Teller"
+        access_token = account.get("access_token") or ""
 
         logger.debug(f"Processing account id: {account_id}")
         existing = Account.query.filter_by(account_id=account_id).first()
         now = datetime.utcnow()
         if existing:
-            logger.debug(f"Updating account {account_id}")
+            logger.debug(f"Updating account {name}, {account_id}")
             existing.name = name
+            existing.access_token = access_token
             existing.type = acc_type
             existing.balance = balance
             existing.subtype = subtype
             existing.status = status
             existing.institution_name = institution_name
             existing.last_refreshed = now
-            existing.link_type = link_type
+            existing.link_type = provider
             if existing.details:
                 existing.details.enrollment_id = enrollment_id
                 existing.details.refresh_links = json.dumps(refresh_links)
@@ -104,6 +108,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
             new_account = Account(
                 account_id=account_id,
                 user_id=user_id,
+                access_token=access_token,
                 name=name,
                 type=acc_type,
                 balance=balance,
@@ -111,7 +116,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
                 status=status,
                 institution_name=institution_name,
                 last_refreshed=now,
-                link_type=link_type,
+                link_type=provider,
             )
             db.session.add(new_account)
             db.session.flush()  # Ensure new_account gets an ID before adding details.
@@ -142,7 +147,7 @@ def upsert_accounts(user_id, accounts_data, batch_size=100):
     logger.debug("Finished upserting accounts.")
 
 
-def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=1):
+def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
     """
     Perform a GET request with exponential backoff if we receive a 429 (rate-limit) response.
 
@@ -173,7 +178,7 @@ def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=1):
     return resp
 
 
-def refresh_account_data_for_account(
+def refresh_data_for_teller_account(
     account, access_token, teller_dot_cert, teller_dot_key, teller_api_base_url
 ):
     """
@@ -380,6 +385,38 @@ def refresh_account_data_for_account(
         )
 
     return updated
+
+
+def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
+    """
+    Refreshes a Plaid-linked account by calling Plaid's /accounts/get endpoint.
+    Returns True if the account was updated.
+    """
+    import requests
+    from app.config import PLAID_CLIENT_ID, PLAID_SECRET, logger
+
+    url = f"{plaid_base_url}/accounts/get"
+    payload = {
+        "client_id": PLAID_CLIENT_ID,
+        "secret": PLAID_SECRET,
+        "access_token": access_token,
+    }
+    try:
+        resp = requests.post(url, json=payload)
+        logger.debug(f"Plaid refresh response: {resp.status_code} - {resp.text}")
+        if resp.status_code == 200:
+            resp.json().get("accounts", [])
+            # transformed_accounts = [
+            #     transform_plaid_account(acc) for acc in accounts_data
+            # ]
+        #     upsert_accounts(account.user_id, transformed_accounts, provider="Plaid")
+        #     return True
+        # else:
+        #     logger.error(f"Error refreshing Plaid account: {resp.text}")
+        #     return False
+    except Exception as e:
+        logger.error(f"Exception refreshing Plaid account: {e}", exc_info=True)
+        return False
 
 
 def get_accounts_from_db():
