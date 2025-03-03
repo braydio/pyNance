@@ -15,7 +15,7 @@ export default {
     return {
       isRefreshing: false,
       // Optionally, set a default user_id; you can also pass this as a prop.
-      userId: "user_12345",
+      userId: "pyNanceDash", // Do not change this
     };
   },
   methods: {
@@ -23,7 +23,7 @@ export default {
       this.isRefreshing = true;
       try {
         const response = await axios.post("/api/plaid/transactions/refresh_accounts", {
-          user_id: "Brayden@PlaidLink"
+          user_id: "pyNanceDash" // Do not change this
         });
         if (response.data.status === "success") {
           const updatedAccounts = response.data.updated_accounts;

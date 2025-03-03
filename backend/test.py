@@ -10,7 +10,13 @@ import sys
 
 import requests
 from app import create_app
-from app.config import FILES, TELLER_API_BASE_URL, logger
+from app.config import (
+    FILES,
+    TELLER_API_BASE_URL,
+    VARIABLE_ENV_ID,
+    VARIABLE_ENV_TOKEN,
+    logger,
+)
 from app.sql import account_logic
 
 # Use the shared certificate paths from config.
@@ -69,7 +75,7 @@ def dev_write_token_info(token_info):
         return
 
     try:
-        account_logic.upsert_accounts(user_id, accounts_data)
+        account_logic.upsert_accounts(user_id, accounts_data, provider="Teller")
         logger.info("Accounts upserted successfully.")
     except Exception as e:
         logger.error(f"Error writing accounts to database: {e}")
@@ -88,7 +94,7 @@ if __name__ == "__main__":
         else:
             # Example token info – replace with valid values for testing.
             token_info = {
-                "user_id": "",
-                "access_token": "",
+                "user_id": VARIABLE_ENV_ID,
+                "access_token": VARIABLE_ENV_TOKEN,
             }
         dev_write_token_info(token_info)
