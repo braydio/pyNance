@@ -1,16 +1,59 @@
-__pycache__
-*.db
-*.bak
-*.log
-*.json
+# Legacy directory
+Dash/
 *.pem
-!ExampleItems.json
-!ExampleAccounts.json
-.env
-.venv
-venv
-dev/
-temp/
+*dev
+
+# Byte-compiled / compiled Python files
+*.py[cod]
+__pycache__/
+
+# Virtual environment
+env/
+venv/
+.venv/
+*.env
+!example.env
+
+# Logs
+*.log
 logs/
-*secret
-current_theme.txt
+
+# Database files
+*.db
+
+# Temporary files
+*.bak
+*.swp
+temp/
+*.tmp
+*.backup
+
+# Configurations and sensitive data
+config/
+app/config/
+
+# Archive files
+archive/
+app/archive/
+
+# Compiled front-end assets
+dist/
+node_modules/
+*.map
+
+# Data files
+data/
+app/data/
+app/temp/
+
+# IDE and editor specific files
+.idea/
+.vscode/
+*.iml
+
+# Miscellaneous
+mappied.txt
+*.DS_Store
+*.egg-info/
+*.lock
+fastcat/
