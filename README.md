@@ -30,7 +30,7 @@ pyNance/
 │   ├── package.json  # Node dependencies
 │   └── example.env  # Example frontend environment file (rename to .env)
 ├── venv/  # (Optional) Python virtual environment
-└── README.md  # This README file
+└── README.md  # This file
 ```
 
 ## Quickstart
