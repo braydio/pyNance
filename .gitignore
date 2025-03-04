@@ -1,6 +1,6 @@
 # Legacy directory
 Dash/
-
+*.pem
 *dev
 
 # Byte-compiled / compiled Python files
