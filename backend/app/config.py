@@ -49,6 +49,7 @@ load_dotenv()
 # Dev Environment Variables - Use in test.py
 VARIABLE_ENV_TOKEN = os.getenv("VARIABLE_ENV_TOKEN")
 VARIABLE_ENV_ID = os.getenv("VARIABLE_ENV_ID")
+print(f"{VARIABLE_ENV_TOKEN} {VARIABLE_ENV_ID}")
 
 # Plaid API Env Variables
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
