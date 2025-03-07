@@ -11,7 +11,6 @@ from app.helpers.plaid_helpers import (
 )
 from app.models import Account
 from app.sql import account_logic  # for upserting accounts and processing transactions
-
 from flask import Blueprint, jsonify, request
 
 plaid_transactions = Blueprint("plaid_transactions", __name__)
@@ -153,4 +152,29 @@ def refresh_plaid_accounts():
         )
     except Exception as e:
         logger.error(f"Error refreshing Plaid accounts: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@plaid_transactions.route("/delete_account", methods=["DELETE"])
+def delete_plaid_account():
+    try:
+        data = request.json
+        account_id = data.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "Missing account_id"}), 400
+
+        # Delete the account; cascading will remove related records.
+        Account.query.filter_by(account_id=account_id).delete()
+        db.session.commit()
+        logger.info(
+            f"Deleted Plaid account {account_id} and all related records via cascade."
+        )
+        return (
+            jsonify(
+                {"status": "success", "message": "Account and related records deleted"}
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error deleting Plaid account: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
