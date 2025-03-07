@@ -6,9 +6,8 @@ from datetime import datetime, timedelta
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Transaction
-from sqlalchemy import case, func
-
 from flask import Blueprint, jsonify, request
+from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -16,8 +15,7 @@ charts = Blueprint("charts", __name__)
 @charts.route("/category_breakdown", methods=["GET"])
 def get_category_breakdown():
     """
-    Group transactions (with negative amounts) by category, summing the absolute
-    amounts, and return the top 10 spending categories.
+    Group negative transactions by category and return top 10 spending categories.
     """
     try:
         result = (
@@ -46,17 +44,13 @@ def get_category_breakdown():
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
     """
-    Aggregate income and expenses from transactions using either daily or monthly granularity.
-    For daily grouping, we use the format YYYY-MM-DD; for monthly, MM-YYYY.
-    This endpoint now filters transactions based on the provided start_date and end_date.
+    Aggregate income and expenses by daily or monthly granularity.
     """
     try:
         granularity = request.args.get("granularity", "monthly")
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
 
-        # Convert query parameters to date objects if provided.
-        # If not provided, let the client-side default apply.
         start_date = (
             datetime.strptime(start_date_str, "%Y-%m-%d").date()
             if start_date_str
@@ -94,12 +88,12 @@ def get_cash_flow():
         ]
         total_income = sum(item["income"] for item in data)
         total_expenses = sum(item["expenses"] for item in data)
-        total_transactions = (
-            db.session.query(Transaction).filter(Transaction.date >= start_date)
-            if start_date
-            else db.session.query(Transaction)
-        )
-        if start_date and end_date:
+        total_transactions = db.session.query(Transaction)
+        if start_date:
+            total_transactions = total_transactions.filter(
+                Transaction.date >= start_date
+            )
+        if end_date:
             total_transactions = total_transactions.filter(Transaction.date <= end_date)
         total_transactions = total_transactions.count()
 
@@ -126,14 +120,11 @@ def get_cash_flow():
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
     """
-    Calculate net assets by summing the balances of all accounts.
-    For demonstration purposes, generate dummy historical net worth data
-    over the past 7 months.
+    Calculate net assets by summing all account balances and simulate historical net worth.
     """
     try:
         accounts = Account.query.all()
         net = sum(acc.balance if acc.balance is not None else 0 for acc in accounts)
-
         base_date = datetime.now().replace(day=1)
         running = net - random.randint(500, 5000)
         data = []
@@ -156,12 +147,7 @@ def get_net_assets():
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
     """
-    Aggregate transactions for the past 30 days and return for each day:
-      - net: sum(amount) [income positive, expenses negative]
-      - income: sum(amount where amount > 0)
-      - expenses: sum(abs(amount) where amount < 0)
-      - transaction_count: number of transactions
-    If a day has no transactions, values default to 0.
+    Aggregate transactions for the past 30 days with daily net, income, expenses, and count.
     """
     try:
         today = datetime.now().date()
@@ -188,7 +174,6 @@ def get_daily_net():
         )
         results = query.all()
 
-        # Create a dict for quick lookup
         results_dict = {
             day: {
                 "net": net,
@@ -199,7 +184,6 @@ def get_daily_net():
             for day, net, income, expenses, transaction_count in results
         }
 
-        # Build a list for each day in the range, filling missing days with zeros.
         data = []
         current = start_date
         while current <= today:
