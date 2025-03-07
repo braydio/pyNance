@@ -1,8 +1,7 @@
 from app.config import logger
 from app.extensions import db
-from flask_cors import CORS
-
 from flask import Flask
+from flask_cors import CORS
 
 
 def create_app():

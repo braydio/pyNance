@@ -11,8 +11,11 @@
           type="text"
           placeholder="Filter accounts..."
         />
-        <!-- Use the reusable RefreshControls component -->
         <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
+        <!-- Toggle button to show/hide delete buttons -->
+        <button class="toggle-delete-btn" @click="toggleDeleteButtons">
+          {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
+        </button>
       </div>
 
       <!-- Table -->
@@ -21,45 +24,70 @@
           <tr>
             <th @click="sortTable('institution_name')">
               Institution
-              <span v-if="sortKey === 'institution_name'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'institution_name'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('name')">
               Name
-              <span v-if="sortKey === 'name'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'name'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('type')">
               Type
-              <span v-if="sortKey === 'type'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'type'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('balance')">
               Balance
-              <span v-if="sortKey === 'balance'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'balance'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('subtype')">
               Subtype
-              <span v-if="sortKey === 'subtype'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'subtype'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('link_type')">
               Link Type
-              <span v-if="sortKey === 'link_type'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'link_type'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
             </th>
             <th @click="sortTable('last_refreshed')">
               Last Refreshed
-              <span v-if="sortKey === 'last_refreshed'">
-                {{ sortOrder === 1 ? '▲' : '▼' }}
+              <span>
+                <template v-if="sortKey === 'last_refreshed'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
               </span>
+            </th>
+            <!-- Only show the delete header if delete buttons are enabled -->
+            <th v-if="showDeleteButtons">
+              Actions
             </th>
           </tr>
         </thead>
@@ -72,6 +100,10 @@
             <td>{{ account.subtype }}</td>
             <td>{{ account.link_type }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
+            <!-- Conditionally render the delete button -->
+            <td v-if="showDeleteButtons">
+              <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -85,13 +117,13 @@
 
 <script>
 import axios from "axios";
+import api from "@/services/api"; // Ensure the API service is imported
 import RefreshControls from "@/components/RefreshControls.vue";
 
 export default {
   name: "AccountsTable",
   components: { RefreshControls },
   props: {
-    // Set the provider: "teller" or "plaid"
     provider: {
       type: String,
       default: "teller",
@@ -105,6 +137,7 @@ export default {
       searchQuery: "",
       sortKey: "",
       sortOrder: 1,
+      showDeleteButtons: false, // controls the visibility of delete buttons
     };
   },
   computed: {
@@ -186,21 +219,33 @@ export default {
         alert("Error refreshing balances: " + err.message);
       }
     },
+    async deleteAccount(accountId) {
+      if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
+      try {
+        const res = await api.deleteAccount(this.provider, accountId);
+        if (res.status === "success") {
+          alert("Account deleted successfully.");
+          this.fetchAccounts();
+        } else {
+          alert("Error deleting account: " + res.message);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    },
     formatBalance(balance) {
       const number = parseFloat(balance);
-      const formatter = new Intl.NumberFormat("en-US", {
+      return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
         currencySign: "accounting",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      });
-      return formatter.format(number);
+      }).format(number);
     },
     formatDate(dateString) {
       if (!dateString) return "";
-      const dateObj = new Date(dateString);
-      return dateObj.toLocaleString();
+      return new Date(dateString).toLocaleString();
     },
     sortTable(key) {
       if (this.sortKey === key) {
@@ -210,6 +255,9 @@ export default {
         this.sortOrder = 1;
       }
     },
+    toggleDeleteButtons() {
+      this.showDeleteButtons = !this.showDeleteButtons;
+    },
   },
   mounted() {
     this.fetchAccounts();
@@ -218,44 +266,113 @@ export default {
 </script>
 
 <style>
-:root {
-  --gruvbox-bg: #282828;
-  --gruvbox-fg: #ebdbb2;
-  --gruvbox-yl: #fabd2f;
-  --gruvbox-accent: #d65d0e;
-  --gruvbox-hover: #b0520c;
-  --gruvbox-border: #3c3836;
-  --gruvbox-hover-bg: #32302f;
+
+
+/* Accounts Table Container */
+.accounts-table {
+  background-color: var(--background);
+  color: var(--foreground);
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.accounts-table {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-fg);
-  padding: 1rem;
-  border: 1px solid var(--gruvbox-border);
-  border-radius: 4px;
-}
+/* Heading */
 .accounts-table h2 {
   margin-top: 0;
-  color: var(--gruvbox-yl);
+  color: var(--accent);
+  font-family: "Fira Code", monospace;
+  font-size: 1.5rem;
 }
 
+/* Filter Row */
 .filter-row {
   display: flex;
   align-items: center;
   gap: 1rem;
   margin-bottom: 1rem;
 }
+
+/* Filter Input */
 .filter-input {
   flex: 1;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--gruvbox-border);
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background-color: #1d2021;
-  color: var(--gruvbox-fg);
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  font-family: "Fira Code", monospace;
+  font-size: 1rem;
   outline: none;
+  transition: border-color 0.2s ease;
 }
 .filter-input:focus {
-  border-color: var(--gruvbox-yl);
+  border-color: var(--accent);
 }
-</style>
+
+/* Toggle Delete Buttons Button */
+.toggle-delete-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--accent);
+  color: var(--background);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.toggle-delete-btn:hover {
+  background-color: var(--hover);
+  transform: translateY(-1px);
+}
+
+/* Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+}
+th {
+  cursor: pointer;
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  position: relative;
+}
+th span {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* Delete Button Styling */
+.delete-btn {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--error);
+  color: #ffffff;
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.delete-btn:hover {
+  background-color: #ff6666;
+  transform: translateY(-1px);
+}
+
+/* Table Row Hover Effect */
+tbody tr:hover {
+  background-color: var(--hover);
+}
+
+</style >
