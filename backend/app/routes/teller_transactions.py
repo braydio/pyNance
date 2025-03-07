@@ -265,4 +265,4 @@ def delete_teller_account():
         )
     except Exception as e:
         logger.error(f"Error deleting Teller account: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": str(e)}), 50
