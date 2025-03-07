@@ -40,10 +40,6 @@ export default {
     const response = await apiClient.put("/teller/transactions/update", transactionData);
     return response.data;
   },
-  /**
-   * Generate a link token for a given provider.
-   * provider: "plaid" or "teller"
-   */
   async generateLinkToken(provider, payload = {}) {
     let url = "";
     if (provider === "plaid") {
@@ -54,11 +50,7 @@ export default {
     const response = await apiClient.post(url, payload);
     return response.data;
   },
-  /**
-   * Exchange a public token for an access token.
-   * provider: "plaid" or "teller"
-   */
-  async exchangePublicToken(provider, public_token) {
+    async exchangePublicToken(provider, public_token) {
     let url = "";
     if (provider === "plaid") {
       url = "/plaid/transactions/exchange_public_token";
@@ -68,4 +60,17 @@ export default {
     const response = await apiClient.post(url, { public_token, provider });
     return response.data;
   },
+  async deleteAccount(provider, account_id) {
+    let url = "";
+    if (provider === "plaid") {
+      url = "/plaid/transactions/delete_account";
+    } else if (provider === "teller") {
+      url = "/teller/transactions/delete_account";
+    }
+    const response = await apiClient.delete(url, {
+      data: { account_id },
+    });
+    return response.data;
+  }
+  
 };

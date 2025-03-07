@@ -56,27 +56,121 @@ export default {
 </script>
 
 <style scoped>
-.controls {
+:root {
+  /* Gruvbox-inspired palette for Hyprland Arch Linux */
+  --background: #282828;    /* Dark Gruvbox background */
+  --foreground: #ebdbb2;    /* Light Gruvbox foreground */
+  --accent: #fabd2f;        /* Accent yellow */
+  --error: #cc241d;         /* Error red for delete buttons */
+  --border: #3c3836;        /* Subtle border color */
+  --hover: #32302f;         /* Hover background color */
+  --input-bg: #1d2021;      /* Slightly darker background for inputs */
+}
+
+/* Accounts Table Container */
+.accounts-table {
+  background-color: var(--background);
+  color: var(--foreground);
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Heading */
+.accounts-table h2 {
+  margin-top: 0;
+  color: var(--accent);
+  font-family: "Fira Code", monospace;
+  font-size: 1.5rem;
+}
+
+/* Filter Row */
+.filter-row {
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
 }
-.controls button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
-  border: 1px solid var(--gruvbox-accent);
+
+/* Filter Input */
+.filter-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  font-family: "Fira Code", monospace;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.filter-input:focus {
+  border-color: var(--accent);
+}
+
+/* Toggle Delete Buttons Button */
+.toggle-delete-btn {
   padding: 0.5rem 1rem;
-  border-radius: 3px;
+  background-color: var(--accent);
+  color: var(--background);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
   cursor: pointer;
+  font-family: "Fira Code", monospace;
   font-weight: bold;
-  transition: background-color 0.2s, color 0.2s, border 0.2s;
+  transition: background-color 0.2s ease, transform 0.2s ease;
 }
-.controls button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+.toggle-delete-btn:hover {
+  background-color: var(--hover);
+  transform: translateY(-1px);
 }
-.controls button:hover:not(:disabled) {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-accent);
-  border: 1px solid var(--gruvbox-accent);
+
+/* Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+}
+th {
+  cursor: pointer;
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  position: relative;
+}
+th span {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* Delete Button Styling */
+.delete-btn {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--error);
+  color: #ffffff;
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.delete-btn:hover {
+  background-color: #ff6666;
+  transform: translateY(-1px);
+}
+
+/* Table Row Hover Effect */
+tbody tr:hover {
+  background-color: var(--hover);
 }
 </style>
