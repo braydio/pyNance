@@ -1,53 +1,15 @@
 # File: app/routes/teller_transactions.py
+
 import json
 from datetime import datetime
 
 import requests
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
-from app.models import (  # TellerItem is our new table for Teller-specific data
-    Account,
-    Transaction,
-)
+from app.helpers.teller_helpers import load_tokens  # Use the shared helper
+from app.models import Account, Transaction
 from app.sql import account_logic
-
 from flask import Blueprint, jsonify, request
-
-# Define file paths and API endpoints
-TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
-TELLER_DOT_CERT = FILES["TELLER_DOT_CERT"]
-TELLER_TOKENS = FILES["TELLER_TOKENS"]
-TELLER_ACCOUNTS = FILES["TELLER_ACCOUNTS"]
-
-
-def load_tokens():
-    try:
-        logger.debug(f"Attempting to load tokens from {TELLER_TOKENS}")
-        with open(TELLER_TOKENS, "r") as f:
-            tokens = json.load(f)
-            logger.debug(f"Loaded tokens: {tokens}")
-            return tokens
-    except FileNotFoundError:
-        logger.warning(
-            f"Tokens file not found at {TELLER_TOKENS}, returning empty list."
-        )
-        return []
-    except json.JSONDecodeError as e:
-        logger.error(
-            f"Error decoding tokens file at {TELLER_TOKENS}: {e}", exc_info=True
-        )
-        return []
-
-
-def save_tokens(tokens):
-    try:
-        logger.debug(f"Saving tokens to {TELLER_TOKENS}: {tokens}")
-        with open(TELLER_TOKENS, "w") as f:
-            json.dump(tokens, f, indent=4)
-        logger.debug("Tokens saved successfully.")
-    except Exception as e:
-        logger.error(f"Error saving tokens to {TELLER_TOKENS}: {e}", exc_info=True)
-
 
 teller_transactions = Blueprint("teller_transactions", __name__)
 
@@ -77,7 +39,6 @@ def teller_exchange_public_token():
 
         access_token = resp.json().get("access_token")
         user_id = resp.json().get("user", {}).get("id")
-        # (For now we store tokens in a JSON file; later you may migrate these to the DB.)
         try:
             with open(FILES["TELLER_TOKENS"], "r") as f:
                 tokens = json.load(f)
@@ -100,19 +61,13 @@ def teller_exchange_public_token():
 @teller_transactions.route("/refresh_accounts", methods=["POST"])
 def teller_refresh_accounts():
     """
-    Refresh Teller accounts and transactions.
-    For each account in the database, use the Teller token.
-    Updated data is stored in the Accounts table.
+    Refresh Teller accounts and transactions using the stored tokens.
     """
     try:
         logger.debug("Refreshing Teller accounts from database.")
         accounts = Account.query.all()
         updated_accounts = []
-        try:
-            with open(FILES["TELLER_TOKENS"], "r") as f:
-                tokens = json.load(f)
-        except Exception:
-            tokens = []
+        tokens = load_tokens()
         for account in accounts:
             access_token = None
             for token in tokens:
@@ -123,7 +78,7 @@ def teller_refresh_accounts():
                 logger.warning(f"No access token found for user {account.user_id}")
                 continue
             logger.debug(
-                f"Refreshing Teller account {account.name} {account.account_id} using token: {access_token}"
+                f"Refreshing Teller account {account.name} ({account.account_id}) with token: {access_token}"
             )
             updated = account_logic.refresh_data_for_teller_account(
                 account,
@@ -134,7 +89,6 @@ def teller_refresh_accounts():
             )
             if updated:
                 updated_accounts.append(account.name)
-                # Update the Account record's last_refreshed timestamp
                 account.last_refreshed = datetime.utcnow()
         db.session.commit()
         return (
@@ -181,7 +135,7 @@ def teller_get_transactions():
 def get_accounts():
     try:
         logger.debug("Fetching accounts from the database.")
-        accounts = account_logic.get_accounts_from_db()  # use our helper
+        accounts = account_logic.get_accounts_from_db()
         logger.debug(f"Fetched {len(accounts)} accounts from DB.")
         return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
     except Exception as e:
@@ -192,44 +146,34 @@ def get_accounts():
 @teller_transactions.route("/refresh_balances", methods=["POST"])
 def refresh_balances():
     """
-    For each account in the database, this endpoint calls the Teller API
-    to fetch the latest balances (using the -u style authentication) and then
-    updates the historical balances (AccountHistory) in the DB.
+    Refresh Teller account balances and update historical records.
     """
     try:
-        accounts = account_logic.get_accounts_from_db()  # Fetch account details
+        accounts = account_logic.get_accounts_from_db()
         updated_accounts = []
-        tokens = load_tokens()  # Assumes tokens are stored and retrievable
-
+        tokens = load_tokens()
         for acc in accounts:
-            # Find the corresponding Account object
             account = Account.query.filter_by(account_id=acc["account_id"]).first()
             if not account:
                 logger.warning(f"Account {acc['account_id']} not found in DB.")
                 continue
-
-            # Find the access token for the account's user.
             access_token = None
             for token in tokens:
                 if token.get("user_id") == acc["user_id"]:
                     access_token = token.get("access_token")
                     break
-
             if not access_token:
                 logger.warning(f"No access token found for account {acc['account_id']}")
                 continue
-
-            # Use our existing refresh logic to fetch balances & update history.
             updated = account_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
-                TELLER_DOT_CERT,
-                TELLER_DOT_KEY,
+                FILES["TELLER_DOT_CERT"],
+                FILES["TELLER_DOT_KEY"],
                 TELLER_API_BASE_URL,
             )
             if updated:
                 updated_accounts.append({"account_name": acc["name"]})
-
         db.session.commit()
         logger.debug(f"Balances refreshed for accounts: {updated_accounts}")
         return (
@@ -249,6 +193,9 @@ def refresh_balances():
 
 @teller_transactions.route("/update", methods=["PUT"])
 def update_transaction():
+    """
+    Update a transaction's editable details.
+    """
     try:
         data = request.json
         transaction_id = data.get("transaction_id")
@@ -262,7 +209,6 @@ def update_transaction():
         if not txn:
             return jsonify({"status": "error", "message": "Transaction not found"}), 404
 
-        # Track changed fields
         changed_fields = {}
         if "amount" in data:
             txn.amount = float(data["amount"])
@@ -283,10 +229,7 @@ def update_transaction():
             txn.merchant_typ = data["merchant_typ"]
             changed_fields["merchant_typ"] = True
 
-        # Mark user_modified
         txn.user_modified = True
-
-        # Merge changes into user_modified_fields (which is a JSON dict)
         existing_fields = {}
         if txn.user_modified_fields:
             existing_fields = json.loads(txn.user_modified_fields)
@@ -297,5 +240,29 @@ def update_transaction():
         db.session.commit()
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        logger.error(...)
+        logger.error(f"Error updating transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@teller_transactions.route("/delete_account", methods=["DELETE"])
+def delete_teller_account():
+    try:
+        data = request.json
+        account_id = data.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "Missing account_id"}), 400
+
+        Account.query.filter_by(account_id=account_id).delete()
+        db.session.commit()
+        logger.info(
+            f"Deleted Teller account {account_id} and related records via cascade."
+        )
+        return (
+            jsonify(
+                {"status": "success", "message": "Account and related records deleted"}
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error deleting Teller account: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 50
