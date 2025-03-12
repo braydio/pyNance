@@ -6,10 +6,12 @@ def generate_link_token(user_id, products=["transactions"]):
     """
     Generate a Plaid link token for the given user and products.
     """
+    logger.debug(f"Generating link token for plaid with ID: {PLAID_CLIENT_ID} and SECRET: {PLAID_SECRET}")
+    logger.debug(f"Using prooducts: {products}")
     payload = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
-        "client_name": "pyNance",
+        "client_name": "pyNanceDashs",
         "products": products,
         "country_codes": ["US"],
         "language": "en",
