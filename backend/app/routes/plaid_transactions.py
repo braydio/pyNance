@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from app.config import PLAID_BASE_URL, logger
+from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
@@ -23,7 +23,7 @@ def generate_link_token_endpoint():
     Expects JSON payload with "user_id" and optionally "products".
     """
     data = request.get_json()
-    user_id = data.get("user_id", "Brayden@PlaidLink")
+    user_id = PLAID_CLIENT_ID
     products = data.get("products", ["transactions"])
     try:
         token = generate_link_token(products=products, user_id=user_id)
