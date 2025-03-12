@@ -7,6 +7,7 @@ import Investments from '../views/Investments.vue';
 import DailyNetChart from '../components/DailyNetChart.vue';
 import CategoryBreakdownChart from '@/components/CategoryBreakdownChart.vue';
 import NetYearComparisonChart from '../components/NetYearComparisonChart.vue';
+import AccountsTable from '@/components/AccountsTable.vue';
 
 
 const routes = [

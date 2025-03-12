@@ -1,5 +1,8 @@
 <template>
   <div class="dashboard">
+    <div>
+    <NotificationsBar :messages="notifications" />
+    </div>
     <header class="dashboard-header">
       <h1>Hello | Personal Finance | Happy User No. 01 | </h1>
       <h2>
