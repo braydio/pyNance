@@ -13,6 +13,33 @@ TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
+def process_transaction_amount(amount, account_type):
+    """
+    Process the transaction amount based on the account type.
+
+    For credit accounts (i.e. types "credit", "credit card", "credit_card", "liability"),
+    assume that positive amounts (charges) should be stored as negative expenses.
+    For non-credit accounts, return the amount as-is.
+    """
+    try:
+        amt = float(amount)
+    except (TypeError, ValueError):
+        return 0.0
+    if account_type and account_type.strip().lower() in [
+        "credit",
+        "credit card",
+        "credit_card",
+        "liability",
+    ]:
+        # If a charge comes in as positive, record it as negative.
+        if amt > 0:
+            return -abs(amt)
+        else:
+            return amt
+    else:
+        return amt
+
+
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     """
     Save or update a PlaidItem record in the database.
@@ -293,11 +320,16 @@ def refresh_data_for_teller_account(
                     f"Unexpected counterparty type for txn {txn_id}: {type(counterparty)}"
                 )
 
+            # Process transaction amount based on account type
+            txn_amount = process_transaction_amount(
+                txn.get("amount") or 0, account.type
+            )
+
             if existing_txn:
                 logger.debug(
                     f"Updating transaction {txn_id} for account {account.account_id}."
                 )
-                existing_txn.amount = txn.get("amount") or 0
+                existing_txn.amount = txn_amount
                 existing_txn.date = txn.get("date") or ""
                 existing_txn.description = txn.get("description") or ""
                 existing_txn.category = category
@@ -310,7 +342,7 @@ def refresh_data_for_teller_account(
                 new_txn = Transaction(
                     transaction_id=txn_id,
                     account_id=account.account_id,
-                    amount=txn.get("amount") or 0,
+                    amount=txn_amount,
                     date=txn.get("date") or "",
                     description=txn.get("description") or "",
                     category=category,
@@ -451,7 +483,10 @@ def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
                     existing_txn = Transaction.query.filter_by(
                         transaction_id=txn_id
                     ).first()
-                    amount = txn.get("amount") or 0
+                    # Process transaction amount based on account type
+                    amount = process_transaction_amount(
+                        txn.get("amount") or 0, account.type
+                    )
                     date_str = txn.get("date") or txn.get("authorized_date") or ""
                     description = txn.get("name") or txn.get("merchant_name") or ""
                     category_list = txn.get("category")
@@ -478,7 +513,7 @@ def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
                         existing_txn.merchant_typ = merchant_typ
                     else:
                         logger.debug(
-                            f"Inserting new transaction {txn_id} for {account.account_id}."
+                            f"Inserting new transaction {txn_id} for account {account.account_id}."
                         )
                         new_txn = Transaction(
                             transaction_id=txn_id,
