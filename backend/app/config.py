@@ -1,5 +1,6 @@
 import logging
 import os
+import sys
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -22,12 +23,16 @@ for name, path in DIRECTORIES.items():
 
 
 # Set up logging
+sys.stdout.reconfigure(encoding="utf-8")
+sys.stderr.reconfigure(encoding="utf-8")
+
+
 def setup_logger():
     logger = logging.getLogger(__name__)
     if not logger.hasHandlers():
         logger.setLevel(logging.DEBUG)
         log_file = DIRECTORIES["LOGS_DIR"] / "testing.log"
-        file_handler = logging.FileHandler(log_file)
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setLevel(logging.DEBUG)
         console_handler = logging.StreamHandler()
         console_handler.setLevel(logging.DEBUG)
