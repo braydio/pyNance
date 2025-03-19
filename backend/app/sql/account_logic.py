@@ -89,6 +89,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
 
+        # For credit/liability accounts, invert the sign on the balance.
         if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
             logger.debug(
                 f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {-balance}."
@@ -106,6 +107,8 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         logger.debug(f"Processing account id: {account_id}")
         existing = Account.query.filter_by(account_id=account_id).first()
         now = datetime.utcnow()
+
+        # If the account already exists, update it. Otherwise, insert new.
         if existing:
             logger.debug(f"Updating account {name}, {account_id}")
             existing.name = name
@@ -143,7 +146,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
                 link_type=provider,
             )
             db.session.add(new_account)
-            db.session.flush()  # Ensure new_account gets an ID before adding details.
+            db.session.flush()  # Ensure new_account has an ID before details.
             details = AccountDetails(
                 account_id=account_id,
                 enrollment_id=enrollment_id,
@@ -151,6 +154,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             )
             db.session.add(details)
 
+        # Update daily balance history
         today = date.today()
         existing_history = AccountHistory.query.filter_by(
             account_id=account_id, date=today
@@ -205,6 +209,9 @@ def refresh_data_for_teller_account(
         )
         balance_json = resp_balance.json()
         new_balance = account.balance
+
+        # If "available" is present, use that for non-credit accounts; for credit,
+        # invert the ledger balance. Otherwise, handle nested structures.
         if "available" in balance_json:
             account_type = (account.type or "").lower()
             if account_type in ["credit", "liability"]:
@@ -272,6 +279,9 @@ def refresh_data_for_teller_account(
         txns_json = resp_txns.json()
         with open(TRANSACTIONS_RAW, "w") as f:
             json.dump(txns_json, f, indent=4)
+
+        # If the response is a dict containing 'transactions', use that;
+        # if it’s a list, treat it directly as transactions.
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
         elif isinstance(txns_json, list):
@@ -295,6 +305,7 @@ def refresh_data_for_teller_account(
                 )
                 existing_txn = None
 
+            # Parse out category, merchant, etc.
             details = txn.get("details", {}) or {}
             category = details.get("category")
             if isinstance(category, list) and category:
@@ -315,15 +326,22 @@ def refresh_data_for_teller_account(
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
                 merchant_typ = counterparty.get("type", "Unknown")
-            else:
-                logger.debug(
-                    f"Unexpected counterparty type for txn {txn_id}: {type(counterparty)}"
-                )
 
             # Process transaction amount based on account type
             txn_amount = process_transaction_amount(
                 txn.get("amount") or 0, account.type
             )
+            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
+            if raw_date_str:
+                try:
+                    # parse "YYYY-MM-DD"
+                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    parsed_date = date.today()  # fallback or raise
+            else:
+                parsed_date = date.today()
+
+            existing_txn.date = parsed_date
 
             if existing_txn:
                 logger.debug(
@@ -356,6 +374,7 @@ def refresh_data_for_teller_account(
             f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
         )
 
+    # Update daily history for this Teller account
     today = datetime.today().date()
     existing_history = AccountHistory.query.filter_by(
         account_id=account.account_id, date=today
@@ -562,9 +581,7 @@ def get_accounts_from_db():
                 "status": acc.status or "Unknown",
                 "institution_name": acc.institution_name or "Unknown",
                 "balance": acc.balance if acc.balance is not None else 0,
-                "last_refreshed": acc.last_refreshed.isoformat()
-                if acc.last_refreshed
-                else None,
+                "last_refreshed": acc.last_refreshed or datetime.now(),
                 "link_type": acc.link_type or "Unknown",
             }
         )
@@ -587,7 +604,7 @@ def get_paginated_transactions(page, page_size):
         serialized.append(
             {
                 "transaction_id": txn.transaction_id,
-                "date": txn.date or "",
+                "date": txn.date or datetime.now(),
                 "amount": txn.amount if txn.amount is not None else 0,
                 "description": txn.description or "",
                 "category": txn.category or "Unknown",
