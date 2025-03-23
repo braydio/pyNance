@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Net Assets vs. Liabilities</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #282828; color: #ebdbb2; font-family: 'Fira Code', monospace; }
+    .summary { background: rgba(44, 44, 44, 0.8); padding: 0.5rem; border-radius: 4px; color: #fabd2f; margin-bottom: 1rem; }
+    canvas { background: #3c3836; border-radius: 8px; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h3>Net Assets vs. Liabilities</h3>
+  <div class="summary" id="totals">Loading totals...</div>
+  <canvas id="netAssetsChart"></canvas>
+
+  <script>
+    async function renderNetAssets() {
+      const res = await fetch('http://localhost:5000/api/charts/net_assets');
+      const { data, metadata } = await res.json();
+
+      // Optional summary metadata display
+      const summary = `
+        Assets: $${parseFloat(metadata.total_assets).toLocaleString()} |
+        Liabilities: $${parseFloat(metadata.total_liabilities).toLocaleString()} |
+        Net: $${parseFloat(metadata.net_now).toLocaleString()}
+      `;
+      document.getElementById('totals').textContent = summary;
+
+      const labels = data.map(d => d.date);
+      const assets = data.map(d => d.assets);
+      const liabilities = data.map(d => d.liabilities);
+      const net = data.map(d => d.net);
+
+      new Chart(document.getElementById('netAssetsChart').getContext('2d'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Assets', data: assets, borderColor: '#83a598', backgroundColor: 'rgba(131,165,152,0.2)', fill: true, tension: 0.1 },
+            { label: 'Liabilities', data: liabilities, borderColor: '#fb4934', backgroundColor: 'rgba(251,73,52,0.2)', fill: true, tension: 0.1 },
+            { label: 'Net', data: net, borderColor: '#fabd2f', backgroundColor: 'rgba(250,189,47,0.2)', fill: true, tension: 0.1 }
+          ]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }},
+            y: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }}
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: $${ctx.raw.toLocaleString()}`
+              }
+            },
+            legend: { labels: { color: '#ebdbb2' } }
+          }
+        }
+      });
+    }
+
+    renderNetAssets();
+  </script>
+</body>
+</html>
