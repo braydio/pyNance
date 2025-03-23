@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Category Breakdown</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #282828; color: #ebdbb2; font-family: 'Fira Code', monospace; }
+    .chart-summary { background: rgba(44, 44, 44, 0.8); padding: 0.5rem; border-radius: 4px; color: #fabd2f; }
+    canvas { background: #3c3836; border-radius: 8px; padding: 1rem; }
+  </style>
+</head>
+<body>
+  <h3>Spending by Category</h3>
+  <div class="chart-summary" id="summary">Loading...</div>
+  <canvas id="categoryChart"></canvas>
+
+  <script>
+    async function renderCategoryChart() {
+      const res = await fetch('http://localhost:5000/api/charts/category_breakdown');
+      const { data } = await res.json();
+
+      const top10 = data.sort((a, b) => b.amount - a.amount).slice(0, 10);
+      const labels = top10.map(entry => entry.category || 'Uncategorized');
+      const amounts = top10.map(entry => Math.round(entry.amount));
+      const total = amounts.reduce((sum, val) => sum + val, 0);
+
+      document.getElementById('summary').textContent = `Total Spending: $${total.toLocaleString()}`;
+
+      new Chart(document.getElementById('categoryChart').getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{
+            label: 'Spending',
+            data: amounts,
+            backgroundColor: '#83a598',
+            borderRadius: 4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            x: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }},
+            y: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }}
+          },
+          plugins: {
+            tooltip: {
+              callbacks: { label: ctx => `${ctx.label}: $${ctx.raw.toLocaleString()}` }
+            }
+          }
+        }
+      });
+    }
+
+    renderCategoryChart();
+  </script>
+</body>
+</html>
+
