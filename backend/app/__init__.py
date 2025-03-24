@@ -20,14 +20,16 @@ def create_app():
         db.create_all()
 
     # Import and register blueprints
+    from app.routes.accounts import accounts
     from app.routes.charts import charts
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
-    from app.routes.recurring import recurring
+    from app.routes.plaid import plaid_bp
     from app.routes.teller_transactions import teller_transactions
 
+    app.register_blueprint(accounts, url_prefi="/api/accounts")
     app.register_blueprint(charts, url_prefix="/api/charts")
-    app.register_blueprint(recurring, url_prefix="/api/recurring")
+    app.register_blueprint(plaid_bp, url_prefix="/api/plaid")
     app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")

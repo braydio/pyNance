@@ -2,7 +2,8 @@
 
 import json
 import time
-from datetime import date, datetime, timedelta
+from datetime import date as pydate
+from datetime import datetime, timedelta
 
 import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
@@ -38,7 +39,7 @@ def process_transaction_amount(amount, account_type):
             return amt
     else:
         return amt
-
+    
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     """
@@ -60,7 +61,6 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
         db.session.add(item)
     db.session.commit()
     return item
-
 
 def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
     """
@@ -155,7 +155,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             db.session.add(details)
 
         # Update daily balance history
-        today = date.today()
+        today = pydate.today()
         existing_history = AccountHistory.query.filter_by(
             account_id=account_id, date=today
         ).first()
@@ -196,6 +196,7 @@ def refresh_data_for_teller_account(
 ):
     """
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
+    Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
     updated = False
     # Refresh Balance
@@ -280,8 +281,6 @@ def refresh_data_for_teller_account(
         with open(TRANSACTIONS_RAW, "w") as f:
             json.dump(txns_json, f, indent=4)
 
-        # If the response is a dict containing 'transactions', use that;
-        # if it’s a list, treat it directly as transactions.
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
         elif isinstance(txns_json, list):
@@ -305,7 +304,17 @@ def refresh_data_for_teller_account(
                 )
                 existing_txn = None
 
-            # Parse out category, merchant, etc.
+            # Process common fields
+            new_amount = process_transaction_amount(txn.get("amount") or 0, account.type)
+            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
+            if raw_date_str:
+                try:
+                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    parsed_date = pydate.today()
+            else:
+                parsed_date = pydate.today()
+
             details = txn.get("details", {}) or {}
             category = details.get("category")
             if isinstance(category, list) and category:
@@ -316,43 +325,29 @@ def refresh_data_for_teller_account(
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
             merchant_typ = "Unknown"
-            if (
-                isinstance(counterparty, list)
-                and counterparty
-                and isinstance(counterparty[0], dict)
-            ):
+            if isinstance(counterparty, list) and counterparty and isinstance(counterparty[0], dict):
                 merchant_name = counterparty[0].get("name", "Unknown")
                 merchant_typ = counterparty[0].get("type", "Unknown")
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
                 merchant_typ = counterparty.get("type", "Unknown")
 
-            # Process transaction amount based on account type
-            txn_amount = process_transaction_amount(
-                txn.get("amount") or 0, account.type
-            )
-            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
-            if raw_date_str:
-                try:
-                    # parse "YYYY-MM-DD"
-                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
-                except ValueError:
-                    parsed_date = date.today()  # fallback or raise
-            else:
-                parsed_date = date.today()
-
-            existing_txn.date = parsed_date
-
             if existing_txn:
-                logger.debug(
-                    f"Updating transaction {txn_id} for account {account.account_id}."
-                )
-                existing_txn.amount = txn_amount
-                existing_txn.date = txn.get("date") or ""
-                existing_txn.description = txn.get("description") or ""
-                existing_txn.category = category
-                existing_txn.merchant_name = merchant_name
-                existing_txn.merchant_typ = merchant_typ
+                if existing_txn.user_modified:
+                    logger.debug(
+                        f"Transaction {txn_id} is user modified; preserving user changes."
+                    )
+                    # Skip updating fields that have been modified by the user.
+                else:
+                    logger.debug(
+                        f"Updating transaction {txn_id} for account {account.account_id}."
+                    )
+                    existing_txn.amount = new_amount
+                    existing_txn.date = parsed_date
+                    existing_txn.description = txn.get("description") or ""
+                    existing_txn.category = category
+                    existing_txn.merchant_name = merchant_name
+                    existing_txn.merchant_typ = merchant_typ
             else:
                 logger.debug(
                     f"Inserting new transaction {txn_id} for account {account.account_id}."
@@ -360,8 +355,8 @@ def refresh_data_for_teller_account(
                 new_txn = Transaction(
                     transaction_id=txn_id,
                     account_id=account.account_id,
-                    amount=txn_amount,
-                    date=txn.get("date") or "",
+                    amount=new_amount,
+                    date=parsed_date,
                     description=txn.get("description") or "",
                     category=category,
                     merchant_name=merchant_name,
@@ -433,11 +428,19 @@ def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
             )
             if plaid_account:
                 try:
-                    new_balance = float(
-                        plaid_account.get("balances", {}).get(
-                            "current", account.balance
+                    account_type = plaid_account.get("type", "").lower()
+                    if account_type in ["credit", "liability"]:
+                        new_balance = -float(
+                            plaid_account.get("balances", {}).get(
+                                "current", account.balance
+                            )
                         )
-                    )
+                    else:
+                        new_balance = float(
+                            plaid_account.get("balances", {}).get(
+                                "current", account.balance
+                            )
+                        )
                 except Exception as e:
                     logger.error(
                         f"Error parsing Plaid balance for {account.account_id}: {e}",
@@ -499,51 +502,65 @@ def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
                         )
                         continue
 
-                    existing_txn = Transaction.query.filter_by(
-                        transaction_id=txn_id
-                    ).first()
-                    # Process transaction amount based on account type
-                    amount = process_transaction_amount(
-                        txn.get("amount") or 0, account.type
-                    )
-                    date_str = txn.get("date") or txn.get("authorized_date") or ""
-                    description = txn.get("name") or txn.get("merchant_name") or ""
-                    category_list = txn.get("category")
-                    category = (
-                        category_list[-1]
-                        if isinstance(category_list, list) and category_list
-                        else "Unknown"
-                    )
-                    merchant_name = txn.get("merchant_name") or "Unknown"
-                    merchant_typ = "Unknown"
-                    counterparties = txn.get("counterparties")
-                    if isinstance(counterparties, list) and counterparties:
-                        merchant_typ = counterparties[0].get("type", "Unknown")
+                    existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
 
+                    amount = process_transaction_amount(txn.get("amount") or 0, account.type)
+
+                    date_str = txn.get("date") or txn.get("authorized_date") or ""
+                    try:
+                        parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else pydate.today()
+                    except ValueError:
+                        parsed_date = pydate.today()
+
+                    # Extract Plaid categories
+                    primary_category = txn.get("personal_finance_category", {}).get("primary")
+                    detailed_category = txn.get("personal_finance_category", {}).get("detailed")
+                    category = txn.get("category", [])
+
+                    # Location extraction
+                    location_data = txn.get("location", {})
+                    location = {
+                        "address": location_data.get("address"),
+                        "city": location_data.get("city"),
+                        "region": location_data.get("region"),
+                        "postal_code": location_data.get("postal_code"),
+                        "lat": location_data.get("lat"),
+                        "lon": location_data.get("lon"),
+                    }            
+                    
+                    # Counterparty / Merchant name extraction
+                    merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
+                    merchant_typ = txn.get("counterparties", [{}])[0].get("type", "Unknown") if txn.get("counterparties") else "Unknown"
+    
                     if existing_txn:
-                        logger.debug(
-                            f"Updating transaction {txn_id} for {account.account_id}."
-                        )
-                        existing_txn.amount = amount
-                        existing_txn.date = date_str
-                        existing_txn.description = description
-                        existing_txn.category = category
-                        existing_txn.merchant_name = merchant_name
-                        existing_txn.merchant_typ = merchant_typ
+                        if existing_txn.user_modified:
+                            logger.debug(f"Transaction {txn_id} is user modified; preserving user changes.")
+                        else:
+                            logger.debug(f"Updating transaction {txn_id} for account {account.account_id}.")
+                            existing_txn.amount = amount
+                            existing_txn.date = parsed_date
+                            existing_txn.description = txn.get("description") or ""
+                            existing_txn.category = category
+                            existing_txn.primary_category = primary_category
+                            existing_txn.detailed_category = detailed_category
+                            existing_txn.merchant_name = merchant_name
+                            existing_txn.merchant_typ = merchant_typ
+                            existing_txn.location = location
                     else:
-                        logger.debug(
-                            f"Inserting new transaction {txn_id} for account {account.account_id}."
-                        )
+                        logger.debug(f"Inserting new transaction {txn_id} for account {account.account_id}.")
                         new_txn = Transaction(
                             transaction_id=txn_id,
                             account_id=account.account_id,
                             amount=amount,
-                            date=date_str,
-                            description=description,
+                            date=parsed_date,
+                            description=txn.get("description") or "",
                             category=category,
+                            primary_category=primary_category,
+                            detailed_category=detailed_category,
                             merchant_name=merchant_name,
                             merchant_typ=merchant_typ,
-                        )
+                            location=location,
+                        )    
                         db.session.add(new_txn)
                 updated = True
             else:
@@ -586,7 +603,6 @@ def get_accounts_from_db():
             }
         )
     return serialized
-
 
 def get_paginated_transactions(page, page_size):
     """

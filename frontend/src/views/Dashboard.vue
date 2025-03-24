@@ -1,7 +1,5 @@
 <template>
   <div class="dashboard">
-    <div>
-    <NotificationsBar :messages="notifications" />
     </div>
     <header class="dashboard-header">
       <h1>Hello | Personal Finance | Happy User No. 01 | </h1>
@@ -13,6 +11,10 @@
       </nav>
     </header>
     <main class="dashboard-content">
+      <div>        
+      <RecurringTransactionSection provider="plaid" />
+
+      </div>
       <section class="charts-section">
         <DailyNetChart />
         <CategoryBreakdownChart />
@@ -48,7 +50,6 @@
     <footer class="dashboard-footer">
       &copy; good dashroad.
     </footer>
-  </div>
 </template>
 
 <script>
@@ -57,6 +58,10 @@ import CategoryBreakdownChart from "../components/CategoryBreakdownChart.vue";
 import AccountsTable from "@/components/AccountsTable.vue";
 import TransactionsTable from "@/components/TransactionsTable.vue";
 import { useTransactions } from "@/composables/useTransactions.js";
+import NotificationsBar from "@/components/NotificationsBar.vue";
+import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue";
+import RecurringTransaction from "@/components/RecurringTransaction.vue";
+
 
 export default {
   name: "Dashboard",
@@ -65,6 +70,9 @@ export default {
     CategoryBreakdownChart,
     AccountsTable,
     TransactionsTable,
+    NotificationsBar,
+    RecurringTransactionSection,
+    RecurringTransaction,
   },
   setup() {
     // Use the composable to get all the transaction-related logic.

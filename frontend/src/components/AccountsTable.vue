@@ -12,10 +12,14 @@
           placeholder="Filter accounts..."
         />
         <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
-        <!-- Toggle button to show/hide delete buttons -->
-        <button class="toggle-delete-btn" @click="toggleDeleteButtons">
+
+        <button class="theme-buttons-top" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
         </button>
+
+        <!-- CSV Export/Import Buttons -->
+        <button class="theme-buttons-top" @click="exportCSV">Export CSV</button>
+        <input type="file" @change="importCSV" accept=".csv" />
       </div>
 
       <!-- Table -->
@@ -85,10 +89,7 @@
                 <template v-else>▲▼</template>
               </span>
             </th>
-            <!-- Only show the delete header if delete buttons are enabled -->
-            <th v-if="showDeleteButtons">
-              Actions
-            </th>
+            <th v-if="showDeleteButtons">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -100,7 +101,6 @@
             <td>{{ account.subtype }}</td>
             <td>{{ account.link_type }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
-            <!-- Conditionally render the delete button -->
             <td v-if="showDeleteButtons">
               <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
             </td>
@@ -266,17 +266,25 @@ export default {
 </script>
 
 <style>
-
+:root {
+  /* Gruvbox-inspired palette for Hyprland Arch Linux */
+  --background: #282828;    /* Dark Gruvbox background */
+  --foreground: #ebdbb2;    /* Light Gruvbox foreground */
+  --accent: rgb(171, 150, 71);  /* Accent yellow */
+  --error: #cc241d;         /* Error red for delete buttons */
+  --border: #3c3836;        /* Subtle border color */
+  --hover: #32302f;         /* Hover background color */
+  --input-bg: #1d2021;      /* Slightly darker background for inputs */
+}
 
 /* Accounts Table Container */
 .accounts-table {
   background-color: var(--background);
   color: var(--foreground);
-  padding: 1rem;
+  padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
+}  /* <-- Added closing bracket here */
 
 /* Heading */
 .accounts-table h2 {
@@ -312,20 +320,22 @@ export default {
 }
 
 /* Toggle Delete Buttons Button */
-.toggle-delete-btn {
+.theme-buttons-top {
   padding: 0.5rem 1rem;
-  background-color: var(--accent);
-  color: var(--background);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 2px groove transparent;
+  border-radius: 0px;
   cursor: pointer;
   font-family: "Fira Code", monospace;
   font-weight: bold;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
-.toggle-delete-btn:hover {
+.theme-buttons-top:hover {
+  color: var(--foreground);
   background-color: var(--hover);
   transform: translateY(-1px);
+  border: 1px solid transparent;
 }
 
 /* Table Styling */
