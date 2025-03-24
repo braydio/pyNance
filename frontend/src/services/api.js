@@ -10,8 +10,9 @@ const apiClient = axios.create({
 });
 
 export default {
-  async getAccounts() {
-    const response = await apiClient.get("/teller/transactions/get_accounts");
+  async getAccounts(provider = "teller") {
+    // Uses the new generic accounts endpoint with a provider query parameter.
+    const response = await apiClient.get(`/accounts/get_accounts?provider=${provider}`);
     return response.data;
   },
   async refreshAccounts() {
@@ -50,7 +51,7 @@ export default {
     const response = await apiClient.post(url, payload);
     return response.data;
   },
-    async exchangePublicToken(provider, public_token) {
+  async exchangePublicToken(provider, public_token) {
     let url = "";
     if (provider === "plaid") {
       url = "/plaid/transactions/exchange_public_token";
@@ -71,6 +72,15 @@ export default {
       data: { account_id },
     });
     return response.data;
-  }
-  
+  },
+  async fetchRecurringTransactions(provider, account_id) {
+    // This now calls the new generic recurring endpoint.
+    const response = await apiClient.get(`/accounts/${account_id}/recurring`);
+    return response.data;
+  },
+  async updateRecurringTransaction(account_id, payload) {
+    // This calls the new recurringTx update endpoint.
+    const response = await apiClient.put(`/accounts/${account_id}/recurringTx`, payload);
+    return response.data;
+  },
 };

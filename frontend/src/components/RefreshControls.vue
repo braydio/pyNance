@@ -1,10 +1,10 @@
 <template>
   <div class="controls">
-    <button @click="handleFetch" :disabled="isFetching">
+    <button class="theme-buttons-top" click="handleFetch" :disabled="isFetching">
       <span v-if="isFetching">Refreshing Accounts…</span>
       <span v-else>Refresh Accounts</span>
     </button>
-    <button @click="handleRefresh" :disabled="isRefreshing">
+    <button class="theme-buttons-top" @click="handleRefresh" :disabled="isRefreshing">
       <span v-if="isRefreshing">Refreshing Activity…</span>
       <span v-else>Refresh Account Activity</span>
     </button>
@@ -60,12 +60,13 @@ export default {
   /* Gruvbox-inspired palette for Hyprland Arch Linux */
   --background: #282828;    /* Dark Gruvbox background */
   --foreground: #ebdbb2;    /* Light Gruvbox foreground */
-  --accent: #fabd2f;        /* Accent yellow */
+  --accent:rgb(36, 77, 39);        /* Accent yellow */
   --error: #cc241d;         /* Error red for delete buttons */
   --border: #3c3836;        /* Subtle border color */
   --hover: #32302f;         /* Hover background color */
   --input-bg: #1d2021;      /* Slightly darker background for inputs */
 }
+
 
 /* Accounts Table Container */
 .accounts-table {
@@ -111,20 +112,22 @@ export default {
 }
 
 /* Toggle Delete Buttons Button */
-.toggle-delete-btn {
+.theme-buttons-top {
   padding: 0.5rem 1rem;
-  background-color: var(--accent);
-  color: var(--background);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 2px groove transparent;
+  border-radius: 0px;
   cursor: pointer;
   font-family: "Fira Code", monospace;
   font-weight: bold;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
-.toggle-delete-btn:hover {
+.theme-buttons-top:hover {
+  color: var(--foreground);
   background-color: var(--hover);
   transform: translateY(-1px);
+  border: 1px solid transparent;
 }
 
 /* Table Styling */

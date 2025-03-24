@@ -82,6 +82,7 @@
           <!-- Actions -->
           <td>
             <button v-if="!tx.isEditing" @click="editTransaction(index)">Edit</button>
+            <button v-if="!tx.isEditing" @click="markRecurring(index)">Mark as Recurring</button>
             <button v-if="tx.isEditing" @click="updateTransaction(index)">Save</button>
             <button v-if="tx.isEditing" @click="cancelEdit(index)">Cancel</button>
           </td>
@@ -93,6 +94,7 @@
 
 <script>
 import axios from "axios";
+import api from "@/services/api";
 
 export default {
   name: "TransactionsTable",
@@ -145,9 +147,33 @@ export default {
       delete tx._backup;
       tx.isEditing = false;
     },
+    async markRecurring(index) {
+      const tx = this.transactions[index];
+      // Confirm with the user before marking as recurring
+      if (!confirm("Mark this transaction as recurring?")) return;
+      try {
+        // Call the recurring endpoint for the account using the transaction's data.
+        // We use the updateRecurringTransaction endpoint, which will update an existing recurring record or create a new one.
+        const payload = {
+          amount: tx.amount,
+          description: tx.description
+          // You could extend this payload to include frequency or other details if needed.
+        };
+        const response = await api.updateRecurringTransaction(tx.account_id, payload);
+        if (response.status === "success") {
+          alert("Transaction marked as recurring successfully.");
+        } else {
+          console.error("Failed to mark as recurring:", response.message);
+          alert("Failed to mark as recurring: " + response.message);
+        }
+      } catch (error) {
+        console.error("Error marking transaction as recurring:", error);
+        alert("Error marking transaction as recurring: " + error.message);
+      }
+    },
   },
 };
-</script>
+</script>b
 
 <style scoped>
 /* Gruvbox-inspired palette (dark) */
