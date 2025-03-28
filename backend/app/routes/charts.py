@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 
 from app.config import logger
 from app.extensions import db
-from app.models import Account, Transaction, Category
+from app.models import Account, Category, Transaction
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
@@ -21,7 +21,7 @@ def get_category_breakdown():
         result = (
             db.session.query(
                 Category.display_name,
-                func.sum(func.abs(Transaction.amount)).label("total")
+                func.sum(func.abs(Transaction.amount)).label("total"),
             )
             .join(Transaction, Transaction.category_id == Category.id)
             .filter(Transaction.amount < 0)
