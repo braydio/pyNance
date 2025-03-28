@@ -7,14 +7,20 @@ import { RouterView } from 'vue-router';
   <header>
     <Navbar />
   </header>
-  <main>
-    <RouterView />
-  </main>
-</template>
+    <header class="dev-building">THIS IS A DEVELOPMENT BUILD. DEV MODE = WHAT DO YOU THINK.</header>
+    <main>
+      <RouterView />
+    </main>
+  </template>
 
 <style scoped>
 main {
   padding: 20px;
 }
 
+.dev-building {
+  background-color: red;
+  color: white;
+  text-align: center;
+}
 </style>
