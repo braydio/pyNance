@@ -56,6 +56,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 :root {
   /* Gruvbox-inspired palette for Hyprland Arch Linux */
   --background: #282828;    /* Dark Gruvbox background */
@@ -176,4 +178,5 @@ th span {
 tbody tr:hover {
   background-color: var(--hover);
 }
+
 </style>

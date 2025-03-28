@@ -163,6 +163,8 @@ export default {
 </script>
   
 <style scoped>
+@import '@/styles/global-colors.css';
+
   .recurring-transactions-section {
     padding: 1rem;
     background-color: var(--gruvbox-bg);
@@ -228,5 +230,6 @@ export default {
   .manual-recurring-section button:hover {
     background-color: var(--gruvbox-hover);
   }
+
 </style>
   

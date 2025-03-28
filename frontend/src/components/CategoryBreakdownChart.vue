@@ -156,6 +156,8 @@ export default {
 
 <!-- Scoped styles for this component -->
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .category-breakdown-chart {
   margin: 1rem;
   background-color: #282828;
@@ -177,4 +179,5 @@ export default {
   color: #fabd2f;
   z-index: 10;
 }
+
 </style>

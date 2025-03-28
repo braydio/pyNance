@@ -39,6 +39,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .controls {
   display: flex;
   gap: 0.5rem;
@@ -62,4 +64,5 @@ export default {
   color: var(--gruvbox-accent);
   border: 1px solid var(--gruvbox-accent);
 }
+
 </style>

@@ -51,16 +51,16 @@ export default {
     const response = await apiClient.post(url, payload);
     return response.data;
   },
-  async exchangePublicToken(provider, public_token) {
-    let url = "";
-    if (provider === "plaid") {
-      url = "/plaid/transactions/exchange_public_token";
-    } else if (provider === "teller") {
-      url = "/teller/transactions/exchange_public_token";
-    }
-    const response = await apiClient.post(url, { public_token, provider });
+
+  async exchangePublicToken(provider, payload) {
+    const response = await apiClient.post(
+      `/${provider}/transactions/exchange_public_token`,
+      payload
+    );
     return response.data;
   },
+  
+
   async deleteAccount(provider, account_id) {
     let url = "";
     if (provider === "plaid") {

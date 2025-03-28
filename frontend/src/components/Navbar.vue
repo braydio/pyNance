@@ -14,6 +14,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .menu {
   background: var(--header-bg);
   padding: 15px;
@@ -30,4 +32,5 @@ export default {
 .menu a:hover {
   color: var(--accent-color);
 }
+
 </style>

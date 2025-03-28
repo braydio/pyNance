@@ -60,6 +60,8 @@ export default {
 
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .notifications-container {
   background-color: #333;
   color: #fff;
@@ -71,4 +73,5 @@ export default {
 .notification-message {
   margin: 0.25rem 0;
 }
+
 </style>

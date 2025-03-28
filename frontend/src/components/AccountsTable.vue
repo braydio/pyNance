@@ -1,3 +1,8 @@
+
+<style scoped>
+@import '@/styles/global-colors.css';
+</style>
+
 <template>
   <div class="accounts-section">
     <div class="accounts-table">
@@ -266,16 +271,6 @@ export default {
 </script>
 
 <style>
-:root {
-  /* Gruvbox-inspired palette for Hyprland Arch Linux */
-  --background: #282828;    /* Dark Gruvbox background */
-  --foreground: #ebdbb2;    /* Light Gruvbox foreground */
-  --accent: rgb(171, 150, 71);  /* Accent yellow */
-  --error: #cc241d;         /* Error red for delete buttons */
-  --border: #3c3836;        /* Subtle border color */
-  --hover: #32302f;         /* Hover background color */
-  --input-bg: #1d2021;      /* Slightly darker background for inputs */
-}
 
 /* Accounts Table Container */
 .accounts-table {
@@ -364,6 +359,8 @@ th span {
 }
 
 /* Delete Button Styling */
+
+
 .delete-btn {
   padding: 0.4rem 0.8rem;
   background-color: var(--error);
@@ -375,6 +372,7 @@ th span {
   font-weight: bold;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
+
 .delete-btn:hover {
   background-color: #ff6666;
   transform: translateY(-1px);
@@ -384,5 +382,6 @@ th span {
 tbody tr:hover {
   background-color: var(--hover);
 }
+
 
 </style >

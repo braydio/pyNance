@@ -1,0 +1,27 @@
+:root {
+  /* Sleek “silver Hyprland cappuccin” style theme: a custom combination of moody greys,
+   * subtle silver text, and soft cappuccin-like highlights.
+   * Inspired by the Catppuccin color palette.
+   */
+
+  --color-bg-dark: #1e1e2e;         /* primary dark base */
+  --color-text-light: #cdd6f4;      /* silverish cappuccin text */
+  --color-accent-yellow: #f9e2af;   /* cappuccin's warm yellow accent */
+  --color-bg-secondary: #313244;    /* slightly lighter background */
+  --page-bg: #181825;               /* deeper dark “mantle” hue */
+  --themed-fg: #cdd6f4;            /* reusing silver cappuccin text */
+  --background: #1e1e2e;            /* unify backgrounds */
+  --themed-bg: #313244;            /* secondary background surfaces */
+  --themed-border: #45475a;        /* darker border shade */
+  --themed-yl: #f9e2af;            /* cappuccin’s yellow accent */
+
+  /* Gradient bars, neutral vs. alert, etc. */
+  --bar-gradient-start: #74c7ec;    /* cappuccin “sapphire” */
+  --bar-gradient-end: #89dceb;      /* cappuccin “sky” */
+  --bar-neutral: #74c7ec;           /* reusing sapphire for neutral bar */
+  --bar-alert: #f38ba8;            /* cappuccin’s soft red for alerts */
+
+  /* Error + hover states */
+  --error: #f38ba8;                 /* unify with bar-alert color for errors */
+  --hover: #24273a;                 /* subtle highlight background on hover */
+}

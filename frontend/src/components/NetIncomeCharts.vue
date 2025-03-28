@@ -148,8 +148,11 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   .active {
     background-color: #fabd2f;
   }
-  </style>
+  
+</style>
   
