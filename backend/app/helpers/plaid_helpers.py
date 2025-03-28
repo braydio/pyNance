@@ -1,5 +1,11 @@
 import requests
-from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.config import (
+    PLAID_BASE_URL,
+    PLAID_CLIENT_ID,
+    PLAID_CLIENT_NAME,
+    PLAID_SECRET,
+    logger,
+)
 
 
 def generate_link_token(user_id, products=["transactions"]):
@@ -13,7 +19,7 @@ def generate_link_token(user_id, products=["transactions"]):
     payload = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
-        "client_name": "pyNanceDashs",
+        "client_name": PLAID_CLIENT_NAME,
         "products": products,
         "country_codes": ["US"],
         "language": "en",

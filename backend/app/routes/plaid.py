@@ -12,7 +12,6 @@ from app.config import (
     logger,
 )
 from app.sql import account_logic
-
 from flask import Blueprint, jsonify, request
 
 plaid_bp = Blueprint("plaid", __name__)
