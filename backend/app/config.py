@@ -59,6 +59,7 @@ print(f"{VARIABLE_ENV_TOKEN} {VARIABLE_ENV_ID}")
 # Plaid API Env Variables
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
+PLAID_CLIENT_NAME = os.getenv("PLAID_CLIENT_NAME")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
@@ -86,7 +87,7 @@ FILES = {
 }
 
 # Database URI using SQLite (SQLAlchemy)
-SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR'] / 'dashroad.db'}"
+SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR'] / 'pynance_dashroad.db'}"
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 
 logger.debug(f"SQL DB initialized: {SQLALCHEMY_DATABASE_URI}")
