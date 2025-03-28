@@ -75,6 +75,33 @@ class AccountHistory(db.Model):
     balance = db.Column(db.Float, default=0)
 
 
+class RecurringTransaction(db.Model):
+    __tablename__ = "recurring_transactions"
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), nullable=False)
+    description = db.Column(db.String(256), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    frequency = db.Column(db.String(64), nullable=True)
+    next_due_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(db.String(256), nullable=True)
+    updated_at = db.Column(db.String(64), default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class Category(db.Model):
+    __tablename__ = "categories"
+    id = db.Column(db.Integer, primary_key=True)
+    plaid_category_id = db.Column(db.String(64), unique=True, nullable=False)
+    primary_category = db.Column(db.String(128), default="Unknown")
+    detailed_category = db.Column(db.String(128), default="Unknown")
+    display_name = db.Column(db.String(256), default="Unknown")
+
+    def __repr__(self):
+        return (
+            f"<Category(plaid_category_id={self.plaid_category_id}, "
+            f"display_name={self.display_name})>"
+        )
+
+# Update the Transaction model to use the new Category relation.
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
@@ -83,28 +110,12 @@ class Transaction(db.Model):
     amount = db.Column(db.Float, default=0)
     date = db.Column(db.String(64))
     description = db.Column(db.String(256))
-    category = db.Column(db.String(128), default="Unknown")
-    primary_category = db.Column(db.String(128), default="Unknown")
-    detailed_category = db.Column(db.String(128), default="Unknown")
     merchant_name = db.Column(db.String(128), default="Unknown")
     merchant_typ = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
-    user_modified_fields = db.Column(db.Text)  # JSON representation
+    user_modified_fields = db.Column(db.Text)  # JSON representation 
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    category = db.relationship("Category", backref="transactions")
 
-
-class RecurringTransaction(db.Model):
-    __tablename__ = "recurring_transactions"
-    id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
-    )
-    description = db.Column(db.String(256), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    frequency = db.Column(
-        db.String(64), nullable=True
-    )  # daily, weekly, monthly, yearly, etc.
-    next_due_date = db.Column(db.Date, nullable=True)
-    notes = db.Column(db.String(256), nullable=True)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    def __repr__(self):
+        return f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
