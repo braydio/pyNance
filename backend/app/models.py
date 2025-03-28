@@ -78,13 +78,17 @@ class AccountHistory(db.Model):
 class RecurringTransaction(db.Model):
     __tablename__ = "recurring_transactions"
     id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), nullable=False)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+    )
     description = db.Column(db.String(256), nullable=False)
     amount = db.Column(db.Float, nullable=False)
     frequency = db.Column(db.String(64), nullable=True)
     next_due_date = db.Column(db.Date, nullable=True)
     notes = db.Column(db.String(256), nullable=True)
-    updated_at = db.Column(db.String(64), default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at = db.Column(
+        db.String(64), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
 
 
 class Category(db.Model):
@@ -101,6 +105,7 @@ class Category(db.Model):
             f"display_name={self.display_name})>"
         )
 
+
 # Update the Transaction model to use the new Category relation.
 class Transaction(db.Model):
     __tablename__ = "transactions"
@@ -113,9 +118,11 @@ class Transaction(db.Model):
     merchant_name = db.Column(db.String(128), default="Unknown")
     merchant_typ = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
-    user_modified_fields = db.Column(db.Text)  # JSON representation 
+    user_modified_fields = db.Column(db.Text)  # JSON representation
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     category = db.relationship("Category", backref="transactions")
 
     def __repr__(self):
-        return f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
+        return (
+            f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
+        )
