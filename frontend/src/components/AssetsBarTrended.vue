@@ -204,6 +204,8 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   .chart-container {
     margin: 1rem;
     background-color: #282828;
@@ -251,5 +253,6 @@
     font-weight: bold;
   }
   
-  </style>
+  
+</style>
   

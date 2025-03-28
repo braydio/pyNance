@@ -4,6 +4,10 @@
       <div>
         <h1>Transactions</h1>
         <h3>View and manage your transactions</h3>
+        <div>        
+        <RecurringTransactionSection provider="plaid" />
+
+      </div>
       </div>
     </header>
     <main>
@@ -64,6 +68,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .transactions-page {
   padding: 20px;
 }
@@ -93,4 +99,5 @@ button:disabled {
 button:hover:not(:disabled) {
   background-color: #0056b3;
 }
+
 </style>

@@ -166,14 +166,7 @@ export default {
 </script>
 
 <style scoped>
-:root {
-  --gruvbox-bg: #282828;
-  --gruvbox-fg: #ebdbb2;
-  --gruvbox-accent: #d65d0e;
-  --gruvbox-border: #3c3836;
-  --gruvbox-hover: #b0520c;
-  --gruvbox-hover-bg: #32302f;
-}
+@import '@/styles/global-colors.css';
 
 .transactions {
   margin-top: 20px;
@@ -222,4 +215,5 @@ th:hover {
 tbody tr:nth-child(even) {
   background-color: var(--gruvbox-hover-bg);
 }
+
 </style>

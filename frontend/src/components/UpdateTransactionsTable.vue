@@ -176,72 +176,181 @@ export default {
 </script>b
 
 <style scoped>
-/* Gruvbox-inspired palette (dark) */
-:root {
-  --gruvbox-bg: #282828;        /* Dark background */
-  --gruvbox-fg: #ebdbb2;        /* Light text */
-  --gruvbox-accent: #d65d0e;    /* Orange accent */
-  --gruvbox-border: #3c3836;    /* Dark border */
-  --gruvbox-hover: #b0520c;     /* Darker accent */
-  --gruvbox-bg-hover: #32302f;  /* Hover row background */
+@import '@/styles/global-colors.css';
+
+/* Base Styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: \"Fira Code\", monospace;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
 }
 
-.transactions {
-  margin-top: 20px;
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-fg);
+/* Dashboard Layout */
+.dashboard {
   padding: 1rem;
-  border: 1px solid var(--gruvbox-border);
+}
+
+/* Header */
+.dashboard-header {
+  padding: 1rem;
+  background-color: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-accent-yellow);
+  margin-bottom: 1rem;
+}
+.dashboard-header h1 {
+  margin: 0;
+  color: var(--color-accent-yellow);
+}
+.dashboard-header h2 {
+  margin-top: 0.5rem;
+  color: var(--color-highlight);
+}
+
+/* Navigation Menu */
+.menu {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+.menu button {
+  padding: 0.5rem 1rem;
+  background-color: var(--button-bg);
+  border: none;
   border-radius: 4px;
+  color: var(--color-text-light);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.menu button:hover {
+  background-color: var(--button-hover);
 }
 
-.transactions h3 {
-  margin-top: 0;
-  color: var(--gruvbox-accent);
+/* Dashboard Content */
+.dashboard-content {
+  display: flex;
+  flex-direction: column;
 }
 
+/* Charts Section */
+.charts-section {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  opacity: 0.85;
+}
+.charts-section > * {
+  flex: 1 1 45%;
+  height: 300px;
+  background-color: var(--color-bg-secondary);
+  padding: 0.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Snapshot Section */
+.snapshot-section {
+  margin-top: 2rem;
+}
+
+/* Transactions Container */
+.transactions-container {
+  margin-top: 1rem;
+}
+
+/* Form Inputs */
+.search-input {
+  padding: 8px;
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 10px;
+  background-color: var(--color-bg-secondary);
+  border: 2px groove var(--border-color);
+  border-radius: 1px;
+  color: var(--color-text-light);
+}
+
+/* Pagination Controls */
+#pagination-controls {
+  margin-top: 10px;
+  text-align: center;
+}
+#pagination-controls button {
+  padding: 4px 20px;
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border: solid 4px;
+  border-radius: 2px;
+  border-color: var(--color-text-light);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+#pagination-controls button:disabled {
+  background-color: var(--button-disabled);
+  cursor: not-allowed;
+}
+#pagination-controls button:hover:not(:disabled) {
+  background-color: var(--button-hover);
+}
+
+/* Tables */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 0.5rem;
 }
-
-/* Table Head */
-thead {
-  background-color: var(--gruvbox-border);
+th, td {
+  border: 1px solid var(--border-color);
+  padding: 8px;
+  text-align: left;
 }
 th {
-  padding: 8px;
-  text-align: left;
-  background-color: var(--gruvbox-border);
-  color: var(--gruvbox-fg);
-}
-
-/* Table Body */
-tbody tr:nth-child(even) {
-  background-color: var(--gruvbox-bg-hover);
-}
-td {
-  border: 1px solid var(--gruvbox-border);
-  padding: 8px;
-  text-align: left;
-}
-
-/* Buttons */
-button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
-  border: 1px solid var(--gruvbox-accent);
-  padding: 0.4rem 0.8rem;
-  margin-right: 4px;
-  font-size: 0.8rem;
+  background-color: var(--color-bg-secondary);
   cursor: pointer;
-  border-radius: 3px;
-  transition: background-color 0.2s, color 0.2s, border 0.2s;
+}
+th:hover {
+  background-color: var(--hover);
 }
 
-button:hover {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-accent);
+/* Transactions */
+.transactions h3 {
+  color: var(--color-accent-yellow);
 }
+
+.transactions table th {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-light);
+}
+
+.transactions tbody tr:nth-child(odd) {
+  background-color: var(--color-bg-dark);
+}
+
+.transactions tbody tr:hover {
+  background-color: var(--hover);
+}
+
+.transactions button {
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--themed-border);
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.transactions button:hover {
+  background-color: var(--button-hover);
+  border-color: var(--color-accent-yellow);
+}
+
+/* Footer */
+.dashboard-footer {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1rem;
+  font-size: 0.9rem;
+  background-color: var(--color-bg-secondary);
+  color: var(--footer-text);
+}
+
 </style>

@@ -67,16 +67,18 @@ export default {
   };
 </script>
 <style scoped>
+
+@import '@/styles/global-colors.css';
 .gallery-container {
   padding: 1rem;
   font-family: "Fira Code", monospace;
-  color: #ebdbb2;
-  background-color: #282828;
+  color: var(--color-text-light);
+  background-color: var(--color-bg-dark);
 }
 
 h1 {
   margin-bottom: 1.5rem;
-  color: #fabd2f; /* Gruvbox yellow accent */
+  color: var(--color-accent-yellow); /* Gruvbox yellow accent */
 }
 
 h2 {
@@ -95,7 +97,7 @@ h2 {
 /* Each chart container item */
 .chart-item {
   flex: 1 1 45%;        /* 2 columns in a row, each ~ 45% of width, gap:1rem leaves ~10% leftover */
-  background-color: #3c3836;
+  background-color: var(--color-bg-secondary);
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
   padding-inline: 1.5rem;
@@ -107,6 +109,7 @@ h2 {
   height: 400px;
   width: 600px;
 }
+
 /* Optional: Style the video container for responsiveness */
 .video-container {
   position: relative;
@@ -115,6 +118,7 @@ h2 {
   height: 400px;
   width: 100%;
 }
+
 .video-container iframe {
   position: absolute;
   top: 0;
@@ -125,8 +129,6 @@ h2 {
 
 .chart-item h2 {
   margin: 0 0 0 0;
-  color: #fabd2f; /* accent color for headings */
+  color: var(--color-accent-yellow); /* accent color for headings */
 }
-
-
-</style >
+</style>

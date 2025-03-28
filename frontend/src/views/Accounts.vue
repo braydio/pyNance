@@ -1,29 +1,28 @@
 <template>
   <div class="accounts-page">
-    <!-- Header -->
     <header class="accounts-header">
       <h1>Accounts Management</h1>
     </header>
-    <!-- Charts Section -->
+
+    <!-- Charts -->
     <section class="charts-section">
-      <LinkAccount />
       <NetYearComparisonChart />
       <AssetsBarTrended />
     </section>
-    <!-- Accounts Overview -->
+
+    <!-- Controls Grouping -->
+    <section class="account-controls">
+      <LinkAccount />
+      <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshActivity" />
+      <RefreshPlaidControls />
+      <RefreshTellerControls />
+    </section>
+
+    <!-- Accounts Table -->
     <div class="accounts-overview">
-      <div class="accounts-section">
-        <AccountsTable />
-        <div class="refresh-buttons">
-          <RefreshTellerControls />
-          <RefreshPlaidControls />
-        </div>
-      </div>
+      <AccountsTable />
     </div>
-    <!-- Drag Section -->
-    <div class="accounts-drag">
-      <AccountsReorderChart />
-    </div>
+
     <!-- Footer -->
     <footer class="accounts-footer">
       &copy; good dashroad.
@@ -55,29 +54,43 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .accounts-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: var(--page-bg, #1d2021);
-  color: var(--gruvbox-fg);
+  background-color: var(--page-bg);
+  color: var(--color-text-light);
+}
+.account-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: var(--background);
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 .accounts-header {
-  background-color: var(--gruvbox-bg);
+  background-color: var(--color-bg-secondary);
   padding: 1rem;
   text-align: center;
-  border-bottom: 1px solid var(--gruvbox-border);
+  border-bottom: 1px solid var(--themed-border);
 }
 .accounts-header h1 {
   margin: 0;
-  color: var(--gruvbox-yl);
+  color: var(--color-accent-yellow);
   font-size: 2rem;
 }
 .accounts-overview {
   margin-bottom: 1rem;
 }
 .accounts-section {
-  background-color: var(--gruvbox-bg);
+  background-color: var(--color-bg-secondary);
   padding: 1rem;
   border-radius: 4px;
   margin-bottom: 1rem;
@@ -92,11 +105,11 @@ export default {
   margin-bottom: 1rem;
 }
 .accounts-footer {
-  background-color: var(--gruvbox-bg);
+  background-color: var(--color-bg-secondary);
   padding: 1rem;
   text-align: center;
-  border-top: 1px solid var(--gruvbox-border);
+  border-top: 1px solid var(--themed-border);
   font-size: 0.9rem;
-  color: var(--gruvbox-fg);
+  color: var(--color-text-light);
 }
 </style>

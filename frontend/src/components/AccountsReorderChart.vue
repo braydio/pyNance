@@ -115,52 +115,63 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .accounts-reorder-chart {
   padding: 1rem;
-  background-color: #282828;
-  color: #ebdbb2;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
   border-radius: 8px;
   margin: 1rem;
 }
+
 .chart-summary {
   display: flex;
   gap: 2rem;
 }
+
 .group {
   flex: 1;
 }
+
 .group h3 {
   margin-bottom: 0.5rem;
-  color: #fabd2f;
+  color: var(--color-accent-yellow);
   font-family: "Fira Code", monospace;
 }
+
 .account-bar {
   padding: 0.5rem;
-  background-color: #3c3836;
+  background-color: var(--color-bg-secondary);
   border-radius: 4px;
   cursor: move;
   margin-bottom: 0.5rem;
   display: flex;
   flex-direction: column;
 }
+
 .account-info {
   display: flex;
   justify-content: space-between;
   font-family: "Fira Code", monospace;
   font-size: 0.9rem;
 }
+
 .account-balance {
   font-weight: bold;
 }
+
 .bar {
   height: 10px;
   border-radius: 4px;
-  background: linear-gradient(to right, #83a598, #458588);
+  background: linear-gradient(to right, var(--bar-gradient-start), var(--bar-gradient-end));
 }
+
 .group .bar {
-  background-color: #83a598;
+  background-color: var(--bar-neutral);
 }
+
 .group:first-child .bar {
-  background-color: #fb4934;
+  background-color: var(--bar-alert);
 }
 </style>

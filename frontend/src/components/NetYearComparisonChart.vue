@@ -141,6 +141,8 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   .chart-container {
     margin: 1rem;
     background-color: #282828;
@@ -151,5 +153,6 @@
     max-height: 400px; /* Adjust as needed */
     width: auto;   /* Adjust as needed */
   }
-  </style>
+  
+</style>
   

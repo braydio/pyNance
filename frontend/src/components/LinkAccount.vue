@@ -19,7 +19,7 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      userId: import.meta.env.USER_ID_PLAID, // Do not change this
+      userId: import.meta.env.VITE_USER_ID_PLAID, // Fixed: added VITE_ prefix
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
     };
   },
@@ -28,7 +28,6 @@ export default {
       try {
         await loadExternalScripts();
         this.scriptsLoaded = true;
-        // Preload Plaid link token after scripts have loaded.
         await this.preloadPlaidLinkToken();
       } catch (error) {
         console.error("Error loading external scripts:", error);
@@ -37,7 +36,7 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: USER_ID_PLAID, // Do not change this
+          user_id: this.userId,
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
@@ -46,30 +45,30 @@ export default {
       }
     },
     async linkPlaid() {
-      if (!this.scriptsLoaded) {
-        console.error("External scripts not loaded yet.");
+      if (!this.scriptsLoaded || !this.plaidLinkToken || !window.Plaid) {
+        console.error("Prerequisites missing for Plaid linking.");
         return;
       }
-      if (!this.plaidLinkToken) {
-        console.error("Plaid link token not available.");
-        return;
-      }
-      if (!window.Plaid) {
-        console.error("Plaid library not available.");
-        return;
-      }
+
       const handler = window.Plaid.create({
         token: this.plaidLinkToken,
         onSuccess: async (public_token, metadata) => {
-          console.log("Plaid onSuccess, public_token:", public_token);
-          const exchangeRes = await api.exchangePublicToken("plaid", public_token);
-          console.log("Plaid exchange response:", exchangeRes);
-          // Optionally, emit an event to refresh your accounts
+          try {
+            console.log("Plaid onSuccess, public_token:", public_token);
+            const exchangeRes = await api.exchangePublicToken("plaid", {
+              user_id: this.userId,
+              public_token: public_token,
+            });
+            console.log("Plaid exchange response:", exchangeRes);
+          } catch (error) {
+            console.error("Error exchanging Plaid public token:", error);
+          }
         },
         onExit: (err, metadata) => {
           console.log("Plaid Link exited", err, metadata);
         },
       });
+
       handler.open();
     },
     async linkTeller() {
@@ -85,21 +84,24 @@ export default {
         this.tellerConnectInstance = window.TellerConnect.setup({
           applicationId: this.tellerAppId,
           products: ["transactions", "balance"],
-          onInit: function() {
+          onInit: () => {
             console.log("Teller Connect has initialized");
           },
-          onSuccess: async function(enrollment) {
+          onSuccess: async (enrollment) => {
             console.log("User enrolled successfully", enrollment.accessToken);
-            const exchangeRes = await api.exchangePublicToken("teller", enrollment.accessToken);
+            const exchangeRes = await api.exchangePublicToken("teller", {
+              user_id: this.userId,
+              public_token: enrollment.accessToken,
+            });
             console.log("Teller exchange response:", exchangeRes);
           },
-          onExit: function() {
+          onExit: () => {
             console.log("User closed Teller Connect");
-          }
+          },
         });
       }
       this.tellerConnectInstance.open();
-    }
+    },
   },
   mounted() {
     this.initializeScripts();
@@ -108,6 +110,8 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 .link-account {
   background-color: var(--gruvbox-bg);
   color: var(--gruvbox-fg);

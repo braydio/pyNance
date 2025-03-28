@@ -14,6 +14,8 @@ import { RouterView } from 'vue-router';
   </template>
 
 <style scoped>
+@import '@/styles/global-colors.css';
+
 main {
   padding: 20px;
 }
@@ -23,4 +25,5 @@ main {
   color: white;
   text-align: center;
 }
+
 </style>

@@ -161,6 +161,8 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   .daily-net-chart {
     margin: 1rem;
     background-color: #282828;
@@ -197,5 +199,6 @@
     color: #fb4934;
     font-size: 1.1em;
   }
-  </style>
+  
+</style>
   
