@@ -1,27 +1,96 @@
 :root {
-  /* Sleek “silver Hyprland cappuccin” style theme: a custom combination of moody greys,
-   * subtle silver text, and soft cappuccin-like highlights.
-   * Inspired by the Catppuccin color palette.
-   */
+  /* twilight nebula: deep purples, ethereal blues, glowing accents */
 
-  --color-bg-dark: #1e1e2e;         /* primary dark base */
-  --color-text-light: #cdd6f4;      /* silverish cappuccin text */
-  --color-accent-yellow: #f9e2af;   /* cappuccin's warm yellow accent */
-  --color-bg-secondary: #313244;    /* slightly lighter background */
-  --page-bg: #181825;               /* deeper dark “mantle” hue */
-  --themed-fg: #cdd6f4;            /* reusing silver cappuccin text */
-  --background: #1e1e2e;            /* unify backgrounds */
-  --themed-bg: #313244;            /* secondary background surfaces */
-  --themed-border: #45475a;        /* darker border shade */
-  --themed-yl: #f9e2af;            /* cappuccin’s yellow accent */
+  --color-bg-dark: #1b1a2e;          /* rich, deep space purple */
+  --color-bg-secondary: #2a273f;     /* twilight shadow purple */
+  --page-bg: #14131f;                /* deep nebula core black */
+  --background: #1b1a2e;             /* unified dark background */
+  --themed-bg: #2a273f;              /* card or surface background */
+  --themed-border: #3c3859;          /* faint purple border */
 
-  /* Gradient bars, neutral vs. alert, etc. */
-  --bar-gradient-start: #74c7ec;    /* cappuccin “sapphire” */
-  --bar-gradient-end: #89dceb;      /* cappuccin “sky” */
-  --bar-neutral: #74c7ec;           /* reusing sapphire for neutral bar */
-  --bar-alert: #f38ba8;            /* cappuccin’s soft red for alerts */
+  --color-text-light: #e0def4;       /* soft, cool lavender */
+  --color-text-muted: #9a8fbf;       /* faded lavender-gray for less important text */
+  --color-accent-yellow: #f6c177;    /* warm honey gold */
+  --themed-yl: #f6c177;              /* alias */
 
-  /* Error + hover states */
-  --error: #f38ba8;                 /* unify with bar-alert color for errors */
-  --hover: #24273a;                 /* subtle highlight background on hover */
+  /* NEW: twilight green & cosmic magenta accents */
+  --color-accent-mint: #a6e3a1;      /* glowy mint — for buttons, active states */
+  --color-accent-magenta: #d782d9;   /* soft magenta — for highlights, active pills */
+
+  /* NEW: cosmic blues */
+  --color-accent-ice: #89dceb;       /* frosty cyan — secondary accents */
+  --color-accent-void: #1e1e28;      /* near-black, for overlays, shadows */
+
+  /* NEW: shadow & separator neutrals */
+  --divider: #2e2a4f;                /* soft section dividers */
+  --shadow: rgba(0, 0, 0, 0.25);     /* card or modal shadow */
+
+  /* gradient bars, neutral vs alert, etc. */
+  --bar-gradient-start: #9ccfd8;     /* cool teal */
+  --bar-gradient-end: #c4a7e7;       /* dreamy violet-pink */
+  --bar-neutral: #9ccfd8;
+  --bar-alert: #eb6f92;              /* cosmic rose pink */
+  --bar-success: #a6e3a1;            /* success green */
+
+  /* error + hover states */
+  --error: #eb6f92;
+  --hover: #22203a;
+  --hover-glow: #302c4d;             /* subtle outer glow on hoverable elements */
+
+  /* NEW: interactive elements */
+  --button-bg: #2c2540;
+  --button-hover-bg: #3a2f5a;
+  --link-color: #c4a7e7;
+  --link-hover-color: #f6c177;
+
+  /* NEW: glowy neon accents */
+  --neon-purple: #b4befe;
+  --neon-mint: #94e2d5;
+}
+
+:root {
+  /* --- Core Backgrounds --- */
+  --color-bg-dark: #1b1a2e;          /* rich, deep space purple */
+  --color-bg-secondary: #2a273f;     /* twilight shadow purple */
+  --page-bg: #14131f;                /* deep nebula core black */
+  --background: #1b1a2e;             /* unified dark background */
+  --themed-bg: #2a273f;              /* card/surface background */
+  --themed-border: #3c3859;          /* subtle purple border */
+  --divider: #2e2a4f;                /* section divider lines */
+  --shadow: rgba(0, 0, 0, 0.25);     /* card shadow */
+  --hover-glow: #302c4d;             /* ambient glow on hover */
+
+  /* --- Text Colors --- */
+  --color-text-light: #e0def4;       /* main text */
+  --color-text-muted: #9a8fbf;       /* faded for labels/descriptions */
+  --themed-fg: var(--color-text-light);
+
+  /* --- Accents --- */
+  --color-accent-yellow: #f6c177;    /* warm honey yellow */
+  --themed-yl: var(--color-accent-yellow);
+
+  --color-accent-mint: #a6e3a1;      /* nebula mint for success states */
+  --color-accent-magenta: #d782d9;   /* glowing soft pink/purple */
+
+  --color-accent-ice: #89dceb;       /* cool cyan */
+  --color-accent-void: #1e1e28;      /* deep overlay bg */
+
+  --neon-purple: #b4befe;            /* neon accent */
+  --neon-mint: #94e2d5;              /* neon mint highlight */
+
+  /* --- Charts & Bars --- */
+  --bar-gradient-start: #9ccfd8;     /* soft teal */
+  --bar-gradient-end: #c4a7e7;       /* dreamy violet-pink */
+  --bar-neutral: #9ccfd8;
+  --bar-alert: #eb6f92;              /* soft rose */
+  --bar-success: #a6e3a1;
+
+  /* --- Interaction States --- */
+  --error: #eb6f92;
+  --hover: #22203a;
+
+  --button-bg: #2c2540;
+  --button-hover-bg: #3a2f5a;
+  --link-color: #c4a7e7;
+  --link-hover-color: #f6c177;
 }
