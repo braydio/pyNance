@@ -1,0 +1,53 @@
+* === utilities.css === */
+
+/* ---------- Spacing Utilities ---------- */
+/* margin (m-*) and padding (p-*) classes */
+.m-0 { margin: 0 !important; }
+.m-1 { margin: 0.25rem !important; }
+.m-2 { margin: 0.5rem !important; }
+.m-3 { margin: 1rem !important; }
+.m-4 { margin: 2rem !important; }
+
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+/* ... you get the idea for mt-3, mb-4, etc. */
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 0.25rem !important; }
+.p-2 { padding: 0.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.p-4 { padding: 2rem !important; }
+
+/* ---------- Z-Index Utilities ---------- */
+.z-0 { z-index: 0 !important; }
+.z-10 { z-index: 10 !important; }
+.z-50 { z-index: 50 !important; }
+.z-999 { z-index: 999 !important; }
+
+/* ---------- Animation & Transition Utilities ---------- */
+
+/* Simple fade in/out transition classes for a <transition name=\"fade\"> in Vue */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Slide up transition for <transition name=\"slide-up\"> */
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.slide-up-enter-from, .slide-up-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+/* More advanced animations can be done with keyframes... */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
