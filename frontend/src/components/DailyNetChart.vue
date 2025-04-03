@@ -154,7 +154,6 @@ export default {
 </script>
 
 <style scoped>
-@import "@/styles/global-colors.css";
 
 .daily-net-chart {
   margin: 1rem;

@@ -128,7 +128,6 @@ export default {
 
 
 <style scoped>
-@import '@/styles/global-colors.css';
 
 .accounts-reorder-chart {
   padding: 1rem;

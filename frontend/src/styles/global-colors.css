@@ -13,15 +13,15 @@
   --color-accent-yellow: #f6c177;    /* warm honey gold */
   --themed-yl: #f6c177;              /* alias */
 
-  /* NEW: twilight green & cosmic magenta accents */
+  /* twilight green & cosmic magenta accents */
   --color-accent-mint: #a6e3a1;      /* glowy mint — for buttons, active states */
   --color-accent-magenta: #d782d9;   /* soft magenta — for highlights, active pills */
 
-  /* NEW: cosmic blues */
+  /*  cosmic blues */
   --color-accent-ice: #89dceb;       /* frosty cyan — secondary accents */
   --color-accent-void: #1e1e28;      /* near-black, for overlays, shadows */
 
-  /* NEW: shadow & separator neutrals */
+  /*  shadow & separator neutrals */
   --divider: #2e2a4f;                /* soft section dividers */
   --shadow: rgba(0, 0, 0, 0.25);     /* card or modal shadow */
 
@@ -37,13 +37,13 @@
   --hover: #22203a;
   --hover-glow: #302c4d;             /* subtle outer glow on hoverable elements */
 
-  /* NEW: interactive elements */
+  /*  interactive elements */
   --button-bg: #2c2540;
   --button-hover-bg: #3a2f5a;
   --link-color: #c4a7e7;
   --link-hover-color: #f6c177;
 
-  /* NEW: glowy neon accents */
+  /*  glowy neon accents */
   --neon-purple: #b4befe;
   --neon-mint: #94e2d5;
 }
@@ -93,4 +93,9 @@
   --button-hover-bg: #3a2f5a;
   --link-color: #c4a7e7;
   --link-hover-color: #f6c177;
+
+  --dev-alert-bg: #ff4b4b;     /* vivid crimson warning */
+  --dev-alert-border: #a80f2c; /* deep blood red */
+  --dev-alert-text: #ffffff;   /* bright contrast for legibility */
+
 }

@@ -22,6 +22,10 @@ const isDev = import.meta.env.MODE === "development"
 
 <style>
 @import "@/styles/global-colors.css";
+@import "@/styles/buttons.css";
+@import "@/styles/typography.css";
+@import "@/styles/layout.css";
+@import "@/styles/utilities.css";
 
 /* example dev banner using your “cosmic rose” or “bar-alert” palette */
 .env-banner-dev {
