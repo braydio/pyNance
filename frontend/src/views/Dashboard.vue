@@ -109,7 +109,6 @@ export default {
 </script>
 
 <style scoped>
-@import "@/styles/global-colors.css";
 
 .dashboard {
   background-color: var(--page-bg);
