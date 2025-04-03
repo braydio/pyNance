@@ -93,7 +93,6 @@ export default {
 </script>
 
 <style scoped>
-@import "@/styles/global-colors.css";
 
 /* Fade Transition Classes */
 .fade-enter-active,
