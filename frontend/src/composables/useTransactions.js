@@ -12,7 +12,7 @@ export function useTransactions(pageSize = 15) {
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(`/api/teller/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`);
+      const res = await axios.get(`/api/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`);
       if (res.data.status === "success") {
         transactions.value = res.data.data.transactions;
         totalPages.value = Math.ceil(res.data.data.total / pageSize);
