@@ -8,7 +8,6 @@
     <!-- Controls Grouping -->
     <section class="account-controls">
       <LinkAccount />
-      <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshActivity" />
       <RefreshPlaidControls />
       <RefreshTellerControls />
     </section>
@@ -18,6 +17,7 @@
       <transition-group name="fade" tag="div" class="charts-wrapper">
         <NetYearComparisonChart key="net-year" />
         <AssetsBarTrended key="assets-bar" />
+        <AccountsReorderChart key="top-accounts" />
       </transition-group>
     </section>
 
@@ -55,6 +55,7 @@ import AssetsBarTrended from "@/components/AssetsBarTrended.vue";
 import RefreshTellerControls from "@/components/RefreshTellerControls.vue";
 import RefreshPlaidControls from "@/components/RefreshPlaidControls.vue";
 import RefreshControls from "@/components/RefreshControls.vue"; // Assuming this exists
+import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
 export default {
   name: "Accounts",
@@ -66,11 +67,11 @@ export default {
     RefreshTellerControls,
     RefreshPlaidControls,
     RefreshControls,
+    AccountsReorderChart,
   },
   data() {
     return {
       userName: import.meta.env.VITE_USER_ID_PLAID,
-      // Format the current date in a human-friendly way:
       currentDate: new Date().toLocaleDateString(undefined, {
         month: "long",
         day: "numeric",
@@ -148,7 +149,7 @@ export default {
 .account-controls {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.5rem;
   justify-content: center;
   padding: 1rem;
   background-color: var(--background);
