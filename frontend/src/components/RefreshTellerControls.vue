@@ -39,16 +39,15 @@ export default {
 </script>
 
 <style scoped>
-@import '@/styles/global-colors.css';
 
 .controls {
   display: flex;
   gap: 0.5rem;
 }
 .controls button {
-  background-color: var(--gruvbox-accent);
+  background-color: var(--color-bg-dark);
   color: var(--gruvbox-fg);
-  border: 1px solid var(--gruvbox-accent);
+  border: 1px solid var(--bar-neutral);
   padding: 0.5rem 1rem;
   border-radius: 3px;
   cursor: pointer;
@@ -60,7 +59,7 @@ export default {
   cursor: not-allowed;
 }
 .controls button:hover:not(:disabled) {
-  background-color: var(--gruvbox-bg);
+  background-color: var(--button-hover);
   color: var(--gruvbox-accent);
   border: 1px solid var(--gruvbox-accent);
 }
