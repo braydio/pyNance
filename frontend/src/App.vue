@@ -3,7 +3,7 @@ import Navbar from "@/components/Navbar.vue"
 import { RouterView } from "vue-router"
 
 // use Vite’s built-in env variable:
-const isDev = import.meta.env.MODE === "development"
+const isDev = import.meta.env.VITE_SESSION_MODE === "development"
 </script>
 
 <template>
