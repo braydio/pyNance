@@ -55,13 +55,13 @@ export default {
   transition: background-color 0.2s, color 0.2s;
 }
 .controls button:disabled {
-  opacity: 0.6;
+  opacity: 0.8;
   cursor: not-allowed;
 }
 .controls button:hover:not(:disabled) {
   background-color: var(--button-hover);
   color: var(--gruvbox-accent);
-  border: 1px solid var(--gruvbox-accent);
+  border: 1px solid var(--color-bg-dark);
 }
 
 </style>

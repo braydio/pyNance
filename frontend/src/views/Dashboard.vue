@@ -4,7 +4,7 @@
       <div class="greeting-block">
         <h1>Hello {{ userName }}, hi.</h1>
         <h2 class="date">Today is {{ currentDate }}</h2>
-        <h2 class="vibe">and things are still looking quite bleak.</h2>
+        <h2 class="vibe">and things are looking quite bleak.</h2>
       </div>
       <nav class="menu">
         <!-- Dashboard menu buttons -->
@@ -42,6 +42,7 @@
           </div>
           <AccountsTable />
         </div>
+        <div ></div>
       </section>
     </main>
 
@@ -60,6 +61,7 @@ import { useTransactions } from "@/composables/useTransactions.js";
 import NotificationsBar from "@/components/NotificationsBar.vue";
 import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue";
 import RecurringTransaction from "@/components/RecurringTransaction.vue";
+import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
 export default {
   name: "Dashboard",
@@ -71,6 +73,7 @@ export default {
     NotificationsBar,
     RecurringTransactionSection,
     RecurringTransaction,
+    AccountsReorderChart,
   },
   setup() {
     const {
