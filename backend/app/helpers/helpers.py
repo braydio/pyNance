@@ -11,14 +11,9 @@ from app.config import (
     PLAID_SECRET,
     logger,
 )
-from app.helper_utils import (
-    ensure_directory_exists,
-    ensure_file_exists,
-    load_json,
-    save_json_with_backup,
-)
-from app.sql_utils import Category, Session, save_account_balances, save_accounts_to_db
 
+from app.sql.account_logic import save_account_balances, upsert_accounts
+from app.extensions import Session
 
 # -------------------------
 # Plaid API Helpers
@@ -110,49 +105,6 @@ def get_item_info(access_token: str):
     except Exception as e:
         logger.error(f"Error in get_item_info: {e}")
         return None, None
-
-
-def save_initial_account_data(access_token: str, item_id: str):
-    """
-    Save the initial account data using the /accounts/get endpoint.
-    """
-    url = f"https://{PLAID_BASE_URL}/accounts/get"
-    headers = {"Content-Type": "application/json"}
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "access_token": access_token,
-    }
-    try:
-        response = requests.post(url, json=payload, headers=headers)
-        response.raise_for_status()
-        account_data = response.json()
-        ensure_file_exists(FILES["LINKED_ACCOUNTS"], default_content={})
-        try:
-            existing_data = load_json(FILES["LINKED_ACCOUNTS"])
-        except Exception:
-            existing_data = {}
-
-        for account in account_data["accounts"]:
-            account_id = account["account_id"]
-            existing_data[account_id] = {
-                "item_id": item_id,
-                "institution_name": account_data["item"].get(
-                    "institution_name", "Unknown Institution"
-                ),
-                "access_token": access_token,
-                "account_name": account["name"],
-                "type": account["type"],
-                "subtype": account["subtype"],
-                "balances": account.get("balances", {}),
-            }
-        save_json_with_backup(FILES["LINKED_ACCOUNTS"], existing_data)
-        # Save accounts to database via SQL utilities:
-        save_accounts_to_db(account_data["accounts"], item_id)
-        save_account_balances(account_data["accounts"])
-        logger.info(f"Account data saved for item_id {item_id}.")
-    except Exception as e:
-        logger.error(f"Error in save_initial_account_data: {e}")
 
 
 def fetch_and_populate_categories():
