@@ -1,10 +1,10 @@
 <template>
   <div class="controls">
-    <button class="theme-buttons-top" click="handleFetch" :disabled="isFetching">
+    <button class=".btn" click="handleFetch" :disabled="isFetching">
       <span v-if="isFetching">Refreshing Accounts…</span>
       <span v-else>Refresh Accounts</span>
     </button>
-    <button class="theme-buttons-top" @click="handleRefresh" :disabled="isRefreshing">
+    <button class=".btn" @click="handleRefresh" :disabled="isRefreshing">
       <span v-if="isRefreshing">Refreshing Activity…</span>
       <span v-else>Refresh Account Activity</span>
     </button>
@@ -56,19 +56,6 @@ export default {
 </script>
 
 <style scoped>
-@import '@/styles/global-colors.css';
-
-:root {
-  /* Gruvbox-inspired palette for Hyprland Arch Linux */
-  --background: #282828;    /* Dark Gruvbox background */
-  --foreground: #ebdbb2;    /* Light Gruvbox foreground */
-  --accent:rgb(36, 77, 39);        /* Accent yellow */
-  --error: #cc241d;         /* Error red for delete buttons */
-  --border: #3c3836;        /* Subtle border color */
-  --hover: #32302f;         /* Hover background color */
-  --input-bg: #1d2021;      /* Slightly darker background for inputs */
-}
-
 
 /* Accounts Table Container */
 .accounts-table {
@@ -114,7 +101,7 @@ export default {
 }
 
 /* Toggle Delete Buttons Button */
-.theme-buttons-top {
+.btn {
   padding: 0.5rem 1rem;
   background-color: var(--background);
   color: var(--foreground);
@@ -125,7 +112,7 @@ export default {
   font-weight: bold;
   transition: transform 0.2s ease;
 }
-.theme-buttons-top:hover {
+.btn:hover {
   color: var(--foreground);
   background-color: var(--hover);
   transform: translateY(-1px);
