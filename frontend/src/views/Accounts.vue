@@ -5,20 +5,20 @@
       <h2>Now with Transitions!</h2>
     </header>
 
-    <!-- Charts Section with Animated Transition -->
-    <section class="charts-section">
-      <transition-group name="fade" tag="div" class="charts-wrapper">
-        <NetYearComparisonChart key="net-year" />
-        <AssetsBarTrended key="assets-bar" />
-      </transition-group>
-    </section>
-
     <!-- Controls Grouping -->
     <section class="account-controls">
       <LinkAccount />
       <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshActivity" />
       <RefreshPlaidControls />
       <RefreshTellerControls />
+    </section>
+
+    <!-- Charts Section with Animated Transition -->
+    <section class="charts-section">
+      <transition-group name="fade" tag="div" class="charts-wrapper">
+        <NetYearComparisonChart key="net-year" />
+        <AssetsBarTrended key="assets-bar" />
+      </transition-group>
     </section>
 
     <!-- Account Group Tabs -->
