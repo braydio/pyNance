@@ -2,6 +2,7 @@
 
 from app.config import logger
 from app.extensions import db
+from app.helpers.plaid_helpers import get_categories
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate  # New import
@@ -20,6 +21,8 @@ def create_app():
         # db.create_all()
 
         # Import and register blueprints
+        from app.helpers.plaid_helpers import get_categories
+        from app.routes.transactions import transactions
         from app.routes.accounts import accounts
         from app.routes.charts import charts
         from app.routes.plaid import plaid_bp
@@ -27,7 +30,9 @@ def create_app():
         from app.routes.plaid_transactions import plaid_transactions
         from app.routes.teller_transactions import teller_transactions
 
-        app.register_blueprint(accounts, url_prefi="/api/accounts")
+        app.route(get_categories, url_prefix="/admin/load_categories")
+        app.register_blueprint(transactions, url_prefix="/api/transactions")
+        app.register_blueprint(accounts, url_prefix="/api/accounts")
         app.register_blueprint(charts, url_prefix="/api/charts")
         app.register_blueprint(plaid_bp, url_prefix="/api/plaid")
         app.register_blueprint(
@@ -35,6 +40,7 @@ def create_app():
         )
         app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
         app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
+
 
         logger.debug(
             "Blueprints registered: charts (/api/charts), Teller (/api/teller/transactions), Plaid transactions (/api/plaid/transactions), and Plaid investments (/api/plaid/investments)"
