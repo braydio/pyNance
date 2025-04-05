@@ -59,7 +59,7 @@ export default {
     );
     return response.data;
   },
-  
+
 
   async deleteAccount(provider, account_id) {
     let url = "";
