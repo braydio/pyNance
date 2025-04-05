@@ -1,0 +1,300 @@
+
+=== buttons.css ===
+/* === buttons.css === */
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--divider);
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 6px var(--hover-glow);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-accent-yellow);
+  color: var(--color-accent-yellow);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-accent-yellow);
+  color: var(--color-bg-dark);
+}
+
+.btn-pill {
+  border-radius: 9999px;
+  padding: 0.4rem 1.25rem;
+  font-weight: bold;
+}
+
+/* Success/alert variants */
+.btn-success {
+  background-color: var(--color-accent-mint);
+  color: var(--color-bg-dark);
+}
+
+.btn-alert {
+  background-color: var(--bar-alert);
+  color: var(--color-bg-dark);
+}
+
+
+
+=== global-colors.css ===
+:root {
+  /* twilight nebula: deep purples, ethereal blues, glowing accents */
+
+  --color-bg-dark: #1b1a2e;          /* rich, deep space purple */
+  --color-bg-secondary: #2a273f;     /* twilight shadow purple */
+  --page-bg: #14131f;                /* deep nebula core black */
+  --background: #1b1a2e;             /* unified dark background */
+  --themed-bg: #2a273f;              /* card or surface background */
+  --themed-border: #3c3859;          /* faint purple border */
+
+  --color-text-light: #e0def4;       /* soft, cool lavender */
+  --color-text-muted: #9a8fbf;       /* faded lavender-gray for less important text */
+  --color-accent-yellow: #f6c177;    /* warm honey gold */
+  --themed-yl: #f6c177;              /* alias */
+
+  /* twilight green & cosmic magenta accents */
+  --color-accent-mint: #a6e3a1;      /* glowy mint — for buttons, active states */
+  --color-accent-magenta: #d782d9;   /* soft magenta — for highlights, active pills */
+
+  /*  cosmic blues */
+  --color-accent-ice: #89dceb;       /* frosty cyan — secondary accents */
+  --color-accent-void: #1e1e28;      /* near-black, for overlays, shadows */
+
+  /*  shadow & separator neutrals */
+  --divider: #2e2a4f;                /* soft section dividers */
+  --shadow: rgba(0, 0, 0, 0.25);     /* card or modal shadow */
+
+  /* gradient bars, neutral vs alert, etc. */
+  --bar-gradient-start: #9ccfd8;     /* cool teal */
+  --bar-gradient-end: #c4a7e7;       /* dreamy violet-pink */
+  --bar-neutral: #9ccfd8;
+  --bar-alert: #eb6f92;              /* cosmic rose pink */
+  --bar-success: #a6e3a1;            /* success green */
+
+  /* error + hover states */
+  --error: #eb6f92;
+  --hover: #22203a;
+  --hover-glow: #302c4d;             /* subtle outer glow on hoverable elements */
+
+  /*  interactive elements */
+  --button-bg: #2c2540;
+  --button-hover-bg: #3a2f5a;
+  --link-color: #c4a7e7;
+  --link-hover-color: #f6c177;
+
+  /*  glowy neon accents */
+  --neon-purple: #b4befe;
+  --neon-mint: #94e2d5;
+}
+
+:root {
+  /* --- Core Backgrounds --- */
+  --color-bg-dark: #1b1a2e;          /* rich, deep space purple */
+  --color-bg-secondary: #2a273f;     /* twilight shadow purple */
+  --page-bg: #14131f;                /* deep nebula core black */
+  --background: #1b1a2e;             /* unified dark background */
+  --themed-bg: #2a273f;              /* card/surface background */
+  --themed-border: #3c3859;          /* subtle purple border */
+  --divider: #2e2a4f;                /* section divider lines */
+  --shadow: rgba(0, 0, 0, 0.25);     /* card shadow */
+  --hover-glow: #302c4d;             /* ambient glow on hover */
+
+  /* --- Text Colors --- */
+  --color-text-light: #e0def4;       /* main text */
+  --color-text-muted: #9a8fbf;       /* faded for labels/descriptions */
+  --themed-fg: var(--color-text-light);
+
+  /* --- Accents --- */
+  --color-accent-yellow: #f6c177;    /* warm honey yellow */
+  --themed-yl: var(--color-accent-yellow);
+
+  --color-accent-mint: #a6e3a1;      /* nebula mint for success states */
+  --color-accent-magenta: #d782d9;   /* glowing soft pink/purple */
+
+  --color-accent-ice: #89dceb;       /* cool cyan */
+  --color-accent-void: #1e1e28;      /* deep overlay bg */
+
+  --neon-purple: #b4befe;            /* neon accent */
+  --neon-mint: #94e2d5;              /* neon mint highlight */
+
+  /* --- Charts & Bars --- */
+  --bar-gradient-start: #9ccfd8;     /* soft teal */
+  --bar-gradient-end: #c4a7e7;       /* dreamy violet-pink */
+  --bar-neutral: #9ccfd8;
+  --bar-alert: #eb6f92;              /* soft rose */
+  --bar-success: #a6e3a1;
+
+  /* --- Interaction States --- */
+  --error: #eb6f92;
+  --hover: #22203a;
+
+  --button-bg: #2c2540;
+  --button-hover-bg: #3a2f5a;
+  --link-color: #c4a7e7;
+  --link-hover-color: #f6c177;
+
+  --dev-alert-bg: #ff4b4b;     /* vivid crimson warning */
+  --dev-alert-border: #a80f2c; /* deep blood red */
+  --dev-alert-text: #ffffff;   /* bright contrast for legibility */
+
+}
+
+
+
+=== layout.css ===
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.flex-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+}
+
+.container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+.card {
+  background-color: var(--themed-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
+  padding: 1rem;
+}
+
+
+
+=== typography.css ===
+/* === buttons.css === */
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--divider);
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 6px var(--hover-glow);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-accent-yellow);
+  color: var(--color-accent-yellow);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-accent-yellow);
+  color: var(--color-bg-dark);
+}
+
+.btn-pill {
+  border-radius: 9999px;
+  padding: 0.4rem 1.25rem;
+  font-weight: bold;
+}
+
+/* Success/alert variants */
+.btn-success {
+  background-color: var(--color-accent-mint);
+  color: var(--color-bg-dark);
+}
+
+.btn-alert {
+  background-color: var(--bar-alert);
+  color: var(--color-bg-dark);
+}
+
+
+
+=== utilities.css ===
+* === utilities.css === */
+
+/* ---------- Spacing Utilities ---------- */
+/* margin (m-*) and padding (p-*) classes */
+.m-0 { margin: 0 !important; }
+.m-1 { margin: 0.25rem !important; }
+.m-2 { margin: 0.5rem !important; }
+.m-3 { margin: 1rem !important; }
+.m-4 { margin: 2rem !important; }
+
+.mt-1 { margin-top: 0.25rem !important; }
+.mt-2 { margin-top: 0.5rem !important; }
+/* ... you get the idea for mt-3, mb-4, etc. */
+
+.p-0 { padding: 0 !important; }
+.p-1 { padding: 0.25rem !important; }
+.p-2 { padding: 0.5rem !important; }
+.p-3 { padding: 1rem !important; }
+.p-4 { padding: 2rem !important; }
+
+/* ---------- Z-Index Utilities ---------- */
+.z-0 { z-index: 0 !important; }
+.z-10 { z-index: 10 !important; }
+.z-50 { z-index: 50 !important; }
+.z-999 { z-index: 999 !important; }
+
+/* ---------- Animation & Transition Utilities ---------- */
+
+/* Simple fade in/out transition classes for a <transition name=\"fade\"> in Vue */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+/* Slide up transition for <transition name=\"slide-up\"> */
+.slide-up-enter-active, .slide-up-leave-active {
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.slide-up-enter-from, .slide-up-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+/* More advanced animations can be done with keyframes... */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+
+
