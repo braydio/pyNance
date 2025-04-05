@@ -2,9 +2,9 @@
   <div class="dashboard">
     <header class="dashboard-header">
       <div class="greeting-block">
-        <h1>Ah, {{ userName }} my old friend!</h1>
+        <h1>Hello {{ userName }}, hi.</h1>
         <h2 class="date">Today is {{ currentDate }}</h2>
-        <h2 class="vibe">and things are looking quite bleak.</h2>
+        <h2 class="vibe">and things are still looking quite bleak.</h2>
       </div>
       <nav class="menu">
         <!-- Dashboard menu buttons -->
