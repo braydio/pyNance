@@ -5,6 +5,78 @@ from app.models import RecurringTransaction
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
 
+@accounts.route("/refresh_accounts", methods=["POST"])
+def refresh_all_accounts():
+    """
+    Unified endpoint to refresh account data for all providers (Plaid + Teller).
+    Iterates through all accounts and refreshes data based on link_type.
+    """
+    try:
+        logger.debug("Starting refresh of all linked accounts.")
+        accounts = Account.query.all()
+        updated_accounts = []
+
+        # Load Teller tokens once
+        teller_tokens = load_tokens()
+
+        for account in accounts:
+            if account.link_type == "Plaid":
+                access_token = account.access_token
+                if not access_token:
+                    logger.warning(f"No Plaid token for {account.account_id}")
+                    continue
+
+                logger.debug(f"Refreshing Plaid account {account.account_id}")
+                updated = account_logic.refresh_data_for_plaid_account(
+                    access_token, PLAID_BASE_URL
+                )
+                if updated:
+                    account.last_refreshed = datetime.utcnow()
+                    updated_accounts.append(account.name)
+
+            elif account.link_type == "Teller":
+                access_token = None
+                for token in teller_tokens:
+                    if token.get("user_id") == account.user_id:
+                        access_token = token.get("access_token")
+                        break
+                if not access_token:
+                    logger.warning(f"No Teller token for {account.account_id}")
+                    continue
+
+                logger.debug(f"Refreshing Teller account {account.account_id}")
+                updated = account_logic.refresh_data_for_teller_account(
+                    account,
+                    access_token,
+                    FILES["TELLER_DOT_CERT"],
+                    FILES["TELLER_DOT_KEY"],
+                    TELLER_API_BASE_URL,
+                )
+                if updated:
+                    account.last_refreshed = datetime.utcnow()
+                    updated_accounts.append(account.name)
+
+            else:
+                logger.info(
+                    f"Skipping account {account.account_id} with unknown link_type {account.link_type}"
+                )
+
+        db.session.commit()
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "All linked accounts refreshed.",
+                    "updated_accounts": updated_accounts,
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error in unified refresh_accounts: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 @accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
     """
