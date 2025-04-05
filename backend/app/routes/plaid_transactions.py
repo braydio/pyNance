@@ -127,7 +127,7 @@ def refresh_plaid_accounts():
                 f"Refreshing Plaid account {account.account_id} using token: {access_token}"
             )
             updated = account_logic.refresh_data_for_plaid_account(
-                account, access_token, PLAID_BASE_URL
+                access_token, PLAID_BASE_URL
             )
             if updated:
                 updated_accounts.append(account.name)
