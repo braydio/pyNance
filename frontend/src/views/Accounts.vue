@@ -1,30 +1,58 @@
 <template>
-  <div class="accounts-page">
-    <header class="accounts-header">
-      <h1>Accounts Management</h1>
-      <h2>Now with Accounts!</h2>
+  <!-- Container to center page and set max-width -->
+  <div class="accounts-page container">
+
+    <!-- Header -->
+    <header class="accounts-header flex-center p-2">
+      <div>
+        <h1>Accounts Management</h1>
+        <h2>Now with Accounts!</h2>
+      </div>
     </header>
 
-
-    <!-- Charts Section with Animated Transition -->
-    <section class="charts-section">
-      <transition-group name="fade" tag="div" class="charts-wrapper">
-        <section class="account-controls">
-        <NetYearComparisonChart key="net-year" />
-        <AssetsBarTrended key="assets-bar" />
-        <AccountsReorderChart key="top-accounts" />
-      </section>
-      </transition-group>
+    <!-- Charts Section -->
+    <section class="charts-section grid-3col gap-2 m-2">
+      <!-- Wrap each chart in a card for consistent styling -->
+      <div class="card">
+        <NetYearComparisonChart />
+      </div>
+      <div class="card">
+        <AssetsBarTrended />
+      </div>
+      <div class="card">
+        <AccountsReorderChart />
+      </div>
     </section>
 
+    
+    <!-- Controls Widget: Hideable section attached to the Accounts Table -->
+    <section class="controls-widget m-2 position-relative">
+      <!-- Toggle icon positioned statically -->
+      <button class="btn btn-pill m-1" @click="toggleControls">Controls
+      </button>
+      <transition name="slide-horizontal" mode="out-in">
+        <div v-if="showControls" class="card p-2 mt-2 controls-container">
+          <div class="flex-center gap-1">
+            <LinkAccount class="btn btn-outline btn-pill" />
+            <RefreshPlaidControls class="btn btn-outline btn-pill" />
+            <RefreshTellerControls class="btn btn-outline btn-pill" />
+          </div>
+        </div>
+      </transition>
+    </section>
+    <!-- Accounts Table with Slide Transition -->
+    <transition name="slide-horizontal" mode="out-in">
+      <div class="accounts-overview card m-2" :key="activeAccountGroup">
+        <AccountsTable :accountGroup="activeAccountGroup" />
+      </div>
+    </transition>
+
     <!-- Account Group Tabs -->
-    <div class="account-tabs">
-    <LinkAccount />
-    <RefreshPlaidControls />
-        <RefreshTellerControls />
-     <button
+    <div class="account-tabs flex-center m-2">
+      <button
         v-for="group in accountGroups"
         :key="group"
+        class="btn btn-pill m-1"
         :class="{ 'active-tab': activeAccountGroup === group }"
         @click="activeAccountGroup = group"
       >
@@ -32,15 +60,8 @@
       </button>
     </div>
 
-    <!-- Accounts Table with Animated Transition -->
-    <transition name="fade" mode="out-in">
-      <div class="accounts-overview" :key="activeAccountGroup">
-        <AccountsTable :accountGroup="activeAccountGroup" />
-      </div>
-    </transition>
-
     <!-- Footer -->
-    <footer class="accounts-footer">
+    <footer class="accounts-footer flex-center p-2 mt-3">
       &copy; good dashroad.
     </footer>
   </div>
@@ -53,7 +74,6 @@ import NetYearComparisonChart from "@/components/NetYearComparisonChart.vue";
 import AssetsBarTrended from "@/components/AssetsBarTrended.vue";
 import RefreshTellerControls from "@/components/RefreshTellerControls.vue";
 import RefreshPlaidControls from "@/components/RefreshPlaidControls.vue";
-import RefreshControls from "@/components/RefreshControls.vue"; // Assuming this exists
 import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
 export default {
@@ -65,7 +85,6 @@ export default {
     AssetsBarTrended,
     RefreshTellerControls,
     RefreshPlaidControls,
-    RefreshControls,
     AccountsReorderChart,
   },
   data() {
@@ -78,10 +97,13 @@ export default {
       }),
       activeAccountGroup: "Checking",
       accountGroups: ["Checking", "Savings", "Credit"],
+      showControls: true, // Controls widget is shown by default
     };
   },
   methods: {
-    // Dummy refresh methods – replace with your logic.
+    toggleControls() {
+      this.showControls = !this.showControls;
+    },
     fetchAccounts() {
       console.log("Fetching accounts...");
     },
@@ -92,42 +114,44 @@ export default {
 };
 </script>
 
-<style scoped>
 
-/* Fade Transition Classes */
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.5s;
+<style scoped>
+/* Slide-horizontal Transition */
+.slide-horizontal-enter-active,
+.slide-horizontal-leave-active {
+  transition: transform 0.4s ease, opacity 0.4s ease;
 }
-.fade-enter-from,
-.fade-leave-to {
+.slide-horizontal-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+.slide-horizontal-leave-to {
+  transform: translateX(100%);
   opacity: 0;
 }
 
+/* Page Layout */
 .accounts-page {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--page-bg);
   color: var(--color-text-light);
-  padding: 1rem;
-  gap: 2rem;
 }
 
-/* Updated Header to Match Dashboard */
+/* Header styling */
 .accounts-header {
   background-color: var(--color-bg-secondary);
-  padding: 1.5rem 1rem;
-  text-align: center;
   border-bottom: 1px solid var(--themed-border);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow);
+  text-align: center;
 }
 .accounts-header h1 {
   margin: 0;
   color: var(--color-accent-yellow);
   font-size: 2rem;
-  text-shadow: 0 0 6px var(--);
+  text-shadow: 0 0 6px var(--color-accent-yellow);
 }
 
 /* Charts Section */
@@ -138,50 +162,14 @@ export default {
   border: 1px solid var(--divider);
   box-shadow: 0 2px 12px var(--shadow);
 }
-.charts-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+
+/* Controls Widget */
+.controls-widget {
+  /* Ensure relative positioning for the static toggle icon */
+  position: relative;
 }
 
-/* Controls Section */
-.account-controls {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-  padding: 1rem;
-  background-color: var(--background);
-  border-radius: 12px;
-  border: 1px solid var(--divider);
-  box-shadow: 0 2px 8px var(--shadow);
-}
 
-/* Account Tabs */
-.account-tabs {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
-}
-.account-tabs button {
-  padding: 0.5rem 1rem;
-  background-color: var(--button-bg);
-  color: var(--color-text-light);
-  border: 1px solid var(--themed-border);
-  border-radius: 6px;
-  cursor: pointer;
-  font-family: "Input Mono Condensed Ita Nerd Font", monospace;
-  transition: background-color 0.3s;
-}
-.account-tabs button:hover {
-  background-color: var(--button-hover-bg);
-}
-.account-tabs .active-tab {
-  background-color: var(--color-accent-mint);
-  color: var(--color-bg-dark);
-  font-weight: bold;
-  box-shadow: 0 0 6px var(--neon-mint);
-}
 
 /* Accounts Table Section */
 .accounts-overview {
@@ -192,16 +180,25 @@ export default {
   box-shadow: 0 2px 12px var(--shadow);
 }
 
+/* Account Tabs */
+.account-tabs button {
+  border: 1px solid var(--divider);
+}
+.account-tabs .active-tab {
+  background-color: var(--color-accent-mint) !important;
+  color: var(--color-bg-dark) !important;
+  box-shadow: 0 0 6px var(--neon-mint);
+}
+.btn btn-pill m-1-hover{
+  background-color: var(--color-bg-dark)
+}
 /* Footer */
 .accounts-footer {
   background-color: var(--color-bg-secondary);
-  padding: 1rem;
-  text-align: center;
   border-top: 1px solid var(--themed-border);
   font-size: 0.9rem;
   color: var(--color-text-muted);
-  border-radius: 12px;
+  border-radius: 8px;
   box-shadow: 0 -2px 8px var(--shadow);
 }
 </style>
-
