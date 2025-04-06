@@ -2,28 +2,27 @@
   <div class="accounts-page">
     <header class="accounts-header">
       <h1>Accounts Management</h1>
-      <h2>Now with Transitions!</h2>
+      <h2>Now with Accounts!</h2>
     </header>
 
-    <!-- Controls Grouping -->
-    <section class="account-controls">
-      <LinkAccount />
-      <RefreshPlaidControls />
-      <RefreshTellerControls />
-    </section>
 
     <!-- Charts Section with Animated Transition -->
     <section class="charts-section">
       <transition-group name="fade" tag="div" class="charts-wrapper">
+        <section class="account-controls">
         <NetYearComparisonChart key="net-year" />
         <AssetsBarTrended key="assets-bar" />
         <AccountsReorderChart key="top-accounts" />
+      </section>
       </transition-group>
     </section>
 
     <!-- Account Group Tabs -->
     <div class="account-tabs">
-      <button
+    <LinkAccount />
+    <RefreshPlaidControls />
+        <RefreshTellerControls />
+     <button
         v-for="group in accountGroups"
         :key="group"
         :class="{ 'active-tab': activeAccountGroup === group }"
@@ -171,7 +170,7 @@ export default {
   border: 1px solid var(--themed-border);
   border-radius: 6px;
   cursor: pointer;
-  font-family: "Fira Code", monospace;
+  font-family: "Input Mono Condensed Ita Nerd Font", monospace;
   transition: background-color 0.3s;
 }
 .account-tabs button:hover {
