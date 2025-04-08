@@ -14,7 +14,7 @@ export const refreshAccounts = async () => {
 
 export const getAccounts = async () => {
     try {
-        const response = await axios.get(`api/teller/get_accounts`);
+        const response = await axios.get(`api/accounts/get_accounts`);
         return response.data;
     } catch (error) {
         console.error("Error fetching accounts:", error.response || error);
