@@ -24,7 +24,7 @@
       </div>
     </section>
 
-    
+
     <!-- Controls Widget: Hideable section attached to the Accounts Table -->
     <section class="controls-widget m-2 position-relative">
       <!-- Toggle icon positioned statically -->
