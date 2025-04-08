@@ -15,7 +15,7 @@ export default {
     return {
       isRefreshing: false,
       // Optionally, set a default user_id; you can also pass this as a prop.
-      userId: import.meta.env.USER_ID_PLAID, 
+      userId: import.meta.env.USER_ID_PLAID,
     };
   },
   methods: {
@@ -23,7 +23,7 @@ export default {
       this.isRefreshing = true;
       try {
         const response = await axios.post("/api/plaid/transactions/refresh_accounts", {
-          user_id: import.meta.env.USER_ID_PLAID, 
+          user_id: import.meta.env.USER_ID_PLAID,
         });
         if (response.data.status === "success") {
           const updatedAccounts = response.data.updated_accounts;
@@ -50,7 +50,7 @@ export default {
   gap: 0.5rem;
 }
 .controls button {
-  background-color: var(--gruvbox-accent);
+    background-color: var(--color-bg-dark);
   color: var(--gruvbox-fg);
   border: 1px solid var(--gruvbox-accent);
   padding: 0.5rem 1rem;
