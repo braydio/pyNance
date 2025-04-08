@@ -12,22 +12,22 @@
           Net: ${{ summary.totalNet.toLocaleString() }}
         </div>
       </div>
-  
+
       <div class="chart-controls">
         <button @click="changeGranularity('daily')" :class="{active: granularity === 'daily'}">Daily</button>
         <button @click="setWeekly" :class="{active: granularity === 'weekly'}">Weekly</button>
         <button @click="setMonthly" :class="{active: granularity === 'monthly'}">Monthly</button>
       </div>
-  
+
       <canvas ref="chartCanvas"></canvas>
     </div>
   </template>
-  
+
   <script>
   import axios from "axios";
   import { ref, onMounted, nextTick, computed } from "vue";
-  import { Chart } from "chart.js/auto";
-  
+  import { Chart } from "chart.jsauto";
+
   export default {
     name: "NetIncomeChart",
     setup() {
@@ -35,7 +35,7 @@
       const chartCanvas = ref(null);
       const chartData = ref([]);
       const granularity = ref("daily");
-  
+
       const fetchData = async () => {
         try {
           const response = await axios.get("/api/charts/cash_flow", {
@@ -49,14 +49,14 @@
           console.error("Error fetching data:", error);
         }
       };
-  
+
       const updateChart = async () => {
         await nextTick();
         const ctx = chartCanvas.value.getContext("2d");
         if (chartInstance.value) {
           chartInstance.value.destroy();
         }
-  
+
         const labels = chartData.value.map(item => item.date);
         const netValues = chartData.value.map(item => item.income - item.expenses);
         const gradients = netValues.map(value => {
@@ -70,7 +70,7 @@
           }
           return gradient;
         });
-  
+
         if (chartInstance.value) chartInstance.value.destroy();
         chartInstance.value = new Chart(ctx, {
           type: "bar",
@@ -116,26 +116,26 @@
           }
         });
       };
-  
+
       const summary = computed(() => {
         const totalIncome = chartData.value.reduce((sum, d) => sum + d.income, 0);
         const totalExpenses = chartData.value.reduce((sum, d) => sum + d.expenses, 0);
         const totalNet = totalIncome - totalExpenses;
         return { totalIncome, totalExpenses, totalNet };
       });
-  
+
       const setWeekly = () => {
         granularity.value = "weekly";
         fetchData();
       };
-  
+
       const setMonthly = () => {
         granularity.value = "monthly";
         fetchData();
       };
-  
+
       onMounted(() => fetchData());
-  
+
       return {
         chartCanvas,
         summary,
@@ -146,13 +146,13 @@
     }
   };
   </script>
-  
+
   <style scoped>
 @import '@/styles/global-colors.css';
 
   .active {
     background-color: #fabd2f;
   }
-  
+
 </style>
-  
+
