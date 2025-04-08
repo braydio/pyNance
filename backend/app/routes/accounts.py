@@ -1,6 +1,6 @@
 from flask import Blueprint, jsonify, request
 from app.extensions import db
-from app.models import RecurringTransaction
+from app.models import RecurringTransaction, Account
 from app.config import logger
 
 # Blueprint for generic accounts routes
@@ -79,24 +79,26 @@ def refresh_all_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @accounts.route("/get_accounts", methods=["GET"])
-def get_accounts():
-    """
-    Generic endpoint to fetch accounts.
-    Routes the request to the appropriate provider-specific endpoint based on the 'provider'
-    query parameter. Defaults to 'teller' if not provided.
-    """
-    provider = request.args.get("provider", "teller").lower()
-    if provider == "plaid":
-        # Import and call the Plaid get_accounts endpoint
-        from app.routes.plaid import get_accounts as plaid_get_accounts
-        return plaid_get_accounts()
-    elif provider == "teller":
-        # Import and call the Teller get_accounts endpoint
-        from app.routes.teller_transactions import get_accounts as teller_get_accounts
-        return teller_get_accounts()
-    else:
-        return jsonify({"status": "error", "message": "Invalid provider specified"}), 400
 
+
+
+
+@accounts.route("/get_accounts", methods=["GET"])
+def get_accounts():
+    try:
+        accounts = Account.query.all()
+        data = [
+            {
+                "id": a.id,
+                "name": a.name,
+                "provider": a.link_type,
+                "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None
+            }
+            for a in accounts
+        ]
+        return jsonify({"status": "success", "accounts": data}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
 @accounts.route("/<account_id>/recurring", methods=["GET"])
 def get_recurring(account_id):
     """
