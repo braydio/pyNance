@@ -90,7 +90,6 @@ export default {
           scales: {
             x: {
               ticks: {
-                autoSkip: true,
                 maxTicksLimit: 10,
                 color: getStyle("--color-text-muted"),
                 font: { family: "'Fira Code', monospace", size: 10 },
@@ -157,13 +156,14 @@ export default {
 
 .daily-net-chart {
   margin: 1rem;
-  background-color: var(--themed-bg);
+  background-color: var(--color-bg-sec);
   padding: 1rem;
   border-radius: 12px;
   box-shadow: 0 4px 16px var(--shadow), 0 0 6px var(--hover-glow);
   position: relative;
   opacity: 0.95;
   height: 400px;
+  min-width: 500px;
   border: 1px solid var(--divider);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
 }
@@ -181,7 +181,7 @@ export default {
   text-align: right;
   box-shadow: 0 2px 8px var(--shadow);
   backdrop-filter: blur(4px);
-  border: 1px solid var(--divider);
+  border: 5px solid var(--divider);
   transition: background 0.3s ease;
 }
 
