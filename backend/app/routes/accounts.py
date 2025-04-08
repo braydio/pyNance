@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction
+from app.config import logger
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
