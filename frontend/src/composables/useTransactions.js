@@ -1,4 +1,5 @@
 // File: src/composables/useTransactions.js
+
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
@@ -12,8 +13,12 @@ export function useTransactions(pageSize = 15) {
 
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(`/api/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`);
+      // Updated to read from res.data.data
+      const res = await axios.get(
+        `/api/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`
+      );
       if (res.data.status === "success") {
+        // Change: access transactions and total from the nested data object
         transactions.value = res.data.data.transactions;
         totalPages.value = Math.ceil(res.data.data.total / pageSize);
       }
@@ -38,7 +43,9 @@ export function useTransactions(pageSize = 15) {
 
   const filteredTransactions = computed(() => {
     let filtered = transactions.value.filter((tx) =>
-      Object.values(tx).some(val => val && val.toString().toLowerCase().includes(searchQuery.value.toLowerCase()))
+      Object.values(tx).some((val) =>
+        val && val.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
+      )
     );
     if (sortKey.value) {
       filtered.sort((a, b) => {
@@ -65,3 +72,4 @@ export function useTransactions(pageSize = 15) {
     filteredTransactions,
   };
 }
+
