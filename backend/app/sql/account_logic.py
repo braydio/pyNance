@@ -513,7 +513,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         account_id=account_id,
                         amount=amount,
                         date=date_str,
-                        description=descritption_str,
+                        description=description_str,
                         merchant_name=merchant_name,
                         merchant_typ=merchant_typ,
                         category=category_string,
