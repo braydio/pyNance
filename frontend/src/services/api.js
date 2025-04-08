@@ -10,9 +10,8 @@ const apiClient = axios.create({
 });
 
 export default {
-  async getAccounts(provider = "teller") {
-    // Uses the new generic accounts endpoint with a provider query parameter.
-    const response = await apiClient.get(`/accounts/get_accounts?provider=${provider}`);
+  async getAccounts() {
+    const response = await apiClient.get(`/accounts/get_accounts`);
     return response.data;
   },
   async refreshAccounts() {
@@ -38,7 +37,7 @@ export default {
     return response.data;
   },
   async updateTransaction(transactionData) {
-    const response = await apiClient.put("/teller/transactions/update", transactionData);
+    const response = await apiClient.put("/transactions/update", transactionData);
     return response.data;
   },
   async generateLinkToken(provider, payload = {}) {
