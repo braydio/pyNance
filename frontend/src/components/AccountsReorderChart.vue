@@ -57,7 +57,7 @@ export default {
   methods: {
     async fetchAccounts() {
       try {
-        const response = await axios.get("/api/teller/transactions/get_accounts");
+        const response = await axios.get("/api/transactions/get_accounts");
         if (response.data && response.data.status === "success") {
           this.accounts = response.data.data.accounts || response.data.data;
           this.filterAccounts();
@@ -123,7 +123,7 @@ export default {
   color: var(--color-text-light);
   border-radius: 8px;
   margin: 1rem;
-}
+  }
 
 .chart-summary {
   display: flex;
@@ -136,8 +136,8 @@ export default {
 
 .group h3 {
   margin-bottom: 0.5rem;
-  color: var(--color-accent-yellow);
-  font-family: "Fira Code", monospace;
+  color: var(--color-text-muted);
+  font-family: "SourceCodeProVF", monospace;
 }
 
 .account-bar {
