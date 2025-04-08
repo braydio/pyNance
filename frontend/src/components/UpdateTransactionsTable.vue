@@ -26,41 +26,41 @@
           <!-- Amount -->
           <td>
             <span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span>
-            <input 
-              v-else 
-              type="number" 
-              step="0.01" 
-              v-model.number="tx.amount" 
+            <input
+              v-else
+              type="number"
+              step="0.01"
+              v-model.number="tx.amount"
             />
           </td>
 
           <!-- Description -->
           <td>
             <span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span>
-            <input 
-              v-else 
-              type="text" 
-              v-model="tx.description" 
+            <input
+              v-else
+              type="text"
+              v-model="tx.description"
             />
           </td>
 
           <!-- Category -->
           <td>
             <span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span>
-            <input 
-              v-else 
-              type="text" 
-              v-model="tx.category" 
+            <input
+              v-else
+              type="text"
+              v-model="tx.category"
             />
           </td>
 
           <!-- Merchant Name -->
           <td>
             <span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span>
-            <input 
-              v-else 
-              type="text" 
-              v-model="tx.merchant_name" 
+            <input
+              v-else
+              type="text"
+              v-model="tx.merchant_name"
             />
           </td>
 
@@ -106,7 +106,6 @@ export default {
   },
   methods: {
     formatAmount(amount) {
-      // Format as accounting-style currency, e.g. negatives in parentheses
       const number = parseFloat(amount);
       const formatter = new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -119,7 +118,6 @@ export default {
     },
     editTransaction(index) {
       const tx = this.transactions[index];
-      // Keep a backup of original data in case user cancels
       tx._backup = { ...tx };
       tx.isEditing = true;
     },
