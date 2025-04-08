@@ -1,6 +1,6 @@
 <template>
     <div class="recurring-transactions-section">
-  
+
       <!-- Notifications/Reminders Section -->
       <div class="notifications-container" v-if="notifications.length">
         <h3>Upcoming Recurring Transactions</h3>
@@ -12,7 +12,7 @@
           {{ notif }}
         </p>
       </div>
-  
+
       <!-- Account Selection Dropdown -->
       <div class="account-dropdown-section">
         <label>Select an Account:</label>
@@ -22,7 +22,7 @@
           </option>
         </select>
       </div>
-  
+
       <!-- Manual Recurring Transaction (User-Defined) -->
       <div class="manual-recurring-section">
         <label for="manualDescription">Description:</label>
@@ -32,7 +32,7 @@
           type="text"
           placeholder="Ex: Netflix subscription"
           />
-  
+
         <label for="manualAmount">Amount ($):</label>
         <input
           id="manualAmount"
@@ -40,7 +40,7 @@
           type="number"
           step="0.01"
         />
-  
+
         <label for="manualFrequency">Frequency:</label>
         <select id="manualFrequency" v-model="frequency">
           <option value="daily">Daily</option>
@@ -48,14 +48,14 @@
           <option value="monthly">Monthly</option>
           <option value="yearly">Yearly</option>
         </select>
-  
+
         <label for="manualNextDue">Next Due Date:</label>
         <input
           id="manualNextDue"
           v-model="nextDueDate"
           type="date"
         />
-  
+
         <label for="manualNotes">Notes:</label>
         <input
           id="manualNotes"
@@ -63,12 +63,12 @@
           type="text"
           placeholder="Any extra info..."
         />
-  
+
         <button @click="saveRecurring">Save</button>
       </div>
     </div>
   </template>
-  
+
   <script>
 import axios from "axios";
 import api from "@/services/api";
@@ -95,14 +95,8 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        let response;
-        if (this.provider === "plaid") {
-          response = await axios.get("/api/plaid/get_accounts");
-        } else {
-          response = await axios.get("/api/teller/transactions/get_accounts");
-        }
-
-        const accounts = response.data.accounts || response.data;  // Adjust if your API shape differs
+        let response = await axios.get("/api/accounts/get_accounts");
+        let accounts = response.data.accounts || response.data;
 
         this.accounts = accounts.filter(acc => acc.type !== 'liability');
 
@@ -161,7 +155,7 @@ export default {
   }
 };
 </script>
-  
+
 <style scoped>
 @import '@/styles/global-colors.css';
 
@@ -173,7 +167,7 @@ export default {
     color: var(--gruvbox-fg);
     font-family: "Fira Code", monospace;
   }
-  
+
   .notifications-container {
     background-color: var(--page-bg, #1d2021);
     color: var(--gruvbox-fg);
@@ -181,12 +175,12 @@ export default {
     border-radius: 6px;
     margin-bottom: 1rem;
   }
-  
+
   .notification-message {
     margin: 0.25rem 0;
     font-size: 0.9rem;
   }
-  
+
   /* Account dropdown section */
   .account-dropdown-section {
     margin-bottom: 1rem;
@@ -202,7 +196,7 @@ export default {
     color: var(--gruvbox-fg);
     cursor: pointer;
   }
-  
+
   /* Form for manual recurring */
   .manual-recurring-section {
     display: flex;
@@ -232,4 +226,4 @@ export default {
   }
 
 </style>
-  
+
