@@ -1,9 +1,10 @@
+
 <template>
-  <nav class="menu">
-    <router-link to="/">Dashboard</router-link>
-    <router-link to="/accounts">Accounts</router-link>
-    <router-link to="/transactions">Transactions</router-link>
-    <router-link to="/gallery">Gallery</router-link>
+  <nav class="menu flex-center p-2 z-50">
+    <router-link to="/" class="nav-link">Dashboard</router-link>
+    <router-link to="/accounts" class="nav-link">Accounts</router-link>
+    <router-link to="/transactions" class="nav-link">Transactions</router-link>
+    <router-link to="/gallery" class="nav-link">Gallery</router-link>
   </nav>
 </template>
 
@@ -14,23 +15,38 @@ export default {
 </script>
 
 <style scoped>
-@import '@/styles/global-colors.css';
+
+.nav-link.router-link-exact-active {
+  background-color: var(--hover);
+  color: var(--color-accent-yellow);
+  font-weight: bold;
+  box-shadow: 0 0 6px var(--hover-glow);
+}
 
 .menu {
-  background: var(--header-bg);
-  padding: 15px;
-  display: flex;
-  justify-content: center;
-  gap: 20px;
-}
-.menu a {
-  color: var(--text-color);
-  text-decoration: none;
-  font-size: 1rem;
-  transition: color 0.3s;
-}
-.menu a:hover {
-  color: var(--accent-color);
+  background-color: var(--background);
+  border-bottom: 1px solid var(--divider);
+  box-shadow: 0 2px 4px var(--shadow);
+  gap: 2rem;
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(6px);
 }
 
+.nav-link {
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: color 0.3s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+  text-decoration: none;
+}
+
+.nav-link:hover {
+  color: var(--link-hover-color);
+  background-color: var(--hover);
+  box-shadow: 0 0 6px var(--hover-glow);
+}
 </style>
+
