@@ -18,7 +18,7 @@
         />
       </div>
 
-      <TransactionsTable
+      <UpdateTransactionsTable
         :transactions="filteredTransactions"
         :sort-key="sortKey"
         :sort-order="sortOrder"
