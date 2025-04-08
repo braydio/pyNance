@@ -124,8 +124,7 @@ export default {
     async updateTransaction(index) {
       const tx = this.transactions[index];
       try {
-        // Example: your Teller endpoint for updating a transaction
-        const response = await axios.put("/api/teller/transactions/update", tx);
+        const response = await axios.put("/api/transactions/update", tx);
         if (response.data.status === "success") {
           tx.isEditing = false;
           delete tx._backup;
