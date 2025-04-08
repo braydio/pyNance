@@ -64,12 +64,15 @@
         placeholder="Any extra info..."
       />
 
-      <button @click="saveRecurring">Save</button>
+      <button @click="saveRecurring" :disabled="loading">
+        {{ loading ? 'Saving...' : 'Save' }}
+      </button>
     </div>
   </div>
 </template>
 
 <script>
+import { getRecurringTransactions, saveRecurringTransaction } from "@/api/recurring";
 import axios from "axios";
 
 export default {
@@ -110,9 +113,9 @@ export default {
     async fetchRecurringTransactions() {
       if (!this.selectedAccountId) return;
       try {
-        const res = await axios.get(`/api/recurring/${this.selectedAccountId}/recurring`);
-        if (res.status === 200 && res.data.status === 'success') {
-          this.notifications = res.data.reminders;
+        const res = await getRecurringTransactions(this.selectedAccountId);
+        if (res.status === 'success') {
+          this.notifications = res.reminders;
         } else {
           this.error = "Failed to fetch recurring transactions.";
         }
@@ -123,6 +126,7 @@ export default {
 
     async saveRecurring() {
       if (!this.selectedAccountId) return;
+      this.loading = true;
       try {
         const payload = {
           amount: this.amount,
@@ -131,10 +135,12 @@ export default {
           notes: this.notes,
           next_due_date: this.nextDueDate,
         };
-        await axios.put(`/api/recurring/${this.selectedAccountId}/recurringTx`, payload);
+        await saveRecurringTransaction(this.selectedAccountId, payload);
         await this.fetchRecurringTransactions();
       } catch (err) {
         this.error = err.message || "Error saving recurring transaction.";
+      } finally {
+        this.loading = false;
       }
     },
 
