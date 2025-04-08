@@ -1,4 +1,13 @@
+
+from plaid.api import plaid_api
+from plaid.api_client import ApiClient
+from plaid.configuration import Configuration
+from app.models import Category
+import logging
+
 import requests
+from flask import Blueprint, jsonify, request
+from app.extensions import db
 from app.config import (
     PLAID_BASE_URL,
     PLAID_CLIENT_ID,
@@ -6,6 +15,9 @@ from app.config import (
     PLAID_SECRET,
     logger,
 )
+logger = logging.getLogger(__name__)
+
+get_categories = Blueprint("/get_categories", __name__)
 
 def generate_link_token(user_id, products=["transactions"]):
     """
@@ -63,35 +75,32 @@ def get_accounts(access_token):
     response.raise_for_status()
     return response.json()
 
-def get_categories():
+get_categories.route("/load_categories", methods=["POST"])
+def refresh_plaid_categories():
     """
-    Fetch all Plaid categories from the Plaid API using the Plaid SDK and populate the SQL categories table.
+    Fetch all Plaid categories from the Plaid API using the Plaid SDK 
+    and populate the categories table via Category.query.
     """
-    from plaid.api import plaid_api
-    from plaid.api_client import ApiClient
-    from plaid.configuration import Configuration
 
-    session = Session()
+    # First, check how many Category records are in the DB
     try:
-        existing_count = session.query(Category).count()
+        existing_count = Category.query.count()
         if existing_count > 0:
-            logger.info(
-                f"{existing_count} categories already exist. Skipping population."
-            )
+            logger.info(f"{existing_count} categories already exist. Skipping population.")
             return
     except Exception as e:
-        logger.error(f"Error checking categories: {e}")
+        logger.error(f"Error checking existing categories: {e}")
         return
-    finally:
-        session.close()
 
+    # Prepare Plaid API client
     configuration = Configuration(
-        host=f"https://{PLAID_ENV}.plaid.com",
+        host=PLAID_BASE_URL,
         api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET},
     )
     api_client = ApiClient(configuration)
     client = plaid_api.PlaidApi(api_client)
 
+    # Fetch categories from Plaid
     try:
         response = client.categories_get({})
         categories_list = response["categories"]
@@ -100,63 +109,56 @@ def get_categories():
         logger.error(f"Error fetching categories from Plaid: {e}")
         return
 
-    session = Session()
     try:
-        unknown_category = session.query(Category).filter_by(name="Unknown").first()
+        # Ensure we have an "Unknown" category
+        unknown_category = Category.query.filter_by(name="Unknown").first()
         if not unknown_category:
             unknown_category = Category(name="Unknown")
-            session.add(unknown_category)
-            session.commit()
+            db.session.add(unknown_category)
+            db.session.commit()
 
+        # Populate or update primary/secondary categories
         for cat in categories_list:
             hierarchy = cat.get("hierarchy", [])
             if hierarchy:
                 primary_name = hierarchy[0]
                 secondary_name = hierarchy[1] if len(hierarchy) > 1 else None
             else:
+                # If hierarchy is missing or empty, default to "Unknown"
                 primary_name = "Unknown"
                 secondary_name = None
 
-            primary_cat = session.query(Category).filter_by(name=primary_name).first()
+            # Look up or create the primary category
+            primary_cat = Category.query.filter_by(name=primary_name).first()
             if not primary_cat:
                 primary_cat = Category(name=primary_name)
-                session.add(primary_cat)
-                session.commit()
+                db.session.add(primary_cat)
+                db.session.commit()
                 logger.info(f"Created primary category: {primary_name}")
             else:
                 logger.debug(f"Using existing primary category: {primary_name}")
 
+            # Look up or create the secondary category
             if secondary_name and secondary_name != primary_name:
-                secondary_cat = (
-                    session.query(Category).filter_by(name=secondary_name).first()
-                )
+                secondary_cat = Category.query.filter_by(name=secondary_name).first()
                 if not secondary_cat:
-                    secondary_cat = Category(
-                        name=secondary_name, parent_id=primary_cat.id
-                    )
-                    session.add(secondary_cat)
-                    session.commit()
-                    logger.info(
-                        f"Created secondary category: {secondary_name} under {primary_name}"
-                    )
+                    secondary_cat = Category(name=secondary_name, parent_id=primary_cat.id)
+                    db.session.add(secondary_cat)
+                    db.session.commit()
+                    logger.info(f"Created secondary category: {secondary_name} under {primary_name}")
                 else:
                     if secondary_cat.parent_id != primary_cat.id:
                         secondary_cat.parent_id = primary_cat.id
-                        session.commit()
-                        logger.info(
-                            f"Updated secondary category: {secondary_name} under {primary_name}"
-                        )
+                        db.session.commit()
+                        logger.info(f"Updated secondary category: {secondary_name} under {primary_name}")
                     else:
-                        logger.debug(
-                            f"Using existing secondary category: {secondary_name}"
-                        )
-        logger.info("Plaid categories successfully populated into the database.")
-    except Exception as e:
-        session.rollback()
-        logger.error(f"Error populating categories: {e}")
-    finally:
-        session.close()
+                        logger.debug(f"Using existing secondary category: {secondary_name}")
 
+        logger.info("Plaid categories successfully populated into the database.")
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error populating categories: {e}")
 
 
 def get_transactions(access_token, start_date, end_date):
