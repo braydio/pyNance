@@ -131,7 +131,7 @@ def teller_get_transactions():
         return jsonify({"error": str(e)}), 500
 
 
-@teller_transactions.route("/get_accounts", methods=["GET"])
+@teller_transactions.route("/list_teller_accounts", methods=["GET"])
 def get_accounts():
     try:
         logger.debug("Fetching accounts from the database.")
