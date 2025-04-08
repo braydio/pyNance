@@ -78,10 +78,6 @@ def refresh_all_accounts():
         logger.error(f"Error in unified refresh_accounts: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
-@accounts.route("/get_accounts", methods=["GET"])
-
-
-
 
 @accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
@@ -99,6 +95,8 @@ def get_accounts():
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
 @accounts.route("/<account_id>/recurring", methods=["GET"])
 def get_recurring(account_id):
     """
