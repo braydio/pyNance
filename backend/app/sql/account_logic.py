@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.helpers.plaid_helpers import refresh_plaid_categories
 from app.extensions import db
 from app.models import (
     Account,
@@ -183,50 +184,12 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
 
 
 def refresh_plaid_categories(plaid_base_url):
-    """
-    Call Plaid's categories endpoint and populate the Categories table.
-    If a category already exists, it will be skipped.
-    """
-    url_categories = f"{plaid_base_url}/categories/get"
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-    }
-    try:
-        resp = requests.post(url_categories, json=payload, timeout=10)
-        logger.debug(
-            f"Plaid categories endpoint response: {resp.status_code} - {resp.text}"
-        )
-        if resp.status_code == 200:
-            data = resp.json()
-            categories = data.get("categories", [])
-            for cat in categories:
-                plaid_cat_id = cat.get("category_id")
-                # Plaid returns a hierarchy list (e.g., ["Travel", "Taxi"])
-                hierarchy = cat.get("hierarchy", [])
-                primary_category = hierarchy[0] if hierarchy else "Unknown"
-                detailed_category = hierarchy[-1] if hierarchy else "Unknown"
-                display_name = " > ".join(hierarchy) if hierarchy else "Unknown"
-                # Check if this category is already in the DB.
-                existing_cat = Category.query.filter_by(
-                    plaid_category_id=plaid_cat_id
-                ).first()
-                if not existing_cat:
-                    new_cat = Category(
-                        plaid_category_id=plaid_cat_id,
-                        primary_category=primary_category,
-                        detailed_category=detailed_category,
-                        display_name=display_name,
-                    )
-                    db.session.add(new_cat)
-                    logger.debug(f"Inserted new category: {new_cat}")
-            db.session.commit()
-            logger.debug("Plaid categories refreshed successfully.")
-        else:
-            logger.error(f"Failed to refresh categories from Plaid: {resp.text}")
-    except Exception as e:
-        logger.error(f"Exception while refreshing categories: {e}", exc_info=True)
-
+    print(plaid_base_url)
+    refresh = refresh+_plaid_categories()
+    if refresh:
+        logger.info("Categories table refreshed.")
+    else:
+        logger.error("Unable to refresh categories from Plaid Helper.")
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
     """
@@ -496,26 +459,40 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                     continue
 
                 existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
-                amount = txn.get("amount") or 0
                 date_str = txn.get("date") or txn.get("authorized_date") or ""
-                try:
-                    parsed_date = datetime.strptime(date_str, "%Y-%m-%d").date() if date_str else pydate.today()
-                except ValueError:
-                    parsed_date = pydate.today()
-
-                plaid_cat_id = txn.get("category_id")
-                category_obj = None
-                if plaid_cat_id:
-                    category_obj = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                amount_get = txn.get("amount") or None
+                if amount_get:
+                    logger.info(f"Transaction amount string returned as {amount_get}")
+                    new_amount = int(amount_get)
+                    amount = new_amount * (-1)
+                else:
+                    logger.warning("Amount not turned integer")
+                
+                description_str = txn.get("name") or  "Unknown"
+                category_list = txn.get("category", [1]) or []
+                if category_list is not None:
+                    category_string = f"{category_list}"
+                    logger.debug(category_string)
+                category_three = txn.get("category", [{0}])
+                if category_list:
+                    category = ("category_list", [0])
+                    print(f"Category_list {category_list}")
+                    print(f"and cat3 {category_three}")
+                category_id = txn.get("category")
+ 
+               # plaid_cat_id = txn.get("category_id")
+               # category_obj = None
+               # if plaid_cat_id:
+               #     category_obj = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
 
                 merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
                 merchant_typ = "Unknown"
-                if txn.get("counterparties"):
-                    cp = txn["counterparties"]
-                    if isinstance(cp, list) and cp:
-                        merchant_typ = cp[0].get("type", "Unknown")
-                    elif isinstance(cp, dict):
-                        merchant_typ = cp.get("type", "Unknown")
+                if txn.get("personal_finance_category"):
+                    fincat = txn["personal_finance_category"]
+                    if isinstance(fincat, list) and fincat:
+                        merchant_typ = fincat[0].get("detailed", "Unknown")
+                    elif isinstance(fincat, dict):
+                        merchant_typ = fincat.get("detailed", "Unknown")
 
                 if existing_txn:
                     if existing_txn.user_modified:
@@ -524,22 +501,22 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                     else:
                         logger.debug(f"Updating transaction {txn_id} for account {account_id}.")
                         existing_txn.amount = amount
-                        existing_txn.date = parsed_date
-                        existing_txn.description = txn.get("description") or ""
+                        existing_txn.date = date_str
+                        existing_txn.description = description_str
                         existing_txn.merchant_name = merchant_name
                         existing_txn.merchant_typ = merchant_typ
-                        existing_txn.category = category_obj
+                        existing_txn.category = category_string
                 else:
                     logger.debug(f"Inserting new transaction {txn_id} for account {account_id}.")
                     new_txn = Transaction(
                         transaction_id=txn_id,
                         account_id=account_id,
                         amount=amount,
-                        date=parsed_date,
-                        description=txn.get("description") or "",
+                        date=date_str,
+                        description=descritption_str,
                         merchant_name=merchant_name,
                         merchant_typ=merchant_typ,
-                        category=category_obj,
+                        category=category_string,
                     )
                     db.session.add(new_txn)
 
@@ -601,7 +578,7 @@ def get_paginated_transactions(page, page_size):
                 "date": txn.date or datetime.now(),
                 "amount": txn.amount if txn.amount is not None else 0,
                 "description": txn.description or "",
-                "category": txn.category.display_name if txn.category else "Unknown",
+                "category": txn.category if txn.category else "Unknown",
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
