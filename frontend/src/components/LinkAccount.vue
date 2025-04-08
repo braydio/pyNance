@@ -1,8 +1,8 @@
 <template>
   <div class="link-account">
-    <h2>Link Your Bank Account</h2>
+    <h2>Link a New Account</h2>
     <div class="button-group">
-      <button @click="linkPlaid">Plaid Link</button>
+      <button @click="linkPlaid">Plaid</button>
       <button @click="linkTeller">Teller.io</button>
     </div>
   </div>
@@ -110,31 +110,30 @@ export default {
 </script>
 
 <style scoped>
-@import '@/styles/global-colors.css';
 
 .link-account {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-fg);
-  padding: 1.5rem;
-  border-radius: 6px;
-  margin: 1rem 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  text-align: center;
+  margin: 0 auto;
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
 }
+
 .link-account h2 {
-  margin: 0 0 1rem;
-  color: var(--gruvbox-yl);
+  margin: 5px 5px 1rem;
+  color: var(--link-color);
 }
 .button-group {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
 }
 .button-group button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.1rem;
   border-radius: 3px;
   font-weight: bold;
   cursor: pointer;
