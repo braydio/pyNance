@@ -60,7 +60,6 @@ import TransactionsTable from "@/components/TransactionsTable.vue";
 import { useTransactions } from "@/composables/useTransactions.js";
 import NotificationsBar from "@/components/NotificationsBar.vue";
 import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue";
-import RecurringTransaction from "@/components/RecurringTransaction.vue";
 import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
 export default {
@@ -72,7 +71,6 @@ export default {
     TransactionsTable,
     NotificationsBar,
     RecurringTransactionSection,
-    RecurringTransaction,
     AccountsReorderChart,
   },
   setup() {
