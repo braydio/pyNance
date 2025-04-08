@@ -46,8 +46,8 @@ export default {
 }
 .controls button {
   background-color: var(--color-bg-dark);
-  color: var(--gruvbox-fg);
-  border: 1px solid var(--bar-neutral);
+  color: var(--color-text-light);
+  border: 1px solid transparent;
   padding: 0.5rem 1rem;
   border-radius: 3px;
   cursor: pointer;
@@ -61,7 +61,7 @@ export default {
 .controls button:hover:not(:disabled) {
   background-color: var(--button-hover);
   color: var(--gruvbox-accent);
-  border: 1px solid var(--color-bg-dark);
+  border: 1px solid transparent;
 }
 
 </style>
