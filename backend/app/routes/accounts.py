@@ -79,7 +79,6 @@ def refresh_all_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
         accounts = Account.query.all()
@@ -88,14 +87,13 @@ def get_accounts():
                 "id": a.id,
                 "name": a.name,
                 "provider": a.link_type,
-                "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None
+                "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None,
             }
             for a in accounts
         ]
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 @accounts.route("/<account_id>/recurring", methods=["GET"])
 def get_recurring(account_id):
