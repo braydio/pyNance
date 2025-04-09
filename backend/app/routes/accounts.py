@@ -1,4 +1,4 @@
-rom flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction, Account
 from app.config import logger
