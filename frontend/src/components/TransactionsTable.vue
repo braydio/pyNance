@@ -1,3 +1,4 @@
+/ ** Marking this for deletion. Replaced by /components/UpdateTransactionsTable.vue /
 <template>
   <div class="transactions">
     <h3>Transactions</h3>
