@@ -40,7 +40,7 @@ class Account(db.Model):
     status = db.Column(db.String(64))
     institution_name = db.Column(db.String(128))
     balance = db.Column(db.Float, default=0)
-    last_refreshed = db.Column(db.String(64))
+    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
     link_type = db.Column(db.String(64), default="InsertProvider")
 
     # Set up cascading deletes for related records
