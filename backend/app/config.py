@@ -93,22 +93,23 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 logger.debug(f"SQL DB initialized: {SQLALCHEMY_DATABASE_URI}")
 
 logger.debug("Directories initialized:")
-for name, path in DIRECTORIES.items():
-    logger.debug(f"{name}: {path}")
-logger.debug("Files initialized:")
-for name, path in FILES.items():
-    logger.debug(f"{name}: {path}")
+# for name, path in DIRECTORIES.items():
+#     logger.debug(f"{name}: {path}")
+# logger.debug("Files initialized:")
+# for name, path in FILES.items():
+#     logger.debug(f"{name}: {path}")
 
 logger.warning(f"Don't forget to remove these logs from config.py in {BASE_DIR}")
 logger.debug(f"PLAID CLIENT ID {PLAID_CLIENT_ID}")
 logger.debug(f"PLAID SECRET {PLAID_SECRET}")
 logger.debug(f"PLAID API URL {PLAID_BASE_URL}")
-logger.debug(f"TELLER APP ID {TELLER_APP_ID}")
-logger.debug(f"TELLER API URL {TELLER_API_BASE_URL}")
+
+# logger.debug(f"TELLER APP ID {TELLER_APP_ID}")
+# logger.debug(f"TELLER API URL {TELLER_API_BASE_URL}")
 
 
 DEBUG = True
-FLASK_ENV = "development"
+# FLASK_ENV = "development"
 
 __all__ = [
     "BASE_DIR",
