@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+rom flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction, Account
 from app.config import logger
@@ -77,7 +77,6 @@ def refresh_all_accounts():
     except Exception as e:
         logger.error(f"Error in unified refresh_accounts: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 
 @accounts.route("/get_accounts", methods=["GET"])
