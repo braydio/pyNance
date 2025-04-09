@@ -120,7 +120,7 @@ class Transaction(db.Model):
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)  # JSON representation
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
-    category = db.relationship("Category", backref="transactions")
+    category = db.Column(db.String(128))
 
     def __repr__(self):
         return (
