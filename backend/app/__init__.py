@@ -25,11 +25,14 @@ def create_app():
         from app.routes.accounts import accounts
         from app.routes.recurring import recurring
         from app.routes.charts import charts
+
+        from app.routes.export import export
         from app.routes.plaid import plaid_bp
         from app.routes.plaid_investments import plaid_investments
         from app.routes.plaid_transactions import plaid_transactions
         from app.routes.teller_transactions import teller_transactions
 
+        app.register_blueprint(export, url_prefix="/api/export")
         app.register_blueprint(transactions, url_prefix="/api/transactions")
         app.register_blueprint(accounts, url_prefix="/api/accounts")
         app.register_blueprint(charts, url_prefix="/api/charts")
