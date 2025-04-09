@@ -334,12 +334,13 @@ def refresh_data_for_teller_account(
             else:
                 parsed_date = pydate.today()
 
-            details = txn.get("details", {}) or {}
-            category = details.get("category")
-            if isinstance(category, list) and category:
-                category = category[-1] or "Unknown"
+
+            category_list = txn.get("category", [])
+            if isinstance(category_list, list) and category_list:
+                category = " > ".join(category_list)
             else:
-                category = category or "Unknown"
+                category = "Unknown"
+
 
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
