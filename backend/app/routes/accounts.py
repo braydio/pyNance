@@ -79,20 +79,30 @@ def refresh_all_accounts():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+
+@accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
         accounts = Account.query.all()
-        data = [
-            {
-                "id": a.id,
-                "name": a.name,
-                "provider": a.link_type,
-                "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None,
-            }
-            for a in accounts
-        ]
+        data = []
+        for a in accounts:
+            try:
+                data.append({
+                    "id": a.id,
+                    "name": a.name,
+                    "provider": a.link_type,
+                    "last_refreshed": (
+                        a.last_refreshed.isoformat()
+                        if hasattr(a, "last_refreshed") and a.last_refreshed
+                        else None
+                    ),
+                })
+            except Exception as item_err:
+                logger.warning(f"Error serializing account ID {a.id}: {item_err}")
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 
 @accounts.route("/<account_id>/recurring", methods=["GET"])
