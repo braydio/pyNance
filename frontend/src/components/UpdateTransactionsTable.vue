@@ -1,6 +1,10 @@
 <template>
-  <div class="transactions">
+ <div class="transactions">
     <h3>Transactions</h3>
+     <div class="actions-row">
+        <h3>Transactions</h3>
+        <button class="export-btn" @click="exportTransactions">Export CSV</button>
+      </div>
     <table>
       <thead>
         <tr>
@@ -143,6 +147,9 @@ export default {
       Object.assign(tx, tx._backup);
       delete tx._backup;
       tx.isEditing = false;
+    },
+    exportTransactions() {
+      window.open("/api/export/transactions", "_blank");
     },
     async markRecurring(index) {
       const tx = this.transactions[index];
@@ -331,13 +338,26 @@ th:hover {
 .transactions button {
   background-color: var(--button-bg);
   color: var(--color-text-light);
-  border: 1px solid var(--themed-border);
+  border: 3px solid var(--color-accent-void);
   transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
 .transactions button:hover {
   background-color: var(--button-hover);
-  border-color: var(--color-accent-yellow);
+  border-color: var(--button-bg);
+}
+
+.export-btn {
+  background-color: var(--gruvbox-accent);
+  color: var(--gruvbox-fg);
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.export-btn:hover {
+  background-color: var(--button-hover);
 }
 
 /* Footer */
