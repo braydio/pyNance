@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 import requests
-from app.config import FILES, TELLER_API_BASE_URL, logger
+from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens  # Use the shared helper
 from app.models import Account, Transaction
@@ -138,7 +138,7 @@ def get_transactions_paginated():
             200,
         )
     except Exception as e:
-        logger.error(f"Error fetching Teller transactions: {e}", exc_info=True)
+        logger.error(f"Error fetching transactions: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
