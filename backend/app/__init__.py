@@ -25,7 +25,7 @@ def create_app():
         from app.routes.accounts import accounts
         from app.routes.recurring import recurring
         from app.routes.charts import charts
-
+        from app.routes.categories import categories as categories_bp
         from app.routes.export import export
         from app.routes.plaid import plaid_bp
         from app.routes.plaid_investments import plaid_investments
@@ -33,6 +33,7 @@ def create_app():
         from app.routes.teller_transactions import teller_transactions
 
         app.register_blueprint(export, url_prefix="/api/export")
+        app.register_blueprint(categories_bp, url_prefix="/api/categories")
         app.register_blueprint(transactions, url_prefix="/api/transactions")
         app.register_blueprint(accounts, url_prefix="/api/accounts")
         app.register_blueprint(charts, url_prefix="/api/charts")
@@ -45,7 +46,4 @@ def create_app():
         app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
 
 
-        logger.debug(
-            "Blueprints registered: charts (/api/charts), Teller (/api/teller/transactions), Plaid transactions (/api/plaid/transactions), and Plaid investments (/api/plaid/investments)"
-        )
     return app
