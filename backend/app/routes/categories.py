@@ -1,4 +1,5 @@
 
+from sqlalchemy.orm import aliased
 from flask import Blueprint, jsonify
 from app.models import Category
 from app import db, plaid_client
@@ -28,7 +29,8 @@ def get_category_tree():
     nested = [{"name": k, "children": v} for k, v in tree.items()]
     return jsonify({"status": "success", "data": nested})
 
-@categories.route("/refresh", methods=["POST"])
+
+categories.route("/refresh", methods=["POST"])
 def refresh_plaid_categories():
     try:
         response = plaid_client.categories_get({})
@@ -54,11 +56,16 @@ def refresh_plaid_categories():
                     )
                     db.session.add(parent)
                     db.session.flush()
+
             elif len(hierarchy) >= 2:
                 primary = hierarchy[0]
                 detailed = hierarchy[1]
 
-                parent = Category.query.filter_by(display_name=primary, parent_id=None).first()
+                ParentCategory = aliased(Category)
+                parent = db.session.query(Category).join(
+                    ParentCategory, Category.parent_id == ParentCategory.id
+                ).filter(ParentCategory.display_name == primary).first()
+
                 if not parent:
                     parent = Category(
                         plaid_category_id=f"{plaid_cat_id}_primary",
