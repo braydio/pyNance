@@ -461,39 +461,38 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
                 existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
                 date_str = txn.get("date") or txn.get("authorized_date") or ""
-                amount_get = txn.get("amount") or None
-                if amount_get:
-                    logger.info(f"Transaction amount string returned as {amount_get}")
-                    new_amount = int(amount_get)
-                    amount = new_amount * (-1)
-                else:
-                    logger.warning("Amount not turned integer")
-                
-                description_str = txn.get("name") or  "Unknown"
-                category_list = txn.get("category", [1]) or []
-                if category_list is not None:
-                    category_string = f"{category_list}"
-                    logger.debug(category_string)
-                category_three = txn.get("category", [{0}])
-                if category_list:
-                    category = ("category_list", [0])
-                    print(f"Category_list {category_list}")
-                    print(f"and cat3 {category_three}")
-                category_id = txn.get("category")
- 
-               # plaid_cat_id = txn.get("category_id")
-               # category_obj = None
-               # if plaid_cat_id:
-               #     category_obj = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                amount = int(txn.get("amount", 0)) * -1
 
+                description_str = txn.get("name") or "Unknown"
                 merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
                 merchant_typ = "Unknown"
+
                 if txn.get("personal_finance_category"):
                     fincat = txn["personal_finance_category"]
-                    if isinstance(fincat, list) and fincat:
-                        merchant_typ = fincat[0].get("detailed", "Unknown")
-                    elif isinstance(fincat, dict):
+                    if isinstance(fincat, dict):
                         merchant_typ = fincat.get("detailed", "Unknown")
+
+                # --- Updated category logic ---
+                category_list = txn.get("category", []) or []
+                category_string = " > ".join(category_list) if category_list else "Unknown"
+                primary = category_list[0] if category_list else "Unknown"
+                secondary = category_list[1] if len(category_list) > 1 else None
+
+                category_obj = None
+                if secondary:
+                    category_obj = (
+                        db.session.query(Category)
+                        .filter(Category.display_name == secondary)
+                        .join(Category.parent)
+                        .filter(Category.parent.has(display_name=primary))
+                        .first()
+                    )
+                else:
+                    category_obj = Category.query.filter_by(display_name=primary).first()
+
+                category_id = category_obj.id if category_obj else None
+
+                # --------------------------------
 
                 if existing_txn:
                     if existing_txn.user_modified:
@@ -507,6 +506,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         existing_txn.merchant_name = merchant_name
                         existing_txn.merchant_typ = merchant_typ
                         existing_txn.category = category_string
+                        existing_txn.category_id = category_id
                 else:
                     logger.debug(f"Inserting new transaction {txn_id} for account {account_id}.")
                     new_txn = Transaction(
@@ -518,6 +518,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         merchant_name=merchant_name,
                         merchant_typ=merchant_typ,
                         category=category_string,
+                        category_id=category_id,
                     )
                     db.session.add(new_txn)
 
