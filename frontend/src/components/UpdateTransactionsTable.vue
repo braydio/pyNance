@@ -1,10 +1,28 @@
+
 <template>
- <div class="transactions">
-    <h3>Transactions</h3>
-     <div class="actions-row">
-        <h3>Transactions</h3>
-        <button class="export-btn" @click="exportTransactions">Export CSV</button>
-      </div>
+  <div class="filter-row">
+    <!-- Primary category selector -->
+    <select v-model="selectedPrimaryCategory" @change="onPrimaryCategoryChange" class="filter-input">
+      <option value="">All Categories</option>
+      <option v-for="group in categoryTree" :key="group.name" :value="group.name">
+        {{ group.name }}
+      </option>
+    </select>
+
+    <!-- Subcategory selector -->
+    <select v-model="selectedSubcategory" class="filter-input" :disabled="!subcategoryOptions.length">
+      <option value="">All Subcategories</option>
+      <option v-for="child in subcategoryOptions" :key="child.id" :value="child.name">
+        {{ child.name }}
+      </option>
+    </select>
+  </div>
+
+  <div class="transactions">
+    <div class="actions-row">
+      <h3>Transactions</h3>
+      <button class="export-btn" @click="exportTransactions">Export CSV</button>
+    </div>
     <table>
       <thead>
         <tr>
@@ -20,70 +38,15 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(tx, index) in transactions" :key="tx.transaction_id">
-          <!-- Date -->
-          <td>
-            <span v-if="!tx.isEditing">{{ tx.date || "N/A" }}</span>
-            <input v-else type="date" v-model="tx.date" />
-          </td>
-
-          <!-- Amount -->
-          <td>
-            <span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span>
-            <input
-              v-else
-              type="number"
-              step="0.01"
-              v-model.number="tx.amount"
-            />
-          </td>
-
-          <!-- Description -->
-          <td>
-            <span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span>
-            <input
-              v-else
-              type="text"
-              v-model="tx.description"
-            />
-          </td>
-
-          <!-- Category -->
-          <td>
-            <span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span>
-            <input
-              v-else
-              type="text"
-              v-model="tx.category"
-            />
-          </td>
-
-          <!-- Merchant Name -->
-          <td>
-            <span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span>
-            <input
-              v-else
-              type="text"
-              v-model="tx.merchant_name"
-            />
-          </td>
-
-          <!-- Account Name (read-only) -->
-          <td>
-            <span>{{ tx.account_name || "N/A" }}</span>
-          </td>
-
-          <!-- Institution Name (read-only) -->
-          <td>
-            <span>{{ tx.institution_name || "N/A" }}</span>
-          </td>
-
-          <!-- Subtype (read-only) -->
-          <td>
-            <span>{{ tx.subtype || "N/A" }}</span>
-          </td>
-
-          <!-- Actions -->
+        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id">
+          <td><span v-if="!tx.isEditing">{{ tx.date || "N/A" }}</span><input v-else type="date" v-model="tx.date" /></td>
+          <td><span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span><input v-else type="number" step="0.01" v-model.number="tx.amount" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span><input v-else type="text" v-model="tx.description" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span><input v-else type="text" v-model="tx.category" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span><input v-else type="text" v-model="tx.merchant_name" /></td>
+          <td><span>{{ tx.account_name || "N/A" }}</span></td>
+          <td><span>{{ tx.institution_name || "N/A" }}</span></td>
+          <td><span>{{ tx.subtype || "N/A" }}</span></td>
           <td>
             <button v-if="!tx.isEditing" @click="editTransaction(index)">Edit</button>
             <button v-if="!tx.isEditing" @click="markRecurring(index)">Mark as Recurring</button>
@@ -103,22 +66,53 @@ import api from "@/services/api";
 export default {
   name: "TransactionsTable",
   props: {
-    transactions: {
-      type: Array,
-      default: () => []
+    transactions: Array,
+  },
+  data() {
+    return {
+      categoryTree: [],
+      selectedPrimaryCategory: "",
+      selectedSubcategory: "",
+    };
+  },
+  computed: {
+    subcategoryOptions() {
+      const match = this.categoryTree.find(c => c.name === this.selectedPrimaryCategory);
+      return match ? match.children : [];
     },
+    filteredTransactions() {
+      let filtered = [...this.transactions];
+      if (this.selectedSubcategory) {
+        filtered = filtered.filter(tx =>
+          tx.category?.toLowerCase().includes(this.selectedSubcategory.toLowerCase())
+        );
+      }
+      return filtered;
+    }
   },
   methods: {
+    async fetchCategoryTree() {
+      try {
+        const res = await axios.get("/api/categories/tree");
+        if (res.data && res.data.status === "success") {
+          this.categoryTree = res.data.data;
+        }
+      } catch (err) {
+        console.error("Failed to load category tree:", err);
+      }
+    },
+    onPrimaryCategoryChange() {
+      this.selectedSubcategory = "";
+    },
     formatAmount(amount) {
       const number = parseFloat(amount);
-      const formatter = new Intl.NumberFormat("en-US", {
+      return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
         currencySign: "accounting",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
-      });
-      return formatter.format(number);
+      }).format(number);
     },
     editTransaction(index) {
       const tx = this.transactions[index];
@@ -133,17 +127,14 @@ export default {
           tx.isEditing = false;
           delete tx._backup;
         } else {
-          console.error("Failed to update transaction:", response.data.message);
           alert("Failed to update transaction: " + response.data.message);
         }
       } catch (error) {
-        console.error("Error updating transaction:", error);
         alert("Error updating transaction: " + error.message);
       }
     },
     cancelEdit(index) {
       const tx = this.transactions[index];
-      // Restore the original backup if user cancels
       Object.assign(tx, tx._backup);
       delete tx._backup;
       tx.isEditing = false;
@@ -153,31 +144,33 @@ export default {
     },
     async markRecurring(index) {
       const tx = this.transactions[index];
-      // Confirm with the user before marking as recurring
+      if (!tx.account_id || tx.account_id === "undefined") {
+        alert("❌ Cannot mark this transaction as recurring: missing or invalid account ID.");
+        return;
+      }
       if (!confirm("Mark this transaction as recurring?")) return;
       try {
-        // Call the recurring endpoint for the account using the transaction's data.
-        // We use the updateRecurringTransaction endpoint, which will update an existing recurring record or create a new one.
-        const payload = {
-          amount: tx.amount,
-          description: tx.description
-          // You could extend this payload to include frequency or other details if needed.
-        };
+        const payload = { amount: tx.amount, description: tx.description };
         const response = await api.updateRecurringTransaction(tx.account_id, payload);
         if (response.status === "success") {
           alert("Transaction marked as recurring successfully.");
         } else {
-          console.error("Failed to mark as recurring:", response.message);
           alert("Failed to mark as recurring: " + response.message);
         }
       } catch (error) {
-        console.error("Error marking transaction as recurring:", error);
         alert("Error marking transaction as recurring: " + error.message);
       }
     },
   },
+  mounted() {
+    this.fetchCategoryTree();
+  },
 };
-</script>b
+</script>
+
+<style scoped>
+/* Your existing scoped styles remain unchanged */
+</style>
 
 <style scoped>
 @import '@/styles/global-colors.css';
@@ -370,4 +363,18 @@ th:hover {
   color: var(--footer-text);
 }
 
+.filter-input {
+  padding: 0.5rem;
+  margin-right: 1rem;
+  border: 1px solid var(--border-color);
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-light);
+  border-radius: 4px;
+}
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+  gap: 1rem;
+}
 </style>
