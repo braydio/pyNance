@@ -1,11 +1,12 @@
 # File: app/sql/account_logic.py
 
+from sqlalchemy.orm import aliased
 import json
 import time
 from datetime import date as pydate
 from datetime import datetime, timedelta
 
-from sqlalchemy import aliases
+from sqlalchemy.orm import aliased
 import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.helpers.plaid_helpers import refresh_plaid_categories
@@ -20,6 +21,7 @@ from app.models import (
 )
 
 ParentCategory = aliased(Category)
+
 TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
@@ -479,22 +481,16 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                 category_string = " > ".join(category_list) if category_list else "Unknown"
                 primary = category_list[0] if category_list else "Unknown"
                 secondary = category_list[1] if len(category_list) > 1 else None
-
+               
                 category_obj = (
                     db.session.query(Category)
-                    .join(ParentCategory, Category.parent)
                     .filter(
                         Category.display_name == secondary,
-                        ParentCategory.display_name == primary
+                        Category.parent.has(display_name=primary)
                     )
                     .first()
                 )
-                else:
-                    category_obj = Category.query.filter_by(display_name=primary).first()
-
                 category_id = category_obj.id if category_obj else None
-
-                # --------------------------------
 
                 if existing_txn:
                     if existing_txn.user_modified:
@@ -587,6 +583,7 @@ def get_paginated_transactions(page, page_size):
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
+                "account_id": tx.account_id or "UnKnown",
             }
         )
     return serialized, total
