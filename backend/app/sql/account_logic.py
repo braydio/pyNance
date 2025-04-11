@@ -5,6 +5,7 @@ import time
 from datetime import date as pydate
 from datetime import datetime, timedelta
 
+from sqlalchemy import aliases
 import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.helpers.plaid_helpers import refresh_plaid_categories
@@ -18,6 +19,7 @@ from app.models import (
     Transaction,
 )
 
+ParentCategory = aliased(Category)
 TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
@@ -478,15 +480,15 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                 primary = category_list[0] if category_list else "Unknown"
                 secondary = category_list[1] if len(category_list) > 1 else None
 
-                category_obj = None
-                if secondary:
-                    category_obj = (
-                        db.session.query(Category)
-                        .filter(Category.display_name == secondary)
-                        .join(Category.parent)
-                        .filter(Category.parent.has(display_name=primary))
-                        .first()
+                category_obj = (
+                    db.session.query(Category)
+                    .join(ParentCategory, Category.parent)
+                    .filter(
+                        Category.display_name == secondary,
+                        ParentCategory.display_name == primary
                     )
+                    .first()
+                )
                 else:
                     category_obj = Category.query.filter_by(display_name=primary).first()
 
