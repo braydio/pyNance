@@ -142,29 +142,49 @@ export default {
     exportTransactions() {
       window.open("/api/export/transactions", "_blank");
     },
-    async markRecurring(index) {
-      const tx = this.transactions[index];
-      if (!tx.account_id || tx.account_id === "undefined") {
-        alert("❌ Cannot mark this transaction as recurring: missing or invalid account ID.");
-        return;
-      }
-      if (!confirm("Mark this transaction as recurring?")) return;
-      try {
-        const payload = { amount: tx.amount, description: tx.description };
-        const response = await api.updateRecurringTransaction(tx.account_id, payload);
-        if (response.status === "success") {
-          alert("Transaction marked as recurring successfully.");
-        } else {
-          alert("Failed to mark as recurring: " + response.message);
-        }
-      } catch (error) {
-        alert("Error marking transaction as recurring: " + error.message);
-      }
-    },
-  },
+
+async markRecurring(index) {
+  const tx = this.transactions[index];
+
+  // ✅ Prevent bad API call if account_id is missing
+  if (!tx.account_id || tx.account_id === "undefined") {
+    alert("❌ Cannot mark this transaction as recurring: missing or invalid account ID.");
+    console.warn("Skipping recurring mark: invalid account ID", tx);
+    return;
+  }
+
+  // ✅ Confirm with user before proceeding
+  if (!confirm("Mark this transaction as recurring?")) {
+    return;
+  }
+
+  try {
+    // 🔍 Log the payload and account ID for debugging
+    console.log("Sending recurring mark for account:", tx.account_id, tx);
+
+    const payload = {
+      amount: tx.amount,
+      description: tx.description,
+      // optional: frequency or extra metadata if you want to expand
+    };
+
+    const response = await api.updateRecurringTransaction(tx.account_id, payload);
+
+    if (response.status === "success") {
+      alert("Transaction marked as recurring successfully.");
+    } else {
+      console.error("❌ Backend error:", response.message);
+      alert("Failed to mark as recurring: " + response.message);
+    }
+  } catch (error) {
+    console.error("❌ Error marking transaction as recurring:", error);
+    alert("Error marking transaction as recurring: " + error.message);
+  }
+},
   mounted() {
     this.fetchCategoryTree();
   },
+},
 };
 </script>
 
@@ -173,13 +193,12 @@ export default {
 </style>
 
 <style scoped>
-@import '@/styles/global-colors.css';
 
 /* Base Styles */
 body {
   margin: 0;
   padding: 0;
-  font-family: \"Fira Code\", monospace;
+  font-family: \"SourceCodeProVF\", monospace;
   background-color: var(--color-bg-dark);
   color: var(--color-text-light);
 }
