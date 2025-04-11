@@ -89,12 +89,12 @@ def get_accounts():
                 data.append({
                     "id": a.id,
                     "name": a.name,
-                    "provider": a.link_type,
-                    "last_refreshed": (
-                        a.last_refreshed.isoformat()
-                        if hasattr(a, "last_refreshed") and a.last_refreshed
-                        else None
-                    ),
+                    "institution_name": a.institution_name,
+                    "type": a.type,
+                    "balance": a.balance,
+                    "subtype": a.subtype,
+                    "link_type": a.link_type,
+                    "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None,
                 })
             except Exception as item_err:
                 logger.warning(f"Error serializing account ID {a.id}: {item_err}")
