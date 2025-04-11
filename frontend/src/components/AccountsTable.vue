@@ -125,6 +125,7 @@ import axios from "axios";
 import api from "@/services/api"; // Ensure the API service is imported
 import RefreshControls from "@/components/RefreshControls.vue";
 
+
 export default {
   name: "AccountsTable",
   components: { RefreshControls },
@@ -181,27 +182,23 @@ export default {
     },
   },
   methods: {
-    async fetchAccounts() {
-      this.loading = true;
-      this.error = "";
-      try {
-        let response;
-        if (this.provider === "plaid") {
-          response = await axios.get("/api/plaid/transactions/get_accounts");
-        } else {
-          response = await axios.get("/api/teller/transactions/get_accounts");
-        }
-        if (response.data && response.data.status === "success") {
-          this.accounts = response.data.data.accounts;
-        } else {
-          this.error = "Error fetching accounts.";
-        }
-      } catch (err) {
-        this.error = err.message || "Error fetching accounts.";
-      } finally {
-        this.loading = false;
+  async fetchAccounts() {
+    this.loading = true;
+    this.error = "";
+    try {
+      let response = await axios.get("/api/accounts/get_accounts");
+      console.log("API response:", response.data); // <--- ADD THIS
+      if (response.data && response.data.status === "success") {
+        this.accounts = response.data.accounts;
+      } else {
+        this.error = "Error fetching accounts.";
       }
-    },
+    } catch (err) {
+      this.error = err.message || "Error fetching accounts.";
+    } finally {
+      this.loading = false;
+    }
+  },
     async refreshAccounts() {
       try {
         let response;
@@ -268,8 +265,7 @@ export default {
     this.fetchAccounts();
   },
 };
-</script>
-
+</script >
 <style>
 
 /* Accounts Table Container */
