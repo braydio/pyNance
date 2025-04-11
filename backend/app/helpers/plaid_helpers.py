@@ -106,14 +106,14 @@ def refresh_plaid_categories():
         categories_list = response["categories"]
         logger.info(f"Fetched {len(categories_list)} categories from Plaid.")
     except Exception as e:
-        logger.error(f"Error fetching categories from Plaid: {e}")
+        logger.erro(f"Error fetching categories from Plaid: {e}")
         return
 
     try:
         # Ensure we have an "Unknown" category
-        unknown_category = Category.query.filter_by(name="Unknown").first()
+        unknown_category = Category.query.filter_by(display_name="Unknown").first()
         if not unknown_category:
-            unknown_category = Category(name="Unknown")
+            unknown_category = Category(display_name="Unknown")
             db.session.add(unknown_category)
             db.session.commit()
 
@@ -129,9 +129,9 @@ def refresh_plaid_categories():
                 secondary_name = None
 
             # Look up or create the primary category
-            primary_cat = Category.query.filter_by(name=primary_name).first()
+            primary_cat = Category.query.filter_by(display_name=primary_name).first()
             if not primary_cat:
-                primary_cat = Category(name=primary_name)
+                primary_cat = Category(display_name=primary_name)
                 db.session.add(primary_cat)
                 db.session.commit()
                 logger.info(f"Created primary category: {primary_name}")
@@ -140,9 +140,9 @@ def refresh_plaid_categories():
 
             # Look up or create the secondary category
             if secondary_name and secondary_name != primary_name:
-                secondary_cat = Category.query.filter_by(name=secondary_name).first()
+                secondary_cat = Category.query.filter_by(disply_name=secondary_name).first()
                 if not secondary_cat:
-                    secondary_cat = Category(name=secondary_name, parent_id=primary_cat.id)
+                    secondary_cat = Category(display_name=secondary_name, parent_id=primary_cat.id)
                     db.session.add(secondary_cat)
                     db.session.commit()
                     logger.info(f"Created secondary category: {secondary_name} under {primary_name}")
