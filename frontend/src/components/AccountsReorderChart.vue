@@ -57,9 +57,9 @@ export default {
   methods: {
     async fetchAccounts() {
       try {
-        const response = await axios.get("/api/transactions/get_accounts");
+        const response = await axios.get("/api/accounts/get_accounts");
         if (response.data && response.data.status === "success") {
-          this.accounts = response.data.data.accounts || response.data.data;
+          this.accounts = response.data.accounts || response.data;
           this.filterAccounts();
         } else {
           console.error("Error fetching accounts:", response.data);
