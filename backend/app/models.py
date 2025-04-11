@@ -93,11 +93,16 @@ class RecurringTransaction(db.Model):
 
 class Category(db.Model):
     __tablename__ = "categories"
+
     id = db.Column(db.Integer, primary_key=True)
+
     plaid_category_id = db.Column(db.String(64), unique=True, nullable=False)
     primary_category = db.Column(db.String(128), default="Unknown")
     detailed_category = db.Column(db.String(128), default="Unknown")
     display_name = db.Column(db.String(256), default="Unknown")
+
+    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)  # ✅ Required
+    parent = db.relationship("Category", remote_side=[id])  # ✅ Now this works
 
     def __repr__(self):
         return (
@@ -106,7 +111,7 @@ class Category(db.Model):
         )
 
 
-# Update the Transaction model to use the new Category relation.
+
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
