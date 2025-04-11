@@ -1,6 +1,11 @@
 
 from flask import Blueprint, jsonify
 from app.models import Category
+from app import db, plaid_client
+from plaid.model.categories_get_request import CategoriesGetRequest
+import logging
+
+logger = logging.getLogger(__name__)
 
 categories = Blueprint("categories", __name__)
 
@@ -23,7 +28,7 @@ def get_category_tree():
     categories = Category.query.all()
     for cat in categories:
         primary = cat.primary_category or "Unknown"
-        detailed = cat.detailed_category or "Other"
+        detailed = cat.detailed_category or cat.display_name or "Other"
 
         if primary not in tree:
             tree[primary] = []
@@ -34,6 +39,73 @@ def get_category_tree():
             "plaid_id": cat.plaid_category_id
         })
 
-    # Convert to a list of nested dicts
-    nested = [{"name": parent, "children": children} for parent, children in tree.items()]
+    nested = [{"name": k, "children": v} for k, v in tree.items()]
     return jsonify({"status": "success", "data": nested})
+
+@categories.route("/refresh", methods=["POST"])
+def refresh_plaid_categories():
+    """
+    Uses Plaid SDK to fetch and store normalized category hierarchy:
+    - Creates parent + child categories with plaid_category_id, names, and relationships
+    """
+    try:
+        request = CategoriesGetRequest()
+        response = plaid_client.categories_get(request)
+        categories = response.to_dict().get("categories", [])
+
+        for cat in categories:
+            hierarchy = cat.get("hierarchy", [])
+            plaid_cat_id = cat.get("category_id")
+
+            if not plaid_cat_id or not hierarchy:
+                continue
+
+            if len(hierarchy) == 1:
+                # Top-level category
+                primary = hierarchy[0]
+                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                if not existing:
+                    parent = Category(
+                        plaid_category_id=plaid_cat_id,
+                        primary_category=primary,
+                        display_name=primary,
+                        detailed_category=None,
+                        parent_id=None,
+                    )
+                    db.session.add(parent)
+                    db.session.flush()
+            elif len(hierarchy) >= 2:
+                primary = hierarchy[0]
+                detailed = hierarchy[1]
+
+                # Get or create parent first
+                parent = Category.query.filter_by(display_name=primary, parent_id=None).first()
+                if not parent:
+                    parent = Category(
+                        plaid_category_id=f"{plaid_cat_id}_primary",
+                        primary_category=primary,
+                        display_name=primary
+                    )
+                    db.session.add(parent)
+                    db.session.flush()
+
+                # Add child
+                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                if not existing:
+                    child = Category(
+                        plaid_category_id=plaid_cat_id,
+                        primary_category=primary,
+                        detailed_category=detailed,
+                        display_name=detailed,
+                        parent_id=parent.id
+                    )
+                    db.session.add(child)
+
+        db.session.commit()
+        logger.info("✅ Refreshed Plaid categories using SDK")
+        return jsonify({"status": "success", "message": "Categories refreshed"})
+
+    except Exception as e:
+        logger.error(f"❌ Failed to refresh Plaid categories: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
