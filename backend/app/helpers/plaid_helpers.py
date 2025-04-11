@@ -78,11 +78,9 @@ def get_accounts(access_token):
 get_categories.route("/load_categories", methods=["POST"])
 def refresh_plaid_categories():
     """
-    Fetch all Plaid categories from the Plaid API using the Plaid SDK 
+    Fetch all Plaid categories from the Plaid API using the Plaid SDK
     and populate the categories table via Category.query.
     """
-
-    # First, check how many Category records are in the DB
     try:
         existing_count = Category.query.count()
         if existing_count > 0:
@@ -92,10 +90,10 @@ def refresh_plaid_categories():
         logger.error(f"Error checking existing categories: {e}")
         return
 
-    # Prepare Plaid API client
+    # Initialize Plaid API
     configuration = Configuration(
         host=PLAID_BASE_URL,
-        api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET},
+        api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET}
     )
     api_client = ApiClient(configuration)
     client = plaid_api.PlaidApi(api_client)
@@ -106,60 +104,67 @@ def refresh_plaid_categories():
         categories_list = response["categories"]
         logger.info(f"Fetched {len(categories_list)} categories from Plaid.")
     except Exception as e:
-        logger.erro(f"Error fetching categories from Plaid: {e}")
+        logger.error(f"Error fetching categories from Plaid: {e}")
         return
 
     try:
-        # Ensure we have an "Unknown" category
-        unknown_category = Category.query.filter_by(display_name="Unknown").first()
-        if not unknown_category:
-            unknown_category = Category(display_name="Unknown")
-            db.session.add(unknown_category)
+        # Ensure 'Unknown' exists
+        unknown_cat = Category.query.filter_by(display_name="Unknown").first()
+        if not unknown_cat:
+            unknown_cat = Category(
+                plaid_category_id="unknown",
+                display_name="Unknown"
+            )
+            db.session.add(unknown_cat)
             db.session.commit()
 
-        # Populate or update primary/secondary categories
         for cat in categories_list:
             hierarchy = cat.get("hierarchy", [])
-            if hierarchy:
-                primary_name = hierarchy[0]
-                secondary_name = hierarchy[1] if len(hierarchy) > 1 else None
-            else:
-                # If hierarchy is missing or empty, default to "Unknown"
-                primary_name = "Unknown"
-                secondary_name = None
+            plaid_id = cat.get("category_id")
+            if not plaid_id or not hierarchy:
+                continue
 
-            # Look up or create the primary category
+            primary_name = hierarchy[0]
+            secondary_name = hierarchy[1] if len(hierarchy) > 1 else None
+
+            # Create or reuse primary category
             primary_cat = Category.query.filter_by(display_name=primary_name).first()
             if not primary_cat:
-                primary_cat = Category(display_name=primary_name)
+                primary_cat = Category(
+                    plaid_category_id=f"{plaid_id}_primary",
+                    display_name=primary_name
+                )
                 db.session.add(primary_cat)
                 db.session.commit()
                 logger.info(f"Created primary category: {primary_name}")
             else:
                 logger.debug(f"Using existing primary category: {primary_name}")
 
-            # Look up or create the secondary category
+            # Create secondary category (if it exists and is different from primary)
             if secondary_name and secondary_name != primary_name:
-                secondary_cat = Category.query.filter_by(disply_name=secondary_name).first()
+                secondary_cat = Category.query.filter_by(display_name=secondary_name).first()
                 if not secondary_cat:
-                    secondary_cat = Category(display_name=secondary_name, parent_id=primary_cat.id)
+                    secondary_cat = Category(
+                        plaid_category_id=plaid_id,
+                        display_name=secondary_name,
+                        parent_id=primary_cat.id
+                    )
                     db.session.add(secondary_cat)
                     db.session.commit()
                     logger.info(f"Created secondary category: {secondary_name} under {primary_name}")
                 else:
+                    # If it's missing parent link, update it
                     if secondary_cat.parent_id != primary_cat.id:
                         secondary_cat.parent_id = primary_cat.id
                         db.session.commit()
-                        logger.info(f"Updated secondary category: {secondary_name} under {primary_name}")
+                        logger.info(f"Updated secondary category: {secondary_name} with parent {primary_name}")
                     else:
                         logger.debug(f"Using existing secondary category: {secondary_name}")
-
         logger.info("Plaid categories successfully populated into the database.")
 
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error populating categories: {e}")
-
 
 def get_transactions(access_token, start_date, end_date):
     """
