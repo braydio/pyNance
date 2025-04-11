@@ -93,6 +93,7 @@ SQLALCHEMY_TRACK_MODIFICATIONS = False
 logger.debug(f"SQL DB initialized: {SQLALCHEMY_DATABASE_URI}")
 
 logger.debug("Directories initialized:")
+# Don't need these all - look to cleanup and re-enable
 # for name, path in DIRECTORIES.items():
 #     logger.debug(f"{name}: {path}")
 # logger.debug("Files initialized:")
