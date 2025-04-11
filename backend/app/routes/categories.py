@@ -2,7 +2,6 @@
 from flask import Blueprint, jsonify
 from app.models import Category
 from app import db, plaid_client
-from plaid.model.categories_get_request import CategoriesGetRequest
 import logging
 
 logger = logging.getLogger(__name__)
@@ -49,8 +48,7 @@ def refresh_plaid_categories():
     - Creates parent + child categories with plaid_category_id, names, and relationships
     """
     try:
-        request = CategoriesGetRequest()
-        response = plaid_client.categories_get(request)
+        response = plaid_client.categories_get({})
         categories = response.to_dict().get("categories", [])
 
         for cat in categories:
