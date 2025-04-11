@@ -10,19 +10,6 @@ categories = Blueprint("categories", __name__)
 
 @categories.route("/tree", methods=["GET"])
 def get_category_tree():
-    """
-    Returns a nested category tree:
-    [
-      {
-        "name": "Food and Drink",
-        "children": [
-          { "name": "Restaurants", "id": 3, "plaid_id": "13005000" },
-          ...
-        ]
-      },
-      ...
-    ]
-    """
     tree = {}
     categories = Category.query.all()
     for cat in categories:
@@ -43,10 +30,6 @@ def get_category_tree():
 
 @categories.route("/refresh", methods=["POST"])
 def refresh_plaid_categories():
-    """
-    Uses Plaid SDK to fetch and store normalized category hierarchy:
-    - Creates parent + child categories with plaid_category_id, names, and relationships
-    """
     try:
         response = plaid_client.categories_get({})
         categories = response.to_dict().get("categories", [])
@@ -59,7 +42,6 @@ def refresh_plaid_categories():
                 continue
 
             if len(hierarchy) == 1:
-                # Top-level category
                 primary = hierarchy[0]
                 existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
                 if not existing:
@@ -76,7 +58,6 @@ def refresh_plaid_categories():
                 primary = hierarchy[0]
                 detailed = hierarchy[1]
 
-                # Get or create parent first
                 parent = Category.query.filter_by(display_name=primary, parent_id=None).first()
                 if not parent:
                     parent = Category(
@@ -87,7 +68,6 @@ def refresh_plaid_categories():
                     db.session.add(parent)
                     db.session.flush()
 
-                # Add child
                 existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
                 if not existing:
                     child = Category(
