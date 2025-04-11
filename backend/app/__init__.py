@@ -1,6 +1,6 @@
 # File: app/__init__.py
 
-from app.config import logger
+from app.config import logger, plaid_client
 from app.extensions import db
 from flask import Flask
 from flask_cors import CORS
@@ -16,7 +16,7 @@ def create_app():
     Migrate(app, db)  # Initialize Flask-Migrate
 
     with app.app_context():
-        from app.helpers.plaid_helpers import refresh_plaid_categories
+        from app.routes.categories import refresh_plaid_categories
         refresh_plaid_categories()
         # Ensure models are imported so that tables are registered
         # db.create_all()
