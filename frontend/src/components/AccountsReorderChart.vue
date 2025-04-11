@@ -57,7 +57,7 @@ export default {
   methods: {
     async fetchAccounts() {
       try {
-        const response = await axios.get("/api/accounts/get_accounts");
+        const response = await axios.get("/api/transactions/get_accounts");
         if (response.data && response.data.status === "success") {
           this.accounts = response.data.data.accounts || response.data.data;
           this.filterAccounts();
@@ -115,6 +115,7 @@ export default {
 </script>
 
 <style scoped>
+@import '@/styles/global-colors.css';
 
 .accounts-reorder-chart {
   padding: 1rem;
