@@ -80,6 +80,7 @@ export default {
               backgroundColor: gradients,
               borderWidth: 1,
               borderRadius: 4,
+              barThickness: 20,
             },
           ],
         },
@@ -92,7 +93,7 @@ export default {
               ticks: {
                 maxTicksLimit: 10,
                 color: getStyle("--color-text-muted"),
-                font: { family: "'Fira Code', monospace", size: 10 },
+                font: { family: "'SourceCodeVF', monospace", size: 10 },
               },
               grid: { color: getStyle("--divider") },
             },
@@ -154,6 +155,7 @@ export default {
 
 <style scoped>
 
+
 .daily-net-chart {
   margin: 1rem;
   background-color: var(--color-bg-sec);
@@ -163,7 +165,8 @@ export default {
   position: relative;
   opacity: 0.95;
   height: 400px;
-  min-width: 500px;
+  min-width: 700px; /* wider base */
+  width: 100%; /* fluid width */
   border: 1px solid var(--divider);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
 }
