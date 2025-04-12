@@ -1,7 +1,12 @@
 
 <template>
   <div class="daily-net-chart">
-    <h2>Daily Net Income</h2>
+    <div class="header-row">
+      <h2>Daily Net Income</h2>
+      <button class="zoom-toggle" @click="toggleZoom">
+        {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
+      </button>
+    </div>
     <div class="chart-summary">
       <div class="summary-line income">
         Income: ${{ summary.totalIncome.toLocaleString() }}
@@ -10,7 +15,7 @@
         Expenses: ${{ summary.totalExpenses.toLocaleString() }}
       </div>
       <div class="summary-line net">
-        Net: ${{ summary.totalNet.toLocaleString() }}
+       Net Total: ${{ summary.totalNet.toLocaleString() }}
       </div>
     </div>
     <canvas ref="chartCanvas"></canvas>
@@ -28,6 +33,7 @@ export default {
     const chartInstance = ref(null);
     const chartCanvas = ref(null);
     const chartData = ref([]);
+    const zoomedOut = ref(false);
 
     const fetchData = async () => {
       try {
@@ -41,6 +47,11 @@ export default {
       }
     };
 
+    const toggleZoom = () => {
+      zoomedOut.value = !zoomedOut.value;
+      updateChart();
+    };
+
     const updateChart = async () => {
       await nextTick();
       const canvasEl = chartCanvas.value;
@@ -49,20 +60,23 @@ export default {
       if (!ctx) return;
       if (chartInstance.value) chartInstance.value.destroy();
 
-      const labels = chartData.value.map((item) => item.date);
-      const netValues = chartData.value.map((item) => item.net);
+      const now = new Date();
+      const rangeStart = new Date();
+      if (!zoomedOut.value) {
+        rangeStart.setMonth(rangeStart.getMonth() - 1);
+      } else {
+        rangeStart.setMonth(rangeStart.getMonth() - 6);
+      }
 
-      const gradients = labels.map((_, index) => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvasEl.height);
-        if (netValues[index] >= 0) {
-          gradient.addColorStop(0, "#a6e3a1"); // nebula green
-          gradient.addColorStop(1, "#5db073");
-        } else {
-          gradient.addColorStop(0, "#eb6f92"); // nebula rose
-          gradient.addColorStop(1, "#a43e5c");
-        }
-        return gradient;
+      const filtered = chartData.value.filter(item => {
+        const d = new Date(item.date);
+        return d >= rangeStart && d <= now;
       });
+
+      const labels = filtered.map((item) => item.date);
+      const netValues = filtered.map((item) => item.net);
+      const incomeValues = filtered.map((item) => item.income);
+      const expenseValues = filtered.map((item) => item.expenses);
 
       const getStyle = (name) =>
         getComputedStyle(document.documentElement)
@@ -75,12 +89,30 @@ export default {
           labels,
           datasets: [
             {
-              label: "Net Income",
-              data: netValues,
-              backgroundColor: gradients,
-              borderWidth: 1,
+              type: "bar",
+              label: "Income",
+              data: incomeValues,
+              backgroundColor: "#5db073",
               borderRadius: 4,
               barThickness: 20,
+            },
+            {
+              type: "bar",
+              label: "Expenses",
+              data: expenseValues,
+              backgroundColor: "#a43e5c",
+              borderRadius: 4,
+              barThickness: 20,
+            },
+            {
+              type: "line",
+              label: "Net",
+              data: netValues,
+              borderColor: getStyle("--color-accent-mint"),
+              backgroundColor: getStyle("--color-accent-mint"),
+              tension: 0.3,
+              borderWidth: 2,
+              pointRadius: 0,
             },
           ],
         },
@@ -90,10 +122,11 @@ export default {
           layout: { padding: { top: 20, bottom: 20 } },
           scales: {
             x: {
+              stacked: true,
               ticks: {
-                maxTicksLimit: 10,
+                maxTicksLimit: 14,
                 color: getStyle("--color-text-muted"),
-                font: { family: "'SourceCodeVF', monospace", size: 10 },
+                font: { family: "'Fira Code', monospace", size: 10 },
               },
               grid: { color: getStyle("--divider") },
             },
@@ -112,7 +145,7 @@ export default {
               callbacks: {
                 label: (context) => {
                   const index = context.dataIndex;
-                  const dataPoint = chartData.value[index];
+                  const dataPoint = filtered[index];
                   return [
                     `Net: $${dataPoint.net.toLocaleString()}`,
                     `Income: $${dataPoint.income.toLocaleString()}`,
@@ -127,7 +160,7 @@ export default {
               borderColor: getStyle("--color-accent-yellow"),
               borderWidth: 1,
             },
-            legend: { display: false },
+            legend: { display: true },
           },
         },
       });
@@ -148,14 +181,16 @@ export default {
       chartCanvas,
       fetchData,
       summary,
+      toggleZoom,
+      zoomedOut,
     };
   },
 };
 </script>
 
+
+
 <style scoped>
-
-
 .daily-net-chart {
   margin: 1rem;
   background-color: var(--color-bg-sec);
@@ -165,10 +200,27 @@ export default {
   position: relative;
   opacity: 0.95;
   height: 400px;
-  min-width: 700px; /* wider base */
-  width: 100%; /* fluid width */
+  min-width: 700px;
+  width: 100%;
   border: 1px solid var(--divider);
   transition: box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.zoom-toggle {
+  background: var(--color-accent-yellow);
+  border: none;
+  color: var(--color-text-dark);
+  padding: 0.25rem 0.75rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
 }
 
 .chart-summary {
