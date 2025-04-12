@@ -10,9 +10,9 @@
         <!-- Dashboard menu buttons -->
       </nav>
     </header>
-
     <main class="dashboard-content">
       <section class="charts-section">
+
         <DailyNetChart />
         <CategoryBreakdownChart />
       </section>
