@@ -583,7 +583,7 @@ def get_paginated_transactions(page, page_size):
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
-                "account_id": tx.account_id or "UnKnown",
+                "account_id": acc.account_id or "UnKnown",
             }
         )
     return serialized, total
