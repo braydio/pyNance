@@ -2,6 +2,7 @@
 
 import random
 from datetime import datetime, timedelta
+import traceback
 
 from app.config import logger
 from app.extensions import db
@@ -11,36 +12,48 @@ from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
-
 @charts.route("/category_breakdown", methods=["GET"])
-def get_category_breakdown():
-    """
-    Group negative transactions by category and return top 10 spending categories.
-    """
+def category_breakdown():
+    print("Received query params:", request.args.get("start_date"), request.args.get("end_date"))
     try:
-        result = (
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else datetime.now().date() - timedelta(days=30)
+        print("Parsed start_date:", start_date)
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.now().date()
+        print("Parsed end_date:", end_date)
+
+        results = (
             db.session.query(
-                Category.display_name,
-                func.sum(func.abs(Transaction.amount)).label("total"),
+                Category.display_name.label("category"),
+                func.sum(func.abs(Transaction.amount)).label("amount"),
+                func.min(Transaction.date).label("date")
             )
             .join(Transaction, Transaction.category_id == Category.id)
             .filter(Transaction.amount < 0)
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
             .group_by(Category.display_name)
             .order_by(func.sum(func.abs(Transaction.amount)).desc())
             .limit(10)
             .all()
         )
 
-        breakdown = [
-            {"category": cat if cat else "Uncategorized", "amount": round(total, 2)}
-            for cat, total in result
+        data = [
+            {
+                "category": row.category or "Uncategorized",
+                "amount": round(row.amount, 2),
+                "date": row.date if row.date else None
+            }
+            for row in results
         ]
-        return jsonify({"status": "success", "data": breakdown}), 200
+
+        return jsonify({"status": "success", "data": data}), 200
 
     except Exception as e:
-        logger.error(f"Error in category breakdown: {e}", exc_info=True)
+        traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
-
 
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
