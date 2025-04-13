@@ -1,10 +1,10 @@
-
 <template>
-  <nav class="menu flex-center p-2 z-50">
-    <router-link to="/" class="nav-link">Dashboard</router-link>
-    <router-link to="/accounts" class="nav-link">Accounts</router-link>
-    <router-link to="/transactions" class="nav-link">Transactions</router-link>
-    <router-link to="/gallery" class="nav-link">Gallery</router-link>
+  <nav class="menu">
+    <router-link to="/">Dashboard</router-link>
+    <router-link to="/accounts">Accounts</router-link>
+    <router-link to="/transactions">Transactions</router-link>
+    <router-link to="/gallery">Gallery</router-link>
+    <router-link to="/recurring-transactions">Recurring Tx</router-link> <!-- ✅ Added -->
   </nav>
 </template>
 
