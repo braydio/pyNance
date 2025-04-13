@@ -70,6 +70,8 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   .video-container {
     position: relative;
     padding-bottom: 56.25%; /* 16:9 aspect ratio */
@@ -97,5 +99,6 @@
   .mute-toggle:hover {
     background-color: var(--gruvbox-hover);
   }
-  </style>
+  
+</style>
   

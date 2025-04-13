@@ -1,8 +1,8 @@
 <template>
   <div class="link-account">
-    <h2>Link Your Bank Account</h2>
+    <h2>Link a New Account</h2>
     <div class="button-group">
-      <button @click="linkPlaid">Plaid Link</button>
+      <button @click="linkPlaid">Plaid</button>
       <button @click="linkTeller">Teller.io</button>
     </div>
   </div>
@@ -19,7 +19,7 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      userId: "pyNanceDash", // Do not change this
+      userId: import.meta.env.VITE_USER_ID_PLAID, // Fixed: added VITE_ prefix
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
     };
   },
@@ -28,7 +28,6 @@ export default {
       try {
         await loadExternalScripts();
         this.scriptsLoaded = true;
-        // Preload Plaid link token after scripts have loaded.
         await this.preloadPlaidLinkToken();
       } catch (error) {
         console.error("Error loading external scripts:", error);
@@ -37,7 +36,7 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: "pyNanceDash", // Do not change this
+          user_id: this.userId,
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
@@ -46,30 +45,30 @@ export default {
       }
     },
     async linkPlaid() {
-      if (!this.scriptsLoaded) {
-        console.error("External scripts not loaded yet.");
+      if (!this.scriptsLoaded || !this.plaidLinkToken || !window.Plaid) {
+        console.error("Prerequisites missing for Plaid linking.");
         return;
       }
-      if (!this.plaidLinkToken) {
-        console.error("Plaid link token not available.");
-        return;
-      }
-      if (!window.Plaid) {
-        console.error("Plaid library not available.");
-        return;
-      }
+
       const handler = window.Plaid.create({
         token: this.plaidLinkToken,
         onSuccess: async (public_token, metadata) => {
-          console.log("Plaid onSuccess, public_token:", public_token);
-          const exchangeRes = await api.exchangePublicToken("plaid", public_token);
-          console.log("Plaid exchange response:", exchangeRes);
-          // Optionally, emit an event to refresh your accounts
+          try {
+            console.log("Plaid onSuccess, public_token:", public_token);
+            const exchangeRes = await api.exchangePublicToken("plaid", {
+              user_id: this.userId,
+              public_token: public_token,
+            });
+            console.log("Plaid exchange response:", exchangeRes);
+          } catch (error) {
+            console.error("Error exchanging Plaid public token:", error);
+          }
         },
         onExit: (err, metadata) => {
           console.log("Plaid Link exited", err, metadata);
         },
       });
+
       handler.open();
     },
     async linkTeller() {
@@ -85,21 +84,24 @@ export default {
         this.tellerConnectInstance = window.TellerConnect.setup({
           applicationId: this.tellerAppId,
           products: ["transactions", "balance"],
-          onInit: function() {
+          onInit: () => {
             console.log("Teller Connect has initialized");
           },
-          onSuccess: async function(enrollment) {
+          onSuccess: async (enrollment) => {
             console.log("User enrolled successfully", enrollment.accessToken);
-            const exchangeRes = await api.exchangePublicToken("teller", enrollment.accessToken);
+            const exchangeRes = await api.exchangePublicToken("teller", {
+              user_id: this.userId,
+              public_token: enrollment.accessToken,
+            });
             console.log("Teller exchange response:", exchangeRes);
           },
-          onExit: function() {
+          onExit: () => {
             console.log("User closed Teller Connect");
-          }
+          },
         });
       }
       this.tellerConnectInstance.open();
-    }
+    },
   },
   mounted() {
     this.initializeScripts();
@@ -108,29 +110,30 @@ export default {
 </script>
 
 <style scoped>
+
 .link-account {
-  background-color: var(--gruvbox-bg);
-  color: var(--gruvbox-fg);
-  padding: 1.5rem;
-  border-radius: 6px;
-  margin: 1rem 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
-  text-align: center;
+  margin: 0 auto;
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-bg-secondary);
+  border-radius: 8px;
+  box-shadow: 0 2px 8px var(--shadow);
 }
+
 .link-account h2 {
-  margin: 0 0 1rem;
-  color: var(--gruvbox-yl);
+  margin: 5px 5px 1rem;
+  color: var(--link-color);
 }
 .button-group {
   display: flex;
-  gap: 1rem;
+  gap: 1.5rem;
   justify-content: center;
 }
 .button-group button {
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
   border: none;
-  padding: 0.75rem 1rem;
+  padding: 0.5rem 0.1rem;
   border-radius: 3px;
   font-weight: bold;
   cursor: pointer;

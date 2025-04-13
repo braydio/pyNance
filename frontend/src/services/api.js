@@ -11,7 +11,7 @@ const apiClient = axios.create({
 
 export default {
   async getAccounts() {
-    const response = await apiClient.get("/teller/transactions/get_accounts");
+    const response = await apiClient.get(`/accounts/get_accounts`);
     return response.data;
   },
   async refreshAccounts() {
@@ -37,7 +37,7 @@ export default {
     return response.data;
   },
   async updateTransaction(transactionData) {
-    const response = await apiClient.put("/teller/transactions/update", transactionData);
+    const response = await apiClient.put("/transactions/update", transactionData);
     return response.data;
   },
   async generateLinkToken(provider, payload = {}) {
@@ -50,16 +50,16 @@ export default {
     const response = await apiClient.post(url, payload);
     return response.data;
   },
-    async exchangePublicToken(provider, public_token) {
-    let url = "";
-    if (provider === "plaid") {
-      url = "/plaid/transactions/exchange_public_token";
-    } else if (provider === "teller") {
-      url = "/teller/transactions/exchange_public_token";
-    }
-    const response = await apiClient.post(url, { public_token, provider });
+
+  async exchangePublicToken(provider, payload) {
+    const response = await apiClient.post(
+      `/${provider}/transactions/exchange_public_token`,
+      payload
+    );
     return response.data;
   },
+
+
   async deleteAccount(provider, account_id) {
     let url = "";
     if (provider === "plaid") {
@@ -71,6 +71,15 @@ export default {
       data: { account_id },
     });
     return response.data;
-  }
-  
+  },
+  async fetchRecurringTransactions(provider, account_id) {
+    // This now calls the new generic recurring endpoint.
+    const response = await apiClient.get(`/accounts/${account_id}/recurring`);
+    return response.data;
+  },
+  async updateRecurringTransaction(account_id, payload) {
+    // This calls the new recurringTx update endpoint.
+    const response = await apiClient.put(`/accounts/${account_id}/recurringTx`, payload);
+    return response.data;
+  },
 };

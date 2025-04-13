@@ -161,6 +161,8 @@
   </script>
   
   <style scoped>
+@import '@/styles/global-colors.css';
+
   body {
     font-family: Arial, sans-serif;
     margin: 0;
@@ -204,5 +206,6 @@
     text-align: center;
     margin-top: 20px;
   }
-  </style>
+  
+</style>
   

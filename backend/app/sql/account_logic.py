@@ -1,16 +1,56 @@
 # File: app/sql/account_logic.py
 
+from sqlalchemy.orm import aliased
 import json
 import time
-from datetime import date, datetime, timedelta
+from datetime import date as pydate
+from datetime import datetime, timedelta
 
+from sqlalchemy.orm import aliased
 import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.helpers.plaid_helpers import refresh_plaid_categories
 from app.extensions import db
-from app.models import Account, AccountDetails, AccountHistory, PlaidItem, Transaction
+from app.models import (
+    Account,
+    AccountDetails,
+    AccountHistory,
+    Category,
+    PlaidItem,
+    Transaction,
+)
+
+ParentCategory = aliased(Category)
 
 TRANSACTIONS_RAW = FILES["TRANSACTIONS_RAW"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
+
+
+def process_transaction_amount(amount, account_type):
+    """
+    Process the transaction amount based on the account type.
+
+    For credit accounts (i.e. types "credit", "credit card", "credit_card", "liability"),
+    assume that positive amounts (charges) should be stored as negative expenses.
+    For non-credit accounts, return the amount as-is.
+    """
+    try:
+        amt = float(amount)
+    except (TypeError, ValueError):
+        return 0.0
+    if account_type and account_type.strip().lower() in [
+        "credit",
+        "credit card",
+        "credit_card",
+        "liability",
+    ]:
+        # If a charge comes in as positive, record it as negative.
+        if amt > 0:
+            return -abs(amt)
+        else:
+            return amt
+    else:
+        return amt
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
@@ -62,6 +102,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
 
+        # For credit/liability accounts, invert the sign on the balance.
         if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
             logger.debug(
                 f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {-balance}."
@@ -79,6 +120,8 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         logger.debug(f"Processing account id: {account_id}")
         existing = Account.query.filter_by(account_id=account_id).first()
         now = datetime.utcnow()
+
+        # If the account already exists, update it. Otherwise, insert new.
         if existing:
             logger.debug(f"Updating account {name}, {account_id}")
             existing.name = name
@@ -116,7 +159,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
                 link_type=provider,
             )
             db.session.add(new_account)
-            db.session.flush()  # Ensure new_account gets an ID before adding details.
+            db.session.flush()  # Ensure new_account has an ID before details.
             details = AccountDetails(
                 account_id=account_id,
                 enrollment_id=enrollment_id,
@@ -124,7 +167,8 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             )
             db.session.add(details)
 
-        today = date.today()
+        # Update daily balance history
+        today = pydate.today()
         existing_history = AccountHistory.query.filter_by(
             account_id=account_id, date=today
         ).first()
@@ -142,6 +186,14 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
     db.session.commit()
     logger.debug("Finished upserting accounts.")
 
+
+def refresh_plaid_categories(plaid_base_url):
+    print(plaid_base_url)
+    refresh = refresh+_plaid_categories()
+    if refresh:
+        logger.info("Categories table refreshed.")
+    else:
+        logger.error("Unable to refresh categories from Plaid Helper.")
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
     """
@@ -165,6 +217,7 @@ def refresh_data_for_teller_account(
 ):
     """
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
+    Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
     updated = False
     # Refresh Balance
@@ -178,6 +231,9 @@ def refresh_data_for_teller_account(
         )
         balance_json = resp_balance.json()
         new_balance = account.balance
+
+        # If "available" is present, use that for non-credit accounts; for credit,
+        # invert the ledger balance. Otherwise, handle nested structures.
         if "available" in balance_json:
             account_type = (account.type or "").lower()
             if account_type in ["credit", "liability"]:
@@ -245,6 +301,7 @@ def refresh_data_for_teller_account(
         txns_json = resp_txns.json()
         with open(TRANSACTIONS_RAW, "w") as f:
             json.dump(txns_json, f, indent=4)
+
         if isinstance(txns_json, dict) and "transactions" in txns_json:
             txns_list = txns_json.get("transactions", [])
         elif isinstance(txns_json, list):
@@ -268,12 +325,26 @@ def refresh_data_for_teller_account(
                 )
                 existing_txn = None
 
-            details = txn.get("details", {}) or {}
-            category = details.get("category")
-            if isinstance(category, list) and category:
-                category = category[-1] or "Unknown"
+            # Process common fields
+            new_amount = process_transaction_amount(
+                txn.get("amount") or 0, account.type
+            )
+            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
+            if raw_date_str:
+                try:
+                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
+                except ValueError:
+                    parsed_date = pydate.today()
             else:
-                category = category or "Unknown"
+                parsed_date = pydate.today()
+
+
+            category_list = txn.get("category", [])
+            if isinstance(category_list, list) and category_list:
+                category = " > ".join(category_list)
+            else:
+                category = "Unknown"
+
 
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
@@ -288,21 +359,23 @@ def refresh_data_for_teller_account(
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
                 merchant_typ = counterparty.get("type", "Unknown")
-            else:
-                logger.debug(
-                    f"Unexpected counterparty type for txn {txn_id}: {type(counterparty)}"
-                )
 
             if existing_txn:
-                logger.debug(
-                    f"Updating transaction {txn_id} for account {account.account_id}."
-                )
-                existing_txn.amount = txn.get("amount") or 0
-                existing_txn.date = txn.get("date") or ""
-                existing_txn.description = txn.get("description") or ""
-                existing_txn.category = category
-                existing_txn.merchant_name = merchant_name
-                existing_txn.merchant_typ = merchant_typ
+                if existing_txn.user_modified:
+                    logger.debug(
+                        f"Transaction {txn_id} is user modified; preserving user changes."
+                    )
+                    # Skip updating fields that have been modified by the user.
+                else:
+                    logger.debug(
+                        f"Updating transaction {txn_id} for account {account.account_id}."
+                    )
+                    existing_txn.amount = new_amount
+                    existing_txn.date = parsed_date
+                    existing_txn.description = txn.get("description") or ""
+                    existing_txn.category = category
+                    existing_txn.merchant_name = merchant_name
+                    existing_txn.merchant_typ = merchant_typ
             else:
                 logger.debug(
                     f"Inserting new transaction {txn_id} for account {account.account_id}."
@@ -310,8 +383,8 @@ def refresh_data_for_teller_account(
                 new_txn = Transaction(
                     transaction_id=txn_id,
                     account_id=account.account_id,
-                    amount=txn.get("amount") or 0,
-                    date=txn.get("date") or "",
+                    amount=new_amount,
+                    date=parsed_date,
                     description=txn.get("description") or "",
                     category=category,
                     merchant_name=merchant_name,
@@ -324,6 +397,7 @@ def refresh_data_for_teller_account(
             f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
         )
 
+    # Update daily history for this Teller account
     today = datetime.today().date()
     existing_history = AccountHistory.query.filter_by(
         account_id=account.account_id, date=today
@@ -344,84 +418,21 @@ def refresh_data_for_teller_account(
 
     return updated
 
-
-def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
+def refresh_data_for_plaid_account(access_token, plaid_base_url):
     """
-    Refresh a Plaid-linked account by querying the Plaid API.
-    It refreshes balance and transactions and updates the DB accordingly.
+    Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
+    Refreshes transactions and updates the DB accordingly, ensuring each transaction goes to the correct account.
     Returns True if any update occurred.
     """
     updated = False
     now = datetime.utcnow()
-    logger.debug(f"Refreshing Plaid account {account.account_id}")
 
-    # Refresh Balance
-    url_balance = f"{plaid_base_url}/accounts/get"
-    payload_balance = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "access_token": access_token,
-    }
-    try:
-        resp_balance = requests.post(url_balance, json=payload_balance)
-        logger.debug(
-            f"Plaid balance response for {account.account_id}: {resp_balance.status_code} - {resp_balance.text}"
-        )
-        if resp_balance.status_code == 200:
-            data = resp_balance.json()
-            with open(TRANSACTIONS_RAW_ENRICHED, "w") as f:
-                json.dump(data, f, indent=4)
-            accounts_list = data.get("accounts", [])
-            plaid_account = next(
-                (
-                    acc
-                    for acc in accounts_list
-                    if acc.get("account_id") == account.account_id
-                ),
-                None,
-            )
-            if plaid_account:
-                try:
-                    new_balance = float(
-                        plaid_account.get("balances", {}).get(
-                            "current", account.balance
-                        )
-                    )
-                except Exception as e:
-                    logger.error(
-                        f"Error parsing Plaid balance for {account.account_id}: {e}",
-                        exc_info=True,
-                    )
-                    new_balance = account.balance
+    PLAID_MAX_LOOKBACK_DAYS = 730
+    end_date = now.strftime("%Y-%m-%d")
+    start_date_dt = now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)
+    start_date = start_date_dt.strftime("%Y-%m-%d")
 
-                if new_balance != account.balance:
-                    logger.debug(
-                        f"Account {account.account_id}: Balance updated from {account.balance} to {new_balance}"
-                    )
-                    account.balance = new_balance
-                    updated = True
-                else:
-                    logger.debug(
-                        f"Account {account.account_id}: Balance remains unchanged."
-                    )
-            else:
-                logger.warning(
-                    f"Account {account.account_id} not found in Plaid response."
-                )
-        else:
-            logger.error(
-                f"Failed to refresh Plaid balance for {account.account_id}: {resp_balance.text}"
-            )
-    except Exception as e:
-        logger.error(
-            f"Exception refreshing Plaid balance for {account.account_id}: {e}",
-            exc_info=True,
-        )
-
-    # Refresh Transactions
     url_txns = f"{plaid_base_url}/transactions/get"
-    start_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d")
-    end_date = datetime.now().strftime("%Y-%m-%d")
     payload_txns = {
         "client_id": PLAID_CLIENT_ID,
         "secret": PLAID_SECRET,
@@ -429,86 +440,100 @@ def refresh_data_for_plaid_account(account, access_token, plaid_base_url):
         "start_date": start_date,
         "end_date": end_date,
     }
+
     try:
         resp_txns = requests.post(url_txns, json=payload_txns, timeout=10)
-        logger.debug(
-            f"Plaid transactions response for {account.account_id}: {resp_txns.status_code} - {resp_txns.text}"
-        )
+        logger.debug(f"Plaid transactions response: {resp_txns.status_code} - {resp_txns.text}")
         if resp_txns.status_code == 200:
             txns_json = resp_txns.json()
-            with open(TRANSACTIONS_RAW_ENRICHED, "w") as f:
-                json.dump(txns_json, f, indent=4)
             transactions = txns_json.get("transactions", [])
-            if transactions:
-                for txn in transactions:
-                    txn_id = txn.get("transaction_id")
-                    if not txn_id:
-                        logger.warning(
-                            "Transaction missing 'transaction_id'; skipping."
-                        )
-                        continue
+            for txn in transactions:
+                txn_id = txn.get("transaction_id")
+                if not txn_id:
+                    logger.warning("Transaction missing 'transaction_id'; skipping.")
+                    continue
 
-                    existing_txn = Transaction.query.filter_by(
-                        transaction_id=txn_id
-                    ).first()
-                    amount = txn.get("amount") or 0
-                    date_str = txn.get("date") or txn.get("authorized_date") or ""
-                    description = txn.get("name") or txn.get("merchant_name") or ""
-                    category_list = txn.get("category")
-                    category = (
-                        category_list[-1]
-                        if isinstance(category_list, list) and category_list
-                        else "Unknown"
+                account_id = txn.get("account_id")
+                if not account_id:
+                    logger.warning(f"Transaction {txn_id} missing 'account_id'; skipping.")
+                    continue
+
+                account = Account.query.filter_by(account_id=account_id).first()
+                if not account:
+                    logger.warning(f"No matching account found in DB for account_id={account_id}")
+                    continue
+
+                existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
+                date_str = txn.get("date") or txn.get("authorized_date") or ""
+                amount = int(txn.get("amount", 0)) * -1
+
+                description_str = txn.get("name") or "Unknown"
+                merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
+                merchant_typ = "Unknown"
+
+                if txn.get("personal_finance_category"):
+                    fincat = txn["personal_finance_category"]
+                    if isinstance(fincat, dict):
+                        merchant_typ = fincat.get("detailed", "Unknown")
+
+                # --- Updated category logic ---
+                category_list = txn.get("category", []) or []
+                category_string = " > ".join(category_list) if category_list else "Unknown"
+                primary = category_list[0] if category_list else "Unknown"
+                secondary = category_list[1] if len(category_list) > 1 else None
+               
+                category_obj = (
+                    db.session.query(Category)
+                    .filter(
+                        Category.display_name == secondary,
+                        Category.parent.has(display_name=primary)
                     )
-                    merchant_name = txn.get("merchant_name") or "Unknown"
-                    merchant_typ = "Unknown"
-                    counterparties = txn.get("counterparties")
-                    if isinstance(counterparties, list) and counterparties:
-                        merchant_typ = counterparties[0].get("type", "Unknown")
+                    .first()
+                )
+                category_id = category_obj.id if category_obj else None
 
-                    if existing_txn:
-                        logger.debug(
-                            f"Updating transaction {txn_id} for {account.account_id}."
-                        )
+                if existing_txn:
+                    if existing_txn.user_modified:
+                        logger.debug(f"Transaction {txn_id} is user modified; preserving user changes.")
+                        continue
+                    else:
+                        logger.debug(f"Updating transaction {txn_id} for account {account_id}.")
                         existing_txn.amount = amount
                         existing_txn.date = date_str
-                        existing_txn.description = description
-                        existing_txn.category = category
+                        existing_txn.description = description_str
                         existing_txn.merchant_name = merchant_name
                         existing_txn.merchant_typ = merchant_typ
-                    else:
-                        logger.debug(
-                            f"Inserting new transaction {txn_id} for {account.account_id}."
-                        )
-                        new_txn = Transaction(
-                            transaction_id=txn_id,
-                            account_id=account.account_id,
-                            amount=amount,
-                            date=date_str,
-                            description=description,
-                            category=category,
-                            merchant_name=merchant_name,
-                            merchant_typ=merchant_typ,
-                        )
-                        db.session.add(new_txn)
-                updated = True
-            else:
-                logger.debug(
-                    f"No transactions found in Plaid response for {account.account_id}."
-                )
+                        existing_txn.category = category_string
+                        existing_txn.category_id = category_id
+                else:
+                    logger.debug(f"Inserting new transaction {txn_id} for account {account_id}.")
+                    new_txn = Transaction(
+                        transaction_id=txn_id,
+                        account_id=account_id,
+                        amount=amount,
+                        date=date_str,
+                        description=description_str,
+                        merchant_name=merchant_name,
+                        merchant_typ=merchant_typ,
+                        category=category_string,
+                        category_id=category_id,
+                    )
+                    db.session.add(new_txn)
+
+            db.session.commit()
+            updated = True
         else:
-            logger.error(
-                f"Failed to refresh Plaid transactions for {account.account_id}: {resp_txns.text}"
-            )
+            logger.error(f"Failed to refresh Plaid transactions: {resp_txns.text}")
     except Exception as e:
-        logger.error(
-            f"Exception refreshing Plaid transactions for {account.account_id}: {e}",
-            exc_info=True,
-        )
+        logger.error(f"Exception refreshing Plaid transactions: {e}", exc_info=True)
 
-    account.last_refreshed = now
+    # Update last_refreshed for all accounts linked to this access_token
+    linked_accounts = Account.query.filter_by(access_token=access_token).all()
+    for acc in linked_accounts:
+        acc.last_refreshed = now
+    db.session.commit()
+
     return updated
-
 
 def get_accounts_from_db():
     """
@@ -527,9 +552,7 @@ def get_accounts_from_db():
                 "status": acc.status or "Unknown",
                 "institution_name": acc.institution_name or "Unknown",
                 "balance": acc.balance if acc.balance is not None else 0,
-                "last_refreshed": acc.last_refreshed.isoformat()
-                if acc.last_refreshed
-                else None,
+                "last_refreshed": acc.last_refreshed or datetime.now(),
                 "link_type": acc.link_type or "Unknown",
             }
         )
@@ -551,15 +574,16 @@ def get_paginated_transactions(page, page_size):
     for txn, acc in results:
         serialized.append(
             {
-                "transaction_id": txn.transaction_id,
-                "date": txn.date or "",
+                "transaction_id": txn.transaction_id * -1,
+                "date": txn.date or datetime.now(),
                 "amount": txn.amount if txn.amount is not None else 0,
                 "description": txn.description or "",
-                "category": txn.category or "Unknown",
+                "category": txn.category if txn.category else "Unknown",
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
+                "account_id": acc.account_id or "UnKnown",
             }
         )
     return serialized, total
