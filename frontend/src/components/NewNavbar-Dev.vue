@@ -1,3 +1,5 @@
+
+# This needs to replace the current navbar component to render the RecurringTX page view
 <template>
   <nav class="menu">
     <router-link to="/">Dashboard</router-link>
