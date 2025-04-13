@@ -1,0 +1,6 @@
+AccountsReorderChart.vue
+CategoryBreakdownChart.vue
+AssetsBarTrended.vue
+UpdateTransactionsTable.vue
+AccountsTable.vue
+

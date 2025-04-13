@@ -1,0 +1,119 @@
+<style scoped>
+@import '@/styles/global-colors.css';
+
+.category-breakdown-chart {
+  margin: 1rem;
+  background-color: var(--themed-bg);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px var(--shadow), 0 0 6px var(--hover-glow);
+  opacity: 0.95;
+  position: relative;
+  border: 1px solid var(--divider);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.range-buttons button {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  font-family: var(--font-ui);
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  padding: 0.25rem 0.75rem;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.range-buttons button.active {
+  background: var(--color-accent-yellow);
+  color: var(--color-bg);
+  font-weight: bold;
+}
+
+.chart-summary {
+  background: var(--color-bg-secondary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-family: var(--font-body);
+  color: var(--color-text-light);
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--divider);
+  backdrop-filter: blur(4px);
+}
+
+.canvas-wrapper {
+  flex-grow: 1;
+  min-height: 240px;
+  position: relative;
+}
+</style>
+style scoped>
+
+.category-breakdown-chart {
+  margin: 1rem;
+  background-color: var(--themed-bg);
+  padding: 1rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px var(--shadow), 0 0 6px var(--hover-glow);
+  opacity: 0.95;
+  position: relative;
+  border: 1px solid var(--divider);
+  transition: background 0.3s ease, box-shadow 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.header-row h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: var(--color-text-light);
+}
+
+.range-slider {
+  flex-grow: 1;
+  max-width: 300px;
+}
+
+.days-label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-family: "SourceCodeVF", monospace;
+}
+.chart-summary {
+  background: var(--color-bg-secondary);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-family: "SourceCodeVF", monospace;
+  color: var(--color-text-;);
+  box-shadow: 0 2px 8px var(--shadow);
+  border: 1px solid var(--divider);
+}
+
+.canvas-wrapper {
+  flex-grow: 1;
+  min-height: 240px;
+  position: relative;
+}
+</style>
+

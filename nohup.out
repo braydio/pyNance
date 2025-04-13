@@ -1,0 +1,23 @@
+[2025-03-08 02:35:59.310] [info] Using configuration file /home/braydenchaffee/.config/waybar/config
+[2025-03-08 02:35:59.310] [info] Unable to receive desktop appearance: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod: No such interface “org.freedesktop.portal.Settings” on object at path /org/freedesktop/portal/desktop
+[2025-03-08 02:35:59.310] [info] Using CSS file /home/braydenchaffee/.config/waybar/style.css
+[2025-03-08 02:35:59.313] [info] Hyprland IPC starting
+[2025-03-08 02:35:59.313] [info] Loading persistent workspaces from Hyprland workspace rules
+[2025-03-08 02:35:59.316] [warning] No batteries.
+[2025-03-08 02:35:59.445] [info] Bar configured (width: 126, height: 436) for output: DP-1
+[2025-03-08 02:36:12.446] [info] Using configuration file /home/braydenchaffee/.config/waybar/config
+[2025-03-08 02:36:12.447] [info] Unable to receive desktop appearance: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod: No such interface “org.freedesktop.portal.Settings” on object at path /org/freedesktop/portal/desktop
+[2025-03-08 02:36:12.447] [info] Using CSS file /home/braydenchaffee/.config/waybar/style.css
+[2025-03-08 02:36:12.450] [info] Hyprland IPC starting
+[2025-03-08 02:36:12.450] [info] Loading persistent workspaces from Hyprland workspace rules
+[2025-03-08 02:36:12.452] [warning] No batteries.
+[2025-03-08 02:36:12.583] [info] Bar configured (width: 126, height: 436) for output: DP-1
+[2025-03-08 02:38:08.628] [info] Using configuration file /home/braydenchaffee/.config/waybar/config
+[2025-03-08 02:38:08.629] [info] Unable to receive desktop appearance: GDBus.Error:org.freedesktop.DBus.Error.UnknownMethod: No such interface “org.freedesktop.portal.Settings” on object at path /org/freedesktop/portal/desktop
+[2025-03-08 02:38:08.629] [info] Using CSS file /home/braydenchaffee/.config/waybar/style.css
+[2025-03-08 02:38:08.632] [info] Hyprland IPC starting
+[2025-03-08 02:38:08.632] [info] Loading persistent workspaces from Hyprland workspace rules
+[2025-03-08 02:38:08.635] [warning] No batteries.
+[2025-03-08 02:38:08.764] [info] Bar configured (width: 126, height: 436) for output: DP-1
+[2025-03-08 02:38:23.279] [info] Quitting.
+[2025-03-08 02:38:23.281] [info] Hyprland IPC stopping...

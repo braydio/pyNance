@@ -1,8 +1,8 @@
-"""Initial migrate
+"""empty message
 
-Revision ID: d124119c9be4
+Revision ID: 6a22943331a6
 Revises: 
-Create Date: 2025-04-04 08:59:14.075159
+Create Date: 2025-04-13 02:26:10.786026
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd124119c9be4'
+revision = '6a22943331a6'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,7 +29,7 @@ def upgrade():
     sa.Column('status', sa.String(length=64), nullable=True),
     sa.Column('institution_name', sa.String(length=128), nullable=True),
     sa.Column('balance', sa.Float(), nullable=True),
-    sa.Column('last_refreshed', sa.String(length=64), nullable=True),
+    sa.Column('last_refreshed', sa.DateTime(), nullable=True),
     sa.Column('link_type', sa.String(length=64), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('account_id')
@@ -40,6 +40,8 @@ def upgrade():
     sa.Column('primary_category', sa.String(length=128), nullable=True),
     sa.Column('detailed_category', sa.String(length=128), nullable=True),
     sa.Column('display_name', sa.String(length=256), nullable=True),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['parent_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('plaid_category_id')
     )
@@ -96,6 +98,7 @@ def upgrade():
     sa.Column('user_modified', sa.Boolean(), nullable=True),
     sa.Column('user_modified_fields', sa.Text(), nullable=True),
     sa.Column('category_id', sa.Integer(), nullable=True),
+    sa.Column('category', sa.String(length=128), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id'),

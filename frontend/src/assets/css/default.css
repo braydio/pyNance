@@ -1,0 +1,22 @@
+.chart-container {
+  margin: 1rem;
+  background-color: #282828;
+  padding: 1rem;
+  border-radius: 8px;
+  position: relative;
+  /* Let’s try flexible sizing: */
+  width: 100%;
+  max-width: 600px;   /* optional max if you want a limit */
+  min-height: 300px;  /* optional baseline height */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.chart-container canvas {
+  width: 100% !important;
+  height: auto !important;
+  max-height: 400px; /* or remove if you want it bigger */
+}
+

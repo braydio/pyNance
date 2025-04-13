@@ -1,0 +1,1225 @@
+=== AccountsReorderChart.vue ===
+<template>
+  <div class="accounts-reorder-chart">
+    <h2>Top Accounts by Balance</h2>
+    <div class="chart-summary">
+      <!-- Liabilities Section -->
+      <div class="group">
+        <h3>Liabilities (Credit Accounts)</h3>
+        <draggable v-model="creditAccounts" :options="{ animation: 150 }" item-key="account_id">
+          <template #item="{ element }">
+            <div class="account-bar">
+              <div class="account-info">
+                <span class="account-name">{{ element.name }}</span>
+                <span class="account-balance">
+                  {{ formatBalance(element.adjusted_balance) }} <!-- Now always correct -->
+                </span>
+              </div>
+              <div class="bar" :style="{ width: getBarWidth(element, creditAccounts) }"></div>
+            </div>
+          </template>
+        </draggable>
+      </div>
+
+      <!-- Assets Section -->
+      <div class="group">
+        <h3>Assets (Depository Accounts)</h3>
+        <draggable v-model="depositoryAccounts" :options="{ animation: 150 }" item-key="account_id">
+          <template #item="{ element }">
+            <div class="account-bar">
+              <div class="account-info">
+                <span class="account-name">{{ element.name }}</span>
+                <span class="account-balance">
+                  {{ formatBalance(element.balance) }}
+                </span>
+              </div>
+              <div class="bar" :style="{ width: getBarWidth(element, depositoryAccounts) }"></div>
+            </div>
+          </template>
+        </draggable>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+import draggable from "vuedraggable";
+
+export default {
+  name: "AccountsReorderChart",
+  components: { draggable },
+  data() {
+    return {
+      accounts: [],
+      creditAccounts: [],
+      depositoryAccounts: [],
+    };
+  },
+  methods: {
+    async fetchAccounts() {
+      console.log("Fetching accounts...");
+      try {
+        const response = await axios.get("/api/teller/transactions/get_accounts");
+        console.log("Response from /api/teller/get_accounts:", response.data);
+        if (response.data && response.data.status === "success") {
+          this.accounts = response.data.data.accounts || response.data.data;
+          console.log("Accounts fetched:", this.accounts.length);
+          this.filterAccounts();
+        } else {
+          console.error("Error fetching accounts:", response.data);
+        }
+      } catch (err) {
+        console.error("Error fetching accounts:", err);
+      }
+    },
+    filterAccounts() {
+      if (!this.accounts.length) {
+        console.warn("No accounts to filter.");
+        return;
+      }
+
+      // Classify accounts into liabilities (credit) and assets (depository)
+      const credit = this.accounts
+        .filter((acc) => acc.type && acc.type.toLowerCase() === "credit")
+        .map((acc) => ({
+          ...acc,
+          adjusted_balance: acc.balance > 0 ? acc.balance : -Math.abs(acc.balance), // Always negative unless credit
+        }));
+
+      const depository = this.accounts.filter(
+        (acc) => !acc.type || acc.type.toLowerCase() !== "credit"
+      );
+
+      // Sort liabilities by absolute balance
+      credit.sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance));
+      depository.sort((a, b) => b.balance - a.balance);
+
+      // Limit to top 10 items per group
+      this.creditAccounts = credit.slice(0, 10);
+      this.depositoryAccounts = depository.slice(0, 10);
+
+      console.log("Liabilities (Adjusted):", this.creditAccounts);
+      console.log("Assets:", this.depositoryAccounts);
+    },
+    formatBalance(balance) {
+      const number = parseFloat(balance);
+      const formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        currencySign: "accounting", // Uses parentheses for negatives
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return formatter.format(number);
+    },
+    getBarWidth(account, group) {
+      // Calculate width relative to the maximum absolute balance in the group
+      const maxBalance = Math.max(...group.map(acc => Math.abs(acc.adjusted_balance || acc.balance)), 1);
+      const widthPercent = (Math.abs(account.adjusted_balance || account.balance) / maxBalance) * 100;
+      return widthPercent + "%";
+    }
+  },
+  mounted() {
+    this.fetchAccounts();
+  }
+};
+</script>
+
+
+
+<style scoped>
+.accounts-reorder-chart {
+  padding: 1rem;
+  background-color: #282828; /* Gruvbox dark background */
+  color: #ebdbb2; /* Gruvbox light text */
+  border-radius: 8px;
+  margin: 1rem;
+}
+.chart-summary {
+  display: flex;
+  gap: 1rem;
+}
+.group {
+  flex: 1;
+}
+.group h3 {
+  margin-bottom: 0.5rem;
+  color: #fabd2f; /* Accent yellow */
+  font-family: "Fira Code", monospace;
+}
+.account-bar {
+  margin-bottom: 0.5rem;
+  padding: 0.5rem;
+  background-color: #3c3836;
+  border-radius: 4px;
+  cursor: move;
+  display: flex;
+  flex-direction: column;
+}
+.account-info {
+  display: flex;
+  justify-content: space-between;
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+  margin-bottom: 0.3rem;
+}
+.account-balance {
+  font-weight: bold;
+}
+.bar {
+  height: 10px;
+  border-radius: 4px;
+}
+</style>
+
+
+
+=== CategoryBreakdownChart.vue ===
+<template>
+  <div class="category-breakdown-chart">
+    <h2>Spending by Category</h2>
+    <div class="chart-summary">
+      <span>Total Spending: ${{ totalSpending.toLocaleString() }}</span>
+    </div>
+    <canvas ref="chartCanvas"></canvas>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+import { ref, onMounted, nextTick, computed } from "vue";
+import { Chart } from "chart.js/auto";
+
+export default {
+  name: "CategoryBreakdownChart",
+  setup() {
+    const chartCanvas = ref(null);
+    const chartInstance = ref(null);
+    // chartData: { labels: string[], amounts: number[] }
+    const chartData = ref({ labels: [], amounts: [] });
+
+    const totalSpending = computed(() => {
+      return chartData.value.amounts.reduce((sum, val) => sum + val, 0);
+    });
+
+    const fetchData = async () => {
+      try {
+        const response = await axios.get("/api/charts/category_breakdown");
+        if (response.data.status === "success") {
+          // Expect data as an array of objects: { category, amount }
+          let data = response.data.data;
+          // Sort descending and take top 10
+          data.sort((a, b) => b.amount - a.amount);
+          const top10 = data.slice(0, 10);
+          chartData.value.labels = top10.map(entry => entry.category || "Uncategorized");
+          chartData.value.amounts = top10.map(entry => Math.round(entry.amount));
+          updateChart();
+        }
+      } catch (err) {
+        console.error("Error fetching category breakdown data:", err);
+      }
+    };
+
+    const updateChart = async () => {
+      await nextTick();
+      const canvasEl = chartCanvas.value;
+      if (!canvasEl) {
+        console.error("Canvas element not available.");
+        return;
+      }
+      const ctx = canvasEl.getContext("2d");
+      if (!ctx) {
+        console.error("Canvas 2D context not available.");
+        return;
+      }
+      if (chartInstance.value) {
+        chartInstance.value.destroy();
+      }
+
+      // Create custom gradients for each bar.
+      const gradients = chartData.value.amounts.map((amount, index) => {
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvasEl.height);
+        // For spending, we use a Gruvbox-inspired blue-green palette.
+        gradient.addColorStop(0, "#83a598"); // light tone
+        gradient.addColorStop(1, "#458588"); // darker tone
+        return gradient;
+      });
+
+      chartInstance.value = new Chart(ctx, {
+        type: "bar",
+        data: {
+          labels: chartData.value.labels,
+          datasets: [
+            {
+              label: "Spending",
+              data: chartData.value.amounts,
+              backgroundColor: gradients,
+              borderWidth: 1,
+              borderRadius: 4,
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          layout: {
+            padding: {
+              top: 20,
+              bottom: 20,
+            },
+          },
+          scales: {
+            x: {
+              ticks: {
+                color: "#ebdbb2",
+                font: {
+                  family: "'Fira Code', monospace",
+                  size: 10,
+                },
+                autoSkip: true,
+                maxTicksLimit: 10,
+              },
+              grid: {
+                color: "#504945",
+              },
+            },
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: (value) => `$${value}`,
+                color: "#ebdbb2",
+                font: {
+                  family: "'Fira Code', monospace",
+                  size: 10,
+                },
+              },
+              grid: {
+                color: "#504945",
+              },
+            },
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: (context) =>
+                  `${context.label}: $${context.raw.toLocaleString()}`,
+              },
+              backgroundColor: "#3c3836",
+              titleColor: "#fabd2f",
+              bodyColor: "#ebdbb2",
+              borderColor: "#fabd2f",
+              borderWidth: 1,
+            },
+            legend: {
+              display: false,
+            },
+          },
+        },
+      });
+    };
+
+    onMounted(() => {
+      fetchData();
+    });
+
+    return {
+      chartCanvas,
+      fetchData,
+      totalSpending,
+    };
+  },
+};
+</script>
+
+<!-- Scoped styles for this component -->
+<style scoped>
+.category-breakdown-chart {
+  margin: 1rem;
+  background-color: #282828;
+  padding: 1rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+  opacity: 0.95;
+  position: relative;
+  height: 300px;
+}
+.chart-summary {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(44, 44, 44, 0.8);
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-family: "Fira Code", monospace;
+  color: #fabd2f;
+  z-index: 10;
+}
+</style>
+
+
+
+=== AssetsBarTrended.vue ===
+<template>
+    <div class="chart-container">
+      <div class="chart-title-row">
+        <h2>Net Assets vs. Liabilities</h2>
+        <!-- Current Totals Summary -->
+        <div class="chart-summary" v-if="metadata">
+          <h4>Current Totals</h4>
+          <div class="summary-line assets">
+            Assets: {{ formatCurrency(metadata.total_assets) }}
+          </div>
+          <div class="summary-line liabilities">
+            Liabilities: {{ formatCurrency(metadata.total_liabilities, true) }}
+          </div>
+          <div class="summary-line net">
+            Net: {{ formatCurrency(metadata.net_now) }}
+          </div>
+        </div>
+      </div>
+      <canvas ref="chartCanvas"></canvas>
+    </div>
+  </template>
+  
+  <script>
+  import axios from "axios";
+  import { ref, onMounted, nextTick } from "vue";
+  import { Chart } from "chart.js/auto";
+  
+  export default {
+    name: "NetAssetsChart",
+    setup() {
+      const chartCanvas = ref(null);
+      const chartInstance = ref(null);
+  
+      // The array of historical data: { date, assets, liabilities, net }
+      const chartData = ref([]);
+      // The metadata object: { total_assets, total_liabilities, net_now }
+      const metadata = ref(null);
+  
+      // Function to fetch data from /net_assets
+      const fetchData = async () => {
+        try {
+          const response = await axios.get("/api/charts/net_assets");
+          if (response.data.status === "success") {
+            chartData.value = response.data.data || [];
+            metadata.value = response.data.metadata || null;
+            updateChart();
+          } else {
+            console.error("Failed to fetch net_assets:", response.data);
+          }
+        } catch (error) {
+          console.error("Error fetching net assets data:", error);
+        }
+      };
+  
+      // Utility to format currency, using parentheses for negative
+      const formatCurrency = (val) => {
+        const number = parseFloat(val) || 0;
+        if (number < 0) {
+          return `($${Math.abs(number).toLocaleString()})`;
+        }
+        return `$${number.toLocaleString()}`;
+      };
+  
+      // Helper: Convert YYYY-MM-DD to MMM
+      const formatMMM = (dateString) => {
+        const [yyyy, mm, dd] = dateString.split("-");
+        const dateObj = new Date(`${yyyy}-${mm}-${dd}T00:00:00`);
+        // Basic list of month abbreviations
+        const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return monthNames[dateObj.getMonth()];
+      };
+  
+      const updateChart = async () => {
+        await nextTick();
+        const canvasEl = chartCanvas.value;
+        if (!canvasEl) return;
+  
+        const ctx = canvasEl.getContext("2d");
+        if (!ctx) return;
+  
+        if (chartInstance.value) {
+          chartInstance.value.destroy();
+        }
+  
+        // Prepare data
+        const labels = chartData.value.map(item => item.date);
+        const assetsData = chartData.value.map(item => item.assets);
+        const liabilitiesData = chartData.value.map(item => item.liabilities);
+        const netData = chartData.value.map(item => item.net);
+  
+        // We'll do all lines
+        chartInstance.value = new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets: [
+              {
+                label: "Assets",
+                data: assetsData,
+                borderColor: "#83a598",   // Gruvbox aqua
+                backgroundColor: "rgba(131, 165, 152, 0.2)",
+                fill: false,
+                tension: 0.1,
+              },
+              {
+                label: "Liabilities",
+                data: liabilitiesData,
+                borderColor: "#fb4934",   // Gruvbox red
+                backgroundColor: "rgba(251, 73, 52, 0.2)",
+                fill: false,
+                tension: 0.1,
+              },
+              {
+                label: "Net",
+                data: netData,
+                borderColor: "#fabd2f",   // Gruvbox yellow
+                backgroundColor: "rgba(250, 189, 47, 0.2)",
+                fill: false,
+                tension: 0.1,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                // We'll do a custom callback to display MMM
+                ticks: {
+                  color: "#ebdbb2",
+                  callback: function (value, index) {
+                    // 'this.getLabelForValue(value)' => date string
+                    const dateString = this.getLabelForValue(value);
+                    return formatMMM(dateString);
+                  },
+                },
+                grid: {
+                  color: "#504945",
+                },
+              },
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  color: "#ebdbb2",
+                  callback: (val) => {
+                    const number = parseFloat(val);
+                    if (number < 0) {
+                      return `($${Math.abs(number).toLocaleString()})`;
+                    }
+                    return `$${number.toLocaleString()}`;
+                  },
+                },
+                grid: {
+                  color: "#504945",
+                },
+              },
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: (context) => {
+                    const label = context.dataset.label;
+                    const val = context.raw;
+                    if (val < 0) {
+                      return `${label}: ($${Math.abs(val).toLocaleString()})`;
+                    }
+                    return `${label}: $${val.toLocaleString()}`;
+                  },
+                  title: (context) => {
+                    // Use MMM for the title as well
+                    const idx = context[0].dataIndex;
+                    const dateString = labels[idx];
+                    return formatMMM(dateString);
+                  },
+                },
+                backgroundColor: "#3c3836",
+                titleColor: "#fabd2f",
+                bodyColor: "#ebdbb2",
+                borderColor: "#fabd2f",
+                borderWidth: 1,
+              },
+              legend: {
+                labels: {
+                  color: "#ebdbb2",
+                },
+              },
+            },
+          },
+        });
+      };
+  
+      onMounted(() => {
+        fetchData();
+      });
+  
+      return {
+        chartCanvas,
+        metadata,
+        formatCurrency,
+      };
+    },
+  };
+  </script>
+  
+  <style scoped>
+  .chart-container {
+    margin: 1rem;
+    background-color: #282828;
+    padding: 1rem;
+    border-radius: 8px;
+    opacity: 0.95;
+    position: relative;
+    max-height: 85%; /* Adjust as needed */
+  }
+  
+  /* Title + summary row at the top */
+  .chart-title-row {
+    display:inline-block;
+    align-items: right;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+  }
+  
+  .chart-summary {
+    background: rgba(44, 44, 44, 0.8);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: "Fira Code", monospace;
+    color: #ebdbb2;
+    text-align: right;
+  }
+  
+  .chart-summary h4 {
+    margin: 0 0 0.5rem 0;
+    color: #fabd2f;
+  }
+  
+  .summary-line {
+    margin: 4px 0;
+  }
+  
+  .summary-line.assets {
+    color: #83a598; /* aqua */
+  }
+  .summary-line.liabilities {
+    color: #fb4934; /* red */
+  }
+  .summary-line.net {
+    color: #fabd2f; /* yellow */
+    font-weight: bold;
+  }
+  
+  </style>
+  
+
+
+=== UpdateTransactionsTable.vue ===
+<template>
+  <div class="transactions">
+    <h3>Transactions</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Description</th>
+          <th>Category</th>
+          <th>Merchant</th>
+          <th>Account Name</th>
+          <th>Institution</th>
+          <th>Subtype</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(tx, index) in transactions" :key="tx.transaction_id">
+          <!-- Date -->
+          <td>
+            <span v-if="!tx.isEditing">{{ tx.date || "N/A" }}</span>
+            <input v-else type="date" v-model="tx.date" />
+          </td>
+
+          <!-- Amount -->
+          <td>
+            <span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span>
+            <input 
+              v-else 
+              type="number" 
+              step="0.01" 
+              v-model.number="tx.amount" 
+            />
+          </td>
+
+          <!-- Description -->
+          <td>
+            <span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span>
+            <input 
+              v-else 
+              type="text" 
+              v-model="tx.description" 
+            />
+          </td>
+
+          <!-- Category -->
+          <td>
+            <span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span>
+            <input 
+              v-else 
+              type="text" 
+              v-model="tx.category" 
+            />
+          </td>
+
+          <!-- Merchant Name -->
+          <td>
+            <span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span>
+            <input 
+              v-else 
+              type="text" 
+              v-model="tx.merchant_name" 
+            />
+          </td>
+
+          <!-- Account Name (read-only) -->
+          <td>
+            <span>{{ tx.account_name || "N/A" }}</span>
+          </td>
+
+          <!-- Institution Name (read-only) -->
+          <td>
+            <span>{{ tx.institution_name || "N/A" }}</span>
+          </td>
+
+          <!-- Subtype (read-only) -->
+          <td>
+            <span>{{ tx.subtype || "N/A" }}</span>
+          </td>
+
+          <!-- Actions -->
+          <td>
+            <button v-if="!tx.isEditing" @click="editTransaction(index)">Edit</button>
+            <button v-if="tx.isEditing" @click="updateTransaction(index)">Save</button>
+            <button v-if="tx.isEditing" @click="cancelEdit(index)">Cancel</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+
+export default {
+  name: "TransactionsTable",
+  props: {
+    transactions: {
+      type: Array,
+      default: () => []
+    },
+  },
+  methods: {
+    formatAmount(amount) {
+      // Format as accounting-style currency, e.g. negatives in parentheses
+      const number = parseFloat(amount);
+      const formatter = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        currencySign: "accounting",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+      return formatter.format(number);
+    },
+    editTransaction(index) {
+      const tx = this.transactions[index];
+      // Keep a backup of original data in case user cancels
+      tx._backup = { ...tx };
+      tx.isEditing = true;
+    },
+    async updateTransaction(index) {
+      const tx = this.transactions[index];
+      try {
+        // Example: your Teller endpoint for updating a transaction
+        const response = await axios.put("/api/teller/transactions/update", tx);
+        if (response.data.status === "success") {
+          tx.isEditing = false;
+          delete tx._backup;
+        } else {
+          console.error("Failed to update transaction:", response.data.message);
+          alert("Failed to update transaction: " + response.data.message);
+        }
+      } catch (error) {
+        console.error("Error updating transaction:", error);
+        alert("Error updating transaction: " + error.message);
+      }
+    },
+    cancelEdit(index) {
+      const tx = this.transactions[index];
+      // Restore the original backup if user cancels
+      Object.assign(tx, tx._backup);
+      delete tx._backup;
+      tx.isEditing = false;
+    },
+  },
+};
+</script>
+
+<style scoped>
+/* Gruvbox-inspired palette (dark) */
+:root {
+  --gruvbox-bg: #282828;        /* Dark background */
+  --gruvbox-fg: #ebdbb2;        /* Light text */
+  --gruvbox-accent: #d65d0e;    /* Orange accent */
+  --gruvbox-border: #3c3836;    /* Dark border */
+  --gruvbox-hover: #b0520c;     /* Darker accent */
+  --gruvbox-bg-hover: #32302f;  /* Hover row background */
+}
+
+.transactions {
+  margin-top: 20px;
+  background-color: var(--gruvbox-bg);
+  color: var(--gruvbox-fg);
+  padding: 1rem;
+  border: 1px solid var(--gruvbox-border);
+  border-radius: 4px;
+}
+
+.transactions h3 {
+  margin-top: 0;
+  color: var(--gruvbox-accent);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+/* Table Head */
+thead {
+  background-color: var(--gruvbox-border);
+}
+th {
+  padding: 8px;
+  text-align: left;
+  background-color: var(--gruvbox-border);
+  color: var(--gruvbox-fg);
+}
+
+/* Table Body */
+tbody tr:nth-child(even) {
+  background-color: var(--gruvbox-bg-hover);
+}
+td {
+  border: 1px solid var(--gruvbox-border);
+  padding: 8px;
+  text-align: left;
+}
+
+/* Buttons */
+button {
+  background-color: var(--gruvbox-accent);
+  color: var(--gruvbox-fg);
+  border: 1px solid var(--gruvbox-accent);
+  padding: 0.4rem 0.8rem;
+  margin-right: 4px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  border-radius: 3px;
+  transition: background-color 0.2s, color 0.2s, border 0.2s;
+}
+
+button:hover {
+  background-color: var(--gruvbox-bg);
+  color: var(--gruvbox-accent);
+}
+</style>
+
+
+
+=== AccountsTable.vue ===
+<template>
+  <div class="accounts-section">
+    <div class="accounts-table">
+      <h2>Accounts</h2>
+
+      <!-- Filter & Controls Row -->
+      <div class="filter-row">
+        <input
+          v-model="searchQuery"
+          class="filter-input"
+          type="text"
+          placeholder="Filter accounts..."
+        />
+        <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
+        <!-- Toggle button to show/hide delete buttons -->
+        <button class="toggle-delete-btn" @click="toggleDeleteButtons">
+          {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
+        </button>
+      </div>
+
+      <!-- Table -->
+      <table v-if="!loading && sortedAccounts.length">
+        <thead>
+          <tr>
+            <th @click="sortTable('institution_name')">
+              Institution
+              <span>
+                <template v-if="sortKey === 'institution_name'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('name')">
+              Name
+              <span>
+                <template v-if="sortKey === 'name'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('type')">
+              Type
+              <span>
+                <template v-if="sortKey === 'type'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('balance')">
+              Balance
+              <span>
+                <template v-if="sortKey === 'balance'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('subtype')">
+              Subtype
+              <span>
+                <template v-if="sortKey === 'subtype'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('link_type')">
+              Link Type
+              <span>
+                <template v-if="sortKey === 'link_type'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <th @click="sortTable('last_refreshed')">
+              Last Refreshed
+              <span>
+                <template v-if="sortKey === 'last_refreshed'">
+                  {{ sortOrder === 1 ? '▲' : '▼' }}
+                </template>
+                <template v-else>▲▼</template>
+              </span>
+            </th>
+            <!-- Only show the delete header if delete buttons are enabled -->
+            <th v-if="showDeleteButtons">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="account in sortedAccounts" :key="account.account_id">
+            <td>{{ account.institution_name }}</td>
+            <td>{{ account.name }}</td>
+            <td>{{ account.type }}</td>
+            <td>{{ formatBalance(account.balance) }}</td>
+            <td>{{ account.subtype }}</td>
+            <td>{{ account.link_type }}</td>
+            <td>{{ formatDate(account.last_refreshed) }}</td>
+            <!-- Conditionally render the delete button -->
+            <td v-if="showDeleteButtons">
+              <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div v-if="!loading && sortedAccounts.length === 0">
+        No accounts found.
+      </div>
+    </div>
+  </div>
+</template>
+
+<script>
+import axios from "axios";
+import api from "@/services/api"; // Ensure the API service is imported
+import RefreshControls from "@/components/RefreshControls.vue";
+
+export default {
+  name: "AccountsTable",
+  components: { RefreshControls },
+  props: {
+    provider: {
+      type: String,
+      default: "teller",
+    },
+  },
+  data() {
+    return {
+      accounts: [],
+      loading: false,
+      error: "",
+      searchQuery: "",
+      sortKey: "",
+      sortOrder: 1,
+      showDeleteButtons: false, // controls the visibility of delete buttons
+    };
+  },
+  computed: {
+    filteredAccounts() {
+      if (!this.searchQuery.trim()) {
+        return this.accounts;
+      }
+      const query = this.searchQuery.toLowerCase();
+      return this.accounts.filter((acc) => {
+        const fieldsToSearch = [
+          acc.institution_name,
+          acc.name,
+          acc.type,
+          acc.subtype,
+          acc.status,
+          acc.link_type,
+        ].map((val) => (val || "").toString().toLowerCase());
+        return fieldsToSearch.some((field) => field.includes(query));
+      });
+    },
+    sortedAccounts() {
+      const sorted = [...this.filteredAccounts];
+      if (!this.sortKey) {
+        return sorted;
+      }
+      sorted.sort((a, b) => {
+        let valA = a[this.sortKey];
+        let valB = b[this.sortKey];
+        if (typeof valA === "string") valA = valA.toLowerCase();
+        if (typeof valB === "string") valB = valB.toLowerCase();
+        if (valA < valB) return -1 * this.sortOrder;
+        if (valA > valB) return 1 * this.sortOrder;
+        return 0;
+      });
+      return sorted;
+    },
+  },
+  methods: {
+    async fetchAccounts() {
+      this.loading = true;
+      this.error = "";
+      try {
+        let response;
+        if (this.provider === "plaid") {
+          response = await axios.get("/api/plaid/transactions/get_accounts");
+        } else {
+          response = await axios.get("/api/teller/transactions/get_accounts");
+        }
+        if (response.data && response.data.status === "success") {
+          this.accounts = response.data.data.accounts;
+        } else {
+          this.error = "Error fetching accounts.";
+        }
+      } catch (err) {
+        this.error = err.message || "Error fetching accounts.";
+      } finally {
+        this.loading = false;
+      }
+    },
+    async refreshAccounts() {
+      try {
+        let response;
+        if (this.provider === "plaid") {
+          response = await axios.post("/api/plaid/transactions/refresh_accounts");
+        } else {
+          response = await axios.post("/api/teller/transactions/refresh_balances");
+        }
+        if (response.data.status === "success") {
+          const accountNames = response.data.updated_accounts.map(
+            (acc) => acc.account_name
+          );
+          alert("Balances refreshed for: " + accountNames.join(", "));
+          this.fetchAccounts();
+        } else {
+          alert("Failed to refresh balances: " + response.data.message);
+        }
+      } catch (err) {
+        console.error("Error refreshing balances:", err);
+        alert("Error refreshing balances: " + err.message);
+      }
+    },
+    async deleteAccount(accountId) {
+      if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
+      try {
+        const res = await api.deleteAccount(this.provider, accountId);
+        if (res.status === "success") {
+          alert("Account deleted successfully.");
+          this.fetchAccounts();
+        } else {
+          alert("Error deleting account: " + res.message);
+        }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    },
+    formatBalance(balance) {
+      const number = parseFloat(balance);
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        currencySign: "accounting",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(number);
+    },
+    formatDate(dateString) {
+      if (!dateString) return "";
+      return new Date(dateString).toLocaleString();
+    },
+    sortTable(key) {
+      if (this.sortKey === key) {
+        this.sortOrder = -this.sortOrder;
+      } else {
+        this.sortKey = key;
+        this.sortOrder = 1;
+      }
+    },
+    toggleDeleteButtons() {
+      this.showDeleteButtons = !this.showDeleteButtons;
+    },
+  },
+  mounted() {
+    this.fetchAccounts();
+  },
+};
+</script>
+
+<style>
+
+
+/* Accounts Table Container */
+.accounts-table {
+  background-color: var(--background);
+  color: var(--foreground);
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+/* Heading */
+.accounts-table h2 {
+  margin-top: 0;
+  color: var(--accent);
+  font-family: "Fira Code", monospace;
+  font-size: 1.5rem;
+}
+
+/* Filter Row */
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Filter Input */
+.filter-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  font-family: "Fira Code", monospace;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.filter-input:focus {
+  border-color: var(--accent);
+}
+
+/* Toggle Delete Buttons Button */
+.toggle-delete-btn {
+  padding: 0.5rem 1rem;
+  background-color: var(--accent);
+  color: var(--background);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.toggle-delete-btn:hover {
+  background-color: var(--hover);
+  transform: translateY(-1px);
+}
+
+/* Table Styling */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  text-align: left;
+  font-family: "Fira Code", monospace;
+  font-size: 0.9rem;
+}
+th {
+  cursor: pointer;
+  background-color: var(--input-bg);
+  color: var(--foreground);
+  position: relative;
+}
+th span {
+  margin-left: 0.5rem;
+  font-size: 0.8rem;
+  opacity: 0.8;
+}
+
+/* Delete Button Styling */
+.delete-btn {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--error);
+  color: #ffffff;
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: "Fira Code", monospace;
+  font-weight: bold;
+  transition: background-color 0.2s ease, transform 0.2s ease;
+}
+.delete-btn:hover {
+  background-color: #ff6666;
+  transform: translateY(-1px);
+}
+
+/* Table Row Hover Effect */
+tbody tr:hover {
+  background-color: var(--hover);
+}
+
+</style >
+
+
