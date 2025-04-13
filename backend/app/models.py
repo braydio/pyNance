@@ -42,8 +42,7 @@ class Account(db.Model):
     balance = db.Column(db.Float, default=0)
     last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
     link_type = db.Column(db.String(64), default="InsertProvider")
-    details = db.relationship("AccountDetails", backref="account", uselist=False)
-    history = db.relationship("AccountHistory", backref="account", lazy=True)
+
     # Set up cascading deletes for related records
     details = db.relationship(
         "AccountDetails", backref="account", uselist=False, cascade="all, delete-orphan"
@@ -76,14 +75,59 @@ class AccountHistory(db.Model):
     balance = db.Column(db.Float, default=0)
 
 
+class RecurringTransaction(db.Model):
+    __tablename__ = "recurring_transactions"
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+    )
+    description = db.Column(db.String(256), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    frequency = db.Column(db.String(64), nullable=True)
+    next_due_date = db.Column(db.Date, nullable=True)
+    notes = db.Column(db.String(256), nullable=True)
+    updated_at = db.Column(
+        db.String(64), default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class Category(db.Model):
+    __tablename__ = "categories"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    plaid_category_id = db.Column(db.String(64), unique=True, nullable=False)
+    primary_category = db.Column(db.String(128), default="Unknown")
+    detailed_category = db.Column(db.String(128), default="Unknown")
+    display_name = db.Column(db.String(256), default="Unknown")
+
+    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)  # ✅ Required
+    parent = db.relationship("Category", remote_side=[id])  # ✅ Now this works
+
+    def __repr__(self):
+        return (
+            f"<Category(plaid_category_id={self.plaid_category_id}, "
+            f"display_name={self.display_name})>"
+        )
+
+
+
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)
-    date = db.Column(db.String(64))  # For production, consider DateTime
+    date = db.Column(db.String(64))
     description = db.Column(db.String(256))
-    category = db.Column(db.String(128), default="Unknown")
     merchant_name = db.Column(db.String(128), default="Unknown")
     merchant_typ = db.Column(db.String(64), default="Unknown")
+    user_modified = db.Column(db.Boolean, default=False)
+    user_modified_fields = db.Column(db.Text)  # JSON representation
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    category = db.Column(db.String(128))
+
+    def __repr__(self):
+        return (
+            f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
+        )

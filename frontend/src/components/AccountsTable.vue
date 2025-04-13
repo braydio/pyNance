@@ -1,3 +1,8 @@
+
+<style scoped>
+@import '@/styles/global-colors.css';
+</style>
+
 <template>
   <div class="accounts-section">
     <div class="accounts-table">
@@ -12,10 +17,14 @@
           placeholder="Filter accounts..."
         />
         <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
-        <!-- Toggle button to show/hide delete buttons -->
-        <button class="toggle-delete-btn" @click="toggleDeleteButtons">
+
+        <button class="theme-buttons-top" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
         </button>
+
+        <!-- CSV Export/Import Buttons -->
+        <button class="theme-buttons-top" @click="exportCSV">Export CSV</button>
+        <input type="file" @change="importCSV" accept=".csv" />
       </div>
 
       <!-- Table -->
@@ -85,10 +94,7 @@
                 <template v-else>▲▼</template>
               </span>
             </th>
-            <!-- Only show the delete header if delete buttons are enabled -->
-            <th v-if="showDeleteButtons">
-              Actions
-            </th>
+            <th v-if="showDeleteButtons">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -100,7 +106,6 @@
             <td>{{ account.subtype }}</td>
             <td>{{ account.link_type }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
-            <!-- Conditionally render the delete button -->
             <td v-if="showDeleteButtons">
               <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
             </td>
@@ -119,6 +124,7 @@
 import axios from "axios";
 import api from "@/services/api"; // Ensure the API service is imported
 import RefreshControls from "@/components/RefreshControls.vue";
+
 
 export default {
   name: "AccountsTable",
@@ -176,27 +182,23 @@ export default {
     },
   },
   methods: {
-    async fetchAccounts() {
-      this.loading = true;
-      this.error = "";
-      try {
-        let response;
-        if (this.provider === "plaid") {
-          response = await axios.get("/api/plaid/transactions/get_accounts");
-        } else {
-          response = await axios.get("/api/teller/transactions/get_accounts");
-        }
-        if (response.data && response.data.status === "success") {
-          this.accounts = response.data.data.accounts;
-        } else {
-          this.error = "Error fetching accounts.";
-        }
-      } catch (err) {
-        this.error = err.message || "Error fetching accounts.";
-      } finally {
-        this.loading = false;
+  async fetchAccounts() {
+    this.loading = true;
+    this.error = "";
+    try {
+      let response = await axios.get("/api/accounts/get_accounts");
+      console.log("API response:", response.data); // <--- ADD THIS
+      if (response.data && response.data.status === "success") {
+        this.accounts = response.data.accounts;
+      } else {
+        this.error = "Error fetching accounts.";
       }
-    },
+    } catch (err) {
+      this.error = err.message || "Error fetching accounts.";
+    } finally {
+      this.loading = false;
+    }
+  },
     async refreshAccounts() {
       try {
         let response;
@@ -263,20 +265,17 @@ export default {
     this.fetchAccounts();
   },
 };
-</script>
-
+</script >
 <style>
-
 
 /* Accounts Table Container */
 .accounts-table {
   background-color: var(--background);
   color: var(--foreground);
-  padding: 1rem;
+  padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
-}
+}  /* <-- Added closing bracket here */
 
 /* Heading */
 .accounts-table h2 {
@@ -312,20 +311,22 @@ export default {
 }
 
 /* Toggle Delete Buttons Button */
-.toggle-delete-btn {
+.theme-buttons-top {
   padding: 0.5rem 1rem;
-  background-color: var(--accent);
-  color: var(--background);
-  border: 1px solid var(--accent);
-  border-radius: 4px;
+  background-color: var(--background);
+  color: var(--foreground);
+  border: 2px groove transparent;
+  border-radius: 0px;
   cursor: pointer;
   font-family: "Fira Code", monospace;
   font-weight: bold;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: transform 0.2s ease;
 }
-.toggle-delete-btn:hover {
+.theme-buttons-top:hover {
+  color: var(--foreground);
   background-color: var(--hover);
   transform: translateY(-1px);
+  border: 1px solid transparent;
 }
 
 /* Table Styling */
@@ -354,6 +355,8 @@ th span {
 }
 
 /* Delete Button Styling */
+
+
 .delete-btn {
   padding: 0.4rem 0.8rem;
   background-color: var(--error);
@@ -365,6 +368,7 @@ th span {
   font-weight: bold;
   transition: background-color 0.2s ease, transform 0.2s ease;
 }
+
 .delete-btn:hover {
   background-color: #ff6666;
   transform: translateY(-1px);
@@ -374,5 +378,6 @@ th span {
 tbody tr:hover {
   background-color: var(--hover);
 }
+
 
 </style >

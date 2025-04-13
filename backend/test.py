@@ -22,6 +22,10 @@ from app.sql import account_logic
 # Use the shared certificate paths from config.
 TELLER_DOT_CERT = FILES["TELLER_DOT_CERT"]
 TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
+VARIABLE_ENV_TOKEN = VARIABLE_ENV_TOKEN
+VARIABLE_ENV_ID = VARIABLE_ENV_ID
+print(VARIABLE_ENV_ID)
+print(VARIABLE_ENV_TOKEN)
 
 
 def extract_accounts_from_response(data):

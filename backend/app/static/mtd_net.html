@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Daily Net Income + Transactions</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { background: #282828; color: #ebdbb2; font-family: 'Fira Code', monospace; }
+    .chart-summary {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(44, 44, 44, 0.1); padding: 0.5rem;
+      border-radius: 4px; color: #fabd2f; text-align: right;
+      z-index: 10;
+    }
+    .chart-summary .income { color: #b8bb26; }
+    .chart-summary .expenses { color: #fb4934; }
+    .chart-summary .net { font-weight: bold; color: #fabd2f; }
+    canvas { background: #3c3836; border-radius: 8px; padding: 1rem; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td {
+      border: 1px solid #3c3836;
+      padding: 8px;
+      background-color: #282828;
+      color: #ebdbb2;
+    }
+    th { cursor: pointer; background-color: #3c3836; }
+    th:hover { background-color: #b0520c; }
+    tbody tr:nth-child(even) { background-color: #32302f; }
+    input.inline-edit {
+      width: 100%;
+      background: #1d2021;
+      color: #ebdbb2;
+      border: 1px solid #3c3836;
+      padding: 4px;
+      font-family: 'Fira Code', monospace;
+    }
+  </style>
+</head>
+<body>
+  <h2>Daily Net Income (MTD)</h2>
+  <div class="chart-summary" id="summary">Loading...</div>
+  <canvas id="netChart" width="800" height="300"></canvas>
+
+  <div id="transactions-section" style="display:none;">
+    <h3>Transactions on <span id="tx-date"></span></h3>
+    <table id="txTable">
+      <thead>
+        <tr>
+          <th onclick="sortTable('amount')">Amount</th>
+          <th onclick="sortTable('description')">Description</th>
+          <th onclick="sortTable('category')">Category</th>
+          <th onclick="sortTable('merchant_name')">Merchant</th>
+          <th onclick="sortTable('account_name')">Account</th>
+          <th onclick="sortTable('institution_name')">Institution</th>
+          <th onclick="sortTable('subtype')">Subtype</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    let transactions = [], currentTx = [], currentSort = 'amount', sortOrder = 1;
+
+    async function renderNetChart() {
+      const res = await fetch('http://localhost:5000/api/charts/daily_net');
+      const { data } = await res.json();
+
+      const txRes = await fetch('http://localhost:5000/api/teller/transactions/get_transactions');
+      const txJson = await txRes.json();
+      transactions = txJson.data.transactions;
+
+      const now = new Date();
+      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const mtd = data.filter(d => new Date(d.date) >= firstOfMonth);
+
+      const totalIncome = mtd.reduce((sum, d) => sum + d.income, 0);
+      const totalExpenses = mtd.reduce((sum, d) => sum + d.expenses, 0);
+      const totalNet = mtd.reduce((sum, d) => sum + d.net, 0);
+
+      document.getElementById('summary').innerHTML = `
+        <div class="income">Income: $${totalIncome.toLocaleString()}</div>
+        <div class="expenses">Expenses: $${totalExpenses.toLocaleString()}</div>
+        <div class="net">Net: $${totalNet.toLocaleString()}</div>
+      `;
+
+      const labels = mtd.map(d => d.date.split('-')[2]);
+      const netValues = mtd.map(d => d.net);
+      const incomes = mtd.map(d => d.income);
+      const expenses = mtd.map(d => d.expenses);
+
+      const ctx = document.getElementById('netChart').getContext('2d');
+      const gradients = netValues.map(val => {
+        const grad = ctx.createLinearGradient(0, 0, 0, 300);
+        if (val >= 0) { grad.addColorStop(0, "#b8bb26"); grad.addColorStop(1, "#98971a"); }
+        else { grad.addColorStop(0, "#fb4934"); grad.addColorStop(1, "#cc241d"); }
+        return grad;
+      });
+
+      const chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [{ label: 'Net Income', data: netValues, backgroundColor: gradients, borderWidth: 1, borderRadius: 4 }]
+        },
+        options: {
+          responsive: false, maintainAspectRatio: false,
+          onClick: (evt) => handleBarClick(evt, chart, mtd),
+          scales: {
+            x: {
+              ticks: { color: '#ebdbb2', maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
+              grid: { color: '#504945' }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: '#ebdbb2', callback: v => `$${v}` },
+              grid: { color: '#504945' }
+            }
+          },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const i = ctx.dataIndex;
+                  return [`Net: $${netValues[i].toLocaleString()}`, `Income: $${incomes[i].toLocaleString()}`, `Expenses: $${expenses[i].toLocaleString()}`];
+                }
+              },
+              backgroundColor: "#3c3836", titleColor: "#fabd2f", bodyColor: "#ebdbb2", borderColor: "#fabd2f", borderWidth: 1
+            },
+            legend: { display: false }
+          }
+        }
+      });
+    }
+
+    function handleBarClick(evt, chart, mtdData) {
+      const points = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false);
+      if (points.length) {
+        const idx = points[0].index;
+        const date = mtdData[idx].date;
+        const txsForDate = transactions.filter(t => t.date === date);
+        populateTransactions(txsForDate, date);
+      }
+    }
+
+    function populateTransactions(txArray, date) {
+      const tbody = document.querySelector('#txTable tbody');
+      tbody.innerHTML = '';
+      currentTx = txArray;
+      document.getElementById('transactions-section').style.display = 'block';
+      document.getElementById('tx-date').textContent = date;
+      sortAndRender();
+    }
+
+    function sortAndRender() {
+      const tbody = document.querySelector('#txTable tbody');
+      tbody.innerHTML = '';
+      const sorted = [...currentTx].sort((a, b) => {
+        let valA = a[currentSort], valB = b[currentSort];
+        if (typeof valA === 'string') valA = valA.toLowerCase();
+        if (typeof valB === 'string') valB = valB.toLowerCase();
+        return (valA < valB ? -1 : valA > valB ? 1 : 0) * sortOrder;
+      });
+
+      sorted.forEach(tx => {
+        tbody.innerHTML += `
+          <tr>
+            <td contenteditable onblur="updateCell(this, 'amount', '${tx.transaction_id}')">${tx.amount}</td>
+            <td contenteditable onblur="updateCell(this, 'description', '${tx.transaction_id}')">${tx.description || 'N/A'}</td>
+            <td contenteditable onblur="updateCell(this, 'category', '${tx.transaction_id}')">${tx.category || 'Unknown'}</td>
+            <td contenteditable onblur="updateCell(this, 'merchant_name', '${tx.transaction_id}')">${tx.merchant_name || 'Unknown'}</td>
+            <td contenteditable onblur="updateCell(this, 'account_name', '${tx.account_name}')">${tx.account_name}</td>
+            <td contenteditable onblur="updateCell(this, 'institution_name', '${tx.transaction_id}')">${tx.institution_name}</td>
+            <td contenteditable onblur="updateCell(this, 'subtype', '${tx.transaction_id}')">${tx.subtype}</td>
+          </tr>`;
+      });
+    }
+
+    function sortTable(key) {
+      if (currentSort === key) sortOrder *= -1;
+      else { currentSort = key; sortOrder = 1; }
+      sortAndRender();
+    }
+
+    function updateCell(el, field, id) {
+      const value = el.textContent;
+      console.log(`Updated ${field} of ${id} to ${value}`);
+      // Optional: Send PUT request to persist changes
+    }
+
+    renderNetChart();
+  </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+/* === buttons.css === */
+.btn {
+  display: inline-block;
+  font-family: var(--font-mono);
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  border: 1px solid var(--divider);
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.25s ease, transform 0.2s ease;
+}
+
+.btn:hover {
+  background-color: var(--button-hover-bg);
+  transform: translateY(-1px);
+  box-shadow: 0 0 6px var(--hover-glow);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--color-accent-yellow);
+  color: var(--color-accent-yellow);
+}
+
+.btn-outline:hover {
+  background-color: var(--color-accent-yellow);
+  color: var(--color-bg-dark);
+}
+
+.btn-pill {
+  border-radius: 9px;
+  padding: 0.4rem 1.25rem;
+  font-weight: bold;
+}
+
+/* Success/alert variants */
+.btn-success {
+  background-color: var(--color-accent-mint);
+  color: var(--color-bg-dark);
+}
+
+.btn-alert {
+  background-color: var(--bar-alert);
+  color: var(--color-bg-dark);
+}
