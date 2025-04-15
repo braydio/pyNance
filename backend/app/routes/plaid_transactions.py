@@ -1,5 +1,4 @@
 # File: app/routes/plaid_transactions.py
-
 from datetime import datetime
 
 from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, PLAID_CLIENT_NAME, logger
@@ -8,6 +7,7 @@ from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
+    get_item,
 )
 from app.models import Account
 from app.sql import account_logic  # for upserting accounts and processing transactions
@@ -47,50 +47,51 @@ def exchange_public_token_endpoint():
     public_token = data.get("public_token")
     if not user_id or not public_token:
         return jsonify({"error": "Missing user_id or public_token"}), 400
+
     try:
+        # Step 1: Exchange token
         exchange_resp = exchange_public_token(public_token)
         if not exchange_resp:
             return jsonify({"error": "Token exchange failed"}), 500
+
         access_token = exchange_resp.get("access_token")
         item_id = exchange_resp.get("item_id")
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
 
-        # Fetch accounts to retrieve institution info using existing SQL logic.
-        accounts_data = get_accounts(access_token)
-        institution_name = accounts_data.get("item", {}).get(
-            "institution_name", "Unknown"
-        )
-        # Transform and upsert accounts.
+        # Step 2: Fetch item info to get institution_id
+        item_info = get_item(access_token)
+        institution_id = item_info.get("institution_id", "Unknown")
+
+        # Step 3: Fetch accounts
+        accounts = get_accounts(access_token)
+
+        # Step 4: Transform and upsert accounts
         transformed = []
-        for acct in accounts_data.get("accounts", []):
-            transformed.append(
-                {
-                    "id": acct.get("account_id"),
-                    "name": acct.get("name")
-                    or acct.get("official_name", "Unnamed Account"),
-                    "type": acct.get("type") or "Unknown",
-                    "subtype": acct.get("subtype") or "Unknown",
-                    "balance": {"current": acct.get("balances", {}).get("current", 0)},
-                    "status": "active",
-                    "institution": {"name": institution_name},
-                    "access_token": access_token,
-                    "enrollment_id": "",
-                    "links": {},
-                    "provider": "Plaid",
-                }
-            )
+        for acct in accounts:
+            transformed.append({
+                "id": acct.get("account_id"),
+                "name": acct.get("name") or acct.get("official_name", "Unnamed Account"),
+                "type": str(acct.get("type") or "Unknown"),
+                "subtype": str(acct.get("subtype") or "Unknown"),
+                "subtype": acct.get("subtype") or "Unknown",
+                "balance": {"current": acct.get("balances", {}).get("current", 0)},
+                "status": "active",
+                "institution": {"name": institution_id},  # You can replace with institution name if desired
+                "access_token": access_token,
+                "enrollment_id": "",
+                "links": {},
+                "provider": "Plaid",
+            })
+
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "item_id": item_id,
-                    "institution_name": institution_name,
-                }
-            ),
-            200,
-        )
+
+        return jsonify({
+            "status": "success",
+            "item_id": item_id,
+            "institution_name": institution_id  # Rename if you want to fetch/display full name later
+        }), 200
+
     except Exception as e:
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
