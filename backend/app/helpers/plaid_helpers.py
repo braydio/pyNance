@@ -5,6 +5,9 @@ from plaid.configuration import Configuration
 
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.accounts_get_request import AccountsGetRequest
+from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
 
@@ -17,6 +20,10 @@ import logging  # ← import logging, not `from app.config import logging`
 logger = logging.getLogger(__name__)
 get_categories = Blueprint("get_categories", __name__)
 
+def get_item(access_token):
+    request = ItemGetRequest(access_token=access_token)
+    response = plaid_client.item_get(request)
+    return response["item"]
 
 def generate_link_token(user_id, products=["transactions"]):
     logger.debug(f"Generating link token with user_id={user_id}, products={products}")
@@ -41,38 +48,41 @@ def generate_link_token(user_id, products=["transactions"]):
         raise
 
 
-
 def exchange_public_token(public_token):
-    """
-    Exchange a Plaid public token for an access token and item_id.
-    Returns the full exchange response.
-    """
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "public_token": public_token,
-    }
-    url = f"{PLAID_BASE_URL}/item/public_token/exchange"
-    logger.debug("Exchanging Plaid public token for access token")
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
-    return response.json()
+    logger.debug(f"Exchanging public token: {public_token}")
+
+    try:
+        request = ItemPublicTokenExchangeRequest(public_token=public_token)
+        response = plaid_client.item_public_token_exchange(request)
+
+        access_token = response["access_token"]
+        item_id = response["item_id"]
+
+        logger.info(f"Successfully exchanged token. Item ID: {item_id}")
+        return {
+            "access_token": access_token,
+            "item_id": item_id
+        }
+
+    except Exception as e:
+        logger.error(f"Error exchanging public token: {e}", exc_info=True)
+        raise
 
 
 def get_accounts(access_token):
-    """
-    Retrieve accounts data from Plaid.
-    """
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "access_token": access_token,
-    }
-    url = f"{PLAID_BASE_URL}/accounts/get"
-    logger.debug("Fetching Plaid accounts")
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
-    return response.json()
+    logger.debug(f"Fetching accounts for access_token: {access_token[:4]}...")
+
+    try:
+        request = AccountsGetRequest(access_token=access_token)
+        response = plaid_client.accounts_get(request)
+        accounts = response["accounts"]
+
+        logger.info(f"Retrieved {len(accounts)} account(s) from Plaid.")
+        return accounts
+
+    except Exception as e:
+        logger.error(f"Error fetching accounts: {e}", exc_info=True)
+        raise
 
 get_categories.route("/load_categories", methods=["POST"])
 def refresh_plaid_categories():
@@ -149,6 +159,8 @@ def refresh_plaid_categories():
 
     except Exception as e:
         logger.error(f"❌ Failed to refresh Plaid categories: {e}", exc_info=True)
+
+
 def get_transactions(access_token, start_date, end_date):
     """
     Retrieve transactions from Plaid for the given date range.
