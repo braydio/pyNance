@@ -28,10 +28,6 @@ temp/
 *.tmp
 *.backup
 
-# Configurations and sensitive data
-config/
-app/config/
-
 # Archive files
 archive/
 app/archive/
