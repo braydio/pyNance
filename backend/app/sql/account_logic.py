@@ -98,7 +98,8 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         processed_ids.add(account_id)
 
         name = account.get("name") or "Unnamed Account"
-        acc_type = account.get("type") or "Unknown"
+        acc_type_raw = account.get("type") or "Unknown"
+        acc_type = str(acc_type_raw)
         normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
 
@@ -109,7 +110,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             )
             balance = -balance
 
-        subtype = (account.get("subtype") or "Unknown").capitalize()
+        subtype = str(account.get("subtype") or "Unknown").capitalize()
         status = account.get("status") or "Unknown"
         institution = account.get("institution", {}) or {}
         institution_name = institution.get("name") or "Unknown"
