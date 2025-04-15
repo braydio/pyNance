@@ -2,45 +2,44 @@
 from plaid.api import plaid_api
 from plaid.api_client import ApiClient
 from plaid.configuration import Configuration
+
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.country_code import CountryCode
+from plaid.model.products import Products
+
+from app.config import plaid_client, PLAID_CLIENT_NAME
 from app.models import Category
-import logging
-
-import requests
-from flask import Blueprint, jsonify, request
 from app.extensions import db
-from app.config import (
-    PLAID_BASE_URL,
-    PLAID_CLIENT_ID,
-    PLAID_CLIENT_NAME,
-    PLAID_SECRET,
-    logger,
-)
-logger = logging.getLogger(__name__)
+from flask import Blueprint, jsonify, request
+import logging  # ← import logging, not `from app.config import logging`
 
-get_categories = Blueprint("/get_categories", __name__)
+logger = logging.getLogger(__name__)
+get_categories = Blueprint("get_categories", __name__)
+
 
 def generate_link_token(user_id, products=["transactions"]):
-    """
-    Generate a Plaid link token for the given user and products.
-    """
-    logger.debug(
-        f"Generating link token for plaid with ID: {PLAID_CLIENT_ID} and SECRET: {PLAID_SECRET}"
-    )
-    logger.debug(f"Using prooducts: {products}")
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "client_name": PLAID_CLIENT_NAME,
-        "products": products,
-        "country_codes": ["US"],
-        "language": "en",
-        "user": {"client_user_id": user_id},
-    }
-    url = f"{PLAID_BASE_URL}/link/token/create"
-    logger.debug(f"Generating Plaid link token with payload: {payload}")
-    response = requests.post(url, json=payload)
-    response.raise_for_status()
-    return response.json().get("link_token")
+    logger.debug(f"Generating link token with user_id={user_id}, products={products}")
+
+    try:
+        product_enums = [Products(p) for p in products]        # ✅ Enum via string
+        country_enum = [CountryCode("US")]                     # ✅ Also via string
+
+        request = LinkTokenCreateRequest(
+            user=LinkTokenCreateRequestUser(client_user_id=user_id),
+            client_name=PLAID_CLIENT_NAME,
+            products=product_enums,
+            language="en",
+            country_codes=country_enum
+        )
+
+        response = plaid_client.link_token_create(request)
+        return response["link_token"]
+
+    except Exception as e:
+        logger.error(f"Error generating link token: {e}", exc_info=True)
+        raise
+
 
 
 def exchange_public_token(public_token):
