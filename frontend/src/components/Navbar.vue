@@ -1,10 +1,10 @@
 <template>
-  <nav class="menu">
-    <router-link to="/">Dashboard</router-link>
-    <router-link to="/accounts">Accounts</router-link>
-    <router-link to="/transactions">Transactions</router-link>
-    <router-link to="/gallery">Gallery</router-link>
-    <router-link to="/recurring-transactions">Recurring Tx</router-link> <!-- ✅ Added -->
+  <nav class="menu flex-center p-2 z-50">
+    <router-link to="/" class="nav-link">Dashboard</router-link>
+    <router-link to="/accounts" class="nav-link">Accounts</router-link>
+    <router-link to="/transactions" class="nav-link">Transactions</router-link>
+    <router-link to="/gallery" class="nav-link">Gallery</router-link>
+    <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link> <!-- ✅ Added -->
   </nav>
 </template>
 
@@ -27,7 +27,7 @@ export default {
   background-color: var(--background);
   border-bottom: 1px solid var(--divider);
   box-shadow: 0 2px 4px var(--shadow);
-  gap: 2rem;
+  gap: 1rem;
   position: sticky;
   top: 0;
   backdrop-filter: blur(6px);
@@ -48,5 +48,6 @@ export default {
   background-color: var(--hover);
   box-shadow: 0 0 6px var(--hover-glow);
 }
+
 </style>
 
