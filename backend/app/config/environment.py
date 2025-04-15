@@ -16,3 +16,4 @@ PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
 TELLER_APP_ID = os.getenv("TELLER_APP_ID")
 TELLER_API_BASE_URL = "https://api.teller.io"
+
