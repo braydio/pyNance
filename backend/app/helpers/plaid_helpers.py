@@ -8,6 +8,7 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
+from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
 
@@ -83,6 +84,18 @@ def get_accounts(access_token):
     except Exception as e:
         logger.error(f"Error fetching accounts: {e}", exc_info=True)
         raise
+
+def get_institution_name(institution_id):
+    try:
+        request = InstitutionsGetByIdRequest(
+            institution_id=institution_id,
+            country_codes=[CountryCode("US")]
+        )
+        response = plaid_client.institutions_get_by_id(request)
+        return response["institution"]["name"]
+    except Exception as e:
+        logger.warning(f"Failed to fetch institution name for {institution_id}: {e}")
+        return institution_id  # fallback
 
 get_categories.route("/load_categories", methods=["POST"])
 def refresh_plaid_categories():
