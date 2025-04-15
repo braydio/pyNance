@@ -62,6 +62,7 @@ def exchange_public_token_endpoint():
         # Step 2: Fetch item info to get institution_id
         item_info = get_item(access_token)
         institution_id = item_info.get("institution_id", "Unknown")
+        institution_name = get_institution_name(institution_id)
 
         # Step 3: Fetch accounts
         accounts = get_accounts(access_token)
