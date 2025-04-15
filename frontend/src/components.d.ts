@@ -5,7 +5,7 @@
 // biome-ignore lint: disable
 export {}
 
-/* prettier-ignore */
+/* prettier-ignore ok */
 declare module 'vue' {
   export interface GlobalComponents {
     AccountsReorderChart: typeof import('./components/AccountsReorderChart.vue')['default']
