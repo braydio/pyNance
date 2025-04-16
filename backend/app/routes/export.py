@@ -23,3 +23,17 @@ def export_all_models():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
+@export.route("/access_token_export, methods=["GET"])
+def export_accounts_csv():
+    accounts = db.session.query(Account.user_id, Account.access_token).all()
+
+    si = StringIO()
+    writer = csv.writer(si)
+    writer.writerow(["user_id", "access_token"])
+    writer.writerows(accounts)
+
+    return Response(
+        si.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=accounts_export.csv"}
+    )
