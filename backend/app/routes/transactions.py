@@ -47,9 +47,9 @@ def update_transaction():
         if "merchant_name" in data:
             txn.merchant_name = data["merchant_name"]
             changed_fields["merchant_name"] = True
-        if "merchant_typ" in data:
-            txn.merchant_typ = data["merchant_typ"]
-            changed_fields["merchant_typ"] = True
+        if "merchant_type" in data:
+            txn.merchant_type = data["merchant_type"]
+            changed_fields["merchant_type"] = True
 
         txn.user_modified = True
         existing_fields = {}
@@ -99,9 +99,9 @@ def user_modified_update_transaction():
         if "merchant_name" in data:
             txn.merchant_name = data["merchant_name"]
             changed_fields["merchant_name"] = True
-        if "merchant_typ" in data:
-            txn.merchant_typ = data["merchant_typ"]
-            changed_fields["merchant_typ"] = True
+        if "merchant_type" in data:
+            txn.merchant_type = data["merchant_type"]
+            changed_fields["merchant_type"] = True
 
         txn.user_modified = True
         existing_fields = {}
