@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from app.extensions import db
 
 
@@ -33,7 +32,7 @@ class Account(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(db.String(64), unique=True, nullable=False)
     user_id = db.Column(db.String(64), nullable=False)
-    access_token = db.Column((db.String(256)))
+    access_token = db.Column(db.String(256))
     name = db.Column(db.String(128))
     type = db.Column(db.String(64))
     subtype = db.Column(db.String(64))
@@ -101,7 +100,9 @@ class Category(db.Model):
     detailed_category = db.Column(db.String(128), default="Unknown")
     display_name = db.Column(db.String(256), default="Unknown")
 
-    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)  # ✅ Required
+    parent_id = db.Column(
+        db.Integer, db.ForeignKey("categories.id"), nullable=True
+    )  # ✅ Required
     parent = db.relationship("Category", remote_side=[id])  # ✅ Now this works
 
     def __repr__(self):
@@ -110,6 +111,25 @@ class Category(db.Model):
             f"display_name={self.display_name})>"
         )
 
+
+class TellerAccount(db.Model):
+    __tablename__ = "teller_accounts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(db.String, unique=True, nullable=False)
+    user_id = db.Column(db.String, nullable=False)
+    name = db.Column(db.String, default="Unnamed Account")
+    type = db.Column(db.String)
+    subtype = db.Column(db.String)
+    balance = db.Column(db.Float, default=0.0)
+    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
+    enrollment_id = db.Column(db.String)
+    access_token = db.Column(db.String)
+    provider = db.Column(db.String, default="Teller")
+    details = db.Column(db.Text)  # use JSON if not using PostgreSQL
+
+    def __repr__(self):
+        return f"<TellerAccount {self.account_id} ({self.name})>"
 
 
 class Transaction(db.Model):
@@ -131,3 +151,14 @@ class Transaction(db.Model):
         return (
             f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
         )
+
+
+# class PlaidItem(db.Model, TimestampMixin):
+#     __tablename__ = "plaid_items"
+
+
+class TimestampMixin:
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
