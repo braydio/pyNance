@@ -1,0 +1,32 @@
+4/16//25
+
+  Cleaning up AccountsTable.vue buttons
+  Adding routes and components for upload/download CSV
+    * First finish the AccountsTable Cleanup
+      - New upload download buttons will be in a dedicated component
+    * Then build out download components and routes
+    * Then build out upload components and routes
+
+
+4/14/25
+
+  Maybe looking to add a page for general notes. Could use it for
+  dev process. Could implement it into a future build.
+
+  Currently: 
+  :- Back to working on TellerIO. Looking to set up a webhook and see what do.
+    * Teller looks to now support Payments (Zelle) let us fucking go.
+
+    - Institution is saved as ID instead of name, updates to sql/account-logic.py
+      for correct upsertion
+    - Looking at refresh logic for individual accounts
+    - Add support for investments
+    - Add support for Plaid Transfer
+    - Multiple UI elements still do not work
+      * NetYearComparisonChart
+      * RecurringTransactionSection
+      * UpdateTransactionsTable -- Need to persist user modified changes/fields
+      * NotificationsBar
+    - views
+      * Accounts - General tidy, toggle hiding of buttons
+      * Dashboard
