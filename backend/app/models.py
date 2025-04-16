@@ -141,7 +141,7 @@ class Transaction(db.Model):
     date = db.Column(db.String(64))
     description = db.Column(db.String(256))
     merchant_name = db.Column(db.String(128), default="Unknown")
-    merchant_typ = db.Column(db.String(64), default="Unknown")
+    merchant_type = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)  # JSON representation
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
