@@ -2,7 +2,14 @@ from datetime import datetime
 from app.extensions import db
 
 
-class PlaidItem(db.Model):
+class TimestampMixin:
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+
+
+class PlaidItem(db.Model, TimestampMixin):
     """
     Stores Plaid-specific item metadata and access tokens.
     This table is kept separate from your Teller tokens.
@@ -15,20 +22,15 @@ class PlaidItem(db.Model):
     item_id = db.Column(db.String(64), unique=True, nullable=False)
     access_token = db.Column(db.String(256), nullable=False)
     institution_name = db.Column(db.String(128), nullable=False)
-    product = db.Column(
-        db.String(32), nullable=False
-    )  # e.g. "transactions" or "investments"
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    product = db.Column(db.String(32), nullable=False)  # e.g. "transactions"
 
     def __repr__(self):
         return f"<PlaidItem(item_id={self.item_id}, institution={self.institution_name}, product={self.product})>"
 
 
-class Account(db.Model):
+class Account(db.Model, TimestampMixin):
     __tablename__ = "accounts"
+
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(db.String(64), unique=True, nullable=False)
     user_id = db.Column(db.String(64), nullable=False)
@@ -42,7 +44,6 @@ class Account(db.Model):
     last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
     link_type = db.Column(db.String(64), default="InsertProvider")
 
-    # Set up cascading deletes for related records
     details = db.relationship(
         "AccountDetails", backref="account", uselist=False, cascade="all, delete-orphan"
     )
@@ -86,7 +87,7 @@ class RecurringTransaction(db.Model):
     next_due_date = db.Column(db.Date, nullable=True)
     notes = db.Column(db.String(256), nullable=True)
     updated_at = db.Column(
-        db.String(64), default=datetime.utcnow, onupdate=datetime.utcnow
+        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
 
@@ -94,25 +95,19 @@ class Category(db.Model):
     __tablename__ = "categories"
 
     id = db.Column(db.Integer, primary_key=True)
-
     plaid_category_id = db.Column(db.String(64), unique=True, nullable=False)
     primary_category = db.Column(db.String(128), default="Unknown")
     detailed_category = db.Column(db.String(128), default="Unknown")
     display_name = db.Column(db.String(256), default="Unknown")
 
-    parent_id = db.Column(
-        db.Integer, db.ForeignKey("categories.id"), nullable=True
-    )  # ✅ Required
-    parent = db.relationship("Category", remote_side=[id])  # ✅ Now this works
+    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    parent = db.relationship("Category", remote_side=[id])
 
     def __repr__(self):
-        return (
-            f"<Category(plaid_category_id={self.plaid_category_id}, "
-            f"display_name={self.display_name})>"
-        )
+        return f"<Category(plaid_category_id={self.plaid_category_id}, display_name={self.display_name})>"
 
 
-class TellerAccount(db.Model):
+class TellerAccount(db.Model, TimestampMixin):
     __tablename__ = "teller_accounts"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -126,7 +121,7 @@ class TellerAccount(db.Model):
     enrollment_id = db.Column(db.String)
     access_token = db.Column(db.String)
     provider = db.Column(db.String, default="Teller")
-    details = db.Column(db.Text)  # use JSON if not using PostgreSQL
+    details = db.Column(db.Text)  # or db.JSON if PostgreSQL
 
     def __repr__(self):
         return f"<TellerAccount {self.account_id} ({self.name})>"
@@ -141,7 +136,7 @@ class Transaction(db.Model):
     date = db.Column(db.String(64))
     description = db.Column(db.String(256))
     merchant_name = db.Column(db.String(128), default="Unknown")
-    merchant_type = db.Column(db.String(64), default="Unknown")
+    merchant_type = db.Column(db.String(64), default="Unknown")  # ✅ typo fixed
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)  # JSON representation
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
@@ -151,14 +146,3 @@ class Transaction(db.Model):
         return (
             f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
         )
-
-
-# class PlaidItem(db.Model, TimestampMixin):
-#     __tablename__ = "plaid_items"
-
-
-class TimestampMixin:
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
