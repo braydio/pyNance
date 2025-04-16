@@ -10,6 +10,9 @@ from .environment import (
 from .constants import FILES, TELEMETRY, DIRECTORIES, SQLALCHEMY_DATABASE_URI
 from .paths import BASE_DIR
 
+env_check = PLAID_ENV.upper()
+
 logger = setup_logger()
 logger.debug(f"Loaded config from {__name__}")
-
+logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
+logger.debug("======")
