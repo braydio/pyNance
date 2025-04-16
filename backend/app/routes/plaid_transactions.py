@@ -7,6 +7,7 @@ from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
+    get_institution_name,
     get_item,
 )
 from app.models import Account
@@ -63,35 +64,43 @@ def exchange_public_token_endpoint():
         item_info = get_item(access_token)
         institution_id = item_info.get("institution_id", "Unknown")
         institution_name = get_institution_name(institution_id)
-
         # Step 3: Fetch accounts
         accounts = get_accounts(access_token)
 
         # Step 4: Transform and upsert accounts
         transformed = []
         for acct in accounts:
-            transformed.append({
-                "id": acct.get("account_id"),
-                "name": acct.get("name") or acct.get("official_name", "Unnamed Account"),
-                "type": str(acct.get("type") or "Unknown"),
-                "subtype": str(acct.get("subtype") or "Unknown"),
-                "subtype": acct.get("subtype") or "Unknown",
-                "balance": {"current": acct.get("balances", {}).get("current", 0)},
-                "status": "active",
-                "institution": {"name": institution_id},  # You can replace with institution name if desired
-                "access_token": access_token,
-                "enrollment_id": "",
-                "links": {},
-                "provider": "Plaid",
-            })
+            transformed.append(
+                {
+                    "id": acct.get("account_id"),
+                    "name": acct.get("name")
+                    or acct.get("official_name", "Unnamed Account"),
+                    "type": str(acct.get("type") or "Unknown"),
+                    "subtype": str(acct.get("subtype") or "Unknown"),
+                    "balance": {"current": acct.get("balances", {}).get("current", 0)},
+                    "status": "active",
+                    "institution": {
+                        "name": institution_name
+                    },  # You can replace with institution name if desired
+                    "access_token": access_token,
+                    "enrollment_id": "",
+                    "links": {},
+                    "provider": "Plaid",
+                }
+            )
 
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
 
-        return jsonify({
-            "status": "success",
-            "item_id": item_id,
-            "institution_name": institution_id  # Rename if you want to fetch/display full name later
-        }), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "item_id": item_id,
+                    "institution_name": institution_id,  # Rename if you want to fetch/display full name later
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
