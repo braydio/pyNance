@@ -1,11 +1,12 @@
-
 from plaid.api import plaid_api
 from plaid.api_client import ApiClient
 from plaid.configuration import Configuration
 
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_public_token_exchange_request import (
+    ItemPublicTokenExchangeRequest,
+)
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
@@ -21,24 +22,26 @@ import logging  # ← import logging, not `from app.config import logging`
 logger = logging.getLogger(__name__)
 get_categories = Blueprint("get_categories", __name__)
 
+
 def get_item(access_token):
     request = ItemGetRequest(access_token=access_token)
     response = plaid_client.item_get(request)
     return response["item"]
 
+
 def generate_link_token(user_id, products=["transactions"]):
     logger.debug(f"Generating link token with user_id={user_id}, products={products}")
 
     try:
-        product_enums = [Products(p) for p in products]        # ✅ Enum via string
-        country_enum = [CountryCode("US")]                     # ✅ Also via string
+        product_enums = [Products(p) for p in products]  # ✅ Enum via string
+        country_enum = [CountryCode("US")]  # ✅ Also via string
 
         request = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=user_id),
             client_name=PLAID_CLIENT_NAME,
             products=product_enums,
             language="en",
-            country_codes=country_enum
+            country_codes=country_enum,
         )
 
         response = plaid_client.link_token_create(request)
@@ -60,10 +63,7 @@ def exchange_public_token(public_token):
         item_id = response["item_id"]
 
         logger.info(f"Successfully exchanged token. Item ID: {item_id}")
-        return {
-            "access_token": access_token,
-            "item_id": item_id
-        }
+        return {"access_token": access_token, "item_id": item_id}
 
     except Exception as e:
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
@@ -85,11 +85,11 @@ def get_accounts(access_token):
         logger.error(f"Error fetching accounts: {e}", exc_info=True)
         raise
 
+
 def get_institution_name(institution_id):
     try:
         request = InstitutionsGetByIdRequest(
-            institution_id=institution_id,
-            country_codes=[CountryCode("US")]
+            institution_id=institution_id, country_codes=[CountryCode("US")]
         )
         response = plaid_client.institutions_get_by_id(request)
         return response["institution"]["name"]
@@ -97,13 +97,16 @@ def get_institution_name(institution_id):
         logger.warning(f"Failed to fetch institution name for {institution_id}: {e}")
         return institution_id  # fallback
 
+
 get_categories.route("/load_categories", methods=["POST"])
+
+
 def refresh_plaid_categories():
     """
     Fetch categories from Plaid and insert them into the local Category table
     with hierarchy: primary → detailed
     """
-    url =  f"{PLAID_BASE_URL}/categories/get"
+    url = f"{PLAID_BASE_URL}/categories/get"
     headers = {"Content-Type": "application/json"}
     payload = {
         "client_id": PLAID_CLIENT_ID,
@@ -125,14 +128,16 @@ def refresh_plaid_categories():
             if len(hierarchy) == 1:
                 # Primary-level category
                 primary_name = hierarchy[0]
-                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                existing = Category.query.filter_by(
+                    plaid_category_id=plaid_cat_id
+                ).first()
                 if not existing:
                     new_primary = Category(
                         plaid_category_id=plaid_cat_id + "_primary",
                         primary_category=primary_name,
                         detailed_category=None,
                         display_name=primary_name,
-                        parent_id=None
+                        parent_id=None,
                     )
                     db.session.add(new_primary)
                     db.session.flush()  # get ID for parent
@@ -145,25 +150,29 @@ def refresh_plaid_categories():
                 detailed_name = hierarchy[1]
 
                 # Find or create parent
-                parent = Category.query.filter_by(display_name=primary_name, parent_id=None).first()
+                parent = Category.query.filter_by(
+                    display_name=primary_name, parent_id=None
+                ).first()
                 if not parent:
                     parent = Category(
                         plaid_category_id=f"{plaid_cat_id}_primary",
                         primary_category=primary_name,
-                        display_name=primary_name
+                        display_name=primary_name,
                     )
                     db.session.add(parent)
                     db.session.flush()
 
                 # Now insert child
-                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                existing = Category.query.filter_by(
+                    plaid_category_id=plaid_cat_id
+                ).first()
                 if not existing:
                     new_cat = Category(
                         plaid_category_id=plaid_cat_id,
                         primary_category=primary_name,
                         detailed_category=detailed_name,
                         display_name=detailed_name,
-                        parent_id=parent.id
+                        parent_id=parent.id,
                     )
                     db.session.add(new_cat)
 
