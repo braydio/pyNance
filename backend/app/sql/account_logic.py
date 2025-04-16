@@ -349,17 +349,17 @@ def refresh_data_for_teller_account(
 
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
-            merchant_typ = "Unknown"
+            merchant_type = "Unknown"
             if (
                 isinstance(counterparty, list)
                 and counterparty
                 and isinstance(counterparty[0], dict)
             ):
                 merchant_name = counterparty[0].get("name", "Unknown")
-                merchant_typ = counterparty[0].get("type", "Unknown")
+                merchant_type = counterparty[0].get("type", "Unknown")
             elif isinstance(counterparty, dict):
                 merchant_name = counterparty.get("name", "Unknown")
-                merchant_typ = counterparty.get("type", "Unknown")
+                merchant_type = counterparty.get("type", "Unknown")
 
             if existing_txn:
                 if existing_txn.user_modified:
@@ -376,7 +376,7 @@ def refresh_data_for_teller_account(
                     existing_txn.description = txn.get("description") or ""
                     existing_txn.category = category
                     existing_txn.merchant_name = merchant_name
-                    existing_txn.merchant_typ = merchant_typ
+                    existing_txn.merchant_type = merchant_type
             else:
                 logger.debug(
                     f"Inserting new transaction {txn_id} for account {account.account_id}."
@@ -389,7 +389,7 @@ def refresh_data_for_teller_account(
                     description=txn.get("description") or "",
                     category=category,
                     merchant_name=merchant_name,
-                    merchant_typ=merchant_typ,
+                    merchant_type=merchant_type,
                 )
                 db.session.add(new_txn)
         updated = True
@@ -470,12 +470,12 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
                 description_str = txn.get("name") or "Unknown"
                 merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
-                merchant_typ = "Unknown"
+                merchant_type = "Unknown"
 
                 if txn.get("personal_finance_category"):
                     fincat = txn["personal_finance_category"]
                     if isinstance(fincat, dict):
-                        merchant_typ = fincat.get("detailed", "Unknown")
+                        merchant_type = fincat.get("detailed", "Unknown")
 
                 # --- Updated category logic ---
                 category_list = txn.get("category", []) or []
@@ -503,7 +503,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         existing_txn.date = date_str
                         existing_txn.description = description_str
                         existing_txn.merchant_name = merchant_name
-                        existing_txn.merchant_typ = merchant_typ
+                        existing_txn.merchant_type = merchant_type
                         existing_txn.category = category_string
                         existing_txn.category_id = category_id
                 else:
@@ -515,7 +515,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         date=date_str,
                         description=description_str,
                         merchant_name=merchant_name,
-                        merchant_typ=merchant_typ,
+                        merchant_type=merchant_type,
                         category=category_string,
                         category_id=category_id,
                     )
