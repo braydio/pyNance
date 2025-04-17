@@ -1,19 +1,15 @@
 
 <template>
-  <div class="relative">
-    <button
-      class="btn btn-outline btn-pill"
-      @click="showForm = !showForm"
-      type="button"
-    >
-      + Token Upload
-    </button>
+  <div class="link-account">
+    <h2>Link Account (Manual)</h2>
+    <div class="button-group">
+      <button @click="showForm = !showForm" class="btn">
+        {{ showForm ? 'Hide Form' : '+ Paste Access Token' }}
+      </button>
+    </div>
 
     <transition name="fade">
-      <div
-        v-if="showForm"
-        class="absolute z-10 mt-2 p-4 rounded bg-white shadow-xl border border-gray-300 w-80"
-      >
+      <div v-if="showForm" class="upload-form">
         <div class="mb-2">
           <label class="text-xs font-medium">User ID</label>
           <input
@@ -22,6 +18,7 @@
             placeholder="e.g. brayden"
           />
         </div>
+
         <div class="mb-2">
           <label class="text-xs font-medium">Access Token</label>
           <textarea
@@ -31,17 +28,16 @@
             placeholder="Paste access token"
           ></textarea>
         </div>
-        <div class="flex justify-between items-center">
+
+        <div class="button-group justify-between">
           <button
             @click="submit"
             :disabled="!userId || !accessToken || loading"
-            class="btn btn-sm bg-blue-600 text-white hover:bg-blue-700 px-3 py-1 rounded"
+            class="btn"
           >
             Upload
           </button>
-          <button class="text-xs text-gray-500" @click="showForm = false">
-            Cancel
-          </button>
+          <button class="btn" @click="showForm = false">Cancel</button>
         </div>
       </div>
     </transition>
@@ -76,16 +72,49 @@ const submit = async () => {
 </script>
 
 <style scoped>
-textarea {
-  font-family:"Fira Code" monospace;
+.link-account {
+  margin: 0 auto;
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border-top: 8px inset var(--color-bg-secondary);
+  border-bottom: 6px outset var(--color-text-muted);
+  border-left: 8px inset var(--color-bg-secondary);
+  border-right: 6px outset var(--color-text-muted);
+  border-radius: 5px;
 }
-
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+.link-account h2 {
+  margin: 5px 1px;
+  color: var(--neon-purple);
+  text-align: center;
 }
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.button-group {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+.button-group button {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px groove transparent;
+  border-radius: 3px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.button-group button:hover {
+  color: var(--themed-bg);
+  background-color: var(--neon-mint);
+}
+.upload-form {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
+  width: 100%;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 </style>
+
