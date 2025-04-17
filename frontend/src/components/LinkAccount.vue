@@ -115,14 +115,15 @@ export default {
   margin: 0 auto;
   background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border: 1px solid var(--color-bg-secondary);
-  border-radius: 8px;
-  box-shadow: 0 2px 8px var(--shadow);
+  border-top: 8px inset var(--color-bg-secondary);
+  border-bottom: 6px outset var(--color-text-muted);
+  border-left: 8px inset var(--color-bg-secondary);
+  border-right: 6px outset var(--color-text-muted);
+  border-radius: 5px;
 }
-
 .link-account h2 {
-  margin: 5px 5px 1rem;
-  color: var(--link-color);
+  margin: 5px 1px;
+  color: var(--neon-purple);
 }
 .button-group {
   display: flex;
@@ -132,15 +133,14 @@ export default {
 .button-group button {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border: none;
-  padding: 0.5rem 0.1rem;
+  border: 1px groove transparent;
   border-radius: 3px;
   font-weight: bold;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
 }
 .button-group button:hover {
-  background-color: var(--gruvbox-hover);
-  transform: translateY(-2px);
+  color: var(--themed-bg);
+  border: 1px ;
+  background-color: var(--neon-mint);
 }
 </style>
