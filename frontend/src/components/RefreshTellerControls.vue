@@ -1,9 +1,13 @@
+
 <template>
-  <div class="controls">
-    <button @click="handleTellerRefresh" :disabled="isRefreshing">
-      <span v-if="isRefreshing">Refreshing Teller Accounts…</span>
-      <span v-else>Refresh Teller Accounts</span>
-    </button>
+  <div class="link-account">
+    <h2>Refresh Teller</h2>
+    <div class="button-group">
+      <button @click="handleTellerRefresh" :disabled="isRefreshing">
+        <span v-if="isRefreshing">Refreshing Teller Accounts…</span>
+        <span v-else>Refresh Teller Accounts</span>
+      </button>
+    </div>
   </div>
 </template>
 
@@ -39,29 +43,35 @@ export default {
 </script>
 
 <style scoped>
-
-.controls {
-  display: flex;
-  gap: 0.5rem;
-}
-.controls button {
-  background-color: var(--color-bg-dark);
+.link-account {
+  margin: 0 auto;
+  background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border: 1px solid transparent;
-  padding: 0.5rem 1rem;
+  border-top: 8px inset var(--color-bg-secondary);
+  border-bottom: 6px outset var(--color-text-muted);
+  border-left: 8px inset var(--color-bg-secondary);
+  border-right: 6px outset var(--color-text-muted);
+  border-radius: 5px;
+}
+.link-account h2 {
+  margin: 5px 1px;
+  color: var(--neon-purple);
+}
+.button-group {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+}
+.button-group button {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px groove transparent;
   border-radius: 3px;
-  cursor: pointer;
   font-weight: bold;
-  transition: background-color 0.2s, color 0.2s;
+  cursor: pointer;
 }
-.controls button:disabled {
-  opacity: 0.8;
-  cursor: not-allowed;
+.button-group button:hover {
+  color: var(--themed-bg);
+  background-color: var(--neon-mint);
 }
-.controls button:hover:not(:disabled) {
-  background-color: var(--button-hover);
-  color: var(--gruvbox-accent);
-  border: 1px solid transparent;
-}
-
 </style>
