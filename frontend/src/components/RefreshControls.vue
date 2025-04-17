@@ -101,7 +101,7 @@ export default {
 }
 
 /* Toggle Delete Buttons Button */
-.btn {
+..btn {
   padding: 0.5rem 1rem;
   background-color: var(--background);
   color: var(--foreground);
