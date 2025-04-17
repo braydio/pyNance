@@ -16,7 +16,6 @@
           type="text"
           placeholder="Filter accounts..."
         />
-        <RefreshControls :onFetch="fetchAccounts" :onRefresh="refreshAccounts" />
 
         <button class="theme-buttons-top" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
@@ -24,7 +23,6 @@
 
         <!-- CSV Export/Import Buttons -->
         <button class="theme-buttons-top" @click="exportCSV">Export CSV</button>
-        <input type="file" @change="importCSV" accept=".csv" />
       </div>
 
       <!-- Table -->
@@ -299,7 +297,7 @@ export default {
   padding: 0.5rem 0.75rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-  background-color: var(--input-bg);
+  background-color: var(--hover);
   color: var(--foreground);
   font-family: "Fira Code", monospace;
   font-size: 1rem;
@@ -307,7 +305,7 @@ export default {
   transition: border-color 0.2s ease;
 }
 .filter-input:focus {
-  border-color: var(--accent);
+  border-color: var(--hover);
 }
 
 /* Toggle Delete Buttons Button */
@@ -315,18 +313,16 @@ export default {
   padding: 0.5rem 1rem;
   background-color: var(--background);
   color: var(--foreground);
-  border: 2px groove transparent;
+  border: 1px groove var(--background);
   border-radius: 0px;
   cursor: pointer;
   font-family: "Fira Code", monospace;
   font-weight: bold;
-  transition: transform 0.2s ease;
 }
 .theme-buttons-top:hover {
   color: var(--foreground);
   background-color: var(--hover);
-  transform: translateY(-1px);
-  border: 1px solid transparent;
+  border: 1px groove transparent;
 }
 
 /* Table Styling */
