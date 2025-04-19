@@ -12,6 +12,7 @@ from .environment import (
     TELLER_APP_ID,
     TELLER_CERTIFICATE,
     TELLER_PRIVATE_KEY,
+    TELLER_WEBHOOK_SECRET,
     VARIABLE_ENV_TOKEN,
     VARIABLE_ENV_ID,
     PRODUCTS,
@@ -24,4 +25,3 @@ env_check = PLAID_ENV.upper()
 logger = setup_logger()
 logger.debug(f"Loaded config from {__name__}")
 logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
-
