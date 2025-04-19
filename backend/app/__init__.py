@@ -17,6 +17,7 @@ def create_app():
 
     with app.app_context():
         from app.routes.categories import refresh_plaid_categories
+
         refresh_plaid_categories()
         # Ensure models are imported so that tables are registered
         # db.create_all()
@@ -24,6 +25,7 @@ def create_app():
         from app.routes.transactions import transactions
         from app.routes.accounts import accounts
         from app.routes.recurring import recurring
+        from app.routes.manual_io import manual_up
         from app.routes.charts import charts
         from app.routes.categories import categories as categories_bp
         from app.routes.export import export
@@ -36,6 +38,7 @@ def create_app():
         app.register_blueprint(categories_bp, url_prefix="/api/categories")
         app.register_blueprint(transactions, url_prefix="/api/transactions")
         app.register_blueprint(accounts, url_prefix="/api/accounts")
+        app.register_blueprint(manual_up, url_prefix="/api/import")
         app.register_blueprint(charts, url_prefix="/api/charts")
         app.register_blueprint(recurring, url_prefix="/api/recurring")
         app.register_blueprint(plaid_bp, url_prefix="/api/plaid")
@@ -44,6 +47,5 @@ def create_app():
         )
         app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
         app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
-
 
     return app
