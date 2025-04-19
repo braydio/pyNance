@@ -1,8 +1,7 @@
-# File: app/routes/teller_transactions.py
-
+# teller_transactions.py
 import json
+import os
 from datetime import datetime
-
 import requests
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
@@ -13,49 +12,53 @@ from flask import Blueprint, jsonify, request
 
 teller_transactions = Blueprint("teller_transactions", __name__)
 
+# In case later I want to split out Link Teller Account logic into its own routes
+# teller_link = Blueprint("teller-link", __name__)
 
-@teller_transactions.route("/exchange_public_token", methods=["POST"])
-def teller_exchange_public_token():
-    """
-    Exchange a public token for a Teller access token.
-    """
+# def load_tokens():
+#    if os.path.exists(FILES["TELLER_TOKENS"]):
+#        with open(FILES["TELLER_TOKENS"], "r") as f:
+#            return json.load(f)
+#    return []
+
+
+@teller_transactions.route("/save_access_token", methods=["POST"])
+def save_teller_token():
     try:
-        logger.debug("Exchanging Teller public token for access token.")
-        data = request.json
-        public_token = data.get("public_token")
-        if not public_token:
-            logger.error("Missing public token in request.")
-            return jsonify({"error": "Missing public token"}), 400
+        data = request.get_json()
+        access_token = data.get("access_token")
+        user_id = data.get("user_id", "default-user")
 
-        url = f"{TELLER_API_BASE_URL}/link_tokens/exchange"
-        headers = {"Authorization": f"Bearer {FILES['TELLER_DOT_KEY']}"}
-        payload = {"public_token": public_token}
-        logger.debug(f"Teller exchange payload: {payload}")
-        resp = requests.post(url, headers=headers, json=payload)
-        logger.debug(f"Teller exchange response: {resp.status_code} - {resp.text}")
-        if resp.status_code != 200:
-            logger.error(f"Error exchanging public token: {resp.json()}")
-            return jsonify({"error": resp.json()}), resp.status_code
+        if not access_token:
+            logger.warning("Missing access token in request body.")
+            return jsonify(
+                {"status": "error", "message": "Access token is required."}
+            ), 400
 
-        access_token = resp.json().get("access_token")
-        user_id = resp.json().get("user", {}).get("id")
-        try:
-            with open(FILES["TELLER_TOKENS"], "r") as f:
-                tokens = json.load(f)
-        except Exception:
-            tokens = []
+        logger.debug(f"Saving access token for user {user_id}")
+        tokens = load_tokens()
         tokens.append({"user_id": user_id, "access_token": access_token})
         with open(FILES["TELLER_TOKENS"], "w") as f:
             json.dump(tokens, f, indent=4)
-        return (
-            jsonify(
-                {"status": "success", "access_token": access_token, "user_id": user_id}
-            ),
-            200,
-        )
+
+        logger.info("Access token saved successfully.")
+        return jsonify({"status": "success"}), 200
+
     except Exception as e:
-        logger.error(f"Error in Teller token exchange: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error saving Teller token: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@teller_transactions.route("/exchange_public_token", methods=["POST"])
+def teller_exchange_public_token():
+    logger.error(
+        "Teller does not have an exchange process. Save response as linked token."
+    )
+    return jsonify(
+        {
+            "error": "You are looking for the /teller_transactions/save_access_token route. This incorrect route is being depreciated."
+        }
+    ), 500
 
 
 @teller_transactions.route("/refresh_accounts", methods=["POST"])
@@ -265,4 +268,4 @@ def delete_teller_account():
         )
     except Exception as e:
         logger.error(f"Error deleting Teller account: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 50
+        return jsonify({"status": "error", "message": str(e)}), 500
