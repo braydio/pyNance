@@ -4,7 +4,7 @@
   font-family: var(--font-mono);
   padding: 0.5rem 1rem;
   font-size: 0.95rem;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--accent-magenta);
   background-color: var(--button-bg);
   color: var(--color-text-light);
   border-radius: 6px;
@@ -13,19 +13,19 @@
 }
 
 .btn:hover {
-  background-color: var(--button-hover-bg);
+  background-color: var(--button-accent-magenta);
   transform: translateY(-1px);
   box-shadow: 0 0 6px var(--hover-glow);
 }
 
 .btn-outline {
   background: transparent;
-  border: 1px solid var(--color-accent-yellow);
-  color: var(--color-accent-yellow);
+  border: 2px inset var(--color-accent-mint);
+  color: var(--color-accent-mint);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-accent-yellow);
+  background-color: var(--bar-gradient-start);
   color: var(--color-bg-dark);
 }
 
