@@ -4,6 +4,7 @@
     <div class="button-group">
       <button @click="linkPlaid">Plaid</button>
       <button @click="linkTeller">Teller.io</button>
+      <button @click="$emit('manual-token-click')">Provide Access Token</button>
     </div>
   </div>
 </template>
@@ -19,7 +20,7 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      userId: import.meta.env.VITE_USER_ID_PLAID, // Fixed: added VITE_ prefix
+      userId: import.meta.env.VITE_USER_ID_PLAID,
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
     };
   },
@@ -55,13 +56,15 @@ export default {
         onSuccess: async (public_token, metadata) => {
           try {
             console.log("Plaid onSuccess, public_token:", public_token);
-            const exchangeRes = await api.exchangePublicToken("plaid", {
-              user_id: this.userId,
-              public_token: public_token,
-            });
+
+              const saveRes = await api.saveTellerToken({
+                user_id: this.userId,
+                access_token: enrollment.accessToken,
+              });
+
             console.log("Plaid exchange response:", exchangeRes);
           } catch (error) {
-            console.error("Error exchanging Plaid public token:", error);
+            console.error("Error exchanging Plaid Access token:", error);
           }
         },
         onExit: (err, metadata) => {
@@ -110,7 +113,6 @@ export default {
 </script>
 
 <style scoped>
-
 .link-account {
   margin: 0 auto;
   background-color: var(--themed-bg);
@@ -140,7 +142,7 @@ export default {
 }
 .button-group button:hover {
   color: var(--themed-bg);
-  border: 1px ;
+  border: 1px;
   background-color: var(--neon-mint);
 }
 </style>
