@@ -1,26 +1,11 @@
-
 <template>
   <div class="recurring-transactions-section">
     <!-- Notifications/Reminders Section -->
     <div class="notifications-container" v-if="notifications.length">
       <h3>Upcoming Recurring Transactions</h3>
-      <p
-        v-for="(notif, idx) in notifications"
-        :key="idx"
-        class="notification-message"
-      >
+      <p v-for="(notif, idx) in notifications" :key="idx" class="notification-message">
         {{ notif }}
       </p>
-    </div>
-
-    <!-- Account Selection Dropdown -->
-    <div class="account-dropdown-section">
-      <label>Select an Account:</label>
-      <select class="styled-dropdown" v-model="selectedAccountId" @change="onAccountChange">
-        <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
-          {{ acc.name }} ({{ acc.institution_name }})
-        </option>
-      </select>
     </div>
 
     <!-- Manual Recurring Transaction (User-Defined) -->
@@ -64,6 +49,14 @@
         placeholder="Any extra info..."
       />
 
+      <label for="manualTxId">Transaction ID:</label>
+      <input
+        id="manualTxId"
+        v-model="transactionId"
+        type="text"
+        placeholder="tx_abc123"
+      />
+
       <button @click="saveRecurring" :disabled="loading">
         {{ loading ? 'Saving...' : 'Save' }}
       </button>
@@ -72,17 +65,13 @@
 </template>
 
 <script>
-import { getRecurringTransactions, saveRecurringTransaction } from "@/api/recurring";
-import axios from "axios";
+import { createRecurringTransaction } from "@/api/recurring";
 
 export default {
   name: "RecurringTransactionsSection",
-  props: ["provider"],
   data() {
     return {
-      accounts: [],
-      selectedAccountId: "",
-      notifications: [],
+      transactionId: "",
       description: "",
       amount: 0.0,
       frequency: "monthly",
@@ -90,74 +79,31 @@ export default {
       notes: "",
       loading: false,
       error: "",
+      notifications: []
     };
   },
   methods: {
-    async fetchAccounts() {
-      this.loading = true;
-      this.error = "";
-      try {
-        const response = await axios.get("/api/accounts/get_accounts");
-        const accounts = response.data.accounts || response.data;
-        this.accounts = accounts.filter(acc => acc.type !== 'liability');
-        if (this.accounts.length && !this.selectedAccountId) {
-          this.selectedAccountId = this.accounts[0].account_id;
-        }
-      } catch (err) {
-        this.error = err.message || "Error fetching accounts.";
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async fetchRecurringTransactions() {
-      if (!this.selectedAccountId) return;
-      try {
-        const res = await getRecurringTransactions(this.selectedAccountId);
-        if (res.status === 'success') {
-          this.notifications = res.reminders;
-        } else {
-          this.error = "Failed to fetch recurring transactions.";
-        }
-      } catch (err) {
-        this.error = err.message || "Error fetching recurring transactions.";
-      }
-    },
-
     async saveRecurring() {
-      if (!this.selectedAccountId) return;
+      if (!this.transactionId) return;
       this.loading = true;
       try {
         const payload = {
-          amount: this.amount,
-          description: this.description || "Untitled Recurring",
           frequency: this.frequency,
-          notes: this.notes,
           next_due_date: this.nextDueDate,
+          notes: this.notes || this.description || "Untitled Recurring",
         };
-        await saveRecurringTransaction(this.selectedAccountId, payload);
-        await this.fetchRecurringTransactions();
+        await createRecurringTransaction(this.transactionId, payload);
+        this.notifications.push(`Recurring rule saved for transaction ${this.transactionId}`);
       } catch (err) {
         this.error = err.message || "Error saving recurring transaction.";
       } finally {
         this.loading = false;
       }
-    },
-
-    async onAccountChange() {
-      this.notifications = [];
-      await this.fetchRecurringTransactions();
-    }
-  },
-
-  async created() {
-    await this.fetchAccounts();
-    if (this.selectedAccountId) {
-      await this.fetchRecurringTransactions();
     }
   }
 };
 </script>
+
 
 <style scoped>
 @import '@/styles/global-colors.css';
