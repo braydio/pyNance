@@ -11,3 +11,8 @@ export const saveRecurringTransaction = async (accountId, payload) => {
   const response = await axios.put(`/api/recurring/${accountId}/recurringTx`, payload);
   return response.data;
 };
+
+export const createRecurringTransaction = async (transactionId, payload) => {
+  const response = await axios.post(`/api/transactions/${transactionId}/recurring`, payload);
+  return response.data;
+};
