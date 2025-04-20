@@ -1,7 +1,6 @@
-<template>
-  <!-- Container to center page and set max-width -->
-  <div class="accounts-page container">
 
+<template>
+  <div class="accounts-page container">
     <!-- Header -->
     <header class="accounts-header flex-center p-2">
       <div>
@@ -10,9 +9,28 @@
       </div>
     </header>
 
+    <!-- Controls Widget -->
+    <section class="controls-widget m-2 position-relative">
+      <button class="btn btn-pill m-1" @click="toggleControls">Controls</button>
+      <transition name="slide-horizontal" mode="out-in">
+        <div v-if="showControls" class="card p-2 mt-2 controls-container min-h-[220px]">
+          <transition name="slide-horizontal" mode="out-in">
+            <div v-if="!showTokenForm" class="flex-center flex-wrap gap-1">
+              <LinkAccount
+                class="btn btn-outline btn-pill"
+                @manual-token-click="toggleManualTokenMode"
+              />
+              <RefreshPlaidControls class="btn btn-outline btn-pill" />
+              <RefreshTellerControls class="btn btn-outline btn-pill" />
+            </div>
+            <TokenUpload v-else @cancel="toggleManualTokenMode" />
+          </transition>
+        </div>
+      </transition>
+    </section>
+
     <!-- Charts Section -->
     <section class="charts-section grid-3col gap-2 m-2">
-      <!-- Wrap each chart in a card for consistent styling -->
       <div class="card">
         <NetYearComparisonChart />
       </div>
@@ -24,23 +42,7 @@
       </div>
     </section>
 
-
-    <!-- Controls Widget: Hideable section attached to the Accounts Table -->
-    <section class="controls-widget m-2 position-relative">
-      <!-- Toggle icon positioned statically -->
-      <button class="btn btn-pill m-1" @click="toggleControls">Controls
-      </button>
-      <transition name="slide-horizontal" mode="out-in">
-        <div v-if="showControls" class="card p-2 mt-2 controls-container">
-          <div class="flex-center gap-1">
-            <LinkAccount class="btn btn-outline btn-pill" />
-            <RefreshPlaidControls class="btn btn-outline btn-pill" />
-            <RefreshTellerControls class="btn btn-outline btn-pill" />
-          </div>
-        </div>
-      </transition>
-    </section>
-    <!-- Accounts Table with Slide Transition -->
+    <!-- Accounts Table -->
     <transition name="slide-horizontal" mode="out-in">
       <div class="accounts-overview card m-2" :key="activeAccountGroup">
         <AccountsTable :accountGroup="activeAccountGroup" />
@@ -67,7 +69,7 @@
   </div>
 </template>
 
-<script>
+<script setup>
 import LinkAccount from "@/components/LinkAccount.vue";
 import AccountsTable from "@/components/AccountsTable.vue";
 import NetYearComparisonChart from "@/components/NetYearComparisonChart.vue";
@@ -75,45 +77,28 @@ import AssetsBarTrended from "@/components/AssetsBarTrended.vue";
 import RefreshTellerControls from "@/components/RefreshTellerControls.vue";
 import RefreshPlaidControls from "@/components/RefreshPlaidControls.vue";
 import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
+import TokenUpload from "@/components/TokenUpload.vue";
+import { ref } from 'vue';
 
-export default {
-  name: "Accounts",
-  components: {
-    LinkAccount,
-    AccountsTable,
-    NetYearComparisonChart,
-    AssetsBarTrended,
-    RefreshTellerControls,
-    RefreshPlaidControls,
-    AccountsReorderChart,
-  },
-  data() {
-    return {
-      userName: import.meta.env.VITE_USER_ID_PLAID,
-      currentDate: new Date().toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-      activeAccountGroup: "Checking",
-      accountGroups: ["Checking", "Savings", "Credit"],
-      showControls: true, // Controls widget is shown by default
-    };
-  },
-  methods: {
-    toggleControls() {
-      this.showControls = !this.showControls;
-    },
-    fetchAccounts() {
-      console.log("Fetching accounts...");
-    },
-    refreshActivity() {
-      console.log("Refreshing activity...");
-    },
-  },
-};
+const userName = import.meta.env.VITE_USER_ID_PLAID;
+const currentDate = new Date().toLocaleDateString(undefined, {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+})
+
+const activeAccountGroup = ref("Checking")
+const accountGroups = ["Checking", "Savings", "Credit"]
+const showControls = ref(true)
+const showTokenForm = ref(false)
+
+function toggleControls() {
+  showControls.value = !showControls.value
+}
+function toggleManualTokenMode() {
+  showTokenForm.value = !showTokenForm.value
+}
 </script>
-
 
 <style scoped>
 /* Slide-horizontal Transition */
@@ -165,11 +150,8 @@ export default {
 
 /* Controls Widget */
 .controls-widget {
-  /* Ensure relative positioning for the static toggle icon */
   position: relative;
 }
-
-
 
 /* Accounts Table Section */
 .accounts-overview {
@@ -189,9 +171,10 @@ export default {
   color: var(--color-bg-dark) !important;
   box-shadow: 0 0 6px var(--neon-mint);
 }
-.btn btn-pill m-1-hover{
-  background-color: var(--color-bg-dark)
+.btn btn-pill m-1-hover {
+  background-color: var(--color-bg-dark);
 }
+
 /* Footer */
 .accounts-footer {
   background-color: var(--color-bg-secondary);
@@ -202,3 +185,4 @@ export default {
   box-shadow: 0 -2px 8px var(--shadow);
 }
 </style>
+
