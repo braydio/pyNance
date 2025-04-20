@@ -4,7 +4,8 @@ from io import TextIOWrapper
 from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models import Account
-from app.helpers.plaid_helpers import get_item, get_accounts, get_institution_name
+from app.helpers.plaid_helpers import get_item, get_institution_name, get_accounts as get_plaid_accounts,
+from app.helpers.teller_helpers import get_teller_accounts
 from app.sql import account_logic
 from app.config import logger
 
@@ -23,33 +24,75 @@ def safe_json(obj):
 
 
 @manual_up.route("/upload/accounts", methods=["POST"])
-def upload_accounts_csv():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+def auto_detect_and_upload():
+    data = request.get_json()
+    access_token = data.get("access_token")
+    user_id = data.get("user_id")
 
-    file = request.files["file"]
-    stream = TextIOWrapper(file.stream, encoding="utf-8")
-    reader = csv.DictReader(stream)
+    if not access_token or not user_id:
+        return jsonify({"error": "Missing access_token or user_id"}), 400
 
-    count = 0
-    for row in reader:
-        user_id = row.get("user_id")
-        access_token = row.get("access_token")
-        if not user_id:
-            continue
+    provider = "unknown"
+    institution_name = "Unknown"
 
-        account = db.session.query(Account).filter_by(user_id=user_id).first()
-        if account:
-            account.access_token = access_token
-        else:
-            new = Account(
-                user_id=user_id, access_token=access_token, account_id="TEMP-ID"
+    try:
+        # Try Plaid first
+        try:
+            item_info = get_item(access_token)
+            inst_id = item_info.get("institution_id")
+            institution_name = get_institution_name(inst_id)
+            accounts_data = get_plaid_accounts(access_token)
+            provider = "Plaid"
+        except Exception as plaid_error:
+            logger.debug(f"Plaid detection failed: {plaid_error}")
+            # Fallback to Teller
+            try:
+                accounts_data = get_teller_accounts(access_token)
+                provider = "Teller"
+            except Exception as teller_error:
+                logger.error(f"Both Plaid and Teller detection failed: {teller_error}")
+                return jsonify(
+                    {"error": "Token is not valid for Plaid or Teller."}
+                ), 400
+
+        accounts = (
+            accounts_data
+            if isinstance(accounts_data, list)
+            else accounts_data.get("accounts", [])
+        )
+        if not accounts:
+            return jsonify({"error": "No accounts found with given token"}), 404
+
+        formatted = []
+        for acc in accounts:
+            formatted.append(
+                {
+                    "id": acc.get("account_id"),
+                    "name": acc.get("name")
+                    or acc.get("official_name", "Unnamed Account"),
+                    "type": str(acc.get("type") or "Unknown"),
+                    "subtype": str(acc.get("subtype") or "Unknown"),
+                    "balance": {"current": acc.get("balances", {}).get("current", 0)},
+                    "status": "active",
+                    "institution": {"name": institution_name},
+                    "access_token": access_token,
+                    "provider": provider,
+                }
             )
-            db.session.add(new)
-        count += 1
 
-    db.session.commit()
-    return jsonify({"status": f"Upserted {count} records"})
+        account_logic.upsert_accounts(user_id, formatted, provider=provider)
+        return jsonify(
+            {
+                "status": "success",
+                "provider": provider,
+                "account_count": len(formatted),
+                "institution_name": institution_name,
+            }
+        ), 200
+
+    except Exception as e:
+        logger.error(f"[manual_up] Upload error: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
 
 
 @manual_up.route("/plaid_upload_token", methods=["POST"])
