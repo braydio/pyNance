@@ -1,8 +1,19 @@
 # File: app/helpers/teller_helpers.py
 
 import json
+import requests
+from app.config import FILES, TELLER_API_BASE_URL, logger
 
-from app.config import FILES, logger
+
+def get_teller_accounts(access_token: str):
+    url = f"{TELLER_API_BASE_URL}/accounts"
+    response = requests.get(
+        url,
+        auth=(access_token, ""),
+        cert=(FILES["TELLER_DOT_CERT"], FILES["TELLER_DOT_KEY"]),
+    )
+    response.raise_for_status()
+    return response.json()  # returns a list of account objects
 
 
 def load_tokens():
