@@ -22,12 +22,12 @@
 
 .btn-outline {
   background: transparent;
-  border: 1px solid var(--color-accent-yellow);
-  color: var(--color-accent-yellow);
+  border: 1px solid var(--color-accent-magenta);
+  color: var(--color-accent-magenta);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-accent-yellow);
+  background-color: var(--color-accent-magenta);
   color: var(--color-bg-dark);
 }
 
@@ -119,8 +119,8 @@
   --themed-fg: var(--color-text-light);
 
   /* --- Accents --- */
-  --color-accent-yellow: #f6c177;    /* warm honey yellow */
-  --themed-yl: var(--color-accent-yellow);
+  --color-accent-magenta: #f6c177;    /* warm honey yellow */
+  --themed-yl: var(--color-accent-magenta);
 
   --color-accent-mint: #a6e3a1;      /* nebula mint for success states */
   --color-accent-magenta: #d782d9;   /* glowing soft pink/purple */
@@ -213,12 +213,12 @@
 
 .btn-outline {
   background: transparent;
-  border: 1px solid var(--color-accent-yellow);
-  color: var(--color-accent-yellow);
+  border: 1px solid var(--color-accent-magenta);
+  color: var(--color-accent-magenta);
 }
 
 .btn-outline:hover {
-  background-color: var(--color-accent-yellow);
+  background-color: var(--color-accent-magenta);
   color: var(--color-bg-dark);
 }
 
