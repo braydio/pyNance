@@ -1,4 +1,3 @@
-
 <style scoped>
 @import '@/styles/global-colors.css';
 </style>
@@ -10,12 +9,7 @@
 
       <!-- Filter & Controls Row -->
       <div class="filter-row">
-        <input
-          v-model="searchQuery"
-          class="filter-input"
-          type="text"
-          placeholder="Filter accounts..."
-        />
+        <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter accounts..." />
 
         <button class="theme-buttons-top" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
@@ -180,23 +174,23 @@ export default {
     },
   },
   methods: {
-  async fetchAccounts() {
-    this.loading = true;
-    this.error = "";
-    try {
-      let response = await axios.get("/api/accounts/get_accounts");
-      console.log("API response:", response.data); // <--- ADD THIS
-      if (response.data && response.data.status === "success") {
-        this.accounts = response.data.accounts;
-      } else {
-        this.error = "Error fetching accounts.";
+    async fetchAccounts() {
+      this.loading = true;
+      this.error = "";
+      try {
+        let response = await axios.get("/api/accounts/get_accounts");
+        console.log("API response:", response.data); // <--- ADD THIS
+        if (response.data && response.data.status === "success") {
+          this.accounts = response.data.accounts;
+        } else {
+          this.error = "Error fetching accounts.";
+        }
+      } catch (err) {
+        this.error = err.message || "Error fetching accounts.";
+      } finally {
+        this.loading = false;
       }
-    } catch (err) {
-      this.error = err.message || "Error fetching accounts.";
-    } finally {
-      this.loading = false;
-    }
-  },
+    },
     async refreshAccounts() {
       try {
         let response;
@@ -222,7 +216,13 @@ export default {
     async deleteAccount(accountId) {
       if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
       try {
-        const res = await api.deleteAccount(this.provider, accountId);
+        const account = this.accounts.find(acc => acc.account_id === accountId);
+        const provider = account?.link_type?.toLowerCase();
+        if (provider !== "plaid" && provider !== "teller") {
+          alert("Unknown account provider. Cannot delete account.");
+          return;
+        }
+        const res = await api.deleteAccount(provider, accountId);
         if (res.status === "success") {
           alert("Account deleted successfully.");
           this.fetchAccounts();
@@ -263,9 +263,8 @@ export default {
     this.fetchAccounts();
   },
 };
-</script >
+</script>
 <style>
-
 /* Accounts Table Container */
 .accounts-table {
   background-color: var(--background);
@@ -273,7 +272,9 @@ export default {
   padding: 0.5rem;
   border: 1px solid var(--border);
   border-radius: 4px;
-}  /* <-- Added closing bracket here */
+}
+
+/* <-- Added closing bracket here */
 
 /* Heading */
 .accounts-table h2 {
@@ -304,6 +305,7 @@ export default {
   outline: none;
   transition: border-color 0.2s ease;
 }
+
 .filter-input:focus {
   border-color: var(--hover);
 }
@@ -319,6 +321,7 @@ export default {
   font-family: "Fira Code", monospace;
   font-weight: bold;
 }
+
 .theme-buttons-top:hover {
   color: var(--foreground);
   background-color: var(--hover);
@@ -330,6 +333,7 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+
 th,
 td {
   padding: 0.75rem 1rem;
@@ -338,12 +342,14 @@ td {
   font-family: "Fira Code", monospace;
   font-size: 0.9rem;
 }
+
 th {
   cursor: pointer;
   background-color: var(--input-bg);
   color: var(--foreground);
   position: relative;
 }
+
 th span {
   margin-left: 0.5rem;
   font-size: 0.8rem;
@@ -374,6 +380,4 @@ th span {
 tbody tr:hover {
   background-color: var(--hover);
 }
-
-
-</style >
+</style>
