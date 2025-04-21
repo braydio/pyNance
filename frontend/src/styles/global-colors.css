@@ -1,6 +1,10 @@
 :root {
   /* twilight nebula: deep purples, ethereal blues, glowing accents */
 
+body {
+  background-color: var(--page-bg);
+  color: var(--color-text-light);
+}
   --color-bg-dark: #1b1a2e;          /* rich, deep space purple */
   --color-bg-secondary: #2a273f;     /* twilight shadow purple */
   --page-bg: #14131f;                /* deep nebula core black */
@@ -98,4 +102,13 @@
   --dev-alert-border: #a80f2c; /* deep blood red */
   --dev-alert-text: #ffffff;   /* bright contrast for legibility */
 
+}
+
+/* ✅ Correctly separate body styles */
+body {
+  background-color: var(--page-bg);
+  color: var(--color-text-light);
+  font-family: "Fira Code", monospace;
+  margin: 0;
+  padding: 0;
 }
