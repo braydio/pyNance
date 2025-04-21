@@ -1,4 +1,4 @@
-# File: app/routes/plaid_transactions.py
+# file: app/routes/plaid_transactions.py
 from datetime import datetime
 
 from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, PLAID_CLIENT_NAME, logger
@@ -23,14 +23,19 @@ def generate_link_token_endpoint():
     user_id = data.get("user_id", PLAID_CLIENT_ID)
     products = data.get("products", ["transactions"])
     try:
+        logger.debug(
+            f"Request to generate link token with user_id={user_id}, products={products}"
+        )
         token = generate_link_token(products=products, user_id=user_id)
         if not token:
+            logger.warning("Failed to generate link token - token was None")
             return (
                 jsonify(
                     {"status": "error", "message": "Failed to generate link token"}
                 ),
                 500,
             )
+        logger.info(f"Generated link token for user_id={user_id}")
         return jsonify({"status": "success", "link_token": token}), 200
     except Exception as e:
         logger.error(f"Error generating link token: {e}", exc_info=True)
@@ -39,35 +44,40 @@ def generate_link_token_endpoint():
 
 @plaid_transactions.route("/exchange_public_token", methods=["POST"])
 def exchange_public_token_endpoint():
-    """
-    Exchange the public token for an access token and save initial accounts.
-    Expects JSON with "user_id" and "public_token".
-    """
     data = request.get_json()
     user_id = data.get("user_id", "")
     public_token = data.get("public_token")
+    logger.debug(f"Received token exchange request for user_id={user_id}")
+
     if not user_id or not public_token:
+        logger.warning("Missing user_id or public_token in request")
         return jsonify({"error": "Missing user_id or public_token"}), 400
 
     try:
-        # Step 1: Exchange token
         exchange_resp = exchange_public_token(public_token)
+        logger.debug(f"Exchange response: {exchange_resp}")
         if not exchange_resp:
+            logger.warning("Exchange returned no response")
             return jsonify({"error": "Token exchange failed"}), 500
 
         access_token = exchange_resp.get("access_token")
         item_id = exchange_resp.get("item_id")
+        logger.info(
+            f"Token exchange successful. Access Token: {access_token}, Item ID: {item_id}"
+        )
+
         if not access_token or not item_id:
+            logger.error("Missing access_token or item_id after exchange")
             return jsonify({"error": "Failed to exchange public token"}), 500
 
-        # Step 2: Fetch item info to get institution_id
         item_info = get_item(access_token)
         institution_id = item_info.get("institution_id", "Unknown")
         institution_name = get_institution_name(institution_id)
-        # Step 3: Fetch accounts
-        accounts = get_accounts(access_token)
+        logger.debug(f"Institution ID: {institution_id}, Name: {institution_name}")
 
-        # Step 4: Transform and upsert accounts
+        accounts = get_accounts(access_token)
+        logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
+
         transformed = []
         for acct in accounts:
             transformed.append(
@@ -79,9 +89,7 @@ def exchange_public_token_endpoint():
                     "subtype": str(acct.get("subtype") or "Unknown"),
                     "balance": {"current": acct.get("balances", {}).get("current", 0)},
                     "status": "active",
-                    "institution": {
-                        "name": institution_name
-                    },  # You can replace with institution name if desired
+                    "institution": {"name": institution_name},
                     "access_token": access_token,
                     "enrollment_id": "",
                     "links": {},
@@ -90,13 +98,14 @@ def exchange_public_token_endpoint():
             )
 
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
+        logger.info(f"Upserted {len(transformed)} accounts for user {user_id}")
 
         return (
             jsonify(
                 {
                     "status": "success",
                     "item_id": item_id,
-                    "institution_name": institution_id,  # Rename if you want to fetch/display full name later
+                    "institution_name": institution_id,
                 }
             ),
             200,
@@ -109,43 +118,41 @@ def exchange_public_token_endpoint():
 
 @plaid_transactions.route("/refresh_accounts", methods=["POST"])
 def refresh_plaid_accounts():
-    """
-    Refresh Plaid-linked accounts using tokens stored in the Accounts table.
-    Expects JSON payload with "user_id" (optional, defaults to "").
-    """
     try:
-        logger.debug("Refreshing Plaid accounts from database.")
+        logger.debug("Starting refresh of Plaid accounts.")
         user_id = request.get_json().get(PLAID_CLIENT_NAME, "Brayden")
-        # Query only accounts for the given user that are linked via Plaid.
         accounts = Account.query.filter_by(
             user_id=PLAID_CLIENT_NAME, link_type="Plaid"
         ).all()
+        logger.debug(f"Found {len(accounts)} accounts for user_id={user_id}")
+
         if not accounts:
             logger.warning(f"No Plaid-linked accounts found for user {user_id}")
         updated_accounts = []
 
         for account in accounts:
-            access_token = (
-                account.access_token
-            )  # Access token stored in the Account record
+            access_token = account.access_token
             if not access_token:
                 logger.warning(
-                    f"No Plaid access token found for account {account.account_id} (user {account.user_id})"
+                    f"Missing access token for account {account.account_id} (user {account.user_id})"
                 )
                 continue
 
             logger.debug(
-                f"Refreshing Plaid account {account.account_id} using token: {access_token}"
+                f"Refreshing account {account.account_id} with token {access_token}"
             )
             updated = account_logic.refresh_data_for_plaid_account(
                 access_token, PLAID_BASE_URL
             )
             if updated:
                 updated_accounts.append(account.name)
-                logger.debug(f"Balance updated as {account.balance}")
+                logger.debug(
+                    f"Updated account: {account.name} with new balance {account.balance}"
+                )
                 account.last_refreshed = datetime.utcnow()
         db.session.commit()
-        logger.debug(f"Refresh complete. Updated accounts: {updated_accounts}")
+        logger.info(f"Refreshed accounts: {updated_accounts}")
+
         return (
             jsonify(
                 {
@@ -167,15 +174,16 @@ def delete_plaid_account():
     try:
         data = request.json
         account_id = data.get("account_id")
+        logger.debug(f"Received request to delete account_id={account_id}")
+
         if not account_id:
+            logger.warning("No account_id provided in request")
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
 
-        # Delete the account; cascading will remove related records.
         Account.query.filter_by(account_id=account_id).delete()
         db.session.commit()
-        logger.info(
-            f"Deleted Plaid account {account_id} and all related records via cascade."
-        )
+        logger.info(f"Deleted Plaid account {account_id} and associated records")
+
         return (
             jsonify(
                 {"status": "success", "message": "Account and related records deleted"}
@@ -185,3 +193,4 @@ def delete_plaid_account():
     except Exception as e:
         logger.error(f"Error deleting Plaid account: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
