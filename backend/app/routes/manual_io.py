@@ -4,7 +4,11 @@ from io import TextIOWrapper
 from flask import Blueprint, request, jsonify
 from app.extensions import db
 from app.models import Account
-from app.helpers.plaid_helpers import get_item, get_institution_name, get_accounts as get_plaid_accounts,
+from app.helpers.plaid_helpers import (
+    get_item,
+    get_institution_name,
+    get_accounts as get_plaid_accounts,
+)
 from app.helpers.teller_helpers import get_teller_accounts
 from app.sql import account_logic
 from app.config import logger
@@ -67,13 +71,13 @@ def auto_detect_and_upload():
         for acc in accounts:
             formatted.append(
                 {
-                    "id": acc.get("account_id"),
+                    "id": acc.get("account_id") or acc.get("id"),
                     "name": acc.get("name")
                     or acc.get("official_name", "Unnamed Account"),
                     "type": str(acc.get("type") or "Unknown"),
                     "subtype": str(acc.get("subtype") or "Unknown"),
                     "balance": {"current": acc.get("balances", {}).get("current", 0)},
-                    "status": "active",
+                    "status": acc.get("status", "active"),
                     "institution": {"name": institution_name},
                     "access_token": access_token,
                     "provider": provider,
@@ -81,6 +85,9 @@ def auto_detect_and_upload():
             )
 
         account_logic.upsert_accounts(user_id, formatted, provider=provider)
+        logger.info(
+            f"[manual_up] Uploaded {len(formatted)} accounts for {user_id} using {provider}"
+        )
         return jsonify(
             {
                 "status": "success",
@@ -109,7 +116,7 @@ def manual_up_plaid():
         institution_id = item_info.get("institution_id", "Unknown")
         institution_name = get_institution_name(institution_id)
 
-        accounts_data = get_accounts(access_token)
+        accounts_data = get_plaid_accounts(access_token)
 
         # If accounts_data is a list, treat it as raw accounts
         accounts_list = (
@@ -146,6 +153,9 @@ def manual_up_plaid():
             )
 
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
+        logger.info(
+            f"[manual_up] Uploaded {len(transformed)} accounts for {user_id} using Plaid"
+        )
 
         return jsonify(
             {
