@@ -77,18 +77,22 @@ class AccountHistory(db.Model):
 
 class RecurringTransaction(db.Model):
     __tablename__ = "recurring_transactions"
+
     id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+    transaction_id = db.Column(
+        db.String(64), db.ForeignKey("transactions.transaction_id"), nullable=False
     )
-    description = db.Column(db.String(256), nullable=False)
-    amount = db.Column(db.Float, nullable=False)
-    frequency = db.Column(db.String(64), nullable=True)
-    next_due_date = db.Column(db.Date, nullable=True)
+    transaction = db.relationship("Transaction", backref="recurrence_rule")
+
+    frequency = db.Column(db.String(64), nullable=False)  # e.g. 'monthly', 'weekly'
+    next_due_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.String(256), nullable=True)
     updated_at = db.Column(
         db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
+    next_instance_id = db.Column(
+        db.String(64), nullable=True
+    )  # optional FK to next real transaction if known
 
 
 class Category(db.Model):
