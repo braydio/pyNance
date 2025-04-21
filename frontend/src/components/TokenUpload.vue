@@ -32,6 +32,10 @@
         <button class="forms-btn" @click="$emit('cancel')">Cancel</button>
       </div>
     </transition>
+
+    <p v-if="successMessage" class="success-badge">
+      {{ successMessage }}
+    </p>
   </div>
 </template>
 
@@ -43,23 +47,33 @@ const showForm = ref(true)
 const userId = ref('')
 const accessToken = ref('')
 const loading = ref(false)
+const successMessage = ref('')
 
 const submit = async () => {
   loading.value = true
   try {
-    await axios.post('/api/import/plaid_upload_token', {
+    const response = await axios.post('/api/import/upload/accounts', {
       user_id: userId.value,
       access_token: accessToken.value,
     })
-    showForm.value = false
+
+    const { provider, account_count, institution_name } = response.data
+    successMessage.value = `✔️ Uploaded ${account_count} ${provider} account(s) from ${institution_name}`
+
     userId.value = ''
     accessToken.value = ''
+    showForm.value = false
+
+    // Notify parent
+    emit('success', response.data)
   } catch (e) {
     alert(e.response?.data?.error || e.message)
   } finally {
     loading.value = false
   }
 }
+
+const emit = defineEmits(['success', 'cancel'])
 </script>
 
 <style scoped>
@@ -118,6 +132,82 @@ const submit = async () => {
 .forms-btn:hover {
   color: var(--themed-bg);
   background-color: var(--neon-mint);
+}
+.success-badge {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-bg-success, #2ecc71);
+  color: #fff;
+  border-radius: 6px;
+  font-weight: bold;
+}
+</style>
+
+
+<style scoped>
+.link-account {
+  margin: 0 auto;
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border-top: 8px inset var(--color-bg-secondary);
+  border-bottom: 6px inset var(--color-text-muted);
+  border-left: 8px outset var(--color-bg-secondary);
+  border-right: 6px outset var(--color-text-muted);
+  border-radius: 5px;
+  text-align: center;
+}
+.link-account h2 {
+  margin: 5px 1px;
+  color: var(--neon-purple);
+}
+.upload-form-inline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
+}
+.input-text,
+.input-textarea {
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  padding: 0.5rem;
+  font-family: var(--font-mono);
+}
+.input-text {
+  width: 160px;
+}
+.input-textarea {
+  width: 300px;
+}
+.forms-btn {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px groove transparent;
+  border-radius: 3px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0.5rem 1.25rem;
+}
+.forms-btn:hover {
+  color: var(--themed-bg);
+  background-color: var(--neon-mint);
+}
+.success-badge {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: var(--color-bg-success, #2ecc71);
+  color: #fff;
+  border-radius: 6px;
+  font-weight: bold;
 }
 </style>
 
