@@ -213,16 +213,11 @@ export default {
         alert("Error refreshing balances: " + err.message);
       }
     },
-    async deleteAccount(accountId) {
+    async deleteAccount(account) {
       if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
+
       try {
-        const account = this.accounts.find(acc => acc.account_id === accountId);
-        const provider = account?.link_type?.toLowerCase();
-        if (provider !== "plaid" && provider !== "teller") {
-          alert("Unknown account provider. Cannot delete account.");
-          return;
-        }
-        const res = await api.deleteAccount(provider, accountId);
+        const res = await api.deleteAccount(account.link_type || "plaid", account.account_id);
         if (res.status === "success") {
           alert("Account deleted successfully.");
           this.fetchAccounts();
