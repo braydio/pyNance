@@ -3,6 +3,7 @@
 from .log_setup import setup_logger
 from .plaid_config import plaid_client
 from .environment import (
+    FLASK_ENV,
     PLAID_CLIENT_NAME,
     PLAID_CLIENT_ID,
     PLAID_SECRET,
