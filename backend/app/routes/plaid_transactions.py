@@ -4,6 +4,7 @@ from datetime import datetime
 from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, PLAID_CLIENT_NAME, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
+    refresh_plaid_categories,
     exchange_public_token,
     generate_link_token,
     get_accounts,
@@ -119,7 +120,10 @@ def exchange_public_token_endpoint():
 @plaid_transactions.route("/refresh_accounts", methods=["POST"])
 def refresh_plaid_accounts():
     try:
-        logger.debug("Starting refresh of Plaid accounts.")
+        logger.debug("Starting refresh of Plaid accounts and Plaid Categories.")
+        category_refresh = refresh_plaid_categories()
+        if category_refresh:
+            logger.info("Successfully refreshed Plaid categories.")
         user_id = request.get_json().get(PLAID_CLIENT_NAME, "Brayden")
         accounts = Account.query.filter_by(
             user_id=PLAID_CLIENT_NAME, link_type="Plaid"
@@ -193,4 +197,3 @@ def delete_plaid_account():
     except Exception as e:
         logger.error(f"Error deleting Plaid account: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-
