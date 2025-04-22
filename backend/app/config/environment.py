@@ -6,6 +6,9 @@ from .paths import DIRECTORIES
 
 load_dotenv()
 
+# Dev Environment Check
+FLASK_ENV = os.getenv("FLASK_ENV", "development")
+
 # Plaid client ID and API secret for authentication
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
