@@ -4,14 +4,13 @@ import os
 from plaid.configuration import Configuration
 from plaid.api_client import ApiClient
 from plaid.api import plaid_api
-from .environment import PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV, PLAID_BASE_URL
+from .environment import PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV
+
+# Dynamically set base URL based on PLAID_ENV
+PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
 
 configuration = Configuration(
-    host=PLAID_BASE_URL,
-    api_key={
-        "clientId": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET
-    }
+    host=PLAID_BASE_URL, api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET}
 )
 
 api_client = ApiClient(configuration)
