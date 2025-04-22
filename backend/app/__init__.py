@@ -28,7 +28,7 @@ def create_app():
         from app.routes.recurring import recurring
         from app.routes.manual_io import manual_up
         from app.routes.charts import charts
-        from app.routes.categories import categories as categories_bp
+        from app.routes.categories import categories
         from app.routes.export import export
         from app.routes.plaid import plaid_bp
         from app.routes.plaid_investments import plaid_investments
@@ -38,7 +38,7 @@ def create_app():
 
         # Register blueprints with prefixes
         app.register_blueprint(export, url_prefix="/api/export")
-        app.register_blueprint(categories_bp, url_prefix="/api/categories")
+        app.register_blueprint(categories, url_prefix="/api/categories")
         app.register_blueprint(transactions, url_prefix="/api/transactions")
         app.register_blueprint(accounts, url_prefix="/api/accounts")
         app.register_blueprint(manual_up, url_prefix="/api/import")
