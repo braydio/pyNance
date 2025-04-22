@@ -3,8 +3,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
-
-from app.config import logger, plaid_client
+from app.config import logger, plaid_client, FLASK_ENV
 from app.extensions import db
 from app.config.environment import TELLER_WEBHOOK_SECRET
 
@@ -18,11 +17,10 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
 
-    # Import & execute setup tasks
-    with app.app_context():
-        from app.routes.categories import refresh_plaid_categories
-
-        refresh_plaid_categories()
+    # DEV-ONLY: Automatically create all tables if missing
+    if FLASK_ENV == "development":
+        with app.app_context():
+            db.create_all()
 
         # Import blueprints
         from app.routes.transactions import transactions
