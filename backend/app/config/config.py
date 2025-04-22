@@ -1,9 +1,7 @@
-
 import logging
 import os
 import sys
 from pathlib import Path
-
 from dotenv import load_dotenv
 
 # Define directories
@@ -26,6 +24,7 @@ for name, path in DIRECTORIES.items():
 sys.stdout.reconfigure(encoding="utf-8")
 sys.stderr.reconfigure(encoding="utf-8")
 
+
 def setup_logger():
     logger = logging.getLogger(__name__)
     if not logger.hasHandlers():
@@ -43,6 +42,7 @@ def setup_logger():
         logger.addHandler(file_handler)
         logger.addHandler(console_handler)
     return logger
+
 
 logger = setup_logger()
 
@@ -68,11 +68,7 @@ from plaid.api_client import ApiClient
 from plaid.api import plaid_api
 
 configuration = Configuration(
-    host=PLAID_BASE_URL,
-    api_key={
-        "clientId": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET
-    }
+    host=PLAID_BASE_URL, api_key={"clientId": PLAID_CLIENT_ID, "secret": PLAID_SECRET}
 )
 api_client = ApiClient(configuration)
 plaid_client = plaid_api.PlaidApi(api_client)
@@ -110,4 +106,3 @@ logger.debug(f"PLAID SECRET {PLAID_SECRET}")
 logger.debug(f"PLAID API URL {PLAID_BASE_URL}")
 
 DEBUG = True
-
