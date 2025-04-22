@@ -37,7 +37,7 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: this.userId,
+          user_id: this.userId || "DefaultUserName",
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
@@ -57,14 +57,28 @@ export default {
           try {
             console.log("Plaid onSuccess, public_token:", public_token);
 
-            const exchangeRes = await api.exchangePublicToken("plaid", {
-              public_token,
-              user_id: this.userID,
+            // ✅ This is the fix: send the token + user_id to backend
+            const userId = this.userID || "Brayden"; // fallback just in case
+            console.log("Using user_id:", userId);
+
+            const exchangeRes = await fetch("/api/plaid/transactions/exchange_public_token", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json"
+              },
+              body: JSON.stringify({
+                public_token,
+                user_id: userId,
+              }),
             });
 
-            console.log("Plaid exchange response:", exchangeRes);
+            const result = await exchangeRes.json();
+            console.log("Exchange response:", result);
+
+            // Optionally emit to parent to refresh accounts
+            this.$emit("refreshAccounts");
           } catch (error) {
-            console.error("Error exchanging Plaid Access token:", error);
+            console.error("Error exchanging Plaid token:", error);
           }
         },
         onExit: (err, metadata) => {
