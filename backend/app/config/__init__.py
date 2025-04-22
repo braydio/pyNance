@@ -23,9 +23,11 @@ from .paths import BASE_DIR
 env_check = PLAID_ENV.upper()
 
 logger = setup_logger()
+
 logger.debug(f"Running in {FLASK_ENV} environment.")
 logger.debug(f"Loaded config from {__name__}")
 logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
 logger.debug(
     f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL}\n\n"
 )
+
