@@ -18,8 +18,7 @@ PLAID_CLIENT_NAME = os.getenv("PLAID_CLIENT_NAME")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 
-# Base URLs for Plaid, Teller API Endpoints
-PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"
+# Base URLs for  Teller API Endpoints
 TELLER_API_BASE_URL = "https://api.teller.io"
 
 # Teller application ID, certificates and API key for authentication
