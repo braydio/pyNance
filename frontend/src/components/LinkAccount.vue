@@ -57,10 +57,10 @@ export default {
           try {
             console.log("Plaid onSuccess, public_token:", public_token);
 
-              const saveRes = await api.saveTellerToken({
-                user_id: this.userId,
-                access_token: enrollment.accessToken,
-              });
+            const exchangeRes = await api.exchangePublicToken("plaid", {
+              public_token,
+              user_id: this.userID,
+            });
 
             console.log("Plaid exchange response:", exchangeRes);
           } catch (error) {
@@ -123,15 +123,18 @@ export default {
   border-right: 6px outset var(--color-text-muted);
   border-radius: 5px;
 }
+
 .link-account h2 {
   margin: 5px 1px;
   color: var(--neon-purple);
 }
+
 .button-group {
   display: flex;
   gap: 1.5rem;
   justify-content: center;
 }
+
 .button-group button {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
@@ -140,6 +143,7 @@ export default {
   font-weight: bold;
   cursor: pointer;
 }
+
 .button-group button:hover {
   color: var(--themed-bg);
   border: 1px;
