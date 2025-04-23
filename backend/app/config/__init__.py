@@ -3,6 +3,7 @@
 from .log_setup import setup_logger
 from .plaid_config import PLAID_BASE_URL, plaid_client
 from .environment import (
+    CLIENT_NAME,
     FLASK_ENV,
     PLAID_CLIENT_NAME,
     PLAID_CLIENT_ID,
@@ -30,4 +31,3 @@ logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
 logger.debug(
     f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL}\n\n"
 )
-
