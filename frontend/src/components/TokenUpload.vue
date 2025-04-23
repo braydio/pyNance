@@ -52,28 +52,23 @@ const successMessage = ref('')
 const submit = async () => {
   loading.value = true
   try {
-    const response = await axios.post('/api/import/upload/accounts', {
+    const response = await axios.post('/api/upload/accounts', {
       user_id: userId.value,
       access_token: accessToken.value,
     })
 
     const { provider, account_count, institution_name } = response.data
-    successMessage.value = `✔️ Uploaded ${account_count} ${provider} account(s) from ${institution_name}`
+    alert(`✔️ Uploaded ${account_count} ${provider} account(s) from ${institution_name}`)
 
+    showForm.value = false
     userId.value = ''
     accessToken.value = ''
-    showForm.value = false
-
-    // Notify parent
-    emit('success', response.data)
   } catch (e) {
     alert(e.response?.data?.error || e.message)
   } finally {
     loading.value = false
   }
 }
-
-const emit = defineEmits(['success', 'cancel'])
 </script>
 
 <style scoped>
@@ -82,8 +77,8 @@ const emit = defineEmits(['success', 'cancel'])
   background-color: var(--themed-bg);
   color: var(--color-text-light);
   border-top: 8px inset var(--color-bg-secondary);
-  border-bottom: 6px inset var(--color-text-muted);
-  border-left: 8px outset var(--color-bg-secondary);
+  border-bottom: 8px inset var(--color-text-muted);
+  border-left: 6px outset var(--color-bg-secondary);
   border-right: 6px outset var(--color-text-muted);
   border-radius: 5px;
   text-align: center;
@@ -133,6 +128,7 @@ const emit = defineEmits(['success', 'cancel'])
   color: var(--themed-bg);
   background-color: var(--neon-mint);
 }
+
 .success-badge {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
@@ -156,10 +152,12 @@ const emit = defineEmits(['success', 'cancel'])
   border-radius: 5px;
   text-align: center;
 }
+
 .link-account h2 {
   margin: 5px 1px;
   color: var(--neon-purple);
 }
+
 .upload-form-inline {
   display: flex;
   align-items: center;
@@ -173,6 +171,7 @@ const emit = defineEmits(['success', 'cancel'])
   border-radius: 12px;
   box-shadow: 0 2px 12px var(--shadow);
 }
+
 .input-text,
 .input-textarea {
   background-color: var(--color-bg-dark);
@@ -182,12 +181,15 @@ const emit = defineEmits(['success', 'cancel'])
   padding: 0.5rem;
   font-family: var(--font-mono);
 }
+
 .input-text {
   width: 160px;
 }
+
 .input-textarea {
   width: 300px;
 }
+
 .forms-btn {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
@@ -197,10 +199,12 @@ const emit = defineEmits(['success', 'cancel'])
   cursor: pointer;
   padding: 0.5rem 1.25rem;
 }
+
 .forms-btn:hover {
   color: var(--themed-bg);
   background-color: var(--neon-mint);
 }
+
 .success-badge {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
@@ -210,4 +214,3 @@ const emit = defineEmits(['success', 'cancel'])
   font-weight: bold;
 }
 </style>
-
