@@ -1,37 +1,34 @@
 <template>
   <div class="mt-6">
-    <Card>
-      <CardContent>
-        <h2 class="text-lg font-bold mb-4">📝 Manually Imported Transactions</h2>
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
+      <h2 class="text-lg font-bold mb-4">📝 Manually Imported Transactions</h2>
 
-        <div v-if="loading" class="text-gray-500">Loading manual transactions...</div>
+      <div v-if="loading" class="text-gray-500">Loading manual transactions...</div>
 
-        <table v-else class="w-full text-sm border border-gray-300">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="text-left p-2">Date</th>
-              <th class="text-left p-2">Description</th>
-              <th class="text-left p-2">Amount</th>
-              <th class="text-left p-2">Account</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="txn in manualTransactions" :key="txn.transaction_id">
-              <td class="p-2">{{ txn.date }}</td>
-              <td class="p-2">{{ txn.name }}</td>
-              <td class="p-2">{{ formatCurrency(txn.amount) }}</td>
-              <td class="p-2">{{ txn.account_name || '—' }}</td>
-            </tr>
-          </tbody>
-        </table>
-      </CardContent>
-    </Card>
+      <table v-else class="w-full text-sm border border-gray-300">
+        <thead>
+          <tr class="bg-gray-100">
+            <th class="text-left p-2">Date</th>
+            <th class="text-left p-2">Description</th>
+            <th class="text-left p-2">Amount</th>
+            <th class="text-left p-2">Account</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="txn in manualTransactions" :key="txn.transaction_id">
+            <td class="p-2">{{ txn.date }}</td>
+            <td class="p-2">{{ txn.name }}</td>
+            <td class="p-2">{{ formatCurrency(txn.amount) }}</td>
+            <td class="p-2">{{ txn.account_name || '—' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
 import axios from 'axios';
 
 const manualTransactions = ref([]);
@@ -56,7 +53,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
-th, td {
+th,
+td {
   border-bottom: 1px solid #ddd;
 }
 </style>
