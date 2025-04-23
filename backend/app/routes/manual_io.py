@@ -1,5 +1,6 @@
 import csv
 import json
+import os
 from io import TextIOWrapper
 from flask import Blueprint, request, jsonify
 from app.extensions import db
@@ -10,8 +11,10 @@ from app.helpers.plaid_helpers import (
     get_accounts as get_plaid_accounts,
 )
 from app.helpers.teller_helpers import get_teller_accounts
+from app.helpers.import_helpers import dispatch_import
 from app.sql import account_logic
-from app.config import logger
+from app.sql.manual_import_logic import upsert_imported_transactions
+from app.config import logger, BASE_DIR, CLIENT_NAME
 
 manual_up = Blueprint("manual_up", __name__)
 
@@ -168,3 +171,58 @@ def manual_up_plaid():
     except Exception as e:
         logger.error(f"[manual_up_plaid] Error: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
+
+
+IMPORT_DIR = os.path.join(BASE_DIR, "app", "data", "imports")
+
+manual_up.route("/files", methods=["GET"])
+def list_import_files():
+    try:
+        files = [
+            f
+            for f in os.listdir(IMPORT_DIR)
+            if f.endswith((".csv", ".pdf"))
+            and os.path.isfile(os.path.join(IMPORT_DIR, f))
+        ]
+        return jsonify(sorted(files))
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@manual_up.route("/import", methods=["POST"])
+def import_selected_file():
+
+
+
+
+    data = request.get_json()
+    filename = data.get("file")
+    if not filename:
+        return jsonify({"error": "Missing file name."}), 400
+
+    filepath = os.path.join(IMPORT_DIR, filename)
+    if not os.path.exists(filepath):
+        return jsonify({"error": "File does not exist."}), 404
+
+    # ✅ Use dispatch helper to process the import
+    try:
+        result = dispatch_import(filepath)
+
+        if result.get("status") == "success" and "data" in result:
+            txns = result["data"]
+            # 🔍 Attempt to extract account name from file name
+            account_hint = filename.split("_")[1] if "_" in filename else "Imported Account"
+            account = Account.query.filter_by(name=account_hint).first()
+            if not account:
+                account = Account(name=account_hint, type="credit", provider="manual")
+                db.session.add(account)
+                db.session.commit()
+
+            inserted = upsert_imported_transactions(txns, user_id=CLIENT_NAME, account_id=account.id)
+            result["inserted"] = inserted
+            result["account"] = account.name
+
+        return jsonify(result), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
