@@ -1,35 +1,32 @@
 <template>
   <div class="p-4">
-    <Card>
-      <CardContent>
-        <h2 class="text-xl font-bold mb-4">📂 Import Transactions from File</h2>
+    <div class="rounded-xl border border-gray-200 bg-white p-4 shadow-md">
+      <h2 class="text-xl font-bold mb-4">📂 Import Transactions from File</h2>
 
-        <div v-if="loading" class="text-gray-500">Loading available files...</div>
+      <div v-if="loading" class="text-gray-500">Loading available files...</div>
 
-        <div v-else>
-          <div class="mb-4">
-            <label class="block text-sm font-medium mb-1">Select a file to import:</label>
-            <select v-model="selectedFile" class="w-full p-2 border rounded">
-              <option disabled value="">-- Choose file --</option>
-              <option v-for="file in files" :key="file.name" :value="file.name">
-                {{ file.label }}
-              </option>
-            </select>
-          </div>
-
-          <Button :disabled="!selectedFile" @click="startImport">
-            Import Selected File
-          </Button>
+      <div v-else>
+        <div class="mb-4">
+          <label class="block text-sm font-medium mb-1">Select a file to import:</label>
+          <select v-model="selectedFile" class="w-full p-2 border rounded">
+            <option disabled value="">-- Choose file --</option>
+            <option v-for="file in files" :key="file.name" :value="file.name">
+              {{ file.label }}
+            </option>
+          </select>
         </div>
-      </CardContent>
-    </Card>
+
+        <button :disabled="!selectedFile" @click="startImport"
+          class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2 rounded disabled:opacity-50">
+          Import Selected File
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import axios from 'axios';
 
 const files = ref([]);
@@ -38,7 +35,7 @@ const loading = ref(true);
 
 const loadFiles = async () => {
   try {
-    const res = await axios.get('/api/imports/files');
+    const res = await axios.get('/api/import/files');
     files.value = res.data.map(name => {
       const [provider, type, datePart] = name.split('_');
       const label = `${provider} – ${type} (${datePart.replace(/\..*$/, '').replace('-', '/')})`;
@@ -54,7 +51,7 @@ const loadFiles = async () => {
 const startImport = async () => {
   if (!selectedFile.value) return;
   try {
-    await axios.post('/api/imports/import', { file: selectedFile.value });
+    await axios.post('/api/import/import', { file: selectedFile.value });
     alert(`Import started for: ${selectedFile.value}`);
   } catch (err) {
     console.error('Import failed:', err);
