@@ -190,11 +190,12 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
 
 def refresh_plaid_categories(plaid_base_url):
     print(plaid_base_url)
-    refresh = refresh+_plaid_categories()
+    refresh = refresh + _plaid_categories()
     if refresh:
         logger.info("Categories table refreshed.")
     else:
         logger.error("Unable to refresh categories from Plaid Helper.")
+
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
     """
@@ -339,13 +340,11 @@ def refresh_data_for_teller_account(
             else:
                 parsed_date = pydate.today()
 
-
             category_list = txn.get("category", [])
             if isinstance(category_list, list) and category_list:
                 category = " > ".join(category_list)
             else:
                 category = "Unknown"
-
 
             counterparty = details.get("counterparty")
             merchant_name = "Unknown"
@@ -419,6 +418,7 @@ def refresh_data_for_teller_account(
 
     return updated
 
+
 def refresh_data_for_plaid_account(access_token, plaid_base_url):
     """
     Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
@@ -444,7 +444,9 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
     try:
         resp_txns = requests.post(url_txns, json=payload_txns, timeout=10)
-        logger.debug(f"Plaid transactions response: {resp_txns.status_code} - {resp_txns.text}")
+        logger.debug(
+            f"Plaid transactions response: {resp_txns.status_code} - {resp_txns.text}"
+        )
         if resp_txns.status_code == 200:
             txns_json = resp_txns.json()
             transactions = txns_json.get("transactions", [])
@@ -456,15 +458,21 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
                 account_id = txn.get("account_id")
                 if not account_id:
-                    logger.warning(f"Transaction {txn_id} missing 'account_id'; skipping.")
+                    logger.warning(
+                        f"Transaction {txn_id} missing 'account_id'; skipping."
+                    )
                     continue
 
                 account = Account.query.filter_by(account_id=account_id).first()
                 if not account:
-                    logger.warning(f"No matching account found in DB for account_id={account_id}")
+                    logger.warning(
+                        f"No matching account found in DB for account_id={account_id}"
+                    )
                     continue
 
-                existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
+                existing_txn = Transaction.query.filter_by(
+                    transaction_id=txn_id
+                ).first()
                 date_str = txn.get("date") or txn.get("authorized_date") or ""
                 amount = int(txn.get("amount", 0)) * -1
 
@@ -479,15 +487,17 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
                 # --- Updated category logic ---
                 category_list = txn.get("category", []) or []
-                category_string = " > ".join(category_list) if category_list else "Unknown"
+                category_string = (
+                    " > ".join(category_list) if category_list else "Unknown"
+                )
                 primary = category_list[0] if category_list else "Unknown"
                 secondary = category_list[1] if len(category_list) > 1 else None
-               
+
                 category_obj = (
                     db.session.query(Category)
                     .filter(
                         Category.display_name == secondary,
-                        Category.parent.has(display_name=primary)
+                        Category.parent.has(display_name=primary),
                     )
                     .first()
                 )
@@ -495,10 +505,14 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
 
                 if existing_txn:
                     if existing_txn.user_modified:
-                        logger.debug(f"Transaction {txn_id} is user modified; preserving user changes.")
+                        logger.debug(
+                            f"Transaction {txn_id} is user modified; preserving user changes."
+                        )
                         continue
                     else:
-                        logger.debug(f"Updating transaction {txn_id} for account {account_id}.")
+                        logger.debug(
+                            f"Updating transaction {txn_id} for account {account_id}."
+                        )
                         existing_txn.amount = amount
                         existing_txn.date = date_str
                         existing_txn.description = description_str
@@ -507,7 +521,9 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         existing_txn.category = category_string
                         existing_txn.category_id = category_id
                 else:
-                    logger.debug(f"Inserting new transaction {txn_id} for account {account_id}.")
+                    logger.debug(
+                        f"Inserting new transaction {txn_id} for account {account_id}."
+                    )
                     new_txn = Transaction(
                         transaction_id=txn_id,
                         account_id=account_id,
@@ -535,56 +551,3 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
     db.session.commit()
 
     return updated
-
-def get_accounts_from_db():
-    """
-    Fetch all saved accounts from the database and return as a list of dictionaries.
-    """
-    accounts = Account.query.all()
-    serialized = []
-    for acc in accounts:
-        serialized.append(
-            {
-                "account_id": acc.account_id,
-                "user_id": acc.user_id,
-                "name": acc.name or "Unnamed Account",
-                "type": acc.type or "Unknown",
-                "subtype": acc.subtype or "Unknown",
-                "status": acc.status or "Unknown",
-                "institution_name": acc.institution_name or "Unknown",
-                "balance": acc.balance if acc.balance is not None else 0,
-                "last_refreshed": acc.last_refreshed or datetime.now(),
-                "link_type": acc.link_type or "Unknown",
-            }
-        )
-    return serialized
-
-
-def get_paginated_transactions(page, page_size):
-    """
-    Returns a tuple (transactions_list, total_count) with joined Transaction and Account fields.
-    """
-    query = (
-        db.session.query(Transaction, Account)
-        .join(Account, Transaction.account_id == Account.account_id)
-        .order_by(Transaction.date.desc())
-    )
-    total = query.count()
-    results = query.offset((page - 1) * page_size).limit(page_size).all()
-    serialized = []
-    for txn, acc in results:
-        serialized.append(
-            {
-                "transaction_id": txn.transaction_id * -1,
-                "date": txn.date or datetime.now(),
-                "amount": txn.amount if txn.amount is not None else 0,
-                "description": txn.description or "",
-                "category": txn.category if txn.category else "Unknown",
-                "merchant_name": txn.merchant_name or "Unknown",
-                "account_name": acc.name or "Unnamed Account",
-                "institution_name": acc.institution_name or "Unknown",
-                "subtype": acc.subtype or "Unknown",
-                "account_id": acc.account_id or "UnKnown",
-            }
-        )
-    return serialized, total
