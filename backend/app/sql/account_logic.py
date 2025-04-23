@@ -419,6 +419,36 @@ def refresh_data_for_teller_account(
     return updated
 
 
+def get_paginated_transactions(page, page_size):
+    """
+    Returns a tuple (transactions_list, total_count) with joined Transaction and Account fields.
+    """
+    query = (
+        db.session.query(Transaction, Account)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .order_by(Transaction.date.desc())
+    )
+    total = query.count()
+    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    serialized = []
+    for txn, acc in results:
+        serialized.append(
+            {
+                "transaction_id": txn.transaction_id * -1,
+                "date": txn.date or datetime.now(),
+                "amount": txn.amount if txn.amount is not None else 0,
+                "description": txn.description or "",
+                "category": txn.category if txn.category else "Unknown",
+                "merchant_name": txn.merchant_name or "Unknown",
+                "account_name": acc.name or "Unnamed Account",
+                "institution_name": acc.institution_name or "Unknown",
+                "subtype": acc.subtype or "Unknown",
+                "account_id": acc.account_id or "UnKnown",
+            }
+        )
+    return serialized, total
+
+
 def refresh_data_for_plaid_account(access_token, plaid_base_url):
     """
     Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
