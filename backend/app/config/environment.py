@@ -8,6 +8,7 @@ load_dotenv()
 
 # Dev Environment Check
 FLASK_ENV = os.getenv("FLASK_ENV", "development")
+CLIENT_NAME = os.getenv("CLIENT_NAME", "pyNance-Dash")
 
 # Plaid client ID and API secret for authentication
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
