@@ -10,7 +10,6 @@ Directory Tree Mapping
 │   │   ├── README.md
 │   │   └── secret_codes.pem
 │   ├── config
-│   │   ├── config.py
 │   │   ├── constants.py
 │   │   ├── environment.py
 │   │   ├── __init__.py
@@ -25,24 +24,37 @@ Directory Tree Mapping
 │   │       ├── paths.cpython-313.pyc
 │   │       └── plaid_config.cpython-313.pyc
 │   ├── data
+│   │   ├── 0420_dashroad.db
 │   │   ├── accounts.csv
 │   │   ├── accounts_dump.csv
 │   │   ├── accounts_transactions.csv
 │   │   ├── backup_database.db
 │   │   ├── dashroad2.db
+│   │   ├── imports
+│   │   │   ├── amazon_credit_2024-10.csv
+│   │   │   ├── amazon_credit_2024-11.csv
+│   │   │   ├── amazon_credit_2024-12.csv
+│   │   │   ├── amazon_credit_2025-01.csv
+│   │   │   ├── amazon_credit_2025-02.csv
+│   │   │   ├── amazon_credit_2025-03.csv
+│   │   │   ├── amazon_statement_2025-03.pdf
+│   │   │   └── README.md
+│   │   ├── main_dash.db
 │   │   ├── manual_tokens.json
 │   │   ├── prod_accounts.csv
-│   │   ├── pynance_dashroad.db
 │   │   ├── transaction_accounts.csv
 │   │   └── transactions.csv
 │   ├── extensions.py
 │   ├── helpers
 │   │   ├── helpers.py
+│   │   ├── import_helpers.py
 │   │   ├── plaid_helpers.py
 │   │   ├── __pycache__
+│   │   │   ├── import_helpers.cpython-313.pyc
 │   │   │   ├── plaid_helpers.cpython-313.pyc
 │   │   │   └── teller_helpers.cpython-313.pyc
 │   │   └── teller_helpers.py
+│   ├── imports
 │   ├── __init__.py
 │   ├── logs
 │   │   ├── app.log
@@ -86,10 +98,13 @@ Directory Tree Mapping
 │   ├── run_api.py
 │   ├── sql
 │   │   ├── account_logic.py
+│   │   ├── category_logic.py
 │   │   ├── export_logic.py
+│   │   ├── manual_import_logic.py
 │   │   └── __pycache__
 │   │       ├── account_logic.cpython-313.pyc
-│   │       └── export_logic.cpython-313.pyc
+│   │       ├── export_logic.cpython-313.pyc
+│   │       └── manual_import_logic.cpython-313.pyc
 │   ├── static
 │   │   ├── assets_vs_liabilities.html
 │   │   ├── category_breakdown.html
@@ -107,12 +122,11 @@ Directory Tree Mapping
 │   ├── README
 │   ├── script.py.mako
 │   └── versions
-│       ├── cd4531736f7e_fuck_this_app.py
+│       ├── f7ca96e457bc_another_new_fucking_database.py
 │       └── __pycache__
-│           └── cd4531736f7e_fuck_this_app.cpython-313.pyc
+│           └── f7ca96e457bc_another_new_fucking_database.cpython-313.pyc
 ├── plaid_config.json
 ├── plaid_manual_upsert.py
-├── plaid_raw_response.json
 ├── plaid_upsert.log
 ├── production.env
 ├── __pycache__
