@@ -1,50 +1,45 @@
+<main>
+  <ImportFileSelector class="mb-4" />
 
-<template>
-  <div class="transactions-page">
-    <header class="transactions-header">
-      <div>
-        <h1 class="heading-lg">Transactions</h1>
-        <h3 class="text-muted mb-2">View and manage your transactions</h3>
-              </div>
-    </header>
-
-    <main>
-      <div class="controls mb-2">
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search transactions..."
-          class="search-input"
-        />
-      </div>
-
-      <UpdateTransactionsTable
-        :transactions="filteredTransactions"
-        :sort-key="sortKey"
-        :sort-order="sortOrder"
-        @sort="setSort"
-      />
-
-      <div id="pagination-controls" class="mt-3 flex-center gap-2">
-        <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">
-          Previous
-        </button>
-        <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button class="btn" @click="changePage(1)" :disabled="currentPage >= totalPages">
-          Next
-        </button>
-        <div>
-          <RecurringTransactionSection provider="plaid" />
-        </div>
-      </div>
-    </main>
+  <div class="controls mb-2">
+    <input
+      v-model="searchQuery"
+      type="text"
+      placeholder="Search transactions..."
+      class="search-input"
+    />
   </div>
-</template>
+
+  <UpdateTransactionsTable
+    :transactions="filteredTransactions"
+    :sort-key="sortKey"
+    :sort-order="sortOrder"
+    @sort="setSort"
+  />
+
+  <div id="pagination-controls" class="mt-3 flex-center gap-2">
+    <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">
+      Previous
+    </button>
+    <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
+    <button class="btn" @click="changePage(1)" :disabled="currentPage >= totalPages">
+      Next
+    </button>
+    <div>
+      <RecurringTransactionSection provider="plaid" />
+    </div>
+  </div>
+
+  <!-- 📝 Manual-only Transactions Table -->
+  <ManualTransactionTable class="mt-6" />
+</main>
 
 <script>
 import { useTransactions } from "@/composables/useTransactions.js";
 import TransactionsTable from "../components/UpdateTransactionsTable.vue";
 import RecurringTransactionSection from "../components/RecurringTransactionSection.vue";
+import ImportFileSelector from "@/components/ImportFileSelector.vue";
+import ManualTransactionTable from "@/components/ManualTransactionTable.vue";
 
 export default {
   name: "Transactions",
@@ -85,6 +80,7 @@ export default {
   padding: 1rem;
   gap: 2rem;
 }
+
 .transactions-header {
   background-color: var(--color-bg-secondary);
   padding: 1.5rem 1rem;
@@ -93,6 +89,7 @@ export default {
   border-radius: 12px;
   box-shadow: 0 4px 12px var(--shadow);
 }
+
 .transactions-header h1 {
   margin: 0;
   color: var(--color-accent-yellow);
@@ -142,4 +139,3 @@ button.btn:disabled {
   cursor: not-allowed;
 }
 </style>
-
