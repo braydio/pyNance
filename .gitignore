@@ -21,6 +21,9 @@ logs/
 # Database files
 *.db
 
+# Manual transaction / account uploads
+imports/*
+
 # Temporary files
 *.bak
 *.swp
