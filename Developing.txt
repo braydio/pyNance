@@ -1,9 +1,9 @@
 4/24/2025
-  Manual Transactions table is now rendering.
-  Manual CSV upload sees the files and all, component works but need to fix backend
-  route to point to an active function in the backend I think.
+  Manual CSV upload sees the files and all, component works but need to fix 
+  backend route to point to an active function in the backend I think.
   Focus points:
     - Integrate data from RSAssistant in a page somewhere
+    - Functionality to hide an account but not delete it
     - Automate teller API refreshes
     - Cleanup codebase
       * Deprecate duplicated / unused backend routes
