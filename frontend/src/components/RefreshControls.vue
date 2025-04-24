@@ -8,10 +8,6 @@
       <span v-if="isRefreshing">Refreshing Activity…</span>
       <span v-else>Refresh Account Activity</span>
     </button>
-    <button class="btn" @click="syncCategories" :disabled="isSyncing">
-      <span v-if="isSyncing">Syncing Categories…</span>
-      <span v-else>Sync Categories</span>
-    </button>
   </div>
 </template>
 
@@ -26,7 +22,6 @@ export default {
     return {
       isFetching: false,
       isRefreshing: false,
-      isSyncing: false,
     };
   },
   methods: {
@@ -50,21 +45,6 @@ export default {
         this.isRefreshing = false;
       }
     },
-    async syncCategories() {
-      this.isSyncing = true;
-      try {
-        const response = await axios.post("/api/categories/refresh");
-        if (response.data.status === "success") {
-          alert("Categories synced from Plaid successfully.");
-        } else {
-          alert("Failed to sync categories: " + response.data.message);
-        }
-      } catch (err) {
-        alert("Error syncing categories: " + err.message);
-      } finally {
-        this.isSyncing = false;
-      }
-    }
   },
 };
 </script>
