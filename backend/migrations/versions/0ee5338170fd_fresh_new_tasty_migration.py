@@ -1,8 +1,8 @@
-"""Initial migrate
+"""Fresh new tasty migration
 
-Revision ID: d124119c9be4
+Revision ID: 0ee5338170fd
 Revises: 
-Create Date: 2025-04-04 08:59:14.075159
+Create Date: 2025-04-24 18:19:52.847738
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd124119c9be4'
+revision = '0ee5338170fd'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -21,16 +21,15 @@ def upgrade():
     op.create_table('accounts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('account_id', sa.String(length=64), nullable=False),
-    sa.Column('user_id', sa.String(length=64), nullable=False),
-    sa.Column('access_token', sa.String(length=256), nullable=True),
-    sa.Column('name', sa.String(length=128), nullable=True),
+    sa.Column('user_id', sa.String(length=64), nullable=True),
+    sa.Column('name', sa.String(length=128), nullable=False),
     sa.Column('type', sa.String(length=64), nullable=True),
     sa.Column('subtype', sa.String(length=64), nullable=True),
-    sa.Column('status', sa.String(length=64), nullable=True),
     sa.Column('institution_name', sa.String(length=128), nullable=True),
-    sa.Column('balance', sa.Float(), nullable=True),
-    sa.Column('last_refreshed', sa.String(length=64), nullable=True),
+    sa.Column('status', sa.String(length=64), nullable=True),
     sa.Column('link_type', sa.String(length=64), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('account_id')
     )
@@ -40,47 +39,45 @@ def upgrade():
     sa.Column('primary_category', sa.String(length=128), nullable=True),
     sa.Column('detailed_category', sa.String(length=128), nullable=True),
     sa.Column('display_name', sa.String(length=256), nullable=True),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
+    sa.ForeignKeyConstraint(['parent_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('plaid_category_id')
-    )
-    op.create_table('plaid_items',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('user_id', sa.String(length=64), nullable=False),
-    sa.Column('item_id', sa.String(length=64), nullable=False),
-    sa.Column('access_token', sa.String(length=256), nullable=False),
-    sa.Column('institution_name', sa.String(length=128), nullable=False),
-    sa.Column('product', sa.String(length=32), nullable=False),
-    sa.Column('created_at', sa.DateTime(), nullable=True),
-    sa.Column('updated_at', sa.DateTime(), nullable=True),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('item_id')
-    )
-    op.create_table('account_details',
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.Column('account_id', sa.String(length=64), nullable=False),
-    sa.Column('enrollment_id', sa.String(length=64), nullable=True),
-    sa.Column('refresh_links', sa.Text(), nullable=True),
-    sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('account_id')
     )
     op.create_table('account_history',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('account_id', sa.String(length=64), nullable=False),
     sa.Column('date', sa.Date(), nullable=False),
     sa.Column('balance', sa.Float(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('account_id', 'date', name='_account_date_uc')
+    )
+    op.create_table('plaid_accounts',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('account_id', sa.String(length=64), nullable=False),
+    sa.Column('access_token', sa.String(length=256), nullable=False),
+    sa.Column('item_id', sa.String(length=128), nullable=True),
+    sa.Column('institution_id', sa.String(length=128), nullable=True),
+    sa.Column('webhook', sa.String(length=256), nullable=True),
+    sa.Column('last_synced', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('recurring_transactions',
+    op.create_table('teller_accounts',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('account_id', sa.String(length=64), nullable=False),
-    sa.Column('description', sa.String(length=256), nullable=False),
-    sa.Column('amount', sa.Float(), nullable=False),
-    sa.Column('frequency', sa.String(length=64), nullable=True),
-    sa.Column('next_due_date', sa.Date(), nullable=True),
-    sa.Column('notes', sa.String(length=256), nullable=True),
-    sa.Column('updated_at', sa.String(length=64), nullable=True),
+    sa.Column('access_token', sa.String(length=256), nullable=False),
+    sa.Column('enrollment_id', sa.String(length=128), nullable=True),
+    sa.Column('institution_id', sa.String(length=128), nullable=True),
+    sa.Column('provider', sa.String(length=64), nullable=True),
+    sa.Column('last_synced', sa.DateTime(), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
     sa.PrimaryKeyConstraint('id')
     )
@@ -91,26 +88,39 @@ def upgrade():
     sa.Column('amount', sa.Float(), nullable=True),
     sa.Column('date', sa.String(length=64), nullable=True),
     sa.Column('description', sa.String(length=256), nullable=True),
+    sa.Column('provider', sa.String(length=64), nullable=True),
     sa.Column('merchant_name', sa.String(length=128), nullable=True),
-    sa.Column('merchant_typ', sa.String(length=64), nullable=True),
+    sa.Column('merchant_type', sa.String(length=64), nullable=True),
     sa.Column('user_modified', sa.Boolean(), nullable=True),
     sa.Column('user_modified_fields', sa.Text(), nullable=True),
     sa.Column('category_id', sa.Integer(), nullable=True),
+    sa.Column('category', sa.String(length=128), nullable=True),
     sa.ForeignKeyConstraint(['account_id'], ['accounts.account_id'], ),
     sa.ForeignKeyConstraint(['category_id'], ['categories.id'], ),
     sa.PrimaryKeyConstraint('id'),
     sa.UniqueConstraint('transaction_id')
+    )
+    op.create_table('recurring_transactions',
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('transaction_id', sa.String(length=64), nullable=False),
+    sa.Column('frequency', sa.String(length=64), nullable=False),
+    sa.Column('next_due_date', sa.Date(), nullable=False),
+    sa.Column('notes', sa.String(length=256), nullable=True),
+    sa.Column('updated_at', sa.DateTime(), nullable=True),
+    sa.Column('next_instance_id', sa.String(length=64), nullable=True),
+    sa.ForeignKeyConstraint(['transaction_id'], ['transactions.transaction_id'], ),
+    sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('transactions')
     op.drop_table('recurring_transactions')
+    op.drop_table('transactions')
+    op.drop_table('teller_accounts')
+    op.drop_table('plaid_accounts')
     op.drop_table('account_history')
-    op.drop_table('account_details')
-    op.drop_table('plaid_items')
     op.drop_table('categories')
     op.drop_table('accounts')
     # ### end Alembic commands ###
