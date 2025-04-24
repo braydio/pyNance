@@ -57,4 +57,9 @@ def create_app():
         else:
             app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
 
+        with app.app_context():
+            print(" Registered Routes:")
+            for rule in app.url_map.iter_rules():
+                print(rule)
+
     return app
