@@ -122,6 +122,12 @@ Directory Tree Mapping
 │   ├── README
 │   ├── script.py.mako
 │   └── versions
+│       ├── 18b0e9bdfb29_last_refresehd_to_datetime.py
+│       ├── 2611d5c2e876_need_accounts_table.py
+│       ├── 46a0ade978f9_add_parent_id_category_table_bish.py
+│       ├── 7665737c5164_categories_bullsh.py
+│       ├── cd4531736f7e_fuck_this_app.py
+│       ├── d124119c9be4_initial_migrate.py
 │       ├── f7ca96e457bc_another_new_fucking_database.py
 │       └── __pycache__
 │           └── f7ca96e457bc_another_new_fucking_database.cpython-313.pyc
