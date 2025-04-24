@@ -34,6 +34,9 @@ Directory Tree Mapping
 │   ├── Settings.vue
 │   ├── TokenUpload.vue
 │   ├── TransactionsTable.vue
+│   ├── ui
+│   │   ├── CardContent.vue
+│   │   └── Card.vue
 │   ├── UpdateTransactionsTable.vue
 │   ├── UploadCSV.vue
 │   ├── UploadDownloadCSV.vue
