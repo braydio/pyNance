@@ -1,4 +1,3 @@
-
 from sqlalchemy.orm import aliased
 from flask import Blueprint, jsonify
 from app.models import Category
@@ -8,6 +7,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 categories = Blueprint("categories", __name__)
+
 
 @categories.route("/tree", methods=["GET"])
 def get_category_tree():
@@ -20,17 +20,15 @@ def get_category_tree():
         if primary not in tree:
             tree[primary] = []
 
-        tree[primary].append({
-            "name": detailed,
-            "id": cat.id,
-            "plaid_id": cat.plaid_category_id
-        })
+        tree[primary].append(
+            {"name": detailed, "id": cat.id, "plaid_id": cat.plaid_category_id}
+        )
 
     nested = [{"name": k, "children": v} for k, v in tree.items()]
     return jsonify({"status": "success", "data": nested})
 
 
-categories.route("/refresh", methods=["POST"])
+@categories.route("/refresh", methods=["POST"])
 def refresh_plaid_categories():
     try:
         response = plaid_client.categories_get({})
@@ -45,7 +43,9 @@ def refresh_plaid_categories():
 
             if len(hierarchy) == 1:
                 primary = hierarchy[0]
-                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                existing = Category.query.filter_by(
+                    plaid_category_id=plaid_cat_id
+                ).first()
                 if not existing:
                     parent = Category(
                         plaid_category_id=plaid_cat_id,
@@ -62,27 +62,32 @@ def refresh_plaid_categories():
                 detailed = hierarchy[1]
 
                 ParentCategory = aliased(Category)
-                parent = db.session.query(Category).join(
-                    ParentCategory, Category.parent_id == ParentCategory.id
-                ).filter(ParentCategory.display_name == primary).first()
+                parent = (
+                    db.session.query(Category)
+                    .join(ParentCategory, Category.parent_id == ParentCategory.id)
+                    .filter(ParentCategory.display_name == primary)
+                    .first()
+                )
 
                 if not parent:
                     parent = Category(
                         plaid_category_id=f"{plaid_cat_id}_primary",
                         primary_category=primary,
-                        display_name=primary
+                        display_name=primary,
                     )
                     db.session.add(parent)
                     db.session.flush()
 
-                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+                existing = Category.query.filter_by(
+                    plaid_category_id=plaid_cat_id
+                ).first()
                 if not existing:
                     child = Category(
                         plaid_category_id=plaid_cat_id,
                         primary_category=primary,
                         detailed_category=detailed,
                         display_name=detailed,
-                        parent_id=parent.id
+                        parent_id=parent.id,
                     )
                     db.session.add(child)
 
@@ -93,4 +98,3 @@ def refresh_plaid_categories():
     except Exception as e:
         logger.error(f"❌ Failed to refresh Plaid categories: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-
