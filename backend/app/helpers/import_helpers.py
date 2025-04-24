@@ -1,17 +1,22 @@
 import csv
 from datetime import datetime
 import os
+import traceback
+from app.config import logger
 
 
 def dispatch_import(filepath: str, filetype: str = "transactions"):
     """
     Dispatch an import task based on file type and format.
     """
+    logger.debug(f"[IMPORT] Dispatching file: {filepath} as type: {filetype}")
+
     if filepath.endswith(".csv"):
         return import_transactions_from_csv(filepath)
     elif filepath.endswith(".pdf"):
         return import_transactions_from_pdf(filepath)
     else:
+        logger.error(f"[IMPORT] Unsupported file format: {filepath}")
         raise ValueError(f"Unsupported file format: {filepath}")
 
 
@@ -22,10 +27,13 @@ def import_transactions_from_csv(filepath: str):
     Transaction Date,Posting Date,Reference Number,Amount,Description
     """
     imported = []
+    logger.debug(f"[CSV IMPORT] Starting CSV import from: {filepath}")
+
     try:
         with open(filepath, newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
+                logger.debug(f"[CSV IMPORT] Row: {row}")
                 amount = float(row["Amount"])
                 imported.append(
                     {
@@ -36,21 +44,25 @@ def import_transactions_from_csv(filepath: str):
                         "name": row["Description"],
                         "amount": abs(amount),
                         "type": "credit" if amount > 0 else "debit",
-                        "provider": "pdf_import",
+                        "provider": "csv_import",
                         "currency": "USD",
-                        # account_id or user_id should be filled in by calling logic
                     }
                 )
+        logger.info(
+            f"[CSV IMPORT] Successfully imported {len(imported)} transactions from CSV."
+        )
         return {"status": "success", "count": len(imported), "data": imported}
     except Exception as e:
-        return {"status": "error", "error": str(e)}
+        tb = traceback.format_exc()
+        logger.error(f"[CSV IMPORT ERROR] Failed to import CSV: {e}\n{tb}")
+        return {"status": "error", "error": str(e), "traceback": tb}
 
 
 def import_transactions_from_pdf(filepath: str):
     """
     Placeholder for future Synchrony PDF parser
     """
-    print(f"[TODO] PDF parsing not yet implemented for {filepath}")
+    logger.warning(f"[TODO] PDF parsing not yet implemented for {filepath}")
     return {
         "status": "pending",
         "message": "PDF parsing not implemented yet",
