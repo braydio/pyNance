@@ -1,5 +1,4 @@
 # File: app/sql/account_logic.py
-
 from sqlalchemy.orm import aliased
 import json
 import time
@@ -13,10 +12,8 @@ from app.helpers.plaid_helpers import refresh_plaid_categories
 from app.extensions import db
 from app.models import (
     Account,
-    AccountDetails,
     AccountHistory,
     Category,
-    PlaidItem,
     Transaction,
 )
 
@@ -103,7 +100,6 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
 
-        # For credit/liability accounts, invert the sign on the balance.
         if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
             logger.debug(
                 f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {-balance}."
@@ -119,10 +115,9 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
         access_token = account.get("access_token") or ""
 
         logger.debug(f"Processing account id: {account_id}")
-        existing = Account.query.filter_by(account_id=account_id).first()
+        existing = db.session.query(Account).filter_by(account_id=account_id).first()
         now = datetime.utcnow()
 
-        # If the account already exists, update it. Otherwise, insert new.
         if existing:
             logger.debug(f"Updating account {name}, {account_id}")
             existing.name = name
@@ -160,7 +155,7 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
                 link_type=provider,
             )
             db.session.add(new_account)
-            db.session.flush()  # Ensure new_account has an ID before details.
+            db.session.flush()
             details = AccountDetails(
                 account_id=account_id,
                 enrollment_id=enrollment_id,
@@ -168,11 +163,12 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             )
             db.session.add(details)
 
-        # Update daily balance history
         today = pydate.today()
-        existing_history = AccountHistory.query.filter_by(
-            account_id=account_id, date=today
-        ).first()
+        existing_history = (
+            db.session.query(AccountHistory)
+            .filter_by(account_id=account_id, date=today)
+            .first()
+        )
         if not existing_history:
             history_record = AccountHistory(
                 account_id=account_id, date=today, balance=balance
