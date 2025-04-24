@@ -1,4 +1,3 @@
-
 # backend/app/sql/export_logic.py
 import csv
 import io
@@ -36,7 +35,7 @@ def export_csv_response(model_name):
         io.BytesIO(csv_io.getvalue().encode("utf-8")),
         mimetype="text/csv",
         as_attachment=True,
-        download_name=f"{model_name}.csv"
+        download_name=f"{model_name}.csv",
     )
 
 
@@ -66,6 +65,7 @@ def export_all_to_csv():
 
 def run_export():
     from app import create_app
+
     app = create_app()
     with app.app_context():
         export_all_to_csv()
@@ -73,4 +73,3 @@ def run_export():
 
 if __name__ == "__main__":
     run_export()
-
