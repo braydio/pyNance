@@ -1,0 +1,75 @@
+Directory Tree Mapping
+[33mfrontend/src[0m
+├── api
+│   └── recurring.js
+├── App.vue
+├── assets
+│   ├── css
+│   │   └── style.css
+│   └── style
+├── auto-imports.d.ts
+├── components
+│   ├── AccountsReorderChart.vue
+│   ├── AccountsTableLite.vue
+│   ├── AccountsTable.vue
+│   ├── AssetsBarTrended.vue
+│   ├── CategoryBreakdownChart.vue
+│   ├── Chart.vue
+│   ├── DailyNetChart.vue
+│   ├── DownloadCSV.vue
+│   ├── ImportFileSelector.vue
+│   ├── LinkAccount.vue
+│   ├── ManualTransactionTable.vue
+│   ├── Navbar.vue
+│   ├── NetIncomeCharts.vue
+│   ├── NetYearComparisonChart.vue
+│   ├── NewNavbar-Dev.vue
+│   ├── NotificationsBar.vue
+│   ├── RecurringCalendar.vue
+│   ├── RecurringTransactionSection.vue
+│   ├── RefreshControls.vue
+│   ├── RefreshPlaidControls.vue
+│   ├── RefreshTellerControls.vue
+│   ├── Settings.vue
+│   ├── TokenUpload.vue
+│   ├── TransactionsTable.vue
+│   ├── UpdateTransactionsTable.vue
+│   ├── UploadCSV.vue
+│   ├── UploadDownloadCSV.vue
+│   └── YoutubeEmbed.vue
+├── components.d.ts
+├── composables
+│   └── useTransactions.js
+├── fastcat
+│   ├── api.js
+│   ├── externalScripts.js
+│   ├── format.js
+│   ├── index.js
+│   ├── loadExternalScripts.js
+│   ├── teller.js
+│   └── useTransactions.js
+├── main.js
+├── router
+│   └── index.js
+├── services
+│   ├── api.js
+│   └── loadExternalScripts.js
+├── styles
+│   ├── buttons.css
+│   ├── default.css
+│   ├── global-colors.css
+│   ├── layout.css
+│   ├── tailstyles.css
+│   ├── typography.css
+│   └── utilities.css
+├── utils
+│   ├── externalScripts.js
+│   └── format.js
+└── views
+    ├── Accounts.vue
+    ├── Dashboard.vue
+    ├── Gallery.vue
+    ├── Investments.vue
+    ├── RecurringTX.vue
+    ├── Settings.vue
+    └── Transactions.vue
