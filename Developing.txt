@@ -7,9 +7,10 @@
     - Automate teller API refreshes
     - Cleanup codebase
       * Deprecate duplicated / unused backend routes
-      * Ensure separation of concerns - that routes are in routes, sql logic in sql,    
+      * Ensure separation of concerns - that routes are in routes, sql logic in 
+        sql,    
         helpers handle the API calls.
-      * Decide whether to keep product calls segreated by provider 
+      * Decide whether to keep product calls segreated by provider
           eg. plaid_transactions.py , teller_transactions.py endpoints vs.
           transactions.py endpoint which determines whether to route to plaid or teller
           handling modules
