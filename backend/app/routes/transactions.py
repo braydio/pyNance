@@ -126,15 +126,12 @@ def get_transactions_paginated():
         transactions_list, total = account_logic.get_paginated_transactions(
             page, page_size
         )
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "data": {"transactions": transactions_list, "total": total},
-                }
-            ),
-            200,
-        )
+        return jsonify(
+            {
+                "status": "success",
+                "data": {"transactions": transactions_list, "total": total},
+            }
+        ), 200
     except Exception as e:
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -155,9 +152,9 @@ def get_manual_transactions():
             {
                 "transaction_id": t.transaction_id,
                 "date": t.date.isoformat(),
-                "name": t.name,
+                "name": t.description,
                 "amount": t.amount,
-                "type": t.type,
+                "type": t.merchant_type,
                 "provider": t.account.link_type if t.account else None,
                 "account_id": t.account_id,
                 "account_name": getattr(t.account, "name", None),
@@ -167,7 +164,5 @@ def get_manual_transactions():
 
         return jsonify(results)
     except Exception as e:
-        import traceback
-
         logger.error("Error fetching manual transactions:\n%s", traceback.format_exc())
         return jsonify({"error": str(e)}), 500
