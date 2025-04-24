@@ -1,17 +1,17 @@
 # File: app/routes/transactions.py
 
-import json
-from datetime import datetime
 
-import requests
+from flask import Blueprint, jsonify, request
+from datetime import datetime
+import json
 from app.config import FILES, logger
 from app.extensions import db
-from app.helpers.teller_helpers import load_tokens  # Use the shared helper
+from app.helpers.teller_helpers import load_token  # Use the shared helper
 from app.models import Account, Transaction
 from app.sql import account_logic
-from flask import Blueprint, jsonify, request
 
 transactions = Blueprint("transactions", __name__)
+
 
 @transactions.route("/update", methods=["PUT"])
 def update_transaction():
@@ -22,10 +22,9 @@ def update_transaction():
         data = request.json
         transaction_id = data.get("transaction_id")
         if not transaction_id:
-            return (
-                jsonify({"status": "error", "message": "Missing transaction_id"}),
-                400,
-            )
+            return jsonify(
+                {"status": "error", "message": "Missing transaction_id"}
+            ), 400
 
         txn = Transaction.query.filter_by(transaction_id=transaction_id).first()
         if not txn:
@@ -64,6 +63,7 @@ def update_transaction():
     except Exception as e:
         logger.error(f"Error updating transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @transactions.route("/user_modify/update")
 def user_modified_update_transaction():
@@ -74,10 +74,9 @@ def user_modified_update_transaction():
         data = request.json
         transaction_id = data.get("transaction_id")
         if not transaction_id:
-            return (
-                jsonify({"status": "error", "message": "Missing transaction_id"}),
-                400,
-            )
+            return jsonify(
+                {"status": "error", "message": "Missing transaction_id"}
+            ), 400
 
         txn = Transaction.query.filter_by(transaction_id=transaction_id).first()
         if not txn:
@@ -116,6 +115,7 @@ def user_modified_update_transaction():
     except Exception as e:
         logger.error(f"Error updating transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @transactions.route("/get_transactions", methods=["GET"])
 def get_transactions_paginated():
@@ -142,3 +142,29 @@ def get_transactions_paginated():
         return jsonify({"error": str(e)}), 500
 
 
+@transactions.route("/manual", methods=["GET"])
+def get_manual_transactions():
+    try:
+        manual_txns = (
+            Transaction.query.filter(Transaction.provider.in_(["manual", "pdf_import"]))
+            .order_by(Transaction.date.desc())
+            .all()
+        )
+
+        results = [
+            {
+                "transaction_id": t.transaction_id,
+                "date": t.date.isoformat(),
+                "name": t.name,
+                "amount": t.amount,
+                "type": t.type,
+                "provider": t.provider,
+                "account_id": t.account_id,
+                "account_name": t.account.name if t.account else None,
+            }
+            for t in manual_txns
+        ]
+
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
