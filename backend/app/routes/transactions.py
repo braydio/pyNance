@@ -1,9 +1,8 @@
 # File: app/routes/transactions.py
-
-
 from flask import Blueprint, jsonify, request
 from datetime import datetime
 import json
+import traceback
 from app.config import FILES, logger
 from app.models import Account, Transaction
 from app.sql import account_logic
@@ -145,7 +144,9 @@ def get_transactions_paginated():
 def get_manual_transactions():
     try:
         manual_txns = (
-            Transaction.query.filter(Transaction.provider.in_(["manual", "pdf_import"]))
+            db.session.query(Transaction)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Account.link_type.in_(["manual", "pdf_import"]))
             .order_by(Transaction.date.desc())
             .all()
         )
@@ -157,13 +158,16 @@ def get_manual_transactions():
                 "name": t.name,
                 "amount": t.amount,
                 "type": t.type,
-                "provider": t.provider,
+                "provider": t.account.link_type if t.account else None,
                 "account_id": t.account_id,
-                "account_name": t.account.name if t.account else None,
+                "account_name": getattr(t.account, "name", None),
             }
             for t in manual_txns
         ]
 
         return jsonify(results)
     except Exception as e:
+        import traceback
+
+        logger.error("Error fetching manual transactions:\n%s", traceback.format_exc())
         return jsonify({"error": str(e)}), 500
