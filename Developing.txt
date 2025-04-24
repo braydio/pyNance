@@ -1,11 +1,39 @@
+4/21/25
+
+  Accounts.vue officially can link new Plaid accounts again. Need to test Teller.
+    Still to Implement:
+      * Checking / Savings / Credit button toggles
+      * Persist user modified fields in UpdateTransactionsTable.vue
+      * Automatic Refresh of Accounts.vue page on Link Success
+
 4/16//25
 
-  Cleaning up AccountsTable.vue buttons
+  Accounts.vue is looking rather clean. Routes completed for uploading an access token and saving account (Plaid)
+  Checking / Savings / Credit button toggles do not work.
+  Need to persist user modified fields in the UpdateTransactionsTable.vue
+
+  - Teller looks to be building support for transfers
+
+  - UI Elements need to work
+    :NetYearComparisonChart
+    :RecurringTransactionSection
+    :NotificationsBar
+
+* FOCUSPOINT *
+  ==========
+Looking to integrate functionality for UpdateTransactionsTable.vue component - for start, plan is likely to manually enter a Due Date & payment info. This should trigger an alert on the main dashboard that does not go away until a transaction matching the recurring match is logged for the payment period.
+
+
+  ================== ^ Update ^
+Cleaning up AccountsTable.vue buttons
+  Integrate functionality for UpdateTransactionsTable.vue to persist user changes
   Adding routes and components for upload/download CSV
     * First finish the AccountsTable Cleanup
       - New upload download buttons will be in a dedicated component
     * Then build out download components and routes
     * Then build out upload components and routes
+
+  Also Checking/Savings/Credit button toggles need to work but don't
 
 
 4/14/25
