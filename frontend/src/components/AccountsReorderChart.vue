@@ -67,7 +67,7 @@ export default {
       } catch (err) {
         console.error("Error fetching accounts:", err);
       }
-   },
+    },
     filterAccounts() {
       if (!this.accounts.length) return;
 
@@ -123,7 +123,7 @@ export default {
   color: var(--color-text-light);
   border-radius: 8px;
   margin: 1rem;
-  }
+}
 
 .chart-summary {
   display: flex;
