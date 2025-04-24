@@ -9,44 +9,23 @@ class TimestampMixin:
     )
 
 
-class PlaidItem(db.Model, TimestampMixin):
-    """
-    Stores Plaid-specific item metadata and access tokens.
-    This table is kept separate from your Teller tokens.
-    """
-
-    __tablename__ = "plaid_items"
-
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(64), nullable=False)
-    item_id = db.Column(db.String(64), unique=True, nullable=False)
-    access_token = db.Column(db.String(256), nullable=False)
-    institution_name = db.Column(db.String(128), nullable=False)
-    product = db.Column(db.String(32), nullable=False)  # e.g. "transactions"
-
-    def __repr__(self):
-        return f"<PlaidItem(item_id={self.item_id}, institution={self.institution_name}, product={self.product})>"
-
-
 class Account(db.Model, TimestampMixin):
     __tablename__ = "accounts"
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(db.String(64), unique=True, nullable=False)
-    user_id = db.Column(db.String(64), nullable=False)
-    access_token = db.Column(db.String(256))
-    name = db.Column(db.String(128))
-    type = db.Column(db.String(64))
-    subtype = db.Column(db.String(64))
-    status = db.Column(db.String(64))
-    institution_name = db.Column(db.String(128))
-    balance = db.Column(db.Float, default=0)
-    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
-    link_type = db.Column(db.String(64), default="InsertProvider")
+    user_id = db.Column(db.String(64), nullable=True)
+    name = db.Column(db.String(128), nullable=False)
+    type = db.Column(db.String(64), nullable=True)
+    subtype = db.Column(db.String(64), nullable=True)
+    institution_name = db.Column(db.String(128), nullable=True)
+    status = db.Column(db.String(64), default="active")
+    link_type = db.Column(
+        db.String(64), default="manual"
+    )  # e.g., manual, plaid, teller
 
-    details = db.relationship(
-        "AccountDetails", backref="account", uselist=False, cascade="all, delete-orphan"
-    )
+    plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False)
+    teller_account = db.relationship("TellerAccount", backref="account", uselist=False)
     history = db.relationship(
         "AccountHistory", backref="account", lazy=True, cascade="all, delete-orphan"
     )
@@ -55,24 +34,70 @@ class Account(db.Model, TimestampMixin):
     )
 
 
-class AccountDetails(db.Model):
-    __tablename__ = "account_details"
+class PlaidAccount(db.Model, TimestampMixin):
+    __tablename__ = "plaid_accounts"
+
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), unique=True, nullable=False
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
-    enrollment_id = db.Column(db.String(64))
-    refresh_links = db.Column(db.Text)  # Stored as JSON string
+    access_token = db.Column(db.String(256), nullable=False)
+    item_id = db.Column(db.String(128), nullable=True)
+    institution_id = db.Column(db.String(128), nullable=True)
+    webhook = db.Column(db.String(256), nullable=True)
+    last_synced = db.Column(db.DateTime, nullable=True)
 
 
-class AccountHistory(db.Model):
+class TellerAccount(db.Model, TimestampMixin):
+    __tablename__ = "teller_accounts"
+
+    id = db.Column(db.Integer, primary_key=True)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+    )
+    access_token = db.Column(db.String(256), nullable=False)
+    enrollment_id = db.Column(db.String(128), nullable=True)
+    institution_id = db.Column(db.String(128), nullable=True)
+    provider = db.Column(db.String(64), default="Teller")
+    last_synced = db.Column(db.DateTime, nullable=True)
+
+
+class AccountHistory(db.Model, TimestampMixin):
     __tablename__ = "account_history"
+
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
     date = db.Column(db.Date, nullable=False)
     balance = db.Column(db.Float, default=0)
+
+    __table_args__ = (
+        db.UniqueConstraint("account_id", "date", name="_account_date_uc"),
+    )
+
+
+class Transaction(db.Model):
+    __tablename__ = "transactions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(db.String(64), unique=True, nullable=False)
+    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
+    amount = db.Column(db.Float, default=0)
+    date = db.Column(db.String(64))
+    description = db.Column(db.String(256))
+    provider = db.Column(db.String(64), default="manual")
+    merchant_name = db.Column(db.String(128), default="Unknown")
+    merchant_type = db.Column(db.String(64), default="Unknown")
+    user_modified = db.Column(db.Boolean, default=False)
+    user_modified_fields = db.Column(db.Text)  # JSON representation
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    category = db.Column(db.String(128))
+
+    def __repr__(self):
+        return (
+            f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
+        )
 
 
 class RecurringTransaction(db.Model):
@@ -109,44 +134,3 @@ class Category(db.Model):
 
     def __repr__(self):
         return f"<Category(plaid_category_id={self.plaid_category_id}, display_name={self.display_name})>"
-
-
-class TellerAccount(db.Model, TimestampMixin):
-    __tablename__ = "teller_accounts"
-
-    id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String, unique=True, nullable=False)
-    user_id = db.Column(db.String, nullable=False)
-    name = db.Column(db.String, default="Unnamed Account")
-    type = db.Column(db.String)
-    subtype = db.Column(db.String)
-    balance = db.Column(db.Float, default=0.0)
-    last_refreshed = db.Column(db.DateTime, default=datetime.utcnow)
-    enrollment_id = db.Column(db.String)
-    access_token = db.Column(db.String)
-    provider = db.Column(db.String, default="Teller")
-    details = db.Column(db.Text)  # or db.JSON if PostgreSQL
-
-    def __repr__(self):
-        return f"<TellerAccount {self.account_id} ({self.name})>"
-
-
-class Transaction(db.Model):
-    __tablename__ = "transactions"
-    id = db.Column(db.Integer, primary_key=True)
-    transaction_id = db.Column(db.String(64), unique=True, nullable=False)
-    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
-    amount = db.Column(db.Float, default=0)
-    date = db.Column(db.String(64))
-    description = db.Column(db.String(256))
-    merchant_name = db.Column(db.String(128), default="Unknown")
-    merchant_type = db.Column(db.String(64), default="Unknown")  # ✅ typo fixed
-    user_modified = db.Column(db.Boolean, default=False)
-    user_modified_fields = db.Column(db.Text)  # JSON representation
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
-    category = db.Column(db.String(128))
-
-    def __repr__(self):
-        return (
-            f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
-        )
