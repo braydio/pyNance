@@ -1,5 +1,22 @@
-4/21/25
+4/24/2025
+  Manual Transactions table is now rendering.
+  Manual CSV upload sees the files and all, component works but need to fix backend
+  route to point to an active function in the backend I think.
+  Focus points:
+    - Integrate data from RSAssistant in a page somewhere
+    - Automate teller API refreshes
+    - Cleanup codebase
+      * Deprecate duplicated / unused backend routes
+      * Ensure separation of concerns - that routes are in routes, sql logic in sql,    
+        helpers handle the API calls.
+      * Decide whether to keep product calls segreated by provider 
+          eg. plaid_transactions.py , teller_transactions.py endpoints vs.
+          transactions.py endpoint which determines whether to route to plaid or teller
+          handling modules
+      * Remove stale modules
+      * Remove stale / unused components
 
+4/21/25
   Accounts.vue officially can link new Plaid accounts again. Need to test Teller.
     Still to Implement:
       * Checking / Savings / Credit button toggles
