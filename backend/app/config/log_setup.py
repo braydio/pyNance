@@ -35,9 +35,11 @@ def setup_logger():
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
 
-        # If VERBOSE enabled, also enable custom level for console
+        # If VERBOSE enabled, enable annoying level for console
         if VERBOSE_LOGGING:
             console_handler.setLevel(min(console_handler.level, VERBOSE_LEVEL_NUM))
+        else:
+            logging.disable(VERBOSE_LEVEL_NUM)
 
         formatter = logging.Formatter(
             "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
