@@ -5,10 +5,9 @@ from flask import Blueprint, jsonify, request
 from datetime import datetime
 import json
 from app.config import FILES, logger
-from app.extensions import db
-from app.helpers.teller_helpers import load_token  # Use the shared helper
 from app.models import Account, Transaction
 from app.sql import account_logic
+from app.extensions import db
 
 transactions = Blueprint("transactions", __name__)
 
