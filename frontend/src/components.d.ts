@@ -12,6 +12,7 @@ declare module 'vue' {
     AccountsTable: typeof import('./components/AccountsTable.vue')['default']
     AccountsTableLite: typeof import('./components/AccountsTableLite.vue')['default']
     AssetsBarTrended: typeof import('./components/AssetsBarTrended.vue')['default']
+    Button: typeof import('./components/ui/Button.vue')['default']
     Card: typeof import('./components/ui/Card.vue')['default']
     CardContent: typeof import('./components/ui/CardContent.vue')['default']
     CategoryBreakdownChart: typeof import('./components/CategoryBreakdownChart.vue')['default']
