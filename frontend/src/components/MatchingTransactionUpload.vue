@@ -1,4 +1,3 @@
-
 <template>
   <div class="p-4">
     <Card>
@@ -32,8 +31,10 @@
 
 <script setup>
 import { ref } from 'vue';
-import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import Card from '@/components/ui/Card.vue';
+import CardContent from '@/components/ui/CardContent.vue';
+import Button from '@/components/ui/Button.vue';
+
 import Papa from 'papaparse';
 
 const file = ref(null);
