@@ -1,6 +1,7 @@
 import csv
 import json
 import os
+import traceback
 from io import TextIOWrapper
 from flask import Blueprint, request, jsonify
 from app.extensions import db
@@ -227,4 +228,5 @@ def list_import_files():
         return jsonify(sorted(files))
     except Exception as e:
         print(f"[IMPORT FILES ERROR] {e}")
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
