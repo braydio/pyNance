@@ -540,7 +540,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         )
                         continue
                     else:
-                        logger.debug(
+                        logger.verbose(
                             f"Updating transaction {txn_id} for account {account_id}."
                         )
                         existing_txn.amount = amount
@@ -551,7 +551,7 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
                         existing_txn.category = category_string
                         existing_txn.category_id = category_id
                 else:
-                    logger.debug(
+                    logger.verbose(
                         f"Inserting new transaction {txn_id} for account {account_id}."
                     )
                     new_txn = Transaction(
