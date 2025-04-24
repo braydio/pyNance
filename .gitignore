@@ -23,6 +23,7 @@ logs/
 
 # Manual transaction / account uploads
 imports/*
+!imports/README.md
 
 # Temporary files
 *.bak
@@ -55,4 +56,4 @@ mappied.txt
 *.DS_Store
 *.egg-info/
 *.lock
-fastcat/
+*.local
