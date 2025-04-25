@@ -22,6 +22,7 @@ export default {
       tellerConnectInstance: null,
       userID: import.meta.env.VITE_USER_ID_PLAID,
       tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
+      tellerEnv: importa.meta.env.VITE_TELLER_ENV || "sandbox",
     };
   },
   methods: {
@@ -92,6 +93,7 @@ export default {
       if (!this.tellerConnectInstance) {
         this.tellerConnectInstance = window.TellerConnect.setup({
           applicationId: this.tellerAppId,
+          environment: this.tellerEnv,
           products: ["transactions", "balance"],
           onInit: () => {
             console.log("Teller Connect has initialized");
