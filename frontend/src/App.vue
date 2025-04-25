@@ -34,7 +34,8 @@ const isDev = import.meta.env.VITE_SESSION_MODE === "development"
   text-align: center;
   font-weight: bold;
   padding: 0.5rem;
-  border-bottom: 2px solid var(--dev-alert-border); /* or var(--bar-alert) */
+  border-bottom: 2px solid var(--dev-alert-border);
+  /* or var(--bar-alert) */
   box-shadow: 0 2px 8px var(--shadow);
   text-transform: uppercase;
 }
