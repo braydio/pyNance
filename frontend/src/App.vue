@@ -16,6 +16,7 @@ const isDev = import.meta.env.VITE_SESSION_MODE === "development"
   </header>
 
   <main>
+    <p style="color: lime">App.vue mounted.</p>
     <RouterView />
   </main>
 </template>
