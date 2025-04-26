@@ -1,4 +1,5 @@
 # backend/app/config/constants.py
+import os
 from .paths import DIRECTORIES
 from .environment import FLASK_ENV
 
@@ -21,6 +22,7 @@ FILES = {
     "TELLER_DOT_KEY": DIRECTORIES["CERTS_DIR"] / "private_key.pem",
 }
 
+FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/dist")
 DATABASE_NAME = "developing_dash.db" if FLASK_ENV == "development" else "main_dash.db"
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR']}/{DATABASE_NAME}"
 TELEMETRY = {"enabled": True, "track_modifications": False}
