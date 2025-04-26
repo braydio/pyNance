@@ -37,7 +37,7 @@ def generate_link_token():
         }
         payload = {
             "application_id": TELLER_APP_ID,
-            "user_id": "Brayden@Teller",
+            "user_id": "Brayden",
             "products": ["transactions", "balance"],
         }
         logger.debug(f"POST {url} with headers={headers} and payload={payload}")
