@@ -15,6 +15,7 @@ from app.models import (
     AccountHistory,
     Category,
     Transaction,
+    PlaidAccount,
 )
 
 ParentCategory = aliased(Category)
@@ -73,53 +74,37 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
 
 
 def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
-    """
-    Inserts or updates account information from the provided accounts_data.
-    For liability accounts like credit cards, the balance sign is reversed.
-    """
     logger.debug(f"Upserting accounts for user {user_id}: {accounts_data}")
     processed_ids = set()
     count = 0
 
     for account in accounts_data:
         account_id = account.get("id")
-        if not account_id:
-            logger.warning("Encountered an account with no 'id'; skipping.")
-            continue
-
-        if account_id in processed_ids:
-            logger.warning(
-                f"Duplicate account id {account_id} encountered; skipping duplicate."
-            )
+        if not account_id or account_id in processed_ids:
+            logger.warning(f"Skipping invalid or duplicate account id: {account_id}")
             continue
         processed_ids.add(account_id)
 
         name = account.get("name") or "Unnamed Account"
-        acc_type_raw = account.get("type") or "Unknown"
-        acc_type = str(acc_type_raw)
+        acc_type = str(account.get("type") or "Unknown")
         normalized_type = acc_type.strip().lower()
         balance = account.get("balance", {}).get("current", 0) or 0
-
         if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
-            logger.debug(
-                f"Account {account_id} is {normalized_type}; inverting balance from {balance} to {-balance}."
-            )
+            logger.debug(f"Inverting balance for {account_id}: {balance} -> {-balance}")
             balance = -balance
 
         subtype = str(account.get("subtype") or "Unknown").capitalize()
         status = account.get("status") or "Unknown"
-        institution = account.get("institution", {}) or {}
-        institution_name = institution.get("name") or "Unknown"
+        institution_name = (account.get("institution") or {}).get("name") or "Unknown"
         enrollment_id = account.get("enrollment_id") or ""
-        refresh_links = account.get("links") or {}
+        refresh_links_json = json.dumps(account.get("links") or {})
         access_token = account.get("access_token") or ""
 
-        logger.debug(f"Processing account id: {account_id}")
-        existing = db.session.query(Account).filter_by(account_id=account_id).first()
         now = datetime.utcnow()
+        existing = db.session.query(Account).filter_by(account_id=account_id).first()
 
         if existing:
-            logger.debug(f"Updating account {name}, {account_id}")
+            logger.debug(f"Updating account {account_id}")
             existing.name = name
             existing.access_token = access_token
             existing.type = acc_type
@@ -129,18 +114,11 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
             existing.institution_name = institution_name
             existing.last_refreshed = now
             existing.link_type = provider
-            if existing.details:
-                existing.details.enrollment_id = enrollment_id
-                existing.details.refresh_links = json.dumps(refresh_links)
-            else:
-                details = AccountDetails(
-                    account_id=account_id,
-                    enrollment_id=enrollment_id,
-                    refresh_links=json.dumps(refresh_links),
-                )
-                db.session.add(details)
+            # Embedded fields, assuming Account model updated
+            existing.enrollment_id = enrollment_id
+            existing.refresh_links_json = refresh_links_json
         else:
-            logger.debug(f"Inserting new account {account_id}")
+            logger.debug(f"Creating new account {account_id}")
             new_account = Account(
                 account_id=account_id,
                 user_id=user_id,
@@ -153,27 +131,21 @@ def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
                 institution_name=institution_name,
                 last_refreshed=now,
                 link_type=provider,
+                enrollment_id=enrollment_id,
+                refresh_links_json=refresh_links_json,
             )
             db.session.add(new_account)
-            db.session.flush()
-            details = AccountDetails(
-                account_id=account_id,
-                enrollment_id=enrollment_id,
-                refresh_links=json.dumps(refresh_links),
-            )
-            db.session.add(details)
 
         today = pydate.today()
-        existing_history = (
+        history = (
             db.session.query(AccountHistory)
             .filter_by(account_id=account_id, date=today)
             .first()
         )
-        if not existing_history:
-            history_record = AccountHistory(
-                account_id=account_id, date=today, balance=balance
+        if not history:
+            db.session.add(
+                AccountHistory(account_id=account_id, date=today, balance=balance)
             )
-            db.session.add(history_record)
 
         count += 1
         if count % batch_size == 0:
