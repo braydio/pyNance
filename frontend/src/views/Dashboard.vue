@@ -44,12 +44,8 @@ import DailyNetChart from "@/components/DailyNetChart.vue";
 import CategoryBreakdownChart from "@/components/CategoryBreakdownChart.vue";
 import AccountsTable from "@/components/AccountsTable.vue";
 import TransactionsTable from "@/components/TransactionsTable.vue";
-import NotificationsBar from "@/components/NotificationsBar.vue";
-import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue";
-import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
 import { useTransactions } from "@/composables/useTransactions.js";
-import { computed, ref } from "vue";
 
 const {
   searchQuery,
