@@ -6,6 +6,7 @@ from app.config import logger
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
 
+
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """
@@ -86,23 +87,29 @@ def get_accounts():
         data = []
         for a in accounts:
             try:
-                data.append({
-                    "id": a.id,
-                    "name": a.name,
-                    "institution_name": a.institution_name,
-                    "type": a.type,
-                    "balance": a.balance,
-                    "subtype": a.subtype,
-                    "link_type": a.link_type,
-                    "last_refreshed": a.last_refreshed.isoformat() if a.last_refreshed else None,
-                })
+                data.append(
+                    {
+                        "id": a.id,
+                        "name": a.name,
+                        "institution_name": a.institution_name,
+                        "type": a.type,
+                        "balance": a.balance,
+                        "subtype": a.subtype,
+                        "link_type": a.link_type,
+                        "last_refreshed": a.last_refreshed.isoformat()
+                        if a.last_refreshed
+                        else None,
+                    }
+                )
             except Exception as item_err:
                 logger.warning(f"Error serializing account ID {a.id}: {item_err}")
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:
         import traceback
+
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @accounts.route("/<account_id>/recurring", methods=["GET"])
 def get_recurring(account_id):
@@ -111,21 +118,28 @@ def get_recurring(account_id):
     Retrieves all recurring transactions for the specified account from the database.
     """
     try:
-        recurring_txs = RecurringTransaction.query.filter_by(account_id=account_id).all()
+        recurring_txs = RecurringTransaction.query.filter_by(
+            account_id=account_id
+        ).all()
         data = []
         for tx in recurring_txs:
-            data.append({
-                "id": tx.id,
-                "description": tx.description,
-                "amount": tx.amount,
-                "frequency": tx.frequency,
-                "next_due_date": tx.next_due_date.isoformat() if tx.next_due_date else None,
-                "notes": tx.notes,
-                "updated_at": tx.updated_at.isoformat() if tx.updated_at else None
-            })
+            data.append(
+                {
+                    "id": tx.id,
+                    "description": tx.description,
+                    "amount": tx.amount,
+                    "frequency": tx.frequency,
+                    "next_due_date": tx.next_due_date.isoformat()
+                    if tx.next_due_date
+                    else None,
+                    "notes": tx.notes,
+                    "updated_at": tx.updated_at.isoformat() if tx.updated_at else None,
+                }
+            )
         return jsonify({"status": "success", "reminders": data}), 200
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @accounts.route("/<account_id>/recurringTx", methods=["PUT"])
 def update_recurring_tx(account_id):
@@ -136,7 +150,9 @@ def update_recurring_tx(account_id):
     """
     data = request.get_json()
     if not data or "amount" not in data:
-        return jsonify({"status": "error", "message": "Missing 'amount' in request body"}), 400
+        return jsonify(
+            {"status": "error", "message": "Missing 'amount' in request body"}
+        ), 400
 
     amount = data["amount"]
     try:
@@ -144,7 +160,9 @@ def update_recurring_tx(account_id):
         if recurring:
             recurring.amount = amount
             db.session.commit()
-            return jsonify({"status": "success", "message": "Recurring transaction updated"}), 200
+            return jsonify(
+                {"status": "success", "message": "Recurring transaction updated"}
+            ), 200
         else:
             # Create a new recurring transaction with a default description and frequency if not provided.
             description = data.get("description", "Recurring Transaction")
@@ -153,11 +171,56 @@ def update_recurring_tx(account_id):
                 account_id=account_id,
                 description=description,
                 amount=amount,
-                frequency=frequency
+                frequency=frequency,
             )
             db.session.add(new_tx)
             db.session.commit()
-            return jsonify({"status": "success", "message": "Recurring transaction created"}), 201
+            return jsonify(
+                {"status": "success", "message": "Recurring transaction created"}
+            ), 201
     except Exception as e:
         db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/match", methods=["POST"])
+def match_account_by_fields():
+    try:
+        data = request.get_json()
+        query = Account.query
+
+        filters = []
+        if data.get("account_id"):
+            filters.append(Account.account_id == data["account_id"])
+        if data.get("name"):
+            filters.append(Account.name.ilike(f"%{data['name']}%"))
+        if data.get("institution_name"):
+            filters.append(
+                Account.institution_name.ilike(f"%{data['institution_name']}%")
+            )
+        if data.get("type"):
+            filters.append(Account.type == data["type"])
+        if data.get("subtype"):
+            filters.append(Account.subtype == data["subtype"])
+
+        if filters:
+            from sqlalchemy import or_
+
+            matches = query.filter(or_(*filters)).all()
+        else:
+            matches = []
+
+        return jsonify(
+            [
+                {
+                    "account_id": acc.account_id,
+                    "name": acc.name,
+                    "institution_name": acc.institution_name,
+                    "type": acc.type,
+                    "subtype": acc.subtype,
+                }
+                for acc in matches
+            ]
+        )
+    except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
