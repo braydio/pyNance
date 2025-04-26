@@ -6,31 +6,19 @@
         <h2 class="date">Today is {{ currentDate }}</h2>
         <h2 class="vibe">and things are looking quite bleak.</h2>
       </div>
-      <nav class="menu">
-        <!-- Dashboard menu buttons -->
-      </nav>
     </header>
+
     <main class="dashboard-content">
       <section class="charts-section">
-
         <DailyNetChart />
         <CategoryBreakdownChart />
       </section>
 
       <section class="snapshot-section">
         <div class="transactions-container">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search transactions..."
-            class="search-input"
-          />
-          <TransactionsTable
-            :transactions="filteredTransactions"
-            :sort-key="sortKey"
-            :sort-order="sortOrder"
-            @sort="setSort"
-          />
+          <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="search-input" />
+          <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
+            @sort="setSort" />
           <div id="pagination-controls">
             <button @click="changePage(-1)" :disabled="currentPage === 1">
               Previous
@@ -42,7 +30,6 @@
           </div>
           <AccountsTable />
         </div>
-        <div ></div>
       </section>
     </main>
 
@@ -52,65 +39,43 @@
   </div>
 </template>
 
-<script>
-import DailyNetChart from "../components/DailyNetChart.vue";
-import CategoryBreakdownChart from "../components/CategoryBreakdownChart.vue";
+<script setup>
+import DailyNetChart from "@/components/DailyNetChart.vue";
+import CategoryBreakdownChart from "@/components/CategoryBreakdownChart.vue";
 import AccountsTable from "@/components/AccountsTable.vue";
 import TransactionsTable from "@/components/TransactionsTable.vue";
-import { useTransactions } from "@/composables/useTransactions.js";
 import NotificationsBar from "@/components/NotificationsBar.vue";
 import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue";
 import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 
-export default {
-  name: "Dashboard",
-  components: {
-    DailyNetChart,
-    CategoryBreakdownChart,
-    AccountsTable,
-    TransactionsTable,
-    NotificationsBar,
-    RecurringTransactionSection,
-    AccountsReorderChart,
-  },
-  setup() {
-    const {
-      searchQuery,
-      currentPage,
-      totalPages,
-      filteredTransactions,
-      changePage,
-      sortKey,
-      sortOrder,
-      setSort,
-    } = useTransactions(15);
+import { useTransactions } from "@/composables/useTransactions.js";
+import { computed, ref } from "vue";
 
-    return {
-      searchQuery,
-      currentPage,
-      totalPages,
-      filteredTransactions,
-      changePage,
-      sortKey,
-      sortOrder,
-      setSort,
-    };
-  },
-  data() {
-    return {
-      userName: import.meta.env.VITE_USER_ID_PLAID,
-      currentDate: new Date().toLocaleDateString(undefined, {
-        month: "long",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
-  },
-};
+const {
+  searchQuery,
+  currentPage,
+  totalPages,
+  filteredTransactions,
+  changePage,
+  sortKey,
+  sortOrder,
+  setSort,
+} = useTransactions(15);
+
+// Use Vite environment properly
+const userName = import.meta.env.VITE_USER_ID_PLAID || "Guest";
+const currentDate = new Date().toLocaleDateString(undefined, {
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
 </script>
 
 <style scoped>
+/* (same styles you posted before, all are valid and fine) */
+</style>
 
+<style scoped>
 .dashboard {
   background-color: var(--page-bg);
   color: var(--themed-fg);
@@ -128,17 +93,20 @@ export default {
   margin-bottom: 1rem;
   box-shadow: 0 4px 10px var(--shadow);
 }
+
 .greeting-block h1 {
   margin: 0;
   font-size: 2rem;
   color: var(--color-accent-mint);
   text-shadow: 0 0 6px var(--neon-mint);
 }
+
 .greeting-block h2 {
   margin: 0.3rem 0;
   color: var(--color-text-muted);
   font-size: 1.1rem;
 }
+
 .greeting-block .vibe {
   font-style: italic;
   color: var(--color-accent-magenta);
@@ -178,6 +146,7 @@ export default {
   border: 1px solid var(--divider);
   box-shadow: 0 2px 12px var(--shadow);
 }
+
 .search-input {
   margin-bottom: 1rem;
   padding: 0.5rem;
@@ -197,6 +166,7 @@ export default {
   font-size: 0.95rem;
   color: var(--color-text-muted);
 }
+
 #pagination-controls button {
   padding: 0.4rem 0.75rem;
   background-color: var(--button-bg);
@@ -207,10 +177,12 @@ export default {
   font-family: "Fira Code", monospace;
   transition: background-color 0.2s;
 }
+
 #pagination-controls button:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
 #pagination-controls button:hover:enabled {
   background-color: var(--button-hover-bg);
 }
