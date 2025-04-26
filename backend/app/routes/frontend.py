@@ -2,6 +2,7 @@
 
 import os
 from flask import Blueprint, send_from_directory, current_app
+from app.config.constants import FRONTEND_DIST_DIR
 
 # Create a blueprint named 'frontend'
 frontend = Blueprint("frontend", __name__)
@@ -15,7 +16,7 @@ def catch_all(path):
     """
 
     # Path to the built frontend directory (adjust if your structure changes)
-    frontend_dist_dir = os.path.join(current_app.root_path, "../../frontend/dist")
+    frontend_dist_dir = os.path.join(FRONTEND_DIST_DIR, path)
 
     # Serve static assets (e.g., /assets/*.js, /assets/*.css)
     requested_file = os.path.join(frontend_dist_dir, path)
