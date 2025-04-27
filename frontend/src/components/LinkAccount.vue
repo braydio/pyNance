@@ -20,9 +20,9 @@ export default {
       scriptsLoaded: false,
       plaidLinkToken: null,
       tellerConnectInstance: null,
-      userID: import.meta.env.VITE_USER_ID_PLAID,
-      tellerAppId: import.meta.env.VITE_TELLER_APP_ID || "app_xxxxxx",
-      tellerEnv: importa.meta.env.VITE_TELLER_ENV || "sandbox",
+      userID: import.meta.env.VITE_USER_ID_PLAID || '',
+      tellerAppId: import.meta.env.VITE_TELLER_APP_ID || '',
+      tellerEnv: import.meta.env.VITE_TELLER_ENV || 'sandbox',
     };
   },
   methods: {
@@ -38,12 +38,12 @@ export default {
     async preloadPlaidLinkToken() {
       try {
         const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: this.userID || "DefaultUserName",
+          user_id: this.userID || "DefaultUser",
           products: ["transactions"],
         });
         this.plaidLinkToken = plaidRes.link_token;
-      } catch (err) {
-        console.error("Error generating Plaid link token:", err);
+      } catch (error) {
+        console.error("Error generating Plaid link token:", error);
       }
     },
     async linkPlaid() {
@@ -56,19 +56,14 @@ export default {
         token: this.plaidLinkToken,
         onSuccess: async (public_token, metadata) => {
           try {
-            const userID = this.userID || "Brayden";
-            console.log("Using user_id:", userID);
-
-            const exchangeRes = await fetch("/api/plaid/transactions/exchange_public_token", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ public_token, user_id: userID })
+            const userID = this.userID || "DefaultUser";
+            const exchangeRes = await api.exchangePublicToken("plaid", {
+              public_token,
+              user_id: userID,
             });
-            const result = await exchangeRes.json();
-            console.log("Exchange response:", result);
+            console.log("Exchange response:", exchangeRes);
 
-            await fetch("/api/categories/refresh", { method: "POST" });
-            console.log("Categories refreshed after linking Plaid account.");
+            await api.refreshCategories(); // Optional if you want to refresh categories after link
 
             this.$emit("refreshAccounts");
           } catch (error) {
@@ -79,6 +74,7 @@ export default {
           console.log("Plaid Link exited", err, metadata);
         },
       });
+
       handler.open();
     },
     async linkTeller() {
@@ -90,6 +86,11 @@ export default {
         console.error("TellerConnect library not available.");
         return;
       }
+      if (!this.tellerAppId) {
+        console.error("Missing Teller App ID.");
+        return;
+      }
+
       if (!this.tellerConnectInstance) {
         this.tellerConnectInstance = window.TellerConnect.setup({
           applicationId: this.tellerAppId,
@@ -100,17 +101,22 @@ export default {
           },
           onSuccess: async (enrollment) => {
             console.log("User enrolled successfully", enrollment.accessToken);
-            const exchangeRes = await api.exchangePublicToken("teller", {
-              user_id: this.userID,
-              public_token: enrollment.accessToken
-            });
-            console.log("Teller exchange response:", exchangeRes);
+            try {
+              const exchangeRes = await api.exchangePublicToken("teller", {
+                user_id: this.userID,
+                public_token: enrollment.accessToken,
+              });
+              console.log("Teller exchange response:", exchangeRes);
+            } catch (error) {
+              console.error("Error exchanging Teller token:", error);
+            }
           },
           onExit: () => {
             console.log("User closed Teller Connect");
           },
         });
       }
+
       this.tellerConnectInstance.open();
     },
   },
@@ -125,11 +131,9 @@ export default {
   margin: 0 auto;
   background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border-top: 8px inset var(--color-bg-secondary);
-  border-bottom: 6px outset var(--color-text-muted);
-  border-left: 8px inset var(--color-bg-secondary);
-  border-right: 6px outset var(--color-text-muted);
+  border: 1px solid var(--color-border-secondary);
   border-radius: 5px;
+  padding: 1rem;
 }
 
 .link-account h2 {
@@ -153,8 +157,6 @@ export default {
 }
 
 .button-group button:hover {
-  color: var(--themed-bg);
-  border: 1px;
   background-color: var(--neon-mint);
 }
 </style>
