@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../views/Dashboard.vue';
 import Accounts from '../views/Accounts.vue';
 import Transactions from '../views/Transactions.vue';
-import RecurringTX from '@/views/RecurringTX.vue'
+import RecurringTX from '../views/RecurringTX.vue'
 import Gallery from '@/views/Gallery.vue';
 import Investments from '../views/Investments.vue';
 import DailyNetChart from '../components/DailyNetChart.vue';
@@ -21,7 +21,8 @@ const routes = [
   { path: '/gallery', name: 'Gallery', component: Gallery },
   { path: '/investments', name: 'Investments', component: Investments },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
-  { path: '/recurring', name: 'RecurringTX', component: RecurringTX},
+  { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
+
 ]
 
 const router = createRouter({
