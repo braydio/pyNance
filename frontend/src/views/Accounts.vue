@@ -71,7 +71,7 @@ import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
 import TokenUpload from "@/components/TokenUpload.vue";
 import { ref } from 'vue';
 
-const userName = import.meta.env.VITE_USER_ID_PLAID;
+const userName = import.meta.env.VITE_USER_ID_PLAID || '';
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: "long",
   day: "numeric",
