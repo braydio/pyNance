@@ -137,7 +137,7 @@ def upsert_accounts(user_id, account_list, provider):
                     existing_plaid.item_id = account.get("item_id")
                     existing_plaid.institution_id = account.get("institution_id")
                     existing_plaid.webhook = account.get("webhook")
-                    existing_plaid.last_synced = now
+                    existing_plaid.last_refreshed = now
                 else:
                     new_plaid = PlaidAccount(
                         account_id=account_id,
@@ -145,7 +145,7 @@ def upsert_accounts(user_id, account_list, provider):
                         item_id=account.get("item_id"),
                         institution_id=account.get("institution_id"),
                         webhook=account.get("webhook"),
-                        last_synced=now,
+                        last_refreshed=now,
                     )
                     db.session.add(new_plaid)
             elif provider.lower() == "teller":
@@ -156,7 +156,7 @@ def upsert_accounts(user_id, account_list, provider):
                     existing_teller.access_token = account.get("access_token")
                     existing_teller.enrollment_id = account.get("enrollment_id")
                     existing_teller.institution_id = account.get("institution_id")
-                    existing_teller.last_synced = now
+                    existing_teller.last_refreshed = now
                 else:
                     new_teller = TellerAccount(
                         account_id=account_id,
@@ -164,7 +164,7 @@ def upsert_accounts(user_id, account_list, provider):
                         enrollment_id=account.get("enrollment_id"),
                         institution_id=account.get("institution_id"),
                         provider="Teller",
-                        last_synced=now,
+                        last_refreshed=now,
                     )
                     db.session.add(new_teller)
 
