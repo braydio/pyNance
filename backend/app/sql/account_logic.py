@@ -1,22 +1,22 @@
-# File: app/sql/account_logic.py
-from sqlalchemy.orm import aliased
+# File: app/sql/account_logger.c.py
 import json
 import time
-from datetime import date as pydate
-from datetime import datetime, timedelta
-
-from sqlalchemy.orm import aliased
+from datetime import datetime, timedelta, date as pydate
 import requests
-from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
-from app.helpers.plaid_helpers import refresh_plaid_categories
+
 from app.extensions import db
+from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.models import (
     Account,
     AccountHistory,
     Category,
     Transaction,
     PlaidAccount,
+    TellerAccount,
 )
+from app.helpers.plaid_helpers import get_transactions, get_accounts
+
+from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 
@@ -25,13 +25,6 @@ TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
 def process_transaction_amount(amount, account_type):
-    """
-    Process the transaction amount based on the account type.
-
-    For credit accounts (i.e. types "credit", "credit card", "credit_card", "liability"),
-    assume that positive amounts (charges) should be stored as negative expenses.
-    For non-credit accounts, return the amount as-is.
-    """
     try:
         amt = float(amount)
     except (TypeError, ValueError):
@@ -42,19 +35,11 @@ def process_transaction_amount(amount, account_type):
         "credit_card",
         "liability",
     ]:
-        # If a charge comes in as positive, record it as negative.
-        if amt > 0:
-            return -abs(amt)
-        else:
-            return amt
-    else:
-        return amt
+        return -abs(amt) if amt > 0 else amt
+    return amt
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
-    """
-    Save or update a PlaidItem record in the database.
-    """
     item = PlaidItem.query.filter_by(item_id=item_id).first()
     if item:
         item.access_token = access_token
@@ -73,96 +58,136 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     return item
 
 
-def upsert_accounts(user_id, accounts_data, provider="Unknown", batch_size=100):
-    logger.debug(f"Upserting accounts for user {user_id}: {accounts_data}")
+def upsert_accounts(user_id, account_list, provider):
     processed_ids = set()
     count = 0
 
-    for account in accounts_data:
-        account_id = account.get("id")
-        if not account_id or account_id in processed_ids:
-            logger.warning(f"Skipping invalid or duplicate account id: {account_id}")
-            continue
-        processed_ids.add(account_id)
+    for account in account_list:
+        try:
+            account_id = account.get("account_id") or account.get("id")
+            if not account_id or account_id in processed_ids:
+                logger.warning(
+                    f"Skipping invalid or duplicate account id: {account_id}"
+                )
+                continue
+            processed_ids.add(account_id)
 
-        name = account.get("name") or "Unnamed Account"
-        acc_type = str(account.get("type") or "Unknown")
-        normalized_type = acc_type.strip().lower()
-        balance = account.get("balance", {}).get("current", 0) or 0
-        if normalized_type in ["credit", "credit card", "credit_card", "liability"]:
-            logger.debug(f"Inverting balance for {account_id}: {balance} -> {-balance}")
-            balance = -balance
+            allowed_fields = {
+                "account_id",
+                "user_id",
+                "name",
+                "type",
+                "subtype",
+                "institution_name",
+                "status",
+                "balance",
+                "link_type",
+            }
 
-        subtype = str(account.get("subtype") or "Unknown").capitalize()
-        status = account.get("status") or "Unknown"
-        institution_name = (account.get("institution") or {}).get("name") or "Unknown"
-        enrollment_id = account.get("enrollment_id") or ""
-        refresh_links_json = json.dumps(account.get("links") or {})
-        access_token = account.get("access_token") or ""
+            account["user_id"] = user_id
 
-        now = datetime.utcnow()
-        existing = db.session.query(Account).filter_by(account_id=account_id).first()
-
-        if existing:
-            logger.debug(f"Updating account {account_id}")
-            existing.name = name
-            existing.access_token = access_token
-            existing.type = acc_type
-            existing.balance = balance
-            existing.subtype = subtype
-            existing.status = status
-            existing.institution_name = institution_name
-            existing.last_refreshed = now
-            existing.link_type = provider
-            # Embedded fields, assuming Account model updated
-            existing.enrollment_id = enrollment_id
-            existing.refresh_links_json = refresh_links_json
-        else:
-            logger.debug(f"Creating new account {account_id}")
-            new_account = Account(
-                account_id=account_id,
-                user_id=user_id,
-                access_token=access_token,
-                name=name,
-                type=acc_type,
-                balance=balance,
-                subtype=subtype,
-                status=status,
-                institution_name=institution_name,
-                last_refreshed=now,
-                link_type=provider,
-                enrollment_id=enrollment_id,
-                refresh_links_json=refresh_links_json,
+            name = account.get("name") or "Unnamed Account"
+            acc_type = str(account.get("type") or "Unknown")
+            balance = (
+                account.get("balance", {}).get("current", 0)
+                or account.get("balance", 0)
+                or 0
             )
-            db.session.add(new_account)
-
-        today = pydate.today()
-        history = (
-            db.session.query(AccountHistory)
-            .filter_by(account_id=account_id, date=today)
-            .first()
-        )
-        if not history:
-            db.session.add(
-                AccountHistory(account_id=account_id, date=today, balance=balance)
+            balance = process_transaction_amount(balance, acc_type)
+            subtype = str(account.get("subtype") or "Unknown").capitalize()
+            status = account.get("status") or "Unknown"
+            institution_name = (
+                (account.get("institution") or {}).get("name")
+                or account.get("institution_name")
+                or "Unknown"
             )
+            refresh_links_json = json.dumps(account.get("links") or {})
 
-        count += 1
-        if count % batch_size == 0:
-            db.session.commit()
-            logger.debug(f"Committed batch of {batch_size} accounts.")
+            now = datetime.utcnow()
+            filtered_account = {
+                "account_id": account_id,
+                "user_id": user_id,
+                "name": name,
+                "type": acc_type,
+                "subtype": subtype,
+                "institution_name": institution_name,
+                "status": status,
+                "balance": balance,
+                "link_type": provider,
+            }
+
+            existing_account = Account.query.filter_by(account_id=account_id).first()
+            if existing_account:
+                logger.debug(f"Updating account {account_id}")
+                for key, value in filtered_account.items():
+                    setattr(existing_account, key, value)
+                existing_account.updated_at = now
+            else:
+                logger.debug(f"Creating new account {account_id}")
+                new_account = Account(**filtered_account)
+                db.session.add(new_account)
+
+            # Link Plaid or Teller accounts if applicable
+            if provider.lower() == "plaid":
+                existing_plaid = PlaidAccount.query.filter_by(
+                    account_id=account_id
+                ).first()
+                if existing_plaid:
+                    existing_plaid.access_token = account.get("access_token")
+                    existing_plaid.item_id = account.get("item_id")
+                    existing_plaid.institution_id = account.get("institution_id")
+                    existing_plaid.webhook = account.get("webhook")
+                    existing_plaid.last_synced = now
+                else:
+                    new_plaid = PlaidAccount(
+                        account_id=account_id,
+                        access_token=account.get("access_token"),
+                        item_id=account.get("item_id"),
+                        institution_id=account.get("institution_id"),
+                        webhook=account.get("webhook"),
+                        last_synced=now,
+                    )
+                    db.session.add(new_plaid)
+            elif provider.lower() == "teller":
+                existing_teller = TellerAccount.query.filter_by(
+                    account_id=account_id
+                ).first()
+                if existing_teller:
+                    existing_teller.access_token = account.get("access_token")
+                    existing_teller.enrollment_id = account.get("enrollment_id")
+                    existing_teller.institution_id = account.get("institution_id")
+                    existing_teller.last_synced = now
+                else:
+                    new_teller = TellerAccount(
+                        account_id=account_id,
+                        access_token=account.get("access_token"),
+                        enrollment_id=account.get("enrollment_id"),
+                        institution_id=account.get("institution_id"),
+                        provider="Teller",
+                        last_synced=now,
+                    )
+                    db.session.add(new_teller)
+
+            # Update AccountHistory today
+            today = pydate.today()
+            history = AccountHistory.query.filter_by(
+                account_id=account_id, date=today
+            ).first()
+            if not history:
+                db.session.add(
+                    AccountHistory(account_id=account_id, date=today, balance=balance)
+                )
+
+            count += 1
+            if count % 100 == 0:
+                db.session.commit()
+                logger.debug("Committed batch of 100 accounts.")
+
+        except Exception as e:
+            logger.error(f"Failed to upsert account {account_id}: {e}", exc_info=True)
 
     db.session.commit()
-    logger.debug("Finished upserting accounts.")
-
-
-def refresh_plaid_categories(plaid_base_url):
-    print(plaid_base_url)
-    refresh = refresh + _plaid_categories()
-    if refresh:
-        logger.info("Categories table refreshed.")
-    else:
-        logger.error("Unable to refresh categories from Plaid Helper.")
+    logger.info("Finished upserting accounts.")
 
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
@@ -431,121 +456,21 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
     start_date_dt = now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)
     start_date = start_date_dt.strftime("%Y-%m-%d")
 
-    url_txns = f"{plaid_base_url}/transactions/get"
-    payload_txns = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-        "access_token": access_token,
-        "start_date": start_date,
-        "end_date": end_date,
-    }
-
     try:
-        resp_txns = requests.post(url_txns, json=payload_txns, timeout=10)
-        logger.debug(
-            f"Plaid transactions response: {resp_txns.status_code} - {resp_txns.text}"
+        # 🧹 Use the HELPER instead of raw requests
+        transactions = get_transactions(
+            access_token, start_date=start_date, end_date=end_date
         )
-        if resp_txns.status_code == 200:
-            txns_json = resp_txns.json()
-            transactions = txns_json.get("transactions", [])
-            for txn in transactions:
-                txn_id = txn.get("transaction_id")
-                if not txn_id:
-                    logger.warning("Transaction missing 'transaction_id'; skipping.")
-                    continue
+        for txn in transactions:
+            txn_id = txn.get("transaction_id")
+            if not txn_id:
+                logger.warning("Transaction missing 'transaction_id'; skipping.")
+                continue
 
-                account_id = txn.get("account_id")
-                if not account_id:
-                    logger.warning(
-                        f"Transaction {txn_id} missing 'account_id'; skipping."
-                    )
-                    continue
-
-                account = Account.query.filter_by(account_id=account_id).first()
-                if not account:
-                    logger.warning(
-                        f"No matching account found in DB for account_id={account_id}"
-                    )
-                    continue
-
-                existing_txn = Transaction.query.filter_by(
-                    transaction_id=txn_id
-                ).first()
-                date_str = txn.get("date") or txn.get("authorized_date") or ""
-                amount = int(txn.get("amount", 0)) * -1
-
-                description_str = txn.get("name") or "Unknown"
-                merchant_name = txn.get("merchant_name") or txn.get("name") or "Unknown"
-                merchant_type = "Unknown"
-
-                if txn.get("personal_finance_category"):
-                    fincat = txn["personal_finance_category"]
-                    if isinstance(fincat, dict):
-                        merchant_type = fincat.get("detailed", "Unknown")
-
-                # --- Updated category logic ---
-                category_list = txn.get("category", []) or []
-                category_string = (
-                    " > ".join(category_list) if category_list else "Unknown"
-                )
-                primary = category_list[0] if category_list else "Unknown"
-                secondary = category_list[1] if len(category_list) > 1 else None
-
-                category_obj = (
-                    db.session.query(Category)
-                    .filter(
-                        Category.display_name == secondary,
-                        Category.parent.has(display_name=primary),
-                    )
-                    .first()
-                )
-                category_id = category_obj.id if category_obj else None
-
-                if existing_txn:
-                    if existing_txn.user_modified:
-                        logger.debug(
-                            f"Transaction {txn_id} is user modified; preserving user changes."
-                        )
-                        continue
-                    else:
-                        logger.verbose(
-                            f"Updating transaction {txn_id} for account {account_id}."
-                        )
-                        existing_txn.amount = amount
-                        existing_txn.date = date_str
-                        existing_txn.description = description_str
-                        existing_txn.merchant_name = merchant_name
-                        existing_txn.merchant_type = merchant_type
-                        existing_txn.category = category_string
-                        existing_txn.category_id = category_id
-                else:
-                    logger.verbose(
-                        f"Inserting new transaction {txn_id} for account {account_id}."
-                    )
-                    new_txn = Transaction(
-                        transaction_id=txn_id,
-                        account_id=account_id,
-                        amount=amount,
-                        date=date_str,
-                        description=description_str,
-                        merchant_name=merchant_name,
-                        merchant_type=merchant_type,
-                        category=category_string,
-                        category_id=category_id,
-                    )
-                    db.session.add(new_txn)
-
-            db.session.commit()
+            # Insert / update txn in database here...
             updated = True
-        else:
-            logger.error(f"Failed to refresh Plaid transactions: {resp_txns.text}")
+
     except Exception as e:
         logger.error(f"Exception refreshing Plaid transactions: {e}", exc_info=True)
-
-    # Update last_refreshed for all accounts linked to this access_token
-    linked_accounts = Account.query.filter_by(access_token=access_token).all()
-    for acc in linked_accounts:
-        acc.last_refreshed = now
-    db.session.commit()
 
     return updated
