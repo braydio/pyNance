@@ -87,6 +87,13 @@ def get_accounts():
         data = []
         for a in accounts:
             try:
+                # Safely pull "last_refreshed" from PlaidAccount or TellerAccount
+                last_refreshed = None
+                if a.plaid_account and a.plaid_account.last_synced:
+                    last_refreshed = a.plaid_account.last_synced
+                elif a.teller_account and a.teller_account.last_synced:
+                    last_refreshed = a.teller_account.last_synced
+
                 data.append(
                     {
                         "id": a.id,
@@ -96,8 +103,8 @@ def get_accounts():
                         "balance": a.balance,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
-                        "last_refreshed": a.last_refreshed.isoformat()
-                        if a.last_refreshed
+                        "last_refreshed": last_refreshed.isoformat()
+                        if last_refreshed
                         else None,
                     }
                 )
