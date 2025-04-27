@@ -1,7 +1,3 @@
-<style scoped>
-@import '@/styles/global-colors.css';
-</style>
-
 <template>
   <div class="accounts-section">
     <div class="accounts-table">
@@ -15,88 +11,45 @@
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
         </button>
 
-        <!-- CSV Export/Import Buttons -->
         <button class="theme-buttons-top" @click="exportCSV">Export CSV</button>
       </div>
 
-      <!-- Table -->
+      <!-- Main Table -->
       <table v-if="!loading && sortedAccounts.length">
         <thead>
           <tr>
             <th @click="sortTable('institution_name')">
-              Institution
-              <span>
-                <template v-if="sortKey === 'institution_name'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Institution <span>{{ sortKey === 'institution_name' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('name')">
-              Name
-              <span>
-                <template v-if="sortKey === 'name'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Name <span>{{ sortKey === 'name' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('type')">
-              Type
-              <span>
-                <template v-if="sortKey === 'type'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Type <span>{{ sortKey === 'type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('balance')">
-              Balance
-              <span>
-                <template v-if="sortKey === 'balance'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Balance <span>{{ sortKey === 'balance' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('subtype')">
-              Subtype
-              <span>
-                <template v-if="sortKey === 'subtype'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Subtype <span>{{ sortKey === 'subtype' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('link_type')">
-              Link Type
-              <span>
-                <template v-if="sortKey === 'link_type'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Link Type <span>{{ sortKey === 'link_type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('last_refreshed')">
-              Last Refreshed
-              <span>
-                <template v-if="sortKey === 'last_refreshed'">
-                  {{ sortOrder === 1 ? '▲' : '▼' }}
-                </template>
-                <template v-else>▲▼</template>
-              </span>
+              Last Refreshed <span>{{ sortKey === 'last_refreshed' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th v-if="showDeleteButtons">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="account in sortedAccounts" :key="account.account_id">
-            <td>{{ account.institution_name }}</td>
-            <td>{{ account.name }}</td>
-            <td>{{ account.type }}</td>
+            <td>{{ account.institution_name || 'N/A' }}</td>
+            <td>{{ account.name || 'N/A' }}</td>
+            <td>{{ account.type || 'N/A' }}</td>
             <td>{{ formatBalance(account.balance) }}</td>
-            <td>{{ account.subtype }}</td>
-            <td>{{ account.link_type }}</td>
+            <td>{{ account.subtype || 'N/A' }}</td>
+            <td>{{ account.link_type || 'N/A' }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
             <td v-if="showDeleteButtons">
               <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
@@ -105,8 +58,12 @@
         </tbody>
       </table>
 
-      <div v-if="!loading && sortedAccounts.length === 0">
+      <div v-else-if="!loading && !sortedAccounts.length">
         No accounts found.
+      </div>
+
+      <div v-else>
+        Loading accounts...
       </div>
     </div>
   </div>
@@ -114,9 +71,8 @@
 
 <script>
 import axios from "axios";
-import api from "@/services/api"; // Ensure the API service is imported
+import api from "@/services/api";
 import RefreshControls from "@/components/RefreshControls.vue";
-
 
 export default {
   name: "AccountsTable",
@@ -130,12 +86,12 @@ export default {
   data() {
     return {
       accounts: [],
-      loading: false,
+      loading: true,
       error: "",
       searchQuery: "",
       sortKey: "",
       sortOrder: 1,
-      showDeleteButtons: false, // controls the visibility of delete buttons
+      showDeleteButtons: false,
     };
   },
   computed: {
@@ -158,12 +114,10 @@ export default {
     },
     sortedAccounts() {
       const sorted = [...this.filteredAccounts];
-      if (!this.sortKey) {
-        return sorted;
-      }
+      if (!this.sortKey) return sorted;
       sorted.sort((a, b) => {
-        let valA = a[this.sortKey];
-        let valB = b[this.sortKey];
+        let valA = a[this.sortKey] ?? "";
+        let valB = b[this.sortKey] ?? "";
         if (typeof valA === "string") valA = valA.toLowerCase();
         if (typeof valB === "string") valB = valB.toLowerCase();
         if (valA < valB) return -1 * this.sortOrder;
@@ -178,10 +132,9 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        let response = await axios.get("/api/accounts/get_accounts");
-        console.log("API response:", response.data); // <--- ADD THIS
-        if (response.data && response.data.status === "success") {
-          this.accounts = response.data.accounts;
+        const response = await axios.get("/api/accounts/get_accounts");
+        if (response.data?.status === "success") {
+          this.accounts = response.data.accounts || [];
         } else {
           this.error = "Error fetching accounts.";
         }
@@ -193,16 +146,13 @@ export default {
     },
     async refreshAccounts() {
       try {
-        let response;
-        if (this.provider === "plaid") {
-          response = await axios.post("/api/plaid/transactions/refresh_accounts");
-        } else {
-          response = await axios.post("/api/teller/transactions/refresh_balances");
-        }
-        if (response.data.status === "success") {
-          const accountNames = response.data.updated_accounts.map(
-            (acc) => acc.account_name
-          );
+        const response =
+          this.provider === "plaid"
+            ? await axios.post("/api/plaid/transactions/refresh_accounts")
+            : await axios.post("/api/teller/transactions/refresh_balances");
+
+        if (response.data?.status === "success") {
+          const accountNames = response.data.updated_accounts.map((acc) => acc.account_name);
           alert("Balances refreshed for: " + accountNames.join(", "));
           this.fetchAccounts();
         } else {
@@ -213,11 +163,10 @@ export default {
         alert("Error refreshing balances: " + err.message);
       }
     },
-    async deleteAccount(account) {
+    async deleteAccount(accountId) {
       if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
-
       try {
-        const res = await api.deleteAccount(account.link_type || "plaid", account.account_id);
+        const res = await api.deleteAccount(this.provider, accountId);
         if (res.status === "success") {
           alert("Account deleted successfully.");
           this.fetchAccounts();
@@ -229,17 +178,16 @@ export default {
       }
     },
     formatBalance(balance) {
-      const number = parseFloat(balance);
+      const number = parseFloat(balance || 0);
       return new Intl.NumberFormat("en-US", {
         style: "currency",
         currency: "USD",
-        currencySign: "accounting",
         minimumFractionDigits: 2,
         maximumFractionDigits: 2,
       }).format(number);
     },
     formatDate(dateString) {
-      if (!dateString) return "";
+      if (!dateString) return "N/A";
       return new Date(dateString).toLocaleString();
     },
     sortTable(key) {
@@ -253,12 +201,16 @@ export default {
     toggleDeleteButtons() {
       this.showDeleteButtons = !this.showDeleteButtons;
     },
+    exportCSV() {
+      // Optionally add export CSV functionality here
+    },
   },
   mounted() {
     this.fetchAccounts();
   },
 };
 </script>
+
 <style>
 /* Accounts Table Container */
 .accounts-table {
