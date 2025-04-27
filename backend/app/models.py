@@ -40,7 +40,7 @@ class PlaidAccount(db.Model, TimestampMixin):
     item_id = db.Column(db.String(128), nullable=True)
     institution_id = db.Column(db.String(128), nullable=True)
     webhook = db.Column(db.String(256), nullable=True)
-    last_synced = db.Column(db.DateTime, nullable=True)
+    last_refreshed = db.Column(db.DateTime, nullable=True)
 
 
 class TellerAccount(db.Model, TimestampMixin):
@@ -54,7 +54,7 @@ class TellerAccount(db.Model, TimestampMixin):
     enrollment_id = db.Column(db.String(128), nullable=True)
     institution_id = db.Column(db.String(128), nullable=True)
     provider = db.Column(db.String(64), default="Teller")
-    last_synced = db.Column(db.DateTime, nullable=True)
+    last_refreshed = db.Column(db.DateTime, nullable=True)
 
 
 class AccountHistory(db.Model, TimestampMixin):
