@@ -1,4 +1,3 @@
-
 import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -11,37 +10,24 @@ import Inspect from 'vite-plugin-inspect'
 
 export default defineConfig({
   plugins: [
-    // Core Vue plugin
     vue(),
-
-    // Vue DevTools plugin (for dev-only debugging features)
     vueDevTools(),
-
-    // Inspector plugin (visit /__inspect in dev to see transforms)
     Inspect(),
-
-    // Auto-register your Vue components as you use them
     Components({
       dirs: ['src/components'],
       extensions: ['vue'],
       deep: true,
-      dts: 'src/components.d.ts', // generates types for TS/IDE autocompletion
+      dts: 'src/components.d.ts',
     }),
-
-    // Auto-import commonly used functions (e.g., ref, computed) from Vue, Vue Router, etc.
     AutoImport({
       imports: ['vue', 'vue-router'],
-      dts: 'src/auto-imports.d.ts', // generates types for TS/IDE autocompletion
+      dts: 'src/auto-imports.d.ts',
     }),
-
-    // Visualize your final bundle
     visualizer({
       filename: 'stats.html',
-      template: 'treemap', // or 'sunburst', 'network', etc.
-      open: true,          // automatically open the stats file in the browser
+      template: 'treemap',
+      open: true,
     }),
-
-    // Optional: turn your app into a PWA
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
@@ -72,10 +58,12 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true,
-        // If you needed path rewriting, do:
+        // Optional rewrite example:
         // rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
     },
+    // 🔥 THIS PART IS NEW — THIS FIXES RELOADS
+    historyApiFallback: true,
   },
   resolve: {
     alias: {
@@ -83,3 +71,4 @@ export default defineConfig({
     },
   },
 })
+
