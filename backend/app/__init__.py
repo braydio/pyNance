@@ -23,6 +23,7 @@ def create_app():
             db.create_all()
 
         # Import blueprints
+        from app.routes.frontend import frontend
         from app.routes.transactions import transactions
         from app.routes.accounts import accounts
         from app.routes.recurring import recurring
@@ -37,6 +38,7 @@ def create_app():
         from app.routes.teller_webhook import webhooks, disabled_webhooks
 
         # Register blueprints with prefixes
+        app.register_blueprint(frontend, url_prefix="/")
         app.register_blueprint(export, url_prefix="/api/export")
         app.register_blueprint(categories, url_prefix="/api/categories")
         app.register_blueprint(transactions, url_prefix="/api/transactions")
