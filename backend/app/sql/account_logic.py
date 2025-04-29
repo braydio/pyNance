@@ -466,33 +466,54 @@ def refresh_data_for_plaid_account(access_token, account_id, plaid_base_url):
         for txn in transactions:
             txn_id = txn.get("transaction_id")
             if not txn_id:
-                logger.warning("Transaction missing 'transaction_id'; skipping.")
+                logger.warning(
+                    f"Transaction missing 'transaction_id'; skipping. Account: {account_id}"
+                )
                 continue
+
+            txn_date = txn.get("date")
+            if isinstance(txn_date, str):
+                txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
 
             existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
 
             if existing_txn:
-                existing_txn.amount = txn.get("amount")
-                existing_txn.date = txn.get("date")
-                existing_txn.name = txn.get("name")
-                logger.info(f"Updated transaction {txn_id}")
+                needs_update = (
+                    existing_txn.amount != txn.get("amount")
+                    or existing_txn.date != txn_date
+                    or existing_txn.name != txn.get("name")
+                )
+                if needs_update:
+                    existing_txn.amount = txn.get("amount")
+                    existing_txn.date = txn_date
+                    existing_txn.name = txn.get("name")
+                    logger.info(
+                        f"Updated transaction {txn_id} for account {account_id}"
+                    )
+                    updated = True
             else:
                 new_txn = Transaction(
                     transaction_id=txn_id,
                     amount=txn.get("amount"),
-                    date=txn.get("date"),
+                    date=txn_date,
                     name=txn.get("name"),
-                    account_id=account_id,  # <-- Now properly defined
+                    category=txn.get("category"),
+                    pending=txn.get("pending"),
+                    account_id=account_id,
                 )
                 db.session.add(new_txn)
-                logger.info(f"Inserted new transaction {txn_id}")
-
-            updated = True
+                logger.info(
+                    f"Inserted new transaction {txn_id} for account {account_id}"
+                )
+                updated = True
 
         db.session.commit()
 
     except Exception as e:
-        logger.error(f"Error refreshing transactions: {e}", exc_info=True)
+        logger.error(
+            f"Error refreshing transactions for account {account_id}: {e}",
+            exc_info=True,
+        )
         db.session.rollback()
 
     return updated
