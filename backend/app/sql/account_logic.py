@@ -442,7 +442,7 @@ def get_paginated_transactions(page, page_size):
     return serialized, total
 
 
-def refresh_data_for_plaid_account(access_token, plaid_base_url):
+def refresh_data_for_plaid_account(access_token, account_id, plaid_base_url):
     """
     Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
     Refreshes transactions and updates the DB accordingly, ensuring each transaction goes to the correct account.
@@ -452,25 +452,47 @@ def refresh_data_for_plaid_account(access_token, plaid_base_url):
     now = datetime.utcnow()
 
     PLAID_MAX_LOOKBACK_DAYS = 730
-    end_date = now.strftime("%Y-%m-%d")
-    start_date_dt = now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)
-    start_date = start_date_dt.strftime("%Y-%m-%d")
+    end_date = now.date()
+    start_date = (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
 
     try:
-        # 🧹 Use the HELPER instead of raw requests
         transactions = get_transactions(
-            access_token, start_date=start_date, end_date=end_date
+            access_token=access_token,
+            start_date=start_date,
+            end_date=end_date,
         )
+        logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
+
         for txn in transactions:
             txn_id = txn.get("transaction_id")
             if not txn_id:
                 logger.warning("Transaction missing 'transaction_id'; skipping.")
                 continue
 
-            # Insert / update txn in database here...
+            existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
+
+            if existing_txn:
+                existing_txn.amount = txn.get("amount")
+                existing_txn.date = txn.get("date")
+                existing_txn.name = txn.get("name")
+                logger.info(f"Updated transaction {txn_id}")
+            else:
+                new_txn = Transaction(
+                    transaction_id=txn_id,
+                    amount=txn.get("amount"),
+                    date=txn.get("date"),
+                    name=txn.get("name"),
+                    account_id=account_id,  # <-- Now properly defined
+                )
+                db.session.add(new_txn)
+                logger.info(f"Inserted new transaction {txn_id}")
+
             updated = True
 
+        db.session.commit()
+
     except Exception as e:
-        logger.error(f"Exception refreshing Plaid transactions: {e}", exc_info=True)
+        logger.error(f"Error refreshing transactions: {e}", exc_info=True)
+        db.session.rollback()
 
     return updated
