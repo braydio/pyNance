@@ -96,7 +96,7 @@ class Category(db.Model):
     __tablename__ = "categories"
 
     id = db.Column(db.Integer, primary_key=True)
-    plaid_category_id = db.Column(db.String(64), unique=True, nullable=False)
+    plaid_category_id = db.Column(db.String(64), unique=True, nullable=True)
     primary_category = db.Column(db.String(128), default="Unknown")
     detailed_category = db.Column(db.String(128), default="Unknown")
     display_name = db.Column(db.String(256), default="Unknown")
@@ -123,6 +123,7 @@ class Transaction(db.Model):
     user_modified_fields = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     category = db.Column(db.String(128))
+    pending = db.Column(db.Boolean, default=False)
 
     def __repr__(self):
         return (
