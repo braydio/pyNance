@@ -435,12 +435,12 @@ def get_paginated_transactions(page, page_size):
                 "date": txn.date or datetime.now(),
                 "amount": txn.amount if txn.amount is not None else 0,
                 "description": txn.description or "",
-                "category": txn.category if txn.category else "Unknown",
+                "category": txn.category.display_name if txn.category else "Unknown",
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
-                "account_id": acc.account_id or "UnKnown",
+                "account_id": acc.account_id or "Unknown",
             }
         )
     return serialized, total
