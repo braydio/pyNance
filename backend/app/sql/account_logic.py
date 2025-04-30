@@ -14,7 +14,11 @@ from app.models import (
     PlaidAccount,
     TellerAccount,
 )
-from app.helpers.plaid_helpers import get_transactions, get_accounts
+from app.helpers.plaid_helpers import (
+    get_transactions,
+    get_accounts,
+    resolve_or_create_category,
+)
 
 from sqlalchemy.orm import aliased
 
@@ -442,7 +446,7 @@ def get_paginated_transactions(page, page_size):
     return serialized, total
 
 
-def refresh_data_for_plaid_account(access_token, account_id, plaid_base_url):
+def refresh_data_for_plaid_account(access_token, account_id):
     """
     Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
     Refreshes transactions and updates the DB accordingly, ensuring each transaction goes to the correct account.
@@ -475,18 +479,25 @@ def refresh_data_for_plaid_account(access_token, account_id, plaid_base_url):
             if isinstance(txn_date, str):
                 txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
 
+            category_path = txn.get("category", [])
+            category = resolve_or_create_category(category_path)
+
             existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
 
             if existing_txn:
                 needs_update = (
                     existing_txn.amount != txn.get("amount")
                     or existing_txn.date != txn_date
-                    or existing_txn.name != txn.get("name")
+                    or existing_txn.description != txn.get("name")
+                    or existing_txn.pending != txn.get("pending")
+                    or existing_txn.category_id != category.id
                 )
                 if needs_update:
                     existing_txn.amount = txn.get("amount")
                     existing_txn.date = txn_date
-                    existing_txn.name = txn.get("name")
+                    existing_txn.description = txn.get("name")
+                    existing_txn.pending = txn.get("pending")
+                    existing_txn.category_id = category.id
                     logger.info(
                         f"Updated transaction {txn_id} for account {account_id}"
                     )
@@ -496,10 +507,10 @@ def refresh_data_for_plaid_account(access_token, account_id, plaid_base_url):
                     transaction_id=txn_id,
                     amount=txn.get("amount"),
                     date=txn_date,
-                    name=txn.get("name"),
-                    category=txn.get("category"),
+                    description=txn.get("name"),
                     pending=txn.get("pending"),
                     account_id=account_id,
+                    category_id=category.id,
                 )
                 db.session.add(new_txn)
                 logger.info(
