@@ -135,7 +135,9 @@ def refresh_plaid_accounts():
         updated_accounts = []
 
         for account in accounts:
-            access_token = account.access_token
+            access_token = (
+                account.plaid_account.access_token if account.plaid_account else None
+            )
             if not access_token:
                 logger.warning(
                     f"Missing access token for account {account.account_id} (user {account.user_id})"
