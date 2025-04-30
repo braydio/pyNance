@@ -87,12 +87,11 @@ def get_accounts():
         data = []
         for a in accounts:
             try:
-                # Safely pull "last_refreshed" from PlaidAccount or TellerAccount
                 last_refreshed = None
-                if a.plaid_account and a.plaid_account.last_synced:
-                    last_refreshed = a.plaid_account.last_synced
-                elif a.teller_account and a.teller_account.last_synced:
-                    last_refreshed = a.teller_account.last_synced
+                if a.plaid_account and a.plaid_account.last_refreshed:
+                    last_refreshed = a.plaid_account.last_refreshed
+                elif a.teller_account and a.teller_account.last_refreshed:
+                    last_refreshed = a.teller_account.last_refreshed
 
                 data.append(
                     {
@@ -109,7 +108,9 @@ def get_accounts():
                     }
                 )
             except Exception as item_err:
-                logger.warning(f"Error serializing account ID {a.id}: {item_err}")
+                logger.warning(
+                    f"Error serializing account ID {a.id}: {item_err}", exc_info=True
+                )
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:
         import traceback
