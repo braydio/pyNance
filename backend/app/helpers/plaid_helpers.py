@@ -105,32 +105,55 @@ def get_institution_name(institution_id):
 
 
 def refresh_plaid_categories():
-    url = "https://sandbox.plaid.com/categories/get"  # or use f"https://{PLAID_ENV}.plaid.com/..."
-    payload = {
-        "client_id": PLAID_CLIENT_ID,
-        "secret": PLAID_SECRET,
-    }
-    try:
-        response = requests.post(url, json=payload, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-
-        count = upsert_categories_from_plaid_data(data)
-        logger.info(f"✅ Refreshed {count} Plaid categories.")
-    except Exception as e:
-        logger.error(f"❌ Failed to refresh Plaid categories: {e}", exc_info=True)
+    """
+    Deprecated: Plaid no longer supports /categories/get in sandbox mode.
+    Stubbed to avoid errors.
+    """
+    logger.warning(
+        "Plaid /categories/get endpoint is deprecated or unsupported in sandbox. Skipping category refresh."
+    )
+    return []
 
 
 def get_transactions(access_token, start_date, end_date):
+    """
+    Retrieve Plaid transactions between start_date and end_date.
+    Returns a list of transaction dictionaries.
+    """
     try:
         request = TransactionsGetRequest(
             access_token=access_token, start_date=start_date, end_date=end_date
         )
         response = plaid_client.transactions_get(request)
-        return response.to_dict()
+        return response["transactions"]  # ✅ Only return the transaction list
     except Exception as e:
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
         raise
+
+
+def resolve_or_create_category(category_path):
+    """
+    Accepts a Plaid category path list (e.g., ['Food and Drink', 'Coffee Shop']) and ensures a matching
+    Category exists in the database. Returns the Category object.
+    """
+    primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
+    secondary = category_path[1] if len(category_path) > 1 else None
+
+    category = Category.query.filter_by(
+        primary_category=primary, detailed_category=secondary
+    ).first()
+
+    if not category:
+        category = Category(
+            primary_category=primary,
+            detailed_category=secondary,
+            display_name=f"{primary} > {secondary}" if secondary else primary,
+            plaid_category_id=None,
+        )
+        db.session.add(category)
+        db.session.flush()  # get ID
+
+    return category
 
 
 def get_investments(access_token):
