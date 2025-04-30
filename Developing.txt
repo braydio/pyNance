@@ -1,5 +1,20 @@
+4/30/25
+  Freaking awesome Plaid devs.
+  - /categories endpoint is deprecated, removed functionality
+  - Instead using /transactions/refresh to sync categories table and update
+  - Focus Points
+      * HANDLED: Separation of Logic,	Plaid/Teller handled in separate files
+      * DRY Principle: Needs work,	Lots of copy-paste in refresh logic
+      * HANDLED: Transaction changes, DB schema and insertion logic robust
+      * Testability: Not really a priority but, implement tests etc
+      * Maintainability: Needs work,	Moderate	Long methods, some overloading of function responsibilities (Eg. /transactions/refresh)
+      * Frontend/Backend Data Sync - Needs to be fixed:	Likely reason why transactions don’t show in frontend
+
+
 4/24/2025
-  Manual CSV upload sees the files and all, component works but need to fix 
+Caught up cleaning codebase - Teller seems like it supports payments well
+  - Decide between next focus as Investments Link or Teller Payments
+Manual CSV upload sees the files and all, component works but need to fix 
   backend route to point to an active function in the backend I think.
   Focus points:
     - Integrate data from RSAssistant in a page somewhere
