@@ -417,9 +417,6 @@ def refresh_data_for_teller_account(
 
 
 def get_paginated_transactions(page, page_size):
-    """
-    Returns a tuple (transactions_list, total_count) with joined Transaction and Account fields.
-    """
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
@@ -427,20 +424,24 @@ def get_paginated_transactions(page, page_size):
     )
     total = query.count()
     results = query.offset((page - 1) * page_size).limit(page_size).all()
+
     serialized = []
     for txn, acc in results:
         serialized.append(
             {
-                "transaction_id": txn.transaction_id * -1,
-                "date": txn.date or datetime.now(),
+                "transaction_id": txn.transaction_id
+                * -1,  # Used for optimistic Vue editing
+                "date": txn.date.isoformat() if txn.date else None,
                 "amount": txn.amount if txn.amount is not None else 0,
-                "description": txn.description or "",
+                "description": txn.description or txn.merchant_name or "N/A",
                 "category": txn.category.display_name if txn.category else "Unknown",
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
+                "pending": txn.pending if hasattr(txn, "pending") else False,
+                "isEditing": False,  # Needed for Vue state control
             }
         )
     return serialized, total
@@ -460,6 +461,16 @@ def refresh_data_for_plaid_account(access_token, account_id):
     start_date = (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
 
     try:
+        account = Account.query.filter_by(account_id=account_id).first()
+
+        if not account:
+            logger.warning(
+                f"[DB Lookup] ❌ No account found for account_id={account_id}"
+            )
+            return False  # ✅ Prevent updating orphaned transactions
+
+        account_label = account.name or f"[unnamed account] {account_id}"
+
         transactions = get_transactions(
             access_token=access_token,
             start_date=start_date,
@@ -471,7 +482,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
             txn_id = txn.get("transaction_id")
             if not txn_id:
                 logger.warning(
-                    f"Transaction missing 'transaction_id'; skipping. Account: {account_id}"
+                    f"Transaction missing 'transaction_id'; skipping. Account: {account_label}"
                 )
                 continue
 
@@ -499,7 +510,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     existing_txn.pending = txn.get("pending")
                     existing_txn.category_id = category.id
                     logger.info(
-                        f"Updated transaction {txn_id} for account {account_id}"
+                        f"✅ Updated transaction {txn_id} for account {account_label}"
                     )
                     updated = True
             else:
@@ -514,7 +525,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
                 )
                 db.session.add(new_txn)
                 logger.info(
-                    f"Inserted new transaction {txn_id} for account {account_id}"
+                    f"➕ Inserted new transaction {txn_id} for account {account_label}"
                 )
                 updated = True
 
@@ -522,7 +533,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
 
     except Exception as e:
         logger.error(
-            f"Error refreshing transactions for account {account_id}: {e}",
+            f"❌ Error refreshing transactions for account {account_id}: {e}",
             exc_info=True,
         )
         db.session.rollback()
