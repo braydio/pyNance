@@ -147,9 +147,13 @@ def refresh_plaid_accounts():
             logger.debug(
                 f"Refreshing account {account.account_id} with token {access_token}"
             )
-            updated = account_logic.refresh_data_for_plaid_account(
-                access_token, PLAID_BASE_URL
-            )
+            accounts = get_accounts(access_token)
+            for acct in accounts:
+                account_id = acct.get("account_id")
+                updated |= account_logic.refresh_data_for_plaid_account(
+                    access_token, account_id
+                )
+
             if updated:
                 updated_accounts.append(account.name)
                 logger.debug(
