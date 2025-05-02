@@ -1,3 +1,1 @@
-@import "tailwind preflight";
-@tailwind utilities;
-
+@import "tailwind/preflight";
