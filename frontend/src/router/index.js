@@ -4,7 +4,7 @@ import Accounts from '../views/Accounts.vue';
 import Transactions from '../views/Transactions.vue';
 import RecurringTX from '../views/RecurringTX.vue'
 import Gallery from '@/views/Gallery.vue';
-import Forecast from '@/views/Forecast.vue'
+import Forecast from '@/views/Forecast.vue';
 import Investments from '../views/Investments.vue';
 import DailyNetChart from '../components/DailyNetChart.vue';
 import CategoryBreakdownChart from '@/components/CategoryBreakdownChart.vue';
