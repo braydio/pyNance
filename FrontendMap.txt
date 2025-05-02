@@ -1,5 +1,5 @@
 Directory Tree Mapping
-[33mfrontend/src[0m
+[33m/home/braydenchaffee/Projects/pyNance/frontend/src[0m
 ├── api
 │   └── recurring.js
 ├── App.vue
@@ -17,6 +17,13 @@ Directory Tree Mapping
 │   ├── Chart.vue
 │   ├── DailyNetChart.vue
 │   ├── DownloadCSV.vue
+│   ├── forecast
+│   │   ├── ForecastAdjustmentsForm.vue
+│   │   ├── ForecastBreakdown.vue
+│   │   ├── ForecastChart.vue
+│   │   ├── ForecastComponent.vue
+│   │   ├── ForecastLayout.vue
+│   │   └── ForecastSummaryPanel.vue
 │   ├── ImportFileSelector.vue
 │   ├── LinkAccount.vue
 │   ├── ManualTransactionTable.vue
@@ -34,7 +41,9 @@ Directory Tree Mapping
 │   ├── Settings.vue
 │   ├── TokenUpload.vue
 │   ├── TransactionsTable.vue
+│   ├── TransactionUploadCSV.vue
 │   ├── ui
+│   │   ├── Button.vue
 │   │   ├── CardContent.vue
 │   │   └── Card.vue
 │   ├── UpdateTransactionsTable.vue
@@ -43,14 +52,6 @@ Directory Tree Mapping
 │   └── YoutubeEmbed.vue
 ├── components.d.ts
 ├── composables
-│   └── useTransactions.js
-├── fastcat
-│   ├── api.js
-│   ├── externalScripts.js
-│   ├── format.js
-│   ├── index.js
-│   ├── loadExternalScripts.js
-│   ├── teller.js
 │   └── useTransactions.js
 ├── main.js
 ├── router
@@ -72,6 +73,7 @@ Directory Tree Mapping
 └── views
     ├── Accounts.vue
     ├── Dashboard.vue
+    ├── Forecast.vue
     ├── Gallery.vue
     ├── Investments.vue
     ├── RecurringTX.vue
