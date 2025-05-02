@@ -16,7 +16,7 @@ const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
   { path: '/transactions', name: 'Transactions', component: Transactions },
-  { path: '/forecast', name: 'Forecast', componenet: Forecast },
+  { path: '/forecast', name: 'Forecast', component: Forecast },
   { path: '/charts/cashflow', name: 'DailyNetChart', component: DailyNetChart },
   { path: '/charts/category', name: 'CategoryChart', component: CategoryBreakdownChart },
   { path: '/charts/assets/year-comporison', name: 'NetYearComparisonChart', component: NetYearComparisonChart },
