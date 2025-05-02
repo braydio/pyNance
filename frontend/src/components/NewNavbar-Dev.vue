@@ -1,4 +1,3 @@
-
 # This needs to replace the current navbar component to render the RecurringTX page view
 <template>
   <nav class="menu">
@@ -6,6 +5,7 @@
     <router-link to="/accounts">Accounts</router-link>
     <router-link to="/transactions">Transactions</router-link>
     <router-link to="/gallery">Gallery</router-link>
+    <router-link to="/forecast">Forecasting</router-link>
     <router-link to="/recurring-transactions">Recurring Tx</router-link> <!-- ✅ Added -->
   </nav>
 </template>
@@ -17,7 +17,6 @@ export default {
 </script>
 
 <style scoped>
-
 .nav-link.router-link-exact-active {
   background-color: var(--hover);
   color: var(--color-accent-yellow);
@@ -51,4 +50,3 @@ export default {
   box-shadow: 0 0 6px var(--hover-glow);
 }
 </style>
-
