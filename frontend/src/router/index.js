@@ -4,6 +4,7 @@ import Accounts from '../views/Accounts.vue';
 import Transactions from '../views/Transactions.vue';
 import RecurringTX from '../views/RecurringTX.vue'
 import Gallery from '@/views/Gallery.vue';
+import Forecast from '@/views/Forecast.vue'
 import Investments from '../views/Investments.vue';
 import DailyNetChart from '../components/DailyNetChart.vue';
 import CategoryBreakdownChart from '@/components/CategoryBreakdownChart.vue';
@@ -15,6 +16,7 @@ const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
   { path: '/transactions', name: 'Transactions', component: Transactions },
+  { path: '/forecast', name: 'Forecast', componenet: Forecast },
   { path: '/charts/cashflow', name: 'DailyNetChart', component: DailyNetChart },
   { path: '/charts/category', name: 'CategoryChart', component: CategoryBreakdownChart },
   { path: '/charts/assets/year-comporison', name: 'NetYearComparisonChart', component: NetYearComparisonChart },
