@@ -1,20 +1,25 @@
 <template>
-  <div class="forecast-card">
-    <h2 class="section-title">Summary</h2>
+  <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+    <h2 class="text-xl font-semibold mb-2">Summary</h2>
+
     <div class="text-base space-y-1">
       <p><strong>Current Balance:</strong> ${{ currentBalance.toFixed(2) }}</p>
       <p><strong>Projected Delta:</strong> ${{ computedDelta.toFixed(2) }}</p>
       <p><strong>Projected Balance:</strong> ${{ (currentBalance + computedDelta).toFixed(2) }}</p>
     </div>
 
-    <div class="input-group">
-      <label class="form-label">Manual Recurring Income ($)</label>
-      <input type="number" v-model.number="localIncome" class="form-input"
-        @input="$emit('update:manualIncome', localIncome)" />
+    <div class="space-y-4 pt-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-600">Manual Recurring Income ($)</label>
+        <input type="number" v-model.number="localIncome" @input="$emit('update:manualIncome', localIncome)"
+          class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
 
-      <label class="form-label mt-4">Liability Rate (%)</label>
-      <input type="number" v-model.number="localRate" class="form-input"
-        @input="$emit('update:liabilityRate', localRate)" />
+      <div>
+        <label class="block text-sm font-medium text-gray-600 mt-2">Liability Rate (%)</label>
+        <input type="number" v-model.number="localRate" @input="$emit('update:liabilityRate', localRate)"
+          class="w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400" />
+      </div>
     </div>
   </div>
 </template>
@@ -32,23 +37,5 @@ const computedDelta = computed(() =>
 </script>
 
 <style scoped>
-.forecast-card {
-  @apply bg-white rounded-2xl shadow p-6 space-y-4;
-}
-
-.section-title {
-  @apply text-xl font-semibold mb-2;
-}
-
-.input-group {
-  @apply space-y-4 pt-4;
-}
-
-.form-label {
-  @apply block text-sm font-medium text-gray-600;
-}
-
-.form-input {
-  @apply w-full border border-gray-300 p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-400;
-}
+/* No Tailwind @apply used — safe with v4+ */
 </style>
