@@ -14,7 +14,7 @@ const forecastItems = ref([
 
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
-const viewType = ref('Month')
+const viewType = ref('Month') // shared toggle
 
 function updateView(newView) {
   viewType.value = newView
@@ -25,15 +25,12 @@ function updateView(newView) {
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <ForecastSummaryPanel :current-balance="currentBalance" :manual-income="manualIncome"
       :liability-rate="liabilityRate" :view-type="viewType" />
-
     <ForecastChart :forecast-items="forecastItems" :view-type="viewType" @update:viewType="updateView" />
-
     <ForecastBreakdown :forecast-items="forecastItems" :view-type="viewType" />
-
     <ForecastAdjustmentsForm @add-adjustment="item => forecastItems.push(item)" />
   </div>
 </template>
 
 <style scoped>
-/* Forecast layout spacing and grid behavior */
+/* Forecast layout grid spacing */
 </style>
