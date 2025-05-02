@@ -1,48 +1,39 @@
+<script setup>
+import { ref } from 'vue'
+import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
+import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
+import ForecastChart from './ForecastChart.vue'
+import ForecastBreakdown from './ForecastBreakdown.vue'
+
+const currentBalance = ref(4200)
+const forecastItems = ref([
+  { label: 'Net Salary', amount: 3100 },
+  { label: 'Subscription', amount: -25 },
+  { label: 'Car Loan', amount: -220 },
+])
+
+const manualIncome = ref(0)
+const liabilityRate = ref(0)
+const viewType = ref('Month')
+
+function updateView(newView) {
+  viewType.value = newView
+}
+</script>
+
 <template>
-  <div class="p-6 space-y-6 max-w-5xl mx-auto">
-    <h1 class="text-3xl font-bold text-center">30-Day Financial Forecast</h1>
-
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
     <ForecastSummaryPanel :current-balance="currentBalance" :manual-income="manualIncome"
-      :liability-rate="liabilityRate" @update:manualIncome="manualIncome = $event"
-      @update:liabilityRate="liabilityRate = $event" />
+      :liability-rate="liabilityRate" :view-type="viewType" />
 
-    <ForecastChart :forecast-items="forecastItems" />
+    <ForecastChart :forecast-items="forecastItems" :view-type="viewType" @update:viewType="updateView" />
 
-    <ForecastBreakdown :forecast-items="forecastItemsWithAdjustments" />
+    <ForecastBreakdown :forecast-items="forecastItems" :view-type="viewType" />
 
-    <ForecastAdjustmentsForm @addAdjustment="addAdjustment" />
+    <ForecastAdjustmentsForm @add-adjustment="item => forecastItems.push(item)" />
   </div>
 </template>
 
-<script setup>
-import { ref, computed } from 'vue'
-import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
-import ForecastChart from './ForecastChart.vue'
-import ForecastBreakdown from './ForecastBreakdown.vue'
-import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
-
-const currentBalance = ref(4300)
-const manualIncome = ref(200)
-const liabilityRate = ref(2.1)
-
-const baseItems = ref([
-  { label: 'Salary', amount: 2500 },
-  { label: 'Rent', amount: -1200 },
-  { label: 'Subscriptions', amount: -200 },
-  { label: 'Investment Returns', amount: 300 },
-])
-
-const adjustments = ref([])
-
-const forecastItems = computed(() => baseItems.value)
-const forecastItemsWithAdjustments = computed(() => [
-  ...forecastItems.value,
-  { label: 'Manual Income', amount: manualIncome.value },
-  { label: 'Liability Impact', amount: -(currentBalance.value * liabilityRate.value / 100) },
-  ...adjustments.value
-])
-
-function addAdjustment(item) {
-  adjustments.value.push(item)
-}
-</script>
+<style scoped>
+/* Forecast layout spacing and grid behavior */
+</style>
