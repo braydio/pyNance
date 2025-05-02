@@ -1,7 +1,5 @@
-
 <template>
   <div>
-    <Navbar />
     <NotificationsBar />
 
     <div class="p-6">
@@ -9,11 +7,8 @@
       <p class="text-gray-600 mb-4">Upcoming due items for your linked accounts:</p>
 
       <ul v-if="reminders.length" class="space-y-3">
-        <li
-          v-for="(reminder, index) in reminders"
-          :key="index"
-          class="p-4 bg-white rounded-md shadow border border-gray-200"
-        >
+        <li v-for="(reminder, index) in reminders" :key="index"
+          class="p-4 bg-white rounded-md shadow border border-gray-200">
           {{ reminder }}
         </li>
       </ul>
@@ -61,4 +56,3 @@ export default {
 <style scoped>
 /* Optional scoped styling here */
 </style>
-
