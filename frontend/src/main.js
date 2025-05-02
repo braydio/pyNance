@@ -1,4 +1,5 @@
 
+import '@/styles/tailstyles.css'
 import '@/styles/global-colors.css'
 import '@/styles/typography.css'
 import '@/styles/layout.css'
