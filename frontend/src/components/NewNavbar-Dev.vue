@@ -5,8 +5,8 @@
     <router-link to="/accounts">Accounts</router-link>
     <router-link to="/transactions">Transactions</router-link>
     <router-link to="/gallery">Gallery</router-link>
-    <router-link to="/forecast">Forecasting</router-link>
-    <router-link to="/recurring-transactions">Recurring Tx</router-link> <!-- ✅ Added -->
+    <router-link to="/forecast" class="nav-link">Forecast</router-link>
+    <router-link to="/recurring-transactions">Recurring Tx</router-link>
   </nav>
 </template>
 
