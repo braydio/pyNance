@@ -1,11 +1,11 @@
 <template>
   <div class="bg-white rounded-2xl shadow p-6 space-y-4">
-    <h2 class="text-xl font-semibold mb-2">Summary</h2>
+    <h2 class="text-xl font-semibold">Summary ({{ viewType }} View)</h2>
 
     <div class="text-base space-y-1">
       <p><strong>Current Balance:</strong> ${{ currentBalance.toFixed(2) }}</p>
-      <p><strong>Projected Delta:</strong> ${{ computedDelta.toFixed(2) }}</p>
-      <p><strong>Projected Balance:</strong> ${{ (currentBalance + computedDelta).toFixed(2) }}</p>
+      <p><strong>Forecasted Delta:</strong> ${{ computedDelta.toFixed(2) }}</p>
+      <p><strong>Projected Balance:</strong> ${{ projectedBalance.toFixed(2) }}</p>
     </div>
 
     <div class="space-y-4 pt-4">
@@ -26,16 +26,29 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-const props = defineProps(['currentBalance', 'manualIncome', 'liabilityRate'])
+
+const props = defineProps({
+  currentBalance: Number,
+  manualIncome: Number,
+  liabilityRate: Number,
+  viewType: String
+})
 
 const localIncome = ref(props.manualIncome)
 const localRate = ref(props.liabilityRate)
+const multiplier = computed(() => props.viewType === 'Year' ? 12 : 1)
 
-const computedDelta = computed(() =>
-  localIncome.value - (props.currentBalance * localRate.value / 100)
+const computedDelta = computed(() => {
+  const income = localIncome.value * multiplier.value
+  const liabilities = props.currentBalance * (localRate.value / 100)
+  return income - liabilities
+})
+
+const projectedBalance = computed(() =>
+  props.currentBalance + computedDelta.value
 )
 </script>
 
 <style scoped>
-/* No Tailwind @apply used — safe with v4+ */
+/* None required — all Tailwind inline */
 </style>
