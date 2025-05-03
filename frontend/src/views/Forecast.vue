@@ -1,13 +1,21 @@
 <template>
-  <div class="p-6 space-y-6 bg-gray-50 min-h-screen">
+  <div class="forecast-view">
     <ForecastLayout />
   </div>
 </template>
 
 <script setup>
-// Top-level Forecast page view, pulls together full mock forecast framework
 import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
 </script>
+
 <style scoped>
-/* Layout polish for better spacing */
+.forecast-view {
+  background-color: var(--page-bg);
+  color: var(--theme-fg);
+  min-height: 100vh;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
 </style>
