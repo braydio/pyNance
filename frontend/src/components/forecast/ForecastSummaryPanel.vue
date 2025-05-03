@@ -1,64 +1,89 @@
 <template>
-  <div class="summary-panel bg-white p-4 rounded shadow space-y-2">
-    <h2 class="text-lg font-semibold">Summary</h2>
-    <p>Current Balance: ${{ currentBalance.toFixed(2) }}</p>
-    <p>Projected Change: ${{ computedDelta.toFixed(2) }}</p>
-    <p>Projected Ending: ${{ projectedBalance.toFixed(2) }}</p>
-
-    <div class="space-y-2">
-      <label class="block text-sm">
-        Manual Income
-        <input type="number" class="input" v-model.number="localIncome"
-          @blur="$emit('update:manualIncome', localIncome)" />
-      </label>
-
-      <label class="block text-sm">
-        Liability Rate
-        <input type="number" class="input" v-model.number="localRate"
-          @blur="$emit('update:liabilityRate', localRate)" />
-      </label>
+  <div class="summary-panel">
+    <h3 class="summary-header">Summary</h3>
+    <div class="summary-grid">
+      <div>
+        <p class="label">Current Balance</p>
+        <p class="value">${{ currentBalance.toFixed(2) }}</p>
+      </div>
+      <div>
+        <p class="label">Manual Income</p>
+        <input type="number" class="input" :value="localIncome"
+          @input="emit('update:manualIncome', +$event.target.value)" />
+      </div>
+      <div>
+        <p class="label">Liability Rate</p>
+        <input type="number" class="input" :value="localRate"
+          @input="emit('update:liabilityRate', +$event.target.value)" />
+      </div>
+    </div>
+    <div class="summary-footer">
+      <p>Net Delta: <strong>{{ netDelta }}</strong></p>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, toRef } from 'vue'
 
 const props = defineProps({
   currentBalance: Number,
   manualIncome: Number,
   liabilityRate: Number,
-  viewType: String,
-  forecastItems: Array,
+  viewType: String
 })
 
 const emit = defineEmits(['update:manualIncome', 'update:liabilityRate'])
 
-const localIncome = ref(props.manualIncome || 0)
-const localRate = ref(props.liabilityRate || 0)
+const localIncome = toRef(props, 'manualIncome')
+const localRate = toRef(props, 'liabilityRate')
 
-watch(() => props.manualIncome, (v) => localIncome.value = v)
-watch(() => props.liabilityRate, (v) => localRate.value = v)
-
-const computedDelta = computed(() => {
-  return props.forecastItems.reduce((sum, item) => sum + item.amount, 0) +
-    (localIncome.value || 0) - (localRate.value || 0)
-})
-
-const projectedBalance = computed(() => {
-  return (props.currentBalance || 0) + computedDelta.value
+const netDelta = computed(() => {
+  return ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2)
 })
 </script>
 
 <style scoped>
 .summary-panel {
-  border: 1px solid #ccc;
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--divider);
+}
+
+.summary-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 1rem;
+}
+
+.label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.value {
+  font-weight: bold;
 }
 
 .input {
-  border: 1px solid #ccc;
-  padding: 0.4rem;
   width: 100%;
-  margin-top: 0.2rem;
+  padding: 0.4rem;
+  font-size: 0.9rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.375rem;
+  background: var(--input-bg);
+  color: var(--theme-fg);
+}
+
+.summary-footer {
+  margin-top: 1rem;
+  font-size: 0.9rem;
 }
 </style>
