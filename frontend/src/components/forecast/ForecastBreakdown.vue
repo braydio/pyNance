@@ -1,9 +1,10 @@
 <template>
-  <div class="breakdown bg-white p-4 rounded shadow space-y-2">
-    <h2 class="text-lg font-semibold">Forecast Breakdown ({{ viewType }})</h2>
-    <ul class="space-y-1">
-      <li v-for="(item, index) in forecastItems" :key="index" class="text-sm">
-        {{ item.label }}: ${{ item.amount.toFixed(2) }}
+  <div class="breakdown-panel">
+    <h3 class="breakdown-header">Forecast Breakdown</h3>
+    <ul class="breakdown-list">
+      <li v-for="(item, i) in forecastItems" :key="i">
+        <span class="label">{{ item.label }}</span>
+        <span class="amount">{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount) }}</span>
       </li>
     </ul>
   </div>
@@ -12,12 +13,41 @@
 <script setup>
 defineProps({
   forecastItems: Array,
-  viewType: String,
+  viewType: String
 })
 </script>
 
 <style scoped>
-.breakdown {
-  border: 1px solid #ccc;
+.breakdown-panel {
+  background: var(--surface);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--divider);
+}
+
+.breakdown-header {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.breakdown-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.breakdown-list li {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  color: var(--text-muted);
+}
+
+.amount {
+  font-weight: bold;
 }
 </style>
