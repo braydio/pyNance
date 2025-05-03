@@ -1,8 +1,8 @@
 <template>
   <div class="forecast-layout">
     <ForecastSummaryPanel :current-balance="currentBalance" :manual-income="manualIncome"
-      :liability-rate="liabilityRate" :view-type="viewType" :forecast-items="forecastItems"
-      @update:manualIncome="manualIncome = $event" @update:liabilityRate="liabilityRate = $event" />
+      :liability-rate="liabilityRate" :view-type="viewType" @update:manualIncome="manualIncome = $event"
+      @update:liabilityRate="liabilityRate = $event" />
 
     <ForecastChart :forecast-items="forecastItems" :view-type="viewType" :manual-income="manualIncome"
       :liability-rate="liabilityRate" @update:viewType="viewType = $event" />
