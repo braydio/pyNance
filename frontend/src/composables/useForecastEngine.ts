@@ -1,5 +1,4 @@
-
-import { ref, computed } from 'vue'
+import { Ref, computed } from 'vue'
 import { startOfMonth, addDays, addMonths, format, isBefore, isSameMonth } from 'date-fns'
 
 type RecurringTransaction = {
@@ -15,23 +14,22 @@ type AccountHistoryPoint = {
 }
 
 export function useForecastEngineMock(
-  viewType: 'Month' | 'Year',
+  viewType: Ref<'Month' | 'Year'>,
   recurringTxs: RecurringTransaction[],
   accountHistory: AccountHistoryPoint[],
   manualIncome: number,
   liabilityRate: number
 ) {
-  const today = new Date()
-  const startDate = startOfMonth(today)
+  const startDate = computed(() => startOfMonth(new Date()))
 
   const labels = computed(() => {
-    if (viewType === 'Month') {
+    if (viewType.value === 'Month') {
       return Array.from({ length: 30 }, (_, i) =>
-        format(addDays(startDate, i), 'MMM d')
+        format(addDays(startDate.value, i), 'MMM d')
       )
     } else {
       return Array.from({ length: 12 }, (_, i) =>
-        format(addMonths(startDate, i), 'MMM')
+        format(addMonths(startDate.value, i), 'MMM')
       )
     }
   })
@@ -42,43 +40,37 @@ export function useForecastEngineMock(
 
     recurringTxs.forEach((tx) => {
       const txDate = new Date(tx.nextDueDate)
-      const txInterval = tx.frequency === 'weekly' ? 7 : 30
 
       for (let i = 0; i < length; i++) {
-        const targetDate = viewType === 'Month'
-          ? addDays(startDate, i)
-          : addMonths(startDate, i)
+        const targetDate = viewType.value === 'Month'
+          ? addDays(startDate.value, i)
+          : addMonths(startDate.value, i)
 
         if (isBefore(txDate, targetDate) || isSameMonth(txDate, targetDate)) {
-          // Roughly deprecate the recurring transaction across interval
-          const idx = i
-          while (idx < length) {
+          for (
+            let idx = i;
+            idx < length;
+            idx += tx.frequency === 'weekly' ? 1 : (viewType.value === 'Month' ? 4 : 1)
+          ) {
             line[idx] += tx.amount
-            if (tx.frequency === 'weekly') {
-              idx += 1 // every week = every 7 days, approximately 1 index per label in month view
-            } else {
-              idx += viewType === 'Month' ? 4 : 1
-            }
           }
+          break
         }
       }
     })
 
-    // Apply manual income and liability rate evenly
     const adjustment = (manualIncome || 0) - (liabilityRate || 0)
-    line = line.map((val) => val + adjustment)
-
-    return line
+    return line.map((val) => val + adjustment)
   })
 
   const actualLine = computed(() => {
-    const lookup = Object.fromEntries(accountHistory.map(pt => [pt.date, pt.balance]))
-    const line = labels.value.map(label => {
-      // fallback dummy line: walk upward by 25
-      const dateKey = label.includes(' ') ? label : format(new Date(label), 'MMM d')
-      return lookup[dateKey] ?? 3000 + Math.random() * 100
-    })
-    return line
+    const lookup = Object.fromEntries(
+      accountHistory.map((pt) => [pt.date, pt.balance])
+    )
+
+    return labels.value.map((label) =>
+      lookup[label] ?? 3000 + Math.random() * 50
+    )
   })
 
   return {
@@ -87,3 +79,4 @@ export function useForecastEngineMock(
     actualLine
   }
 }
+
