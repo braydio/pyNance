@@ -1,9 +1,9 @@
 <template>
-  <div class="breakdown">
-    <h2>Forecast Breakdown ({{ viewType }})</h2>
-    <ul>
-      <li v-for="(item, index) in forecastItems" :key="index">
-        {{ item.label }}: ${{ item.amount }}
+  <div class="breakdown bg-white p-4 rounded shadow space-y-2">
+    <h2 class="text-lg font-semibold">Forecast Breakdown ({{ viewType }})</h2>
+    <ul class="space-y-1">
+      <li v-for="(item, index) in forecastItems" :key="index" class="text-sm">
+        {{ item.label }}: ${{ item.amount.toFixed(2) }}
       </li>
     </ul>
   </div>
@@ -18,7 +18,6 @@ defineProps({
 
 <style scoped>
 .breakdown {
-  padding: 1rem;
   border: 1px solid #ccc;
 }
 </style>
