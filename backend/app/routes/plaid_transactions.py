@@ -132,7 +132,15 @@ def refresh_plaid_accounts():
 
         if not accounts:
             logger.warning(f"No Plaid-linked accounts found for user {user_id}")
-        updated_accounts = []
+            return jsonify(
+                {
+                    "status": "success",
+                    "message": "No linked Plaid accounts to refresh.",
+                    "updated_accounts": [],
+                }
+            ), 200
+
+        updated_accounts = []  # ✅ Fix: initialize variable
 
         for account in accounts:
             access_token = (
@@ -147,19 +155,20 @@ def refresh_plaid_accounts():
             logger.debug(
                 f"Refreshing account {account.account_id} with token {access_token}"
             )
-            accounts = get_accounts(access_token)
-            for acct in accounts:
+            plaid_accounts = get_accounts(access_token)
+            for acct in plaid_accounts:
                 account_id = acct.get("account_id")
-                updated |= account_logic.refresh_data_for_plaid_account(
+                updated = account_logic.refresh_data_for_plaid_account(
                     access_token, account_id
                 )
 
-            if updated:
-                updated_accounts.append(account.name)
-                logger.debug(
-                    f"Updated account: {account.name} with new balance {account.balance}"
-                )
-                account.last_refreshed = datetime.utcnow()
+                if updated:
+                    updated_accounts.append(account.name)
+                    logger.debug(
+                        f"Updated account: {account.name} with new balance {account.balance}"
+                    )
+                    account.last_refreshed = datetime.utcnow()
+
         db.session.commit()
         logger.info(f"Refreshed accounts: {updated_accounts}")
 
