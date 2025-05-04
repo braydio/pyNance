@@ -8,7 +8,7 @@ FILES = {
     "LINKED_ITEMS": DIRECTORIES["DATA_DIR"] / "LinkItems.json",
     "INVESTMENTS": DIRECTORIES["DATA_DIR"] / "LinkInvestments.json",
     "TRANSACTIONS": DIRECTORIES["DATA_DIR"] / "Transactions.json",
-    "TRANSACTIONS_RAW": DIRECTORIES["TEMP_DIR"] / "RichTransactionsRaw.json",
+    "LAST_TX_REFRESH": DIRECTORIES["TEMP_DIR"] / "TxRefresh_Temporary.json",
     "TRANSACTIONS_EXPORT": DIRECTORIES["TEMP_DIR"] / "Transactions.json",
     "TRANSACTIONS_RAW_ENRICHED": DIRECTORIES["TEMP_DIR"]
     / "TransactionsRawEnriched.json",
