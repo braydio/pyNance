@@ -5,7 +5,15 @@ module.exports = {
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'page-bg': 'var(--page-bg)',
+        'theme-fg': 'var(--theme-fg)',
+        'surface': 'var(--surface)',
+        'divider': 'var(--divider)',
+        'input-bg': 'var(--input-bg)',
+      },
+    },
   },
   plugins: [],
 }
