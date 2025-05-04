@@ -1,4 +1,3 @@
-
 // frontend/src/mocks/forecastMockData.ts
 
 export const mockRecurringTransactions = [
