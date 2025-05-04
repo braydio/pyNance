@@ -1,5 +1,6 @@
+
 import { Ref, computed } from 'vue'
-import { startOfMonth, addDays, addMonths, format, isBefore, isSameMonth } from 'date-fns'
+import { startOfMonth, addDays, addMonths, format, isBefore, isSameMonth, isAfter } from 'date-fns'
 
 type RecurringTransaction = {
   label: string
@@ -21,6 +22,7 @@ export function useForecastEngineMock(
   liabilityRate: number
 ) {
   const startDate = computed(() => startOfMonth(new Date()))
+  const today = new Date()
 
   const labels = computed(() => {
     if (viewType.value === 'Month') {
@@ -42,9 +44,10 @@ export function useForecastEngineMock(
       const txDate = new Date(tx.nextDueDate)
 
       for (let i = 0; i < length; i++) {
-        const targetDate = viewType.value === 'Month'
-          ? addDays(startDate.value, i)
-          : addMonths(startDate.value, i)
+        const targetDate =
+          viewType.value === 'Month'
+            ? addDays(startDate.value, i)
+            : addMonths(startDate.value, i)
 
         if (isBefore(txDate, targetDate) || isSameMonth(txDate, targetDate)) {
           for (
@@ -60,23 +63,31 @@ export function useForecastEngineMock(
     })
 
     const adjustment = (manualIncome || 0) - (liabilityRate || 0)
-    return line.map((val) => val + adjustment)
+    return line.map(val => val + adjustment)
   })
 
   const actualLine = computed(() => {
     const lookup = Object.fromEntries(
-      accountHistory.map((pt) => [pt.date, pt.balance])
+      accountHistory.map(pt => [pt.date, pt.balance])
     )
 
-    return labels.value.map((label) =>
-      lookup[label] ?? 3000 + Math.random() * 50
-    )
+    return labels.value.map((label, idx) => {
+      const date = viewType.value === 'Month'
+        ? addDays(startDate.value, idx)
+        : addMonths(startDate.value, idx)
+
+      if (isAfter(date, today)) {
+        return null // hide or make transparent in chart
+      }
+
+      return lookup[label] ?? 3000 + Math.random() * 50
+    })
   })
 
   return {
     labels,
     forecastLine,
-    actualLine
+    actualLine,
   }
 }
 
