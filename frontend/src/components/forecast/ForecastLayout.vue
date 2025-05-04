@@ -29,6 +29,7 @@ const forecastItems = ref([
   { label: 'Salary', amount: 5000 },
   { label: 'Rent', amount: -1500 },
   { label: 'Utilities', amount: -200 },
+
 ])
 
 function addAdjustment(adjustment) {
