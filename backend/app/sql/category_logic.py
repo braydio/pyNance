@@ -1,6 +1,6 @@
-
 from app.models import Category
 from app.extensions import db
+
 
 def upsert_categories_from_plaid_data(data: dict) -> int:
     """
@@ -9,52 +9,90 @@ def upsert_categories_from_plaid_data(data: dict) -> int:
     Returns the number of new categories added.
     """
     count = 0
+
     for cat in data.get("categories", []):
         hierarchy = cat.get("hierarchy", [])
         plaid_cat_id = cat.get("category_id")
-        if not plaid_cat_id:
+        if not plaid_cat_id or not hierarchy:
             continue
 
-        if len(hierarchy) == 1:
-            primary_name = hierarchy[0]
-            existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
-            if not existing:
-                new_primary = Category(
-                    plaid_category_id=plaid_cat_id + "_primary",
+        primary_name = hierarchy[0]
+        detailed_name = hierarchy[1] if len(hierarchy) > 1 else None
+        display_name = (
+            f"{primary_name} > {detailed_name}" if detailed_name else primary_name
+        )
+
+        # Ensure parent exists (or is created)
+        parent = None
+        if detailed_name:
+            parent = Category.query.filter_by(
+                primary_category=primary_name, detailed_category=None, parent_id=None
+            ).first()
+            if not parent:
+                parent = Category(
+                    plaid_category_id=f"{plaid_cat_id}_primary",
                     primary_category=primary_name,
                     detailed_category=None,
                     display_name=primary_name,
                     parent_id=None,
                 )
-                db.session.add(new_primary)
+                db.session.add(parent)
                 db.session.flush()
-                count += 1
 
-        elif len(hierarchy) >= 2:
-            primary_name = hierarchy[0]
-            detailed_name = hierarchy[1]
+        # Check for existing category by Plaid category ID
+        existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
+        if not existing:
+            new_cat = Category(
+                plaid_category_id=plaid_cat_id,
+                primary_category=primary_name,
+                detailed_category=detailed_name,
+                display_name=display_name,
+                parent_id=parent.id if parent else None,
+            )
+            db.session.add(new_cat)
+            count += 1
 
-            parent = Category.query.filter_by(display_name=primary_name, parent_id=None).first()
+    db.session.commit()
+    return count
+
+
+def get_or_create_category(category_path, plaid_category_id=None):
+    """
+    Resolves or creates a category entry using a hierarchical list (Plaid-style),
+    optionally assigning the Plaid category ID and parent relationships.
+    """
+    primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
+    detailed = category_path[1] if len(category_path) > 1 else None
+
+    # Check if category exists using composite uniqueness
+    category = Category.query.filter_by(
+        primary_category=primary, detailed_category=detailed
+    ).first()
+
+    if not category:
+        parent = None
+        if detailed:
+            parent = Category.query.filter_by(
+                primary_category=primary, detailed_category=None
+            ).first()
+
             if not parent:
                 parent = Category(
-                    plaid_category_id=f"{plaid_cat_id}_primary",
-                    primary_category=primary_name,
-                    display_name=primary_name,
+                    primary_category=primary,
+                    detailed_category=None,
+                    display_name=primary,
                 )
                 db.session.add(parent)
                 db.session.flush()
 
-            existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
-            if not existing:
-                new_cat = Category(
-                    plaid_category_id=plaid_cat_id,
-                    primary_category=primary_name,
-                    detailed_category=detailed_name,
-                    display_name=detailed_name,
-                    parent_id=parent.id,
-                )
-                db.session.add(new_cat)
-                count += 1
+        category = Category(
+            plaid_category_id=plaid_category_id,
+            primary_category=primary,
+            detailed_category=detailed,
+            display_name=f"{primary} > {detailed}" if detailed else primary,
+            parent_id=parent.id if parent else None,
+        )
+        db.session.add(category)
+        db.session.flush()
 
-    db.session.commit()
-    return count
+    return category
