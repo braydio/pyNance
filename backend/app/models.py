@@ -100,12 +100,20 @@ class Category(db.Model):
     primary_category = db.Column(db.String(128), default="Unknown")
     detailed_category = db.Column(db.String(128), default="Unknown")
     display_name = db.Column(db.String(256), default="Unknown")
-
     parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     parent = db.relationship("Category", remote_side=[id])
 
-    def __repr__(self):
-        return f"<Category(plaid_category_id={self.plaid_category_id}, display_name={self.display_name})>"
+    __table_args__ = (
+        db.UniqueConstraint(
+            "primary_category", "detailed_category", name="uq_category_composite"
+        ),
+    )
+
+    @property
+    def computed_display_name(self):
+        if self.detailed_category:
+            return f"{self.primary_category} > {self.detailed_category}"
+        return self.primary_category
 
 
 class Transaction(db.Model):
