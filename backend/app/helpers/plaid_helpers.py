@@ -4,7 +4,9 @@ from app.config import (
     PLAID_CLIENT_ID,
     PLAID_SECRET,
     PLAID_CLIENT_NAME,
+    FILES,
 )
+import json
 import requests
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
@@ -27,6 +29,19 @@ from app.config.log_setup import setup_logger
 logger = setup_logger()
 
 categories = Blueprint("categories", __name__)
+
+LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
+
+logger.debug(f"Loading last transactions refrhes file from {LAST_TRANSACTIONS}")
+
+
+def save_transactions_json(transactions):
+    try:
+        with open(LAST_TRANSACTIONS, "w") as f:
+            json.dump(transactions, f, indent=4, default=str)
+        logger.info(f"Successfully saved transactions to {LAST_TRANSACTIONS}.")
+    except Exception as e:
+        logger.error(f"Error saving transactions to file: {e}", exc_info=True)
 
 
 def get_item(access_token):
@@ -125,7 +140,14 @@ def get_transactions(access_token, start_date, end_date):
             access_token=access_token, start_date=start_date, end_date=end_date
         )
         response = plaid_client.transactions_get(request)
-        return response["transactions"]  # ✅ Only return the transaction list
+        transactions = [
+            tx.to_dict() for tx in response["transactions"]
+        ]  # ✅ convert all to dicts
+
+        # Save full list of transactions to JSON once (not one by one)
+        save_transactions_json(transactions)
+
+        return transactions
     except Exception as e:
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
         raise
