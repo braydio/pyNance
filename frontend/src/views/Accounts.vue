@@ -5,7 +5,8 @@
       <div>
         <h1>Accounts Management</h1>
         <h2>Now with Accounts!</h2>
-        <p>This item uses the username variable. Right, {{ userName }}?</p>
+        <p>This item uses the {{ userName }} variable. Say "Hi, I'm {{ userName }}" {{ userName }}.</p>
+        <p>{{ currentDate }}. They made us put that here.</p>
       </div>
     </header>
 
