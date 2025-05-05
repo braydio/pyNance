@@ -1,4 +1,3 @@
-
 <template>
   <div class="link-account">
     <h2>Okay Genius Go Ahead</h2>
@@ -6,27 +5,13 @@
     <transition name="fade">
       <div class="upload-form-inline">
         <label class="text-xs font-medium" for="userId">User ID</label>
-        <input
-          id="userId"
-          v-model="userId"
-          class="input-text"
-          placeholder="Well?"
-        />
+        <input id="userId" v-model="userId" class="input-text" placeholder="Well?" />
 
         <label class="text-xs font-medium" for="accessToken">Access Token</label>
-        <textarea
-          id="accessToken"
-          v-model="accessToken"
-          class="input-textarea"
-          rows="2"
-          placeholder="You said you knew what you were doing."
-        ></textarea>
+        <textarea id="accessToken" v-model="accessToken" class="input-textarea" rows="2"
+          placeholder="You said you knew what you were doing."></textarea>
 
-        <button
-          @click="submit"
-          :disabled="!userId || !accessToken || loading"
-          class="forms-btn"
-        >
+        <button @click="submit" :disabled="!userId || !accessToken || loading" class="forms-btn">
           Upload
         </button>
         <button class="forms-btn" @click="$emit('cancel')">Cancel</button>
@@ -83,10 +68,12 @@ const submit = async () => {
   border-radius: 5px;
   text-align: center;
 }
+
 .link-account h2 {
   margin: 5px 1px;
   color: var(--neon-purple);
 }
+
 .upload-form-inline {
   display: flex;
   align-items: center;
@@ -100,6 +87,7 @@ const submit = async () => {
   border-radius: 12px;
   box-shadow: 0 2px 12px var(--shadow);
 }
+
 .input-text,
 .input-textarea {
   background-color: var(--color-bg-dark);
@@ -109,12 +97,15 @@ const submit = async () => {
   padding: 0.5rem;
   font-family: var(--font-mono);
 }
+
 .input-text {
   width: 160px;
 }
+
 .input-textarea {
   width: 300px;
 }
+
 .forms-btn {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
@@ -124,6 +115,7 @@ const submit = async () => {
   cursor: pointer;
   padding: 0.5rem 1.25rem;
 }
+
 .forms-btn:hover {
   color: var(--themed-bg);
   background-color: var(--neon-mint);
