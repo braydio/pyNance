@@ -5,6 +5,7 @@
       <div>
         <h1>Accounts Management</h1>
         <h2>Now with Accounts!</h2>
+        <p>This item uses the username variable. Right, {{ userName }}?</p>
       </div>
     </header>
 
