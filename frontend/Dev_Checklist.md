@@ -6,28 +6,75 @@ A step-by-step guide to implementing a forecast engine using the `pyNance` repo,
 
 ## 󰲢 Goal 1: Ingest & Structure Data
 
-### 󰄬 Objective:
+### 󰄬 Objective
 
 Build a robust data ingestion pipeline for transactions and balances.
 
-### 󰐥 Steps:
+### 󰐥 Steps
 
-- [ ] Set up Plaid/Teller API integration.
-- [ ] Fetch and normalize transaction data.
-- [ ] Store transactions in `transactions` table.
+- [x] Set up Plaid/Teller API integration.
+- [x] Fetch and normalize transaction data.
+- [x] Store transactions in `transactions` table.
 - [ ] Fetch and store account balance snapshots in `account_history`.
-- [ ] Define SQLAlchemy models in `models.py`.
+- [x] Define SQLAlchemy models in `models.py`.
 - [ ] Schedule daily sync via backend cron or task runner.
 
 ---
 
-## 󰲢 Goal 2: Detect Recurring Patterns
+## 󰲢 Goal 2: Build and Validate Frontend Visuals
 
-### 󰄬 Objective:
+### 󰄬 Objective
 
-Identify repeating charges/income for forecast generation.
+Render forecast and actuals UI with mock data matching the final backend format.
 
-### 󰐥 Steps:
+### 󰐥 Steps
+
+- [ ] Build `ForecastChart.vue` using Chart.js/D3.
+- [ ] Plot forecast vs actual with mock data.
+- [ ] Add monthly/yearly toggle.
+- [ ] Embed chart in `Dashboard.vue`.
+- [ ] Validate frontend rendering logic for key calculations (totals, rates, deltas).
+
+---
+
+## 󰲢 Goal 3: Implement Forecast Calculation Logic
+
+### 󰄬 Objective
+
+Build all frontend-facing logic for forecast generation, manual adjustments, and rate modeling.
+
+### 󰐥 Steps
+
+- [ ] Create forecast calculator service in `services/`.
+- [ ] Add time period logic and interest rate handling.
+- [ ] Support manual event/adjustment inputs.
+- [ ] Generate daily forecasted balances from base logic.
+- [ ] Prepare forecast data shape for chart compatibility.
+
+---
+
+## 󰲢 Goal 4: Derive Actuals in Pipeline
+
+### 󰄬 Objective
+
+Perform actual calculations automatically during the sync pipeline, not just at API call time.
+
+### 󰐥 Steps
+
+- [ ] Aggregate `account_history` by date for balances.
+- [ ] Fallback: sum `transactions` per day.
+- [ ] If both available: align and log differences.
+- [ ] Store `actuals` as part of forecast cache or sync metadata.
+
+---
+
+## 󰲢 Goal 5: Detect Recurring Patterns
+
+### 󰄬 Objective
+
+Identify repeating charges/income for use in forecasting.
+
+### 󰐥 Steps
 
 - [ ] Create `findRecurring()` utility in `utils/`.
 - [ ] Group by `description` and interval similarity.
@@ -44,44 +91,13 @@ Identify repeating charges/income for forecast generation.
 
 ---
 
-## 󰲢 Goal 3: Generate Forecast Data
+## 󰲢 Goal 6: Create Backend API
 
-### 󰄬 Objective:
+### 󰄬 Objective
 
-Produce future forecast line using recurrence + manual inputs.
+Expose forecast and actuals data for frontend via REST API.
 
-### 󰐥 Steps:
-
-- [ ] Create forecast generator service in `services/`.
-- [ ] Combine recurring rules and user-defined inputs.
-- [ ] Generate daily forecasted balances.
-- [ ] Store forecast cache per user/account.
-- [ ] Add fallback logic for no recurring data.
-
----
-
-## 󰲢 Goal 4: Derive Actuals
-
-### 󰄬 Objective:
-
-Generate historical actuals using transaction flow or balance snapshots.
-
-### 󰐥 Steps:
-
-- [ ] Aggregate `account_history` by date for balances.
-- [ ] Fallback: sum `transactions` per day.
-- [ ] If both available: align and log differences.
-- [ ] Prepare actuals series for chart rendering.
-
----
-
-## 󰲢 Goal 5: Create Backend API
-
-### 󰄬 Objective:
-
-Expose data for frontend via REST API.
-
-### 󰐥 Steps:
+### 󰐥 Steps
 
 - [ ] Add endpoints in `routes/forecast.py`:
 
@@ -95,32 +111,16 @@ Expose data for frontend via REST API.
 
 ---
 
-## 󰲢 Goal 6: Render Forecast in Frontend
-
-### 󰄬 Objective:
-
-Visualize actual and forecast data interactively.
-
-### 󰐥 Steps:
-
-- [ ] Build `ForecastChart.vue` using Chart.js/D3.
-- [ ] Plot forecast vs actual with date-bound cutoff.
-- [ ] Add monthly/yearly toggle.
-- [ ] Embed in `Dashboard.vue`.
-- [ ] Fetch data via Vuex store from backend.
-
----
-
 ## 󰲢 Goal 7: Deploy & Monitor
 
-### 󰄬 Objective:
+### 󰄬 Objective
 
 Ship and maintain the feature in production.
 
-### 󰐥 Steps:
+### 󰐥 Steps
 
 - [ ] Test complete flow using mock/test data.
-- [ ] Integrate with production Plaid/Teller credentials.
+- [x] Integrate with production Plaid/Teller credentials.
 - [ ] Deploy backend and frontend changes.
 - [ ] Monitor logs, set up alerting on sync failures.
 - [ ] Schedule periodic review of forecast accuracy.
