@@ -1,4 +1,3 @@
-
 <template>
   <div class="filter-row">
     <!-- Primary category selector -->
@@ -39,11 +38,16 @@
       </thead>
       <tbody>
         <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id">
-          <td><span v-if="!tx.isEditing">{{ tx.date || "N/A" }}</span><input v-else type="date" v-model="tx.date" /></td>
-          <td><span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span><input v-else type="number" step="0.01" v-model.number="tx.amount" /></td>
-          <td><span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span><input v-else type="text" v-model="tx.description" /></td>
-          <td><span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span><input v-else type="text" v-model="tx.category" /></td>
-          <td><span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span><input v-else type="text" v-model="tx.merchant_name" /></td>
+          <td><span v-if="!tx.isEditing">{{ formatDate(tx.date) || "N/A" }}</span><input v-else type="date"
+              v-model="tx.date" /></td>
+          <td><span v-if="!tx.isEditing">{{ formatAmount(tx.amount) }}</span><input v-else type="number" step="0.01"
+              v-model.number="tx.amount" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.description || "N/A" }}</span><input v-else type="text"
+              v-model="tx.description" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.category || "Unknown" }}</span><input v-else type="text"
+              v-model="tx.category" /></td>
+          <td><span v-if="!tx.isEditing">{{ tx.merchant_name || "Unknown" }}</span><input v-else type="text"
+              v-model="tx.merchant_name" /></td>
           <td><span>{{ tx.account_name || "N/A" }}</span></td>
           <td><span>{{ tx.institution_name || "N/A" }}</span></td>
           <td><span>{{ tx.subtype || "N/A" }}</span></td>
@@ -91,6 +95,15 @@ export default {
     }
   },
   methods: {
+    formatDate(dateStr) {
+      if (!dateStr) return "N/A";
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", {
+        year: "2-digit",
+        month: "short",
+        day: "numeric"
+      });
+    },
     async fetchCategoryTree() {
       try {
         const res = await axios.get("/api/categories/tree");
@@ -143,48 +156,48 @@ export default {
       window.open("/api/export/transactions", "_blank");
     },
 
-async markRecurring(index) {
-  const tx = this.transactions[index];
+    async markRecurring(index) {
+      const tx = this.transactions[index];
 
-  // ✅ Prevent bad API call if account_id is missing
-  if (!tx.account_id || tx.account_id === "undefined") {
-    alert("❌ Cannot mark this transaction as recurring: missing or invalid account ID.");
-    console.warn("Skipping recurring mark: invalid account ID", tx);
-    return;
-  }
+      // ✅ Prevent bad API call if account_id is missing
+      if (!tx.account_id || tx.account_id === "undefined") {
+        alert("❌ Cannot mark this transaction as recurring: missing or invalid account ID.");
+        console.warn("Skipping recurring mark: invalid account ID", tx);
+        return;
+      }
 
-  // ✅ Confirm with user before proceeding
-  if (!confirm("Mark this transaction as recurring?")) {
-    return;
-  }
+      // ✅ Confirm with user before proceeding
+      if (!confirm("Mark this transaction as recurring?")) {
+        return;
+      }
 
-  try {
-    // 🔍 Log the payload and account ID for debugging
-    console.log("Sending recurring mark for account:", tx.account_id, tx);
+      try {
+        // 🔍 Log the payload and account ID for debugging
+        console.log("Sending recurring mark for account:", tx.account_id, tx);
 
-    const payload = {
-      amount: tx.amount,
-      description: tx.description,
-      // optional: frequency or extra metadata if you want to expand
-    };
+        const payload = {
+          amount: tx.amount,
+          description: tx.description,
+          // optional: frequency or extra metadata if you want to expand
+        };
 
-    const response = await api.updateRecurringTransaction(tx.account_id, payload);
+        const response = await api.updateRecurringTransaction(tx.account_id, payload);
 
-    if (response.status === "success") {
-      alert("Transaction marked as recurring successfully.");
-    } else {
-      console.error("❌ Backend error:", response.message);
-      alert("Failed to mark as recurring: " + response.message);
-    }
-  } catch (error) {
-    console.error("❌ Error marking transaction as recurring:", error);
-    alert("Error marking transaction as recurring: " + error.message);
-  }
-},
-  mounted() {
-    this.fetchCategoryTree();
+        if (response.status === "success") {
+          alert("Transaction marked as recurring successfully.");
+        } else {
+          console.error("❌ Backend error:", response.message);
+          alert("Failed to mark as recurring: " + response.message);
+        }
+      } catch (error) {
+        console.error("❌ Error marking transaction as recurring:", error);
+        alert("Error marking transaction as recurring: " + error.message);
+      }
+    },
+    mounted() {
+      this.fetchCategoryTree();
+    },
   },
-},
 };
 </script>
 
@@ -193,7 +206,6 @@ async markRecurring(index) {
 </style>
 
 <style scoped>
-
 /* Base Styles */
 body {
   margin: 0;
@@ -215,10 +227,12 @@ body {
   border-bottom: 2px solid var(--color-accent-yellow);
   margin-bottom: 1rem;
 }
+
 .dashboard-header h1 {
   margin: 0;
   color: var(--color-accent-yellow);
 }
+
 .dashboard-header h2 {
   margin-top: 0.5rem;
   color: var(--color-highlight);
@@ -230,6 +244,7 @@ body {
   display: flex;
   gap: 1rem;
 }
+
 .menu button {
   padding: 0.5rem 1rem;
   background-color: var(--button-bg);
@@ -239,6 +254,7 @@ body {
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
+
 .menu button:hover {
   background-color: var(--button-hover);
 }
@@ -257,7 +273,8 @@ body {
   margin-bottom: 2rem;
   opacity: 0.85;
 }
-.charts-section > * {
+
+.charts-section>* {
   flex: 1 1 45%;
   height: 300px;
   background-color: var(--color-bg-secondary);
@@ -293,6 +310,7 @@ body {
   margin-top: 10px;
   text-align: center;
 }
+
 #pagination-controls button {
   padding: 4px 20px;
   background-color: var(--button-bg);
@@ -303,10 +321,12 @@ body {
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
+
 #pagination-controls button:disabled {
   background-color: var(--button-disabled);
   cursor: not-allowed;
 }
+
 #pagination-controls button:hover:not(:disabled) {
   background-color: var(--button-hover);
 }
@@ -316,15 +336,19 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
-th, td {
+
+th,
+td {
   border: 1px solid var(--border-color);
   padding: 8px;
   text-align: left;
 }
+
 th {
   background-color: var(--color-bg-secondary);
   cursor: pointer;
 }
+
 th:hover {
   background-color: var(--hover);
 }
@@ -368,6 +392,7 @@ th:hover {
   cursor: pointer;
   transition: background-color 0.2s;
 }
+
 .export-btn:hover {
   background-color: var(--button-hover);
 }
@@ -390,6 +415,7 @@ th:hover {
   color: var(--color-text-light);
   border-radius: 4px;
 }
+
 .filter-row {
   display: flex;
   flex-wrap: wrap;
