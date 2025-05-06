@@ -1,12 +1,10 @@
 <template>
   <div class="refresh-controls">
-    <button class="btn" @click="handleFetch" :disabled="isFetching">
-      <span v-if="isFetching">Refreshing Accounts…</span>
-      <span v-else>Refresh Accounts</span>
+    <button class="btn-accent" @click="$emit('refresh')">
+      Refresh Balances
     </button>
-    <button class="btn" @click="handleRefresh" :disabled="isRefreshing">
-      <span v-if="isRefreshing">Refreshing Activity…</span>
-      <span v-else>Refresh Account Activity</span>
+    <button class="btn-accent" @click="$emit('sync')">
+      Sync Transactions
     </button>
   </div>
 </template>
@@ -14,61 +12,31 @@
 <script>
 export default {
   name: "RefreshControls",
-  props: {
-    onFetch: { type: Function, required: true },
-    onRefresh: { type: Function, required: true },
-  },
-  data() {
-    return {
-      isFetching: false,
-      isRefreshing: false,
-    };
-  },
-  methods: {
-    async handleFetch() {
-      this.isFetching = true;
-      try {
-        await this.onFetch();
-      } catch (err) {
-        console.error("Error in fetch:", err);
-      } finally {
-        this.isFetching = false;
-      }
-    },
-    async handleRefresh() {
-      this.isRefreshing = true;
-      try {
-        await this.onRefresh();
-      } catch (err) {
-        console.error("Error in refresh:", err);
-      } finally {
-        this.isRefreshing = false;
-      }
-    },
-  },
 };
 </script>
 
 <style scoped>
 .refresh-controls {
   display: flex;
-  gap: 1.5rem;
-  justify-content: center;
+  gap: 1rem;
   margin-top: 1rem;
+  flex-wrap: wrap;
 }
 
-.btn {
-  background-color: var(--themed-bg);
-  color: var(--color-text-light);
-  border: 1px groove transparent;
-  border-radius: 3px;
-  font-weight: bold;
+.btn-accent {
+  background-color: transparent;
+  color: var(--neon-purple);
+  border: 1px solid var(--neon-purple);
+  border-radius: 2rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
   cursor: pointer;
-  padding: 0.5rem 1.25rem;
+  transition: all 0.2s ease-in-out;
 }
 
-.btn:hover {
-  color: var(--themed-bg);
-  background-color: var(--neon-mint);
+.btn-accent:hover {
+  background-color: var(--neon-purple);
+  color: var(--color-bg-dark);
 }
 </style>
