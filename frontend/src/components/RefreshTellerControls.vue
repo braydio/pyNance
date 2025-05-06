@@ -1,4 +1,3 @@
-
 <template>
   <div class="link-account">
     <h2>Refresh Teller</h2>
@@ -53,15 +52,18 @@ export default {
   border-right: 6px outset var(--color-text-muted);
   border-radius: 5px;
 }
+
 .link-account h2 {
   margin: 5px 1px;
   color: var(--neon-purple);
 }
+
 .button-group {
   display: flex;
   gap: 1.5rem;
   justify-content: center;
 }
+
 .button-group button {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
@@ -70,6 +72,7 @@ export default {
   font-weight: bold;
   cursor: pointer;
 }
+
 .button-group button:hover {
   color: var(--themed-bg);
   background-color: var(--neon-mint);
