@@ -1,3 +1,4 @@
+<!-- src/components/forecast/ForecastChart.vue -->
 <template>
   <div class="chart-container">
     <div class="chart-header">
@@ -10,42 +11,32 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import { useForecastEngine } from '@/composables/useForecastEngine'
 
 Chart.register(...registerables)
 
-const props = defineProps({
-  forecastItems: Array,
-  viewType: String,
-})
+const props = defineProps<{
+  forecastItems: any[]
+  viewType: string
+  manualIncome: number
+  liabilityRate: number
+  accountHistory: any[]
+}>()
 
 const emit = defineEmits(['update:viewType'])
 
-const chartCanvas = ref(null)
-let chartInstance = null
-
-const recurringTxs = [
-  { label: 'Net Salary', amount: 3000, frequency: 'monthly', nextDueDate: '2025-05-01' },
-  { label: 'Subscription', amount: -30, frequency: 'monthly', nextDueDate: '2025-05-10' },
-  { label: 'Car Loan', amount: -250, frequency: 'monthly', nextDueDate: '2025-05-12' }
-]
-
-const accountHistory = [
-  { date: 'May 1', balance: 4200 },
-  { date: 'May 2', balance: 4235 },
-  { date: 'May 3', balance: 4190 },
-  { date: 'May 4', balance: 4220 }
-]
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+let chartInstance: Chart | null = null
 
 const engine = useForecastEngine(
   ref(props.viewType),
-  recurringTxs,
-  accountHistory,
-  200, // manual income
-  50   // liability rate
+  props.forecastItems,
+  props.accountHistory,
+  props.manualIncome,
+  props.liabilityRate
 )
 
 function toggleView() {
@@ -55,6 +46,7 @@ function toggleView() {
 function renderChart() {
   if (!chartCanvas.value) return
   const ctx = chartCanvas.value.getContext('2d')
+  if (!ctx) return
   if (chartInstance) chartInstance.destroy()
 
   chartInstance = new Chart(ctx, {
@@ -74,18 +66,24 @@ function renderChart() {
           borderColor: '#10B981',
           tension: 0.3,
         },
-      ]
+      ],
     },
     options: {
       responsive: true,
-      interaction: { mode: 'index', intersect: false },
-      scales: { y: { beginAtZero: false } }
-    }
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      scales: {
+        y: {
+          beginAtZero: false,
+        },
+      },
+    },
   })
 }
 
 onMounted(renderChart)
-
 watch(
   () => [engine.labels.value, engine.forecastLine.value, engine.actualLine.value],
   renderChart
