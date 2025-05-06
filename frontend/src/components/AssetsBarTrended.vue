@@ -1,215 +1,104 @@
-
 <template>
   <div class="chart-container card">
-   <div class="chart-title-row flex-between">
-      <h2 class="heading-md">Net Assets vs. Liabilities</h2>
-      <div class="chart-summary" v-if="metadata">
-        <h4 class="text-accent">Current Totals</h4>
-        <div class="summary-line assets">Assets: {{ formatCurrency(metadata.total_assets) }}</div>
-        <div class="summary-line liabilities">Liabilities: {{ formatCurrency(metadata.total_liabilities, true) }}</div>
-        <div class="summary-line net">Net: {{ formatCurrency(metadata.net_now) }}</div>
-      </div>
-    </div>
-    <canvas ref="chartCanvas"></canvas>
+    <h2 class="heading-md">Net Assets Trend</h2>
+    <canvas ref="canvasRef"></canvas>
   </div>
 </template>
 
-<script>
-import axios from "axios";
-import { ref, onMounted, nextTick } from "vue";
-import { Chart } from "chart.js/auto";
+<script setup>
+import axios from 'axios'
+import { Chart } from 'chart.js/auto'
+import { onMounted, ref } from 'vue'
 
-export default {
-  name: "NetAssetsChart",
-  setup() {
-    const chartCanvas = ref(null);
-    const chartInstance = ref(null);
-    const chartData = ref([]);
-    const metadata = ref(null);
+const canvasRef = ref()
+const chartInstance = ref()
+const chartData = ref([])
 
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/api/charts/net_assets");
-        if (response.data.status === "success") {
-          chartData.value = response.data.data || [];
-          metadata.value = response.data.metadata || null;
-          updateChart();
+const format = (val) => {
+  const n = Number(val || 0)
+  return n < 0 ? `($${Math.abs(n).toLocaleString()})` : `$${n.toLocaleString()}`
+}
+
+const parseDate = (str) => new Date(str).toLocaleString('default', { month: 'short', day: 'numeric' })
+
+async function fetchData() {
+  try {
+    const { data } = await axios.get('/api/charts/net_assets')
+    chartData.value = data?.data || []
+    render()
+  } catch (e) {
+    console.error('fetch error:', e)
+  }
+}
+
+function render() {
+  if (chartInstance.value) chartInstance.value.destroy()
+  const ctx = canvasRef.value.getContext('2d')
+
+  const fillA = ctx.createLinearGradient(0, 0, 0, 300)
+  fillA.addColorStop(0, 'rgba(0, 255, 135, 0.2)')
+  fillA.addColorStop(1, 'rgba(0, 255, 135, 0)')
+
+  const fillL = ctx.createLinearGradient(0, 0, 0, 300)
+  fillL.addColorStop(0, 'rgba(255, 87, 87, 0.3)')
+  fillL.addColorStop(1, 'rgba(255, 87, 87, 0)')
+
+  chartInstance.value = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: chartData.value.map(d => parseDate(d.date)),
+      datasets: [
+        {
+          label: 'Assets',
+          data: chartData.value.map(d => d.assets),
+          borderColor: '#00ffaa',
+          backgroundColor: fillA,
+          tension: 0.2,
+          fill: true
+        },
+        {
+          label: 'Liabilities',
+          data: chartData.value.map(d => d.liabilities),
+          borderColor: '#ff5757',
+          backgroundColor: fillL,
+          tension: 0.2,
+          fill: true
         }
-      } catch (error) {
-        console.error("Error fetching net assets data:", error);
+      ]
+    },
+    options: {
+      animation: {
+        duration: 800,
+        easing: 'easeOutQuart'
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${format(ctx.raw)}`
+          }
+        },
+        legend: {
+          labels: {
+            color: '#ccc'
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#888' },
+          grid: { color: '#333' }
+        },
+        y: {
+          ticks: {
+            color: '#888',
+            callback: format
+          },
+          grid: { color: '#333' }
+        }
       }
-    };
+    }
+  })
+}
 
-    const formatCurrency = (val) => {
-      const number = parseFloat(val) || 0;
-      return number < 0
-        ? `($${Math.abs(number).toLocaleString()})`
-        : `$${number.toLocaleString()}`;
-    };
-
-    const formatMMM = (dateString) => {
-      const [yyyy, mm, dd] = dateString.split("-");
-      return new Date(`${yyyy}-${mm}-${dd}`).toLocaleString("default", { month: "short" });
-    };
-
-    const updateChart = async () => {
-      await nextTick();
-      const canvasEl = chartCanvas.value;
-      const ctx = canvasEl.getContext("2d");
-      if (!canvasEl || !ctx) return;
-      if (chartInstance.value) chartInstance.value.destroy();
-
-      const labels = chartData.value.map(item => item.date);
-      const assetsData = chartData.value.map(item => item.assets);
-      const liabilitiesData = chartData.value.map(item => item.liabilities);
-      const netData = chartData.value.map(item => item.net);
-
-      chartInstance.value = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels,
-          datasets: [
-            {
-              label: "Assets",
-              data: assetsData,
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-accent-ice').trim(),
-              backgroundColor: "rgba(137, 220, 235, 0.15)",
-              fill: false,
-              tension: 0.1,
-            },
-            {
-              label: "Liabilities",
-              data: liabilitiesData,
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bar-alert').trim(),
-              backgroundColor: "rgba(251, 73, 52, 0.15)",
-              fill: false,
-              tension: 0.1,
-            },
-            {
-              label: "Net",
-              data: netData,
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-accent-yellow').trim(),
-              backgroundColor: "rgba(250, 189, 47, 0.15)",
-              fill: false,
-              tension: 0.1,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          scales: {
-            x: {
-              ticks: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim(),
-                callback: (value, index) => formatMMM(labels[index]),
-              },
-              grid: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--divider').trim(),
-              },
-            },
-            y: {
-              beginAtZero: true,
-              ticks: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim(),
-                callback: (val) => {
-                  const number = parseFloat(val);
-                  return number < 0
-                    ? `($${Math.abs(number).toLocaleString()})`
-                    : `$${number.toLocaleString()}`;
-                },
-              },
-              grid: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--divider').trim(),
-              },
-            },
-          },
-          plugins: {
-            tooltip: {
-              callbacks: {
-                label: (context) => {
-                  const label = context.dataset.label;
-                  const val = context.raw;
-                  return val < 0
-                    ? `${label}: ($${Math.abs(val).toLocaleString()})`
-                    : `${label}: $${val.toLocaleString()}`;
-                },
-                title: (context) => formatMMM(context[0].label),
-              },
-              backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--themed-bg').trim(),
-              titleColor: getComputedStyle(document.documentElement).getPropertyValue('--color-accent-yellow').trim(),
-              bodyColor: getComputedStyle(document.documentElement).getPropertyValue('--color-text-light').trim(),
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-accent-yellow').trim(),
-              borderWidth: 1,
-            },
-            legend: {
-              labels: {
-                color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-light').trim(),
-              },
-            },
-          },
-        },
-      });
-    };
-
-    onMounted(() => fetchData());
-
-    return {
-      chartCanvas,
-      metadata,
-      formatCurrency,
-    };
-  },
-};
+onMounted(fetchData)
 </script>
-
-<style scoped>
-.chart-container {
-  margin: 1rem;
-  padding: 1rem;
-  opacity: 0.95;
-  position: relative;
-  max-height: 400px;
-  height: 100%;
-}
-
-.chart-title-row {
-  margin-bottom: 0.75rem;
-}
-
-.chart-summary {
-  background: var(--color-bg-secondary);
-  padding: 0.75rem;
-  border-radius: 6px;
-  font-family: var(--font-mono, 'Fira Code', monospace);
-  color: var(--color-text-muted);
-  text-align: right;
-  border: 1px solid var(--divider);
-  box-shadow: 0 2px 6px var(--shadow);
-}
-
-.chart-summary h4 {
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
-  font-weight: bold;
-  color: var(--color-accent-yellow);
-}
-
-.summary-line {
-  margin: 0.25rem 0;
-}
-
-.summary-line.assets {
-  color: var(--color-accent-ice);
-}
-
-.summary-line.liabilities {
-  color: var(--bar-alert);
-}
-
-.summary-line.net {
-  font-weight: bold;
-  color: var(--color-accent-yellow);
-}
-</style>
-
