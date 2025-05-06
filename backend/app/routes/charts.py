@@ -12,23 +12,36 @@ from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
+
 @charts.route("/category_breakdown", methods=["GET"])
 def category_breakdown():
-    print("Received query params:", request.args.get("start_date"), request.args.get("end_date"))
+    print(
+        "Received query params:",
+        request.args.get("start_date"),
+        request.args.get("end_date"),
+    )
     try:
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
 
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else datetime.now().date() - timedelta(days=30)
+        start_date = (
+            datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if start_date_str
+            else datetime.now().date() - timedelta(days=30)
+        )
         print("Parsed start_date:", start_date)
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.now().date()
+        end_date = (
+            datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            if end_date_str
+            else datetime.now().date()
+        )
         print("Parsed end_date:", end_date)
 
         results = (
             db.session.query(
                 Category.display_name.label("category"),
                 func.sum(func.abs(Transaction.amount)).label("amount"),
-                func.min(Transaction.date).label("date")
+                func.min(Transaction.date).label("date"),
             )
             .join(Transaction, Transaction.category_id == Category.id)
             .filter(Transaction.amount < 0)
@@ -44,7 +57,7 @@ def category_breakdown():
             {
                 "category": row.category or "Uncategorized",
                 "amount": round(row.amount, 2),
-                "date": row.date if row.date else None
+                "date": row.date if row.date else None,
             }
             for row in results
         ]
@@ -54,6 +67,7 @@ def category_breakdown():
     except Exception as e:
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
@@ -135,22 +149,30 @@ def get_cash_flow():
 def get_net_assets():
     """
     Calculate net assets by summing all account balances and simulate historical net worth.
+    Returns a trend with `assets` and `liabilities` fields to support chart display.
     """
     try:
         accounts = Account.query.all()
         net = sum(acc.balance if acc.balance is not None else 0 for acc in accounts)
         base_date = datetime.now().replace(day=1)
-        running = net - random.randint(500, 5000)
+        running = net
         data = []
-        for m in range(6, -1, -1):
+
+        for m in range(6, -1, -1):  # 6 months back to current
             dt = base_date - timedelta(days=30 * m)
             variation = random.randint(-2000, 3000)
             running += variation
             if m == 0:
-                running = net
+                running = net  # current month gets the actual balance
+
             data.append(
-                {"date": dt.strftime("%Y-%m-%d"), "netWorth": round(running, 2)}
+                {
+                    "date": dt.strftime("%Y-%m-%d"),
+                    "assets": round(running, 2),
+                    "liabilities": 0,  # default liabilities to 0
+                }
             )
+
         return jsonify({"status": "success", "data": data}), 200
 
     except Exception as e:
