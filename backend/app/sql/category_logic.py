@@ -1,6 +1,8 @@
 from app.models import Category
 from app.extensions import db
 
+from sqlalchemy.exc import IntegrityError
+
 
 def upsert_categories_from_plaid_data(data: dict) -> int:
     """
@@ -56,35 +58,38 @@ def upsert_categories_from_plaid_data(data: dict) -> int:
     return count
 
 
-def get_or_create_category(category_path, plaid_category_id=None):
-    """
-    Resolves or creates a category entry using a hierarchical list (Plaid-style),
-    optionally assigning the Plaid category ID and parent relationships.
-    """
+def resolve_or_create_category(category_path, plaid_category_id=None):
     primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
     detailed = category_path[1] if len(category_path) > 1 else None
 
-    # Check if category exists using composite uniqueness
-    category = Category.query.filter_by(
+    # Prevent duplicate insert before attempting
+    existing = Category.query.filter_by(
         primary_category=primary, detailed_category=detailed
     ).first()
+    if existing:
+        return existing
 
-    if not category:
-        parent = None
-        if detailed:
-            parent = Category.query.filter_by(
-                primary_category=primary, detailed_category=None
-            ).first()
+    # Ensure parent exists if needed
+    parent = None
+    if detailed:
+        parent = Category.query.filter_by(
+            primary_category=primary, detailed_category=None
+        ).first()
+        if not parent:
+            parent = Category(
+                plaid_category_id=f"{plaid_category_id}_parent"
+                if plaid_category_id
+                else None,
+                primary_category=primary,
+                detailed_category=None,
+                display_name=primary,
+                parent_id=None,
+            )
+            db.session.add(parent)
+            db.session.flush()
 
-            if not parent:
-                parent = Category(
-                    primary_category=primary,
-                    detailed_category=None,
-                    display_name=primary,
-                )
-                db.session.add(parent)
-                db.session.flush()
-
+    # Safe insert with fallback
+    try:
         category = Category(
             plaid_category_id=plaid_category_id,
             primary_category=primary,
@@ -94,5 +99,10 @@ def get_or_create_category(category_path, plaid_category_id=None):
         )
         db.session.add(category)
         db.session.flush()
+    except IntegrityError:
+        db.session.rollback()
+        category = Category.query.filter_by(
+            primary_category=primary, detailed_category=detailed
+        ).first()
 
     return category
