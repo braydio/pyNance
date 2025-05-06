@@ -14,7 +14,6 @@ from app.models import (
     PlaidAccount,
     TellerAccount,
 )
-from app.sql.category_logic import get_or_create_category
 from app.helpers.plaid_helpers import (
     get_transactions,
     get_accounts,
@@ -417,7 +416,6 @@ def refresh_data_for_teller_account(
     return updated
 
 
-
 def get_paginated_transactions(page, page_size):
     query = (
         db.session.query(Transaction, Account)
@@ -431,24 +429,27 @@ def get_paginated_transactions(page, page_size):
     for txn, acc in results:
         serialized.append(
             {
-                "transaction_id": txn.transaction_id,  # Keep as string (don't multiply)
+                "transaction_id": txn.transaction_id,
                 "date": txn.date.isoformat() if txn.date else None,
                 "amount": txn.amount if txn.amount is not None else 0,
                 "description": txn.description or txn.merchant_name or "N/A",
-                "category": txn.category or "Uncategorized",  # ✅ Now uses string field
+                "category": (
+                    txn.category.display_name
+                    if hasattr(txn.category, "display_name")
+                    else txn.category or "Uncategorized"
+                ),
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
+                "access_token": acc.access_token or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
             }
         )
 
     return serialized, total
-
-
 
 
 def refresh_data_for_plaid_account(access_token, account_id):
@@ -468,7 +469,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
         account = Account.query.filter_by(account_id=account_id).first()
 
         if not account:
-            logger.warning(f"[DB Lookup] ❌ No account found for account_id={account_id}")
+            logger.warning(f"[DB Lookup] No account found for account_id={account_id}")
             return False
 
         account_label = account.name or f"[unnamed account] {account_id}"
@@ -483,7 +484,9 @@ def refresh_data_for_plaid_account(access_token, account_id):
         for txn in transactions:
             txn_id = txn.get("transaction_id")
             if not txn_id:
-                logger.warning(f"Transaction missing 'transaction_id'; skipping. Account: {account_label}")
+                logger.warning(
+                    f"Transaction missing 'transaction_id'; skipping. Account: {account_label}"
+                )
                 continue
 
             txn_date = txn.get("date")
@@ -497,10 +500,12 @@ def refresh_data_for_plaid_account(access_token, account_id):
             # ✅ Category resolution now includes plaid_category_id and parent assignment
             category_path = txn.get("category", [])
             plaid_cat_id = txn.get("category_id")
-            category = get_or_create_category(category_path, plaid_cat_id)
+            category = resolve_or_create_category(category_path)
 
             merchant_name = txn.get("merchant_name") or "Unknown"
-            merchant_type = txn.get("payment_meta", {}).get("payment_method") or "Unknown"
+            merchant_type = (
+                txn.get("payment_meta", {}).get("payment_method") or "Unknown"
+            )
             description = txn.get("name") or "[no description]"
             pending = txn.get("pending", False)
 
@@ -526,7 +531,9 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
                     existing_txn.provider = "Plaid"
-                    logger.info(f"✅ Updated transaction {txn_id} for account {account_label}")
+                    logger.info(
+                        f"Updated transaction {txn_id} for account {account_label}"
+                    )
                     updated = True
             else:
                 new_txn = Transaction(
@@ -540,17 +547,21 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     category=category.computed_display_name,
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
-                    provider="Plaid"
+                    provider="Plaid",
                 )
                 db.session.add(new_txn)
-                logger.info(f"➕ Inserted new transaction {txn_id} for account {account_label}")
+                logger.info(
+                    f"➕ Inserted new transaction {txn_id} for account {account_label}"
+                )
                 updated = True
 
         db.session.commit()
 
     except Exception as e:
-        logger.error(f"❌ Error refreshing transactions for account {account_id}: {e}", exc_info=True)
+        logger.error(
+            f"Error refreshing transactions for account {account_id}: {e}",
+            exc_info=True,
+        )
         db.session.rollback()
 
     return updated
-
