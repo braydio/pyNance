@@ -44,6 +44,7 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     Settings: typeof import('./components/Settings.vue')['default']
     TempForecast: typeof import('./components/TempForecast.vue')['default']
+    TempRecoveredTokenUpload: typeof import('./components/TempRecoveredTokenUpload.vue')['default']
     TokenUpload: typeof import('./components/TokenUpload.vue')['default']
     TransactionsTable: typeof import('./components/TransactionsTable.vue')['default']
     TransactionUploadCSV: typeof import('./components/TransactionUploadCSV.vue')['default']
