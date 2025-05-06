@@ -73,18 +73,21 @@ export default {
     );
     return response.data;
   },
-
   async deleteAccount(provider, account_id) {
-    let url = "";
-    if (provider === "plaid") {
-      url = "/plaid/transactions/delete_account";
-    } else if (provider === "teller") {
-      url = "/teller/transactions/delete_account";
+    const urlMap = {
+      plaid: "/plaid/transactions/delete_account",
+      teller: "/teller/transactions/delete_account",
+    };
+    const url = urlMap[provider];
+    if (!url) return;
+
+    try {
+      const response = await apiClient.delete(url, { data: { account_id } });
+      return response.data;
+    } catch (error) {
+      console.error("Failed to delete account:", error);
+      throw error;
     }
-    const response = await apiClient.request({
-      method: "DELETE",
-      url,
-      data: { account_id },
-    });
   }
-}
+};
+
