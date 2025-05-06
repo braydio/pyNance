@@ -1,177 +1,101 @@
 <template>
-  <div class="accounts-reorder-chart">
-    <h2>Top Accounts by Balance</h2>
-
-    <div class="chart-summary">
-      <!-- Liabilities Section -->
-      <div class="group">
-        <h3>Liabilities (Top 5)</h3>
-        <draggable v-model="creditAccounts" :options="{ animation: 150 }" item-key="account_id">
-          <template #item="{ element }">
-            <div class="account-bar">
-              <div class="account-info">
-                <span class="account-name">{{ element.name }}</span>
-                <span class="account-balance">{{ formatBalance(element.adjusted_balance) }}</span>
-              </div>
-              <div class="bar liabilities-bar" :style="{ width: getBarWidth(element, creditAccounts) }"></div>
-            </div>
-          </template>
-        </draggable>
-      </div>
-
-      <!-- Assets Section -->
-      <div class="group">
-        <h3>Assets (Top 5)</h3>
-        <draggable v-model="depositoryAccounts" :options="{ animation: 150 }" item-key="account_id">
-          <template #item="{ element }">
-            <div class="account-bar">
-              <div class="account-info">
-                <span class="account-name">{{ element.name }}</span>
-                <span class="account-balance">
-                  {{ formatBalance(element.balance) }}
-                </span>
-              </div>
-              <div class="bar" :style="{ width: getBarWidth(element, depositoryAccounts) }"></div>
-            </div>
-          </template>
-        </draggable>
+  <div class="chart-container card">
+    <h2 class="heading-md">Top Credit Accounts</h2>
+    <div class="bar-chart">
+      <div v-for="account in topAccounts" :key="account.id" class="bar-row">
+        <span class="bar-label">{{ account.name }}</span>
+        <div class="bar-outer">
+          <div class="bar-fill" :style="{ width: barWidth(account) }">
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-import axios from "axios";
-import draggable from "vuedraggable";
+<script setup>
+import axios from 'axios'
+import { ref, computed, onMounted } from 'vue'
 
-export default {
-  name: "AccountsReorderChart",
-  components: { draggable },
-  data() {
-    return {
-      accounts: [],
-      creditAccounts: [],
-      depositoryAccounts: [],
-    };
-  },
-  methods: {
-    async fetchAccounts() {
-      try {
-        const response = await axios.get("/api/accounts/get_accounts");
-        if (response.data && response.data.status === "success") {
-          this.accounts = response.data.accounts || response.data;
-          this.filterAccounts();
-        } else {
-          console.error("Error fetching accounts:", response.data);
-        }
-      } catch (err) {
-        console.error("Error fetching accounts:", err);
-      }
-    },
-    filterAccounts() {
-      if (!this.accounts.length) return;
+const accounts = ref([])
 
-      const credit = this.accounts
-        .filter((acc) => acc.type && acc.type.toLowerCase() === "credit")
-        .map((acc) => ({
-          ...acc,
-          adjusted_balance: -Math.abs(acc.balance),
-        }))
-        .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance));
+function format(n) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n)
+}
 
-      const depository = this.accounts
-        .filter((acc) => !acc.type || acc.type.toLowerCase() !== "credit")
-        .sort((a, b) => b.balance - a.balance);
+function barWidth(acc) {
+  const max = Math.max(...accounts.value.map(a => Math.abs(a.adjusted_balance || a.balance)), 1)
+  return `${(Math.abs(acc.adjusted_balance || acc.balance) / max) * 100}%`
+}
 
-      this.creditAccounts = credit.slice(0, 5);
-      this.depositoryAccounts = depository.slice(0, 5);
-    },
-    formatBalance(balance) {
-      return new Intl.NumberFormat("en-US", {
-        style: "currency",
-        currency: "USD",
-        currencySign: "accounting",
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
-      }).format(balance);
-    },
-    getBarWidth(account, group) {
-      const maxBalance = Math.max(...group.map(acc => Math.abs(acc.adjusted_balance || acc.balance)), 1);
-      return ((Math.abs(account.adjusted_balance || account.balance) / maxBalance) * 100) + "%";
-    }
-  },
-  computed: {
-    topFiveLiabilities() {
-      return this.creditAccounts.slice(0, 5);
-    },
-    topFiveAssets() {
-      return this.depositoryAccounts.slice(0, 5);
-    }
-  },
-  mounted() {
-    this.fetchAccounts();
+const topAccounts = computed(() =>
+  accounts.value
+    .filter(a => a.type?.toLowerCase() === 'credit')
+    .sort((a, b) => b.adjusted_balance - a.adjusted_balance)
+    .slice(0, 5)
+)
+
+async function fetchAccounts() {
+  const { data } = await axios.get('/api/accounts/get_accounts')
+  if (data.status === 'success') {
+    accounts.value = data.accounts.map(acc => ({
+      ...acc,
+      adjusted_balance: -Math.abs(acc.balance)
+    }))
   }
-};
+}
+
+onMounted(fetchAccounts)
 </script>
 
 <style scoped>
-@import '@/styles/global-colors.css';
-
-.accounts-reorder-chart {
+.chart-container {
   padding: 1rem;
-  background-color: var(--color-bg-dark);
-  color: var(--color-text-light);
-  border-radius: 8px;
-  margin: 1rem;
+  background: var(--color-bg-secondary);
+  border-radius: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
 }
 
-.chart-summary {
-  display: flex;
-  gap: 2rem;
-}
-
-.group {
-  flex: 1;
-}
-
-.group h3 {
-  margin-bottom: 0.5rem;
-  color: var(--color-text-muted);
-  font-family: "SourceCodeProVF", monospace;
-}
-
-.account-bar {
-  padding: 0.5rem;
-  background-color: var(--color-bg-secondary);
-  border-radius: 4px;
-  cursor: move;
-  margin-bottom: 0.5rem;
+.bar-chart {
   display: flex;
   flex-direction: column;
+  gap: 0.75rem;
 }
 
-.account-info {
+.bar-row {
   display: flex;
-  justify-content: space-between;
-  font-family: "Fira Code", monospace;
-  font-size: 0.9rem;
+  align-items: center;
+  gap: 0.5rem;
 }
 
-.account-balance {
-  font-weight: bold;
+.bar-label {
+  flex: 1;
+  color: var(--color-text-muted);
 }
 
-.bar {
-  height: 10px;
-  border-radius: 4px;
-  background: linear-gradient(to right, var(--bar-gradient-start), var(--bar-gradient-end));
+.bar-outer {
+  flex: 5;
+  background: var(--color-bg-darker);
+  height: 16px;
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
 }
 
-.group .bar {
-  background-color: var(--bar-neutral);
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(to right, #ffadad, #ff5757);
+  border-radius: 6px;
+  transition: width 0.5s ease-out;
+  position: relative;
 }
 
-.group:first-child .bar {
-  background-color: var(--bar-alert);
+.bar-value {
+  position: absolute;
+  right: 0.5rem;
+  top: -1.25rem;
+  font-size: 0.8rem;
+  color: #ccc;
 }
 </style>
