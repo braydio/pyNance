@@ -5,12 +5,7 @@
 
     <!-- Filter Row -->
     <div class="filter-row">
-      <input
-        v-model="searchQuery"
-        class="filter-input"
-        type="text"
-        placeholder="Filter transactions..."
-      />
+      <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter transactions..." />
     </div>
 
     <table>
@@ -68,7 +63,7 @@
       </thead>
       <tbody>
         <tr v-for="tx in sortedTransactions" :key="tx.transaction_id">
-          <td>{{ tx.date || "N/A" }}</td>
+          <td>{{ formatDate(tx.date) || "N/A" }}</td>
           <td>{{ formatAmount(tx.amount) }}</td>
           <td>{{ tx.description || "N/A" }}</td>
           <td>{{ tx.category || "Unknown" }}</td>
@@ -143,6 +138,15 @@ export default {
     },
   },
   methods: {
+    formatDate(dateStr) {
+      if (!dateStr) return "N/A";
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("en-US", {
+        year: "2-digit",
+        month: "short",
+        day: "numeric"
+      });
+    },
     formatAmount(amount) {
       const number = parseFloat(amount);
       const formatter = new Intl.NumberFormat("en-US", {
@@ -178,6 +182,7 @@ export default {
 .filter-row {
   margin-bottom: 1rem;
 }
+
 .filter-input {
   width: 200px;
   padding: 0.4rem 0.6rem;
@@ -187,6 +192,7 @@ export default {
   color: var(--gruvbox-fg);
   outline: none;
 }
+
 .filter-input:focus {
   border-color: var(--gruvbox-accent);
 }
@@ -196,6 +202,7 @@ table {
   width: 100%;
   border-collapse: collapse;
 }
+
 th,
 td {
   border: 1px solid var(--gruvbox-border);
@@ -204,10 +211,12 @@ td {
   background-color: var(--gruvbox-bg);
   user-select: none;
 }
+
 th {
   cursor: pointer;
   font-weight: bold;
 }
+
 th:hover {
   background-color: var(--gruvbox-hover);
 }
@@ -216,5 +225,4 @@ th:hover {
 tbody tr:nth-child(even) {
   background-color: var(--gruvbox-hover-bg);
 }
-
 </style>
