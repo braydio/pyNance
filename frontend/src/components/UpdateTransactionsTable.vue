@@ -1,3 +1,7 @@
+/ * UpdateTransactionsTable.vue -- DEV Note: Look to integrate in the same module
+as TransactionsTable.vue, cut down on duplicated code.
+Flag the version of the table in the Transactions page as the
+version that can edit transactions elements.*
 <template>
   <div class="transactions">
     <div class="actions-row">
@@ -41,7 +45,7 @@
           <td>{{ formatAmount(tx.amount) }}</td>
           <td>{{ tx.description || 'N/A' }}</td>
           <td>{{ tx.category || 'Unknown' }}</td>
-          <td>{{ tx.merchant_name || 'Unknown' }}</td>
+          <td>{{ tx.merchant_name || 'N/A' }}</td>
           <td>{{ tx.account_name || 'N/A' }}</td>
           <td>{{ tx.institution_name || 'N/A' }}</td>
           <td>{{ tx.subtype || 'N/A' }}</td>
@@ -67,6 +71,11 @@ const categoryTree = ref([])
 const selectedPrimaryCategory = ref('')
 const selectedSubcategory = ref('')
 
+const subcategoryOptions = computed(() => {
+  const group = categoryTree.value.find(g => g.name === selectedPrimaryCategory.value)
+  return group ? group.children : []
+})
+
 const filteredTransactions = computed(() => {
   let txs = [...props.transactions]
   if (selectedSubcategory.value) {
@@ -77,31 +86,19 @@ const filteredTransactions = computed(() => {
   return txs
 })
 
-const subcategoryOptions = computed(() => {
-  const match = categoryTree.value.find(
-    (group) => group.name === selectedPrimaryCategory.value
-  )
-  return match ? match.children : []
-})
-
-function onPrimaryCategoryChange() {
-  selectedSubcategory.value = ''
-}
-
-function formatDate(str) {
+const formatDate = (str) => {
   if (!str) return 'N/A'
-  const d = new Date(str)
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+  return new Date(str).toLocaleDateString(undefined, {
+    year: 'numeric', month: 'short', day: 'numeric'
+  })
 }
 
-function formatAmount(amt) {
+const formatAmount = (amt) => {
   const n = parseFloat(amt)
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    currencySign: 'accounting',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: 2
   }).format(n)
 }
 
@@ -109,7 +106,19 @@ function exportTransactions() {
   window.open('/api/export/transactions', '_blank')
 }
 
-async function fetchCategories() {
+function onPrimaryCategoryChange() {
+  selectedSubcategory.value = ''
+}
+
+function editTransaction(index) {
+  console.log('Edit clicked for:', props.transactions[index])
+}
+
+function markRecurring(index) {
+  console.log('Mark recurring for:', props.transactions[index])
+}
+
+onMounted(async () => {
   try {
     const res = await axios.get('/api/categories/tree')
     if (res.data?.status === 'success') {
@@ -118,17 +127,7 @@ async function fetchCategories() {
   } catch (e) {
     console.error('Failed to load category tree:', e)
   }
-}
-
-function editTransaction(index) {
-  console.log("Edit clicked for:", props.transactions[index])
-}
-
-function markRecurring(index) {
-  console.log("Mark recurring for:", props.transactions[index])
-}
-
-onMounted(fetchCategories)
+})
 </script>
 
 <style scoped>
@@ -146,8 +145,7 @@ onMounted(fetchCategories)
   margin-bottom: 1rem;
 }
 
-.export-btn,
-.btn.btn-sm {
+.export-btn {
   background-color: transparent;
   color: var(--neon-purple);
   border: 1px solid var(--neon-purple);
@@ -159,8 +157,7 @@ onMounted(fetchCategories)
   transition: all 0.2s ease-in-out;
 }
 
-.export-btn:hover,
-.btn.btn-sm:hover {
+.export-btn:hover {
   background-color: var(--neon-purple);
   color: var(--color-bg-dark);
   border-color: var(--neon-purple);
@@ -189,19 +186,8 @@ onMounted(fetchCategories)
   outline: none;
 }
 
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-thead {
-  background-color: var(--color-bg-dark);
-  color: white;
-}
-
-td,
-th {
+th,
+td {
   padding: 0.6rem 1rem;
   border-bottom: 1px solid var(--divider);
 }
