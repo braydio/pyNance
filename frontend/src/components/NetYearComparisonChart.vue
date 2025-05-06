@@ -1,137 +1,157 @@
-
 <template>
   <div class="chart-container card">
-    <div class="flex-between mb-2">
-      <h2 class="heading-md">{{ chartTypeLabel }} </h2>
-      <div>
-        <button
-          v-for="type in chartTypes"
-          :key="type.value"
-          class="btn btn-pill m-1"
-          :class="{'btn-success': activeChart === type.value, 'btn-outline': activeChart !== type.value}"
-          @click="setChartType(type.value)"
-        >
-          {{ type.label }}
-        </button>
-      </div>
+    <h2 class="heading-md">{{ chartTypeLabel }} Year Comparison</h2>
+    <div class="toggle-group">
+      <button v-for="type in chartTypes" :key="type.value" class="btn btn-pill"
+        :class="{ active: activeChart === type.value }" @click="setChartType(type.value)">
+        {{ type.label }}
+      </button>
     </div>
     <canvas ref="chartCanvas"></canvas>
   </div>
 </template>
 
-<script>
-import axios from "axios";
-import { ref, onMounted, nextTick } from "vue";
-import { Chart } from "chart.js/auto";
+<script setup>
+import axios from 'axios'
+import { ref, onMounted, nextTick } from 'vue'
+import { Chart } from 'chart.js/auto'
 
-export default {
-  name: "NetYearComparisonChart",
-  setup() {
-    const chartCanvas = ref(null);
-    const chartInstance = ref(null);
-    const chartData = ref([]);
-    const activeChart = ref('assets');
+const chartCanvas = ref(null)
+const chartInstance = ref(null)
+const chartData = ref([])
+const activeChart = ref('assets')
+const chartTypeLabel = ref('Assets')
 
-    const MONTH_LABELS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const thisYear = new Date().getFullYear()
+const lastYear = thisYear - 1
+const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
-    const thisYear = new Date().getFullYear();
-    const lastYear = thisYear - 1;
+const chartTypes = [
+  { label: 'Assets', value: 'assets' },
+  { label: 'Liabilities', value: 'liabilities' },
+  { label: 'Net Worth', value: 'netWorth' }
+]
 
-    const chartTypes = [
-      { label: "Assets", value: "assets" },
-      { label: "Liabilities", value: "liabilities" },
-      { label: "Net", value: "netWorth" }
-    ];
+function parseByType(year, key) {
+  const result = new Array(12).fill(null)
+  chartData.value.forEach(d => {
+    const [y, m] = d.date.split('-').map(Number)
+    if (y === year) result[m - 1] = d[key]
+  })
+  return result
+}
 
-    const chartTypeLabel = ref('Assets');
+function formatCurrency(val) {
+  const num = Number(val || 0)
+  return num < 0 ? `($${Math.abs(num).toLocaleString()})` : `$${num.toLocaleString()}`
+}
 
-    onMounted(() => {
-      fetchData();
-    });
+async function fetchData() {
+  try {
+    const { data } = await axios.get('/api/charts/net_assets')
+    chartData.value = Array.isArray(data?.data) ? data.data : []
+    await nextTick()
+    buildChart()
+  } catch (e) {
+    console.error('Chart fetch failed:', e)
+  }
+}
 
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("/api/charts/net_assets");
-        if (response.data.status === "success") {
-          chartData.value = response.data.data || [];
-          await nextTick();
-          buildChart();
+function buildChart() {
+  if (!chartData.value.length) return
+  if (chartInstance.value) chartInstance.value.destroy()
+
+  const ctx = chartCanvas.value.getContext('2d')
+
+  const grad1 = ctx.createLinearGradient(0, 0, 0, 400)
+  grad1.addColorStop(0, '#89dceb')
+  grad1.addColorStop(1, 'transparent')
+
+  const grad2 = ctx.createLinearGradient(0, 0, 0, 400)
+  grad2.addColorStop(0, '#facc15')
+  grad2.addColorStop(1, 'transparent')
+
+  chartInstance.value = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: MONTH_LABELS,
+      datasets: [
+        {
+          label: `${chartTypeLabel.value} (${lastYear})`,
+          data: parseByType(lastYear, activeChart.value),
+          borderColor: '#22d3ee',
+          backgroundColor: grad1,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0
+        },
+        {
+          label: `${chartTypeLabel.value} (${thisYear})`,
+          data: parseByType(thisYear, activeChart.value),
+          borderColor: '#facc15',
+          backgroundColor: grad2,
+          fill: true,
+          tension: 0.25,
+          pointRadius: 0
         }
-      } catch (error) {
-        console.error(error);
+      ]
+    },
+    options: {
+      responsive: true,
+      animation: { duration: 1000, easing: 'easeOutExpo' },
+      plugins: {
+        legend: {
+          labels: { color: '#ddd', boxWidth: 14, usePointStyle: true }
+        },
+        tooltip: {
+          backgroundColor: '#1e1e1e',
+          borderColor: '#444',
+          borderWidth: 1,
+          callbacks: {
+            label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#aaa' },
+          grid: { color: '#333' }
+        },
+        y: {
+          ticks: { color: '#aaa', callback: formatCurrency },
+          grid: { color: '#333' }
+        }
       }
-    };
+    }
+  })
+}
 
-    const getMonthIndex = (dateString) => parseInt(dateString.split("-")[1], 10) - 1;
+function setChartType(type) {
+  activeChart.value = type
+  chartTypeLabel.value = chartTypes.find(t => t.value === type).label
+  buildChart()
+}
 
-    const createMonthlyData = (year, dataKey) => {
-      const monthlyData = new Array(12).fill(null);
-
-      chartData.value.forEach(item => {
-        if (parseInt(item.date.split("-")[0], 10) === year) {
-          monthlyData[getMonthIndex(item.date)] = item[dataKey];
-        }
-      });
-      return monthlyData;
-    };
-
-    const buildChart = () => {
-      if (chartInstance.value) chartInstance.value.destroy();
-
-      const ctx = chartCanvas.value.getContext("2d");
-
-      chartInstance.value = new Chart(ctx, {
-        type: "line",
-        data: {
-          labels: MONTH_LABELS,
-          datasets: [
-            {
-              label: `${chartTypeLabel.value} (${lastYear})`,
-              data: createMonthlyData(lastYear, activeChart.value),
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bar-neutral').trim(),
-              backgroundColor: "transparent",
-              tension: 0.1,
-              borderDash: [5, 5],
-            },
-            {
-              label: `${chartTypeLabel.value} (${thisYear})`,
-              data: createMonthlyData(thisYear, activeChart.value),
-              borderColor: getComputedStyle(document.documentElement).getPropertyValue('--bar-success').trim(),
-              backgroundColor: "transparent",
-              tension: 0.1,
-            },
-          ],
-        },
-        options: {
-          responsive: true,
-          plugins: { legend: { labels: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-light').trim() } } },
-          scales: {
-            x: { ticks: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim() }, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--divider').trim() } },
-            y: { ticks: { display: false }, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--divider').trim() } },
-          },
-        },
-      });
-    };
-
-    const setChartType = (type) => {
-      activeChart.value = type;
-      chartTypeLabel.value = chartTypes.find(t => t.value === type).label;
-      buildChart();
-    };
-
-    return { chartCanvas, chartTypes, activeChart, setChartType, chartTypeLabel };
-  },
-};
+onMounted(fetchData)
 </script>
 
 <style scoped>
 .chart-container {
-  margin: 1rem;
-  padding: 1rem;
-  opacity: 0.95;
-  position: relative;
-  max-height: 400px;
-  height: 100%;
+  padding: 1.5rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+}
+
+.toggle-group {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.toggle-group .btn.active {
+  background: var(--color-accent-mint);
+  color: var(--color-bg-dark);
+  box-shadow: 0 0 6px var(--neon-mint);
 }
 </style>
-
