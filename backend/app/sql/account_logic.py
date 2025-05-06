@@ -443,7 +443,6 @@ def get_paginated_transactions(page, page_size):
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
-                "access_token": acc.access_token or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
             }
