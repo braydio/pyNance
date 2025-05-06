@@ -7,11 +7,27 @@
       <div class="filter-row">
         <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter accounts..." />
 
-        <button class="theme-buttons-top" @click="toggleDeleteButtons">
+        <button class="export-btn" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
         </button>
 
-        <button class="theme-buttons-top" @click="exportCSV">Export CSV</button>
+        <button class="export-btn" @click="exportCSV">Export CSV</button>
+
+        <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
+          Filter by Type
+        </button>
+      </div>
+
+      <!-- Type Filter Slide -->
+      <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
+        <select v-model="selectedType" class="filter-input">
+          <option value="">All Types</option>
+          <option value="checking">Checking</option>
+          <option value="savings">Savings</option>
+          <option value="credit">Credit</option>
+          <option value="loan">Loan</option>
+          <option value="investment">Investment</option>
+        </select>
       </div>
 
       <!-- Main Table -->
@@ -52,7 +68,7 @@
             <td>{{ account.link_type || 'N/A' }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
             <td v-if="showDeleteButtons">
-              <button class="delete-btn" @click="deleteAccount(account.account_id)">Delete</button>
+              <button class="btn btn-sm" @click="deleteAccount(account.account_id)">Delete</button>
             </td>
           </tr>
         </tbody>
@@ -68,6 +84,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import axios from "axios";
@@ -92,25 +109,27 @@ export default {
       sortKey: "",
       sortOrder: 1,
       showDeleteButtons: false,
+      showTypeFilter: false,
+      typeFilters: [],
     };
   },
   computed: {
+    uniqueTypes() {
+      return [...new Set(this.accounts.map(acc => acc.type).filter(Boolean))];
+    },
     filteredAccounts() {
-      if (!this.searchQuery.trim()) {
-        return this.accounts;
+      let results = [...this.accounts];
+      if (this.searchQuery.trim()) {
+        const query = this.searchQuery.toLowerCase();
+        results = results.filter((acc) => {
+          const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status, acc.link_type].map(val => (val || '').toLowerCase());
+          return fields.some(f => f.includes(query));
+        });
       }
-      const query = this.searchQuery.toLowerCase();
-      return this.accounts.filter((acc) => {
-        const fieldsToSearch = [
-          acc.institution_name,
-          acc.name,
-          acc.type,
-          acc.subtype,
-          acc.status,
-          acc.link_type,
-        ].map((val) => (val || "").toString().toLowerCase());
-        return fieldsToSearch.some((field) => field.includes(query));
-      });
+      if (this.typeFilters.length) {
+        results = results.filter(acc => this.typeFilters.includes(acc.type));
+      }
+      return results;
     },
     sortedAccounts() {
       const sorted = [...this.filteredAccounts];
@@ -128,6 +147,9 @@ export default {
     },
   },
   methods: {
+    toggleTypeFilter() {
+      this.showTypeFilter = !this.showTypeFilter;
+    },
     async fetchAccounts() {
       this.loading = true;
       this.error = "";
@@ -142,25 +164,6 @@ export default {
         this.error = err.message || "Error fetching accounts.";
       } finally {
         this.loading = false;
-      }
-    },
-    async refreshAccounts() {
-      try {
-        const response =
-          this.provider === "plaid"
-            ? await axios.post("/api/plaid/transactions/refresh_accounts")
-            : await axios.post("/api/teller/transactions/refresh_balances");
-
-        if (response.data?.status === "success") {
-          const accountNames = response.data.updated_accounts.map((acc) => acc.account_name);
-          alert("Balances refreshed for: " + accountNames.join(", "));
-          this.fetchAccounts();
-        } else {
-          alert("Failed to refresh balances: " + response.data.message);
-        }
-      } catch (err) {
-        console.error("Error refreshing balances:", err);
-        alert("Error refreshing balances: " + err.message);
       }
     },
     async deleteAccount(accountId) {
@@ -202,7 +205,7 @@ export default {
       this.showDeleteButtons = !this.showDeleteButtons;
     },
     exportCSV() {
-      // Optionally add export CSV functionality here
+      window.open('/api/export/accounts', '_blank');
     },
   },
   mounted() {
@@ -211,120 +214,139 @@ export default {
 };
 </script>
 
-<style>
-/* Accounts Table Container */
-.accounts-table {
-  background-color: var(--background);
-  color: var(--foreground);
-  padding: 0.5rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
+
+<style scoped>
+.accounts-section {
+  background-color: var(--color-bg-secondary);
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px var(--shadow);
+  color: var(--color-text-light);
 }
 
-/* <-- Added closing bracket here */
-
-/* Heading */
 .accounts-table h2 {
-  margin-top: 0;
-  color: var(--accent);
-  font-family: "Fira Code", monospace;
+  margin-bottom: 1rem;
   font-size: 1.5rem;
+  color: var(--neon-purple);
 }
 
-/* Filter Row */
 .filter-row {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.75rem;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
 }
 
-/* Filter Input */
 .filter-input {
-  flex: 1;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background-color: var(--hover);
-  color: var(--foreground);
-  font-family: "Fira Code", monospace;
-  font-size: 1rem;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
-.filter-input:focus {
-  border-color: var(--hover);
-}
-
-/* Toggle Delete Buttons Button */
-.theme-buttons-top {
-  padding: 0.5rem 1rem;
-  background-color: var(--background);
-  color: var(--foreground);
-  border: 1px groove var(--background);
-  border-radius: 0px;
-  cursor: pointer;
-  font-family: "Fira Code", monospace;
-  font-weight: bold;
-}
-
-.theme-buttons-top:hover {
-  color: var(--foreground);
-  background-color: var(--hover);
-  border: 1px groove transparent;
-}
-
-/* Table Styling */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--border);
-  text-align: left;
-  font-family: "Fira Code", monospace;
+  padding: 0.4rem 0.9rem;
+  border-radius: 2rem;
+  border: 1px solid var(--neon-purple);
+  background-color: transparent;
+  color: var(--neon-purple);
   font-size: 0.9rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.filter-input:hover,
+.filter-input:focus {
+  background-color: var(--neon-purple);
+  color: var(--color-bg-dark);
+  outline: none;
+}
+
+.export-btn {
+  background-color: transparent;
+  color: var(--neon-purple);
+  border: 1px solid var(--neon-purple);
+  border-radius: 2rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.export-btn:hover {
+  background-color: var(--neon-purple);
+  color: var(--color-bg-dark);
+  border-color: var(--neon-purple);
+}
+
+/* Slide-in filter row */
+.type-filter-row {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease, margin-top 0.3s ease;
+}
+
+.type-filter-row.slide-in {
+  max-height: 80px;
+  margin-top: 0.5rem;
+}
+
+.btn.btn-sm {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.8rem;
+  border: none;
+  border-radius: 0.5rem;
+  background-color: var(--neon-purple);
+  color: black;
+  cursor: pointer;
+  margin-right: 0.25rem;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.btn.btn-sm:hover {
+  background-color: var(--color-accent-purple-hover);
+  color: white;
+}
+
+.btn-delete {
+  background-color: transparent;
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+  border-radius: 2rem;
+  padding: 0.35rem 0.9rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+}
+
+.btn-delete:hover {
+  background-color: var(--color-error);
+  color: white;
 }
 
 th {
   cursor: pointer;
-  background-color: var(--input-bg);
-  color: var(--foreground);
-  position: relative;
+  user-select: none;
+  font-weight: 500;
 }
 
 th span {
-  margin-left: 0.5rem;
-  font-size: 0.8rem;
-  opacity: 0.8;
+  margin-left: 0.4rem;
+  color: var(--color-text-muted);
 }
 
-/* Delete Button Styling */
-
-
-.delete-btn {
-  padding: 0.4rem 0.8rem;
-  background-color: var(--error);
-  color: #ffffff;
-  border: 1px solid var(--error);
-  border-radius: 4px;
-  cursor: pointer;
-  font-family: "Fira Code", monospace;
-  font-weight: bold;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
 }
 
-.delete-btn:hover {
-  background-color: #ff6666;
-  transform: translateY(-1px);
+thead {
+  background-color: var(--color-bg-dark);
+  color: white;
 }
 
-/* Table Row Hover Effect */
+td,
+th {
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid var(--divider);
+}
+
 tbody tr:hover {
-  background-color: var(--hover);
+  background-color: var(--color-hover-light);
 }
 </style>
