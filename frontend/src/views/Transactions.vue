@@ -12,12 +12,12 @@
       <!-- File Importer -->
       <ImportFileSelector class="mb-4" />
 
-      <!-- Search and Filters -->
+      <!-- Search + Controls -->
       <div class="controls mb-2">
         <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="search-input" />
       </div>
 
-      <!-- Primary Table -->
+      <!-- Main Table -->
       <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
         @sort="setSort" />
 
@@ -32,13 +32,10 @@
         </button>
       </div>
 
-      <!-- Recurring Highlight -->
-      <div>
+      <!-- Recurring Transactions (Optional) -->
+      <div class="mt-6">
         <RecurringTransactionSection provider="plaid" />
       </div>
-
-      <!-- Manual Upload Table -->
-      <ManualTransactionTable class="mt-6" />
     </main>
   </div>
 </template>
@@ -48,7 +45,6 @@ import { useTransactions } from "@/composables/useTransactions.js"
 import UpdateTransactionsTable from "@/components/UpdateTransactionsTable.vue"
 import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue"
 import ImportFileSelector from "@/components/ImportFileSelector.vue"
-import ManualTransactionTable from "@/components/ManualTransactionTable.vue"
 
 export default {
   name: "Transactions",
@@ -56,7 +52,6 @@ export default {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
-    ManualTransactionTable,
   },
   setup() {
     const {
