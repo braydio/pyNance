@@ -13,7 +13,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { useForecastEngineMock } from '@/composables/useForecastEngine'
+import { useForecastEngine } from '@/composables/useForecastEngine'
 
 Chart.register(...registerables)
 
@@ -40,7 +40,7 @@ const accountHistory = [
   { date: 'May 4', balance: 4220 }
 ]
 
-const engine = useForecastEngineMock(
+const engine = useForecastEngine(
   ref(props.viewType),
   recurringTxs,
   accountHistory,
