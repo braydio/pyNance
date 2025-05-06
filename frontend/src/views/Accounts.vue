@@ -1,87 +1,94 @@
 <template>
-  <div class="accounts-page container">
+  <div class="accounts-view">
     <!-- Header -->
-    <header class="accounts-header flex-center p-2">
-      <div>
-        <h1>Accounts Management</h1>
-        <h2>Now with Accounts!</h2>
-        <p>This item uses the {{ userName }} variable. Say "Hi, I'm {{ userName }}" {{ userName }}.</p>
-        <p>{{ currentDate }}. They made us put that here.</p>
-      </div>
+    <header class="accounts-header">
+      <h1>Accounts Management</h1>
+      <h2>Now with Accounts!</h2>
+      <p>
+        This item uses the {{ userName }} variable. Say "Hi, I'm {{ userName }}"
+        {{ userName }}.
+      </p>
+      <p>{{ currentDate }}. They made us put that here.</p>
     </header>
 
-    <!-- Controls Widget -->
-    <section class="controls-widget m-2 position-relative">
-      <button class="btn btn-pill m-1" @click="toggleControls">Controls</button>
+    <!-- Control Buttons -->
+    <section class="controls-widget">
+      <button class="btn btn-pill" @click="toggleControls">Controls</button>
       <transition name="slide-horizontal" mode="out-in">
-        <div v-if="showControls" class="card p-2 mt-2 controls-container min-h-[220px]">
+        <div v-if="showControls" class="controls-container">
           <transition name="slide-horizontal" mode="out-in">
-            <div v-if="!showTokenForm" class="flex-center flex-wrap gap-1">
-              <LinkAccount class="btn btn-outline btn-pill" @manual-token-click="toggleManualTokenMode" />
-              <RefreshPlaidControls class="btn btn-outline btn-pill" />
-              <RefreshTellerControls class="btn btn-outline btn-pill" />
-            </div>
-            <TokenUpload v-else @cancel="toggleManualTokenMode" />
+            <template v-if="!showTokenForm">
+              <div class="controls-buttons">
+                <LinkAccount class="btn btn-outline btn-pill" @manual-token-click="toggleManualTokenMode" />
+                <RefreshPlaidControls class="btn btn-outline btn-pill" />
+                <RefreshTellerControls class="btn btn-outline btn-pill" />
+              </div>
+            </template>
+            <template v-else>
+              <TokenUpload @cancel="toggleManualTokenMode" />
+            </template>
           </transition>
         </div>
       </transition>
     </section>
 
-    <!-- Charts Section -->
-    <section class="charts-section grid-3col gap-2 m-2">
-      <div class="card">
+    <!-- Charts -->
+    <section class="charts-section">
+      <div class="chart-container">
         <NetYearComparisonChart />
       </div>
-      <div class="card">
+      <div class="chart-container">
         <AssetsBarTrended />
       </div>
-      <div class="card">
+      <div class="chart-container">
         <AccountsReorderChart />
       </div>
     </section>
 
     <!-- Accounts Table -->
     <transition name="slide-horizontal" mode="out-in">
-      <div class="accounts-overview card m-2" :key="activeAccountGroup">
+      <div class="card section-container" :key="activeAccountGroup">
         <AccountsTable :accountGroup="activeAccountGroup" />
       </div>
     </transition>
 
-    <!-- Account Group Tabs -->
-    <div class="account-tabs flex-center m-2">
-      <button v-for="group in accountGroups" :key="group" class="btn btn-pill m-1"
-        :class="{ 'active-tab': activeAccountGroup === group }" @click="activeAccountGroup = group">
-        {{ group }}
-      </button>
-    </div>
+    <!-- Account Tabs -->
+    <section class="section-container">
+      <div class="account-tabs">
+        <button v-for="group in accountGroups" :key="group" class="btn btn-pill"
+          :class="{ 'active-tab': activeAccountGroup === group }" @click="activeAccountGroup = group">
+          {{ group }}
+        </button>
+      </div>
+    </section>
 
     <!-- Footer -->
-    <footer class="accounts-footer flex-center p-2 mt-3">
+    <footer class="accounts-footer">
       &copy; good dashroad.
     </footer>
   </div>
 </template>
 
 <script setup>
-import LinkAccount from "@/components/LinkAccount.vue";
-import AccountsTable from "@/components/AccountsTable.vue";
-import NetYearComparisonChart from "@/components/NetYearComparisonChart.vue";
-import AssetsBarTrended from "@/components/AssetsBarTrended.vue";
-import RefreshTellerControls from "@/components/RefreshTellerControls.vue";
-import RefreshPlaidControls from "@/components/RefreshPlaidControls.vue";
-import AccountsReorderChart from "@/components/AccountsReorderChart.vue";
-import TokenUpload from "@/components/TokenUpload.vue";
-import { ref } from 'vue';
+import { ref } from 'vue'
+import LinkAccount from '@/components/LinkAccount.vue'
+import AccountsTable from '@/components/AccountsTable.vue'
+import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue'
+import AssetsBarTrended from '@/components/AssetsBarTrended.vue'
+import AccountsReorderChart from '@/components/AccountsReorderChart.vue'
+import RefreshTellerControls from '@/components/RefreshTellerControls.vue'
+import RefreshPlaidControls from '@/components/RefreshPlaidControls.vue'
+import TokenUpload from '@/components/TokenUpload.vue'
 
-const userName = import.meta.env.VITE_USER_ID_PLAID || '';
+const userName = import.meta.env.VITE_USER_ID_PLAID || ''
 const currentDate = new Date().toLocaleDateString(undefined, {
-  month: "long",
-  day: "numeric",
-  year: "numeric",
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric'
 })
 
-const activeAccountGroup = ref("Checking")
-const accountGroups = ["Checking", "Savings", "Credit"]
+const activeAccountGroup = ref('Checking')
+const accountGroups = ['Checking', 'Savings', 'Credit']
 const showControls = ref(true)
 const showTokenForm = ref(false)
 
@@ -95,92 +102,78 @@ function toggleManualTokenMode() {
 </script>
 
 <style scoped>
-/* Slide-horizontal Transition */
-.slide-horizontal-enter-active,
-.slide-horizontal-leave-active {
-  transition: transform 0.4s ease, opacity 0.4s ease;
-}
-
-.slide-horizontal-enter-from {
-  transform: translateX(-100%);
-  opacity: 0;
-}
-
-.slide-horizontal-leave-to {
-  transform: translateX(100%);
-  opacity: 0;
-}
-
-/* Layout Styling */
-.accounts-page {
+.accounts-view {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
   background-color: var(--page-bg);
   color: var(--color-text-light);
+  padding: 1.5rem;
+  gap: 1.5rem;
 }
 
-/* Header */
 .accounts-header {
+  text-align: center;
   background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--themed-border);
+  padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow);
-  text-align: center;
 }
 
 .accounts-header h1 {
-  margin: 0;
   color: var(--color-accent-yellow);
+  margin: 0;
   font-size: 2rem;
   text-shadow: 0 0 6px var(--color-accent-yellow);
 }
 
-/* Charts Section */
-.charts-section {
-  background-color: var(--themed-bg);
-  padding: 1rem;
-  border-radius: 12px;
-  border: 1px solid var(--divider);
-  box-shadow: 0 2px 12px var(--shadow);
-}
-
-/* Controls Widget */
 .controls-widget {
   position: relative;
 }
 
-/* Accounts Table Section */
-.accounts-overview {
-  background-color: var(--color-bg-secondary);
+.controls-container {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.chart-container,
+.section-container {
   padding: 1rem;
+  background-color: var(--color-bg-secondary);
   border-radius: 12px;
-  border: 1px solid var(--divider);
   box-shadow: 0 2px 12px var(--shadow);
 }
 
-/* Account Tabs */
+.account-tabs {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
 .account-tabs button {
   border: 1px solid var(--divider);
 }
 
 .account-tabs .active-tab {
-  background-color: var(--color-accent-mint) !important;
-  color: var(--color-bg-dark) !important;
+  background-color: var(--color-accent-mint);
+  color: var(--color-bg-dark);
   box-shadow: 0 0 6px var(--neon-mint);
 }
 
-.btn btn-pill m-1-hover {
-  background-color: var(--color-bg-dark);
-}
-
-/* Footer */
 .accounts-footer {
-  background-color: var(--color-bg-secondary);
-  border-top: 1px solid var(--themed-border);
-  font-size: 0.9rem;
+  margin-top: 3rem;
+  text-align: center;
   color: var(--color-text-muted);
-  border-radius: 8px;
-  box-shadow: 0 -2px 8px var(--shadow);
+  font-size: 0.9rem;
+  border-top: 1px solid var(--themed-border);
+  padding-top: 1rem;
 }
 </style>
