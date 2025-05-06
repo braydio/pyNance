@@ -1,93 +1,80 @@
+// src/composables/useForecastEngine.ts
 
-import { Ref, computed } from 'vue'
-import { startOfMonth, addDays, addMonths, format, isBefore, isSameMonth, isAfter } from 'date-fns'
+import { computed } from 'vue'
 
-type RecurringTransaction = {
+interface RecurringTransaction {
   label: string
   amount: number
-  frequency: 'monthly' | 'weekly'
-  nextDueDate: string
+  frequency: 'weekly' | 'monthly'
+  nextDueDate: string // ISO date
 }
 
-type AccountHistoryPoint = {
-  date: string
+interface AccountBalance {
+  date: string // ISO date
   balance: number
 }
 
-export function useForecastEngineMock(
-  viewType: Ref<'Month' | 'Year'>,
+function generateLabels(viewType: 'Month' | 'Year'): string[] {
+  const labels: string[] = []
+  const today = new Date()
+  if (viewType === 'Month') {
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today)
+      date.setDate(today.getDate() + i)
+      labels.push(date.toISOString().split('T')[0])
+    }
+  } else if (viewType === 'Year') {
+    for (let i = 0; i < 12; i++) {
+      const date = new Date(today)
+      date.setMonth(today.getMonth() + i)
+      labels.push(`${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`)
+    }
+  }
+  return labels
+}
+
+function computeActualLine(labels: string[], history: AccountBalance[]): number[] {
+  const historyMap = new Map(history.map(h => [h.date, h.balance]))
+  return labels.map(label => historyMap.get(label) ?? null)
+}
+
+function computeForecastLine(
+  labels: string[],
   recurringTxs: RecurringTransaction[],
-  accountHistory: AccountHistoryPoint[],
   manualIncome: number,
   liabilityRate: number
+): number[] {
+  const forecast = Array(labels.length).fill(0)
+  const labelDates = labels.map(label => new Date(label))
+
+  recurringTxs.forEach(tx => {
+    const startDate = new Date(tx.nextDueDate)
+    const interval = tx.frequency === 'weekly' ? 7 : 30
+    labelDates.forEach((date, index) => {
+      if (date >= startDate && (date.getTime() - startDate.getTime()) % (interval * 86400000) === 0) {
+        forecast[index] += tx.amount
+      }
+    })
+  })
+
+  return forecast.map(value => value + manualIncome - liabilityRate)
+}
+
+export function useForecastEngine(
+  viewType: 'Month' | 'Year',
+  recurringTxs: RecurringTransaction[],
+  accountHistory: AccountBalance[],
+  manualIncome: number = 0,
+  liabilityRate: number = 0
 ) {
-  const startDate = computed(() => startOfMonth(new Date()))
-  const today = new Date()
-
-  const labels = computed(() => {
-    if (viewType.value === 'Month') {
-      return Array.from({ length: 30 }, (_, i) =>
-        format(addDays(startDate.value, i), 'MMM d')
-      )
-    } else {
-      return Array.from({ length: 12 }, (_, i) =>
-        format(addMonths(startDate.value, i), 'MMM')
-      )
-    }
-  })
-
-  const forecastLine = computed(() => {
-    const length = labels.value.length
-    let line = Array(length).fill(0)
-
-    recurringTxs.forEach((tx) => {
-      const txDate = new Date(tx.nextDueDate)
-
-      for (let i = 0; i < length; i++) {
-        const targetDate =
-          viewType.value === 'Month'
-            ? addDays(startDate.value, i)
-            : addMonths(startDate.value, i)
-
-        if (isBefore(txDate, targetDate) || isSameMonth(txDate, targetDate)) {
-          for (
-            let idx = i;
-            idx < length;
-            idx += tx.frequency === 'weekly' ? 1 : (viewType.value === 'Month' ? 4 : 1)
-          ) {
-            line[idx] += tx.amount
-          }
-          break
-        }
-      }
-    })
-
-    const adjustment = (manualIncome || 0) - (liabilityRate || 0)
-    return line.map(val => val + adjustment)
-  })
-
-  const actualLine = computed(() => {
-    const lookup = Object.fromEntries(
-      accountHistory.map(pt => [pt.date, pt.balance])
-    )
-
-    return labels.value.map((label, idx) => {
-      const date = viewType.value === 'Month'
-        ? addDays(startDate.value, idx)
-        : addMonths(startDate.value, idx)
-
-      if (isAfter(date, today)) {
-        return null // hide or make transparent in chart
-      }
-
-      return lookup[label] ?? 3000 + Math.random() * 50
-    })
-  })
+  const labels = generateLabels(viewType)
+  const actualLine = computeActualLine(labels, accountHistory)
+  const forecastLine = computeForecastLine(labels, recurringTxs, manualIncome, liabilityRate)
 
   return {
     labels,
-    forecastLine,
     actualLine,
+    forecastLine
   }
 }
 
