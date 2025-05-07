@@ -27,6 +27,7 @@ def create_app():
         from app.routes.transactions import transactions
         from app.routes.accounts import accounts
         from app.routes.recurring import recurring
+        from app.routes.forecast import forecast
         from app.routes.manual_io import manual_up
         from app.routes.charts import charts
         from app.routes.categories import categories
@@ -45,6 +46,7 @@ def create_app():
         app.register_blueprint(accounts, url_prefix="/api/accounts")
         app.register_blueprint(manual_up, url_prefix="/api/import")
         app.register_blueprint(charts, url_prefix="/api/charts")
+        app.register_blueprint(forecast, url_prefix="/api/forecast")
         app.register_blueprint(recurring, url_prefix="/api/recurring")
         app.register_blueprint(plaid_bp, url_prefix="/api/plaid")
         app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
