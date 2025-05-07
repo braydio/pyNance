@@ -1,175 +1,265 @@
+
+
 <template>
-  <div class="recurring-transactions-section">
-    <!-- Notifications/Reminders Section -->
-    <div class="notifications-container" v-if="notifications.length">
-      <h3>Upcoming Recurring Transactions</h3>
-      <p v-for="(notif, idx) in notifications" :key="idx" class="notification-message">
-        {{ notif }}
-      </p>
-    </div>
+  <section id="recurring" class="recurring-manager">
+    <h2 class="heading-md mb-4">Recurring Transactions</h2>
 
-    <!-- Manual Recurring Transaction (User-Defined) -->
-    <div class="manual-recurring-section">
-      <label for="manualDescription">Description:</label>
-      <input
-        id="manualDescription"
-        v-model="description"
-        type="text"
-        placeholder="Ex: Netflix subscription"
-      />
+    <!-- Form Modal Toggle -->
+    <button @click="resetForm" class="btn">+ Add Recurring Transaction Rule</button>
 
-      <label for="manualAmount">Amount ($):</label>
-      <input
-        id="manualAmount"
-        v-model.number="amount"
-        type="number"
-        step="0.01"
-      />
-
-      <label for="manualFrequency">Frequency:</label>
-      <select id="manualFrequency" v-model="frequency">
+    <!-- Form -->
+    <div v-if="showForm" class="recurring-form">
+      <input v-model="transactionId" placeholder="Transaction ID (e.g. tx_abc123)" />
+      <input v-model="description" placeholder="Description (optional)" />
+      <input v-model.number="amount" type="number" step="0.01" placeholder="Amount ($)" />
+      <select v-model="frequency">
         <option value="daily">Daily</option>
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
         <option value="yearly">Yearly</option>
       </select>
-
-      <label for="manualNextDue">Next Due Date:</label>
-      <input
-        id="manualNextDue"
-        v-model="nextDueDate"
-        type="date"
-      />
-
-      <label for="manualNotes">Notes:</label>
-      <input
-        id="manualNotes"
-        v-model="notes"
-        type="text"
-        placeholder="Any extra info..."
-      />
-
-      <label for="manualTxId">Transaction ID:</label>
-      <input
-        id="manualTxId"
-        v-model="transactionId"
-        type="text"
-        placeholder="tx_abc123"
-      />
-
+      <input v-model="nextDueDate" type="date" placeholder="Next Due Date" />
+      <input v-model="notes" placeholder="Notes" />
       <button @click="saveRecurring" :disabled="loading">
-        {{ loading ? 'Saving...' : 'Save' }}
+        {{ loading ? 'Saving...' : isEditing ? 'Update' : 'Save' }}
       </button>
     </div>
-  </div>
+
+    <!-- User-Defined Rules Table -->
+    <div class="table-section mt-6" v-if="userRules.length">
+      <h3 class="subheading">Your Recurring Rules</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Frequency</th>
+            <th>Next Due</th>
+            <th>Amount</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(rule, i) in userRules" :key="rule.description">
+            <td>{{ rule.description }}</td>
+            <td>{{ rule.frequency }}</td>
+            <td>{{ rule.next_due_date }}</td>
+            <td>{{ formatAmount(rule.amount) }}</td>
+            <td>{{ rule.notes }}</td>
+            <td>
+              <button class="btn-sm" @click="editRule(rule)">✏️</button>
+              <button class="btn-sm" @click="deleteRule(rule)">🗑</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Auto Reminders -->
+    <div class="auto-section mt-6" v-if="autoReminders.length">
+      <h3 class="subheading">Detected Reminders</h3>
+      <ul>
+        <li v-for="(reminder, i) in autoReminders" :key="i" class="note">
+          {{ reminder.description }} (${{ reminder.amount.toFixed(2) }}) due on {{ reminder.next_due_date }}
+        </li>
+      </ul>
+    </div>
+  </section>
 </template>
 
-<script>
-import { createRecurringTransaction } from "@/api/recurring";
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { createRecurringTransaction } from '@/api/recurring'
+import axios from 'axios'
 
-export default {
-  name: "RecurringTransactionsSection",
-  data() {
-    return {
-      transactionId: "",
-      description: "",
-      amount: 0.0,
-      frequency: "monthly",
-      nextDueDate: "",
-      notes: "",
-      loading: false,
-      error: "",
-      notifications: []
-    };
-  },
-  methods: {
-    async saveRecurring() {
-      if (!this.transactionId) return;
-      this.loading = true;
-      try {
-        const payload = {
-          frequency: this.frequency,
-          next_due_date: this.nextDueDate,
-          notes: this.notes || this.description || "Untitled Recurring",
-        };
-        await createRecurringTransaction(this.transactionId, payload);
-        this.notifications.push(`Recurring rule saved for transaction ${this.transactionId}`);
-      } catch (err) {
-        this.error = err.message || "Error saving recurring transaction.";
-      } finally {
-        this.loading = false;
-      }
-    }
+const route = useRoute()
+const accountId = route.params.accountId || '1'
+
+const transactionId = ref('')
+const description = ref('')
+const amount = ref(0.0)
+const frequency = ref('monthly')
+const nextDueDate = ref('')
+const notes = ref('')
+const loading = ref(false)
+const userRules = ref([])
+const autoReminders = ref([])
+const showForm = ref(false)
+const isEditing = ref(false)
+
+function resetForm() {
+  transactionId.value = ''
+  description.value = ''
+  amount.value = 0
+  frequency.value = 'monthly'
+  nextDueDate.value = ''
+  notes.value = ''
+  isEditing.value = false
+  showForm.value = true
+}
+
+function editRule(rule) {
+  transactionId.value = rule.transaction_id || ''
+  description.value = rule.description
+  amount.value = rule.amount
+  frequency.value = rule.frequency
+  nextDueDate.value = rule.next_due_date
+  notes.value = rule.notes
+  isEditing.value = true
+  showForm.value = true
+}
+
+async function deleteRule(rule) {
+  try {
+    await axios.delete(`/api/accounts/${accountId}/recurringTx`, { data: rule })
+    userRules.value = userRules.value.filter(r => r.description !== rule.description || r.amount !== rule.amount)
+  } catch (err) {
+    console.error('Failed to delete rule:', err)
   }
-};
+}
+
+async function saveRecurring() {
+  if (!transactionId.value) return
+  loading.value = true
+  try {
+    const payload = {
+      description: description.value,
+      amount: amount.value,
+      frequency: frequency.value,
+      next_due_date: nextDueDate.value,
+      notes: notes.value || description.value || 'Untitled Recurring'
+    }
+    await axios.put(`/api/accounts/${accountId}/recurringTx`, payload)
+    userRules.value = userRules.value.filter(r => r.description !== payload.description || r.amount !== payload.amount)
+    userRules.value.push(payload)
+    resetForm()
+  } catch (err) {
+    console.error('Error saving recurring:', err)
+  } finally {
+    loading.value = false
+  }
+}
+
+const formatAmount = (val) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency', currency: 'USD'
+  }).format(parseFloat(val || 0))
+}
+
+onMounted(async () => {
+  try {
+    const res = await axios.get(`/api/accounts/${accountId}/recurring`)
+    if (Array.isArray(res.data?.reminders)) {
+      userRules.value = res.data.reminders.filter(r => r.source === 'user')
+      autoReminders.value = res.data.reminders.filter(r => r.source === 'auto')
+    }
+  } catch (err) {
+    console.error('Failed to load recurring reminders:', err)
+  }
+})
 </script>
 
 
 <style scoped>
-@import '@/styles/global-colors.css';
-
-.recurring-transactions-section {
-  padding: 1rem;
-  background-color: var(--gruvbox-bg);
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  color: var(--gruvbox-fg);
-  font-family: "Fira Code", monospace;
+.recurring-manager {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 2rem;
+  background-color: var(--color-bg-secondary);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
-.notifications-container {
-  background-color: var(--page-bg, #1d2021);
-  color: var(--gruvbox-fg);
-  padding: 1rem;
+.heading-md {
+  font-size: 1.6rem;
+  font-weight: bold;
+  color: var(--color-accent-yellow);
+  margin-bottom: 1rem;
+}
+
+.subheading {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.recurring-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1.25rem;
+}
+
+.recurring-form input,
+.recurring-form select {
+  padding: 0.5rem;
   border-radius: 6px;
-  margin-bottom: 1rem;
+  border: 1px solid var(--divider);
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
 }
 
-.notification-message {
-  margin: 0.25rem 0;
-  font-size: 0.9rem;
-}
-
-.account-dropdown-section {
-  margin-bottom: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-.account-dropdown-section .styled-dropdown {
-  padding: 0.4rem;
-  border-radius: 4px;
-  border: 1px solid var(--gruvbox-border);
-  background-color: #1d2021;
-  color: var(--gruvbox-fg);
-  cursor: pointer;
-}
-
-.manual-recurring-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-.manual-recurring-section input,
-.manual-recurring-section select {
-  padding: 0.4rem;
-  border-radius: 4px;
-  border: 1px solid var(--gruvbox-border);
-  background-color: #1d2021;
-  color: var(--gruvbox-fg);
-}
-.manual-recurring-section button {
-  align-self: flex-start;
-  background-color: var(--gruvbox-accent);
-  color: var(--gruvbox-fg);
-  border: none;
+.btn {
+  grid-column: 1 / -1;
+  justify-self: start;
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border: solid 2px var(--color-text-light);
   padding: 0.5rem 1rem;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.2s;
 }
-.manual-recurring-section button:hover {
-  background-color: var(--gruvbox-hover);
+
+.btn:hover {
+  background-color: var(--neon-purple);
+  color: var(--button-bg);
+  border: solid 2px var(--neon-purple);
+}
+
+.recurring-form button {
+  grid-column: 1 / -1;
+  justify-self: start;
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border: solid 2px var(--color-text-light);
+  padding: 0.25rem 1.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.recurring-form button:hover {
+  background-color: var(--neon-purple);
+  color: var(--button-bg);
+  border: solid 2px var(--neon-purple);
+}
+
+.table-section table {
+  width: 100%;
+  background-color: var(--color-bg-dark);
+  border-collapse: collapse;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-top: 1rem;
+}
+
+table th, table td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--divider);
+  text-align: left;
+}
+
+.note {
+  font-size: 0.95rem;
+  margin: 0.3rem 0;
+  color: var(--color-accent);
+}
+
+.btn-sm {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 1.1rem;
 }
 </style>
-
