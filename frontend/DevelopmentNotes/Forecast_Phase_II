@@ -1,0 +1,173 @@
+* Read and write code from your repo (`/frontend/src/views/Forecast.vue`, etc.).
+* Analyze existing files before acting.
+* Improve files iteratively based on phase/stage.
+
+---
+
+# 📊 `Forecast.vue` Feature Development Template (GPT + Repo-Aware)
+
+---
+
+## ⚙️ Setup Instruction for GPT-Powered Workflow
+
+When you prompt, **reference real paths** like this:
+
+> “Check `/frontend/src/views/Forecast.vue` and add the reactive mock data as described in Phase 1.2.”
+
+---
+
+##  Phase 1: Frontend-Only Mock
+
+###  Step 1.1 – Scaffold Base Component
+
+**Prompt:**
+
+```text
+Create `/frontend/src/views/Forecast.vue` with the following layout:
+- Editable sections: income, expenses, investment return, liabilities
+- Forecast summary panel (live updating)
+Use Vue 3 Composition API, mock data only.
+```
+
+---
+
+### ✅ Step 1.2 – Add Reactive Mock Data + Forecast Logic
+
+**Prompt:**
+
+```text
+In `/frontend/src/views/Forecast.vue`, implement the forecast calculation:
+forecast = currentBalance + (inflows - outflows ± investmentReturn - liabilityImpact)
+
+Tasks:
+1. Add mock data using `ref()`.
+2. Create a `computed()` forecast value.
+3. Ensure recalculation when inputs change.
+```
+
+---
+
+### ✅ Step 1.3 – Dynamic Input Interactions
+
+**Prompt:**
+
+```text
+Add to `Forecast.vue`: dynamic add/remove support for recurring income/expense rows.
+
+Each item should include:
+- Name
+- Amount
+- Frequency (weekly/monthly)
+Bind using v-model and ref arrays.
+```
+
+---
+
+### ✅ Step 1.4 – Forecast Summary & Visualization
+
+**Prompt:**
+
+```text
+In `Forecast.vue`, add:
+1. A visual breakdown (divided section UI)
+2. A 30-day forecast line chart using mock data.
+Chart should update when input changes.
+Use Chart.js or Vue-compatible charting lib.
+```
+
+---
+
+## 🔗 Phase 2: Backend Integration (Python Flask)
+
+### ✅ Step 2.1 – Create `/forecast/data` API
+
+**Prompt:**
+
+```text
+Create a Flask route `/api/forecast/data`:
+- Pulls dummy data for now: income[], expenses[], investments[], liabilities[]
+- Returns JSON in schema needed by Forecast.vue
+
+Update frontend to fetch this on mount.
+```
+
+---
+
+### ✅ Step 2.2 – Axios + API Sync
+
+**Prompt:**
+
+```text
+In `Forecast.vue`, use Axios to fetch from `/api/forecast/data`.
+
+1. Populate the data into the reactive model.
+2. Add fallback to mock values if fetch fails.
+3. Show loading/error states as needed.
+```
+
+---
+
+## 🔐 Phase 3: Plaid + Teller Integration
+
+### ✅ Step 3.1 – Build Financial Data Service
+
+**Prompt:**
+
+```text
+In the Flask backend, create a service module:
+- Fetch transactions from Plaid and Teller
+- Normalize into a common `Transaction` model
+- Cache data per user session
+
+Expose via `/api/forecast/data`
+```
+
+---
+
+## 🧠 Phase 4: Manual Input Overrides
+
+### ✅ Step 4.1 – Store User Overrides
+
+**Prompt:**
+
+```text
+Add support for user overrides in Forecast.vue:
+- Allow edits to be POSTed to `/api/forecast/custom`
+- Track overrides in Vue state
+- Merge server data with local changes
+```
+
+---
+
+## 📈 Phase 5: 30-Day Projection
+
+### ✅ Step 5.1 – Forecast Function
+
+**Prompt:**
+
+```text
+Write a function in `Forecast.vue`:
+- Given all drivers, return a 30-day forecast array
+- Use recurrence rules to simulate daily deltas
+
+Use this array to feed the forecast chart.
+```
+
+---
+
+## ✅ Final Phase: Optimization & QA
+
+### 🧪 Step 6.1 – Code Cleanup
+
+**Prompt:**
+
+```text
+Audit `Forecast.vue` and backend routes:
+- Identify performance issues (e.g., redundant renders, slow API calls)
+- Suggest better structure or code splitting
+- Ensure good separation of concerns
+```
+
+---
+
+Would you like this saved as a `README.md` or `forecast_dev_guide.md` in your repo so your GPT can reference it contextually later?
