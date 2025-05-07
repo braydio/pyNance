@@ -1,7 +1,7 @@
-/ * UpdateTransactionsTable.vue -- DEV Note: Look to integrate in the same module
+/ * UpdateTransactionsTable.vue  -- DEV Note: Look to integrate in the same module
 as TransactionsTable.vue, cut down on duplicated code.
 Flag the version of the table in the Transactions page as the
-version that can edit transactions elements.*
+version that can edit transactions elements.* /
 <template>
   <div class="transactions">
     <div class="actions-row">
