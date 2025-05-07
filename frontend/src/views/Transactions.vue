@@ -1,3 +1,5 @@
+
+
 <template>
   <div class="transactions-page">
     <!-- Header -->
@@ -9,20 +11,28 @@
     </header>
 
     <main>
-      <!-- File Importer -->
-      <ImportFileSelector class="mb-4" />
-
-      <!-- Search + Controls -->
-      <div class="controls mb-2">
-        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="search-input" />
+      <!-- Top Controls -->
+      <div class="top-controls">
+        <ImportFileSelector class="import-section" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search transactions..."
+          class="search-input"
+        />
       </div>
 
       <!-- Main Table -->
-      <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-        @sort="setSort" />
+      <UpdateTransactionsTable
+        :transactions="filteredTransactions"
+        :sort-key="sortKey"
+        :sort-order="sortOrder"
+        @sort="setSort"
+        @editRecurringFromTransaction="prefillRecurringFromTransaction"
+      />
 
       <!-- Pagination -->
-      <div id="pagination-controls" class="mt-3 flex-center gap-2">
+      <div id="pagination-controls">
         <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">
           Prev
         </button>
@@ -32,15 +42,14 @@
         </button>
       </div>
 
-      <!-- Recurring Transactions (Optional) -->
-      <div class="mt-6">
-        <RecurringTransactionSection provider="plaid" />
-      </div>
+      <!-- Recurring Transactions -->
+      <RecurringTransactionSection ref="recurringFormRef" provider="plaid" class="mt-8" />
     </main>
   </div>
 </template>
 
 <script>
+import { ref } from "vue"
 import { useTransactions } from "@/composables/useTransactions.js"
 import UpdateTransactionsTable from "@/components/UpdateTransactionsTable.vue"
 import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue"
@@ -65,6 +74,18 @@ export default {
       setSort,
     } = useTransactions(15)
 
+    const recurringFormRef = ref(null)
+
+    function prefillRecurringFromTransaction(tx) {
+      if (recurringFormRef.value) {
+        recurringFormRef.value.transactionId = tx.transaction_id || ''
+        recurringFormRef.value.description = tx.description || ''
+        recurringFormRef.value.amount = parseFloat(tx.amount) || 0
+        recurringFormRef.value.notes = tx.notes || ''
+        recurringFormRef.value.showForm = true
+      }
+    }
+
     return {
       searchQuery,
       currentPage,
@@ -74,6 +95,8 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      recurringFormRef,
+      prefillRecurringFromTransaction
     }
   },
 }
@@ -86,32 +109,40 @@ export default {
   min-height: 100vh;
   background-color: var(--page-bg);
   color: var(--color-text-light);
-  padding: 1rem;
+  padding: 1.5rem;
   gap: 2rem;
+}
+
+.import-section {
+  margin-bottom: 1.5rem;
 }
 
 .transactions-header {
   background-color: var(--color-bg-secondary);
-  padding: 1.5rem;
-  text-align: center;
+  padding: 1.5rem 2rem;
   border-radius: 12px;
+  text-align: center;
   box-shadow: 0 4px 14px var(--shadow);
 }
 
 .transactions-header h1 {
   color: var(--color-accent-yellow);
+  font-size: 2.4rem;
   margin: 0;
-  font-size: 2.2rem;
   text-shadow: 0 0 6px var(--color-accent-yellow);
 }
 
-.controls {
-  margin-bottom: 1rem;
+.top-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
 }
 
 .search-input {
-  width: 100%;
-  max-width: 320px;
+  flex-grow: 1;
+  max-width: 360px;
   padding: 0.5rem 1rem;
   border: 1px solid var(--divider);
   border-radius: 6px;
@@ -121,8 +152,11 @@ export default {
 }
 
 #pagination-controls {
-  margin-top: 1rem;
-  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 2rem;
 }
 
 button.btn {
@@ -147,3 +181,4 @@ button.btn:disabled {
   cursor: not-allowed;
 }
 </style>
+
