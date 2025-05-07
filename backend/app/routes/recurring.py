@@ -1,4 +1,3 @@
-
 from datetime import date, datetime, timedelta
 
 from app.config import logger
@@ -8,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
 recurring = Blueprint("recurring", __name__)
+
 
 # -------------------------------------------------------------------
 # 1) Save or update a user-defined recurring transaction
@@ -78,19 +78,23 @@ def update_recurring_tx(account_id):
 # -------------------------------------------------------------------
 # 2) Fetch merged recurring transactions (user + auto-detected), return reminders
 # -------------------------------------------------------------------
+
+
 @recurring.route("/<account_id>/recurring", methods=["GET"])
-def get_merged_recurring(account_id):
+def get_structured_recurring(account_id):
     """
-    Return a merged list of reminders for:
-      A) Auto-detected recurring transactions from main Transaction table
-      B) User-defined recurring transactions from RecurringTransaction table
-    within the next 7 days
+    Return a list of structured reminders for:
+      A) Auto-detected recurring transactions from recent history
+      B) User-defined recurring transactions
+    Each entry includes: source, description, amount, next_due_date
     """
     try:
         today = date.today()
         three_months_ago = today - timedelta(days=90)
+        reminders = []
 
-        auto_query = (
+        # AUTO-DETECTED
+        auto_rows = (
             db.session.query(
                 Transaction.description,
                 Transaction.amount,
@@ -104,54 +108,57 @@ def get_merged_recurring(account_id):
             .all()
         )
 
-        auto_reminders = []
-        for row in auto_query:
-            latest = row.latest_date
-            if isinstance(latest, str):
-                latest = datetime.strptime(latest, "%Y-%m-%d").date()
-
-            next_due_date = add_months(latest, 1)
-            days_until_due = (next_due_date - today).days
-            if 0 <= days_until_due <= 7:
-                auto_reminders.append(
-                    f"Reminder (Auto): {row.description} (${row.amount:.2f}) due on {next_due_date.strftime('%b %d')}."
+        for row in auto_rows:
+            if not isinstance(row.latest_date, date):
+                latest_date = datetime.strptime(row.latest_date, "%Y-%m-%d").date()
+            else:
+                latest_date = row.latest_date
+            next_due = add_months(latest_date, 1)
+            if 0 <= (next_due - today).days <= 7:
+                reminders.append(
+                    {
+                        "source": "auto",
+                        "description": row.description,
+                        "amount": float(row.amount),
+                        "next_due_date": next_due.strftime("%Y-%m-%d"),
+                    }
                 )
 
+        # USER-DEFINED
         user_rows = RecurringTransaction.query.filter_by(account_id=account_id).all()
-        user_reminders = []
-        for ur in user_rows:
-            if not ur.next_due_date:
+        for row in user_rows:
+            if not row.next_due_date:
                 continue
-            days_until_due = (ur.next_due_date - today).days
-            if 0 <= days_until_due <= 7:
-                user_reminders.append(
-                    f"Reminder (User): {ur.description} (${ur.amount:.2f}) is due on {ur.next_due_date.strftime('%b %d')}."
+            next_due = row.next_due_date
+            if 0 <= (next_due - today).days <= 7:
+                reminders.append(
+                    {
+                        "source": "user",
+                        "description": row.description,
+                        "amount": float(row.amount),
+                        "next_due_date": next_due.strftime("%Y-%m-%d"),
+                        "notes": row.notes,
+                        "frequency": row.frequency,
+                    }
                 )
-
-        reminders = auto_reminders + user_reminders
 
         return jsonify({"status": "success", "reminders": reminders}), 200
 
     except Exception as e:
         logger.error(
-            f"Error fetching merged recurring transactions: {e}", exc_info=True
+            f"Error fetching structured recurring transactions: {e}", exc_info=True
         )
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
 def add_months(original_date, months=1):
-    """
-    Utility: add X months to a given date, carefully handling year rollover.
-    """
     new_month = original_date.month + months
     new_year = original_date.year
     while new_month > 12:
         new_month -= 12
         new_year += 1
-
     try:
         return original_date.replace(year=new_year, month=new_month)
     except ValueError:
         day = min(original_date.day, 28)
         return original_date.replace(year=new_year, month=new_month, day=day)
-
