@@ -2,6 +2,8 @@
 
 A step-by-step guide to implementing a forecast engine using the `pyNance` repo, from concept to production deployment.
 
+- Detailed notes in frontned/DevelopmentNotes/Forecast/
+
 ---
 
 ## 󰲢 Goal 1: Ingest & Structure Data
