@@ -7,7 +7,7 @@ from .paths import DIRECTORIES
 load_dotenv()
 
 # Dev Environment Check
-FLASK_ENV = os.getenv("FLASK_ENV", "development")
+FLASK_ENV = os.getenv("FLASK_ENV", "production")
 CLIENT_NAME = os.getenv("CLIENT_NAME", "pyNance-Dash")
 
 # Plaid client ID and API secret for authentication
