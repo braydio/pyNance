@@ -1,7 +1,4 @@
-/ * UpdateTransactionsTable.vue  -- DEV Note: Look to integrate in the same module
-as TransactionsTable.vue, cut down on duplicated code.
-Flag the version of the table in the Transactions page as the
-version that can edit transactions elements.* /
+
 <template>
   <div class="transactions">
     <div class="actions-row">
@@ -42,16 +39,28 @@ version that can edit transactions elements.* /
       <tbody>
         <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id">
           <td>{{ formatDate(tx.date) }}</td>
-          <td>{{ formatAmount(tx.amount) }}</td>
-          <td>{{ tx.description || 'N/A' }}</td>
+          <td>
+            <input v-if="editingIndex === index" v-model="editBuffer.amount" type="number" step="0.01" />
+            <span v-else>{{ formatAmount(tx.amount) }}</span>
+          </td>
+          <td>
+            <input v-if="editingIndex === index" v-model="editBuffer.description" />
+            <span v-else>{{ tx.description || 'N/A' }}</span>
+          </td>
           <td>{{ tx.category || 'Unknown' }}</td>
           <td>{{ tx.merchant_name || 'N/A' }}</td>
           <td>{{ tx.account_name || 'N/A' }}</td>
           <td>{{ tx.institution_name || 'N/A' }}</td>
           <td>{{ tx.subtype || 'N/A' }}</td>
           <td>
-            <button class="btn btn-sm" @click="editTransaction(index)">Edit</button>
-            <button class="btn btn-sm" @click="markRecurring(index)">Mark</button>
+            <template v-if="editingIndex === index">
+              <button class="btn btn-sm" @click="saveEdit(tx.transaction_id)">Save</button>
+              <button class="btn btn-sm" @click="cancelEdit">Cancel</button>
+            </template>
+            <template v-else>
+              <button class="btn btn-sm" @click="startEdit(index, tx)">Edit</button>
+              <button class="btn btn-sm" @click="markRecurring(index)">Mark</button>
+            </template>
           </td>
         </tr>
       </tbody>
@@ -63,9 +72,35 @@ version that can edit transactions elements.* /
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
-const props = defineProps({
-  transactions: Array
-})
+const emit = defineEmits(['editRecurringFromTransaction'])
+const props = defineProps({ transactions: Array })
+
+const editingIndex = ref(null)
+const editBuffer = ref({ amount: 0, description: '' })
+
+function startEdit(index, tx) {
+  editingIndex.value = index
+  editBuffer.value.amount = tx.amount
+  editBuffer.value.description = tx.description
+}
+
+function cancelEdit() {
+  editingIndex.value = null
+  editBuffer.value = { amount: 0, description: '' }
+}
+
+async function saveEdit(transactionId) {
+  try {
+    await axios.put('/api/transactions/update', {
+      transaction_id: transactionId,
+      amount: parseFloat(editBuffer.value.amount),
+      description: editBuffer.value.description
+    })
+    editingIndex.value = null
+  } catch (e) {
+    console.error('Failed to save edit:', e)
+  }
+}
 
 const categoryTree = ref([])
 const selectedPrimaryCategory = ref('')
@@ -108,10 +143,6 @@ function exportTransactions() {
 
 function onPrimaryCategoryChange() {
   selectedSubcategory.value = ''
-}
-
-function editTransaction(index) {
-  console.log('Edit clicked for:', props.transactions[index])
 }
 
 function markRecurring(index) {
