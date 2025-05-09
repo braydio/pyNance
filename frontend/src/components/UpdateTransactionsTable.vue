@@ -161,6 +161,7 @@ onMounted(async () => {
 })
 </script>
 
+
 <style scoped>
 .transactions {
   background: var(--color-bg-secondary);
@@ -217,6 +218,29 @@ onMounted(async () => {
   outline: none;
 }
 
+th {
+  background-color: var(--color-bg-darkest);
+  color: var(--color-accent);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  user-select: none;
+}
+
+th:hover {
+  background-color: var(--color-hover-light);
+}
+
+th.sorted-asc::after {
+  content: ' \25B2';
+}
+
+th.sorted-desc::after {
+  content: ' \25BC';
+}
+
 th,
 td {
   padding: 0.6rem 1rem;
@@ -226,4 +250,52 @@ td {
 tbody tr:hover {
   background-color: var(--color-hover-light);
 }
+
+/* Highlight row in edit mode */
+tbody tr.editing-row {
+  background-color: var(--color-bg-highlight);
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+/* Style editable input fields */
+td input,
+td select {
+  width: 100%;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+td input[type="date"] {
+  font-family: var(--font-sans);
+  text-transform: none;
+}
+
+td input:focus,
+td select:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-fade);
+}
+
+.btn-sm {
+  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  margin-right: 0.25rem;
+  background-color: var(--button-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--divider);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-sm:hover {
+  background-color: var(--button-hover-bg);
+}
 </style>
+
