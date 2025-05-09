@@ -496,10 +496,46 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue
 
-            # ✅ Category resolution now includes plaid_category_id and parent assignment
             category_path = txn.get("category", [])
             plaid_cat_id = txn.get("category_id")
-            category = resolve_or_create_category(category_path)
+
+            category_path = txn.get("category", [])
+            primary = category_path[0] if len(category_path) > 0 else "Unknown"
+            detailed = category_path[1] if len(category_path) > 1 else "Unknown"
+
+            existing_category = db.session.query(Category).filter_by(
+                primary_category=primary,
+                detailed_category=detailed
+            ).first()
+
+            if existing_category:
+                category = existing_category
+            else:
+                category = Category(
+                    primary_category=primary,
+                    detailed_category=detailed,
+                    display_name=f"{primary} > {detailed}"
+                )
+                db.session.add(category)
+                db.session.flush()
+
+
+            existing_category = db.session.query(Category).filter_by(
+                primary_category=primary,
+                detailed_category=detailed
+            ).first()
+
+            if existing_category:
+                category = existing_category
+            else:
+                category = Category(
+                    primary_category=primary,
+                    detailed_category=detailed,
+                    display_name=f"{primary} > {detailed}"
+                )
+                db.session.add(category)
+                db.session.flush()
+
 
             merchant_name = txn.get("merchant_name") or "Unknown"
             merchant_type = (
