@@ -76,29 +76,54 @@ const emit = defineEmits(['editRecurringFromTransaction'])
 const props = defineProps({ transactions: Array })
 
 const editingIndex = ref(null)
-const editBuffer = ref({ amount: 0, description: '' })
+const editBuffer = ref({ amount: 0, description: '', date: '', merchant_name: '', category: '' })
+
+const sortKey = ref('date')
+sortKey.value = 'date'
+const sortOrder = ref('desc')
 
 function startEdit(index, tx) {
   editingIndex.value = index
   editBuffer.value.amount = tx.amount
   editBuffer.value.description = tx.description
+  editBuffer.value.date = tx.date
+  editBuffer.value.merchant_name = tx.merchant_name || ''
+  editBuffer.value.category = tx.category || ''
 }
 
 function cancelEdit() {
   editingIndex.value = null
-  editBuffer.value = { amount: 0, description: '' }
+  editBuffer.value = { amount: 0, description: '', date: '', merchant_name: '', category: '' }
 }
 
-async function saveEdit(transactionId) {
+async function saveEdit(tx) {
   try {
     await axios.put('/api/transactions/update', {
-      transaction_id: transactionId,
+      transaction_id: tx.transaction_id,
       amount: parseFloat(editBuffer.value.amount),
-      description: editBuffer.value.description
+      description: editBuffer.value.description,
+      date: editBuffer.value.date,
+      merchant_name: editBuffer.value.merchant_name,
+      category: editBuffer.value.category
     })
+    const confirmed = confirm(
+      `Always use description "${editBuffer.value.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`
+    )
+    if (confirmed) {
+      console.log('[RuleEngine] Create rule: if merchant is', tx.merchant_name)
+    }
     editingIndex.value = null
   } catch (e) {
     console.error('Failed to save edit:', e)
+  }
+}
+
+function sortBy(key) {
+  if (sortKey.value === key) {
+    sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortOrder.value = 'asc'
   }
 }
 
@@ -118,6 +143,11 @@ const filteredTransactions = computed(() => {
       tx.category?.toLowerCase().includes(selectedSubcategory.value.toLowerCase())
     )
   }
+  txs.sort((a, b) => {
+    const aVal = a[sortKey.value] || ''
+    const bVal = b[sortKey.value] || ''
+    return (sortOrder.value === 'asc' ? 1 : -1) * (aVal > bVal ? 1 : aVal < bVal ? -1 : 0)
+  })
   return txs
 })
 
@@ -160,6 +190,7 @@ onMounted(async () => {
   }
 })
 </script>
+
 
 
 <style scoped>
