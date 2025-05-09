@@ -1,65 +1,90 @@
-
 <template>
   <div class="transactions">
-    <div class="actions-row">
-      <h3>Transactions</h3>
-      <button class="export-btn" @click="exportTransactions">Export CSV</button>
-    </div>
-
-    <div class="filter-row">
-      <select v-model="selectedPrimaryCategory" @change="onPrimaryCategoryChange" class="filter-input">
-        <option value="">All Categories</option>
-        <option v-for="group in categoryTree" :key="group.name" :value="group.name">
-          {{ group.name }}
-        </option>
-      </select>
-
-      <select v-model="selectedSubcategory" class="filter-input" :disabled="!subcategoryOptions.length">
-        <option value="">All Subcategories</option>
-        <option v-for="child in subcategoryOptions" :key="child.id" :value="child.name">
-          {{ child.name }}
-        </option>
-      </select>
-    </div>
-
     <table>
       <thead>
         <tr>
-          <th>Date</th>
-          <th>Amount</th>
-          <th>Description</th>
-          <th>Category</th>
-          <th>Merchant</th>
-          <th>Account</th>
-          <th>Institution</th>
-          <th>Subtype</th>
+          <th @click="sortBy('date')">Date</th>
+          <th @click="sortBy('amount')">Amount</th>
+          <th @click="sortBy('description')">Description</th>
+          <th @click="sortBy('category')">Category</th>
+          <th @click="sortBy('merchant_name')">Merchant</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id">
-          <td>{{ formatDate(tx.date) }}</td>
+        <tr
+          v-for="(tx, index) in filteredTransactions"
+          :key="tx.transaction_id"
+          :class="{ 'editing-row': editingIndex === index }"
+        >
           <td>
-            <input v-if="editingIndex === index" v-model="editBuffer.amount" type="number" step="0.01" />
+            <input
+              v-if="editingIndex === index"
+              v-model="editBuffer.date"
+              type="date"
+            />
+            <span v-else>{{ formatDate(tx.date) }}</span>
+          </td>
+
+          <td>
+            <input
+              v-if="editingIndex === index"
+              v-model.number="editBuffer.amount"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+            />
             <span v-else>{{ formatAmount(tx.amount) }}</span>
           </td>
+
           <td>
-            <input v-if="editingIndex === index" v-model="editBuffer.description" />
-            <span v-else>{{ tx.description || 'N/A' }}</span>
+            <input
+              v-if="editingIndex === index"
+              v-model="editBuffer.description"
+              type="text"
+              placeholder="Description"
+            />
+            <span v-else>{{ tx.description }}</span>
           </td>
-          <td>{{ tx.category || 'Unknown' }}</td>
-          <td>{{ tx.merchant_name || 'N/A' }}</td>
-          <td>{{ tx.account_name || 'N/A' }}</td>
-          <td>{{ tx.institution_name || 'N/A' }}</td>
-          <td>{{ tx.subtype || 'N/A' }}</td>
+
+          <td>
+            <select v-if="editingIndex === index" v-model="editBuffer.category">
+              <option disabled value="">-- Select Category --</option>
+              <optgroup
+                v-for="group in categoryTree"
+                :label="group.name"
+                :key="group.name"
+              >
+                <option
+                  v-for="child in group.children"
+                  :key="child.id"
+                  :value="child.name"
+                >
+                  {{ child.name }}
+                </option>
+              </optgroup>
+            </select>
+            <span v-else>{{ tx.category }}</span>
+          </td>
+
+          <td>
+            <input
+              v-if="editingIndex === index"
+              v-model="editBuffer.merchant_name"
+              type="text"
+              placeholder="Merchant"
+            />
+            <span v-else>{{ tx.merchant_name }}</span>
+          </td>
+
           <td>
             <template v-if="editingIndex === index">
-              <button class="btn btn-sm" @click="saveEdit(tx.transaction_id)">Save</button>
-              <button class="btn btn-sm" @click="cancelEdit">Cancel</button>
+              <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+              <button class="btn-sm" @click="cancelEdit">Cancel</button>
             </template>
             <template v-else>
-              <button class="btn btn-sm" @click="startEdit(index, tx)">Edit</button>
-              <button class="btn btn-sm" @click="markRecurring(index)">Mark</button>
+              <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+              <button class="btn-sm" @click="markRecurring(index)">Mark</button>
             </template>
           </td>
         </tr>
@@ -67,6 +92,7 @@
     </table>
   </div>
 </template>
+
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
