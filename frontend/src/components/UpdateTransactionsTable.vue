@@ -1,5 +1,8 @@
+
 <template>
   <div class="transactions">
+    <VueToast v-if="toast.message" :type="toast.type" :message="toast.message" @close="toast.message = ''" />
+
     <table>
       <thead>
         <tr>
@@ -93,16 +96,17 @@
   </div>
 </template>
 
-
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import VueToast from '@/components/base/Toast.vue'
 
 const emit = defineEmits(['editRecurringFromTransaction'])
 const props = defineProps({ transactions: Array })
 
 const editingIndex = ref(null)
 const editBuffer = ref({ amount: 0, description: '', date: '', merchant_name: '', category: '' })
+const toast = ref({ type: '', message: '' })
 
 const sortKey = ref('date')
 sortKey.value = 'date'
@@ -132,6 +136,8 @@ async function saveEdit(tx) {
       merchant_name: editBuffer.value.merchant_name,
       category: editBuffer.value.category
     })
+    toast.value = { type: 'success', message: 'Transaction updated successfully.' }
+
     const confirmed = confirm(
       `Always use description "${editBuffer.value.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`
     )
@@ -141,6 +147,7 @@ async function saveEdit(tx) {
     editingIndex.value = null
   } catch (e) {
     console.error('Failed to save edit:', e)
+    toast.value = { type: 'error', message: 'Failed to update transaction.' }
   }
 }
 
