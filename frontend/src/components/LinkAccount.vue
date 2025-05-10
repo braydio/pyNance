@@ -9,7 +9,7 @@
   </div>
 </template>
 
-<script>
+  <script>
 import accountLinkApi from "@/api/accounts_link";
 import { loadExternalScripts } from "@/utils/externalScripts";
 
