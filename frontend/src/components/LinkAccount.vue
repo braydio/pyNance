@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import api from "@/services/api";
+import accountLinkApi from "@/api/accounts_link";
 import { loadExternalScripts } from "@/utils/externalScripts";
 
 export default {
