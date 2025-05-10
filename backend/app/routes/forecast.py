@@ -2,13 +2,13 @@
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
 from sqlalchemy import func
-from backend.app.models import db, Account, AccountHistory, RecurringTransaction
+from app.models import db, Account, AccountHistory, RecurringTransaction
 import logging
 
-forecast_bp = Blueprint('forecast', __name__)
+forecast = Blueprint('forecast', __name__)
 logger = logging.getLogger(__name__)
 
-@forecast_bp.route('/api/forecast/calculate', methods=['POST'])
+@forecast.route('/api/forecast/calculate', methods=['POST'])
 def calculate_forecast():
     data = request.get_json()
     user_id = data.get('user_id')
