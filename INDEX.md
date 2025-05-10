@@ -9,11 +9,11 @@ This repo implements a dynamic forecast engine that models projected vs. actual 
 
 | Module | Description | Link |
 |--------|-------------|------|
-| **Module 1** | Architecture & Data Model – Input types, feature breakdown, actuals fallback | [View in Canvas](#) |
-| **Module 2** | Backend API & Integration – Live forecast calculation and Flask route strategy | [View in Canvas](#) |
-| **Module 3** | Development & Enhancement Tracker – Implementation checklist and dev-mode support | [View in Canvas](#) |
+| **Module 1** | Architecture & Data Model – Input types, feature breakdown, actuals fallback | [Forecast Working Dir](#) |
+| **Module 2** | Backend API & Integration – Live forecast calculation and Flask route strategy | [Forecast Working Dir](#) |
+| **Module 3** | Development & Enhancement Tracker – Implementation checklist and dev-mode support | [Forecast Working Dir](#) |
 
-> 🧠 These are internal design docs authored in GPT Canvas. Ask your dev assistant to open/edit them.
+> 🧠 These are internal design docs authored for development and referencing. This index should provide a list of currently active development processes.
 
 ---
 
