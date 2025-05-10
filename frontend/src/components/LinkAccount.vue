@@ -37,7 +37,7 @@ export default {
     },
     async preloadPlaidLinkToken() {
       try {
-        const plaidRes = await api.generateLinkToken("plaid", {
+        const plaidRes = await accountLinkApi.generateLinkToken("plaid", {
           user_id: this.userID || "DefaultUser",
           products: ["transactions"],
         });
@@ -57,13 +57,13 @@ export default {
         onSuccess: async (public_token, metadata) => {
           try {
             const userID = this.userID || "DefaultUser";
-            const exchangeRes = await api.exchangePublicToken("plaid", {
+            const exchangeRes = await accountLinkApi.exchangePublicToken("plaid", {
               public_token,
               user_id: userID,
             });
             console.log("Exchange response:", exchangeRes);
 
-            await api.refreshCategories(); // Optional if you want to refresh categories after link
+            await accountLinkApi.refreshCategories(); // Optional if you want to refresh categories after link
 
             this.$emit("refreshAccounts");
           } catch (error) {
@@ -102,7 +102,7 @@ export default {
           onSuccess: async (enrollment) => {
             console.log("User enrolled successfully", enrollment.accessToken);
             try {
-              const exchangeRes = await api.exchangePublicToken("teller", {
+              const exchangeRes = await accountLinkApi.exchangePublicToken("teller", {
                 user_id: this.userID,
                 public_token: enrollment.accessToken,
               });
