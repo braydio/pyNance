@@ -169,7 +169,7 @@ export default {
     async deleteAccount(accountId) {
       if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
       try {
-        const res = await api.deleteAccount(this.provider, accountId);
+        const res = await accountLinkApi.deleteAccount(this.provider, accountId);
         if (res.status === "success") {
           alert("Account deleted successfully.");
           this.fetchAccounts();
