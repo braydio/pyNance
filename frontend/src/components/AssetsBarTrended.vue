@@ -5,22 +5,28 @@
   </div>
 </template>
 
+
 <script setup>
 import axios from 'axios'
 import { Chart } from 'chart.js/auto'
 import { onMounted, ref, nextTick } from 'vue'
 
 const canvasRef = ref()
-const chartInstance = ref()
+const chartInstance = ref(null)
 const chartData = ref([])
 
 const format = (val) => {
   const n = Number(val || 0)
-  return n < 0 ? `($${Math.abs(n).toLocaleString()})` : `$${n.toLocaleString()}`
+  return n < 0
+    ? `($${Math.abs(n).toLocaleString()})`
+    : `$${n.toLocaleString()}`
 }
 
 const parseDate = (str) =>
-  new Date(str).toLocaleString('default', { month: 'short', day: 'numeric' })
+  new Date(str).toLocaleDateString('default', {
+    month: 'short',
+    day: 'numeric',
+  })
 
 async function fetchData() {
   try {
@@ -39,14 +45,6 @@ function render() {
 
   const ctx = canvasRef.value.getContext('2d')
 
-  const fillA = ctx.createLinearGradient(0, 0, 0, 300)
-  fillA.addColorStop(0, '#98e8ff')
-  fillA.addColorStop(1, 'rgba(152,232,255,0)')
-
-  const fillL = ctx.createLinearGradient(0, 0, 0, 300)
-  fillL.addColorStop(0, '#ffc0cb')
-  fillL.addColorStop(1, 'rgba(255,192,203,0)')
-
   chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {
@@ -56,19 +54,17 @@ function render() {
           label: 'Assets',
           data: chartData.value.map(d => d.assets),
           borderColor: '#00ffa5',
-          backgroundColor: fillA,
+          backgroundColor: '#98e8ff',
           tension: 0.2,
           fill: true,
-          pointRadius: 0
         },
         {
           label: 'Liabilities',
           data: chartData.value.map(d => d.liabilities),
           borderColor: '#ff6a6a',
-          backgroundColor: fillL,
+          backgroundColor: '#ffc0cb',
           tension: 0.2,
           fill: true,
-          pointRadius: 0
         }
       ]
     },
@@ -87,7 +83,7 @@ function render() {
           labels: {
             color: '#ccc',
             boxWidth: 16,
-            usePointStyle: true
+            usePointStyle: true,
           }
         }
       },
@@ -110,6 +106,7 @@ function render() {
 
 onMounted(fetchData)
 </script>
+
 
 <style scoped>
 .chart-container {
