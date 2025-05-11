@@ -1,25 +1,64 @@
+
 {
-  "arch-ux-fix-plaid-user-lookup": {
-    "lastAccessed": "2025-05-11T12:17:00Z",
-    "accessedBy": "arch-ux",
+  "refresh_route_reviewer": {
+    "lastAccessed": "2025-05-11T19:10:00Z",
+    "accessedBy": "refresh_route_reviewer",
+    "forecast_sync_stabilization": {
+      "sync_helpers": {
+        "review_account_refresh_dispatcher": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:41:00Z"
+        },
+        "review_plaid_helpers": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:43:00Z"
+        },
+        "review_teller_helpers": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:46:00Z"
+        },
+        "review_refresh_dispatcher": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:52:00Z"
+        },
+        "thread_user_id": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:58:00Z"
+        },
+        "build_sync_service": {
+          "complete": true,
+          "timestamp": "2025-05-11T19:09:00Z"
+        },
+        "refactor_dispatcher_to_use_service": {
+          "complete": true,
+          "timestamp": "2025-05-11T19:12:00Z"
+        }
+      }
+    }
+  },
+  "arch-ux-account-refresh": {
+    "lastAccessed": "2025-05-11T19:12:00Z",
+    "accessedBy": "arch_ux_01",
     "groups": [
       {
-        "name": "Plaid user_id lookup debug",
+        "name": "Auto-Refresh Integration",
         "tasks": [
           {
-            "name": "Review models.py for account user_id field",
-            "complete": true
-          },
-          {
-            "name": "Analyze plaid.py routes to see user-token persistence",
-            "complete": true
-          },
-          {
-            "name": "Proposed fix for get_accounts() user_id unresolved",
-            "complete": true
+            "task": "Refactor and optimize account refresh dispatcher",
+            "items": [
+              {
+                "name": "Use sync_service.sync_account(account) for routing",
+                "complete": true
+              },
+              {
+                "name": "Drop direct plaid/teller helper calls from dispatcher",
+                "complete": true
+              }
+            ]
           }
         ]
       }
     ]
   }
 }
+
