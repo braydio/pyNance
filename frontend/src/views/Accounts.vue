@@ -166,10 +166,10 @@ function toggleManualTokenMode() {
 }
 
 .accounts-header h1 {
-  color: var(--color-accent-);
+  color: var(--accent-yellow-deep);
   margin: 0;
   font-size: 2rem;
-  text-shadow: 0px 0px 8px var(--color-accent-yellow);
+  text-shadow: 0px 0px 8px var(--accent-yellow-soft);
 }
 .accounts-header h2 {
   color: var(--color-accent-yellow);
