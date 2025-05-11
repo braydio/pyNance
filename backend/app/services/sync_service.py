@@ -2,10 +2,9 @@
 import logging
 from backend.app.models import Account
 from backend.app.helpers.teller_helpers import get_teller_accounts
-from backend.app.helpers.plaid_helpers import get_plaid_accounts
+from backend.app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
 
 logger = logging.getLogger(__name__)
-
 
 def sync_account(account: Account) -> None:
     """
@@ -34,3 +33,4 @@ def sync_account(account: Account) -> None:
 
     except Exception as e:
         logger.error(f"Sync error for account {account.id} ({provider}): {e}")
+
