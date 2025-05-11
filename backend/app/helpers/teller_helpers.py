@@ -2,10 +2,12 @@
 
 import json
 import requests
+from app.sql.forecast_logic import update_account_history
 from app.config import FILES, TELLER_API_BASE_URL, logger
 
 
-def get_teller_accounts(access_token: str):
+
+def get_teller_accounts(access_token: str, user_id: str):
     url = f"{TELLER_API_BASE_URL}/accounts"
     response = requests.get(
         url,
@@ -13,7 +15,16 @@ def get_teller_accounts(access_token: str):
         cert=(FILES["TELLER_DOT_CERT"], FILES["TELLER_DOT_KEY"]),
     )
     response.raise_for_status()
-    return response.json()  # returns a list of account objects
+    accounts = response.json()
+
+    # Update AccountHistory
+    for acct in accounts:
+        account_id = acct.get("id")
+        balance = acct.get("available_balance") or acct.get("current_balance")
+        if account_id and balance is not None:
+            update_account_history(account_id=account_id, user_id=user_id, balance=balance)
+
+    return accounts
 
 
 def load_tokens():
