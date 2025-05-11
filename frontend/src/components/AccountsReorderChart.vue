@@ -3,10 +3,17 @@
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
 
     <div v-if="filteredAccounts.length" class="bar-chart">
-      <div v-for="account in filteredAccounts" :key="account.id" class="bar-row">
+      <div
+        v-for="account in filteredAccounts"
+        :key="account.id"
+        class="bar-row"
+      >
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div
+            class="bar-fill"
+            :style="{ width: barWidth(account) }"
+          >
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -18,21 +25,18 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
-import { ref, computed, onMounted, watch } from 'vue'
 
-const props = defineProps({
-  accountSubtype: String
-})
+const props = defineProps({ accountSubtype: String })
 
 const accounts = ref([])
+const loading = ref(true)
 
-const format = val =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    maximumFractionDigits: 0
-  }).format(val)
+const format = val => new Intl.NumberFormat('en-US', {
+  style: 'currency',
+  currency: 'USD',
+}).format(val)
 
 const barWidth = (account) => {
   const max = Math.max(...filteredAccounts.value.map(a => Math.abs(a.adjusted_balance)), 1)
@@ -41,28 +45,30 @@ const barWidth = (account) => {
 
 const filteredAccounts = computed(() =>
   accounts.value
-    .filter(a => a.subtype?.toLowerCase() === props.accountSubtype?.toLowerCase())
+    .filter(a => a.subtype?.toLowerCase() === props.accountSubtype.toLowerCase())
     .sort((a, b) => b.adjusted_balance - a.adjusted_balance)
     .slice(0, 5)
 )
 
-async function fetchAccounts() {
+const fetchAccounts = async () => {
   try {
     const { data } = await axios.get('/api/accounts/get_accounts')
-    if (data.status === 'success') {
+    if (data?.status === 'success') {
       accounts.value = data.accounts.map(acc => ({
         ...acc,
-        adjusted_balance: Math.abs(acc.balance ?? 0)
+        adjusted_balance: Math.abs(acc.balance ?? 0),
       }))
     }
   } catch (err) {
     console.error('Failed to load accounts:', err)
+  } finally {
+    loading.value = false
   }
 }
 
 onMounted(fetchAccounts)
-watch(() => props.accountSubtype, fetchAccounts)
 </script>
+
 
 <style scoped>
 .chart-container {
