@@ -1,35 +1,34 @@
 <template>
   <div class="accounts-view">
     <!-- Header -->
+
     <header class="accounts-header">
       <h1>Accounts Management</h1>
-      <h2>Now with Accounts!</h2>
-      <p>
-      Hello again, {{ userName }}
-      </p>
-      <p>It is still {{ currentDate }}.</p>
+      <h2></h2>
+      <h3>
+        Hello again
+        <span class="username">{{ userName }}</span>,
+        welcome back.
+      </h3>
+      <p>Why don't you come have a seat.</p>
+      <div class="controls-widget">
+        <button class="btn btn-pill btn-outline" @click="toggleControls">
+          {{ showControls ? 'Hide Controls' : 'Link / Refresh' }}
+        </button>
+
+        <transition name="slide-vertical" mode="out-in">
+          <div v-if="showControls" class="account-controls-group">
+            <template v-if="!showTokenForm">
+              <LinkAccount @manual-token-click="toggleManualTokenMode" />
+              <RefreshPlaidControls />
+              <RefreshTellerControls />
+            </template>
+            <TokenUpload v-else @cancel="toggleManualTokenMode" />
+          </div>
+        </transition>
+      </div>
     </header>
 
-    <!-- Control Buttons -->
-    <section class="controls-widget">
-      <button class="btn btn-pill" @click="toggleControls">Controls</button>
-      <transition name="slide-horizontal" mode="out-in">
-        <div v-if="showControls" class="controls-container">
-          <transition name="slide-horizontal" mode="out-in">
-            <template v-if="!showTokenForm">
-              <div class="controls-buttons">
-                <LinkAccount class="btn btn-outline btn-pill" @manual-token-click="toggleManualTokenMode" />
-                <RefreshPlaidControls class="btn btn-outline btn-pill" />
-                <RefreshTellerControls class="btn btn-outline btn-pill" />
-              </div>
-            </template>
-            <template v-else>
-              <TokenUpload @cancel="toggleManualTokenMode" />
-            </template>
-          </transition>
-        </div>
-      </transition>
-    </section>
 
     <!-- Charts -->
     <section class="charts-section">
@@ -88,7 +87,7 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 
 const activeAccountGroup = ref('Checking')
 const accountGroups = ['Checking', 'Savings', 'Credit']
-const showControls = ref(true)
+const showControls = ref(false)
 const showTokenForm = ref(false)
 
 function toggleControls() {
@@ -101,42 +100,107 @@ function toggleManualTokenMode() {
 </script>
 
 <style scoped>
-.accounts-view {
+
+.controls-widget {
+  margin-top: 0.1rem;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  background-color: var(--page-bg);
-  color: var(--color-text-light);
-  padding: 1.5rem;
-  gap: 1.5rem;
+  align-items: center;
 }
+
+.account-controls-group {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--color-text-muted);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-top: 0.5rem;
+  box-shadow: 0px 2px 3px var(--color-accent-ice);
+  width: 100%;
+  max-width: 900px;
+  opacity: 1;
+  transition: all 0.3s ease;
+}
+
+.control-block {
+  flex: 1 1 250px;
+  max-width: 280px;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px var(--shadow);
+}
+
+.slide-vertical-enter-active,
+.slide-vertical-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-vertical-enter-from,
+.slide-vertical-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  overflow: hidden;
+}
+
+.slide-vertical-enter-to,
+.slide-vertical-leave-from {
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
 
 .accounts-header {
   text-align: center;
-  background-color: var(--color-bg-secondary);
+  background-color: var(--color-bg);
   padding: 1rem;
   border-radius: 8px;
   box-shadow: 0 4px 12px var(--shadow);
 }
 
 .accounts-header h1 {
-  color: var(--color-accent-yellow);
+  color: var(--color-accent-);
   margin: 0;
   font-size: 2rem;
-  text-shadow: 0 0 6px var(--color-accent-yellow);
+  text-shadow: 0px 0px 8px var(--color-accent-yellow);
+}
+.accounts-header h2 {
+  color: var(--color-accent-yellow);
+  margin: 2px;
+  font-style: italic;
+  font-size: 1.5rem;
+  text-shadow: 2px 0px 6px var(--color-accent-yellow);
 }
 
-.controls-widget {
-  position: relative;
+.accounts-header h3 {
+  color: var(--neon-mint);
+  margin: 0;
+  font-style: bold;
+  font-size: 1rem;
+  text-shadow: 0px 1px 6px var(--color-accent-yellow);
 }
 
-.controls-container {
-  margin-top: 1rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
+.username {
+  color: var(--color-accent-ice);
+  margin: 0;
+  font-size: 1.2rem;
+  text-shadow: 2px 6px 8px var(--bar-gradient-end);
 }
 
+.accounts-header p {
+  color: var(--color-accent-magenta);
+  margin: 0;
+  font-style: italic;
+  font-size: 0.9rem;
+  text-shadow: 2px 4px 6px var(--bar-gradient-end);
+}
 .charts-section {
   display: flex;
   flex-direction: column;
