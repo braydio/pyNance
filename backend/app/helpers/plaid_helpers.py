@@ -6,6 +6,7 @@ from app.config import (
     PLAID_CLIENT_NAME,
     FILES,
 )
+from app.sql.forecast_logic import account_history
 import json
 import requests
 from plaid.model.accounts_get_request import AccountsGetRequest
@@ -98,6 +99,13 @@ def get_accounts(access_token):
         request = AccountsGetRequest(access_token=access_token)
         response = plaid_client.accounts_get(request)
         accounts = response["accounts"]
+        for acct in accounts:
+            account_id = acct["account_id"]
+            balance = acct["balances"].get("available") or acct["balances"].get("current")
+            user_id = <retrieve associated user_id from context or token>  # must be determined here
+            if account_id and balance is not None:
+                update_account_history(account_id=account_id, user_id=user_id, balance=balance)
+        
 
         logger.info(f"Retrieved {len(accounts)} account(s) from Plaid.")
         return accounts
