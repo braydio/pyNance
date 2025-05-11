@@ -1,5 +1,4 @@
 # backend/app/sql/forecast_logic.py
-
 from datetime import datetime, timedelta
 from app.models import AccountHistory, db
 
