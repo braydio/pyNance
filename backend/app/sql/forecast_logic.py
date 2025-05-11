@@ -1,7 +1,7 @@
 # backend/app/sql/forecast_logic.py
 
 from datetime import datetime, timedelta
-from backend.app.models import AccountHistory, db
+from app.models import AccountHistory, db
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
     """
