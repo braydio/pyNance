@@ -8,6 +8,8 @@ import logging
 forecast = Blueprint('forecast', __name__)
 logger = logging.getLogger(__name__)
 
+
+
 @forecast.route('/api/forecast/calculate', methods=['POST'])
 def calculate_forecast():
     data = request.get_json()
@@ -155,8 +157,13 @@ def calculate_forecast():
     delta = []
 
     for label in date_labels:
-        f_value = manual_income - liability_rate
-        a_value = ah_map.get(label, 0.0)
+        f_value = manual_income - liability_rate       
+        # Optional: derive from most recently synced account balance if ah_map is sparse
+        a_value = ah_map.get(label) or sum([
+            get_latest_balance_for_account(acct.account_id, user_id)
+            for acct in Account.query.filter_by(user_id=user_id).all()
+        ])
+
         d_value = round(f_value - a_value, 2)
         forecast.append(f_value)
         actuals.append(a_value)
