@@ -5,10 +5,9 @@
       <h1>Accounts Management</h1>
       <h2>Now with Accounts!</h2>
       <p>
-        This item uses the {{ userName }} variable. Say "Hi, I'm {{ userName }}"
-        {{ userName }}.
+      Hello again, {{ userName }}
       </p>
-      <p>{{ currentDate }}. They made us put that here.</p>
+      <p>It is still {{ currentDate }}.</p>
     </header>
 
     <!-- Control Buttons -->
