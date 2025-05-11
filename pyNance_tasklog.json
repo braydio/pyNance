@@ -1,0 +1,28 @@
+{
+  "arch-ux-account-refresh": {
+    "lastAccessed": "2025-05-11T12:02:00Z",
+    "accessedBy": "arch-ux",
+    "groups": [
+      {
+        "name": "Auto-Refresh Integration",
+        "tasks": [
+        {
+          "task": "Refactor and optimize account refresh dispatcher",
+          "items": [
+            {
+              "name": "Refactor logic to use external sync intervals",
+              "complete": true
+            },
+            {
+              "name": "Add user_id to sync functions",
+              "complete": true
+            },
+            {
+              "name": "Log account sync status per provider",
+              "complete": true
+            }
+            ]
+          }
+      ]
+    }
+}
