@@ -6,7 +6,7 @@ from app.config import (
     PLAID_CLIENT_NAME,
     FILES,
 )
-from app.sql.forecast_logic import account_history
+from app.sql.forecast_logic import update_account_history
 import json
 import requests
 from plaid.model.accounts_get_request import AccountsGetRequest
