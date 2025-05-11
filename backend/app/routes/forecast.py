@@ -1,8 +1,8 @@
 # routes/forecast.py
 from flask import Blueprint, request, jsonify
 from datetime import datetime, timedelta
-from sqlalchemy import func, Expression
-from backend.app.models import db, Account, AccountHistory, RecurringTransaction, Transaction
+from sqlalchemy import func
+from app.models import db, Account, AccountHistory, RecurringTransaction, Transaction
 import logging
 
 forecast = Blueprint('forecast', __name__)
