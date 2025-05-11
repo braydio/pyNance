@@ -1,28 +1,38 @@
 {
-  "arch-ux-account-refresh": {
-    "lastAccessed": "2025-05-11T12:02:00Z",
-    "accessedBy": "arch-ux",
-    "groups": [
-      {
-        "name": "Auto-Refresh Integration",
-        "tasks": [
-        {
-          "task": "Refactor and optimize account refresh dispatcher",
-          "items": [
-            {
-              "name": "Refactor logic to use external sync intervals",
-              "complete": true
-            },
-            {
-              "name": "Add user_id to sync functions",
-              "complete": true
-            },
-            {
-              "name": "Log account sync status per provider",
-              "complete": true
-            }
-            ]
-          }
-      ]
+  "refresh_route_reviewer": {
+    "lastAccessed": "2025-05-11T19:10:00Z",
+    "accessedBy": "refresh_route_reviewer",
+    "forecast_sync_stabilization": {
+      "sync_helpers": {
+        "review_account_refresh_dispatcher": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:41:00Z"
+        },
+        "review_plaid_helpers": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:43:00Z"
+        },
+        "review_teller_helpers": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:46:00Z"
+        },
+        "review_refresh_dispatcher": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:52:00Z"
+        },
+        "thread_user_id": {
+          "complete": true,
+          "timestamp": "2025-05-11T18:58:00Z"
+        },
+        "build_sync_service": {
+          "complete": true,
+          "timestamp": "2025-05-11T19:09:00Z"
+        },
+        "refactor_dispatcher_to_use_service": {
+          "complete": false
+        }
+      }
     }
+  }
 }
+
