@@ -2,6 +2,11 @@
 Dash/
 *.pem
 *dev
+dev*
+scripts/
+
+# Flask Alembic Migrate files
+migrations/
 
 # Byte-compiled / compiled Python files
 *.py[cod]
