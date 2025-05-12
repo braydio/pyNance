@@ -27,6 +27,7 @@ declare module 'vue' {
     ForecastSummaryPanel: typeof import('./components/forecast/ForecastSummaryPanel.vue')['default']
     ImportFileSelector: typeof import('./components/ImportFileSelector.vue')['default']
     LinkAccount: typeof import('./components/LinkAccount.vue')['default']
+    LinkAccountFullProducts: typeof import('./components/LinkAccountFullProducts.vue')['default']
     ManualTransactionsTable: typeof import('./components/ManualTransactionsTable.vue')['default']
     ManualTransactionTable: typeof import('./components/ManualTransactionTable.vue')['default']
     MatchingTransactionUpload: typeof import('./components/MatchingTransactionUpload.vue')['default']
