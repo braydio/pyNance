@@ -2,7 +2,7 @@
   <div class="dashboard">
     <header class="dashboard-header">
       <div class="greeting-block">
-        <h1>Hello {{ userName }}, hi.</h1>
+        <h1>Hello {{ userName }}</h1>
         <h2 class="date">Today is {{ currentDate }}</h2>
         <h2 class="vibe">and things are looking quite bleak.</h2>
       </div>
