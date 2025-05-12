@@ -119,6 +119,7 @@ class Category(db.Model):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), db.ForeignKey("users.id"), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)
