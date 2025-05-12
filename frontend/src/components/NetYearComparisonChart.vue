@@ -1,16 +1,23 @@
+
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">{{ chartTypeLabel }} Year Comparison</h2>
     <div class="toggle-group">
-      <button v-for="type in chartTypes" :key="type.value" class="btn btn-pill"
-        :class="{ active: activeChart === type.value }" @click="setChartType(type.value)">
+      <button
+        v-for="type in chartTypes"
+        :key="type.value"
+        class="btn btn-pill"
+        :class="{ active: activeChart === type.value }"
+        @click="setChartType(type.value)"
+      >
         {{ type.label }}
       </button>
     </div>
-    <canvas ref="chartCanvas"></canvas>
+    <div class="chart-wrapper">
+      <canvas ref="chartCanvas"></canvas>
+    </div>
   </div>
 </template>
-
 
 <script setup>
 import axios from 'axios'
@@ -91,6 +98,7 @@ function buildChart() {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: {
           labels: {
@@ -134,13 +142,15 @@ function setChartType(type) {
 onMounted(fetchData)
 </script>
 
-
 <style scoped>
 .chart-container {
-  padding: 1.5rem;
+  flex: 1 1 48%;
+  padding: 0.75rem;
+  max-width: 48%;
+  min-width: 300px;
   background-color: var(--color-bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px var(--shadow);
 }
 
 .toggle-group {
@@ -154,4 +164,23 @@ onMounted(fetchData)
   color: var(--color-bg-dark);
   box-shadow: 0 0 6px var(--neon-mint);
 }
+
+.chart-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+}
 </style>
+
