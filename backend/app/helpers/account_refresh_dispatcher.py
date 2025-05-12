@@ -44,6 +44,6 @@ def refresh_all_accounts():
             db.session.commit()
 
         except Exception as e:
-            logger.error(fBFailed to sync account {acct.id}: {str(e)}")
+            logger.error(f"Failed to sync account {acct.id}: {str(e)}")
 
     logger.info("Account refresh dispatch complete.")
