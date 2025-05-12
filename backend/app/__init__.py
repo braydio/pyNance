@@ -6,7 +6,7 @@ from flask_migrate import Migrate
 from app.config import logger, plaid_client, FLASK_ENV
 from app.extensions import db
 from app.config.environment import TELLER_WEBHOOK_SECRET
-
+from app.cli.sync import sync_accounts
 
 
 def create_app():
@@ -15,10 +15,6 @@ def create_app():
     app.config.from_object("app.config")
     db.init_app(app)
     Migrate(app, db)
-
-    from app.cli.sync import sync_accounts
-    app.cli.add_command(sync_accounts)
-
     # Always register routes (for all environments)
     from app.routes.frontend import frontend
     from app.routes.transactions import transactions
@@ -53,13 +49,13 @@ def create_app():
         app.register_blueprint(webhooks, url_prefix="/api/webhooks")
     else:
         app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
+    app.cli.add_command(sync_accounts)
 
     # DEV-only DB setup
     if FLASK_ENV == "development":
         with app.app_context():
             db.create_all()
-    
-   
+
     # Optional: always log routes
     with app.app_context():
         routes = " \n ".join(str(rule) for rule in app.url_map.iter_rules())

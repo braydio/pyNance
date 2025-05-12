@@ -1,4 +1,3 @@
-
 from datetime import datetime, timedelta
 from app.models import db, PlaidAccount, TellerAccount
 from app.helpers.teller_helpers import get_teller_accounts

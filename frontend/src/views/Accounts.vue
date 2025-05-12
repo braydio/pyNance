@@ -10,7 +10,7 @@
         <span class="username">{{ userName }}</span>,
         welcome back.
       </h3>
-      <p>Why don't you come have a seat.</p>
+      <p>Why don't you take a seat.</p>
 
     </header>
 
