@@ -1,7 +1,8 @@
 
 from datetime import datetime, timedelta
 from backend.app.models import db, Account
-from backend.app.services.sync_service import sync_account
+from backend.app.helpers.teller_helpers import get_teller_accounts
+from backend.app.helpers.plaid_helpers import get_accounts
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ def refresh_all_accounts():
     accounts = Account.query.all()
 
     for acct in accounts:
-        provider = acct.provider.lower()      if acct.provider else "unknown"
+        provider = acct.provider.lower() if acct.provider else "unknown"
         last_synced = acct.last_synced_at
         user_id = acct.user_id
 
@@ -30,11 +31,19 @@ def refresh_all_accounts():
             continue
 
         try:
-            logger.info(f\"Syncing {provider} account {acct.id} for user {user_id}\")
-            sync_account(acct)
-            acct.last_synced_at = datetime.utcnow()
+            logger.info(f"Syncing {provider} account {acct.id} for user {user_id}")
+            if provider == "teller":
+                get_teller_accounts(acct.access_token, user_id=user_id)
+            elif provider == "plaid":
+                get_accounts(acct.access_token, user_id=user_id)
+            else:
+                logger.warning(f"Unknown provider for account {act.id}: {provider}")
+                continue
+
+            act.last_synced_at = datetime.utcnow()
             db.session.commit()
+
         except Exception as e:
-            logger.error(f"Failed to sync account {acct.id}: {str(e)}")
+            logger.error(fBFailed to sync account {acct.id}: {str(e)}")
 
     logger.info("Account refresh dispatch complete.")
