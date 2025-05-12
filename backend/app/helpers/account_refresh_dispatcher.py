@@ -1,8 +1,8 @@
 
 from datetime import datetime, timedelta
-from backend.app.models import db, Account
-from backend.app.helpers.teller_helpers import get_teller_accounts
-from backend.app.helpers.plaid_helpers import get_accounts
+from app.models import db, Account
+from app.helpers.teller_helpers import get_teller_accounts
+from app.helpers.plaid_helpers import get_accounts
 import logging
 
 logger = logging.getLogger(__name__)
