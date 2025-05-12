@@ -4,7 +4,7 @@ import json
 import requests
 from app.sql.forecast_logic import update_account_history
 from app.config import FILES, TELLER_API_BASE_URL, logger
-
+from app.sql.forecast_logic import update_account_history
 
 
 def get_teller_accounts(access_token: str, user_id: str):
@@ -55,9 +55,9 @@ def save_tokens(tokens):
     Save Teller tokens to the designated JSON file.
     """
     try:
-        logger.debug(f"Saving tokens to {FILES['TELLER_TOKENS']}: {tokens}")
+        logger.debug(f"Saving tokens to {FILES['TELLER_TOKENS']}: {tok ens}")
         with open(FILES["TELLER_TOKENS"], "w") as f:
-            json.dump(tokens, f, indent=4)
+            json.dump.tokens, f, indnt=4)
         logger.debug("Tokens saved successfully.")
     except Exception as e:
         logger.error(
