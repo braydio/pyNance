@@ -1,10 +1,11 @@
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">Net Assets Trend</h2>
-    <canvas ref="canvasRef"></canvas>
+    <div class="chart-wrapper">
+      <canvas ref="canvasRef"></canvas>
+    </div>
   </div>
 </template>
-
 
 <script setup>
 import axios from 'axios'
@@ -15,17 +16,17 @@ const canvasRef = ref()
 const chartInstance = ref(null)
 const chartData = ref([])
 
-const format = (val) => {
+const format = val => {
   const n = Number(val || 0)
   return n < 0
     ? `($${Math.abs(n).toLocaleString()})`
     : `$${n.toLocaleString()}`
 }
 
-const parseDate = (str) =>
+const parseDate = str =>
   new Date(str).toLocaleDateString('default', {
     month: 'short',
-    day: 'numeric',
+    day: 'numeric'
   })
 
 async function fetchData() {
@@ -56,7 +57,7 @@ function render() {
           borderColor: '#00ffa5',
           backgroundColor: '#98e8ff',
           tension: 0.2,
-          fill: true,
+          fill: true
         },
         {
           label: 'Liabilities',
@@ -64,12 +65,14 @@ function render() {
           borderColor: '#ff6a6a',
           backgroundColor: '#ffc0cb',
           tension: 0.2,
-          fill: true,
+          fill: true
         }
       ]
     },
     options: {
       animation: { duration: 900, easing: 'easeOutCubic' },
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         tooltip: {
           backgroundColor: '#1f1f1f',
@@ -83,7 +86,7 @@ function render() {
           labels: {
             color: '#ccc',
             boxWidth: 16,
-            usePointStyle: true,
+            usePointStyle: true
           }
         }
       },
@@ -107,10 +110,12 @@ function render() {
 onMounted(fetchData)
 </script>
 
-
 <style scoped>
 .chart-container {
-  padding: 1.5rem;
+  flex: 1 1 48%;
+  padding: 0.75rem;
+  max-width: 48%;
+  min-width: 300px;
   background-color: var(--color-bg-secondary);
   border-radius: 12px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
@@ -119,5 +124,23 @@ onMounted(fetchData)
 
 .chart-container:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
 }
 </style>
