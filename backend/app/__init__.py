@@ -16,6 +16,9 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
 
+    from app.cli.sync import sync_accounts
+    app.cli.add_command(sync_accounts)
+
     # Always register routes (for all environments)
     from app.routes.frontend import frontend
     from app.routes.transactions import transactions
@@ -55,7 +58,8 @@ def create_app():
     if FLASK_ENV == "development":
         with app.app_context():
             db.create_all()
-
+    
+   
     # Optional: always log routes
     with app.app_context():
         routes = " \n ".join(str(rule) for rule in app.url_map.iter_rules())
