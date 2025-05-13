@@ -1,28 +1,22 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-12T12:35:00Z",
+    "lastAccessed": "2025-05-13T19:52:00Z",
     "groups": [
       {
-        "name": "Documentation Cleanup & Restructure",
+        "name": "Forecast Engine Processing",
         "tasks": [
           {
-            "task": "Reorganize mapping files to `docs/maps`",
-            "items": [{"name": "BackendMap.txt", "complete": true},{"name": "FrontendMap.txt", "complete": true}, {"name": "LinkAccountFullProducts_Backend_Integration_Map.md","complete":true}]
-          },
-          {
-            "task": "Relate development notes to `docs/internal`",
-            "items": [{"name": "Dev_ForecastReference.md", "complete": true}, {"name": "refresh_route_reviewer.md","complete": true}, {"name": "DevelopingForecast.txt", "complete": true}]
-          },
-          {
-            "task": "Replace architecture files",
-            "items": [{"name": "arch_ux_01.md", "complete": true}, {"name": "arch_ux_02.md", "complete": true}]
-          },
-          {
-            "task": "Audit root level files (non-/scripts/)",
-            "items": []
+            "task": "Initialize from process description",
+            "items": [
+              {"name": "Parse steps from `DevelopingForecast.txt`", "complete": false},
+              {"name": "Translate logic into functions", "complete": false},
+              {"name": "Stub module for `forecast/forecast_engine.py`", "complete": false},
+              {"name": "Trace data flows (AccountHistory)", "complete": false},
+              {"name": "Cross-check with `dev_forecast_reference.md`", "complete": false},
+              {"name": "Scaffold utilities/tests", "complete": false}
+            ]
           }
       ]
-    }]
-  }
+    }
 }
