@@ -16,7 +16,7 @@ def is_due(last_synced, provider):
     return now - last_synced >= SYNC_INTERVALS.get(provider, timedelta(days=1))
 
 def refresh_all_accounts():
-    logger.info("🏌 Starting account refresh dispatch...")
+    logger.info("Starting account refresh dispatch...")
 
     # ---- Teller Accounts ----
     teller_accounts = TellerAccount.query.all()
@@ -28,9 +28,9 @@ def refresh_all_accounts():
             get_teller_accounts(act.access_token, user_id=act.user_id)
             act.last_refreshed = datetime.utcnow()
             db.session.commit()
-            logger.info(f"⚤ Synced teller account {act.id} for user {act.user_id}")
+            logger.info(f"Synced teller account {act.id} for user {act.user_id}")
         except Exception as e:
-            logger.error(f"ë� Teller sync failed for account {act.id}: {str(e)}")
+            logger.error(f"Teller sync failed for account {act.id}: {str(e)}")
 
     # ---- Plaid Accounts ----
     plaid_accounts = PlaidAccount.query.all()
@@ -42,8 +42,8 @@ def refresh_all_accounts():
             get_accounts(act.access_token, user_id=act.user_id)
             act.last_refreshed = datetime.utcnow()
             db.session.commit()
-            logger.info(f"⚤ Synced plaid account {act.id} for user {act.user_id}")
+            logger.info(f"Synced plaid account {act.id} for user {act.user_id}")
         except Exception as e:
-            logger.error(f"ë� Plaid sync failed for account {act.id}: {str(e}}")
+            logger.error(f"Plaid sync failed for account {act.id}: {str(e}}")
 
-    logger.info("⨫ Account refresh dispatch complete.")
+    logger.info("Account refresh dispatch complete.")
