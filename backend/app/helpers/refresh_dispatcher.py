@@ -1,13 +1,14 @@
 from datetime import datetime, timedelta
-from backend.app.models import db, Account
-from backend.app.helpers.teller_helpers import get_teller_accounts
-from backend.app.helpers.plaid_helpers import get_accounts
+from app.models import db, Account
+from app.helpers.teller_helpers import get_teller_accounts
+from app.helpers.plaid_helpers import get_accounts
 from app.config import logger  # use app logger for consistency
 
 SYNC_INTERVALS = {
     "teller": timedelta(hours=8),
-    "plaid": timedelta(days=2)
+    "plaid": timedelta(days=2),
 }
+
 
 def is_due(last_synced, provider):
     if not last_synced:
@@ -15,12 +16,13 @@ def is_due(last_synced, provider):
     now = datetime.utcnow()
     return now - last_synced >= SYNC_INTERVALS.get(provider, timedelta(days=1))
 
+
 def refresh_all_accounts():
     logger.info("Starting account refresh dispatch...")
     accounts = Account.query.all()
 
     for acct in accounts:
-        provider = acct.link_type.lower() if acct.link_type else "unknown"
+        provider = (acct.link_type or "unknown").lower()
         last_synced = acct.last_refreshed
         user_id = acct.user_id
 
@@ -42,7 +44,6 @@ def refresh_all_accounts():
             logger.info(f"Synced {provider} account {acct.id} for user {user_id}")
 
         except Exception as e:
-            logger.error(f"Failed to sync account {acct.id} (user {user_id}): {str(e)}")
+            logger.error(f"Sync failed for account {acct.id} ({provider}): {e}")
 
     logger.info("Account refresh dispatch complete.")
-
