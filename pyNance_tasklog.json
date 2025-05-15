@@ -1,7 +1,7 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-13T20:06:47Z",
+    "lastAccessed": "2025-05-15T16:46:06Z",
     "groups": [
       {
         "name": "Forecast Engine Processing",
@@ -15,7 +15,16 @@
               {"name": "Trace data flows (AccountHistory)", "complete": false},
               {"name": "Cross-check with `dev_forecast_reference.md`", "complete": false},
               {"name": "Scaffold utilities/tests", "complete": false}]
-          }
+          },
+        {
+          "name": "Arch cleanup",
+          "tasks": [
+            {
+              "name": "Fix syntax in `account_refresh_dispatcher.py` which broke Flask run",
+              "complete": true
+            }
+          ]
+        }
       ]
     }
 }
