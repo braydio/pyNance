@@ -1,8 +1,8 @@
 from datetime import datetime, timedelta
-from app.models import db, PlaidAccount, TellerAccount
+from app.models import db, Account
 from app.helpers.teller_helpers import get_teller_accounts
 from app.helpers.plaid_helpers import get_accounts
-from app.config import logger
+from app.config import logger  # use app logger for consistency
 
 SYNC_INTERVALS = {
     "teller": timedelta(hours=8),
@@ -17,33 +17,33 @@ def is_due(last_synced, provider):
 
 def refresh_all_accounts():
     logger.info("Starting account refresh dispatch...")
+    accounts = Account.query.all()
 
-    # ---- Teller Accounts ----
-    teller_accounts = TellerAccount.query.all()
-    for act in teller_accounts:
-        if not is_due(act.last_refreshed, "teller"):
-            continue
-        try:
-            logger.info(f"syncing teller account {act.id} for user {act.user_id}")
-            get_teller_accounts(act.access_token, user_id=act.user_id)
-            act.last_refreshed = datetime.utcnow()
-            db.session.commit()
-            logger.info(f"Synced teller account {act.id} for user {act.user_id}")
-        except Exception as e:
-            logger.error(f"Teller sync failed for account {act.id}: {str(e)}")
+    for acct in accounts:
+        provider = acct.link_type.lower() if acct.link_type else "unknown"
+        last_synced = acct.last_refreshed
+        user_id = acct.user_id
 
-    # ---- Plaid Accounts ----
-    plaid_accounts = PlaidAccount.query.all()
-    for act in plaid_accounts:
-        if not is_due(act.last_refreshed, "plaid"):
+        if not is_due(last_synced, provider):
             continue
-        try:
-            logger.info(f"syncing plaid account {act.id} for user {act.user_id}")
-            get_accounts(act.access_token, user_id=act.user_id)
-            act.last_refreshed = datetime.utcnow()
+
+
+        trig:
+            logger.info(f"syncing {provider} account {acct.id} for user {user_id}")
+            if provider == "teller":
+                get_teller_accounts(acct.access_token, user_id=user_id)
+            elif provider == "plaid":
+                get_accounts(acct.access_token, user_id=user_id)
+            else:
+                logger.warning(f"unknown provider for account {acct.id}: {provider}")
+                continue
+
+
+            acct.last_refreshed = datetime.utcnow()
             db.session.commit()
-            logger.info(f"Synced plaid account {act.id} for user {act.user_id}")
+            logger.info(f"Synced {provider} account {acct.id} for user {user_id}")
+
         except Exception as e:
-            logger.error(f"Plaid sync failed for account {act.id}: {str(e}}")
+            logger.error(f"plaid sync failed for account {acct.id}: {str(e)}")
 
     logger.info("Account refresh dispatch complete.")
