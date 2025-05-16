@@ -1,30 +1,25 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-15T16:46:06Z",
+    "lastAccessed": "2025-05-16T03:23:32Z",
     "groups": [
       {
-        "name": "Forecast Engine Processing",
+        "name": "Routing Refactor",
         "tasks": [
           {
-            "task": "Initialize from process description",
+            "task": "Introduce `app/routes/transactions.py`",
             "items": [
-              {"name": "Parse steps from `DevelopingForecast.txt`", "complete": true},
-              {"name": "Translate logic into functions", "complete": true},
-              {"name": "Stub module for `forecast/forecast_engine.py` ", "complete": true},
-              {"name": "Trace data flows (AccountHistory)", "complete": false},
-              {"name": "Cross-check with `dev_forecast_reference.md`", "complete": false},
-              {"name": "Scaffold utilities/tests", "complete": false}]
+              {"name": "Create transactions routes", "complete": false}
+            ]
           },
-        {
-          "name": "Arch cleanup",
-          "tasks": [
-            {
-              "name": "Fix syntax in `account_refresh_dispatcher.py` which broke Flask run",
-              "complete": true
-            }
-          ]
-        }
-      ]
-    }
+          {
+            "task": "Create service file for transactions",
+            "items": [
+              {"name": "Extract shared logic from existing routes", "complete": false}
+            ]
+          }
+        ]
+      }
+    ]
+  }
 }
