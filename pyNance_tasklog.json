@@ -1,22 +1,22 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-16T03:23:32Z",
+    "lastAccessed": "2025-05-16T04:36:07Z",
     "groups": [
       {
         "name": "Routing Refactor",
         "tasks": [
           {
-            "task": "Introduce `app/routes/transactions.py`",
-            "items": [
-              {"name": "Create transactions routes", "complete": false}
-            ]
+            "task": "Introduce `app/routes/product_transactions.py`",
+            "items": [{"name": "Create transactions routes", "complete": true}]
           },
           {
             "task": "Create service file for transactions",
-            "items": [
-              {"name": "Extract shared logic from existing routes", "complete": false}
-            ]
+            "items": [{"name": "Extract shared logic from existing routes", "complete": false}]
+          },
+          {
+            "task": "Map function exposures in plaid_transactions.py",
+            "items": [{"name": "Locate and classify functions as exposed/non-exposed", "complete": true}]
           }
         ]
       }
