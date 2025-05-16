@@ -1,7 +1,7 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-16T04:36:07Z",
+    "lastAccessed": "2025-05-16T04:40:10Z",
     "groups": [
       {
         "name": "Routing Refactor",
@@ -16,6 +16,10 @@
           },
           {
             "task": "Map function exposures in plaid_transactions.py",
+            "items": [{"name": "Locate and classify functions as exposed/non-exposed", "complete": true}]
+          },
+          {
+            "task": "Map function exposures in teller_transactions.py",
             "items": [{"name": "Locate and classify functions as exposed/non-exposed", "complete": true}]
           }
         ]
