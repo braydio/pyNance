@@ -36,6 +36,7 @@ declare module 'vue' {
     NetYearComparisonChart: typeof import('./components/NetYearComparisonChart.vue')['default']
     NewNavbarDev: typeof import('./components/NewNavbar-Dev.vue')['default']
     NotificationsBar: typeof import('./components/NotificationsBar.vue')['default']
+    PlaidProductScopeSelector: typeof import('./components/PlaidProductScopeSelector.vue')['default']
     RecurringCalendar: typeof import('./components/RecurringCalendar.vue')['default']
     RecurringTransactionSection: typeof import('./components/RecurringTransactionSection.vue')['default']
     RefreshControls: typeof import('./components/RefreshControls.vue')['default']
