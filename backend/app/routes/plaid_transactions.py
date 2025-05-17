@@ -155,7 +155,7 @@ def refresh_plaid_accounts():
             logger.debug(
                 f"Refreshing account {account.account_id} with token {access_token}"
             )
-            plaid_accounts = get_accounts(access_token)
+            plaid_accounts = get_accounts(access_token, user_id)
             for acct in plaid_accounts:
                 account_id = acct.get("account_id")
                 updated = account_logic.refresh_data_for_plaid_account(
