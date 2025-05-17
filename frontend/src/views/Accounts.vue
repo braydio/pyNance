@@ -1,7 +1,6 @@
 <template>
   <div class="accounts-view">
     <!-- Header -->
-
     <header class="accounts-header">
       <h1>Accounts Management</h1>
       <h2></h2>
@@ -11,12 +10,9 @@
         welcome back.
       </h3>
       <p>Why don't you take a seat.</p>
-
     </header>
 
-
     <!-- Charts -->
-
     <section class="charts-section">
       <div class="chart-controls-row">
         <div class="chart-container">
@@ -30,8 +26,11 @@
 
             <transition name="slide-vertical" mode="out-in">
               <div v-if="showControls" class="account-controls-group">
+                <!-- ✅ INSERTED: Product Scope Selector -->
+                <PlaidProductScopeSelector v-model="selectedProducts" />
+
                 <template v-if="!showTokenForm">
-                  <LinkAccount @manual-token-click="toggleManualTokenMode" />
+                  <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
                   <RefreshPlaidControls />
                   <RefreshTellerControls />
                 </template>
@@ -49,6 +48,7 @@
         <AccountsReorderChart />
       </div>
     </section>
+
     <!-- Accounts Table -->
     <transition name="slide-horizontal" mode="out-in">
       <div class="card section-container" :key="activeAccountGroup">
@@ -75,6 +75,10 @@
 
 <script setup>
 import { ref } from 'vue'
+
+// ✅ NEW: State for selected Plaid products
+const selectedProducts = ref([])
+
 import LinkAccount from '@/components/LinkAccount.vue'
 import AccountsTable from '@/components/AccountsTable.vue'
 import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue'
@@ -84,11 +88,15 @@ import RefreshTellerControls from '@/components/RefreshTellerControls.vue'
 import RefreshPlaidControls from '@/components/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/TokenUpload.vue'
 
+// ✅ NEW: Import product scope selector
+import PlaidProductScopeSelector from '@/components/PlaidProductScopeSelector.vue'
+
+// Meta & State
 const userName = import.meta.env.VITE_USER_ID_PLAID || ''
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
   day: 'numeric',
-  year: 'numeric'
+  year: 'numeric',
 })
 
 const activeAccountGroup = ref('Checking')
@@ -106,7 +114,6 @@ function toggleManualTokenMode() {
 </script>
 
 <style scoped>
-
 .chart-controls-row {
   display: flex;
   flex-wrap: wrap;
@@ -135,6 +142,7 @@ function toggleManualTokenMode() {
     flex-basis: 100%;
   }
 }
+
 .controls-widget {
   margin-top: 0.1rem;
   display: flex;
@@ -205,6 +213,7 @@ function toggleManualTokenMode() {
   font-size: 2rem;
   text-shadow: 0px 0px 8px var(--accent-yellow-soft);
 }
+
 .accounts-header h2 {
   color: var(--color-accent-yellow);
   margin: 2px;
@@ -235,6 +244,7 @@ function toggleManualTokenMode() {
   font-size: 0.9rem;
   text-shadow: 2px 4px 6px var(--bar-gradient-end);
 }
+
 .charts-section {
   display: flex;
   flex-direction: column;
