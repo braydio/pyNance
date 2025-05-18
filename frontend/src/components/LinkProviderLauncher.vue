@@ -36,16 +36,36 @@ const emit = defineEmits(['refresh'])
 const loading = ref(false)
 const activeProvider = ref(null)
 
+async function ensurePlaidScript() {
+  if (window.Plaid) return
+
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
+    script.async = true
+    script.onload = resolve
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+}
+
 const linkPlaid = async () => {
   if (props.selectedProducts.length === 0) return
   loading.value = true
   activeProvider.value = 'plaid'
 
   try {
+    await ensurePlaidScript()
+
     const { link_token } = await accountLinkApi.generateLinkToken('plaid', {
       user_id: props.userId,
       products: props.selectedProducts,
     })
+
+    if (!link_token || !window.Plaid) {
+      console.error('Missing Plaid link token or SDK.')
+      return
+    }
 
     const handler = window.Plaid.create({
       token: link_token,
