@@ -1,5 +1,3 @@
-
-
 <template>
   <div class="transactions-page">
     <!-- Header -->
@@ -14,22 +12,12 @@
       <!-- Top Controls -->
       <div class="top-controls">
         <ImportFileSelector class="import-section" />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search transactions..."
-          class="search-input"
-        />
+        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="search-input" />
       </div>
 
       <!-- Main Table -->
-      <UpdateTransactionsTable
-        :transactions="filteredTransactions"
-        :sort-key="sortKey"
-        :sort-order="sortOrder"
-        @sort="setSort"
-        @editRecurringFromTransaction="prefillRecurringFromTransaction"
-      />
+      <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
+        @sort="setSort" @editRecurringFromTransaction="prefillRecurringFromTransaction" />
 
       <!-- Pagination -->
       <div id="pagination-controls">
@@ -52,7 +40,7 @@
 import { ref } from "vue"
 import { useTransactions } from "@/composables/useTransactions.js"
 import UpdateTransactionsTable from "@/components/UpdateTransactionsTable.vue"
-import RecurringTransactionSection from "@/components/RecurringTransactionSection.vue"
+import RecurringTransactionSection from "@/components/recurring/RecurringTransactionSection.vue"
 import ImportFileSelector from "@/components/ImportFileSelector.vue"
 
 export default {
@@ -181,4 +169,3 @@ button.btn:disabled {
   cursor: not-allowed;
 }
 </style>
-
