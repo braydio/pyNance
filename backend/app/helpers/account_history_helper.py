@@ -1,37 +1,33 @@
-   pyNance
- ├╴  RoutingRefactor
- ├╴  backend
- │ ├╴  app
- │ │ ├╴  certs
- │ │ ├╴  cli
- │ │ ├╴  config
- │ │ ├╴  helpers
- │ │ │ ├╴  account_refresh_dispatcher.py
- │ │ │ ├╴  helpers.py
- │ │ │ ├╴  import_helpers.py
- │ │ │ ├╴  plaid_exchange_helpers.py
- │ │ │ ├╴  plaid_helpers.py
- │ │ │ ├╴  refresh_dispatcher.py
- │ │ │ └╴  teller_helpers.py
- │ │ ├╴  imports
- │ │ ├╴  routes
- │ │ ├╴  services
- │ │ ├╴  sql
- │ │ │ ├╴  01_DEV-ArchitectureChecks.md
- │ │ │ ├╴  account_logic.py
- │ │ │ ├╴  category_logic.py
- │ │ │ ├╴  export_logic.py
- │ │ │ ├╴  forecast_logic.py
- │ │ │ ├╴  manual_import_logic.py
- │ │ │ └╴  recurring_logic.py
- │ │ ├╴  static
- │ │ ├╴  themes
- │ │ ├╴  __init__.py
- │ │ ├╴  extensions.py
- │ │ └╴  models.py
- │ ├╴  migrations
- │ ├╴  scripts
- │ ├╴  cron_sync.py
- │ ├╴  example.env
- │ ├╴  installed_pkg
+from datetime import datetime
+from collections import defaultdict
 
+from app.extensions import db
+from app.models import Transaction, AccountHistory
+
+
+def update_account_history():
+    """
+    Aggregate daily transaction totals into AccountHistory entries per account.
+    This is used as the backend data source for forecasting.
+    """
+    print("🔁 Starting account history aggregation...")
+
+    # Daily sum per account_id → {account_id: {date: balance}}
+    daily_balances = defaultdict(lambda: defaultdict(float))
+    transactions = Transaction.query.all()
+
+    for tx in transactions:
+        tx_date = tx.date.date() if hasattr(tx.date, "date") else tx.date
+        daily_balances[tx.account_id][tx_date] += tx.amount
+
+    records = []
+    for account_id, dated in daily_balances.items():
+        for tx_date, total in dated.items():
+            records.append(
+                AccountHistory(account_id=account_id, date=tx_date, balance=total)
+            )
+
+    db.session.bulk_save_objects(records)
+    db.session.commit()
+
+    print(f"✅ AccountHistory updated with {len(records)} records.")
