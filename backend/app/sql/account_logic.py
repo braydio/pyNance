@@ -422,28 +422,30 @@ def get_paginated_transactions(page, page_size):
         .join(Account, Transaction.account_id == Account.account_id)
         .order_by(Transaction.date.desc())
     )
+
     total = query.count()
+
     results = query.offset((page - 1) * page_size).limit(page_size).all()
 
     serialized = []
-    for txn, acc in results:
+    for tx, acc in results:
         serialized.append(
             {
-                "transaction_id": txn.transaction_id,
-                "date": txn.date.isoformat() if txn.date else None,
-                "amount": txn.amount if txn.amount is not None else 0,
-                "description": txn.description or txn.merchant_name or "N/A",
+                "transaction_id": tx.transaction_id,
+                "date": tx.date.isoformat() if tx.date else None,
+                "amount": tx.amount or 0,
+                "description": tx.description or tx.merchant_name or "N/A",
                 "category": (
-                    txn.category.display_name
-                    if hasattr(txn.category, "display_name")
-                    else txn.category or "Uncategorized"
+                    tx.category.display_name
+                    if hasattr(tx.category, "display_name")
+                    else tx.category or "Uncategorized"
                 ),
-                "merchant_name": txn.merchant_name or "Unknown",
+                "merchant_name": tx.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
-                "pending": getattr(txn, "pending", False),
+                "pending": getattr(tx, "pending", False),
                 "isEditing": False,
             }
         )
@@ -503,10 +505,11 @@ def refresh_data_for_plaid_account(access_token, account_id):
             primary = category_path[0] if len(category_path) > 0 else "Unknown"
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 
-            existing_category = db.session.query(Category).filter_by(
-                primary_category=primary,
-                detailed_category=detailed
-            ).first()
+            existing_category = (
+                db.session.query(Category)
+                .filter_by(primary_category=primary, detailed_category=detailed)
+                .first()
+            )
 
             if existing_category:
                 category = existing_category
@@ -514,16 +517,16 @@ def refresh_data_for_plaid_account(access_token, account_id):
                 category = Category(
                     primary_category=primary,
                     detailed_category=detailed,
-                    display_name=f"{primary} > {detailed}"
+                    display_name=f"{primary} > {detailed}",
                 )
                 db.session.add(category)
                 db.session.flush()
 
-
-            existing_category = db.session.query(Category).filter_by(
-                primary_category=primary,
-                detailed_category=detailed
-            ).first()
+            existing_category = (
+                db.session.query(Category)
+                .filter_by(primary_category=primary, detailed_category=detailed)
+                .first()
+            )
 
             if existing_category:
                 category = existing_category
@@ -531,11 +534,10 @@ def refresh_data_for_plaid_account(access_token, account_id):
                 category = Category(
                     primary_category=primary,
                     detailed_category=detailed,
-                    display_name=f"{primary} > {detailed}"
+                    display_name=f"{primary} > {detailed}",
                 )
                 db.session.add(category)
                 db.session.flush()
-
 
             merchant_name = txn.get("merchant_name") or "Unknown"
             merchant_type = (
