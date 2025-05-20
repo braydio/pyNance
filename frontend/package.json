@@ -39,7 +39,7 @@
     "prettier": "^3.4.2",
     "rollup-plugin-visualizer": "^5.14.0",
     "start-server-and-test": "^2.0.10",
-    "tailwindcss": "^4.1.4",
+    "tailwindcss": "^4.1.7",
     "unplugin-auto-import": "^19.1.2",
     "unplugin-vue-components": "^28.4.1",
     "vite": "^6.0.11",
