@@ -64,13 +64,12 @@ class AccountHistory(db.Model, TimestampMixin):
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
-    user_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), nullable=False)
-    date = db.Column(db.DateTime, nullable=False)
-    db.UniqueConstraint("acc   balance = db.Column(db.Float, default=0)
-
-    __table_args__ = (
-        db.UniqueConstraint("account_id", "date", name="_account_date_uc")
+    user_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
+    date = db.Column(db.DateTime, nullable=False)
+    balance = db.Column(db.Float, default=0)
+    __table_args__ = db.UniqueConstraint("account_id", "date", name="_account_date_uc")
 
 
 class RecurringTransaction(db.Model):
