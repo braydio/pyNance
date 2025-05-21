@@ -64,11 +64,12 @@ class AccountHistory(db.Model, TimestampMixin):
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
+    user_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), nullable=False)
     date = db.Column(db.DateTime, nullable=False)
-    balance = db.Column(db.Float, default=0)
+    db.UniqueConstraint("acc   balance = db.Column(db.Float, default=0)
 
     __table_args__ = (
-        db.UniqueConstraint("account_id", "date", name="_account_date_uc"),
+        db.UniqueConstraint("account_id", "date", name="_account_date_uc")
     )
 
 
@@ -119,7 +120,7 @@ class Category(db.Model):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.String(64), db.ForeignKey("users.id"), nullable=True, index=True)
+    user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)
