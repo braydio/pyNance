@@ -1,7 +1,7 @@
 {
   "arch_cleanup": {
     "accessedBy": "arch_cleanup",
-    "lastAccessed": "2025-05-16T04:40:10Z",
+    "lastAccessed": "2025-05-16T05:11:00Z",
     "groups": [
       {
         "name": "Routing Refactor",
@@ -21,6 +21,16 @@
           {
             "task": "Map function exposures in teller_transactions.py",
             "items": [{"name": "Locate and classify functions as exposed/non-exposed", "complete": true}]
+          },
+          {
+            "task": "Complete downstream usage and logic path mapping",
+            "items": [
+              {"name": "Scan routes/ for imports", "complete": true},
+              {
+              "name": "Review helpers/ usage", "complete": true},
+              {"name": "Analyze sql/ data ingestion and sync logic", "complete": true},
+              {"name": "Confirm schema exposure via models.py", "complete": true}
+            ]
           }
         ]
       }
