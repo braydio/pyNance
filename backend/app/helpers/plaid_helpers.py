@@ -1,4 +1,3 @@
-
 from app.config import (
     plaid_client,
     PLAID_CLIENT_ID,
@@ -17,7 +16,9 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
+from plaid.model.item_public_token_exchange_request import (
+    ItemPublicTokenExchangeRequest,
+)
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
@@ -27,6 +28,7 @@ from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetR
 logger = setup_logger()
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 
+
 def save_transactions_json(transactions):
     try:
         with open(LAST_TRANSACTIONS, "w") as f:
@@ -35,8 +37,13 @@ def save_transactions_json(transactions):
     except Exception as e:
         logger.error(f"Failed to save transactions: {e}", exc_info=True)
 
+
 def get_accounts(access_token: str, user_id: str):
     logger.debug(f"Fetching accounts for token {access_token[:4]}...")
+
+    if not user_id:
+        logger.error("Missing user_id in get_accounts() — aborting.")
+        raise ValueError("user_id must be provided to get_accounts")
 
     try:
         plaid_request = AccountsGetRequest(access_token=access_token)
@@ -60,6 +67,7 @@ def get_accounts(access_token: str, user_id: str):
         logger.error(f"Error syncing accounts: {e}", exc_info=True)
         raise
 
+
 def get_item(access_token: str):
     try:
         plaid_request = ItemGetRequest(access_token=access_token)
@@ -68,6 +76,7 @@ def get_item(access_token: str):
     except Exception as e:
         logger.error(f"Error getting item: {e}", exc_info=True)
         raise
+
 
 def generate_link_token(user_id: str, products=["transactions"]):
     logger.debug(f"Generating link token with user_id={user_id}, products={products}")
@@ -91,6 +100,7 @@ def generate_link_token(user_id: str, products=["transactions"]):
         logger.error(f"Error generating link token: {e}", exc_info=True)
         raise
 
+
 def exchange_public_token(public_token: str):
     logger.debug(f"Exchanging public token: {public_token}")
 
@@ -108,11 +118,11 @@ def exchange_public_token(public_token: str):
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
         raise
 
+
 def get_institution_name(institution_id: str):
     try:
         plaid_request = InstitutionsGetByIdRequest(
-            institution_id=institution_id,
-            country_codes=[CountryCode("US")]
+            institution_id=institution_id, country_codes=[CountryCode("US")]
         )
         response = plaid_client.institutions_get_by_id(plaid_request)
         return response.institution.name
@@ -120,16 +130,18 @@ def get_institution_name(institution_id: str):
         logger.warning(f"Failed to fetch institution name for {institution_id}: {e}")
         return institution_id  # fallback
 
+
 def refresh_plaid_categories():
-    logger.warning("Plaid /categories/get endpoint is deprecated. Skipping category refresh.")
+    logger.warning(
+        "Plaid /categories/get endpoint is deprecated. Skipping category refresh."
+    )
     return []
+
 
 def get_transactions(access_token: str, start_date: str, end_date: str):
     try:
         plaid_request = TransactionsGetRequest(
-            access_token=access_token,
-            start_date=start_date,
-            end_date=end_date
+            access_token=access_token, start_date=start_date, end_date=end_date
         )
         response = plaid_client.transactions_get(plaid_request)
         transactions = [tx.to_dict() for tx in response.transactions]
@@ -140,13 +152,13 @@ def get_transactions(access_token: str, start_date: str, end_date: str):
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
         raise
 
+
 def resolve_or_create_category(category_path):
     primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
     secondary = category_path[1] if len(category_path) > 1 else None
 
     category = Category.query.filter_by(
-        primary_category=primary,
-        detailed_category=secondary
+        primary_category=primary, detailed_category=secondary
     ).first()
 
     if not category:
@@ -161,6 +173,7 @@ def resolve_or_create_category(category_path):
 
     return category
 
+
 def get_investments(access_token: str):
     try:
         plaid_request = InvestmentsHoldingsGetRequest(access_token=access_token)
@@ -169,4 +182,3 @@ def get_investments(access_token: str):
     except Exception as e:
         logger.error(f"Error fetching investments: {e}", exc_info=True)
         raise
-
