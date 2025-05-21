@@ -129,7 +129,7 @@ def get_transactions_paginated():
             page, page_size
         )
 
-        return jsonif(
+        return jsonify(
             {
                 "status": "success",
                 "data": {"transactions": transactions_list, "total": total},
