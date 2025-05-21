@@ -102,9 +102,7 @@ def get_accounts():
                         "balance": a.balance,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
-                        "last_refreshed": last_refreshed.isoformat()
-                        if last_refreshed
-                        else None,
+                        "last_refreshed": last_refreshed,
                     }
                 )
             except Exception as item_err:
