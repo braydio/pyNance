@@ -76,7 +76,7 @@ def exchange_public_token_endpoint():
         institution_name = get_institution_name(institution_id)
         logger.debug(f"Institution ID: {institution_id}, Name: {institution_name}")
 
-        accounts = get_accounts(access_token)
+        accounts = get_accounts(access_token, user_id)
         logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
 
         transformed = []
@@ -124,10 +124,9 @@ def refresh_plaid_accounts():
         category_refresh = refresh_plaid_categories()
         if category_refresh:
             logger.info("Successfully refreshed Plaid categories.")
-        user_id = request.get_json().get(PLAID_CLIENT_NAME, "Brayden")
-        accounts = Account.query.filter_by(
-            user_id=PLAID_CLIENT_NAME, link_type="Plaid"
-        ).all()
+        data = request.get_json() or {}
+        user_id = data.get("user_id", PLAID_CLIENT_NAME)
+        accounts = Account.query.filter_by(user_id=user_id, link_type="Plaid").all()
         logger.debug(f"Found {len(accounts)} accounts for user_id={user_id}")
 
         if not accounts:
@@ -140,7 +139,7 @@ def refresh_plaid_accounts():
                 }
             ), 200
 
-        updated_accounts = []  # ✅ Fix: initialize variable
+        updated_accounts = []
 
         for account in accounts:
             access_token = (
