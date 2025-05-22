@@ -1,4 +1,3 @@
-
 # backend/scripts/cron_sync.py
 
 from app.config import DIRECTORIES
@@ -16,6 +15,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s: %(message)s",
 )
 
+
 def main():
     logging.info("🔄 Starting scheduled account sync...")
     try:
@@ -24,6 +24,6 @@ def main():
     except Exception as e:
         logging.error(f"❌ Sync failed: {e}", exc_info=True)
 
+
 if __name__ == "__main__":
     main()
-
