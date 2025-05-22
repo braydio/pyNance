@@ -1,7 +1,7 @@
 # file: app/routes/plaid_transactions.py
 from datetime import datetime
 
-from app.config import PLAID_BASE_URL, PLAID_CLIENT_ID, PLAID_CLIENT_NAME, logger
+from app.config import PLAID_CLIENT_ID, PLAID_CLIENT_NAME, CLIENT_NAME, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
     refresh_plaid_categories,
@@ -46,7 +46,17 @@ def generate_link_token_endpoint():
 @plaid_transactions.route("/exchange_public_token", methods=["POST"])
 def exchange_public_token_endpoint():
     data = request.get_json()
-    user_id = data.get("user_id", "")
+    frontend_user_id = data.get("user_id", "")
+    user_id = frontend_user_id or CLIENT_NAME
+
+    if not user_id:
+        logger.error("No user_id available from frontend or env")
+        return jsonify({"error": "user_id is required"}), 400
+
+    logger.debug(
+        f"user_id resolved from {'frontend' if frontend_user_id else 'env'}: {user_id}"
+    )
+
     public_token = data.get("public_token")
     logger.debug(f"Received token exchange request for user_id={user_id}")
 
@@ -97,7 +107,7 @@ def exchange_public_token_endpoint():
                     "provider": "Plaid",
                 }
             )
-
+        logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
         logger.info(f"Upserted {len(transformed)} accounts for user {user_id}")
 
