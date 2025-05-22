@@ -65,6 +65,7 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
 def upsert_accounts(user_id, account_list, provider):
     processed_ids = set()
     count = 0
+    logger.debug(f"[CHECK] upsert_accounts received user_id={user_id}")
 
     for account in account_list:
         try:
