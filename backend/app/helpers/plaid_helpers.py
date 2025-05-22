@@ -55,6 +55,7 @@ def get_accounts(access_token: str, user_id: str):
                 logger.warning(
                     "[WARN] Missing user_id while syncing account_id=%s", acct
                 )
+            logger.debug(f"Passing along user id {user_id} from plaid_helpers")
             account_id = acct.account_id
             balance = acct.balances.available or acct.balances.current
             if account_id and balance is not None:
