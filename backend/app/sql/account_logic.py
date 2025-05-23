@@ -224,115 +224,80 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
+    from datetime import datetime, date as pydate
+    import json
+    from tempfile import NamedTemporaryFile
+
     updated = False
+    account_id = account.account_id
+    user_id = account.user_id
+    balance = account.balance
+
     # Refresh Balance
-    url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
+    url_balance = f"{teller_api_base_url}/accounts/{account_id}/balances"
     resp_balance = fetch_url_with_backoff(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
-#upsert_accounts update block fix
-from datetime import datetime
-
-today = datetime.utcnow().date()
-
-existing_history = AccountHistory.query.filter_by(account_id=account_id, date=today).first()
-if existing_history:
-    logger.debug(f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"))
-    existing_history.balance = balance
-    existing_history.updated_at = datetime.utcnow()
-    logger.debug(f"History record already exists for account {account.account_id} for date {today}.")
-else:
-    logger.debug(f"[CREATING] New AccountHistory for account_id={account_id} on date={today}")
-    new_history = AccountHistory(
-        account_id=account_id,
-        user_id=user_id,
-        date=today,
-        balance=balance,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
     )
-    if resp_balance.status_code == 200:
-        logger.debug(
-            f"Balance response for account {account.account_id}: {resp_balance.text}"
-        )
-        balance_json = resp_balance.json()
-        new_balance = account.balance
 
-        # If "available" is present, use that for non-credit accounts; for credit,
-        # invert the ledger balance. Otherwise, handle nested structures.
+    if resp_balance.status_code == 200:
+        logger.debug(f"Balance response for account {account_id}: {resp_balance.text}")
+        balance_json = resp_balance.json()
+        new_balance = balance
+
         if "available" in balance_json:
             account_type = (account.type or "").lower()
-            if account_type in ["credit", "liability"]:
-                try:
-                    ledger_value = float(balance_json.get("ledger", account.balance))
-                    new_balance = -ledger_value
-                    logger.debug(
-                        f"Inverting ledger balance for account {account.account_id}: {ledger_value} -> {new_balance}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error parsing ledger balance: {e}", exc_info=True)
-            else:
-                try:
-                    new_balance = float(balance_json.get("available", account.balance))
-                    logger.debug(
-                        f"Using available balance for account {account.account_id}: {new_balance}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error parsing available balance: {e}", exc_info=True)
+            try:
+                if account_type in ["credit", "liability"]:
+                    new_balance = -float(balance_json.get("ledger", balance))
+                    logger.debug(f"Inverting ledger balance for {account_id}")
+                else:
+                    new_balance = float(balance_json.get("available", balance))
+                    logger.debug(f"Using available balance for {account_id}")
+            except Exception as e:
+                logger.error(f"Error parsing balance: {e}", exc_info=True)
+
         elif isinstance(balance_json, dict):
             if "balance" in balance_json:
-                new_balance = (
-                    balance_json.get("balance", {}).get("current", account.balance) or 0
-                )
-                logger.debug("Extracted balance using nested 'balance' key.")
-            elif "balances" in balance_json:
-                balances_list = balance_json.get("balances", [])
-                if balances_list:
-                    new_balance = balances_list[0].get("current", account.balance) or 0
-                    logger.debug("Extracted balance from 'balances' list.")
-                else:
-                    logger.warning(
-                        f"'balances' list empty for account {account.account_id}."
-                    )
-        else:
-            logger.warning(
-                f"Unexpected balance format for account {account.account_id}: {balance_json}"
-            )
+                new_balance = balance_json.get("balance", {}).get("current", balance)
+                logger.debug("Extracted balance from 'balance.current'")
+            elif "balances" in balance_json and balance_json["balances"]:
+                new_balance = balance_json["balances"][0].get("current", balance)
+                logger.debug("Extracted balance from 'balances' list")
+            else:
+                logger.warning(f"No balance data for {account_id}")
 
-        if new_balance != account.balance:
-            logger.debug(
-                f"Account {account.account_id}: Balance updated from {account.balance} to {new_balance}"
-            )
+        if new_balance != balance:
             account.balance = new_balance
+            balance = new_balance
             updated = True
+            logger.debug(f"Updated balance for {account_id}: {new_balance}")
         else:
-            logger.debug(f"Account {account.account_id}: Balance unchanged.")
+            logger.debug(f"No change to balance for {account_id}")
     else:
-        logger.error(
-            f"Failed to refresh balance for account {account.account_id}: {resp_balance.text}"
-        )
+        logger.error(f"Failed to refresh balance for {account_id}: {resp_balance.text}")
 
     # Refresh Transactions
-    url_txns = f"{teller_api_base_url}/accounts/{account.account_id}/transactions"
-    logger.debug(
-        f"Requesting transactions for account {account.account_id} from {url_txns}"
-    )
+    url_txns = f"{teller_api_base_url}/accounts/{account_id}/transactions"
+    logger.debug(f"Requesting transactions for {account_id} from {url_txns}")
     resp_txns = fetch_url_with_backoff(
         url_txns, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
-    if resp_txns.status_code == 200:
-        logger.debug(
-            f"Transactions response for account {account.account_id}: {resp_txns.text}"
-        )
-        txns_json = resp_txns.json()
-        with open(TRANSACTIONS_RAW, "w") as f:
-            json.dump(txns_json, f, indent=4)
 
-        if isinstance(txns_json, dict) and "transactions" in txns_json:
-            txns_list = txns_json.get("transactions", [])
-        elif isinstance(txns_json, list):
-            txns_list = txns_json
-        else:
-            txns_list = []
+    if resp_txns.status_code == 200:
+        txns_json = resp_txns.json()
+        try:
+            with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
+                json.dump(txns_json, f, indent=4)
+        except Exception as e:
+            logger.warning(f"Could not dump raw transactions: {e}")
+
+        txns_list = (
+            txns_json.get("transactions", [])
+            if isinstance(txns_json, dict)
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
+        )
 
         for txn in txns_list:
             txn_id = txn.get("id")
@@ -350,26 +315,23 @@ else:
                 )
                 existing_txn = None
 
-            # Process common fields
             new_amount = process_transaction_amount(
                 txn.get("amount") or 0, account.type
             )
-            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
-            if raw_date_str:
-                try:
-                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
-                except ValueError:
-                    parsed_date = pydate.today()
-            else:
+            raw_date_str = txn.get("date") or ""
+            try:
+                parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
+            except ValueError:
                 parsed_date = pydate.today()
 
             category_list = txn.get("category", [])
-            if isinstance(category_list, list) and category_list:
-                category = " > ".join(category_list)
-            else:
-                category = "Unknown"
+            category = (
+                " > ".join(category_list)
+                if isinstance(category_list, list)
+                else "Unknown"
+            )
 
-            counterparty = details.get("counterparty")
+            counterparty = txn.get("details", {}).get("counterparty", {})
             merchant_name = "Unknown"
             merchant_type = "Unknown"
             if (
@@ -385,14 +347,9 @@ else:
 
             if existing_txn:
                 if existing_txn.user_modified:
-                    logger.debug(
-                        f"Transaction {txn_id} is user modified; preserving user changes."
-                    )
-                    # Skip updating fields that have been modified by the user.
+                    logger.debug(f"Preserving user-modified txn {txn_id}")
                 else:
-                    logger.debug(
-                        f"Updating transaction {txn_id} for account {account.account_id}."
-                    )
+                    logger.debug(f"Updating transaction {txn_id}")
                     existing_txn.amount = new_amount
                     existing_txn.date = parsed_date
                     existing_txn.description = txn.get("description") or ""
@@ -400,12 +357,10 @@ else:
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
             else:
-                logger.debug(
-                    f"Inserting new transaction {txn_id} for account {account.account_id}."
-                )
+                logger.debug(f"Inserting new transaction {txn_id}")
                 new_txn = Transaction(
                     transaction_id=txn_id,
-                    account_id=account.account_id,
+                    account_id=account_id,
                     amount=new_amount,
                     date=parsed_date,
                     description=txn.get("description") or "",
@@ -417,26 +372,23 @@ else:
         updated = True
     else:
         logger.error(
-            f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
+            f"Failed to refresh transactions for {account_id}: {resp_txns.text}"
         )
 
-    today = datetime.utcnow().date()  # Ensure date only (no time)
+    # Finalize AccountHistory
+    today = datetime.utcnow().date()
     existing_history = AccountHistory.query.filter_by(
         account_id=account_id, date=today
     ).first()
-
     if existing_history:
         logger.debug(
-            f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"
+            f"[UPDATING] AccountHistory for account_id={account_id} on {today}"
         )
         existing_history.balance = balance
         existing_history.updated_at = datetime.utcnow()
-        logger.debug(
-            f"History record already exists for account {account.account_id} for date {today}."
-        )
     else:
         logger.debug(
-            f"[CREATING] New AccountHistory for account_id={account_id} on date={today}"
+            f"[CREATING] AccountHistory for account_id={account_id} on {today}"
         )
         new_history = AccountHistory(
             account_id=account_id,
@@ -447,11 +399,6 @@ else:
             updated_at=datetime.utcnow(),
         )
         db.session.add(new_history)
-
-        updated = True
-        logger.debug(
-            f"History record already exists for account {account.account_id} for date {today}."
-        )
 
     return updated
 
@@ -643,4 +590,6 @@ def refresh_data_for_plaid_account(access_token, account_id):
 
     return updated
     db.session.add(new_history)
+
+
 Footer
