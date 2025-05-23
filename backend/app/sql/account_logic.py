@@ -180,7 +180,12 @@ def upsert_accounts(user_id, account_list, provider):
             ).first()
             if not history:
                 db.session.add(
-                    AccountHistory(account_id=account_id, date=today, balance=balance)
+                    AccountHistory(
+                        account_id=account_id,
+                        user_id=user_id,
+                        date=today,
+                        balance=balance,
+                    )
                 )
 
             count += 1
