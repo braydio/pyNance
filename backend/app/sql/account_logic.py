@@ -229,6 +229,26 @@ def refresh_data_for_teller_account(
     url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
     resp_balance = fetch_url_with_backoff(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
+#upsert_accounts update block fix
+from datetime import datetime
+
+today = datetime.utcnow().date()
+
+existing_history = AccountHistory.query.filter_by(account_id=account_id, date=today).first()
+if existing_history:
+    logger.debug(f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"))
+    existing_history.balance = balance
+    existing_history.updated_at = datetime.utcnow()
+    logger.debug(f"History record already exists for account {account.account_id} for date {today}.")
+else:
+    logger.debug(f"[CREATING] New AccountHistory for account_id={account_id} on date={today}")
+    new_history = AccountHistory(
+        account_id=account_id,
+        user_id=user_id,
+        date=today,
+        balance=balance,
+        created_at=datetime.utcnow(),
+        updated_at=datetime.utcnow(),
     )
     if resp_balance.status_code == 200:
         logger.debug(
@@ -622,3 +642,5 @@ def refresh_data_for_plaid_account(access_token, account_id):
         db.session.rollback()
 
     return updated
+    db.session.add(new_history)
+Footer
