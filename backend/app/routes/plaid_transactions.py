@@ -90,15 +90,18 @@ def exchange_public_token_endpoint():
         logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
 
         transformed = []
+
         for acct in accounts:
             transformed.append(
                 {
-                    "id": acct.get("account_id"),
-                    "name": acct.get("name")
-                    or acct.get("official_name", "Unnamed Account"),
-                    "type": str(acct.get("type") or "Unknown"),
-                    "subtype": str(acct.get("subtype") or "Unknown"),
-                    "balance": {"current": acct.get("balances", {}).get("current", 0)},
+                    "account_id": acct.account_id,
+                    "user_id": user_id,
+                    "name": acct.name or acct.official_name or "Unnamed Account",
+                    "type": str(acct.type or "Unknown"),
+                    "subtype": str(acct.subtype or "Unknown"),
+                    "balance": {
+                        "current": acct.balances.available or acct.balances.current or 0
+                    },
                     "status": "active",
                     "institution": {"name": institution_name},
                     "access_token": access_token,
@@ -107,6 +110,7 @@ def exchange_public_token_endpoint():
                     "provider": "Plaid",
                 }
             )
+
         logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
         account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
         logger.info(f"Upserted {len(transformed)} accounts for user {user_id}")
