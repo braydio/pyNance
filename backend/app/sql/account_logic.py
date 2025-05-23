@@ -587,9 +587,3 @@ def refresh_data_for_plaid_account(access_token, account_id):
             exc_info=True,
         )
         db.session.rollback()
-
-    return updated
-    db.session.add(new_history)
-
-
-Footer
