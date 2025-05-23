@@ -175,22 +175,16 @@ def upsert_accounts(user_id, account_list, provider):
 
             # Update AccountHistory today
             today = pydate.today()
-
-            existing_history = AccountHistory.query.filter_by(
+            history = AccountHistory.query.filter_by(
                 account_id=account_id, date=today
             ).first()
-            if existing_history:
-                existing_history.balance = balance
-                existing_history.updated_at = datetime.utcnow()
-            else:
+            if not history:
                 db.session.add(
                     AccountHistory(
                         account_id=account_id,
                         user_id=user_id,
                         date=today,
                         balance=balance,
-                        created_at=datetime.utcnow(),
-                        updated_at=datetime.utcnow(),
                     )
                 )
 
@@ -406,21 +400,35 @@ def refresh_data_for_teller_account(
             f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
         )
 
-    # Update daily history for this Teller account
-    today = datetime.today().date()
+    today = datetime.utcnow().date()  # Ensure date only (no time)
     existing_history = AccountHistory.query.filter_by(
-        account_id=account.account_id, date=today
+        account_id=account_id, date=today
     ).first()
-    if not existing_history:
+
+    if existing_history:
         logger.debug(
-            f"Creating new history record for account {account.account_id} for date {today}."
+            f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"
         )
-        history_record = AccountHistory(
-            account_id=account.account_id, date=today, balance=account.balance
+        existing_history.balance = balance
+        existing_history.updated_at = datetime.utcnow()
+        logger.debug(
+            f"History record already exists for account {account.account_id} for date {today}."
         )
-        db.session.add(history_record)
-        updated = True
     else:
+        logger.debug(
+            f"[CREATING] New AccountHistory for account_id={account_id} on date={today}"
+        )
+        new_history = AccountHistory(
+            account_id=account_id,
+            user_id=user_id,
+            date=today,
+            balance=balance,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.session.add(new_history)
+
+        updated = True
         logger.debug(
             f"History record already exists for account {account.account_id} for date {today}."
         )
