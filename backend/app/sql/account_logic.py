@@ -175,16 +175,22 @@ def upsert_accounts(user_id, account_list, provider):
 
             # Update AccountHistory today
             today = pydate.today()
-            history = AccountHistory.query.filter_by(
+
+            existing_history = AccountHistory.query.filter_by(
                 account_id=account_id, date=today
             ).first()
-            if not history:
+            if existing_history:
+                existing_history.balance = balance
+                existing_history.updated_at = datetime.utcnow()
+            else:
                 db.session.add(
                     AccountHistory(
                         account_id=account_id,
                         user_id=user_id,
                         date=today,
                         balance=balance,
+                        created_at=datetime.utcnow(),
+                        updated_at=datetime.utcnow(),
                     )
                 )
 
