@@ -77,20 +77,6 @@ def upsert_accounts(user_id, account_list, provider):
                 continue
             processed_ids.add(account_id)
 
-            allowed_fields = {
-                "account_id",
-                "user_id",
-                "name",
-                "type",
-                "subtype",
-                "institution_name",
-                "status",
-                "balance",
-                "link_type",
-            }
-
-            account["user_id"] = user_id
-
             name = account.get("name") or "Unnamed Account"
             acc_type = str(account.get("type") or "Unknown")
             balance = (
@@ -106,7 +92,6 @@ def upsert_accounts(user_id, account_list, provider):
                 or account.get("institution_name")
                 or "Unknown"
             )
-            refresh_links_json = json.dumps(account.get("links") or {})
 
             now = datetime.utcnow()
             filtered_account = {
@@ -132,73 +117,30 @@ def upsert_accounts(user_id, account_list, provider):
                 new_account = Account(**filtered_account)
                 db.session.add(new_account)
 
-            # Link Plaid or Teller accounts if applicable
-            if provider.lower() == "plaid":
-                existing_plaid = PlaidAccount.query.filter_by(
-                    account_id=account_id
-                ).first()
-                if existing_plaid:
-                    existing_plaid.access_token = account.get("access_token")
-                    existing_plaid.item_id = account.get("item_id")
-                    existing_plaid.institution_id = account.get("institution_id")
-                    existing_plaid.webhook = account.get("webhook")
-                    existing_plaid.last_refreshed = now
-                else:
-                    new_plaid = PlaidAccount(
-                        account_id=account_id,
-                        access_token=account.get("access_token"),
-                        item_id=account.get("item_id"),
-                        institution_id=account.get("institution_id"),
-                        webhook=account.get("webhook"),
-                        last_refreshed=now,
-                    )
-                    db.session.add(new_plaid)
-            elif provider.lower() == "teller":
-                existing_teller = TellerAccount.query.filter_by(
-                    account_id=account_id
-                ).first()
-                if existing_teller:
-                    existing_teller.access_token = account.get("access_token")
-                    existing_teller.enrollment_id = account.get("enrollment_id")
-                    existing_teller.institution_id = account.get("institution_id")
-                    existing_teller.last_refreshed = now
-                else:
-                    new_teller = TellerAccount(
-                        account_id=account_id,
-                        access_token=account.get("access_token"),
-                        enrollment_id=account.get("enrollment_id"),
-                        institution_id=account.get("institution_id"),
-                        provider="Teller",
-                        last_refreshed=now,
-                    )
-                    db.session.add(new_teller)
-
-            # Update AccountHistory today
+            # Patch: safely upsert AccountHistory
             today = datetime.utcnow().date()
-            existing_history = AccountHistory.query.filter_by(
+            history = AccountHistory.query.filter_by(
                 account_id=account_id, date=today
             ).first()
-
-            if existing_history:
+            if history:
                 logger.debug(
                     f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"
                 )
-                existing_history.balance = balance
-                existing_history.updated_at = datetime.utcnow()
+                history.balance = balance
+                history.updated_at = datetime.utcnow()
             else:
                 logger.debug(
                     f"[CREATING] New AccountHistory for account_id={account_id} on date={today}"
                 )
-                db.session.add(
-                    AccountHistory(
-                        account_id=account_id,
-                        user_id=user_id,
-                        date=today,
-                        balance=balance,
-                        created_at=datetime.utcnow(),
-                        updated_at=datetime.utcnow(),
-                    )
+                history = AccountHistory(
+                    account_id=account_id,
+                    user_id=user_id,
+                    date=today,
+                    balance=balance,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
                 )
+                db.session.add(history)
 
             count += 1
             if count % 100 == 0:
