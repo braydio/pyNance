@@ -1,11 +1,14 @@
 #!/bin/bash
 
 SCRIPT="scripts/lint_routes.py"
-echo "[LINDER] Running route linter..."
-python $SCRIPT | tee
+echo "[LINTER] Running route linter..."
 
-if [ $?!e == 0 ]; then
-    echo "[LINDR] API routes inconsistent! These errors must be fixed."
-    exit 1
+python3 "$SCRIPT"
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "[LINTER] API route violations detected. Please fix before committing."
+  exit 1
 fi
+
 exit 0
