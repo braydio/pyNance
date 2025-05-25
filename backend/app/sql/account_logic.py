@@ -150,9 +150,8 @@ def upsert_accounts(user_id, account_list, provider):
         except Exception as e:
             logger.error(f"Failed to upsert account {account_id}: {e}", exc_info=True)
 
-
-db.session.commit()
-logger.info("Finished upserting accounts.")
+    db.session.commit()
+    logger.info("Finished upserting accounts.")
 
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
