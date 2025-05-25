@@ -80,12 +80,17 @@ def upsert_accounts(user_id, account_list, provider):
 
             name = account.get("name") or "Unnamed Account"
             acc_type = str(account.get("type") or "Unknown")
-            balance = (
-                account.get("balance", {}).get("current", 0)
-                or account.get("balance", 0)
+
+            # ✅ Corrected Plaid/Teller-safe balance parsing
+            balance_raw = (
+                account.get("balances", {}).get("current")
+                or account.get("balance", {}).get("current")
+                or account.get("balance")
                 or 0
             )
-            balance = process_transaction_amount(balance, acc_type)
+            balance = process_transaction_amount(balance_raw, acc_type)
+            logger.debug(f"[UPSERT] Balance parsed for {account_id}: {balance}")
+
             subtype = str(account.get("subtype") or "Unknown").capitalize()
             status = account.get("status") or "Unknown"
             institution_name = (
@@ -117,6 +122,8 @@ def upsert_accounts(user_id, account_list, provider):
                 logger.debug(f"Creating new account {account_id}")
                 new_account = Account(**filtered_account)
                 db.session.add(new_account)
+
+            # Existing AccountHistory logic follows...
 
             # Patched: safely upsert AccountHistory with conflict resolution
             today = datetime.utcnow().date()
@@ -404,10 +411,26 @@ def refresh_data_for_plaid_account(access_token, account_id):
 
     try:
         account = Account.query.filter_by(account_id=account_id).first()
-
         if not account:
             logger.warning(f"[DB Lookup] No account found for account_id={account_id}")
             return False
+
+        # ✅ Refresh balance via get_accounts()
+        accounts_data = get_accounts(access_token, account.user_id)
+        for acct in accounts_data:
+            if acct.get("account_id") == account_id:
+                raw_balance = (
+                    acct.get("balances", {}).get("current")
+                    or acct.get("balance", {}).get("current")
+                    or acct.get("balance")
+                    or 0
+                )
+                account.balance = process_transaction_amount(raw_balance, account.type)
+                account.updated_at = datetime.utcnow()
+                logger.debug(
+                    f"[REFRESH] Updated balance for {account_id}: {account.balance}"
+                )
+                break
 
         account_label = account.name or f"[unnamed account] {account_id}"
 
@@ -438,7 +461,6 @@ def refresh_data_for_plaid_account(access_token, account_id):
             primary = category_path[0] if len(category_path) > 0 else "Unknown"
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 
-            # ✅ Corrected: only one check + add for category
             existing_category = (
                 db.session.query(Category)
                 .filter_by(primary_category=primary, detailed_category=detailed)
@@ -510,6 +532,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
                 updated = True
 
         db.session.commit()
+        return updated
 
     except Exception as e:
         logger.error(
@@ -517,5 +540,6 @@ def refresh_data_for_plaid_account(access_token, account_id):
             exc_info=True,
         )
         db.session.rollback()
+        return False
 
     return updated
