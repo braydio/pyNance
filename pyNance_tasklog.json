@@ -1,18 +1,26 @@
 {
-  "arch-linux-assistant": {
-    "lastAccessed": "2025-05-23T15:10:00Z",
-    "accessedBy": "arch-linux-assistant",
-    "groups": {
-      "qa-stable": {
-        "tasks": {
-          "upsert-history-fix": {
-            "items": {
-              "parameter_checks": true,
-              "date-normalization": true,
-              "existence-check": true
-            },
-            "completed": true,
-            "timestamp": "2025-05-23T15:10:00Z"
+  "instances": {
+    "ChatGPT": {
+      "lastAccessed": "2025-05-24T16:47:00Z",
+      "accessedBy": "ChatWGPT",
+      "groups": {
+        "AccountHistoryUpserts": {
+          "tasks": {
+            "AnalyzeModules": {
+              "items": {
+                "ManualImport": {
+                  "checklist": [
+                    "Investigate if manual_import_logic.py writes to AccountHistory",
+                    "Patch with safe UPSERT insert."
+                  ]
+                },
+                "RecurringLogic": {
+                  "checklist": [
+                    "Does recurring_logic.py modify or create account_history?",
+                    "Uses account_id + date so same UINICE constraint applies."
+                  ]
+                }
+            }
           }
         }
       }
