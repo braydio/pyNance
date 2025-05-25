@@ -117,33 +117,22 @@ def user_modified_update_transaction():
 
 @transactions.route("/get_transactions", methods=["GET"])
 def get_transactions_paginated():
-    """Return paginated transactions."""
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
 
-        if page < 1 or page_size < 1:
-            raise ValueError("Page and page_size must be positive integers")
-
-        transactions_list, total = account_logic.get_paginated_transactions(
-            page, page_size
-        )
+        transactions, total = account_logic.get_paginated_transactions(page, page_size)
 
         return jsonify(
             {
                 "status": "success",
-                "data": {"transactions": transactions_list, "total": total},
-            },
-            200,
-        )
-
-    except ValueError as ve:
-        logger.warning(f"Invalid pagination input: {ve}")
-        return jsonify({"status": "error", "message": str(ve)}), 400
+                "data": {"transactions": transactions, "total": total},
+            }
+        ), 200
 
     except Exception as e:
-        logger.error(f"Error fetching transactions: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+        logger.error(f"Error in get_transactions_paginated: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @transactions.route("/manual", methods=["GET"])
