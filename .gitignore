@@ -3,7 +3,6 @@ Dash/
 *.pem
 *dev
 dev*
-scripts/
 
 # Flask Alembic Migrate files
 migrations/*
@@ -57,7 +56,6 @@ app/temp/
 *.iml
 
 # Miscellaneous
-mappied.txt
 *.DS_Store
 *.egg-info/
 *.lock
