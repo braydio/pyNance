@@ -1,4 +1,4 @@
-# File: app/sql/account_logger.c.py
+# account_logic.py
 import json
 import time
 from datetime import datetime, timedelta, date as pydate
@@ -21,6 +21,7 @@ from app.helpers.plaid_helpers import (
 )
 
 from sqlalchemy.orm import aliased
+from sqlalcehmy.dialects.sqlite import insert
 
 ParentCategory = aliased(Category)
 
@@ -117,22 +118,11 @@ def upsert_accounts(user_id, account_list, provider):
                 new_account = Account(**filtered_account)
                 db.session.add(new_account)
 
-            # Patch: safely upsert AccountHistory
+            # Patched: safely upsert AccountHistory with conflict resolution
             today = datetime.utcnow().date()
-            history = AccountHistory.query.filter_by(
-                account_id=account_id, date=today
-            ).first()
-            if history:
-                logger.debug(
-                    f"[UPDATING] AccountHistory for account_id={account_id} on date={today}"
-                )
-                history.balance = balance
-                history.updated_at = datetime.utcnow()
-            else:
-                logger.debug(
-                    f"[CREATING] New AccountHistory for account_id={account_id} on date={today}"
-                )
-                history = AccountHistory(
+            stmt = (
+                insert(AccountHistory)
+                .values(
                     account_id=account_id,
                     user_id=user_id,
                     date=today,
@@ -140,7 +130,17 @@ def upsert_accounts(user_id, account_list, provider):
                     created_at=datetime.utcnow(),
                     updated_at=datetime.utcnow(),
                 )
-                db.session.add(history)
+                .on_conflict_do_update(
+                    index_elements=["account_id", "date"],
+                    set_={
+                        "balance": balance,
+                        "updated_at": datetime.utcnow(),
+                    },
+                )
+            )
+            db.session.execute(
+                stmt
+            )  # <-- PATCHED: conflict-safe upsert via insert().on_conflict_do_update
 
             count += 1
             if count % 100 == 0:
@@ -150,8 +150,9 @@ def upsert_accounts(user_id, account_list, provider):
         except Exception as e:
             logger.error(f"Failed to upsert account {account_id}: {e}", exc_info=True)
 
-    db.session.commit()
-    logger.info("Finished upserting accounts.")
+
+db.session.commit()
+logger.info("Finished upserting accounts.")
 
 
 def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
