@@ -156,3 +156,36 @@ def delete_plaid_account():
     except Exception as e:
         logger.error(f"Error deleting Plaid account: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@plaid_transactions.route("/refresh_accounts", methods=["POST"])
+def refresh_accounts_endpoint():
+    data = request.get_json()
+    user_id = data.get("user_id")
+    if not user_id:
+        return jsonify({"error": "Missing user_id"}), 400
+
+    try:
+        accounts = (
+            Account.query.options(joinedload(Account.plaid_account))
+            .filter_by(user_id=user_id)
+            .all()
+        )
+        refreshed = []
+        for acct in accounts:
+            if acct.plaid_account and acct.plaid_account.access_token:
+                refreshed_flag = refresh_data_for_plaid_account(
+                    access_token=acct.plaid_account.access_token,
+                    account_id=acct.account_id,
+                )
+                if refreshed_flag:
+                    refreshed.append(acct.account_id)
+            else:
+                logger.warning(
+                    f"Missing access token for account {acct.account_id} (user {user_id})"
+                )
+
+        return jsonify({"status": "success", "refreshed": refreshed}), 200
+    except Exception as e:
+        logger.error(f"Error refreshing accounts: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
