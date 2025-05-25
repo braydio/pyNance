@@ -90,31 +90,33 @@ def exchange_public_token_endpoint():
         accounts = get_accounts(access_token, user_id)
         logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
 
-        transformed = []
-
+        # --- PATCH: Persist PlaidAccount entries ---
         for acct in accounts:
-            transformed.append(
-                {
-                    "account_id": acct.account_id,
-                    "user_id": user_id,
-                    "name": acct.name or acct.official_name or "Unnamed Account",
-                    "type": str(acct.type or "Unknown"),
-                    "subtype": str(acct.subtype or "Unknown"),
-                    "balance": {
-                        "current": acct.balances.available or acct.balances.current or 0
-                    },
-                    "status": "active",
-                    "institution": {"name": institution_name},
-                    "access_token": access_token,
-                    "enrollment_id": "",
-                    "links": {},
-                    "provider": "Plaid",
-                }
+            account_id = acct.get("account_id")
+            if not account_id:
+                continue
+
+            exists = PlaidAccount.query.filter_by(account_id=account_id).first()
+            if exists:
+                logger.debug(f"PlaidAccount already exists for {account_id}")
+                continue
+
+            new_plaid_account = PlaidAccount(
+                account_id=account_id,
+                access_token=access_token,
+                item_id=item_id,
+                institution_id=institution_id,
+                institution_name=institution_name,
+                provider="Plaid",
+                last_refreshed=datetime.utcnow(),
             )
+            db.session.add(new_plaid_account)
+
+        db.session.commit()
 
         logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
-        account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
-        logger.info(f"Upserted {len(transformed)} accounts for user {user_id}")
+        account_logic.upsert_accounts(user_id, accounts, provider="Plaid")
+        logger.info(f"Upserted {len(accounts)} accounts for user {user_id}")
 
         return (
             jsonify(
@@ -130,83 +132,6 @@ def exchange_public_token_endpoint():
     except Exception as e:
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
-
-
-@plaid_transactions.route("/refresh_accounts", methods=["POST"])
-def refresh_plaid_accounts():
-    try:
-        logger.debug("Starting refresh of Plaid accounts and Plaid Categories.")
-        category_refresh = refresh_plaid_categories()
-        if category_refresh:
-            logger.info("Successfully refreshed Plaid categories.")
-        data = request.get_json() or {}
-        user_id = data.get("user_id", PLAID_CLIENT_NAME)
-        accounts = (
-            Account.query.options(
-                joinedload(Account.plaid_account)
-            )  # <-- This preloads the related PlaidAccount
-            .filter_by(user_id=user_id, link_type="Plaid")
-            .all()
-        )
-
-        logger.debug(f"Found {len(accounts)} accounts for user_id={user_id}")
-
-        if not accounts:
-            logger.warning(f"No Plaid-linked accounts found for user {user_id}")
-            return jsonify(
-                {
-                    "status": "success",
-                    "message": "No linked Plaid accounts to refresh.",
-                    "updated_accounts": [],
-                }
-            ), 200
-
-        updated_accounts = []
-
-        for account in accounts:
-            access_token = (
-                account.plaid_account.access_token if account.plaid_account else None
-            )
-            if not access_token:
-                logger.warning(
-                    f"Missing access token for account {account.account_id} (user {account.user_id})"
-                )
-                continue
-
-            logger.debug(
-                f"Refreshing account {account.account_id} with token {access_token}"
-            )
-            plaid_accounts = get_accounts(access_token, user_id)
-            for acct in plaid_accounts:
-                account_id = acct.get("account_id")
-                updated = account_logic.refresh_data_for_plaid_account(
-                    access_token, account_id
-                )
-
-                if updated:
-                    updated_accounts.append(account.name)
-                    logger.debug(
-                        f"Updated account: {account.name} with new balance {account.balance}"
-                    )
-                    account.last_refreshed = datetime.utcnow()
-
-        db.session.commit()
-        logger.info(f"Refreshed accounts: {updated_accounts}")
-
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "message": "Plaid account data refreshed",
-                    "updated_accounts": updated_accounts,
-                }
-            ),
-            200,
-        )
-
-    except Exception as e:
-        logger.error(f"Error refreshing Plaid accounts: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
 
 
 @plaid_transactions.route("/delete_account", methods=["DELETE"])
