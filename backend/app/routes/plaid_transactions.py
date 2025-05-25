@@ -179,13 +179,16 @@ def refresh_accounts_endpoint():
                     account_id=acct.account_id,
                 )
                 if refreshed_flag:
-                    refreshed.append(acct.account_id)
+                    refreshed.append(
+                        acct.name or acct.account_id
+                    )  # ✅ return readable name
             else:
                 logger.warning(
                     f"Missing access token for account {acct.account_id} (user {user_id})"
                 )
 
-        return jsonify({"status": "success", "refreshed": refreshed}), 200
+        return jsonify({"status": "success", "updated_accounts": refreshed}), 200
+
     except Exception as e:
         logger.error(f"Error refreshing accounts: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
