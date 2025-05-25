@@ -395,11 +395,6 @@ def get_paginated_transactions(page, page_size):
 
 
 def refresh_data_for_plaid_account(access_token, account_id):
-    """
-    Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
-    Refreshes transactions and updates the DB accordingly, ensuring each transaction goes to the correct account.
-    Returns True if any update occurred.
-    """
     updated = False
     now = datetime.utcnow()
 
@@ -440,29 +435,10 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     continue
 
             category_path = txn.get("category", [])
-            plaid_cat_id = txn.get("category_id")
-
-            category_path = txn.get("category", [])
             primary = category_path[0] if len(category_path) > 0 else "Unknown"
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 
-            existing_category = (
-                db.session.query(Category)
-                .filter_by(primary_category=primary, detailed_category=detailed)
-                .first()
-            )
-
-            if existing_category:
-                category = existing_category
-            else:
-                category = Category(
-                    primary_category=primary,
-                    detailed_category=detailed,
-                    display_name=f"{primary} > {detailed}",
-                )
-                db.session.add(category)
-                db.session.flush()
-
+            # ✅ Corrected: only one check + add for category
             existing_category = (
                 db.session.query(Category)
                 .filter_by(primary_category=primary, detailed_category=detailed)
@@ -541,3 +517,5 @@ def refresh_data_for_plaid_account(access_token, account_id):
             exc_info=True,
         )
         db.session.rollback()
+
+    return updated
