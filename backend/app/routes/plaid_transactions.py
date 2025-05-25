@@ -106,7 +106,6 @@ def exchange_public_token_endpoint():
                 access_token=access_token,
                 item_id=item_id,
                 institution_id=institution_id,
-                provider="Plaid",
                 last_refreshed=datetime.utcnow(),
             )
             db.session.add(new_plaid_account)
