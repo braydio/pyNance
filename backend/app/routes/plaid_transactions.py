@@ -174,7 +174,7 @@ def refresh_accounts_endpoint():
         refreshed = []
         for acct in accounts:
             if acct.plaid_account and acct.plaid_account.access_token:
-                refreshed_flag = refresh_data_for_plaid_account(
+                refreshed_flag = account_logic.refresh_data_for_plaid_account(
                     access_token=acct.plaid_account.access_token,
                     account_id=acct.account_id,
                 )
