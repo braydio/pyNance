@@ -21,7 +21,7 @@ from app.helpers.plaid_helpers import (
 )
 
 from sqlalchemy.orm import aliased
-from sqlalcehmy.dialects.sqlite import insert
+from sqlalchemy.dialects.sqlite import insert
 
 ParentCategory = aliased(Category)
 
