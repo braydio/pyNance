@@ -1,6 +1,9 @@
 # backend/app/sql/forecast_logic.py
 from datetime import datetime, timedelta
-from app.models import AccountHistory, db
+from app.models import AccountHistory
+from app.extensions import db
+from app.config import logger
+from sqlalchemy.dialects.sqlite import insert
 
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
@@ -21,23 +24,37 @@ def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
     return latest.balance if latest else 0.0
 
 
-def update_account_history(
-    account_id: str, user_id: str, balance: float, date: datetime = None
-):
-    """
-    Writes the most recent balance to AccountHistory if not already present for the given date.
-    """
-    date = date or datetime.utcnow().date()
-    exists = AccountHistory.query.filter_by(
-        account_id=account_id, user_id=user_id, date=date
-    ).first()
-    if not exists:
-        db.session.add(
-            AccountHistory(
-                account_id=account_id, user_id=user_id, balance=balance, date=date
+def update_account_history(account_id, user_id, balance):
+    today = datetime.utcnow().date()
+    now = datetime.utcnow()
+
+    try:
+        stmt = (
+            insert(AccountHistory)
+            .values(
+                account_id=account_id,
+                user_id=user_id,
+                date=today,
+                balance=balance,
+                created_at=now,
+                updated_at=now,
+            )
+            .on_conflict_do_update(
+                index_elements=["account_id", "date"],
+                set_={
+                    "balance": balance,
+                    "updated_at": now,
+                },
             )
         )
+        db.session.execute(stmt)
         db.session.commit()
+        logger.debug(f"AccountHistory upserted for {account_id} on {today}")
+    except Exception as e:
+        db.session.rollback()
+        logger.error(
+            f"Failed to update AccountHistory for {account_id}: {e}", exc_info=True
+        )
 
 
 def generate_forecast_line(
