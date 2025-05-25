@@ -14,6 +14,7 @@ from app.helpers.plaid_helpers import (
 from app.models import Account
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
+from sqlalchemy.orm import joinedload
 
 plaid_transactions = Blueprint("plaid_transactions", __name__)
 
@@ -140,7 +141,14 @@ def refresh_plaid_accounts():
             logger.info("Successfully refreshed Plaid categories.")
         data = request.get_json() or {}
         user_id = data.get("user_id", PLAID_CLIENT_NAME)
-        accounts = Account.query.filter_by(user_id=user_id, link_type="Plaid").all()
+        accounts = (
+            Account.query.options(
+                joinedload(Account.plaid_account)
+            )  # <-- This preloads the related PlaidAccount
+            .filter_by(user_id=user_id, link_type="Plaid")
+            .all()
+        )
+
         logger.debug(f"Found {len(accounts)} accounts for user_id={user_id}")
 
         if not accounts:
