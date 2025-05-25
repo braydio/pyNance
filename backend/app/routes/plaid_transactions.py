@@ -106,7 +106,6 @@ def exchange_public_token_endpoint():
                 access_token=access_token,
                 item_id=item_id,
                 institution_id=institution_id,
-                institution_name=institution_name,
                 provider="Plaid",
                 last_refreshed=datetime.utcnow(),
             )
