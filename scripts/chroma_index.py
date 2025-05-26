@@ -51,3 +51,5 @@ for root, _, files in os.walk(SOURCE_DIR):
 print(
     f"Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."
 )
+print(f"Total documents: {collection.count()}")
+
