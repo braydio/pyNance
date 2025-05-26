@@ -1,0 +1,3 @@
+/* frontend/src/assets/tailwind.css */
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
