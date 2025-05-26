@@ -1,12 +1,8 @@
-
-
 <template>
   <section id="recurring" class="recurring-manager">
     <h2 class="heading-md mb-4">Recurring Transactions</h2>
-
     <!-- Form Modal Toggle -->
     <button @click="resetForm" class="btn">+ Add Recurring Transaction Rule</button>
-
     <!-- Form -->
     <div v-if="showForm" class="recurring-form">
       <input v-model="transactionId" placeholder="Transaction ID (e.g. tx_abc123)" />
@@ -40,7 +36,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(rule, i) in userRules" :key="rule.description">
+          <tr v-for="rule in userRules" :key="rule.description">
             <td>{{ rule.description }}</td>
             <td>{{ rule.frequency }}</td>
             <td>{{ rule.next_due_date }}</td>
@@ -244,7 +240,8 @@ onMounted(async () => {
   margin-top: 1rem;
 }
 
-table th, table td {
+table th,
+table td {
   padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--divider);
   text-align: left;
