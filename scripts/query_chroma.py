@@ -16,7 +16,8 @@ client = chromadb.Client(
     Settings(persist_directory=".chroma_store", anonymized_telemetry=False)
 )
 
-collection = client.get_collection(name=COLLECTION_NAME)
+collection = client.get_or_create_collection(name=COLLECTION_NAME)
+
 
 print(f'[SEARCH] Finding results for "{query_text}" ...')
 results = collection.query(query_texts=[query_text], n_results=COUNT)
