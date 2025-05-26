@@ -110,10 +110,18 @@ def exchange_public_token_endpoint():
             )
             db.session.add(new_plaid_account)
 
+        for acct in accounts:
+            acct["institution_name"] = institution_name
+            logger.debug(
+                f"Injected institution name into {len(accounts)} accounts: {institution_name}"
+            )
+
         db.session.commit()
 
         logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
-        account_logic.upsert_accounts(user_id, accounts, provider="Plaid")
+        account_logic.upsert_accounts(
+            user_id, accounts, provider="Plaid", access_token=access_token
+        )
         logger.info(f"Upserted {len(accounts)} accounts for user {user_id}")
 
         return (
@@ -181,7 +189,7 @@ def refresh_accounts_endpoint():
                 if refreshed_flag:
                     refreshed.append(
                         acct.name or acct.account_id
-                    )  # ✅ return readable name
+                    )  # ✅ returneadable name
             else:
                 logger.warning(
                     f"Missing access token for account {acct.account_id} (user {user_id})"
