@@ -12,6 +12,16 @@
       <p>Why don't you take a seat.</p>
     </header>
 
+    <!-- Account Actions -->
+    <div class="card section-container controls-section">
+      <div class="controls-group">
+        <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
+        <RefreshPlaidControls />
+        <RefreshTellerControls />
+        <TokenUpload v-if="showTokenForm" @cancel="toggleManualTokenMode" />
+      </div>
+    </div>
+
     <!-- Charts -->
     <section class="charts-section">
       <div class="chart-controls-row">
@@ -19,25 +29,7 @@
           <NetYearComparisonChart />
         </div>
         <div class="controls-panel">
-          <div class="controls-widget">
-            <button class="btn btn-pill btn-outline" @click="toggleControls">
-              {{ showControls ? 'Hide Controls' : 'Link / Refresh' }}
-            </button>
-
-            <transition name="slide-vertical" mode="out-in">
-              <div v-if="showControls" class="account-controls-group">
-                <!-- ✅ INSERTED: Product Scope Selector -->
-                <PlaidProductScopeSelector v-model="selectedProducts" />
-
-                <template v-if="!showTokenForm">
-                  <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
-                  <RefreshPlaidControls />
-                  <RefreshTellerControls />
-                </template>
-                <TokenUpload v-else @cancel="toggleManualTokenMode" />
-              </div>
-            </transition>
-          </div>
+          <PlaidProductScopeSelector v-model="selectedProducts" />
         </div>
       </div>
 
@@ -101,12 +93,7 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 
 const activeAccountGroup = ref('Checking')
 const accountGroups = ['Checking', 'Savings', 'Credit']
-const showControls = ref(false)
 const showTokenForm = ref(false)
-
-function toggleControls() {
-  showControls.value = !showControls.value
-}
 
 function toggleManualTokenMode() {
   showTokenForm.value = !showTokenForm.value
@@ -150,54 +137,13 @@ function toggleManualTokenMode() {
   align-items: center;
 }
 
-.account-controls-group {
+/* Controls Section Styles */
+.controls-section .controls-group {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 1rem;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--color-text-muted);
-  border-radius: 12px;
-  padding: 1rem;
-  margin-top: 0.5rem;
-  box-shadow: 0px 2px 3px var(--color-accent-ice);
-  width: 100%;
-  max-width: 900px;
-  opacity: 1;
-  transition: all 0.3s ease;
+  justify-content: center;
 }
-
-.control-block {
-  flex: 1 1 250px;
-  max-width: 280px;
-  background-color: var(--themed-bg);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: 8px;
-  padding: 1rem;
-  box-shadow: 0 2px 6px var(--shadow);
-}
-
-.slide-vertical-enter-active,
-.slide-vertical-leave-active {
-  transition: all 0.3s ease;
-}
-
-.slide-vertical-enter-from,
-.slide-vertical-leave-to {
-  max-height: 0;
-  opacity: 0;
-  transform: translateY(-10px);
-  overflow: hidden;
-}
-
-.slide-vertical-enter-to,
-.slide-vertical-leave-from {
-  max-height: 500px;
-  opacity: 1;
-  transform: translateY(0);
-}
-
 
 .accounts-header {
   text-align: center;
