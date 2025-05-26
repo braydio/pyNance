@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime, timedelta, date as pydate
 import requests
-from app.helpers import normalize
+from app.helpers.normalize import normalize_amount
 from app.extensions import db
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.models import (
@@ -30,7 +30,7 @@ TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
 def process_transaction_amount(amount, account_type):
-    return normalize.normalize_amount(
+    return normalize_amount(
         {
             "amount": amount,
             "transaction_type": account_type.lower().replace("_", " ")
