@@ -1,46 +1,42 @@
-# pyNance/scripts/chroma_index.py
+# chroma_index.py
 import os
 import chromadb
 from chromadb.config import Settings
 
 # Constants
-SOURCE_DIR = "/home/braydenchaffee/Projects/pyNance/backend"
-CHROMA_HOST = "localhost"
-CHROMA_PORT = 8055
+SOURCE_DIR = "backend"
 COLLECTION_NAME = "pynance-code"
 
-# Connect to ChromaDB
+# Embedded ChromaDB client (persisted locally)
 client = chromadb.Client(
-    Settings(
-        chroma_api_impl="rest",
-        chroma_server_host=CHROMA_HOST,
-        chroma_server_http_port=CHROMA_PORT,
-    )
+    Settings(persist_directory=".chroma_store", anonymized_telemetry=False)
 )
 
-# Create or get existing collection
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
 
-# Helper function to chunk text
 def chunk_text(text, max_length=1000):
     return [text[i : i + max_length] for i in range(0, len(text), max_length)]
 
 
-# Add .py files to the collection
-doc_count = 0
+# Index .py, .md, and .txt files from source
+count = 0
 for root, _, files in os.walk(SOURCE_DIR):
     for filename in files:
-        if filename.endswith(".py"):
+        if filename.endswith((".py", ".md", ".txt")):
             path = os.path.join(root, filename)
-            with open(path, "r", encoding="utf-8") as file:
-                content = file.read()
-                chunks = chunk_text(content)
-                for i, chunk in enumerate(chunks):
-                    doc_id = f"{filename}-{i}"
+            with open(path, "r", encoding="utf-8") as f:
+                content = f.read()
+            chunks = chunk_text(content)
+            for i, chunk in enumerate(chunks):
+                doc_id = f"{filename}-{i}"
+                # Avoid duplicate ID re-adds (if needed, check first)
+                try:
                     collection.add(
                         documents=[chunk], metadatas=[{"source": path}], ids=[doc_id]
                     )
-                    doc_count += 1
+                    count += 1
+                except chromadb.errors.IDAlreadyExistsError:
+                    pass  # Skip duplicate chunks
 
-print(f"Indexed {doc_count} code chunks into ChromaDB collection '{COLLECTION_NAME}'.")
+print(f"Indexed {count} document chunks into ChromaDB collection '{COLLECTION_NAME}'.")
