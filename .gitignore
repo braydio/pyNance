@@ -5,7 +5,7 @@ Dash/
 dev*
 
 # Flask Alembic Migrate files
-migrations/*
+migrations/
 
 # Byte-compiled / compiled Python files
 *.py[cod]
