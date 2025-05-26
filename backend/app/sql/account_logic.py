@@ -3,7 +3,7 @@ import json
 import time
 from datetime import datetime, timedelta, date as pydate
 import requests
-
+from app.helpers import normalize
 from app.extensions import db
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.models import (
@@ -30,18 +30,14 @@ TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
 def process_transaction_amount(amount, account_type):
-    try:
-        amt = float(amount)
-    except (TypeError, ValueError):
-        return 0.0
-    if account_type and account_type.strip().lower() in [
-        "credit",
-        "credit card",
-        "credit_card",
-        "liability",
-    ]:
-        return -abs(amt) if amt > 0 else amt
-    return amt
+    return normalize.normalize_amount(
+        {
+            "amount": amount,
+            "transaction_type": account_type.lower().replace("_", " ")
+            if account_type
+            else None,
+        }
+    )
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
