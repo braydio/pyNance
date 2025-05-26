@@ -1,0 +1,4 @@
+#!/bin/bash
+
+echo "[CHROMA] Running index update after commit..."
+python scripts/chroma_index.py

@@ -1,11 +1,14 @@
+// tailwind.config.js
+import forms from '@tailwindcss/forms';
+import typography from '@tailwindcss/typography';
+import aspectRatio from '@tailwindcss/aspect-ratio';
+
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
-    "./**/*.{html,js,ts,jsx,tsx}"
   ],
-
   theme: {
     extend: {
       colors: {
@@ -17,6 +20,6 @@ module.exports = {
       },
     },
   },
-  plugins: [],
-}
+  plugins: [forms, typography, aspectRatio],
+};
 
