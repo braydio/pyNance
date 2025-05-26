@@ -290,9 +290,9 @@ export default {
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   background-color: var(--neon-purple);
-  color: black;
+  color: var(--);
   cursor: pointer;
   margin-right: 0.25rem;
   transition: background-color 0.2s ease-in-out;
@@ -304,7 +304,7 @@ export default {
 }
 
 .btn-delete {
-  background-color: transparent;
+  background-color: var(--color-bg-dark);
   color: var(--color-error);
   border: 1px solid var(--color-error);
   border-radius: 2rem;
