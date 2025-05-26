@@ -14,6 +14,14 @@ client = chromadb.Client(
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
+# Load existing IDs to avoid duplicate work
+existing_ids = set()
+try:
+    existing = collection.peek(limit=5000)
+    existing_ids.update(existing["ids"])
+except Exception:
+    pass
+
 
 def chunk_text(text, max_length=1000):
     return [text[i : i + max_length] for i in range(0, len(text), max_length)]
@@ -30,13 +38,16 @@ for root, _, files in os.walk(SOURCE_DIR):
             chunks = chunk_text(content)
             for i, chunk in enumerate(chunks):
                 doc_id = f"{filename}-{i}"
-                # Avoid duplicate ID re-adds (if needed, check first)
+                if doc_id in existing_ids:
+                    continue  # Skip already indexed
                 try:
                     collection.add(
                         documents=[chunk], metadatas=[{"source": path}], ids=[doc_id]
                     )
                     count += 1
                 except chromadb.errors.IDAlreadyExistsError:
-                    pass  # Skip duplicate chunks
+                    pass  # Extra safety: shouldn't hit if pre-checked
 
-print(f"Indexed {count} document chunks into ChromaDB collection '{COLLECTION_NAME}'.")
+print(
+    f"Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."
+)
