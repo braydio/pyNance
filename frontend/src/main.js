@@ -1,4 +1,4 @@
-import '@/styles/tailwind.css'
+import '@/assets/css/tailwind.css'
 import '@/styles/tailstyles.css'
 import '@/styles/global-colors.css'
 import '@/styles/typography.css'
