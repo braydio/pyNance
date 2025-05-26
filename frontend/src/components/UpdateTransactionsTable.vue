@@ -1,4 +1,3 @@
-
 <template>
   <div class="transactions">
     <VueToast v-if="toast.message" :type="toast.type" :message="toast.message" @close="toast.message = ''" />
@@ -15,54 +14,30 @@
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="(tx, index) in filteredTransactions"
-          :key="tx.transaction_id"
-          :class="{ 'editing-row': editingIndex === index }"
-        >
+        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id"
+          :class="{ 'editing-row': editingIndex === index }">
           <td>
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.date"
-              type="date"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" />
             <span v-else>{{ formatDate(tx.date) }}</span>
           </td>
 
           <td>
-            <input
-              v-if="editingIndex === index"
-              v-model.number="editBuffer.amount"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-            />
+            <input v-if="editingIndex === index" v-model.number="editBuffer.amount" type="number" step="0.01"
+              placeholder="0.00" />
             <span v-else>{{ formatAmount(tx.amount) }}</span>
           </td>
 
           <td>
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.description"
-              type="text"
-              placeholder="Description"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.description" type="text"
+              placeholder="Description" />
             <span v-else>{{ tx.description }}</span>
           </td>
 
           <td>
             <select v-if="editingIndex === index" v-model="editBuffer.category">
               <option disabled value="">-- Select Category --</option>
-              <optgroup
-                v-for="group in categoryTree"
-                :label="group.name"
-                :key="group.name"
-              >
-                <option
-                  v-for="child in group.children"
-                  :key="child.id"
-                  :value="child.name"
-                >
+              <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
+                <option v-for="child in group.children" :key="child.id" :value="child.name">
                   {{ child.name }}
                 </option>
               </optgroup>
@@ -71,12 +46,8 @@
           </td>
 
           <td>
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.merchant_name"
-              type="text"
-              placeholder="Merchant"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text"
+              placeholder="Merchant" />
             <span v-else>{{ tx.merchant_name }}</span>
           </td>
 
@@ -202,10 +173,6 @@ const formatAmount = (amt) => {
 
 function exportTransactions() {
   window.open('/api/export/transactions', '_blank')
-}
-
-function onPrimaryCategoryChange() {
-  selectedSubcategory.value = ''
 }
 
 function markRecurring(index) {
@@ -362,4 +329,3 @@ td select:focus {
   background-color: var(--button-hover-bg);
 }
 </style>
-
