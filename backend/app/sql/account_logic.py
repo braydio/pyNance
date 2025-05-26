@@ -63,7 +63,7 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     return item
 
 
-def upsert_accounts(user_id, account_list, provider):
+def upsert_accounts(user_id, account_list, provider, access_token=None):
     processed_ids = set()
     count = 0
     logger.debug(f"[CHECK] upsert_accounts received user_id={user_id}")
@@ -99,6 +99,22 @@ def upsert_accounts(user_id, account_list, provider):
                 or "Unknown"
             )
 
+            # If we have access_token and missing institution, refresh metadata
+            if access_token and institution_name == "Unknown":
+                try:
+                    refreshed_accounts = get_accounts(access_token, user_id)
+                    for refreshed in refreshed_accounts:
+                        if refreshed.get("account_id") == account_id:
+                            institution_name = (
+                                (refreshed.get("institution") or {}).get("name")
+                                or refreshed.get("institution_name")
+                                or institution_name
+                            )
+                            break
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to refresh institution for {account_id}: {e}"
+                    )
             now = datetime.utcnow()
             filtered_account = {
                 "account_id": account_id,
@@ -116,8 +132,15 @@ def upsert_accounts(user_id, account_list, provider):
             if existing_account:
                 logger.debug(f"Updating account {account_id}")
                 for key, value in filtered_account.items():
+                    # Only update institution_name if it was Unknown
+                    if (
+                        key == "institution_name"
+                        and existing_account.institution_name != "Unknown"
+                    ):
+                        continue
                     setattr(existing_account, key, value)
                 existing_account.updated_at = now
+
             else:
                 logger.debug(f"Creating new account {account_id}")
                 new_account = Account(**filtered_account)
