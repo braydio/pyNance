@@ -11,12 +11,11 @@ export default {
   ],
   theme: {
     extend: {
-      colors: {
-        'page-bg': 'var(--page-bg)',
-        'theme-fg': 'var(--theme-fg)',
-        'surface': 'var(--surface)',
-        'divider': 'var(--divider)',
-        'input-bg': 'var(--input-bg)',
+      boxShadow: {
+        card: '0 2px 8px rgba(0, 0, 0, 0.1)',
+      },
+      borderRadius: {
+        lg: '0.75rem',
       },
     },
   },

@@ -1,10 +1,4 @@
-import '@/assets/css/tailwind.css'
-import '@/styles/tailstyles.css'
-import '@/styles/global-colors.css'
-import '@/styles/typography.css'
-import '@/styles/layout.css'
-import '@/styles/buttons.css'
-import '@/styles/utilities.css'
+import '@/assets/css/main.css'
 
 import { createApp } from 'vue'
 import App from './App.vue'
