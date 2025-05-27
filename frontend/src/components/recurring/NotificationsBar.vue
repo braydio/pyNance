@@ -1,10 +1,10 @@
 <template>
   <div>
-    <div class="notifications-container">
+    <div class="bg-[#333] text-white p-4 mb-4 rounded-[6px]">
       <p 
         v-for="(notif, idx) in notifications" 
         :key="idx" 
-        class="notification-message"
+        class="my-1"
       >
         {{ notif }}
       </p>
@@ -57,21 +57,3 @@ export default {
   },
 };
 </script>
-
-
-<style scoped>
-@import '@/styles/global-colors.css';
-
-.notifications-container {
-  background-color: #333;
-  color: #fff;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  border-radius: 6px;
-}
-
-.notification-message {
-  margin: 0.25rem 0;
-}
-
-</style>

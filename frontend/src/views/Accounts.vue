@@ -1,7 +1,7 @@
 <template>
   <div class="accounts-view">
     <!-- Header -->
-    <header class="accounts-header">
+    <header class="text-center bg-[var(--color-bg)] p-4 rounded-lg shadow-md">
       <h1>Accounts Management</h1>
       <h2></h2>
       <h3>
@@ -14,7 +14,7 @@
 
     <!-- Account Actions -->
     <div class="card section-container controls-section">
-      <div class="controls-group">
+      <div class="flex flex-wrap gap-4 justify-center">
         <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
         <RefreshPlaidControls />
         <RefreshTellerControls />
@@ -23,20 +23,20 @@
     </div>
 
     <!-- Charts -->
-    <section class="charts-section">
-      <div class="chart-controls-row">
-        <div class="chart-container">
+    <section class="flex flex-col gap-6">
+      <div class="flex flex-wrap gap-2 justify-between items-start">
+        <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
           <NetYearComparisonChart />
         </div>
-        <div class="controls-panel">
+        <div class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] bg-[var(--color-bg-secondary)] rounded-lg shadow-md p-3">
           <PlaidProductScopeSelector v-model="selectedProducts" />
         </div>
       </div>
 
-      <div class="chart-container">
+      <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
         <AssetsBarTrended />
       </div>
-      <div class="chart-container">
+      <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
         <AccountsReorderChart />
       </div>
     </section>

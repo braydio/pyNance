@@ -1,5 +1,5 @@
 <template>
-  <div class="recurring-calendar">
+  <div class="max-w-[900px] mx-auto p-4">
     <h2 class="text-xl font-bold mb-4">Recurring Transaction Calendar</h2>
     <div class="grid grid-cols-7 gap-2">
       <div v-for="day in days" :key="day.date" class="p-2 border rounded-xl shadow-sm text-center">
@@ -44,12 +44,4 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-.recurring-calendar {
-  max-width: 900px;
-  margin: auto;
-  padding: 1rem;
-}
-</style>
 

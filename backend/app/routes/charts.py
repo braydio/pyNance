@@ -1,5 +1,4 @@
 # File: app/routes/charts.py
-
 import random
 from datetime import datetime, timedelta
 import traceback

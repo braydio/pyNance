@@ -1,6 +1,9 @@
 <!-- frontend/src/components/base/Toast.vue -->
 <template>
-  <div v-if="visible" :class="['toast', type]" @click="close">
+  <div v-if="visible" @click="close" :class="[
+    'fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg cursor-pointer text-white',
+    type === 'success' ? 'bg-green-500' : 'bg-red-500'
+  ]">
     {{ message }}
   </div>
 </template>
@@ -16,6 +19,7 @@ const props = defineProps({
 const emit = defineEmits(['close'])
 
 const visible = ref(true)
+
 watch(() => props.message, () => {
   visible.value = true
   setTimeout(() => {
@@ -29,23 +33,3 @@ function close() {
   emit('close')
 }
 </script>
-
-<style scoped>
-.toast {
-  position: fixed;
-  top: 1rem;
-  right: 1rem;
-  padding: 1rem;
-  border-radius: 8px;
-  color: white;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
-  cursor: pointer;
-}
-.toast.success {
-  background-color: #28a745;
-}
-.toast.error {
-  background-color: #dc3545;
-}
-</style>

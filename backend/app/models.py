@@ -82,7 +82,7 @@ class AccountHistory(db.Model, TimestampMixin):
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
 
-    user_id = db.Column(db.String(64), nullable=False, index=True)
+    user_id = db.Column(db.String(64), nullable=True, index=True)
 
     date = db.Column(db.DateTime, nullable=False)  # Domain field
     balance = db.Column(db.Float, default=0)

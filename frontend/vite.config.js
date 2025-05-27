@@ -62,7 +62,6 @@ export default defineConfig({
         // rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
     },
-    // 🔥 THIS PART IS NEW — THIS FIXES RELOADS
     historyApiFallback: true,
   },
   resolve: {
