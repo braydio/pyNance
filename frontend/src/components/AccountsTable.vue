@@ -31,6 +31,7 @@
       </div>
 
       <!-- Main Table -->
+
       <table v-if="!loading && sortedAccounts.length">
         <thead>
           <tr>
@@ -41,13 +42,10 @@
               Name <span>{{ sortKey === 'name' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('type')">
-              Type <span>{{ sortKey === 'type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
+              Account Type <span>{{ sortKey === 'type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('balance')">
               Balance <span>{{ sortKey === 'balance' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th @click="sortTable('subtype')">
-              Subtype <span>{{ sortKey === 'subtype' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('link_type')">
               Link Type <span>{{ sortKey === 'link_type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
@@ -62,9 +60,8 @@
           <tr v-for="account in sortedAccounts" :key="account.account_id">
             <td>{{ account.institution_name || 'N/A' }}</td>
             <td>{{ account.name || 'N/A' }}</td>
-            <td>{{ account.type || 'N/A' }}</td>
+            <td>{{ formatType(account.subtype || account.type) }}</td>
             <td>{{ formatBalance(account.balance) }}</td>
-            <td>{{ account.subtype || 'N/A' }}</td>
             <td>{{ account.link_type || 'N/A' }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
             <td v-if="showDeleteButtons">
@@ -169,7 +166,7 @@ export default {
     async deleteAccount(accountId) {
       if (!confirm("Are you sure you want to delete this account and all its transactions?")) return;
       try {
-        const res = await api.deleteAccount(this.provider, accountId);
+        const res = await accountLinkApi.deleteAccount(this.provider, accountId);
         if (res.status === "success") {
           alert("Account deleted successfully.");
           this.fetchAccounts();
@@ -192,6 +189,10 @@ export default {
     formatDate(dateString) {
       if (!dateString) return "N/A";
       return new Date(dateString).toLocaleString();
+    },
+    formatType(type) {
+      if (!type) return 'Unknown';
+      return type.charAt(0).toUpperCase() + type.slice(1);
     },
     sortTable(key) {
       if (this.sortKey === key) {
@@ -289,9 +290,9 @@ export default {
   padding: 0.25rem 0.6rem;
   font-size: 0.8rem;
   border: none;
-  border-radius: 0.5rem;
+  border-radius: 0.2rem;
   background-color: var(--neon-purple);
-  color: black;
+  color: var(--);
   cursor: pointer;
   margin-right: 0.25rem;
   transition: background-color 0.2s ease-in-out;
@@ -303,7 +304,7 @@ export default {
 }
 
 .btn-delete {
-  background-color: transparent;
+  background-color: var(--color-bg-dark);
   color: var(--color-error);
   border: 1px solid var(--color-error);
   border-radius: 2rem;

@@ -2,6 +2,10 @@
 Dash/
 *.pem
 *dev
+dev*
+
+# Flask Alembic Migrate files
+migrations/
 
 # Byte-compiled / compiled Python files
 *.py[cod]
@@ -52,7 +56,6 @@ app/temp/
 *.iml
 
 # Miscellaneous
-mappied.txt
 *.DS_Store
 *.egg-info/
 *.lock

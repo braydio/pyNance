@@ -1,13 +1,21 @@
+
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">{{ chartTypeLabel }} Year Comparison</h2>
     <div class="toggle-group">
-      <button v-for="type in chartTypes" :key="type.value" class="btn btn-pill"
-        :class="{ active: activeChart === type.value }" @click="setChartType(type.value)">
+      <button
+        v-for="type in chartTypes"
+        :key="type.value"
+        class="btn btn-pill"
+        :class="{ active: activeChart === type.value }"
+        @click="setChartType(type.value)"
+      >
         {{ type.label }}
       </button>
     </div>
-    <canvas ref="chartCanvas"></canvas>
+    <div class="chart-wrapper">
+      <canvas ref="chartCanvas"></canvas>
+    </div>
   </div>
 </template>
 
@@ -22,9 +30,9 @@ const chartData = ref([])
 const activeChart = ref('assets')
 const chartTypeLabel = ref('Assets')
 
-const thisYear = new Date().getFullYear()
-const lastYear = thisYear - 1
 const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const currentYear = new Date().getFullYear()
+const previousYear = currentYear - 1
 
 const chartTypes = [
   { label: 'Assets', value: 'assets' },
@@ -43,7 +51,9 @@ function parseByType(year, key) {
 
 function formatCurrency(val) {
   const num = Number(val || 0)
-  return num < 0 ? `($${Math.abs(num).toLocaleString()})` : `$${num.toLocaleString()}`
+  return num < 0
+    ? `($${Math.abs(num).toLocaleString()})`
+    : `$${num.toLocaleString()}`
 }
 
 async function fetchData() {
@@ -63,45 +73,39 @@ function buildChart() {
 
   const ctx = chartCanvas.value.getContext('2d')
 
-  const grad1 = ctx.createLinearGradient(0, 0, 0, 400)
-  grad1.addColorStop(0, '#89dceb')
-  grad1.addColorStop(1, 'transparent')
-
-  const grad2 = ctx.createLinearGradient(0, 0, 0, 400)
-  grad2.addColorStop(0, '#facc15')
-  grad2.addColorStop(1, 'transparent')
-
   chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {
       labels: MONTH_LABELS,
       datasets: [
         {
-          label: `${chartTypeLabel.value} (${lastYear})`,
-          data: parseByType(lastYear, activeChart.value),
+          label: `${chartTypeLabel.value} (${previousYear})`,
+          data: parseByType(previousYear, activeChart.value),
           borderColor: '#22d3ee',
-          backgroundColor: grad1,
+          backgroundColor: 'rgba(137, 220, 235, 0.3)',
           fill: true,
-          tension: 0.25,
-          pointRadius: 0
+          tension: 0.25
         },
         {
-          label: `${chartTypeLabel.value} (${thisYear})`,
-          data: parseByType(thisYear, activeChart.value),
-          borderColor: '#facc15',
-          backgroundColor: grad2,
+          label: `${chartTypeLabel.value} (${currentYear})`,
+          data: parseByType(currentYear, activeChart.value),
+          borderColor: '#fac15f',
+          backgroundColor: 'rgba(250, 193, 95, 0.3)',
           fill: true,
-          tension: 0.25,
-          pointRadius: 0
+          tension: 0.25
         }
       ]
     },
     options: {
       responsive: true,
-      animation: { duration: 1000, easing: 'easeOutExpo' },
+      maintainAspectRatio: false,
       plugins: {
         legend: {
-          labels: { color: '#ddd', boxWidth: 14, usePointStyle: true }
+          labels: {
+            color: '#ddd',
+            boxWidth: 14,
+            usePointStyle: true
+          }
         },
         tooltip: {
           backgroundColor: '#1e1e1e',
@@ -118,7 +122,10 @@ function buildChart() {
           grid: { color: '#333' }
         },
         y: {
-          ticks: { color: '#aaa', callback: formatCurrency },
+          ticks: {
+            color: '#aaa',
+            callback: formatCurrency
+          },
           grid: { color: '#333' }
         }
       }
@@ -137,10 +144,13 @@ onMounted(fetchData)
 
 <style scoped>
 .chart-container {
-  padding: 1.5rem;
+  flex: 1 1 48%;
+  padding: 0.75rem;
+  max-width: 48%;
+  min-width: 300px;
   background-color: var(--color-bg-secondary);
   border-radius: 12px;
-  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 12px var(--shadow);
 }
 
 .toggle-group {
@@ -154,4 +164,23 @@ onMounted(fetchData)
   color: var(--color-bg-dark);
   box-shadow: 0 0 6px var(--neon-mint);
 }
+
+.chart-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
+}
 </style>
+

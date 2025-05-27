@@ -21,7 +21,7 @@
 </template>
 
 <script>
-import NotificationsBar from "@/components/NotificationsBar.vue";
+import NotificationsBar from "@/components/recurring/NotificationsBar.vue";
 
 export default {
   name: "RecurringTx",

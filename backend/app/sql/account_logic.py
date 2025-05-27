@@ -1,9 +1,9 @@
-# File: app/sql/account_logger.c.py
+# account_logic.py
 import json
 import time
 from datetime import datetime, timedelta, date as pydate
 import requests
-
+from app.helpers.normalize import normalize_amount
 from app.extensions import db
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.models import (
@@ -21,6 +21,7 @@ from app.helpers.plaid_helpers import (
 )
 
 from sqlalchemy.orm import aliased
+from sqlalchemy.dialects.sqlite import insert
 
 ParentCategory = aliased(Category)
 
@@ -29,18 +30,14 @@ TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
 def process_transaction_amount(amount, account_type):
-    try:
-        amt = float(amount)
-    except (TypeError, ValueError):
-        return 0.0
-    if account_type and account_type.strip().lower() in [
-        "credit",
-        "credit card",
-        "credit_card",
-        "liability",
-    ]:
-        return -abs(amt) if amt > 0 else amt
-    return amt
+    return normalize_amount(
+        {
+            "amount": amount,
+            "transaction_type": account_type.lower().replace("_", " ")
+            if account_type
+            else None,
+        }
+    )
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
@@ -62,9 +59,10 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     return item
 
 
-def upsert_accounts(user_id, account_list, provider):
+def upsert_accounts(user_id, account_list, provider, access_token=None):
     processed_ids = set()
     count = 0
+    logger.debug(f"[CHECK] upsert_accounts received user_id={user_id}")
 
     for account in account_list:
         try:
@@ -76,28 +74,19 @@ def upsert_accounts(user_id, account_list, provider):
                 continue
             processed_ids.add(account_id)
 
-            allowed_fields = {
-                "account_id",
-                "user_id",
-                "name",
-                "type",
-                "subtype",
-                "institution_name",
-                "status",
-                "balance",
-                "link_type",
-            }
-
-            account["user_id"] = user_id
-
             name = account.get("name") or "Unnamed Account"
             acc_type = str(account.get("type") or "Unknown")
-            balance = (
-                account.get("balance", {}).get("current", 0)
-                or account.get("balance", 0)
+
+            # ✅ Corrected Plaid/Teller-safe balance parsing
+            balance_raw = (
+                account.get("balances", {}).get("current")
+                or account.get("balance", {}).get("current")
+                or account.get("balance")
                 or 0
             )
-            balance = process_transaction_amount(balance, acc_type)
+            balance = process_transaction_amount(balance_raw, acc_type)
+            logger.debug(f"[UPSERT] Balance parsed for {account_id}: {balance}")
+
             subtype = str(account.get("subtype") or "Unknown").capitalize()
             status = account.get("status") or "Unknown"
             institution_name = (
@@ -105,8 +94,23 @@ def upsert_accounts(user_id, account_list, provider):
                 or account.get("institution_name")
                 or "Unknown"
             )
-            refresh_links_json = json.dumps(account.get("links") or {})
 
+            # If we have access_token and missing institution, refresh metadata
+            if access_token and institution_name == "Unknown":
+                try:
+                    refreshed_accounts = get_accounts(access_token, user_id)
+                    for refreshed in refreshed_accounts:
+                        if refreshed.get("account_id") == account_id:
+                            institution_name = (
+                                (refreshed.get("institution") or {}).get("name")
+                                or refreshed.get("institution_name")
+                                or institution_name
+                            )
+                            break
+                except Exception as e:
+                    logger.warning(
+                        f"Failed to refresh institution for {account_id}: {e}"
+                    )
             now = datetime.utcnow()
             filtered_account = {
                 "account_id": account_id,
@@ -124,63 +128,45 @@ def upsert_accounts(user_id, account_list, provider):
             if existing_account:
                 logger.debug(f"Updating account {account_id}")
                 for key, value in filtered_account.items():
+                    # Only update institution_name if it was Unknown
+                    if (
+                        key == "institution_name"
+                        and existing_account.institution_name != "Unknown"
+                    ):
+                        continue
                     setattr(existing_account, key, value)
                 existing_account.updated_at = now
+
             else:
                 logger.debug(f"Creating new account {account_id}")
                 new_account = Account(**filtered_account)
                 db.session.add(new_account)
 
-            # Link Plaid or Teller accounts if applicable
-            if provider.lower() == "plaid":
-                existing_plaid = PlaidAccount.query.filter_by(
-                    account_id=account_id
-                ).first()
-                if existing_plaid:
-                    existing_plaid.access_token = account.get("access_token")
-                    existing_plaid.item_id = account.get("item_id")
-                    existing_plaid.institution_id = account.get("institution_id")
-                    existing_plaid.webhook = account.get("webhook")
-                    existing_plaid.last_refreshed = now
-                else:
-                    new_plaid = PlaidAccount(
-                        account_id=account_id,
-                        access_token=account.get("access_token"),
-                        item_id=account.get("item_id"),
-                        institution_id=account.get("institution_id"),
-                        webhook=account.get("webhook"),
-                        last_refreshed=now,
-                    )
-                    db.session.add(new_plaid)
-            elif provider.lower() == "teller":
-                existing_teller = TellerAccount.query.filter_by(
-                    account_id=account_id
-                ).first()
-                if existing_teller:
-                    existing_teller.access_token = account.get("access_token")
-                    existing_teller.enrollment_id = account.get("enrollment_id")
-                    existing_teller.institution_id = account.get("institution_id")
-                    existing_teller.last_refreshed = now
-                else:
-                    new_teller = TellerAccount(
-                        account_id=account_id,
-                        access_token=account.get("access_token"),
-                        enrollment_id=account.get("enrollment_id"),
-                        institution_id=account.get("institution_id"),
-                        provider="Teller",
-                        last_refreshed=now,
-                    )
-                    db.session.add(new_teller)
+            # Existing AccountHistory logic follows...
 
-            # Update AccountHistory today
-            today = pydate.today()
-            history = AccountHistory.query.filter_by(
-                account_id=account_id, date=today
-            ).first()
-            if not history:
-                db.session.add(
-                    AccountHistory(account_id=account_id, date=today, balance=balance)
+            # Patched: safely upsert AccountHistory with conflict resolution
+            today = datetime.utcnow().date()
+            stmt = (
+                insert(AccountHistory)
+                .values(
+                    account_id=account_id,
+                    user_id=user_id,
+                    date=today,
+                    balance=balance,
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
                 )
+                .on_conflict_do_update(
+                    index_elements=["account_id", "date"],
+                    set_={
+                        "balance": balance,
+                        "updated_at": datetime.utcnow(),
+                    },
+                )
+            )
+            db.session.execute(
+                stmt
+            )  # <-- PATCHED: conflict-safe upsert via insert().on_conflict_do_update
 
             count += 1
             if count % 100 == 0:
@@ -218,95 +204,80 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
+    from datetime import datetime, date as pydate
+    import json
+    from tempfile import NamedTemporaryFile
+
     updated = False
+    account_id = account.account_id
+    user_id = account.user_id
+    balance = account.balance
+
     # Refresh Balance
-    url_balance = f"{teller_api_base_url}/accounts/{account.account_id}/balances"
+    url_balance = f"{teller_api_base_url}/accounts/{account_id}/balances"
     resp_balance = fetch_url_with_backoff(
         url_balance, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
-    if resp_balance.status_code == 200:
-        logger.debug(
-            f"Balance response for account {account.account_id}: {resp_balance.text}"
-        )
-        balance_json = resp_balance.json()
-        new_balance = account.balance
 
-        # If "available" is present, use that for non-credit accounts; for credit,
-        # invert the ledger balance. Otherwise, handle nested structures.
+    if resp_balance.status_code == 200:
+        logger.debug(f"Balance response for account {account_id}: {resp_balance.text}")
+        balance_json = resp_balance.json()
+        new_balance = balance
+
         if "available" in balance_json:
             account_type = (account.type or "").lower()
-            if account_type in ["credit", "liability"]:
-                try:
-                    ledger_value = float(balance_json.get("ledger", account.balance))
-                    new_balance = -ledger_value
-                    logger.debug(
-                        f"Inverting ledger balance for account {account.account_id}: {ledger_value} -> {new_balance}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error parsing ledger balance: {e}", exc_info=True)
-            else:
-                try:
-                    new_balance = float(balance_json.get("available", account.balance))
-                    logger.debug(
-                        f"Using available balance for account {account.account_id}: {new_balance}"
-                    )
-                except Exception as e:
-                    logger.error(f"Error parsing available balance: {e}", exc_info=True)
+            try:
+                if account_type in ["credit", "liability"]:
+                    new_balance = -float(balance_json.get("ledger", balance))
+                    logger.debug(f"Inverting ledger balance for {account_id}")
+                else:
+                    new_balance = float(balance_json.get("available", balance))
+                    logger.debug(f"Using available balance for {account_id}")
+            except Exception as e:
+                logger.error(f"Error parsing balance: {e}", exc_info=True)
+
         elif isinstance(balance_json, dict):
             if "balance" in balance_json:
-                new_balance = (
-                    balance_json.get("balance", {}).get("current", account.balance) or 0
-                )
-                logger.debug("Extracted balance using nested 'balance' key.")
-            elif "balances" in balance_json:
-                balances_list = balance_json.get("balances", [])
-                if balances_list:
-                    new_balance = balances_list[0].get("current", account.balance) or 0
-                    logger.debug("Extracted balance from 'balances' list.")
-                else:
-                    logger.warning(
-                        f"'balances' list empty for account {account.account_id}."
-                    )
-        else:
-            logger.warning(
-                f"Unexpected balance format for account {account.account_id}: {balance_json}"
-            )
+                new_balance = balance_json.get("balance", {}).get("current", balance)
+                logger.debug("Extracted balance from 'balance.current'")
+            elif "balances" in balance_json and balance_json["balances"]:
+                new_balance = balance_json["balances"][0].get("current", balance)
+                logger.debug("Extracted balance from 'balances' list")
+            else:
+                logger.warning(f"No balance data for {account_id}")
 
-        if new_balance != account.balance:
-            logger.debug(
-                f"Account {account.account_id}: Balance updated from {account.balance} to {new_balance}"
-            )
+        if new_balance != balance:
             account.balance = new_balance
+            balance = new_balance
             updated = True
+            logger.debug(f"Updated balance for {account_id}: {new_balance}")
         else:
-            logger.debug(f"Account {account.account_id}: Balance unchanged.")
+            logger.debug(f"No change to balance for {account_id}")
     else:
-        logger.error(
-            f"Failed to refresh balance for account {account.account_id}: {resp_balance.text}"
-        )
+        logger.error(f"Failed to refresh balance for {account_id}: {resp_balance.text}")
 
     # Refresh Transactions
-    url_txns = f"{teller_api_base_url}/accounts/{account.account_id}/transactions"
-    logger.debug(
-        f"Requesting transactions for account {account.account_id} from {url_txns}"
-    )
+    url_txns = f"{teller_api_base_url}/accounts/{account_id}/transactions"
+    logger.debug(f"Requesting transactions for {account_id} from {url_txns}")
     resp_txns = fetch_url_with_backoff(
         url_txns, cert=(teller_dot_cert, teller_dot_key), auth=(access_token, "")
     )
-    if resp_txns.status_code == 200:
-        logger.debug(
-            f"Transactions response for account {account.account_id}: {resp_txns.text}"
-        )
-        txns_json = resp_txns.json()
-        with open(TRANSACTIONS_RAW, "w") as f:
-            json.dump(txns_json, f, indent=4)
 
-        if isinstance(txns_json, dict) and "transactions" in txns_json:
-            txns_list = txns_json.get("transactions", [])
-        elif isinstance(txns_json, list):
-            txns_list = txns_json
-        else:
-            txns_list = []
+    if resp_txns.status_code == 200:
+        txns_json = resp_txns.json()
+        try:
+            with NamedTemporaryFile(mode="w", delete=False, suffix=".json") as f:
+                json.dump(txns_json, f, indent=4)
+        except Exception as e:
+            logger.warning(f"Could not dump raw transactions: {e}")
+
+        txns_list = (
+            txns_json.get("transactions", [])
+            if isinstance(txns_json, dict)
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
+        )
 
         for txn in txns_list:
             txn_id = txn.get("id")
@@ -324,26 +295,23 @@ def refresh_data_for_teller_account(
                 )
                 existing_txn = None
 
-            # Process common fields
             new_amount = process_transaction_amount(
                 txn.get("amount") or 0, account.type
             )
-            raw_date_str = txn.get("date") or ""  # e.g. '2025-03-17'
-            if raw_date_str:
-                try:
-                    parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
-                except ValueError:
-                    parsed_date = pydate.today()
-            else:
+            raw_date_str = txn.get("date") or ""
+            try:
+                parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
+            except ValueError:
                 parsed_date = pydate.today()
 
             category_list = txn.get("category", [])
-            if isinstance(category_list, list) and category_list:
-                category = " > ".join(category_list)
-            else:
-                category = "Unknown"
+            category = (
+                " > ".join(category_list)
+                if isinstance(category_list, list)
+                else "Unknown"
+            )
 
-            counterparty = details.get("counterparty")
+            counterparty = txn.get("details", {}).get("counterparty", {})
             merchant_name = "Unknown"
             merchant_type = "Unknown"
             if (
@@ -359,14 +327,9 @@ def refresh_data_for_teller_account(
 
             if existing_txn:
                 if existing_txn.user_modified:
-                    logger.debug(
-                        f"Transaction {txn_id} is user modified; preserving user changes."
-                    )
-                    # Skip updating fields that have been modified by the user.
+                    logger.debug(f"Preserving user-modified txn {txn_id}")
                 else:
-                    logger.debug(
-                        f"Updating transaction {txn_id} for account {account.account_id}."
-                    )
+                    logger.debug(f"Updating transaction {txn_id}")
                     existing_txn.amount = new_amount
                     existing_txn.date = parsed_date
                     existing_txn.description = txn.get("description") or ""
@@ -374,12 +337,10 @@ def refresh_data_for_teller_account(
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
             else:
-                logger.debug(
-                    f"Inserting new transaction {txn_id} for account {account.account_id}."
-                )
+                logger.debug(f"Inserting new transaction {txn_id}")
                 new_txn = Transaction(
                     transaction_id=txn_id,
-                    account_id=account.account_id,
+                    account_id=account_id,
                     amount=new_amount,
                     date=parsed_date,
                     description=txn.get("description") or "",
@@ -391,27 +352,33 @@ def refresh_data_for_teller_account(
         updated = True
     else:
         logger.error(
-            f"Failed to refresh transactions for account {account.account_id}: {resp_txns.text}"
+            f"Failed to refresh transactions for {account_id}: {resp_txns.text}"
         )
 
-    # Update daily history for this Teller account
-    today = datetime.today().date()
+    # Finalize AccountHistory
+    today = datetime.utcnow().date()
     existing_history = AccountHistory.query.filter_by(
-        account_id=account.account_id, date=today
+        account_id=account_id, date=today
     ).first()
-    if not existing_history:
+    if existing_history:
         logger.debug(
-            f"Creating new history record for account {account.account_id} for date {today}."
+            f"[UPDATING] AccountHistory for account_id={account_id} on {today}"
         )
-        history_record = AccountHistory(
-            account_id=account.account_id, date=today, balance=account.balance
-        )
-        db.session.add(history_record)
-        updated = True
+        existing_history.balance = balance
+        existing_history.updated_at = datetime.utcnow()
     else:
         logger.debug(
-            f"History record already exists for account {account.account_id} for date {today}."
+            f"[CREATING] AccountHistory for account_id={account_id} on {today}"
         )
+        new_history = AccountHistory(
+            account_id=account_id,
+            user_id=user_id,
+            date=today,
+            balance=balance,
+            created_at=datetime.utcnow(),
+            updated_at=datetime.utcnow(),
+        )
+        db.session.add(new_history)
 
     return updated
 
@@ -422,28 +389,30 @@ def get_paginated_transactions(page, page_size):
         .join(Account, Transaction.account_id == Account.account_id)
         .order_by(Transaction.date.desc())
     )
+
     total = query.count()
+
     results = query.offset((page - 1) * page_size).limit(page_size).all()
 
     serialized = []
-    for txn, acc in results:
+    for tx, acc in results:
         serialized.append(
             {
-                "transaction_id": txn.transaction_id,
-                "date": txn.date.isoformat() if txn.date else None,
-                "amount": txn.amount if txn.amount is not None else 0,
-                "description": txn.description or txn.merchant_name or "N/A",
+                "transaction_id": tx.transaction_id,
+                "date": tx.date.isoformat() if tx.date else None,
+                "amount": tx.amount or 0,
+                "description": tx.description or tx.merchant_name or "N/A",
                 "category": (
-                    txn.category.display_name
-                    if hasattr(txn.category, "display_name")
-                    else txn.category or "Uncategorized"
+                    tx.category.display_name
+                    if hasattr(tx.category, "display_name")
+                    else tx.category or "Uncategorized"
                 ),
-                "merchant_name": txn.merchant_name or "Unknown",
+                "merchant_name": tx.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
-                "pending": getattr(txn, "pending", False),
+                "pending": getattr(tx, "pending", False),
                 "isEditing": False,
             }
         )
@@ -452,11 +421,6 @@ def get_paginated_transactions(page, page_size):
 
 
 def refresh_data_for_plaid_account(access_token, account_id):
-    """
-    Refresh all Plaid-linked accounts under a single access_token by querying the Plaid API.
-    Refreshes transactions and updates the DB accordingly, ensuring each transaction goes to the correct account.
-    Returns True if any update occurred.
-    """
     updated = False
     now = datetime.utcnow()
 
@@ -466,10 +430,26 @@ def refresh_data_for_plaid_account(access_token, account_id):
 
     try:
         account = Account.query.filter_by(account_id=account_id).first()
-
         if not account:
             logger.warning(f"[DB Lookup] No account found for account_id={account_id}")
             return False
+
+        # ✅ Refresh balance via get_accounts()
+        accounts_data = get_accounts(access_token, account.user_id)
+        for acct in accounts_data:
+            if acct.get("account_id") == account_id:
+                raw_balance = (
+                    acct.get("balances", {}).get("current")
+                    or acct.get("balance", {}).get("current")
+                    or acct.get("balance")
+                    or 0
+                )
+                account.balance = process_transaction_amount(raw_balance, account.type)
+                account.updated_at = datetime.utcnow()
+                logger.debug(
+                    f"[REFRESH] Updated balance for {account_id}: {account.balance}"
+                )
+                break
 
         account_label = account.name or f"[unnamed account] {account_id}"
 
@@ -496,10 +476,26 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue
 
-            # ✅ Category resolution now includes plaid_category_id and parent assignment
             category_path = txn.get("category", [])
-            plaid_cat_id = txn.get("category_id")
-            category = resolve_or_create_category(category_path)
+            primary = category_path[0] if len(category_path) > 0 else "Unknown"
+            detailed = category_path[1] if len(category_path) > 1 else "Unknown"
+
+            existing_category = (
+                db.session.query(Category)
+                .filter_by(primary_category=primary, detailed_category=detailed)
+                .first()
+            )
+
+            if existing_category:
+                category = existing_category
+            else:
+                category = Category(
+                    primary_category=primary,
+                    detailed_category=detailed,
+                    display_name=f"{primary} > {detailed}",
+                )
+                db.session.add(category)
+                db.session.flush()
 
             merchant_name = txn.get("merchant_name") or "Unknown"
             merchant_type = (
@@ -555,6 +551,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
                 updated = True
 
         db.session.commit()
+        return updated
 
     except Exception as e:
         logger.error(
@@ -562,5 +559,6 @@ def refresh_data_for_plaid_account(access_token, account_id):
             exc_info=True,
         )
         db.session.rollback()
+        return False
 
     return updated

@@ -1,7 +1,9 @@
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">Net Assets Trend</h2>
-    <canvas ref="canvasRef"></canvas>
+    <div class="chart-wrapper">
+      <canvas ref="canvasRef"></canvas>
+    </div>
   </div>
 </template>
 
@@ -11,16 +13,21 @@ import { Chart } from 'chart.js/auto'
 import { onMounted, ref, nextTick } from 'vue'
 
 const canvasRef = ref()
-const chartInstance = ref()
+const chartInstance = ref(null)
 const chartData = ref([])
 
-const format = (val) => {
+const format = val => {
   const n = Number(val || 0)
-  return n < 0 ? `($${Math.abs(n).toLocaleString()})` : `$${n.toLocaleString()}`
+  return n < 0
+    ? `($${Math.abs(n).toLocaleString()})`
+    : `$${n.toLocaleString()}`
 }
 
-const parseDate = (str) =>
-  new Date(str).toLocaleString('default', { month: 'short', day: 'numeric' })
+const parseDate = str =>
+  new Date(str).toLocaleDateString('default', {
+    month: 'short',
+    day: 'numeric'
+  })
 
 async function fetchData() {
   try {
@@ -39,14 +46,6 @@ function render() {
 
   const ctx = canvasRef.value.getContext('2d')
 
-  const fillA = ctx.createLinearGradient(0, 0, 0, 300)
-  fillA.addColorStop(0, '#98e8ff')
-  fillA.addColorStop(1, 'rgba(152,232,255,0)')
-
-  const fillL = ctx.createLinearGradient(0, 0, 0, 300)
-  fillL.addColorStop(0, '#ffc0cb')
-  fillL.addColorStop(1, 'rgba(255,192,203,0)')
-
   chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {
@@ -56,24 +55,24 @@ function render() {
           label: 'Assets',
           data: chartData.value.map(d => d.assets),
           borderColor: '#00ffa5',
-          backgroundColor: fillA,
+          backgroundColor: '#98e8ff',
           tension: 0.2,
-          fill: true,
-          pointRadius: 0
+          fill: true
         },
         {
           label: 'Liabilities',
           data: chartData.value.map(d => d.liabilities),
           borderColor: '#ff6a6a',
-          backgroundColor: fillL,
+          backgroundColor: '#ffc0cb',
           tension: 0.2,
-          fill: true,
-          pointRadius: 0
+          fill: true
         }
       ]
     },
     options: {
       animation: { duration: 900, easing: 'easeOutCubic' },
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         tooltip: {
           backgroundColor: '#1f1f1f',
@@ -113,7 +112,10 @@ onMounted(fetchData)
 
 <style scoped>
 .chart-container {
-  padding: 1.5rem;
+  flex: 1 1 48%;
+  padding: 0.75rem;
+  max-width: 48%;
+  min-width: 300px;
   background-color: var(--color-bg-secondary);
   border-radius: 12px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
@@ -122,5 +124,23 @@ onMounted(fetchData)
 
 .chart-container:hover {
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.chart-wrapper {
+  position: relative;
+  height: 300px;
+  width: 100%;
+}
+
+canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    flex-basis: 100%;
+    max-width: 100%;
+  }
 }
 </style>

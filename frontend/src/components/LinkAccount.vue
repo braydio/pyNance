@@ -1,149 +1,61 @@
 <template>
-  <div class="link-account">
-    <h2>Link a New Account</h2>
-    <div class="button-group">
-      <button @click="linkPlaid">Plaid</button>
-      <button @click="linkTeller">Teller.io</button>
-      <button @click="$emit('manual-token-click')">Provide Access Token</button>
-    </div>
+  <div class="link-account-wrapper">
+    <button class="btn btn-pill btn-outline" @click="showLinkOptions = !showLinkOptions">
+      {{ showLinkOptions ? 'Hide' : 'Link Account' }}
+    </button>
+
+    <transition name="slide-vertical">
+      <div v-if="showLinkOptions" class="link-account mt-4">
+        <PlaidProductScopeSelector v-model="selectedProducts" />
+        <LinkProviderLauncher :selected-products="selectedProducts" :user-id="userID"
+          @refresh="$emit('refreshAccount')" />
+      </div>
+    </transition>
   </div>
 </template>
 
-<script>
-import api from "@/services/api";
-import { loadExternalScripts } from "@/utils/externalScripts";
+<script setup>
+import { ref } from 'vue'
+import PlaidProductScopeSelector from '@/components/PlaidProductScopeSelector.vue'
+import LinkProviderLauncher from '@/components/LinkProviderLauncher.vue'
 
-export default {
-  name: "LinkAccount",
-  data() {
-    return {
-      scriptsLoaded: false,
-      plaidLinkToken: null,
-      tellerConnectInstance: null,
-      userID: import.meta.env.VITE_USER_ID_PLAID || '',
-      tellerAppId: import.meta.env.VITE_TELLER_APP_ID || '',
-      tellerEnv: import.meta.env.VITE_TELLER_ENV || 'sandbox',
-    };
-  },
-  methods: {
-    async initializeScripts() {
-      try {
-        await loadExternalScripts();
-        this.scriptsLoaded = true;
-        await this.preloadPlaidLinkToken();
-      } catch (error) {
-        console.error("Error loading external scripts:", error);
-      }
-    },
-    async preloadPlaidLinkToken() {
-      try {
-        const plaidRes = await api.generateLinkToken("plaid", {
-          user_id: this.userID || "DefaultUser",
-          products: ["transactions"],
-        });
-        this.plaidLinkToken = plaidRes.link_token;
-      } catch (error) {
-        console.error("Error generating Plaid link token:", error);
-      }
-    },
-    async linkPlaid() {
-      if (!this.scriptsLoaded || !this.plaidLinkToken || !window.Plaid) {
-        console.error("Plaid linking prerequisites missing.");
-        return;
-      }
-
-      const handler = window.Plaid.create({
-        token: this.plaidLinkToken,
-        onSuccess: async (public_token, metadata) => {
-          try {
-            const userID = this.userID || "DefaultUser";
-            const exchangeRes = await api.exchangePublicToken("plaid", {
-              public_token,
-              user_id: userID,
-            });
-            console.log("Exchange response:", exchangeRes);
-
-            await api.refreshCategories(); // Optional if you want to refresh categories after link
-
-            this.$emit("refreshAccounts");
-          } catch (error) {
-            console.error("Error exchanging Plaid token:", error);
-          }
-        },
-        onExit: (err, metadata) => {
-          console.log("Plaid Link exited", err, metadata);
-        },
-      });
-
-      handler.open();
-    },
-    async linkTeller() {
-      if (!this.scriptsLoaded) {
-        console.error("External scripts not loaded yet.");
-        return;
-      }
-      if (!window.TellerConnect) {
-        console.error("TellerConnect library not available.");
-        return;
-      }
-      if (!this.tellerAppId) {
-        console.error("Missing Teller App ID.");
-        return;
-      }
-
-      if (!this.tellerConnectInstance) {
-        this.tellerConnectInstance = window.TellerConnect.setup({
-          applicationId: this.tellerAppId,
-          environment: this.tellerEnv,
-          products: ["transactions", "balance"],
-          onInit: () => {
-            console.log("Teller Connect has initialized");
-          },
-          onSuccess: async (enrollment) => {
-            console.log("User enrolled successfully", enrollment.accessToken);
-            try {
-              const exchangeRes = await api.exchangePublicToken("teller", {
-                user_id: this.userID,
-                public_token: enrollment.accessToken,
-              });
-              console.log("Teller exchange response:", exchangeRes);
-            } catch (error) {
-              console.error("Error exchanging Teller token:", error);
-            }
-          },
-          onExit: () => {
-            console.log("User closed Teller Connect");
-          },
-        });
-      }
-
-      this.tellerConnectInstance.open();
-    },
-  },
-  mounted() {
-    this.initializeScripts();
-  },
-};
+const selectedProducts = ref([])
+const showLinkOptions = ref(false)
+const userID = import.meta.env.VITE_USER_ID_PLAID || ''
 </script>
 
 <style scoped>
-.link-account {
-  margin: 0 auto;
-  background-color: var(--themed-bg);
-  color: var(--color-text-light);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: 5px;
-  padding: 1rem;
+.link-account-wrapper {
+  @apply p-4 rounded-xl border bg-white shadow-md w-full max-w-2xl;
 }
 
-.link-account h2 {
-  margin: 5px 1px;
+.link-account {
+  @apply mt-2 space-y-4;
+}
+</style>
+
+
+<style scoped>
+.link-account-wrapper {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-text-light);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px var(--shadow);
+  width: 100%;
+  max-width: 600px;
+}
+
+.link-account-wrapper h2 {
+  margin-bottom: 0.5rem;
   color: var(--neon-purple);
+  text-align: center;
 }
 
 .button-group {
   display: flex;
-  gap: 1.5rem;
+  gap: 1rem;
   justify-content: center;
 }
 
@@ -153,10 +65,53 @@ export default {
   border: 1px groove transparent;
   border-radius: 3px;
   font-weight: bold;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .button-group button:hover {
   background-color: var(--neon-mint);
+  color: var(--themed-bg);
+}
+</style>
+<style scoped>
+.control-block {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--color-text-light);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px var(--shadow);
+  width: 100%;
+  max-width: 600px;
+}
+
+.control-block h2 {
+  margin-bottom: 0.5rem;
+  color: var(--neon-purple);
+  text-align: center;
+}
+
+.button-group {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.button-group button {
+  background-color: var(--themed-bg);
+  color: var(--color-text-light);
+  border: 1px groove transparent;
+  border-radius: 3px;
+  font-weight: bold;
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.button-group button:hover {
+  background-color: var(--neon-mint);
+  color: var(--themed-bg);
 }
 </style>

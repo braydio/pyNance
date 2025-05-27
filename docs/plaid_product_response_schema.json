@@ -1,0 +1,34 @@
+{
+  "transactions": {
+    "description": "Successfully exchanged transactions token",
+    "example": {
+      "access_token": "access-token-tx123",
+      "item_id": "ITEMID-123",
+      "product": "transactions"
+    }
+  },
+  "investments": {
+    "description": "Token exchanged to access investment holdings",
+    "example": {
+      "access_token": "access-token-inv123",
+      "item_id": "ITEMID-INV123",
+      "product": "investments"
+    }
+  },
+  "assets": {
+    "description": "Access token for account balances and asset verification",
+    "example": {
+      "access_token": "access-token-assets123",
+      "item_id": "ITEMID-ASS123",
+      "product": "assets"
+    }
+  },
+  "liabilities": {
+    "description": "Exchanged token for liability loans or mortgages",
+    "example": {
+      "access_token": "access-token-liab123",
+      "item_id": "ITEMID-LIAb123",
+      "product": "liabilities"
+    }
+  }
+}

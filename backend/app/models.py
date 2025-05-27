@@ -42,6 +42,23 @@ class PlaidAccount(db.Model, TimestampMixin):
     webhook = db.Column(db.String(256), nullable=True)
     last_refreshed = db.Column(db.DateTime, nullable=True)
 
+    # 🔧 Skeleton additions
+    sync_cursor = db.Column(db.String(256), nullable=True)  # for /transactions/sync
+    is_active = db.Column(db.Boolean, default=True)  # soft-disable broken tokens
+    last_error = db.Column(db.Text, nullable=True)  # last known error from Plaid
+
+
+class PlaidWebhookLog(db.Model, TimestampMixin):
+    __tablename__ = "plaid_webhook_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    event_type = db.Column(db.String(128))
+    webhook_type = db.Column(db.String(64))
+    webhook_code = db.Column(db.String(64))
+    item_id = db.Column(db.String(128))
+    payload = db.Column(db.JSON, nullable=True)
+    received_at = db.Column(db.DateTime, default=datetime.utcnow)
+
 
 class TellerAccount(db.Model, TimestampMixin):
     __tablename__ = "teller_accounts"
@@ -64,7 +81,10 @@ class AccountHistory(db.Model, TimestampMixin):
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
-    date = db.Column(db.DateTime, nullable=False)
+
+    user_id = db.Column(db.String(64), nullable=False, index=True)
+
+    date = db.Column(db.DateTime, nullable=False)  # Domain field
     balance = db.Column(db.Float, default=0)
 
     __table_args__ = (
@@ -119,6 +139,7 @@ class Category(db.Model):
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)

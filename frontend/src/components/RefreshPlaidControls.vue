@@ -45,39 +45,42 @@ export default {
 </script>
 
 <style scoped>
-.link-account {
-  margin: 0 auto;
+.control-block {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border-top: 8px inset var(--color-bg-secondary);
-  border-bottom: 6px outset var(--color-text-muted);
-  border-left: 8px inset var(--color-bg-secondary);
-  border-right: 6px outset var(--color-text-muted);
-  border-radius: 5px;
+  border: 1px solid var(--color-border-secondary);
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px var(--shadow);
+  width: 100%;
+  max-width: 600px;
 }
 
-.link-account h2 {
-  margin: 5px 1px;
+.control-block h2 {
+  margin-bottom: 0.5rem;
   color: var(--neon-purple);
+  text-align: center;
 }
 
 .button-group {
   display: flex;
-  gap: 1.5rem;
   justify-content: center;
 }
 
 .button-group button {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
-  border: 1px groove transparent;
+  border: 1px solid var(--color-border-secondary);
   border-radius: 3px;
   font-weight: bold;
+  padding: 0.5rem 1rem;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .button-group button:hover {
-  color: var(--themed-bg);
   background-color: var(--neon-mint);
+  color: var(--themed-bg);
 }
 </style>
+

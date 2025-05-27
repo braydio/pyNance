@@ -1,7 +1,7 @@
 # backend/app/config/constants.py
 import os
 from .paths import DIRECTORIES
-from .environment import FLASK_ENV
+from .environment import FLASK_ENV, PLAID_ENV
 
 FILES = {
     "LINKED_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkAccounts.json",
@@ -23,6 +23,6 @@ FILES = {
 }
 
 FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/dist")
-DATABASE_NAME = "developing_dash.db" if FLASK_ENV == "development" else "main_dash.db"
+DATABASE_NAME = "developing_dash.db" if PLAID_ENV == "sandbox" else "main_dash.db"
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR']}/{DATABASE_NAME}"
 TELEMETRY = {"enabled": True, "track_modifications": False}

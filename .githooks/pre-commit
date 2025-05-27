@@ -1,0 +1,14 @@
+#!/bin/bash
+
+SCRIPT="scripts/lint_routes.py"
+echo "[LINTER] Running route linter..."
+
+python3 "$SCRIPT"
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "[LINTER] API route violations detected. Please fix before committing."
+  exit 1
+fi
+
+exit 0
