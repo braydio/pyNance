@@ -57,6 +57,7 @@ declare module 'vue' {
     TokenUpload: typeof import('./components/forms/TokenUpload.vue')['default']
     TransactionsTable: typeof import('./components/tables/TransactionsTable.vue')['default']
     TransactionUploadCSV: typeof import('./components/TransactionUploadCSV.vue')['default']
+    TxUploadcsv: typeof import('./components/TxUploadcsv.vue')['default']
     UpdateTransactionsTable: typeof import('./components/UpdateTransactionsTable.vue')['default']
     UploadCSV: typeof import('./components/unused/UploadCSV.vue')['default']
     UploadDownloadCSV: typeof import('./components/UploadDownloadCSV.vue')['default']

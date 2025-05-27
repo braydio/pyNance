@@ -71,17 +71,17 @@ import { ref } from 'vue'
 // ✅ NEW: State for selected Plaid products
 const selectedProducts = ref([])
 
-import LinkAccount from '@/components/LinkAccount.vue'
-import AccountsTable from '@/components/AccountsTable.vue'
+import LinkAccount from '@/components/forms/LinkAccount.vue'
+import AccountsTable from '@/components/tables/AccountsTable.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
-import AssetsBarTrended from '@/components/AssetsBarTrended.vue'
+import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
-import RefreshTellerControls from '@/components/RefreshTellerControls.vue'
-import RefreshPlaidControls from '@/components/RefreshPlaidControls.vue'
-import TokenUpload from '@/components/TokenUpload.vue'
+import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vue'
+import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
+import TokenUpload from '@/components/forms/TokenUpload.vue'
 
 // ✅ NEW: Import product scope selector
-import PlaidProductScopeSelector from '@/components/PlaidProductScopeSelector.vue'
+import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
 
 // Meta & State
 const userName = import.meta.env.VITE_USER_ID_PLAID || ''
