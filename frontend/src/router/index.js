@@ -5,9 +5,9 @@ import Transactions from '../views/Transactions.vue';
 import RecurringTX from '../views/RecurringTX.vue'
 import Forecast from '@/views/Forecast.vue';
 import Investments from '../views/Investments.vue';
-import DailyNetChart from '@/components/DailyNetChart.vue';
+import DailyNetChart from '@/components/charts/DailyNetChart.vue';
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue';
-import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue';
+import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue';
 import AccountsTable from '@/components/AccountsTable.vue';
 import ForecastMock from '@/views/ForecastMock.vue';
 

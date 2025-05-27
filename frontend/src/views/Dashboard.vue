@@ -18,23 +18,11 @@
 
       <BaseCard>
         <div class="space-y-4">
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search transactions..."
-            class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-          <TransactionsTable
-            :transactions="filteredTransactions"
-            :sort-key="sortKey"
-            :sort-order="sortOrder"
-            @sort="setSort"
-          />
-          <PaginationControls
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            @change="changePage"
-          />
+          <input v-model="searchQuery" type="text" placeholder="Search transactions..."
+            class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+          <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
+            @sort="setSort" />
+          <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
           <AccountsTable />
         </div>
       </BaseCard>
@@ -47,11 +35,11 @@
 </template>
 
 <script setup>
-import AppLayout from '@/components/AppLayout.vue'
-import BaseCard from '@/components/BaseCard.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import BaseCard from '@/components/base/BaseCard.vue'
 import PaginationControls from '@/components/PaginationControls.vue'
-import DailyNetChart from '@/components/DailyNetChart.vue'
-import CategoryBreakdownChart from '@/components/CategoryBreakdownChart.vue'
+import DailyNetChart from '@/components/charts/DailyNetChart.vue'
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import AccountsTable from '@/components/AccountsTable.vue'
 import TransactionsTable from '@/components/TransactionsTable.vue'
 
