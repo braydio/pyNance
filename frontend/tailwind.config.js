@@ -1,4 +1,4 @@
-// tailwind.config.js
+
 import forms from '@tailwindcss/forms';
 import typography from '@tailwindcss/typography';
 import aspectRatio from '@tailwindcss/aspect-ratio';
@@ -6,8 +6,8 @@ import aspectRatio from '@tailwindcss/aspect-ratio';
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx}",
+    "./frontend/index.html",
+    "./frontend/src/**/*.{vue,js,ts,jsx,tsx}", // ✅ FIXED: matches actual structure
   ],
   theme: {
     extend: {

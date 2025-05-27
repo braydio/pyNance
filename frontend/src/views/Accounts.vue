@@ -73,9 +73,9 @@ const selectedProducts = ref([])
 
 import LinkAccount from '@/components/LinkAccount.vue'
 import AccountsTable from '@/components/AccountsTable.vue'
-import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue'
+import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
 import AssetsBarTrended from '@/components/AssetsBarTrended.vue'
-import AccountsReorderChart from '@/components/AccountsReorderChart.vue'
+import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import RefreshTellerControls from '@/components/RefreshTellerControls.vue'
 import RefreshPlaidControls from '@/components/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/TokenUpload.vue'
