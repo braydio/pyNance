@@ -3,12 +3,11 @@ import Dashboard from '../views/Dashboard.vue';
 import Accounts from '../views/Accounts.vue';
 import Transactions from '../views/Transactions.vue';
 import RecurringTX from '../views/RecurringTX.vue'
-import Gallery from '@/views/Gallery.vue';
 import Forecast from '@/views/Forecast.vue';
 import Investments from '../views/Investments.vue';
-import DailyNetChart from '../components/DailyNetChart.vue';
-import CategoryBreakdownChart from '@/components/CategoryBreakdownChart.vue';
-import NetYearComparisonChart from '../components/NetYearComparisonChart.vue';
+import DailyNetChart from '@/components/DailyNetChart.vue';
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue';
+import NetYearComparisonChart from '@/components/NetYearComparisonChart.vue';
 import AccountsTable from '@/components/AccountsTable.vue';
 import ForecastMock from '@/views/ForecastMock.vue';
 
@@ -21,7 +20,6 @@ const routes = [
   { path: '/charts/cashflow', name: 'DailyNetChart', component: DailyNetChart },
   { path: '/charts/category', name: 'CategoryChart', component: CategoryBreakdownChart },
   { path: '/charts/assets/year-comporison', name: 'NetYearComparisonChart', component: NetYearComparisonChart },
-  { path: '/gallery', name: 'Gallery', component: Gallery },
   { path: '/investments', name: 'Investments', component: Investments },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
