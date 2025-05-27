@@ -1,0 +1,60 @@
+
+# 📦 Component Usage Report — pyNance Frontend
+
+This document summarizes which components in `frontend/src/components/` are used in views under `frontend/src/views/`. Unused components are flagged for possible cleanup or archiving.
+
+---
+
+## ✅ Used Components
+
+| Component                       | Used In Views          |
+|--------------------------------|-------------------------|
+| AccountsReorderChart.vue       | Dashboard.vue           |
+| AccountsTable.vue              | Accounts.vue            |
+| AssetsBarTrended.vue           | Dashboard.vue           |
+| CategoryBreakdownChart.vue     | Dashboard.vue           |
+| DailyNetChart.vue              | Dashboard.vue           |
+| ImportFileSelector.vue         | Transactions.vue        |
+| LinkAccount.vue                | Accounts.vue            |
+| ManualTransactionTable.vue     | Transactions.vue        |
+| Navbar.vue                     | AppLayout.vue           |
+| NetIncomeCharts.vue            | Dashboard.vue           |
+| NetYearComparisonChart.vue     | Accounts.vue            |
+| PlaidProductScopeSelector.vue  | Accounts.vue            |
+| RecurringCalendar.vue          | RecurringTX.vue         |
+| RefreshPlaidControls.vue       | Accounts.vue            |
+| RefreshTellerControls.vue      | Accounts.vue            |
+| Settings.vue                   | Settings.vue            |
+| TokenUpload.vue                | Accounts.vue            |
+| TransactionUploadCSV.vue       | Transactions.vue        |
+| TransactionsTable.vue          | Transactions.vue        |
+| UpdateTransactionsTable.vue    | Transactions.vue        |
+| YoutubeEmbed.vue               | Gallery.vue             |
+
+---
+
+## ⚠️ Unused Components
+
+These components are not currently referenced in any views:
+
+| Component                      |
+|-------------------------------|
+| AccountsTableLite.vue         |
+| Chart.vue                     |
+| DownloadCSV.vue               |
+| LinkAccountFullProducts.vue   |
+| LinkProviderLauncher.vue      |
+| MatchingTransactionUpload.vue |
+| RefreshControls.vue           |
+| UploadCSV.vue                 |
+| UploadDownloadCSV.vue         |
+
+---
+
+### 📌 Recommendations
+
+- **Delete or archive**: If no longer needed.
+- **Deduplicate**: Some like `UploadCSV.vue` vs `UploadDownloadCSV.vue` may overlap.
+- **Centralize styles**: Consider moving standard elements to `ui/` or `base/`.
+
+Let me know if you'd like this written to `/docs/frontend_component_usage.md` or logged into the task tracker.

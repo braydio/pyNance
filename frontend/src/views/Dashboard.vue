@@ -37,11 +37,11 @@
 <script setup>
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
-import PaginationControls from '@/components/PaginationControls.vue'
+import PaginationControls from '@/components/tables//PaginationControls.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
-import AccountsTable from '@/components/AccountsTable.vue'
-import TransactionsTable from '@/components/TransactionsTable.vue'
+import AccountsTable from '@/components/tables/AccountsTable.vue'
+import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 
 import { useTransactions } from '@/composables/useTransactions.js'
 
