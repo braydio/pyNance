@@ -7,9 +7,14 @@ from chromadb.config import Settings
 SOURCE_DIR = "backend"
 COLLECTION_NAME = "pynance-code"
 
+# Set up persistent directory with absolute path
+PERSIST_DIR = os.path.abspath(".chroma_store")
+os.makedirs(PERSIST_DIR, exist_ok=True)
+print(f"[CHROMA] Using persist directory: {PERSIST_DIR}")
+
 # Embedded ChromaDB client (persisted locally)
 client = chromadb.Client(
-    Settings(persist_directory=".chroma_store", anonymized_telemetry=False)
+    Settings(persist_directory=PERSIST_DIR, anonymized_telemetry=False)
 )
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
@@ -51,5 +56,3 @@ for root, _, files in os.walk(SOURCE_DIR):
 print(
     f"Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."
 )
-print(f"Total documents: {collection.count()}")
-
