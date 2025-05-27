@@ -1,7 +1,7 @@
 <template>
   <div class="investments-page">
-    <header>
-      <nav class="menu">
+    <header class="text-center py-2.5">
+      <nav class="flex justify-center gap-2.5 mt-2.5">
         <router-link to="/">Dashboard</router-link>
         <router-link to="/teller-dot">Teller.IO</router-link>
         <router-link to="/accounts">Accounts</router-link>
@@ -10,11 +10,14 @@
       </nav>
     </header>
 
-    <main>
+    <main class="max-w-[960px] mx-auto">
       <!-- Account Details Section -->
-      <section id="account-details">
-        <h2>Account Details</h2>
-        <button @click="refreshInvestments">Refresh Investments</button>
+      <section id="account-details" class="bg-white p-5 mb-5 rounded shadow">
+        <h2 class="mt-0">Account Details</h2>
+        <button @click="refreshInvestments"
+          class="bg-[#3498db] text-white border-none py-[10px] px-[20px] rounded cursor-pointer">
+          Refresh Investments
+        </button>
         <!-- Here we render the list of investment accounts -->
         <div id="accounts-list">
           <div v-if="loadingAccounts">Loading accounts…</div>
@@ -30,10 +33,10 @@
       </section>
 
       <!-- Visual Selections Section -->
-      <section id="visuals">
-        <h2>Investment Visuals</h2>
+      <section id="visuals" class="bg-white p-5 mb-5 rounded shadow">
+        <h2 class="mt-0">Investment Visuals</h2>
         <!-- Investment Performance Chart -->
-        <div id="performance-chart">
+        <div id="performance-chart" class="text-center mt-5">
           <canvas id="investmentChart" width="800" height="400"></canvas>
         </div>
         <!-- You can add more visual components here (e.g. pie charts, etc.) -->
@@ -46,7 +49,7 @@
 import { ref, onMounted } from "vue";
 import Chart from "chart.js/auto";
 import axios from "axios";
-import { formatAmount } from "../utils/format";
+import { formatAmount } from "@/utils/format";
 
 export default {
   name: "Investments",
@@ -144,60 +147,3 @@ export default {
   },
 };
 </script>
-
-
-<style scoped>
-@import '@/styles/global-colors.css';
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  padding: 20px;
-  background: #f4f4f4;
-}
-
-header,
-main {
-  max-width: 960px;
-  margin: auto;
-}
-
-header {
-  text-align: center;
-  padding: 10px 0;
-}
-
-nav.menu {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-section {
-  background: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-h2 {
-  margin-top: 0;
-}
-
-button {
-  background: #3498db;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-#performance-chart {
-  text-align: center;
-  margin-top: 20px;
-}
-</style>
-

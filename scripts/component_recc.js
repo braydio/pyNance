@@ -2,7 +2,8 @@
 
 import fs from 'fs';
 import path from 'path';
-import glob from 'glob';
+import { glob } from 'glob'
+  ;
 
 const COMPONENTS_DIR = path.resolve('frontend/src/components');
 

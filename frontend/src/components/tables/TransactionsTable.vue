@@ -1,59 +1,88 @@
 / ** Marking this for deletion. Replaced by /components/UpdateTransactionsTable.vue /
 <template>
-  <div class="transactions">
+  <div class="mt-5 text-gruvbox-fg">
     <h3>Transactions</h3>
 
     <!-- Filter Row -->
-    <div class="filter-row">
-      <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter transactions..." />
+    <div class="mb-4">
+      <input
+        v-model="searchQuery"
+        class="w-[200px] py-[0.4rem] px-[0.6rem] border border-gruvbox-border rounded bg-[#1d2021] text-gruvbox-fg focus:outline-none focus:border-gruvbox-accent"
+        type="text"
+        placeholder="Filter transactions..."
+      />
     </div>
 
-    <table>
+    <table class="border-collapse w-full">
       <thead>
         <tr>
-          <th @click="sortTable('date')">
+        <th
+          @click="sortTable('date')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Date
             <span v-if="sortKey === 'date'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('amount')">
+        <th
+          @click="sortTable('amount')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Amount
             <span v-if="sortKey === 'amount'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('description')">
+        <th
+          @click="sortTable('description')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Description
             <span v-if="sortKey === 'description'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('category')">
+        <th
+          @click="sortTable('category')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Category
             <span v-if="sortKey === 'category'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('merchant_name')">
+        <th
+          @click="sortTable('merchant_name')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Merchant
             <span v-if="sortKey === 'merchant_name'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('account_name')">
+        <th
+          @click="sortTable('account_name')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Account Name
             <span v-if="sortKey === 'account_name'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('institution_name')">
+        <th
+          @click="sortTable('institution_name')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Institution
             <span v-if="sortKey === 'institution_name'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
             </span>
           </th>
-          <th @click="sortTable('subtype')">
+        <th
+          @click="sortTable('subtype')"
+          class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg select-none cursor-pointer font-bold hover:bg-gruvbox-hover"
+        >
             Subtype
             <span v-if="sortKey === 'subtype'">
               {{ sortOrder === 1 ? '▲' : '▼' }}
@@ -62,15 +91,35 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="tx in sortedTransactions" :key="tx.transaction_id">
-          <td>{{ formatDate(tx.date) || "N/A" }}</td>
-          <td>{{ formatAmount(tx.amount) }}</td>
-          <td>{{ tx.description || "N/A" }}</td>
-          <td>{{ tx.category || "Unknown" }}</td>
-          <td>{{ tx.merchant_name || "Unknown" }}</td>
-          <td>{{ tx.account_name || "N/A" }}</td>
-          <td>{{ tx.institution_name || "N/A" }}</td>
-          <td>{{ tx.subtype || "N/A" }}</td>
+        <tr
+          v-for="tx in sortedTransactions"
+          :key="tx.transaction_id"
+          class="even:bg-gruvbox-hover-bg"
+        >
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ formatDate(tx.date) || "N/A" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ formatAmount(tx.amount) }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.description || "N/A" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.category || "Unknown" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.merchant_name || "Unknown" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.account_name || "N/A" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.institution_name || "N/A" }}
+          </td>
+          <td class="p-2 border border-gruvbox-border text-left bg-gruvbox-bg">
+            {{ tx.subtype || "N/A" }}
+          </td>
         </tr>
       </tbody>
     </table>
@@ -169,60 +218,3 @@ export default {
   },
 };
 </script>
-
-<style scoped>
-@import '@/styles/global-colors.css';
-
-.transactions {
-  margin-top: 20px;
-  color: var(--gruvbox-fg);
-}
-
-/* Filter input styling */
-.filter-row {
-  margin-bottom: 1rem;
-}
-
-.filter-input {
-  width: 200px;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--gruvbox-border);
-  border-radius: 4px;
-  background-color: #1d2021;
-  color: var(--gruvbox-fg);
-  outline: none;
-}
-
-.filter-input:focus {
-  border-color: var(--gruvbox-accent);
-}
-
-/* Table styling */
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border: 1px solid var(--gruvbox-border);
-  padding: 8px;
-  text-align: left;
-  background-color: var(--gruvbox-bg);
-  user-select: none;
-}
-
-th {
-  cursor: pointer;
-  font-weight: bold;
-}
-
-th:hover {
-  background-color: var(--gruvbox-hover);
-}
-
-/* Zebra striping on even rows */
-tbody tr:nth-child(even) {
-  background-color: var(--gruvbox-hover-bg);
-}
-</style>

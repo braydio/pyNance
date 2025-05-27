@@ -424,7 +424,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
     updated = False
     now = datetime.utcnow()
 
-    PLAID_MAX_LOOKBACK_DAYS = 730
+    PLAID_MAX_LOOKBACK_DAYS = 680
     end_date = now.date()
     start_date = (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
 

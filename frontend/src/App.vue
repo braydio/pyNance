@@ -19,24 +19,3 @@ const isDev = import.meta.env.VITE_SESSION_MODE === "development"
     <RouterView />
   </main>
 </template>
-
-<style>
-@import "@/styles/global-colors.css";
-@import "@/styles/buttons.css";
-@import "@/styles/typography.css";
-@import "@/styles/layout.css";
-@import "@/styles/utilities.css";
-
-/* example dev banner using your “cosmic rose” or “bar-alert” palette */
-.env-banner-dev {
-  background: var(--dev-alert-bg);
-  color: var(--dev-alert-text);
-  text-align: center;
-  font-weight: bold;
-  padding: 0.5rem;
-  border-bottom: 2px solid var(--dev-alert-border);
-  /* or var(--bar-alert) */
-  box-shadow: 0 2px 8px var(--shadow);
-  text-transform: uppercase;
-}
-</style>
