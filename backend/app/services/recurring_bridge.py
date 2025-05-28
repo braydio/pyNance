@@ -1,13 +1,14 @@
-
-from backend.app.services.recurring_detection import RecurringDetector
-from backend.app.sql import recurring_logic
+from app.services.recurring_detection import RecurringDetector
+from app.sql import recurring_logic
 
 # TODO: Import db session and models when integrating
+
 
 class RecurringBridge:
     """
     Links RecurringDetector output to DB persistence via recurring_logic helpers.
     """
+
     def __init__(self, transactions):
         self.detector = RecurringDetector(transactions)
 
@@ -22,8 +23,9 @@ class RecurringBridge:
                 description=item["description"],
                 frequency=item["frequency"],
                 next_due_date=item["next_due_date"],
-                confidence=item["confidence"]
+                confidence=item["confidence"],
             )
             actions.append(result)
 
         return actions
+
