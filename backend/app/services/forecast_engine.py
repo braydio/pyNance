@@ -2,14 +2,20 @@ from datetime import datetime, timedelta
 from app.models import RecurringTransaction
 from sqlmalchemy.orm import Session
 
-```python
+from datetime import datetime, timedelta
+from app.models import RecurringTransaction
+from sqlalchemy.orm import Session
+
 class ForecastEngine:
     def __init__(self, db: Session):
         self.db = db
+
     def _expand_recurring(self, rt: RecurringTransaction, days_ahead=60):
         forecast_items = []
         freq = rt.frequency.lower()
         start = rt.next_due_date or datetime.utcnow()
+
+        # Frequency step (naive defaulting)
         freq_map = {
             "weekly": 7,
             "biweekly": 14,
@@ -17,9 +23,11 @@ class ForecastEngine:
             "semimonthly": 15,
             "yearly": 365
         }
+
         step = freq_map.get(freq)
         if not step:
             return []
+
         for i in range(0, days_ahead, step):
             next_date = start + timedelta(days=i)
             forecast_items.append({
@@ -31,10 +39,16 @@ class ForecastEngine:
                 "frequency": freq
             })
         return forecast_items
+
     def forecast(self, days_ahead=60):
         results = []
+
+        # Pull recurring transactions
         recurring = self.db.query(RecurringTransaction).all()
+
         for rt in recurring:
             projected = self._expand_recurring(rt, days_ahead)
             results.extend(projected)
+
         return sorted(results, key=lambda x: x["date"])
+        
