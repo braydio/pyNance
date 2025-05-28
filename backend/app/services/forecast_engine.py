@@ -1,54 +1,55 @@
-from datetime import datetime, timedelta
-from app.models import RecurringTransaction
-from sqlmalchemy.orm import Session
 
 from datetime import datetime, timedelta
-from app.models import RecurringTransaction
+from typing import List
 from sqlalchemy.orm import Session
+from app.models import RecurringTransaction, AccountHistory
+
 
 class ForecastEngine:
     def __init__(self, db: Session):
         self.db = db
 
-    def _expand_recurring(self, rt: RecurringTransaction, days_ahead=60):
-        forecast_items = []
-        freq = rt.frequency.lower()
-        start = rt.next_due_date or datetime.utcnow()
-
-        # Frequency step (naive defaulting)
-        freq_map = {
+    def _generate_projection_dates(self, start: datetime, freq: str, horizon: int) -> List[datetime]:
+        delta_map = {
+            "daily": 1,
             "weekly": 7,
             "biweekly": 14,
             "monthly": 30,
-            "semimonthly": 15,
-            "yearly": 365
         }
+        interval = delta_map.get(freq.lower(), 30)
+        dates = []
+        current = start
+        end = start + timedelta(days=horizon)
 
-        step = freq_map.get(freq)
-        if not step:
-            return []
+        while current <= end:
+            dates.append(current)
+            current += timedelta(days=interval)
+        return dates
 
-        for i in range(0, days_ahead, step):
-            next_date = start + timedelta(days=i)
-            forecast_items.append({
-                "date": next_date,
-                "value": rt.transaction.amount,
-                "description": rt.transaction.description,
-                "account_id": rt.transaction.account_id,
-                "type": "recurring",
-                "frequency": freq
-            })
-        return forecast_items
+    def forecast(self, horizon_days: int = 60):
+        forecast = []
 
-    def forecast(self, days_ahead=60):
-        results = []
+        recurrences = self.db.query(RecurringTransaction).all()
+        today = datetime.utcnow()
 
-        # Pull recurring transactions
-        recurring = self.db.query(RecurringTransaction).all()
+        for r in recurrences:
+            if not r.next_due_date or not r.frequency:
+                continue
 
-        for rt in recurring:
-            projected = self._expand_recurring(rt, days_ahead)
-            results.extend(projected)
+            dates = self._generate_projection_dates(
+                start=r.next_due_date,
+                freq=r.frequency,
+                horizon=horizon_days
+            )
 
-        return sorted(results, key=lambda x: x["date"])
-        
+            for d in dates:
+                forecast.append({
+                    "date": d,
+                    "account_id": r.transaction.account_id if r.transaction else None,
+                    "amount": r.transaction.amount if r.transaction else 0,
+                    "description": r.transaction.description if r.transaction else "Recurring",
+                    "type": "recurring",
+                    "frequency": r.frequency
+                })
+
+        return forecast
