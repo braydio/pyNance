@@ -1,7 +1,6 @@
 # query_chroma.py
 import sys
 import chromadb
-from chromadb.config import Settings
 
 COLLECTION_NAME = "pynance-code"
 COUNT = 3
@@ -12,12 +11,10 @@ if len(sys.argv) < 2:
 
 query_text = " ".join(sys.argv[1:])
 
-client = chromadb.Client(
-    Settings(persist_directory=".chroma_store", anonymized_telemetry=False)
-)
+print("[CHROMA] Connecting to Chroma server at http://localhost:8000")
+client = chromadb.HttpClient(host="localhost", port=8000)
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
-
 
 print(f'[SEARCH] Finding results for "{query_text}" ...')
 results = collection.query(query_texts=[query_text], n_results=COUNT)
