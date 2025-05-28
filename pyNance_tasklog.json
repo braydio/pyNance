@@ -1,1 +1,29 @@
-{"instances": {"general": {"lastAccessed": "2025-05-26T19:09:07.032602", "accessedBy": "Arch Linux Assistant", "groups": {"frontend_cleanup": {"tasks": {"component_deduplication":{"items": [{"name": "Generate duplicate component top-level checklist", "completed": true, "timestamp": "2025-05-26T19:09:07.032602"}, {"name": "Scan and log triage checklist", "completed": true, "timestamp": "2025-05-26T19:09:07.032602"}, {"name": "Determine which components are unused", "completed": false}]}}}}}}
+{
+  "instances": {
+    "forecast_refractor": {
+      "lastAccessed": "2025-05-28T15:11:50Z",
+      "accessedBy": "arch",
+      "groups": {
+        "recurrence_based": {
+          "tasks": {
+            "refactor_engine": {
+              "items": [
+                {
+                  "name": "Consume RecurringTransactions",
+                  "completed": true
+                },
+                {
+                  "name": "Front-end forecast starts with recurring",
+                  "completed": true
+                },
+                {
+                  "name": "Encode and commit to main",
+                  "completed": true
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+}
