@@ -6,6 +6,7 @@ import traceback
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Transaction
+from app.utils.finance_utils import normalize_balance
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
@@ -242,3 +243,27 @@ def get_daily_net():
     except Exception as e:
         logger.error(f"Error in daily net: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@charts.route("/accounts-snapshot", methods=["GET"])
+def accounts_snapshot():
+    accounts = request.args.get("user_id")
+    db.session.query(Account)
+    .filter(Account.user_id == user_id)
+    .order_by(Account.balance.desc())
+        .all()
+    )
+
+    result = [
+        {
+            "account_id": acc.account_id,
+            "name": acc.name,
+            "institution_name": acc.institution_name,
+            "balance": normalize_balance(acc.balance, acc.type),
+            "type": acc.type,
+            "subtype": acc.subtype,
+        }
+        for acc in accounts
+    ]
+    return jsonify(result)
+
