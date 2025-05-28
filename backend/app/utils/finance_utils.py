@@ -1,9 +1,9 @@
 # ap/utils/finance_utils.py
-
-
-def normalize_balance(balance, account_type):
-    """Assets positive, liabilities negative."""
-    if (account_type or "").lower() in ["credit", "loan", "liability"]:
+def normalize_account_balance(balance, account_type):
+    """
+    Normalize the balance: liabilities are negative, assets are positive.
+    """
+    if account_type.lower() in ["credit", "loan", "liability"]:
         return -abs(balance)
     return abs(balance)
 

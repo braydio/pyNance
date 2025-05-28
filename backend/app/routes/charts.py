@@ -6,7 +6,7 @@ import traceback
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Transaction
-from app.utils.finance_utils import normalize_balance
+from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
@@ -148,36 +148,48 @@ def get_cash_flow():
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
     """
-    Calculate net assets by summing all account balances and simulate historical net worth.
-    Returns a trend with `assets` and `liabilities` fields to support chart display.
+    Return trended net asset values over time. Normalizes balances such that
+    liabilities reduce net worth (appear negative), and assets increase it.
     """
-    try:
-        accounts = Account.query.all()
-        net = sum(acc.balance if acc.balance is not None else 0 for acc in accounts)
-        base_date = datetime.now().replace(day=1)
-        running = net
-        data = []
+    today = datetime.utcnow().date()
+    months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
 
-        for m in range(6, -1, -1):  # 6 months back to current
-            dt = base_date - timedelta(days=30 * m)
-            variation = random.randint(-2000, 3000)
-            running += variation
-            if m == 0:
-                running = net  # current month gets the actual balance
+    data = []
 
-            data.append(
-                {
-                    "date": dt.strftime("%Y-%m-%d"),
-                    "assets": round(running, 2),
-                    "liabilities": 0,  # default liabilities to 0
-                }
+    for month in months:
+        accounts = db.session.query(Account).filter(Account.created_at <= month).all()
+
+        net = sum(
+            normalize_account_balance(
+                acc.balance if acc.balance is not None else 0, acc.type
             )
+            for acc in accounts
+        )
 
-        return jsonify({"status": "success", "data": data}), 200
+        assets = sum(
+            acc.balance
+            for acc in accounts
+            if acc.type.lower() not in ["credit", "loan", "liability"]
+            and acc.balance is not None
+        )
 
-    except Exception as e:
-        logger.error(f"Error in net assets: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        liabilities = sum(
+            acc.balance
+            for acc in accounts
+            if acc.type.lower() in ["credit", "loan", "liability"]
+            and acc.balance is not None
+        )
+
+        data.append(
+            {
+                "date": month.isoformat(),
+                "net_assets": net,
+                "assets": assets,
+                "liabilities": liabilities,
+            }
+        )
+
+    return jsonify(data)
 
 
 @charts.route("/daily_net", methods=["GET"])
@@ -247,10 +259,11 @@ def get_daily_net():
 
 @charts.route("/accounts-snapshot", methods=["GET"])
 def accounts_snapshot():
-    accounts = request.args.get("user_id")
-    db.session.query(Account)
-    .filter(Account.user_id == user_id)
-    .order_by(Account.balance.desc())
+    user_id = request.args.get("user_id")
+    accounts = (
+        db.session.query(Account)
+        .filter(Account.user_id == user_id)
+        .order_by(Account.balance.desc())
         .all()
     )
 
@@ -266,4 +279,3 @@ def accounts_snapshot():
         for acc in accounts
     ]
     return jsonify(result)
-

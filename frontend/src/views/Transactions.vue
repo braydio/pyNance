@@ -39,9 +39,9 @@
 <script>
 import { ref } from "vue"
 import { useTransactions } from "@/composables/useTransactions.js"
-import UpdateTransactionsTable from "@/components/tables//UpdateTransactionsTable.vue"
+import UpdateTransactionsTable from "@/components/tables/UpdateTransactionsTable.vue"
 import RecurringTransactionSection from "@/components/recurring/RecurringTransactionSection.vue"
-import ImportFileSelector from "@/components/forms//ImportFileSelector.vue"
+import ImportFileSelector from "@/components/forms/ImportFileSelector.vue"
 
 export default {
   name: "Transactions",
