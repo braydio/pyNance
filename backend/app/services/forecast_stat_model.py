@@ -1,10 +1,9 @@
 import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 from sklearn.metrics import mean_squared_error
-from datetime import datetime
-import logging
+from config import logger
 
-logger = logging.getLogger(__name__)
+logger.info("Initializing forecast stat model")
 
 
 class ForecastEngine:
@@ -28,4 +27,6 @@ class ForecastEngine:
         train, test = series[:-steps], series[-steps:]
         self.fit(train)
         preds = self.forecast(steps)
-        return mean_squared_error(test, preds)
+        mse = mean_squared_error(test, preds)
+        logger.info(f"ARIMA Evaluation MSE: {mse}")
+        return mse

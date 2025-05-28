@@ -12,10 +12,7 @@ PERSIST_DIR = os.path.abspath(".chroma_store")
 os.makedirs(PERSIST_DIR, exist_ok=True)
 print(f"[CHROMA] Using persist directory: {PERSIST_DIR}")
 
-# Embedded ChromaDB client (persisted locally)
-client = chromadb.Client(
-    Settings(persist_directory=PERSIST_DIR, anonymized_telemetry=False)
-)
+client = chromadb.HttpClient(host="localhost", port=8000)
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
