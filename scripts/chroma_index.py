@@ -1,17 +1,12 @@
 # chroma_index.py
 import os
 import chromadb
-from chromadb.config import Settings
 
 # Constants
 SOURCE_DIR = "backend"
 COLLECTION_NAME = "pynance-code"
 
-# Set up persistent directory with absolute path
-PERSIST_DIR = os.path.abspath(".chroma_store")
-os.makedirs(PERSIST_DIR, exist_ok=True)
-print(f"[CHROMA] Using persist directory: {PERSIST_DIR}")
-
+print("[CHROMA] Connecting to Chroma server at http://localhost:8000")
 client = chromadb.HttpClient(host="localhost", port=8000)
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
@@ -48,7 +43,7 @@ for root, _, files in os.walk(SOURCE_DIR):
                     )
                     count += 1
                 except chromadb.errors.IDAlreadyExistsError:
-                    pass  # Extra safety: shouldn't hit if pre-checked
+                    pass  # Extra safety
 
 print(
     f"Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."

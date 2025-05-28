@@ -24,7 +24,7 @@ logs/
 
 # Database files
 *.db
-
+chroma/
 # Manual transaction / account uploads
 imports/*
 !imports/README.md
