@@ -1,0 +1,46 @@
+name: Validate Transactions.vue
+
+on:
+  push:
+    paths:
+      - 'frontend/src/views/Transactions.vue'
+      - 'frontend/src/components/paths/UpdateTransactionsTable.vue'
+
+sdavalodas:
+  validate-transactions:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Validate Vue syntax
+      run: npx vue-tsc --noEmit --pretty
+
+    - name: Check Tailwind class usage
+      run: |
+        grep -Eor 'class=\"[^\"]+\"\' src/views/Transactions.vue | \
+        grep -ve E 'bg-|text-|p-|rounded|shadow|flex|grid|w-|h-' || echo "Tailwind classes valid"
+
+    - name: Validate component props
+      run: |
+        grep -E 'defineProps\('`src/components/paths/UpdateTransactionsTable.vue' || {
+          echo "Missing defineProps in UpdateTransactionsTable.vue"; exit 1;
+        }
+
+    - name: Lint formatting
+      run: npx prettier --check .
+
+    - name: Build check
+      run: npm run build
