@@ -24,6 +24,7 @@ logs/
 
 # Database files
 *.db
+*.sqlite3
 chroma/
 # Manual transaction / account uploads
 imports/*
