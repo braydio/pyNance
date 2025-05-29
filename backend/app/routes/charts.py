@@ -105,7 +105,7 @@ def get_cash_flow():
                 if granularity == "daily"
                 else tx.date.strftime("%m-%Y")
             )
-            amt = normalize_account_balance(tx.amount, tx.account.subtype)
+            amt = normalize_account_balance(tx.amount, tx.account.type)
             if key not in groups:
                 groups[key] = {"income": 0, "expenses": 0}
             if amt > 0:
@@ -189,20 +189,43 @@ def get_net_assets():
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
     try:
+        logger.debug("Starting to retrieve daily net transactions.")
         today = datetime.now().date()
+        logger.debug(f"Current date: {today}")
         start_date = today - timedelta(days=30)
+        logger.debug(f"Calculating transactions from {start_date} to {today}.")
 
         transactions = (
             db.session.query(Transaction)
-            .join(Account, Transaction.account_id == Account.id)
+            .join(Account, Transaction.account_id == Account.account_id)
             .filter(Transaction.date >= start_date)
             .all()
         )
+        logger.debug(f"Retrieved {len(transactions)} transactions from the database.")
 
         day_map = {}
         for tx in transactions:
             day_str = tx.date.strftime("%Y-%m-%d")
-            amt = normalize_account_balance(tx.amount, tx.account.subtype)
+            logger.debug(f"Processing transaction {tx.id} on date {day_str}.")
+
+            # Safe access and fallback
+            account = getattr(tx, "account", None)
+            subtype = getattr(account, "subtype", None)
+            if subtype is None:
+                logger.warning(
+                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to neutral normalization."
+                )
+
+            try:
+                amt = normalize_account_balance(tx.amount, subtype)
+                logger.debug(f"Normalized transaction amount for {tx.id}: {amt}")
+            except Exception as e:
+                logger.error(f"Normalization failed for transaction {tx.id}: {e}")
+                amt = tx.amount  # fallback to raw amount
+                logger.debug(
+                    f"Falling back to raw transaction amount for {tx.id}: {amt}"
+                )
+
             if day_str not in day_map:
                 day_map[day_str] = {
                     "net": 0,
@@ -210,13 +233,20 @@ def get_daily_net():
                     "expenses": 0,
                     "transaction_count": 0,
                 }
+                logger.debug(f"Initializing entry for {day_str} in day_map.")
+
             day_map[day_str]["transaction_count"] += 1
             if amt > 0:
                 day_map[day_str]["income"] += amt
+                logger.debug(f"Adding to income for {day_str}: {amt}")
             else:
                 day_map[day_str]["expenses"] += abs(amt)
+                logger.debug(f"Adding to expenses for {day_str}: {abs(amt)}")
             day_map[day_str]["net"] += amt
+            logger.debug(f"Updated net for {day_str}: {day_map[day_str]['net']}")
 
+        # Fill in missing days
+        logger.debug("Filling in missing days for the last 30 days.")
         data = []
         current = start_date
         while current <= today:
@@ -233,8 +263,10 @@ def get_daily_net():
                     "transaction_count": entry["transaction_count"],
                 }
             )
+            logger.debug(f"Added data entry for {key}: {data[-1]}")
             current += timedelta(days=1)
 
+        logger.debug("Finished constructing response data.")
         return jsonify({"status": "success", "data": data}), 200
 
     except Exception as e:

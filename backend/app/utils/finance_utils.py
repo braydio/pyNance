@@ -16,16 +16,17 @@ def normalize_account_balance(balance, account_type):
     return abs(balance)
 
 
-def normalize_transaction_amount(amount, account_type, transaction_type="expense"):
+def normalize_transaction_amount(amount, account_type):
     account_type = (account_type or "").lower()
-    transaction_type = (transaction_type or "").lower()
     amount = abs(amount)
 
-    if transaction_type == "expense":
-        return -amount
-    elif transaction_type in ["income", "payment"]:
+    if account_type.lower() in ["credit card", "credit", "loan", "liability"]:
+        normalized_amount = -1 * (amount)
+        logger.info(f"Normalized transaction amount to {normalized_amount}")
+        return normalized_amount
+    else:
+        logger.info(f"Cannot determine for {account_type}, returning {amount}")
         return amount
-    return amount
 
 
 def display_transaction_amount(txn: Transaction) -> float:
