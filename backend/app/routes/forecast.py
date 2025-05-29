@@ -1,37 +1,38 @@
-from flask import Blueprint, jsonify, request
-from app.models import Account, RecurringTransaction
-from app.extensions import db
+from fastapi import APIRouter, Depends, Query
+from sqlachemy.orm import Session
 from app.services.forecast_balance import ForecastSimulator
+from app.sql import get_db
+from app.models import Account, RecurringTransaction
+from fastapi.responses import JSONResponse
+from datetime import datetime
 
-forecast = Blueprint("forecast", __name__, url_prefix="/api/forecast")
+forecast = APIRouter()
 
-
-@forecast.route("/balance", methods=["GET"])
-def get_balance_projection():
+@forecast.get("/forecast")
+def get_forecast(
+    days: int = Query(30, ge=1, le=90),
+    db: Session = Depends(get_db),
+): 
     try:
-        # Query parameter for number of days
-        days = int(request.args.get("days", 30))
+        primary_account = db.query(Account).filter(Account.is_primary == True).first()
+        if not primary_account:
+            return JSONResponse(status_code=204, content={"error": "Primary account not found"})
 
-        # 1. Fetch first account as sample
-        account = db.session.query(Account).first()
-        starting_balance = account.balance if account else 0.0
-
-        # 2. Fetch all recurring transactions
-        recs = db.session.query(RecurringTransaction).all()
-        recurring_events = [
-            {
-                "amount": r.transaction.amount,
-                "frequency": r.frequency,
+        rec_events = []
+        recs = db.query(RecurringTransaction).all()
+        for r in recs:
+            tx = r.transaction
+            if not tx:
+                continue
+            rec_events.append({
+                "amount": tx.amount,
                 "next_due_date": r.next_due_date.isoformat(),
-            }
-            for r in recs
-        ]
+                "frequency": r.frequency
+            })
 
-        # 3. Run simulation
-        simulator = ForecastSimulator(starting_balance, recurring_events)
-        forecast_data = simulator.project(days=days)
-
-        return jsonify(forecast_data)
+        sim = ForecastSimulator(primary_account.current_balance, rec_events)
+        result = sim.project(days=days)
+        return {"status": "success", "data": result}
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
