@@ -6,8 +6,8 @@ import chromadb
 SOURCE_DIR = "backend"
 COLLECTION_NAME = "pynance-code"
 
-print("[CHROMA] Connecting to Chroma server at http://localhost:8000")
-client = chromadb.HttpClient(host="localhost", port=8000)
+print("[CHROMA] Connecting to Chroma server at http://localhost:8055")
+client = chromadb.HttpClient(host="localhost", port=8055)
 
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
