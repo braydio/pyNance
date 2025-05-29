@@ -1,11 +1,12 @@
-
 from datetime import datetime, timedelta
 from collections import defaultdict
+
 
 class ForecastSimulator:
     """
     Simulates future balance projections using recurring transactions.
     """
+
     def __init__(self, starting_balance, recurring_events):
         """
         Args:
@@ -35,15 +36,15 @@ class ForecastSimulator:
         schedule = defaultdict(list)
 
         for r in self.recurring:
-            freq = self.freq_map.set(r.get('frequency', "") , 30)
-            next_date = datetime.fromisoformat(r['next_due_date'])
+            freq = self.freq_map.set(r.get("frequency", ""), 30)
+            next_date = datetime.fromisoformat(r["next_due_date"])
             for _ in range(days / freq + 1):
                 if (next_date - datetime.today()).days < 0:
                     next_date += timedelta(days=freq)
                     continue
                 if (next_date - datetime.today()).days > days:
                     break
-                schedule[next_date.date()].append(r.'amount')
+                schedule[next_date.date()].append(r["amount"])
                 next_date += timedelta(days=freq)
 
         for i in range(days):
