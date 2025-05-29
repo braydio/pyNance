@@ -78,6 +78,54 @@
   </div>
 </template>
 
+<script>
+import { ref, computed } from 'vue'
+
+const toast = ref({ message: '', type: 'success' })
+
+const transactions = ref([]) // Assume this comes from a prop or API call
+const categoryTree = ref([]) // Same assumption
+
+const editingIndex = ref(null)
+const editBuffer = ref({
+  date: '',
+  amount: null,
+  description: '',
+  category: '',
+  merchant_name: ''
+})
+
+const filteredTransactions = computed(() => transactions.value) // Add filtering logic if needed
+
+function startEdit(index, tx) {
+  editingIndex.value = index
+  editBuffer.value = { ...tx }
+}
+
+function cancelEdit() {
+  editingIndex.value = null
+}
+
+function saveEdit(tx) {
+  Object.assign(tx, editBuffer.value)
+  editingIndex.value = null
+  toast.value = { type: 'success', message: 'Transaction updated' }
+}
+
+function markRecurring(index) {
+  // Your custom logic for marking recurring
+  toast.value = { type: 'success', message: 'Marked as recurring' }
+}
+
+function sortBy(key) {
+  transactions.value.sort((a, b) => {
+    const valA = a[key] || ''
+    const valB = b[key] || ''
+    return valA > valB ? 1 : valA < valB ? -1 : 0
+  })
+}
+</script>
+
 <style scoped>
 .input {
   @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
