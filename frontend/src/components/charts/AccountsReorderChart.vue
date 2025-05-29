@@ -3,17 +3,10 @@
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
 
     <div v-if="filteredAccounts.length" class="bar-chart">
-      <div
-        v-for="account in filteredAccounts"
-        :key="account.id"
-        class="bar-row"
-      >
+      <div v-for="account in filteredAccounts" :key="account.id" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div
-            class="bar-fill"
-            :style="{ width: barWidth(account) }"
-          >
+          <div class="bar-fill" :style="{ width: barWidth(account) }">
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -28,7 +21,12 @@
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 
-const props = defineProps({ accountSubtype: String })
+const props = defineProps({
+  accountSubtype: {
+    type: String,
+    required: true,
+  },
+})
 
 const accounts = ref([])
 const loading = ref(true)
