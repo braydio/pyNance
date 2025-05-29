@@ -29,37 +29,38 @@ def category_breakdown():
             if start_date_str
             else datetime.now().date() - timedelta(days=30)
         )
-        print("Parsed start_date:", start_date)
         end_date = (
             datetime.strptime(end_date_str, "%Y-%m-%d").date()
             if end_date_str
             else datetime.now().date()
         )
-        print("Parsed end_date:", end_date)
 
-        results = (
-            db.session.query(
-                Category.display_name.label("category"),
-                func.sum(func.abs(Transaction.amount)).label("amount"),
-                func.min(Transaction.date).label("date"),
-            )
-            .join(Transaction, Transaction.category_id == Category.id)
+        transactions = (
+            db.session.query(Transaction, Category)
+            .join(Category, Transaction.category_id == Category.id)
+            .join(Account, Transaction.account_id == Account.id)
             .filter(Transaction.amount < 0)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
-            .group_by(Category.display_name)
-            .order_by(func.sum(func.abs(Transaction.amount)).desc())
-            .limit(10)
             .all()
         )
 
+        breakdown_map = {}
+        for tx, category in transactions:
+            key = category.display_name or "Uncategorized"
+            amt = normalize_account_balance(abs(tx.amount), tx.account.subtype)
+            breakdown_map.setdefault(key, {"amount": 0, "date": tx.date})
+            breakdown_map[key]["amount"] += amt
+            if tx.date < breakdown_map[key]["date"]:
+                breakdown_map[key]["date"] = tx.date
+
         data = [
             {
-                "category": row.category or "Uncategorized",
-                "amount": round(row.amount, 2),
-                "date": row.date if row.date else None,
+                "category": k,
+                "amount": round(v["amount"], 2),
+                "date": v["date"],
             }
-            for row in results
+            for k, v in breakdown_map.items()
         ]
 
         return jsonify({"status": "success", "data": data}), 200
@@ -71,9 +72,6 @@ def category_breakdown():
 
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
-    """
-    Aggregate income and expenses by daily or monthly granularity.
-    """
     try:
         granularity = request.args.get("granularity", "monthly")
         start_date_str = request.args.get("start_date")
@@ -88,57 +86,51 @@ def get_cash_flow():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        if granularity == "daily":
-            group_expr = func.strftime("%Y-%m-%d", Transaction.date)
-        else:
-            group_expr = func.strftime("%m-%Y", Transaction.date)
-        period_label = group_expr.label("period")
-
-        query = db.session.query(
-            period_label,
-            func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label(
-                "income"
-            ),
-            func.sum(
-                case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
-            ).label("expenses"),
+        transactions = db.session.query(Transaction).join(
+            Account, Transaction.account_id == Account.id
         )
         if start_date:
-            query = query.filter(Transaction.date >= start_date)
+            transactions = transactions.filter(Transaction.date >= start_date)
         if end_date:
-            query = query.filter(Transaction.date <= end_date)
-        query = query.group_by(period_label).order_by(period_label)
-        results = query.all()
+            transactions = transactions.filter(Transaction.date <= end_date)
+
+        all_tx = transactions.all()
+
+        groups = {}
+        for tx in all_tx:
+            key = (
+                tx.date.strftime("%Y-%m-%d")
+                if granularity == "daily"
+                else tx.date.strftime("%m-%Y")
+            )
+            amt = normalize_account_balance(tx.amount, tx.account.subtype)
+            if key not in groups:
+                groups[key] = {"income": 0, "expenses": 0}
+            if amt > 0:
+                groups[key]["income"] += amt
+            else:
+                groups[key]["expenses"] += abs(amt)
 
         data = [
-            {"date": period, "income": income, "expenses": expenses}
-            for period, income, expenses in results
+            {"date": k, "income": v["income"], "expenses": v["expenses"]}
+            for k, v in sorted(groups.items())
         ]
+
         total_income = sum(item["income"] for item in data)
         total_expenses = sum(item["expenses"] for item in data)
-        total_transactions = db.session.query(Transaction)
-        if start_date:
-            total_transactions = total_transactions.filter(
-                Transaction.date >= start_date
-            )
-        if end_date:
-            total_transactions = total_transactions.filter(Transaction.date <= end_date)
-        total_transactions = total_transactions.count()
+        total_transactions = len(all_tx)
 
-        return (
-            jsonify(
-                {
-                    "status": "success",
-                    "data": data,
-                    "metadata": {
-                        "total_income": total_income,
-                        "total_expenses": total_expenses,
-                        "total_transactions": total_transactions,
-                    },
-                }
-            ),
-            200,
-        )
+        return jsonify(
+            {
+                "status": "success",
+                "data": data,
+                "metadata": {
+                    "total_income": total_income,
+                    "total_expenses": total_expenses,
+                    "total_transactions": total_transactions,
+                },
+            }
+        ), 200
 
     except Exception as e:
         logger.error(f"Error in cash flow: {e}", exc_info=True)
@@ -176,7 +168,7 @@ def get_net_assets():
         liabilities = sum(
             acc.balance
             for acc in accounts
-            if acc.type.lower() in ["credit", "loan", "liability"]
+            if acc.type.lower() in ["credit", "credit card", "loan", "liability"]
             and acc.balance is not None
         )
 
@@ -194,58 +186,49 @@ def get_net_assets():
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
-    """
-    Aggregate transactions for the past 30 days with daily net, income, expenses, and count.
-    """
     try:
         today = datetime.now().date()
         start_date = today - timedelta(days=30)
 
-        query = (
-            db.session.query(
-                func.strftime("%Y-%m-%d", Transaction.date).label("day"),
-                func.sum(Transaction.amount).label("net"),
-                func.sum(
-                    case((Transaction.amount > 0, Transaction.amount), else_=0)
-                ).label("income"),
-                func.sum(
-                    case(
-                        (Transaction.amount < 0, func.abs(Transaction.amount)), else_=0
-                    )
-                ).label("expenses"),
-                func.count(Transaction.transaction_id).label("transaction_count"),
-            )
+        transactions = (
+            db.session.query(Transaction)
+            .join(Account, Transaction.account_id == Account.id)
             .filter(Transaction.date >= start_date)
-            .filter(Transaction.date <= today)
-            .group_by("day")
-            .order_by("day")
+            .all()
         )
-        results = query.all()
 
-        results_dict = {
-            day: {
-                "net": net,
-                "income": income,
-                "expenses": expenses,
-                "transaction_count": transaction_count,
-            }
-            for day, net, income, expenses, transaction_count in results
-        }
+        day_map = {}
+        for tx in transactions:
+            day_str = tx.date.strftime("%Y-%m-%d")
+            amt = normalize_account_balance(tx.amount, tx.account.subtype)
+            if day_str not in day_map:
+                day_map[day_str] = {
+                    "net": 0,
+                    "income": 0,
+                    "expenses": 0,
+                    "transaction_count": 0,
+                }
+            day_map[day_str]["transaction_count"] += 1
+            if amt > 0:
+                day_map[day_str]["income"] += amt
+            else:
+                day_map[day_str]["expenses"] += abs(amt)
+            day_map[day_str]["net"] += amt
 
         data = []
         current = start_date
         while current <= today:
-            day_str = current.strftime("%Y-%m-%d")
-            daily = results_dict.get(
-                day_str, {"net": 0, "income": 0, "expenses": 0, "transaction_count": 0}
+            key = current.strftime("%Y-%m-%d")
+            entry = day_map.get(
+                key, {"net": 0, "income": 0, "expenses": 0, "transaction_count": 0}
             )
             data.append(
                 {
-                    "date": day_str,
-                    "net": round(daily["net"], 2),
-                    "income": round(daily["income"], 2),
-                    "expenses": round(daily["expenses"], 2),
-                    "transaction_count": daily["transaction_count"],
+                    "date": key,
+                    "net": round(entry["net"], 2),
+                    "income": round(entry["income"], 2),
+                    "expenses": round(entry["expenses"], 2),
+                    "transaction_count": entry["transaction_count"],
                 }
             )
             current += timedelta(days=1)
@@ -272,7 +255,7 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": normalize_balance(acc.balance, acc.type),
+            "balance": normalize_account_balance(acc.balance, acc.type),
             "type": acc.type,
             "subtype": acc.subtype,
         }
