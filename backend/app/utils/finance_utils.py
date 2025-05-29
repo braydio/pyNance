@@ -1,13 +1,18 @@
 # app/utils/finance_utils.py
 from app.models import Transaction
+from app.config import logger
 
 
 def normalize_account_balance(balance, account_type):
     """
     Normalize the balance: liabilities are negative, assets are positive.
     """
-    if account_type.lower() in ["credit", "loan", "liability"]:
-        return -abs(balance)
+    if account_type.lower() in ["credit card", "credit", "loan", "liability"]:
+        norm_balance = -1 * (balance)
+        logger.info(
+            f"Account type {account_type} - balance normalized to {norm_balance}"
+        )
+        return norm_balance
     return abs(balance)
 
 

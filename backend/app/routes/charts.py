@@ -1,4 +1,5 @@
 # File: app/routes/charts.py
+# business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
 import random
 from datetime import datetime, timedelta
 import traceback
@@ -48,9 +49,10 @@ def category_breakdown():
         breakdown_map = {}
         for tx, category in transactions:
             key = category.display_name or "Uncategorized"
-            amt = normalize_account_balance(abs(tx.amount), tx.account.subtype)
+            amt = normalize_account_balance(abs(tx.amount), tx.account.type)
             breakdown_map.setdefault(key, {"amount": 0, "date": tx.date})
             breakdown_map[key]["amount"] += amt
+            logger.debug(f"Adding {amt} for {key} in {tx.account.type}")
             if tx.date < breakdown_map[key]["date"]:
                 breakdown_map[key]["date"] = tx.date
 
