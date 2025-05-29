@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction, Account
+from app.utils.finance_utils import normalize_account_balance
 from app.config import logger
 
 # Blueprint for generic accounts routes
@@ -92,6 +93,10 @@ def get_accounts():
                     last_refreshed = a.plaid_account.last_refreshed
                 elif a.teller_account and a.teller_account.last_refreshed:
                     last_refreshed = a.teller_account.last_refreshed
+                normalized_balance = normalize_account_balance(a.balance, a.type)
+                logger.info(
+                    f"Normalized original balance of {a.balance} to {normalized_balance} because account type {a.type}"
+                )
 
                 data.append(
                     {
@@ -99,7 +104,7 @@ def get_accounts():
                         "name": a.name,
                         "institution_name": a.institution_name,
                         "type": a.type,
-                        "balance": a.balance,
+                        "balance": normalized_balance,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
                         "last_refreshed": last_refreshed,
