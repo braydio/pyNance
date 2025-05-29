@@ -25,7 +25,8 @@ logs/
 # Database files
 *.db
 *.sqlite3
-chroma/
+chroma/*
+chroma.sqlite3/
 # Manual transaction / account uploads
 imports/*
 !imports/README.md
