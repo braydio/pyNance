@@ -1,38 +1,40 @@
-from fastapi import APIRouter, Depends, Query
-from sqlachemy.orm import Session
+from flask import Blueprint, jsonify, request
 from app.services.forecast_balance import ForecastSimulator
-from app.sql import get_db
+from app.extensions import db
 from app.models import Account, RecurringTransaction
-from fastapi.responses import JSONResponse
 from datetime import datetime
 
-forecast = APIRouter()
+forecast = Blueprint("forecast", __name__)
 
-@forecast.get("/forecast")
-def get_forecast(
-    days: int = Query(30, ge=1, le=90),
-    db: Session = Depends(get_db),
-): 
+
+@forecast.route("/forecast", methods=["GET"])
+def get_forecast():
     try:
-        primary_account = db.query(Account).filter(Account.is_primary == True).first()
+        days = int(request.args.get("days", 30))
+        if not 1 <= days <= 90:
+            return jsonify({"error": "days must be between 1 and 90"}), 400
+
+        primary_account = Account.query.filter_by(is_primary=True).first()
         if not primary_account:
-            return JSONResponse(status_code=204, content={"error": "Primary account not found"})
+            return jsonify({"error": "Primary account not found"}), 404
 
         rec_events = []
-        recs = db.query(RecurringTransaction).all()
+        recs = RecurringTransaction.query.all()
         for r in recs:
             tx = r.transaction
             if not tx:
                 continue
-            rec_events.append({
-                "amount": tx.amount,
-                "next_due_date": r.next_due_date.isoformat(),
-                "frequency": r.frequency
-            })
+            rec_events.append(
+                {
+                    "amount": tx.amount,
+                    "next_due_date": r.next_due_date.isoformat(),
+                    "frequency": r.frequency,
+                }
+            )
 
         sim = ForecastSimulator(primary_account.current_balance, rec_events)
         result = sim.project(days=days)
-        return {"status": "success", "data": result}
+        return jsonify({"status": "success", "data": result})
 
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return jsonify({"error": str(e)}), 500

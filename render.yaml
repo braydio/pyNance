@@ -1,0 +1,31 @@
+
+services:
+
+  - type: web
+    name: pynance-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python run.py
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    plan: free
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - backend/**
+
+  - type: web
+    name: pynance-frontend
+    env: node
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    startCommand: npx serve -s dist
+    staticPublishPath: frontend/dist
+    plan: free
+    autoDeploy: true
+    buildFilter:
+      paths:
+        - frontend/**
