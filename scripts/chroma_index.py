@@ -1,6 +1,7 @@
 # chroma_index.py
 import os
 import chromadb
+from chromadb.errors import ChromaError, IDAlreadyExistsError
 
 # Constants
 SOURCE_DIR = "backend"
@@ -16,12 +17,25 @@ existing_ids = set()
 try:
     existing = collection.peek(limit=5000)
     existing_ids.update(existing["ids"])
-except Exception:
-    pass
+except ChromaError as e:
+    print(f"[CHROMA] Warning: Failed to peek collection: {e}")
 
 
 def chunk_text(text, max_length=1000):
-    return [text[i : i + max_length] for i in range(0, len(text), max_length)]
+    """
+    Split text into chunks by lines, maintaining boundaries and context.
+    """
+    lines = text.splitlines()
+    chunks, current, current_len = [], [], 0
+    for line in lines:
+        if current_len + len(line) > max_length:
+            chunks.append("\n".join(current))
+            current, current_len = [], 0
+        current.append(line)
+        current_len += len(line)
+    if current:
+        chunks.append("\n".join(current))
+    return chunks
 
 
 # Index .py, .md, and .txt files from source
@@ -30,21 +44,32 @@ for root, _, files in os.walk(SOURCE_DIR):
     for filename in files:
         if filename.endswith((".py", ".md", ".txt")):
             path = os.path.join(root, filename)
-            with open(path, "r", encoding="utf-8") as f:
-                content = f.read()
-            chunks = chunk_text(content)
-            for i, chunk in enumerate(chunks):
-                doc_id = f"{filename}-{i}"
-                if doc_id in existing_ids:
-                    continue  # Skip already indexed
-                try:
-                    collection.add(
-                        documents=[chunk], metadatas=[{"source": path}], ids=[doc_id]
-                    )
-                    count += 1
-                except chromadb.errors.IDAlreadyExistsError:
-                    pass  # Extra safety
+            try:
+                with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read().replace("\x00", "")
+                if not content.strip():
+                    continue
+
+                chunks = chunk_text(content)
+                relative_path = os.path.relpath(path, SOURCE_DIR)
+                for i, chunk in enumerate(chunks):
+                    doc_id = f"{relative_path}-{i}"
+                    if doc_id in existing_ids:
+                        continue  # Skip already indexed
+                    try:
+                        collection.add(
+                            documents=[chunk],
+                            metadatas=[{"source": path}],
+                            ids=[doc_id],
+                        )
+                        count += 1
+                        if count % 50 == 0:
+                            print(f"[CHROMA] Indexed {count} chunks so far...")
+                    except IDAlreadyExistsError:
+                        pass  # Safe to skip
+            except Exception as e:
+                print(f"[CHROMA] Error processing {path}: {e}")
 
 print(
-    f"Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."
+    f"[CHROMA] Indexed {count} new document chunks into ChromaDB collection '{COLLECTION_NAME}'."
 )
