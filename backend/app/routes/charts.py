@@ -16,44 +16,72 @@ charts = Blueprint("charts", __name__)
 
 @charts.route("/category_breakdown", methods=["GET"])
 def category_breakdown():
-    print(
-        "Received query params:",
-        request.args.get("start_date"),
-        request.args.get("end_date"),
+    logger.debug("Entered category_breakdown endpoint")
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    logger.debug(
+        "Received query params - start_date: %s, end_date: %s",
+        start_date_str,
+        end_date_str,
     )
+
     try:
-        start_date_str = request.args.get("start_date")
-        end_date_str = request.args.get("end_date")
+        if start_date_str:
+            logger.debug("Parsing provided start_date: %s", start_date_str)
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        else:
+            start_date = datetime.now().date() - timedelta(days=30)
+            logger.debug(
+                "No start_date provided; defaulting start_date to: %s", start_date
+            )
 
-        start_date = (
-            datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            if start_date_str
-            else datetime.now().date() - timedelta(days=30)
-        )
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d").date()
-            if end_date_str
-            else datetime.now().date()
-        )
+        if end_date_str:
+            logger.debug("Parsing provided end_date: %s", end_date_str)
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        else:
+            end_date = datetime.now().date()
+            logger.debug("No end_date provided; defaulting end_date to: %s", end_date)
 
+        logger.debug("Querying transactions between %s and %s", start_date, end_date)
         transactions = (
             db.session.query(Transaction, Category)
             .join(Category, Transaction.category_id == Category.id)
-            .join(Account, Transaction.account_id == Account.id)
-            .filter(Transaction.amount < 0)
+            .outerjoin(Account, Transaction.account_id == Account.account_id)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .all()
         )
+        logger.debug("Fetched %d transactions for processing", len(transactions))
 
         breakdown_map = {}
         for tx, category in transactions:
             key = category.display_name or "Uncategorized"
-            amt = normalize_account_balance(abs(tx.amount), tx.account.type)
-            breakdown_map.setdefault(key, {"amount": 0, "date": tx.date})
+            amt = abs(
+                tx.amount
+            )  # normalize_account_balance(abs(tx.amount), tx.account.type)
+
+            if hasattr(tx, "account") and tx.account and hasattr(tx.account, "type"):
+                amt = normalize_account_balance(abs(tx.amount), tx.account.type)
+            else:
+                amt = abs(tx.amount)
+
+            if key not in breakdown_map:
+                logger.debug("Initializing breakdown record for category: %s", key)
+                breakdown_map[key] = {"amount": 0, "date": tx.date}
             breakdown_map[key]["amount"] += amt
-            logger.debug(f"Adding {amt} for {key} in {tx.account.type}")
+            logger.debug(
+                "Added %s to category '%s'. New cumulative amount: %s",
+                amt,
+                key,
+                breakdown_map[key]["amount"],
+            )
             if tx.date < breakdown_map[key]["date"]:
+                logger.debug(
+                    "Updating earliest transaction date for category '%s' from %s to %s",
+                    key,
+                    breakdown_map[key]["date"],
+                    tx.date,
+                )
                 breakdown_map[key]["date"] = tx.date
 
         data = [
@@ -64,10 +92,13 @@ def category_breakdown():
             }
             for k, v in breakdown_map.items()
         ]
+        logger.debug("Prepared final breakdown data: %s", data)
 
+        logger.debug("Returning success response with data")
         return jsonify({"status": "success", "data": data}), 200
 
     except Exception as e:
+        logger.error("Error in category_breakdown endpoint: %s", e, exc_info=True)
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 

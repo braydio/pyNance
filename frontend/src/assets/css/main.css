@@ -1,9 +1,13 @@
+@tailwind base;
+
 /* Base styles */
 @layer base {
   body {
     @apply bg-gray-50 text-gray-800 font-sans;
   }
 }
+
+@tailwind components;
 
 /* Shared component classes */
 @layer components {
@@ -13,7 +17,7 @@
   }
 
   .card {
-    @apply bg-white border border-gray-200 rounded-lg shadow-card p-6;
+    @apply bg-white border border-gray-200 rounded-lg shadow-lg p-6;
   }
 
   .btn {
@@ -60,3 +64,5 @@
     @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
   }
 }
+
+@tailwind utilities;

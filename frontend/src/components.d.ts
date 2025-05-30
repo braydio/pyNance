@@ -35,6 +35,7 @@ declare module 'vue' {
     LinkProviderLauncher: typeof import('./components/forms/LinkProviderLauncher.vue')['default']
     ManualTransactionsTable: typeof import('./components/ManualTransactionsTable.vue')['default']
     ManualTransactionTable: typeof import('./components/ManualTransactionTable.vue')['default']
+    MasterTxidTable: typeof import('./components/tables/MasterTxidTable.vue')['default']
     MatchingTransactionUpload: typeof import('./components/unused/MatchingTransactionUpload.vue')['default']
     Navbar: typeof import('./components/layout/Navbar.vue')['default']
     NetIncomeCharts: typeof import('./components/charts/NetIncomeCharts.vue')['default']
