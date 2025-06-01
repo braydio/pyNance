@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Dashboard from '../views/Dashboard.vue';
+import Dashboard from '../views/DashboardMock.vue';
 import Accounts from '../views/Accounts.vue';
 import Transactions from '../views/Transactions.vue';
 import RecurringTX from '../views/RecurringTX.vue'
@@ -14,6 +15,7 @@ import ForecastMock from '@/views/ForecastMock.vue';
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
+  { path: '/DashboardMock', name: 'DashboardMock', component: DashboardMock },
   { path: '/accounts', name: 'Accounts', component: Accounts },
   { path: '/transactions', name: 'Transactions', component: Transactions },
   { path: '/forecast', name: 'Forecast', component: Forecast },
