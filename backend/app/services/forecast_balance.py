@@ -36,9 +36,9 @@ class ForecastSimulator:
         schedule = defaultdict(list)
 
         for r in self.recurring:
-            freq = self.freq_map.set(r.get("frequency", ""), 30)
+            freq = self.freq_map.get(r.get("frequency", ""), 30)
             next_date = datetime.fromisoformat(r["next_due_date"])
-            for _ in range(days / freq + 1):
+            for _ in range(days // freq + 1):
                 if (next_date - datetime.today()).days < 0:
                     next_date += timedelta(days=freq)
                     continue
