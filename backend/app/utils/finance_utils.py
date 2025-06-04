@@ -68,5 +68,4 @@ def transform_transaction(txn: Transaction):
     return normalize_transaction_amount(
         amount=txn.amount,
         account_type=txn.account.type if txn.account else None,
-        transaction_type=txn.transaction_type or "expense",
     )
