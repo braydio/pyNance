@@ -5,11 +5,11 @@ from chromadb.errors import ChromaError, IDAlreadyExistsError
 
 # Constants
 SOURCE_DIR = "backend"
+EXCLUDE_DIRS = {".venv", "__pycache__"}
 COLLECTION_NAME = "pynance-code"
 
 print("[CHROMA] Connecting to Chroma server at http://localhost:8055")
 client = chromadb.HttpClient(host="localhost", port=8055)
-
 collection = client.get_or_create_collection(name=COLLECTION_NAME)
 
 # Load existing IDs to avoid duplicate work
@@ -22,9 +22,6 @@ except ChromaError as e:
 
 
 def chunk_text(text, max_length=1000):
-    """
-    Split text into chunks by lines, maintaining boundaries and context.
-    """
     lines = text.splitlines()
     chunks, current, current_len = [], [], 0
     for line in lines:
@@ -40,7 +37,8 @@ def chunk_text(text, max_length=1000):
 
 # Index .py, .md, and .txt files from source
 count = 0
-for root, _, files in os.walk(SOURCE_DIR):
+for root, dirs, files in os.walk(SOURCE_DIR):
+    dirs[:] = [d for d in dirs if d not in EXCLUDE_DIRS]
     for filename in files:
         if filename.endswith((".py", ".md", ".txt")):
             path = os.path.join(root, filename)
@@ -55,7 +53,7 @@ for root, _, files in os.walk(SOURCE_DIR):
                 for i, chunk in enumerate(chunks):
                     doc_id = f"{relative_path}-{i}"
                     if doc_id in existing_ids:
-                        continue  # Skip already indexed
+                        continue
                     try:
                         collection.add(
                             documents=[chunk],
@@ -66,7 +64,7 @@ for root, _, files in os.walk(SOURCE_DIR):
                         if count % 50 == 0:
                             print(f"[CHROMA] Indexed {count} chunks so far...")
                     except IDAlreadyExistsError:
-                        pass  # Safe to skip
+                        pass
             except Exception as e:
                 print(f"[CHROMA] Error processing {path}: {e}")
 
