@@ -2,48 +2,42 @@
   <div class="transactions space-y-4 p-6 bg-gray-50 rounded-xl shadow">
     <VueToast v-if="toast.message" :type="toast.type" :message="toast.message" @close="toast.message = ''" />
 
+    <!-- Category Filters -->
     <div class="flex items-center gap-4">
       <select v-model="selectedPrimaryCategory" class="input">
         <option value="">All Categories</option>
         <option v-for="group in categoryTree" :key="group.name" :value="group.name">{{ group.name }}</option>
       </select>
-
       <select v-model="selectedSubcategory" class="input" :disabled="!selectedPrimaryCategory">
         <option value="">All Subcategories</option>
         <option v-for="child in subcategoryOptions" :key="child.id" :value="child.name">{{ child.name }}</option>
       </select>
     </div>
 
+    <!-- Transactions Table -->
     <table class="min-w-full divide-y divide-gray-200 mt-4">
       <thead class="bg-gray-100 text-gray-700 text-sm font-semibold uppercase">
         <tr>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">
-            Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('amount')">
-            Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('description')">
-            Description <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('category')">
-            Category <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('merchant_name')">
-            Merchant <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('account_name')">
-            Account Name <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('institution_name')">
-            Institution <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('subtype')">
-            Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">Date <span v-if="sortKey === 'date'">{{ sortOrder
+            === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('amount')">Amount <span v-if="sortKey === 'amount'">{{
+            sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('description')">Description <span
+              v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('category')">Category <span
+              v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('merchant_name')">Merchant <span
+              v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('account_name')">Account Name <span
+              v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('institution_name')">Institution <span
+              v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
+          <th class="px-3 py-2 cursor-pointer" @click="sortBy('subtype')">Subtype <span v-if="sortKey === 'subtype'">{{
+            sortOrder === 'asc' ? '▲' : '▼' }}</span></th>
           <th class="px-3 py-2">Actions</th>
         </tr>
       </thead>
+
       <tbody>
         <tr v-for="(tx, index) in paginatedTransactions" :key="tx.transaction_id"
           :class="['text-sm', editingIndex === index ? 'bg-yellow-100' : 'hover:bg-gray-100']">
@@ -58,7 +52,7 @@
           </td>
           <td class="px-3 py-2">
             <input v-if="editingIndex === index" v-model="editBuffer.description" type="text" class="input" />
-            <span v-else>{{ tx.description || 'N/A' }}</span>
+            <span v-else>{{ tx.description }}</span>
           </td>
           <td class="px-3 py-2">
             <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
@@ -67,11 +61,11 @@
                 <option v-for="child in group.children" :key="child.id" :value="child.name">{{ child.name }}</option>
               </optgroup>
             </select>
-            <span v-else>{{ tx.category || 'Unknown' }}</span>
+            <span v-else>{{ tx.category }}</span>
           </td>
           <td class="px-3 py-2">
             <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text" class="input" />
-            <span v-else>{{ tx.merchant_name || 'Unknown' }}</span>
+            <span v-else>{{ tx.merchant_name }}</span>
           </td>
           <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
           <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
@@ -90,20 +84,20 @@
       </tbody>
     </table>
 
+    <!-- Pagination Controls -->
     <div class="flex justify-between items-center mt-4">
       <button @click="currentPage--" :disabled="currentPage === 1" class="btn-sm">Previous</button>
-      <span>Page {{ currentPage }}</span>
-      <button @click="currentPage++" :disabled="currentPage * itemsPerPage >= filteredTransactions.length"
-        class="btn-sm">
-        Next
-      </button>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <button @click="currentPage++" :disabled="currentPage >= totalPages" class="btn-sm">Next</button>
     </div>
 
+    <!-- Empty State -->
     <div v-if="filteredTransactions.length === 0" class="text-center text-gray-500">
       No transactions found.
     </div>
   </div>
 </template>
+
 
 
 <script setup>
