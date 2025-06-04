@@ -17,7 +17,7 @@ from app.config import (
     VARIABLE_ENV_TOKEN,
     logger,
 )
-from app.sql import account_logic
+from app.db_logic import account_logic
 
 # Use the shared certificate paths from config.
 TELLER_DOT_CERT = FILES["TELLER_DOT_CERT"]

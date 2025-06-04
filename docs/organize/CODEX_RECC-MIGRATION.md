@@ -41,7 +41,7 @@ For example, in your paginated‑transactions logic you do:
            )
            total = query.count()
 
-       [backend/app/sql/account_logic.py](/home/braydenchaffee/Projects/pyNance/backend/app/sql/account_logic.py)
+       [backend/app/db_logic/account_logic.py](/home/braydenchaffee/Projects/pyNance/backend/app/db_logic/account_logic.py)
 
        Calling `.count()` on a multi‑entity query wraps the original select (including every column of `Transaction`, among them `user_id`) in a `SELECT
 

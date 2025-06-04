@@ -59,7 +59,7 @@ from app.helpers.plaid_helpers import generate_link_token, exchange_public_token
 
 ```python
 from app.helpers.teller_helpers import load_tokens
-from app.sql.account_logic import get_accounts_from_db
+from app.db_logic.account_logic import get_accounts_from_db
 ```
 
 #### ??? Function Highlights:
@@ -74,6 +74,6 @@ from app.sql.account_logic import get_accounts_from_db
 
 ## ? Next Steps
 
-* Review `app/helpers/` and `app/sql/` for overlap with transactions sync functions.
+* Review `app/helpers/` and `app/db_logic/` for overlap with transactions sync functions.
 * Plan refactor path for helper-based logic into `providers/` where appropriate.
 * Log additional references to transaction sync fields or behavior in shared logic modules.

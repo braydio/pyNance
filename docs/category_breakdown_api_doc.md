@@ -104,7 +104,7 @@ Route expected to serve data: `routes/summary.py` or similar in `app/routes/`
 - `frontend/src/components/charts/CategoryChart.jsx`
 - `frontend/src/pages/Dashboard.jsx` (context provider)
 - `backend/app/routes/summary.py`
-- `backend/app/sql/summary_logic.py`
+- `backend/app/db_logic/summary_logic.py`
 
 ---
 

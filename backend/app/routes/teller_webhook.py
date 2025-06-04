@@ -6,7 +6,7 @@ import json
 from flask import Blueprint, request, jsonify, current_app
 from app.config import FILES, logger
 from app.helpers.teller_helpers import load_tokens
-from app.sql import account_logic
+from app.db_logic import account_logic
 from app.extensions import db
 from app.models import Account
 

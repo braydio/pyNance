@@ -37,8 +37,8 @@ Captures a single financial transaction made by a user. This can be a synced tra
 
 ## Related Logic
 
-- [`transactions_logic.py`](../../backend/app/sql/transactions_logic.py)
-- [`category_logic.py`](../../backend/app/sql/category_logic.py)
+- [`transactions_logic.py`](../../backend/app/db_logic/transactions_logic.py)
+- [`category_logic.py`](../../backend/app/db_logic/category_logic.py)
 - [`recurring_bridge.py`](../../backend/app/services/recurring_bridge.py)
 
 ## Related Docs

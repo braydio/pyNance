@@ -12,7 +12,7 @@ from app.helpers.plaid_helpers import (
     get_item,
 )
 from app.models import Account, PlaidAccount
-from app.sql import account_logic  # for upserting accounts and processing transactions
+from app.db_logic import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import joinedload
 

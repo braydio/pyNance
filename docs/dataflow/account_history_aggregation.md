@@ -65,7 +65,7 @@ def update_account_history():
 
   > Isolated, composable, easy to call in sync pipelines
 
-- **NOT** in `sql/` — that is for derived/transform logic
+- **NOT** in `db_logic/` — that is for derived/transform logic
 - **NOT** in `routes/` — not client-facing
 - **NOT** in `helpers.py` — already too large
 
@@ -100,7 +100,7 @@ Infrastructure: wire this to refresh after sync or manual import.
 
 ## 🐘 Downstream Use
 
-- `sql/forecast_logic.py` uses `account_history` as the time-series base
+- `db_logic/forecast_logic.py` uses `account_history` as the time-series base
 - UI forecast charts reconstruct historical data from it
 
 ---

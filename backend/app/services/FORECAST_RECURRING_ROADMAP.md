@@ -21,7 +21,7 @@ Integrate recurring transaction detection and forecasting into a cohesive system
 | Module      | Purpose                                   |
 | ----------- | ----------------------------------------- |
 | `routes/`   | API endpoints                             |
-| `sql/`      | DB read/write logic                       |
+| `db_logic/`      | DB read/write logic                       |
 | `services/` | Core business logic and algorithm engines |
 | `models.py` | SQLAlchemy models                         |
 
@@ -29,7 +29,7 @@ Integrate recurring transaction detection and forecasting into a cohesive system
 
 - `services/recurring_detection.py`: Detects recurring patterns from transaction history
 - `routes/forecast.py`, `routes/recurring.py`: Forecasting and recurring endpoints
-- `sql/recurring_logic.py`: DB-level logic for recurring insertion
+- `db_logic/recurring_logic.py`: DB-level logic for recurring insertion
 
 ---
 
@@ -45,13 +45,13 @@ Integrate recurring transaction detection and forecasting into a cohesive system
 
 - Takes the output from `RecurringDetector`
 - Matches against existing `RecurringTransaction` records
-- Uses `sql/recurring_logic.py` to upsert candidates
+- Uses `db_logic/recurring_logic.py` to upsert candidates
 
 #### 🔎 Tasks
 
 - [ ] Normalize detection output to model fields
 - [ ] Use `description`, `amount` to check for duplicates
-- [ ] Insert or update DB as needed (call into `sql/`)
+- [ ] Insert or update DB as needed (call into `db_logic/`)
 - [ ] Return response with status (inserted/updated/matched)
 
 ### 🌟 Phase 2: Forecast Engine
@@ -92,7 +92,7 @@ Integrate recurring transaction detection and forecasting into a cohesive system
 | --------------------------------------- | ------------------------------ | --------- |
 | `services/recurring_detection.py`       | Pattern recognition engine     | Service   |
 | `services/recurring_bridge.py`          | DB sync bridge for recurrence  | Service   |
-| `sql/recurring_logic.py`                | Upsert recurring items         | SQL       |
+| `db_logic/recurring_logic.py`                | Upsert recurring items         | SQL       |
 | `services/forecast/forecast_balance.py` | Simulate future cash flow      | Service   |
 | `routes/forecast.py`                    | Forecast endpoint handler      | API Route |
 | `routes/recurring.py`                   | Recurring management interface | API Route |
@@ -116,7 +116,7 @@ Integrate recurring transaction detection and forecasting into a cohesive system
 - [ ] Create `recurring_bridge.py` in `services/`
 - [ ] Normalize and map detector output
 - [ ] Validate against DB (existing recurring)
-- [ ] Call into `sql/recurring_logic.py`
+- [ ] Call into `db_logic/recurring_logic.py`
 
 ### Phase 2: Forecast Balance Engine
 

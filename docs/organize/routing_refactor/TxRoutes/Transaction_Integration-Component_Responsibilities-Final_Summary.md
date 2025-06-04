@@ -53,12 +53,12 @@ These call into `helpers/` modules, where the true sync logic begins.
 - Functions: `get_teller_accounts`, `load_tokens`, `update_account_history`
 - Writes to and reads from JSON tokens.
 
-### 📁 `sql/account_logic.py`
+### 📁 `db_logic/account_logic.py`
 
 - Major ingestion logic for both Plaid and Teller.
 - Key sync functions: `refresh_data_for_plaid_account`, `refresh_data_for_teller_account`, `upsert_accounts`, `save_plaid_item`
 
-### 📁 `sql/category_logic.py`
+### 📁 `db_logic/category_logic.py`
 
 - Sync-related support functions:
 

@@ -119,7 +119,7 @@ def get_item_details():
 def get_accounts():
     try:
         logger.debug("Fetching accounts from the database.")
-        from app.sql.account_logic import get_accounts_from_db
+        from app.db_logic.account_logic import get_accounts_from_db
 
         accounts = get_accounts_from_db()
         logger.debug(f"Fetched {len(accounts)} accounts from DB.")

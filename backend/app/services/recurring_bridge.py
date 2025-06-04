@@ -1,5 +1,5 @@
 from app.services.recurring_detection import RecurringDetector
-from app.sql import recurring_logic
+from app.db_logic import recurring_logic
 
 # TODO: Import db session and models when integrating
 

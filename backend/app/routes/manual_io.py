@@ -13,8 +13,8 @@ from app.helpers.plaid_helpers import (
 )
 from app.helpers.teller_helpers import get_teller_accounts
 from app.helpers.import_helpers import dispatch_import
-from app.sql import account_logic
-from app.sql.manual_import_logic import upsert_imported_transactions
+from app.db_logic import account_logic
+from app.db_logic.manual_import_logic import upsert_imported_transactions
 from app.config import logger, BASE_DIR, CLIENT_NAME
 
 IMPORT_DIR = os.path.join(BASE_DIR, "data", "imports")

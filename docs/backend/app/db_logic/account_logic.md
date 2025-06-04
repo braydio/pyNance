@@ -1,4 +1,4 @@
-# backend/app/sql/ Documentation
+# backend/app/db_logic/ Documentation
 
 ---
 

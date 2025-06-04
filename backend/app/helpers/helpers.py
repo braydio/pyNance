@@ -12,7 +12,7 @@ from app.config import (
     logger,
 )
 
-from app.sql.account_logic import save_account_balances, upsert_accounts
+from app.db_logic.account_logic import save_account_balances, upsert_accounts
 from app.extensions import Session
 
 # -------------------------

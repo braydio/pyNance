@@ -8,7 +8,7 @@
 
 #### 📌 Checklist Overview
 
-- [x] Mapped core files in `helpers/`, `sql/`, and `routes/`
+- [x] Mapped core files in `helpers/`, `db_logic/`, and `routes/`
 - [x] Parsed `account_refresh_dispatcher.py` — sync orchestration confirmed, `user_id` not threaded
 - [x] Parsed `plaid_helpers.py` — `AccountHistory` update confirmed, `user_id` inferred
 - [x] Parsed `teller_helpers.py` — sync parity validated, explicit `user_id` usage

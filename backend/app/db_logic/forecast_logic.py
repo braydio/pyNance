@@ -1,4 +1,4 @@
-# backend/app/sql/forecast_logic.py
+# backend/app/db_logic/forecast_logic.py
 from datetime import datetime, timedelta
 from app.models import AccountHistory
 from app.extensions import db

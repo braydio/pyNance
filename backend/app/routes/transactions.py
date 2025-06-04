@@ -5,7 +5,7 @@ import json
 import traceback
 from app.config import FILES, logger
 from app.models import Account, Transaction
-from app.sql import account_logic
+from app.db_logic import account_logic
 from app.extensions import db
 
 transactions = Blueprint("transactions", __name__)

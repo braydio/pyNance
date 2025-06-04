@@ -1,6 +1,6 @@
 # backend/app/routes/export.py
 from flask import Blueprint, jsonify
-from app.sql.export_logic import export_csv_response, export_all_to_csv
+from app.db_logic.export_logic import export_csv_response, export_all_to_csv
 
 export = Blueprint("export", __name__)
 

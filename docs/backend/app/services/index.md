@@ -88,4 +88,4 @@ Provides core logic for managing user transactions. Supports listing, filtering,
 
 ---
 
-All service files now documented. Ready for `sql/` layer next?
+All service files now documented. Ready for `db_logic/` layer next?

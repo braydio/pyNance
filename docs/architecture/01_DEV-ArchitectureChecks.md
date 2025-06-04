@@ -2,7 +2,7 @@
 
 ### 📁 Summary of Reviewed Modules
 
-#### 1. `/sql/` Directory
+#### 1. `/db_logic/` Directory
 
 * `account_logic.py`: Large file handling balances, aggregates, linking accounts
 * `forecast_logic.py`: ✅ Contains newly added `get_latest_balance_for_account`, `update_account_history`, `generate_forecast_line`, `calculate_deltas`

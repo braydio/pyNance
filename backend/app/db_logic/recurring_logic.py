@@ -1,4 +1,4 @@
-# backend/app/sql/recurring_logic.py
+# backend/app/db_logic/recurring_logic.py
 
 from collections import defaultdict
 from datetime import datetime

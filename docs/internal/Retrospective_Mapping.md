@@ -11,7 +11,7 @@
 
 - Iterative directory scanning via `getFileOrFolder` to inspect submodules
 - Explicit function extraction and cross-referencing to prior module findings
-- Internal state tracking across `routes/`, `helpers/`, `sql/`, and `models` layers
+- Internal state tracking across `routes/`, `helpers/`, `db_logic/`, and `models` layers
 - Verification against Canvas and remote source to avoid duplication or omissions
 
 ### What Worked

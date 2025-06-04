@@ -35,7 +35,7 @@ Tracks inferred or manually identified recurring transaction patterns. Supports 
 ## Related Logic
 
 - [`recurring_detection.py`](../../backend/app/services/recurring_detection.py)
-- [`recurring_logic.py`](../../backend/app/sql/recurring_logic.py)
+- [`recurring_logic.py`](../../backend/app/db_logic/recurring_logic.py)
 - [`forecast_engine.py`](../../backend/app/services/forecast_engine.py)
 
 ## Related Docs

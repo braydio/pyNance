@@ -7,7 +7,7 @@ from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens  # Use the shared helper
 from app.models import Account, Transaction
-from app.sql import account_logic
+from app.db_logic import account_logic
 from flask import Blueprint, jsonify, request
 
 teller_transactions = Blueprint("teller_transactions", __name__)

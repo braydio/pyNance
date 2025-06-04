@@ -50,7 +50,7 @@ README.md (/home/braydenchaffee/Projects/pyNance/README.md)
     ├── config/          # Env, logging, paths, Plaid/Teller setup
     ├── routes/          # Flask blueprints (API endpoints)
     ├── helpers/         # SDK wrappers (plaid_helpers, teller_helpers)
-    ├── sql/             # Business logic (account_logic, recurring_logic,
+    ├── db_logic/             # Business logic (account_logic, recurring_logic,
 
 forecast_logic,…)
 ├── models.py # SQLAlchemy models
@@ -160,7 +160,7 @@ confirmations │
 ├─────────────────────────────┼────────────────────────────────────────────────────────────
 ────────────────────────────────────────────────────────────────────────────────┤
 │ Recurring Pattern Detection │ - Design and implement auto pattern detection (use
-find_recurring_items in sql/recurring_logic.py)<br>- Unit tests for detection algorithm │
+find_recurring_items in db_logic/recurring_logic.py)<br>- Unit tests for detection algorithm │
 ├─────────────────────────────┼────────────────────────────────────────────────────────────
 ────────────────────────────────────────────────────────────────────────────────┤
 │ Future Visualization │ - Build recurring-cashflow graph (e.g. next-3-month

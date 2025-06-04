@@ -11,7 +11,7 @@
   config/            # Environment, logging, constants, Plaid config
   routes/            # Flask API endpoints (accounts, transactions, charts, etc)
   helpers/           # Business logic helpers (Plaid, Teller, etc)
-  sql/               # Raw SQL helpers
+  db_logic/        # Database logic helpers
   models.py          # SQLAlchemy models
   extensions.py      # Flask extensions
 

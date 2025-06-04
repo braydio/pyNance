@@ -4,7 +4,7 @@ from app.helpers.plaid_helpers import (
     generate_link_token,
     get_investments,
 )
-from app.sql.account_logic import save_plaid_item
+from app.db_logic.account_logic import save_plaid_item
 
 from flask import Blueprint, jsonify, request
 

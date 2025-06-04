@@ -3,7 +3,7 @@ import json
 from app import create_app
 from app.extensions import db
 from app.models import Account
-from app.sql import account_logic
+from app.db_logic import account_logic
 from app.config import FILES, TELLER_API_BASE_URL, logger
 
 # Get the certificate and key paths from our config

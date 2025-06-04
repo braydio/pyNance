@@ -34,7 +34,7 @@ Represents a financial account belonging to a user. Each account can be linked t
 
 ## Related Logic
 
-- [`account_logic.py`](../../backend/app/sql/account_logic.py)
+- [`account_logic.py`](../../backend/app/db_logic/account_logic.py)
 - [`sync_service.py`](../../backend/app/services/sync_service.py)
 
 ## Related Docs
