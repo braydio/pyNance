@@ -140,9 +140,9 @@ def get_recurring(account_id):
                     "description": tx.description,
                     "amount": tx.amount,
                     "frequency": tx.frequency,
-                    "next_due_date": tx.next_due_date.isoformat()
-                    if tx.next_due_date
-                    else None,
+                    "next_due_date": (
+                        tx.next_due_date.isoformat() if tx.next_due_date else None
+                    ),
                     "notes": tx.notes,
                     "updated_at": tx.updated_at.isoformat() if tx.updated_at else None,
                 }
@@ -161,9 +161,10 @@ def update_recurring_tx(account_id):
     """
     data = request.get_json()
     if not data or "amount" not in data:
-        return jsonify(
-            {"status": "error", "message": "Missing 'amount' in request body"}
-        ), 400
+        return (
+            jsonify({"status": "error", "message": "Missing 'amount' in request body"}),
+            400,
+        )
 
     amount = data["amount"]
     try:
@@ -171,9 +172,12 @@ def update_recurring_tx(account_id):
         if recurring:
             recurring.amount = amount
             db.session.commit()
-            return jsonify(
-                {"status": "success", "message": "Recurring transaction updated"}
-            ), 200
+            return (
+                jsonify(
+                    {"status": "success", "message": "Recurring transaction updated"}
+                ),
+                200,
+            )
         else:
             # Create a new recurring transaction with a default description and frequency if not provided.
             description = data.get("description", "Recurring Transaction")
@@ -186,9 +190,12 @@ def update_recurring_tx(account_id):
             )
             db.session.add(new_tx)
             db.session.commit()
-            return jsonify(
-                {"status": "success", "message": "Recurring transaction created"}
-            ), 201
+            return (
+                jsonify(
+                    {"status": "success", "message": "Recurring transaction created"}
+                ),
+                201,
+            )
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500

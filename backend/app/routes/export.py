@@ -10,9 +10,12 @@ def export_model_csv(model_name):
     try:
         response = export_csv_response(model_name)
         if response is None:
-            return jsonify(
-                {"status": "error", "message": f"Unknown model '{model_name}'"}
-            ), 404
+            return (
+                jsonify(
+                    {"status": "error", "message": f"Unknown model '{model_name}'"}
+                ),
+                404,
+            )
         return response
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -22,9 +25,15 @@ def export_model_csv(model_name):
 def export_all_models():
     try:
         export_all_to_csv()
-        return jsonify(
-            {"status": "success", "message": "All models exported to local CSV files."}
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "message": "All models exported to local CSV files.",
+                }
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
 
