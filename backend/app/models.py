@@ -22,6 +22,7 @@ class Account(db.Model, TimestampMixin):
     subtype = db.Column(db.String(64), nullable=True)
     institution_name = db.Column(db.String(128), nullable=True)
     status = db.Column(db.String(64), default="active")
+    is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0)
     link_type = db.Column(db.String(64), default="manual")
 

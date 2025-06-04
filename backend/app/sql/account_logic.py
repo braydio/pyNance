@@ -385,6 +385,7 @@ def get_paginated_transactions(page, page_size):
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Account.is_hidden.is_(False))
         .order_by(Transaction.date.desc())
     )
 
