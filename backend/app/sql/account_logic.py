@@ -33,9 +33,9 @@ def process_transaction_amount(amount, account_type):
     return normalize_amount(
         {
             "amount": amount,
-            "transaction_type": account_type.lower().replace("_", " ")
-            if account_type
-            else None,
+            "transaction_type": (
+                account_type.lower().replace("_", " ") if account_type else None
+            ),
         }
     )
 
@@ -274,9 +274,7 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json
-            if isinstance(txns_json, list)
-            else []
+            else txns_json if isinstance(txns_json, list) else []
         )
 
         for txn in txns_list:
