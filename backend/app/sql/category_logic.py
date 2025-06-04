@@ -77,9 +77,9 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
         ).first()
         if not parent:
             parent = Category(
-                plaid_category_id=f"{plaid_category_id}_parent"
-                if plaid_category_id
-                else None,
+                plaid_category_id=(
+                    f"{plaid_category_id}_parent" if plaid_category_id else None
+                ),
                 primary_category=primary,
                 detailed_category=None,
                 display_name=primary,

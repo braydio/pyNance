@@ -39,38 +39,64 @@ Backend and frontend both require `.env` files.
 **Backend**:
 
 ```bash
-
-cp .env.example .env
-
+cd backend
+cp example.env .env
 ```
 
-Edit `.env` with your real credentials:
+Edit `backend/.env` with your real credentials:
 
 ```dotenv
-# Plaid Setup
-PLAID_CLIENT_ID=your_client_id
-PLAID_SECRET=your_secret
-PLAID_ENV=sandbox
+# Application
+FLASK_ENV=development          # Options: production, development
+CLIENT_NAME=pyNance-Dash       # Optional client name
 
-# Optional (if needed)
-VITE_USER_ID_PLAID=your_user_id
-VITE_APP_API_BASE_URL=http://localhost:5000/api
+# Logging
+LOG_LEVEL=INFO                 # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
+VERBOSE_LOGGING=false          # true enables custom 'VERBOSE' log level
 
-# Teller Setup (optional)
-TELLER_APP_ID=your_teller_app_id
-TELLER_WEBHOOK_SECRET=...
+# Plaid Configuration
+PLAID_CLIENT_ID=your_client_id_here
+PLAID_SECRET_KEY=your_secret_here
+PLAID_CLIENT_NAME=YourName     # (Optional) currently used for display
+PLAID_ENV=sandbox              # Options: sandbox, development, production
+PRODUCTS=transactions,investments  # Comma-separated list of products
+
+# Teller Configuration
+TELLER_APP_ID=your_teller_app_id_here
+TELLER_WEBHOOK_SECRET=your_webhook_secret_here
+
+# Dev/Test Variables (optional)
+VARIABLE_ENV_TOKEN=optional_test_token
+VARIABLE_ENV_ID=optional_test_id
 ```
 
-> Backend environment variables are loaded via `/backend/app/config/environment.py`.
+> These variables are loaded via `/backend/app/config/environment.py`.
+
+**Certificates**:
+
+Place your Teller certificates in:
+
+```bash
+backend/app/certs/
+  ├── certificate.pem
+  └── private_key.pem
+```
+
+See `/backend/app/certs/README.md` for details.
 
 **Frontend**:
 
 ```bash
 cd frontend
-cp .env.example .env
+cp example.env .env
 ```
 
-Customize frontend `.env` too if needed.
+Edit `frontend/.env` with:
+
+```dotenv
+VITE_APP_API_BASE_URL=http://localhost:5000/api
+# ... other VITE_ variables as needed
+```
 
 ### 3. Install Backend Requirements
 
@@ -110,12 +136,14 @@ npm run dev
 
 | File | Purpose |
 |:--|:--|
-| `/backend/app/config/environment.py` | Loads `.env` for Flask server |
-| `/backend/app/config/plaid_config.py` | Plaid API settings |
-| `/backend/app/config/log_setup.py` | Logging setup |
-| `/frontend/.env` | Frontend API and environment variables |
-| `/BackendMap.txt` | Backend file structure map |
-| `/FrontendMap.txt` | Frontend file structure map |
+| `/backend/app/config/environment.py`    | Loads environment variables (FLASK_ENV, CLIENT_NAME, PLAID_*, TELLER_*, etc.) |
+| `/backend/app/config/plaid_config.py`   | Plaid API client setup (PLAID_CLIENT_ID, PLAID_SECRET_KEY & PLAID_ENV) |
+| `/backend/app/config/log_setup.py`      | Logging configuration (LOG_LEVEL, VERBOSE_LOGGING, handlers) |
+| `/backend/app/config/constants.py`      | Application constants & database URI (data paths, themes, etc.) |
+| `/backend/app/config/paths.py`          | Directory paths auto-creation (DATA_DIR, LOGS_DIR, CERTS_DIR, etc.) |
+| `/backend/app/certs/README.md`          | Instructions for placing Teller certificate.pem & private_key.pem |
+| `/frontend/example.env`                 | Frontend environment variables example |
+| `/frontend/.env`                        | Frontend environment variables |
 
 ---
 
@@ -135,15 +163,15 @@ Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Logs
 
-Backend logs are output to `/backend/logs/app.log`. Logging behavior controlled by `/backend/app/config/log_setup.py`.
+Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/verbose.log` if `VERBOSE_LOGGING=true`). Logging behavior is controlled by `/backend/app/config/log_setup.py`.
 
 ---
 
 ## Troubleshooting
 
-- If you get database errors, check if `backend/app/data/pynance_dashroad.db` exists. Otherwise initialize it manually.
-- For Plaid access issues, verify client_id, secret, and environment match (sandbox/development).
-- Logs (`logs/app.log`) are your best friend!
+- If you get database errors, check if `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). Otherwise initialize it manually.
+- For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
+- Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
 
 ---
 

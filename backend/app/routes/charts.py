@@ -153,17 +153,20 @@ def get_cash_flow():
         total_expenses = sum(item["expenses"] for item in data)
         total_transactions = len(all_tx)
 
-        return jsonify(
-            {
-                "status": "success",
-                "data": data,
-                "metadata": {
-                    "total_income": total_income,
-                    "total_expenses": total_expenses,
-                    "total_transactions": total_transactions,
-                },
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": data,
+                    "metadata": {
+                        "total_income": total_income,
+                        "total_expenses": total_expenses,
+                        "total_transactions": total_transactions,
+                    },
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error in cash flow: {e}", exc_info=True)

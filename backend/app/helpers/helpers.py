@@ -15,6 +15,7 @@ from app.config import (
 from app.sql.account_logic import save_account_balances, upsert_accounts
 from app.extensions import Session
 
+
 # -------------------------
 # Plaid API Helpers
 # -------------------------

@@ -13,6 +13,7 @@ recurring = Blueprint("recurring", __name__)
 # 1) Save or update a user-defined recurring transaction
 # -------------------------------------------------------------------
 
+
 @recurring.route("/accounts/<account_id>/recurringTx", methods=["PUT"])
 def update_recurring_tx(account_id):
     """
@@ -38,9 +39,13 @@ def update_recurring_tx(account_id):
             tx = Transaction.query.filter_by(transaction_id=tx_id).first()
             if tx:
                 resolved_account_id = tx.account_id
-                logger.debug(f"Resolved account ID from transaction: {resolved_account_id}")
+                logger.debug(
+                    f"Resolved account ID from transaction: {resolved_account_id}"
+                )
             else:
-                logger.warning(f"Transaction ID {tx_id} not found — falling back to route account_id")
+                logger.warning(
+                    f"Transaction ID {tx_id} not found — falling back to route account_id"
+                )
 
         # Handle due date parsing
         next_due_str = data.get("next_due_date")
@@ -54,19 +59,21 @@ def update_recurring_tx(account_id):
             next_due_date = date.today() + timedelta(days=30)
 
         existing = RecurringTransaction.query.filter_by(
-            account_id=resolved_account_id,
-            description=description,
-            amount=amount
+            account_id=resolved_account_id, description=description, amount=amount
         ).first()
 
         if existing:
-            logger.debug(f"Updating existing RecurringTransaction for account {resolved_account_id}")
+            logger.debug(
+                f"Updating existing RecurringTransaction for account {resolved_account_id}"
+            )
             existing.frequency = frequency
             existing.notes = notes
             existing.next_due_date = next_due_date
             db.session.commit()
         else:
-            logger.debug(f"Inserting new RecurringTransaction for account {resolved_account_id}")
+            logger.debug(
+                f"Inserting new RecurringTransaction for account {resolved_account_id}"
+            )
             new_rec = RecurringTransaction(
                 account_id=resolved_account_id,
                 description=description,
@@ -84,10 +91,9 @@ def update_recurring_tx(account_id):
         )
 
     except Exception as e:
-        logger.error(
-            f"Error saving recurring transaction: {e}", exc_info=True
-        )
+        logger.error(f"Error saving recurring transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
 
 # -------------------------------------------------------------------
 # 2) Fetch merged recurring transactions (user + auto-detected), return reminders
@@ -164,6 +170,7 @@ def get_structured_recurring(account_id):
         )
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 def add_months(original_date, months=1):
     new_month = original_date.month + months
     new_year = original_date.year
@@ -176,9 +183,11 @@ def add_months(original_date, months=1):
         day = min(original_date.day, 28)
         return original_date.replace(year=new_year, month=new_month, day=day)
 
+
 # -------------------------------------------------------------------
 # 2) Fetch merged recurring transactions (user + auto-detected), return reminders
 # -------------------------------------------------------------------
+
 
 @recurring.route("/accounts/<account_id>/recurringTx", methods=["DELETE"])
 def delete_recurring_tx(account_id):
@@ -191,16 +200,22 @@ def delete_recurring_tx(account_id):
         amount = data.get("amount")
 
         if not description or amount is None:
-            return jsonify({"status": "error", "message": "Missing required fields."}), 400
+            return (
+                jsonify({"status": "error", "message": "Missing required fields."}),
+                400,
+            )
 
         match = RecurringTransaction.query.filter_by(
-            account_id=account_id,
-            description=description,
-            amount=amount
+            account_id=account_id, description=description, amount=amount
         ).first()
 
         if not match:
-            return jsonify({"status": "error", "message": "No matching recurring rule found."}), 404
+            return (
+                jsonify(
+                    {"status": "error", "message": "No matching recurring rule found."}
+                ),
+                404,
+            )
 
         db.session.delete(match)
         db.session.commit()
