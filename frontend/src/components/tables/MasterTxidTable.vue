@@ -1,6 +1,5 @@
 <template>
   <div class="transactions space-y-4 p-6 bg-gray-50 rounded-xl shadow">
-    <VueToast v-if="toast.message" :type="toast.type" :message="toast.message" @close="toast.message = ''" />
     <!-- Filter Row -->
     <div class="flex gap-4 items-center text-sm text-gray-700">
       <div>
