@@ -7,8 +7,9 @@ from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.sql.forecast_logic import update_account_history
 
 TELLER_CERTIFICATE = FILES["TELLER_DOT_CERT"]
-TELLER_PRIVATE_KEY = FILES["TELLER_DOT_KEY"] 
+TELLER_PRIVATE_KEY = FILES["TELLER_DOT_KEY"]
 TELLER_TOKENS = FILES["TELLER_TOKENS"]
+
 
 def get_teller_accounts(access_token: str, user_id: str):
     url = f"{TELLER_API_BASE_URL}/accounts"
@@ -25,7 +26,9 @@ def get_teller_accounts(access_token: str, user_id: str):
         account_id = acct.get("id")
         balance = acct.get("available_balance") or acct.get("current_balance")
         if account_id and balance is not None:
-            update_account_history(account_id=account_id, user_id=user_id, balance=balance)
+            update_account_history(
+                account_id=account_id, user_id=user_id, balance=balance
+            )
 
     return accounts
 
@@ -58,11 +61,11 @@ def save_tokens(tokens):
     Save Teller tokens to the designated JSON file.
     """
     try:
-        logger.debug(f"Saving tokens to {TELLER_TOKENS}: {tokens}")  # corrected 'tokens'
+        logger.debug(
+            f"Saving tokens to {TELLER_TOKENS}: {tokens}"
+        )  # corrected 'tokens'
         with open(TELLER_TOKENS, "w") as f:
             json.dump(tokens, f, indent=4)  # corrected to 'tokens' and 'indent'
         logger.debug("Tokens saved successfully.")
     except Exception as e:
-        logger.error(
-            f"Error saving tokens to {TELLER_TOKENS}: {e}", exc_info=True
-        )
+        logger.error(f"Error saving tokens to {TELLER_TOKENS}: {e}", exc_info=True)
