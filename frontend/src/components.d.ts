@@ -37,6 +37,7 @@ declare module 'vue' {
     ManualTransactionTable: typeof import('./components/ManualTransactionTable.vue')['default']
     MasterTxidTable: typeof import('./components/tables/MasterTxidTable.vue')['default']
     MatchingTransactionUpload: typeof import('./components/unused/MatchingTransactionUpload.vue')['default']
+    Modal: typeof import('./components/ui/Modal.vue')['default']
     Navbar: typeof import('./components/layout/Navbar.vue')['default']
     NetIncomeCharts: typeof import('./components/charts/NetIncomeCharts.vue')['default']
     NetYearComparisonChart: typeof import('./components/charts/NetYearComparisonChart.vue')['default']
