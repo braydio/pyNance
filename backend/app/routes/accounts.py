@@ -32,7 +32,8 @@ def refresh_all_accounts():
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
                 updated = account_logic.refresh_data_for_plaid_account(
-                    access_token, PLAID_BASE_URL
+                    access_token,
+                    account.account_id
                 )
                 if updated:
                     account.last_refreshed = datetime.utcnow()
@@ -229,6 +230,7 @@ def set_account_hidden(account_id):
             balance=account.balance,
             is_hidden=account.is_hidden,
         )
+
         return jsonify({"status": "success", "hidden": account.is_hidden}), 200
     except Exception as e:
         db.session.rollback()
