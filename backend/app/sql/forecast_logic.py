@@ -24,7 +24,7 @@ def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
     return latest.balance if latest else 0.0
 
 
-def update_account_history(account_id, user_id, balance):
+def update_account_history(account_id, user_id, balance, is_hidden=None):
     today = datetime.utcnow().date()
     now = datetime.utcnow()
 
@@ -36,6 +36,7 @@ def update_account_history(account_id, user_id, balance):
                 user_id=user_id,
                 date=today,
                 balance=balance,
+                is_hidden=is_hidden,
                 created_at=now,
                 updated_at=now,
             )
@@ -44,6 +45,7 @@ def update_account_history(account_id, user_id, balance):
                 set_={
                     "balance": balance,
                     "updated_at": now,
+                    "is_hidden": is_hidden,
                 },
             )
         )

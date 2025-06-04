@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from app.extensions import db
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class TimestampMixin:
@@ -28,6 +29,10 @@ class Account(db.Model, TimestampMixin):
 
     plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False)
     teller_account = db.relationship("TellerAccount", backref="account", uselist=False)
+
+    @hybrid_property
+    def is_visible(self):
+        return not self.is_hidden
 
 
 class PlaidAccount(db.Model, TimestampMixin):
@@ -87,6 +92,7 @@ class AccountHistory(db.Model, TimestampMixin):
 
     date = db.Column(db.DateTime, nullable=False)  # Domain field
     balance = db.Column(db.Float, default=0)
+    is_hidden = db.Column(db.Boolean, default=None)
 
     __table_args__ = (
         db.UniqueConstraint("account_id", "date", name="_account_date_uc"),

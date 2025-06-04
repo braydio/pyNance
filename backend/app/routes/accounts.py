@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction, Account
+from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import normalize_account_balance
 from app.config import logger
 
@@ -223,6 +224,13 @@ def set_account_hidden(account_id):
             )
         account.is_hidden = hidden
         db.session.commit()
+        update_account_history(
+            account_id=account.account_id,
+            user_id=account.user_id,
+            balance=account.balance,
+            is_hidden=account.is_hidden,
+        )
+
         return jsonify({"status": "success", "hidden": account.is_hidden}), 200
     except Exception as e:
         db.session.rollback()

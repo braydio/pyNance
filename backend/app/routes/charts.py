@@ -318,6 +318,7 @@ def accounts_snapshot():
     accounts = (
         db.session.query(Account)
         .filter(Account.user_id == user_id)
+        .filter(Account.is_hidden.is_(False))
         .order_by(Account.balance.desc())
         .all()
     )
