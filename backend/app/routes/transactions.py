@@ -123,7 +123,20 @@ def get_transactions_paginated():
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
 
-        transactions, total = account_logic.get_paginated_transactions(page, page_size)
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+        category = request.args.get("category")
+
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+
+        transactions, total = account_logic.get_paginated_transactions(
+            page,
+            page_size,
+            start_date=start_date,
+            end_date=end_date,
+            category=category,
+        )
 
         return (
             jsonify(

@@ -381,12 +381,20 @@ def refresh_data_for_teller_account(
     return updated
 
 
-def get_paginated_transactions(page, page_size):
+def get_paginated_transactions(page, page_size, start_date=None, end_date=None, category=None):
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
-        .order_by(Transaction.date.desc())
     )
+
+    if start_date:
+        query = query.filter(Transaction.date >= start_date)
+    if end_date:
+        query = query.filter(Transaction.date <= end_date)
+    if category:
+        query = query.filter(Transaction.category == category)
+
+    query = query.order_by(Transaction.date.desc())
 
     total = query.count()
 
