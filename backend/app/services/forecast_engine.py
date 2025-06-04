@@ -42,13 +42,13 @@ class ForecastEngine:
                 forecast.append(
                     {
                         "date": d,
-                        "account_id": r.transaction.account_id
-                        if r.transaction
-                        else None,
+                        "account_id": (
+                            r.transaction.account_id if r.transaction else None
+                        ),
                         "amount": r.transaction.amount if r.transaction else 0,
-                        "description": r.transaction.description
-                        if r.transaction
-                        else "Recurring",
+                        "description": (
+                            r.transaction.description if r.transaction else "Recurring"
+                        ),
                         "type": "recurring",
                         "frequency": r.frequency,
                     }

@@ -1,10 +1,10 @@
-
 import logging
 from backend.app.models import Account
 from backend.app.helpers.teller_helpers import get_teller_accounts
 from backend.app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
 
 logger = logging.getLogger(__name__)
+
 
 def sync_account(account: Account) -> None:
     """
@@ -16,16 +16,22 @@ def sync_account(account: Account) -> None:
     access_token = account.access_token
 
     if not provider or not access_token or not user_id:
-        logger.warning(f"Missing sync data for account {account.id} | provider={provider}")
+        logger.warning(
+            f"Missing sync data for account {account.id} | provider={provider}"
+        )
         return
 
     try:
         if provider == "teller":
-            logger.info(f"[SYNC] Teller sync start: account={account.id}, user={user_id}")
+            logger.info(
+                f"[SYNC] Teller sync start: account={account.id}, user={user_id}"
+            )
             get_teller_accounts(access_token, user_id)
 
         elif provider == "plaid":
-            logger.info(f"[SYNC] Plaid sync start: account={account.id}, user={user_id}")
+            logger.info(
+                f"[SYNC] Plaid sync start: account={account.id}, user={user_id}"
+            )
             get_plaid_accounts(access_token, user_id)
 
         else:
@@ -33,4 +39,3 @@ def sync_account(account: Account) -> None:
 
     except Exception as e:
         logger.error(f"Sync error for account {account.id} ({provider}): {e}")
-
