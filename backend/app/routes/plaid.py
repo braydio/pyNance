@@ -30,4 +30,3 @@ def exchange_token():
             "product": product,
         }
     )
-

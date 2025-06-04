@@ -20,9 +20,10 @@ def update_transaction():
         data = request.json
         transaction_id = data.get("transaction_id")
         if not transaction_id:
-            return jsonify(
-                {"status": "error", "message": "Missing transaction_id"}
-            ), 400
+            return (
+                jsonify({"status": "error", "message": "Missing transaction_id"}),
+                400,
+            )
 
         txn = Transaction.query.filter_by(transaction_id=transaction_id).first()
         if not txn:
@@ -72,9 +73,10 @@ def user_modified_update_transaction():
         data = request.json
         transaction_id = data.get("transaction_id")
         if not transaction_id:
-            return jsonify(
-                {"status": "error", "message": "Missing transaction_id"}
-            ), 400
+            return (
+                jsonify({"status": "error", "message": "Missing transaction_id"}),
+                400,
+            )
 
         txn = Transaction.query.filter_by(transaction_id=transaction_id).first()
         if not txn:
@@ -123,12 +125,15 @@ def get_transactions_paginated():
 
         transactions, total = account_logic.get_paginated_transactions(page, page_size)
 
-        return jsonify(
-            {
-                "status": "success",
-                "data": {"transactions": transactions, "total": total},
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": {"transactions": transactions, "total": total},
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error in get_transactions_paginated: {e}", exc_info=True)

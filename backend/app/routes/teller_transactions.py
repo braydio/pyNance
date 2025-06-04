@@ -31,9 +31,10 @@ def save_teller_token():
 
         if not access_token:
             logger.warning("Missing access token in request body.")
-            return jsonify(
-                {"status": "error", "message": "Access token is required."}
-            ), 400
+            return (
+                jsonify({"status": "error", "message": "Access token is required."}),
+                400,
+            )
 
         logger.debug(f"Saving access token for user {user_id}")
         tokens = load_tokens()
@@ -54,11 +55,14 @@ def teller_exchange_public_token():
     logger.error(
         "Teller does not have an exchange process. Save response as linked token."
     )
-    return jsonify(
-        {
-            "error": "You are looking for the /teller_transactions/save_access_token route. This incorrect route is being depreciated."
-        }
-    ), 500
+    return (
+        jsonify(
+            {
+                "error": "You are looking for the /teller_transactions/save_access_token route. This incorrect route is being depreciated."
+            }
+        ),
+        500,
+    )
 
 
 @teller_transactions.route("/refresh_accounts", methods=["POST"])

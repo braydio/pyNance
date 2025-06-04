@@ -61,9 +61,10 @@ def auto_detect_and_upload():
                 provider = "Teller"
             except Exception as teller_error:
                 logger.error(f"Both Plaid and Teller detection failed: {teller_error}")
-                return jsonify(
-                    {"error": "Token is not valid for Plaid or Teller."}
-                ), 400
+                return (
+                    jsonify({"error": "Token is not valid for Plaid or Teller."}),
+                    400,
+                )
 
         accounts = (
             accounts_data
@@ -94,14 +95,17 @@ def auto_detect_and_upload():
         logger.info(
             f"[manual_up] Uploaded {len(formatted)} accounts for {user_id} using {provider}"
         )
-        return jsonify(
-            {
-                "status": "success",
-                "provider": provider,
-                "account_count": len(formatted),
-                "institution_name": institution_name,
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "provider": provider,
+                    "account_count": len(formatted),
+                    "institution_name": institution_name,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"[manual_up] Upload error: {e}", exc_info=True)
@@ -163,13 +167,16 @@ def manual_up_plaid():
             f"[manual_up] Uploaded {len(transformed)} accounts for {user_id} using Plaid"
         )
 
-        return jsonify(
-            {
-                "status": "success",
-                "institution_name": institution_name,
-                "account_count": len(transformed),
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "institution_name": institution_name,
+                    "account_count": len(transformed),
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"[manual_up_plaid] Error: {e}", exc_info=True)
