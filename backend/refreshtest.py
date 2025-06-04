@@ -11,6 +11,7 @@ TELLER_DOT_CERT = FILES["TELLER_DOT_CERT"]
 TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
 RAW_FILE = FILES["TRANSACTIONS_RAW"]
 
+
 def refresh_all_accounts():
     accounts = Account.query.all()
     updated_accounts = []
@@ -34,16 +35,13 @@ def refresh_all_accounts():
 
         # Call our refresh function (which uses documented Teller endpoints)
         updated = account_logic.refresh_account_data_for_account(
-            account,
-            access_token,
-            TELLER_DOT_CERT,
-            TELLER_DOT_KEY,
-            TELLER_API_BASE_URL
+            account, access_token, TELLER_DOT_CERT, TELLER_DOT_KEY, TELLER_API_BASE_URL
         )
         if updated:
             updated_accounts.append(account.account_id)
     db.session.commit()
     return updated_accounts
+
 
 if __name__ == "__main__":
     app = create_app()

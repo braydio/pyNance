@@ -1,4 +1,3 @@
-
 import random
 from datetime import datetime, timedelta
 from app import create_app, db
@@ -10,7 +9,7 @@ CATEGORIES = {
     "utilities": (-100, -250),
     "entertainment": (-50, -200),
     "subscriptions": (-10, -30),
-    "salary": (2000, 4000)
+    "salary": (2000, 4000),
 }
 
 
@@ -38,33 +37,37 @@ def generate_transactions_for_account(account, months=6, start_date=None):
 
                 category_id = get_or_create_category(cat)
 
-                transactions.append(Transaction(
-                    account_id=account.id,
-                    user_id=account.user_id,
-                    amount=amount,
-                    category_id=category_id,
-                    category=cat,
-                    date=tx_date,
-                    description=f"Auto-{cat.title()}",
-                    provider='synthetic',
-                    pending=False
-                ))
+                transactions.append(
+                    Transaction(
+                        account_id=account.id,
+                        user_id=account.user_id,
+                        amount=amount,
+                        category_id=category_id,
+                        category=cat,
+                        date=tx_date,
+                        description=f"Auto-{cat.title()}",
+                        provider="synthetic",
+                        pending=False,
+                    )
+                )
 
             # Infrequent spikes
             if cat in ("utilities", "entertainment") and random.random() < 0.1:
                 spike = round(amt_range[1] * random.uniform(1.5, 2.0), 2)
                 category_id = get_or_create_category(cat)
-                transactions.append(Transaction(
-                    account_id=account.id,
-                    user_id=account.user_id,
-                    amount=-spike,
-                    category_id=category_id,
-                    category=cat,
-                    date=month_date.replace(day=random.randint(1, 28)),
-                    description=f"Spike-{cat.title()}",
-                    provider='synthetic',
-                    pending=False
-                ))
+                transactions.append(
+                    Transaction(
+                        account_id=account.id,
+                        user_id=account.user_id,
+                        amount=-spike,
+                        category_id=category_id,
+                        category=cat,
+                        date=month_date.replace(day=random.randint(1, 28)),
+                        description=f"Spike-{cat.title()}",
+                        provider="synthetic",
+                        pending=False,
+                    )
+                )
 
     return transactions
 
@@ -89,4 +92,3 @@ def run(account_id=None):
 
 if __name__ == "__main__":
     run()  # optionally: run(account_id="abc123")
-
