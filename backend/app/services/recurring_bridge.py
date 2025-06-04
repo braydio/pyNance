@@ -28,4 +28,3 @@ class RecurringBridge:
             actions.append(result)
 
         return actions
-
