@@ -25,8 +25,12 @@ jobs:
           pip install -r requirements.txt
       - name: Run formatting checks
         run: black . --check
+
+      - name: List test files
+        run: ls -R
+        
       - name: Run unit tests
-        run: pytest --maxfail=1 --disable-warnings
+        run: pytest --maxfail=1 --disable-warnin
 
   frontend:
     name: Vue Frontend
