@@ -216,7 +216,7 @@ def get_net_assets():
             }
         )
 
-    return jsonify(data)
+    return jsonify({"status": "success", "data": data}), 200
 
 
 @charts.route("/daily_net", methods=["GET"])
