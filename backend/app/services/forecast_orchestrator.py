@@ -13,7 +13,9 @@ class ForecastOrchestrator:
     def __init__(self, db):
         self.db = db
         self.rule_engine = ForecastEngineRuleBased(db)
-        self.stat_engine = ForecastEngineStatModel() if ForecastEngineStatModel else None
+        self.stat_engine = (
+            ForecastEngineStatModel() if ForecastEngineStatModel else None
+        )
 
     def forecast(self, method="rule", days=60, stat_input=None):
         if method == "rule":

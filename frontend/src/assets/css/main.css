@@ -1,9 +1,12 @@
+@import '../../styles/global-colors.css';
 @tailwind base;
 
 /* Base styles */
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-800 font-sans;
+    background-color: var(--page-bg);
+    color: var(--theme-fg);
+    @apply font-sans;
   }
 }
 
@@ -17,7 +20,10 @@
   }
 
   .card {
-    @apply bg-white border border-gray-200 rounded-lg shadow-lg p-6;
+    background-color: var(--surface);
+    color: var(--theme-fg);
+    border: 1px solid var(--divider);
+    @apply rounded-lg shadow-lg p-6;
   }
 
   .btn {
