@@ -267,6 +267,15 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
+.input {
+  @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
+}
+
+.input:focus {
+  @apply outline-none ring-2 ring-blue-300;
+}
+
 .btn-sm {
   @apply inline-flex items-center px-2 py-1 text-xs rounded;
   background-color: var(--neon-purple);
