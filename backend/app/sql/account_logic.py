@@ -1,4 +1,5 @@
 # account_logic.py
+from tempfile import NamedTemporaryFile
 import json
 import time
 from datetime import date as pydate
@@ -202,11 +203,6 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
-    import json
-    from datetime import date as pydate
-    from datetime import datetime
-    from tempfile import NamedTemporaryFile
-
     updated = False
     account_id = account.account_id
     user_id = account.user_id

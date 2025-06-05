@@ -211,7 +211,7 @@ def import_selected_file():
                 db.session.commit()
 
             inserted = upsert_imported_transactions(
-                txns, user_id=CLIENT_NAME, account_id=account.id
+                txns, user_id=CLIENT_NAME, account_id=account.account_id
             )
             result["inserted"] = inserted
             result["account"] = account.name

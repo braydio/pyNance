@@ -77,13 +77,13 @@ Implement an internal service function such as build_forecast_payload(user_id, v
 
 API Routes
 
-Replace /api/forecast/forecast with routes:
+Replace `/api/forecast/forecast` with a single endpoint:
 
-GET /api/forecast – returns forecast/actual lines using orchestrator. ✅ Implemented June 2025
+`GET /api/forecast` – returns `labels`, `forecast`, `actuals`, and `metadata` calculated by `ForecastOrchestrator`.
 
-POST /api/forecast/calculate – accepts manual income/liability overrides. ✅ Implemented
+`POST /api/forecast/calculate` may later accept manual overrides.
 
-Optionally add GET /api/forecast/events and /api/forecast/account/{account_id} as per roadmap.
+Future enhancements might expose `/api/forecast/events` and `/api/forecast/account/{account_id}`.
 
 Frontend Integration
 
