@@ -9,6 +9,7 @@ import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
+from app.utils.finance_utils import normalize_transaction_amount
 from app.helpers.plaid_helpers import (
     get_accounts,
     get_transactions,
@@ -411,11 +412,12 @@ def get_paginated_transactions(
 
     serialized = []
     for tx, acc in results:
+        amount_signed = normalize_transaction_amount(tx.amount or 0, acc.type or "")
         serialized.append(
             {
                 "transaction_id": tx.transaction_id,
                 "date": tx.date.isoformat() if tx.date else None,
-                "amount": tx.amount or 0,
+                "amount": amount_signed,
                 "description": tx.description or tx.merchant_name or "N/A",
                 "category": (
                     tx.category.display_name
