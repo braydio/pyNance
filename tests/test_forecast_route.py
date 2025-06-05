@@ -119,6 +119,12 @@ def client():
     with app.test_client() as c:
         yield c
 
+def dummy_forecast(self, method="rule", days=60, stat_input=None):
+    today = datetime.utcnow().date()
+    return [
+        {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
+        for i in range(days)
+    ]
 
 def test_forecast_route(client):
     resp = client.get("/api/forecast")
@@ -130,7 +136,6 @@ def test_forecast_route(client):
         "actuals": [None, None],
         "metadata": {},
     }
-
 
 def test_forecast_route_missing_data(client, monkeypatch):
     def empty_payload(self, **_):
@@ -144,3 +149,4 @@ def test_forecast_route_missing_data(client, monkeypatch):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
     assert resp.get_json()["labels"] == []
+
