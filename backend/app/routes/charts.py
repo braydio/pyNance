@@ -169,9 +169,11 @@ def get_cash_flow():
 
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
-    """
-    Return trended net asset values over time. Normalizes balances such that
-    liabilities reduce net worth (appear negative), and assets increase it.
+    """Return trended net asset values.
+
+    Balances are normalized so liabilities reduce net worth while assets
+    increase it. The response is wrapped in a ``{"status": "success", "data": ...}``
+    payload for frontend consumption.
     """
     today = datetime.utcnow().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
@@ -216,7 +218,7 @@ def get_net_assets():
             }
         )
 
-    return jsonify(data)
+    return jsonify({"status": "success", "data": data}), 200
 
 
 @charts.route("/daily_net", methods=["GET"])
