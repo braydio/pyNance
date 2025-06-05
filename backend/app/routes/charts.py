@@ -47,6 +47,9 @@ def category_breakdown():
             db.session.query(Transaction, Category)
             .join(Category, Transaction.category_id == Category.id)
             .outerjoin(Account, Transaction.account_id == Account.account_id)
+            .filter(
+                (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
+            )
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .all()
@@ -121,7 +124,7 @@ def get_cash_flow():
 
         transactions = db.session.query(Transaction).join(
             Account, Transaction.account_id == Account.id
-        )
+        ).filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         if start_date:
             transactions = transactions.filter(Transaction.date >= start_date)
         if end_date:
@@ -232,6 +235,7 @@ def get_daily_net():
         transactions = (
             db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Account.is_hidden.is_(False))
             .filter(Transaction.date >= start_date)
             .all()
         )
@@ -314,6 +318,7 @@ def accounts_snapshot():
     accounts = (
         db.session.query(Account)
         .filter(Account.user_id == user_id)
+        .filter(Account.is_hidden.is_(False))
         .order_by(Account.balance.desc())
         .all()
     )

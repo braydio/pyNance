@@ -88,6 +88,14 @@ export default {
       console.error("Failed to delete account:", error);
       throw error;
     }
+  },
+
+  async setAccountHidden(account_id, hidden) {
+    const response = await apiClient.put(
+      `/accounts/${account_id}/hidden`,
+      { hidden }
+    );
+    return response.data;
   }
 };
 

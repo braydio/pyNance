@@ -363,6 +363,7 @@ def refresh_data_for_teller_account(
             f"[UPDATING] AccountHistory for account_id={account_id} on {today}"
         )
         existing_history.balance = balance
+        existing_history.is_hidden = account.is_hidden
         existing_history.updated_at = datetime.utcnow()
     else:
         logger.debug(
@@ -373,6 +374,7 @@ def refresh_data_for_teller_account(
             user_id=user_id,
             date=today,
             balance=balance,
+            is_hidden=account.is_hidden,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
@@ -385,6 +387,7 @@ def get_paginated_transactions(page, page_size):
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Account.is_hidden.is_(False))
         .order_by(Transaction.date.desc())
     )
 
