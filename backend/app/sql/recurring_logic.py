@@ -2,6 +2,13 @@
 
 from collections import defaultdict
 from datetime import datetime
+from typing import Optional
+
+from sqlalchemy import func
+
+from app.extensions import db
+from app.models import RecurringTransaction, Transaction
+import uuid
 
 
 def find_recurring_items(transactions):
@@ -42,6 +49,50 @@ def find_recurring_items(transactions):
     return recurring_items
 
 
-def upsert_recurring():
-    print("This method is not yet integrated.")
-    return
+def upsert_recurring(
+    *,
+    amount: float,
+    description: str,
+    frequency: str,
+    next_due_date: datetime,
+    confidence: Optional[float] = None,
+):
+    """Insert or update a RecurringTransaction linked to a matching Transaction."""
+
+    tx = (
+        db.session.query(Transaction)
+        .filter(func.lower(Transaction.description) == description.lower())
+        .filter(Transaction.amount == amount)
+        .order_by(Transaction.date.desc())
+        .first()
+    )
+
+    if not tx:
+        tx = Transaction(
+            transaction_id=str(uuid.uuid4())[:12],
+            amount=amount,
+            date=datetime.utcnow(),
+            description=description,
+            provider="detected",
+        )
+        db.session.add(tx)
+        db.session.flush()
+
+    rec = RecurringTransaction.query.filter_by(transaction_id=tx.transaction_id).first()
+
+    status = "updated" if rec else "inserted"
+    if rec:
+        rec.frequency = frequency
+        rec.next_due_date = next_due_date
+        rec.notes = f"confidence:{confidence}" if confidence is not None else None
+    else:
+        rec = RecurringTransaction(
+            transaction_id=tx.transaction_id,
+            frequency=frequency,
+            next_due_date=next_due_date,
+            notes=f"confidence:{confidence}" if confidence is not None else None,
+        )
+        db.session.add(rec)
+
+    db.session.commit()
+    return {"status": status, "recurring_id": rec.id}
