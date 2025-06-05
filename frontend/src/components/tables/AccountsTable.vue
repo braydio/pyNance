@@ -16,6 +16,10 @@
         <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
           Filter by Type
         </button>
+
+        <button class="export-btn" @click="showHidden = !showHidden">
+          {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
+        </button>
       </div>
 
       <!-- Type Filter Slide -->
@@ -53,7 +57,7 @@
             <th @click="sortTable('last_refreshed')">
               Last Refreshed <span>{{ sortKey === 'last_refreshed' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
-            <th v-if="showDeleteButtons">Actions</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -64,8 +68,17 @@
             <td>{{ formatBalance(account.balance) }}</td>
             <td>{{ account.link_type || 'N/A' }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
-            <td v-if="showDeleteButtons">
-              <button class="btn btn-sm" @click="deleteAccount(account.account_id)">Delete</button>
+            <td>
+              <button class="btn btn-sm" @click="toggleHidden(account)">
+                {{ account.is_hidden ? 'Unhide' : 'Hide' }}
+              </button>
+              <button
+                v-if="showDeleteButtons"
+                class="btn btn-sm"
+                @click="deleteAccount(account.account_id)"
+              >
+                Delete
+              </button>
             </td>
           </tr>
         </tbody>
@@ -108,6 +121,7 @@ export default {
       showDeleteButtons: false,
       showTypeFilter: false,
       typeFilters: [],
+      showHidden: false,
     };
   },
   computed: {
@@ -116,6 +130,9 @@ export default {
     },
     filteredAccounts() {
       let results = [...this.accounts];
+      if (!this.showHidden) {
+        results = results.filter(acc => !acc.is_hidden);
+      }
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
         results = results.filter((acc) => {
@@ -151,7 +168,9 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const response = await axios.get("/api/accounts/get_accounts");
+        const response = await axios.get(
+          "/api/accounts/get_accounts?include_hidden=true"
+        );
         if (response.data?.status === "success") {
           this.accounts = response.data.accounts || [];
         } else {
@@ -173,6 +192,14 @@ export default {
         } else {
           alert("Error deleting account: " + res.message);
         }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    },
+    async toggleHidden(account) {
+      try {
+        await api.setAccountHidden(account.account_id, !account.is_hidden);
+        this.fetchAccounts();
       } catch (err) {
         alert("Error: " + err.message);
       }

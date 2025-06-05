@@ -363,6 +363,7 @@ def refresh_data_for_teller_account(
             f"[UPDATING] AccountHistory for account_id={account_id} on {today}"
         )
         existing_history.balance = balance
+        existing_history.is_hidden = account.is_hidden
         existing_history.updated_at = datetime.utcnow()
     else:
         logger.debug(
@@ -373,6 +374,7 @@ def refresh_data_for_teller_account(
             user_id=user_id,
             date=today,
             balance=balance,
+            is_hidden=account.is_hidden,
             created_at=datetime.utcnow(),
             updated_at=datetime.utcnow(),
         )
@@ -385,6 +387,8 @@ def get_paginated_transactions(page, page_size, start_date=None, end_date=None, 
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Account.is_hidden.is_(False))
+        .order_by(Transaction.date.desc())
     )
 
     if start_date:
@@ -465,6 +469,9 @@ def refresh_data_for_plaid_account(access_token, account_id):
             end_date=end_date,
         )
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
+        # Only process transactions belonging to this specific account
+        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
+        logger.info(f"Processing {len(transactions)} transactions for account {account_id}.")
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")

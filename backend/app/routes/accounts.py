@@ -1,6 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.extensions import db
 from app.models import RecurringTransaction, Account
+from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import normalize_account_balance
 from app.config import logger
 
@@ -31,7 +32,8 @@ def refresh_all_accounts():
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
                 updated = account_logic.refresh_data_for_plaid_account(
-                    access_token, PLAID_BASE_URL
+                    access_token,
+                    account.account_id
                 )
                 if updated:
                     account.last_refreshed = datetime.utcnow()
@@ -84,7 +86,13 @@ def refresh_all_accounts():
 @accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
-        accounts = Account.query.all()
+        include_hidden = (
+            request.args.get("include_hidden", "false").lower() == "true"
+        )
+        query = Account.query
+        if not include_hidden:
+            query = query.filter(Account.is_hidden.is_(False))
+        accounts = query.all()
         data = []
         for a in accounts:
             try:
@@ -101,6 +109,7 @@ def get_accounts():
                 data.append(
                     {
                         "id": a.id,
+                        "account_id": a.account_id,
                         "name": a.name,
                         "institution_name": a.institution_name,
                         "type": a.type,
@@ -108,6 +117,7 @@ def get_accounts():
                         "subtype": a.subtype,
                         "link_type": a.link_type,
                         "last_refreshed": last_refreshed,
+                        "is_hidden": a.is_hidden,
                     }
                 )
             except Exception as item_err:
@@ -196,6 +206,32 @@ def update_recurring_tx(account_id):
                 ),
                 201,
             )
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/<account_id>/hidden", methods=["PUT"])
+def set_account_hidden(account_id):
+    """Toggle an account's hidden status."""
+    data = request.get_json() or {}
+    hidden = bool(data.get("hidden", True))
+    try:
+        account = Account.query.filter_by(account_id=account_id).first()
+        if not account:
+            return (
+                jsonify({"status": "error", "message": "Account not found"}),
+                404,
+            )
+        account.is_hidden = hidden
+        db.session.commit()
+        update_account_history(
+            account_id=account.account_id,
+            user_id=account.user_id,
+            balance=account.balance,
+            is_hidden=account.is_hidden,
+        )
+        return jsonify({"status": "success", "hidden": account.is_hidden}), 200
     except Exception as e:
         db.session.rollback()
         return jsonify({"status": "error", "message": str(e)}), 500
