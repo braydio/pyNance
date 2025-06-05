@@ -24,7 +24,7 @@ import axios from 'axios'
 const props = defineProps({
   accountSubtype: {
     type: String,
-    required: true,
+    default: '',
   },
 })
 
@@ -43,7 +43,11 @@ const barWidth = (account) => {
 
 const filteredAccounts = computed(() =>
   accounts.value
-    .filter(a => a.subtype?.toLowerCase() === props.accountSubtype.toLowerCase())
+    .filter(a =>
+      props.accountSubtype
+        ? a.subtype?.toLowerCase() === props.accountSubtype.toLowerCase()
+        : true,
+    )
     .sort((a, b) => b.adjusted_balance - a.adjusted_balance)
     .slice(0, 5)
 )
