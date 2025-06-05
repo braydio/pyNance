@@ -19,6 +19,8 @@ import { ref, onMounted, watch, computed } from "vue";
 import { Chart } from "chart.js/auto";
 import axios from "axios";
 
+const emit = defineEmits(["bar-click"]);
+
 const chartCanvas = ref(null);
 const chartInstance = ref(null);
 const chartData = ref({ labels: [], amounts: [], raw: [] });
@@ -117,6 +119,19 @@ function updateChart() {
             font: { size: 12 },
           },
         },
+      },
+      onClick: (evt) => {
+        const points = chartInstance.value.getElementsAtEventForMode(
+          evt,
+          "nearest",
+          { intersect: true },
+          true
+        );
+        if (points.length) {
+          const index = points[0].index;
+          const label = chartData.value.labels[index];
+          emit("bar-click", label);
+        }
       },
     },
   });
