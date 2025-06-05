@@ -47,7 +47,9 @@ def category_breakdown():
             db.session.query(Transaction, Category)
             .join(Category, Transaction.category_id == Category.id)
             .outerjoin(Account, Transaction.account_id == Account.account_id)
-            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
+            )
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .all()
