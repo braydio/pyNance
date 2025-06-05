@@ -13,6 +13,7 @@ config_stub.logger = types.SimpleNamespace(info=lambda *a, **k: None)
 config_stub.plaid_client = None
 config_stub.FLASK_ENV = "test"
 env_stub = types.ModuleType("app.config.environment")
+env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
