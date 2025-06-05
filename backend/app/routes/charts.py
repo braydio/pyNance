@@ -1,6 +1,7 @@
 # File: app/routes/charts.py
 # business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
 import traceback
+from datetime import datetime, timedelta
 from collections import defaultdict
 
 from app.services.forecast_orchestrator import ForecastOrchestrator
@@ -114,9 +115,8 @@ def get_cash_flow():
         )
 
         transactions = (
-
+            db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)
-
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         )
         if start_date:
@@ -221,9 +221,8 @@ def get_net_assets():
             }
         )
 
-    return jsonify({"status": "success", "data": data}), 200
-
-    return jsonify({"status": "success", "data": data}), 200
+)
+  return jsonify({"status": "success", "data": data}), 200
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
