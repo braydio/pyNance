@@ -460,6 +460,9 @@ def refresh_data_for_plaid_account(access_token, account_id):
             end_date=end_date,
         )
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
+        # Only process transactions belonging to this specific account
+        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
+        logger.info(f"Processing {len(transactions)} transactions for account {account_id}.")
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")
