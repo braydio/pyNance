@@ -94,6 +94,10 @@ const fetchAccounts = async () => {
 }
 
 onMounted(fetchAccounts)
+
+defineExpose({
+  refresh: fetchAccounts,
+})
 </script>
 
 
