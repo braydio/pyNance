@@ -220,8 +220,8 @@ def get_net_assets():
             }
         )
 
-)
-  return jsonify({"status": "success", "data": data}), 200
+    return jsonify({"status": "success", "data": data}), 200
+
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
@@ -342,7 +342,11 @@ def forecast_route():
 
         daily_totals = defaultdict(float)
         for p in projections:
-            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
+            day = (
+                p["date"].strftime("%Y-%m-%d")
+                if hasattr(p["date"], "strftime")
+                else str(p["date"])
+            )
             daily_totals[day] += p.get("balance", 0)
 
         labels = []
@@ -351,7 +355,9 @@ def forecast_route():
         for i in range(horizon):
             day = start + timedelta(days=i)
             labels.append(day.strftime("%b %d"))
-            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+            forecast_line.append(
+                round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2)
+            )
 
         adjustment = manual_income - liability_rate
         if adjustment:

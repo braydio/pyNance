@@ -28,7 +28,9 @@ class QueryStub:
         return []
 
 
-extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *a, **k: QueryStub()))
+extensions_stub.db = types.SimpleNamespace(
+    session=types.SimpleNamespace(query=lambda *a, **k: QueryStub())
+)
 sys.modules["app.config"] = config_stub
 sys.modules["app.extensions"] = extensions_stub
 
@@ -81,6 +83,8 @@ class ColumnStub:
 class AccountHistory:
     date = ColumnStub()
     balance = 0
+
+
 models_stub.AccountHistory = AccountHistory
 sys.modules["app.models"] = models_stub
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "forecast.py")
@@ -91,12 +95,16 @@ try:
 except Exception:  # pragma: no cover - skip if deps missing
     pytest.skip("forecast module import failed", allow_module_level=True)
 from flask import Flask
-SERVICES_PATH = os.path.join(BASE_BACKEND, "app", "services", "forecast_orchestrator.py")
+
+SERVICES_PATH = os.path.join(
+    BASE_BACKEND, "app", "services", "forecast_orchestrator.py"
+)
 spec2 = importlib.util.spec_from_file_location(
     "app.services.forecast_orchestrator", SERVICES_PATH
 )
 forecast_orchestrator = importlib.util.module_from_spec(spec2)
 spec2.loader.exec_module(forecast_orchestrator)
+
 
 @pytest.fixture
 def client():
@@ -106,12 +114,14 @@ def client():
     with app.test_client() as c:
         yield c
 
+
 def dummy_forecast(self, method="rule", days=60, stat_input=None):
     today = datetime.utcnow().date()
     return [
         {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
         for i in range(days)
     ]
+
 
 def test_forecast_route(client, monkeypatch):
     monkeypatch.setattr(
