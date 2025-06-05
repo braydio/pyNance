@@ -1,4 +1,3 @@
-
 name: Format & Test
 
 on:
@@ -28,9 +27,14 @@ jobs:
 
       - name: List test files
         run: ls -R
-        
+
       - name: Run unit tests
-        run: pytest --maxfail=1 --disable-warnin
+        run: pytest --maxfail=1 --disable-warning
+
+      - name: Run tests with coverage
+        run: |
+          pip install pytest pytest-cov
+          pytest --cov=backend --cov=tests --cov-fail-under=85
 
   frontend:
     name: Vue Frontend
@@ -50,4 +54,3 @@ jobs:
         run: npm run lint
       - name: Build frontend
         run: npm run build
-
