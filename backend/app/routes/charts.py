@@ -216,8 +216,8 @@ def get_net_assets():
             }
         )
 
-    return jsonify({"status": "success", "data": data}), 200
 
+    return jsonify({"status": "success", "data": data}), 200
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
@@ -321,3 +321,53 @@ def accounts_snapshot():
         for acc in accounts
     ]
     return jsonify(result)
+
+
+@charts.route("/forecast", methods=["GET", "POST"])
+def forecast_route():
+    """Return forecast vs actual lines for the authenticated user."""
+    try:
+        view_type = request.args.get("view_type", "Month")
+        manual_income = float(request.args.get("manual_income", 0))
+        liability_rate = float(request.args.get("liability_rate", 0))
+
+        horizon = 30 if view_type.lower() == "month" else 365
+
+        orchestrator = ForecastOrchestrator(db.session)
+        projections = orchestrator.forecast(days=horizon)
+
+        daily_totals = defaultdict(float)
+        for p in projections:
+            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
+            daily_totals[day] += p.get("balance", 0)
+
+        labels = []
+        forecast_line = []
+        start = datetime.utcnow().date()
+        for i in range(horizon):
+            day = start + timedelta(days=i)
+            labels.append(day.strftime("%b %d"))
+            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+
+        actuals = [None for _ in range(horizon)]
+
+        metadata = {
+            "account_count": len({p["account_id"] for p in projections}),
+            "recurring_count": 0,
+            "data_age_days": 0,
+        }
+
+        return (
+            jsonify(
+                {
+                    "labels": labels,
+                    "forecast": forecast_line,
+                    "actuals": actuals,
+                    "metadata": metadata,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error generating forecast: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
