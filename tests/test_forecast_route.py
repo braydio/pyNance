@@ -64,7 +64,12 @@ orch_stub.ForecastOrchestrator = type(
     (),
     {
         "__init__": lambda self, db=None: None,
-        "forecast": lambda self, method="rule", days=60, stat_input=None: [],
+        "build_forecast_payload": lambda self, **k: {
+            "labels": ["a", "b"],
+            "forecast": [1, 2],
+            "actuals": [None, None],
+            "metadata": {},
+        },
     },
 )
 sys.modules["app.services.forecast_orchestrator"] = orch_stub
@@ -114,7 +119,6 @@ def client():
     with app.test_client() as c:
         yield c
 
-
 def dummy_forecast(self, method="rule", days=60, stat_input=None):
     today = datetime.utcnow().date()
     return [
@@ -122,14 +126,27 @@ def dummy_forecast(self, method="rule", days=60, stat_input=None):
         for i in range(days)
     ]
 
-
-def test_forecast_route(client, monkeypatch):
-    monkeypatch.setattr(
-        forecast_orchestrator.ForecastOrchestrator, "forecast", dummy_forecast
-    )
+def test_forecast_route(client):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert "labels" in data
-    assert "forecast" in data
-    assert len(data["labels"]) == len(data["forecast"])
+    assert data == {
+        "labels": ["a", "b"],
+        "forecast": [1, 2],
+        "actuals": [None, None],
+        "metadata": {},
+    }
+
+def test_forecast_route_missing_data(client, monkeypatch):
+    def empty_payload(self, **_):
+        return {"labels": [], "forecast": [], "actuals": [], "metadata": {}}
+
+    monkeypatch.setattr(
+        forecast_orchestrator.ForecastOrchestrator,
+        "build_forecast_payload",
+        empty_payload,
+    )
+    resp = client.get("/api/forecast")
+    assert resp.status_code == 200
+    assert resp.get_json()["labels"] == []
+
