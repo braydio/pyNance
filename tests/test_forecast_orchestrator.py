@@ -20,7 +20,9 @@ extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.config"] = config_stub
 sys.modules["app.extensions"] = extensions_stub
 MODULE_PATH = os.path.join(BASE_BACKEND, "app", "services", "forecast_orchestrator.py")
-spec = importlib.util.spec_from_file_location("forecast_orchestrator", MODULE_PATH)
+spec = importlib.util.spec_from_file_location(
+    "app.services.forecast_orchestrator", MODULE_PATH
+)
 forecast_orchestrator = importlib.util.module_from_spec(spec)
 try:
     spec.loader.exec_module(forecast_orchestrator)
