@@ -1,12 +1,12 @@
-@import './theme.css';
+@import '../../styles/global-colors.css';
 @tailwind base;
 
 /* Base styles */
 @layer base {
   body {
+    background-color: var(--page-bg);
+    color: var(--theme-fg);
     @apply font-sans;
-    background-color: var(--color-bg-dark);
-    color: var(--color-text-light);
   }
 }
 
@@ -20,10 +20,10 @@
   }
 
   .card {
-    @apply rounded-lg shadow-lg p-6;
-    background-color: var(--color-bg-secondary);
+    background-color: var(--surface);
+    color: var(--theme-fg);
     border: 1px solid var(--divider);
-    color: var(--color-text-light);
+    @apply rounded-lg shadow-lg p-6;
   }
 
   .btn {
