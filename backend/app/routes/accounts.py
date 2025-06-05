@@ -1,9 +1,13 @@
 from flask import Blueprint, jsonify, request
+from datetime import datetime
+
 from app.extensions import db
 from app.models import RecurringTransaction, Account
 from app.sql.forecast_logic import update_account_history
+from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
-from app.config import logger
+from app.helpers.teller_helpers import load_tokens
+from app.config import logger, FILES, TELLER_API_BASE_URL
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -80,6 +84,74 @@ def refresh_all_accounts():
     except Exception as e:
         logger.error(f"Error in unified refresh_accounts: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/<account_id>/refresh", methods=["POST"])
+def refresh_single_account(account_id):
+    """Refresh a single account with an optional date range."""
+    data = request.get_json() or {}
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+
+    account = Account.query.filter_by(account_id=account_id).first()
+    if not account:
+        return jsonify({"status": "error", "message": "Account not found"}), 404
+
+    updated = False
+
+    if account.link_type == "Plaid":
+        token = getattr(account.plaid_account, "access_token", None)
+        if not token:
+            return (
+                jsonify({"status": "error", "message": "Missing Plaid token"}),
+                400,
+            )
+        updated = account_logic.refresh_data_for_plaid_account(
+            token,
+            account_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        if updated and account.plaid_account:
+            account.plaid_account.last_refreshed = datetime.utcnow()
+
+    elif account.link_type == "Teller":
+        access_token = None
+        tokens = load_tokens()
+        for t in tokens:
+            if t.get("user_id") == account.user_id:
+                access_token = t.get("access_token")
+                break
+        if not access_token and account.teller_account:
+            access_token = account.teller_account.access_token
+        if not access_token:
+            return (
+                jsonify({"status": "error", "message": "Missing Teller token"}),
+                400,
+            )
+        updated = account_logic.refresh_data_for_teller_account(
+            account,
+            access_token,
+            FILES["TELLER_DOT_CERT"],
+            FILES["TELLER_DOT_KEY"],
+            TELLER_API_BASE_URL,
+            start_date=start_date,
+            end_date=end_date,
+        )
+        if updated and account.teller_account:
+            account.teller_account.last_refreshed = datetime.utcnow()
+    else:
+        return (
+            jsonify({"status": "error", "message": "Unsupported link type"}),
+            400,
+        )
+
+    if updated:
+        db.session.commit()
+    else:
+        db.session.rollback()
+
+    return jsonify({"status": "success", "updated": updated}), 200
 
 
 @accounts.route("/get_accounts", methods=["GET"])
