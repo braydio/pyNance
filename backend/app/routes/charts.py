@@ -1,7 +1,5 @@
 # File: app/routes/charts.py
 # business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
-import random
-from datetime import datetime, timedelta
 import traceback
 from collections import defaultdict
 
@@ -12,7 +10,6 @@ from app.extensions import db
 from app.models import Account, Category, Transaction
 from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
-from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -50,9 +47,7 @@ def category_breakdown():
             db.session.query(Transaction, Category)
             .join(Category, Transaction.category_id == Category.id)
             .outerjoin(Account, Transaction.account_id == Account.account_id)
-            .filter(
-                (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
-            )
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .all()
@@ -62,14 +57,7 @@ def category_breakdown():
         breakdown_map = {}
         for tx, category in transactions:
             key = category.display_name or "Uncategorized"
-            amt = abs(
-                tx.amount
-            )  # normalize_account_balance(abs(tx.amount), tx.account.type)
-
-            if hasattr(tx, "account") and tx.account and hasattr(tx.account, "type"):
-                amt = normalize_account_balance(abs(tx.amount), tx.account.type)
-            else:
-                amt = abs(tx.amount)
+            amt = abs(tx.amount)
 
             if key not in breakdown_map:
                 logger.debug("Initializing breakdown record for category: %s", key)
@@ -125,9 +113,11 @@ def get_cash_flow():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        transactions = db.session.query(Transaction).join(
-            Account, Transaction.account_id == Account.id
-        ).filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        transactions = (
+            db.session.query(Transaction)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        )
         if start_date:
             transactions = transactions.filter(Transaction.date >= start_date)
         if end_date:
@@ -142,7 +132,7 @@ def get_cash_flow():
                 if granularity == "daily"
                 else tx.date.strftime("%m-%Y")
             )
-            amt = normalize_account_balance(tx.amount, tx.account.type)
+            amt = tx.amount
             if key not in groups:
                 groups[key] = {"income": 0, "expenses": 0}
             if amt > 0:
@@ -181,9 +171,11 @@ def get_cash_flow():
 
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
-    """
-    Return trended net asset values over time. Normalizes balances such that
-    liabilities reduce net worth (appear negative), and assets increase it.
+    """Return trended net asset values.
+
+    Balances are normalized so liabilities reduce net worth while assets
+    increase it. The response is wrapped in a ``{"status": "success", "data": ...}``
+    payload for frontend consumption.
     """
     today = datetime.utcnow().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
@@ -228,8 +220,8 @@ def get_net_assets():
             }
         )
 
-    return jsonify(data)
-
+)
+  return jsonify({"status": "success", "data": data}), 200
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
@@ -256,21 +248,11 @@ def get_daily_net():
 
             # Safe access and fallback
             account = getattr(tx, "account", None)
-            subtype = getattr(account, "subtype", None)
-            if subtype is None:
+            if not account or getattr(account, "subtype", None) is None:
                 logger.warning(
-                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to neutral normalization."
+                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to raw amount."
                 )
-
-            try:
-                amt = normalize_account_balance(tx.amount, subtype)
-                logger.debug(f"Normalized transaction amount for {tx.id}: {amt}")
-            except Exception as e:
-                logger.error(f"Normalization failed for transaction {tx.id}: {e}")
-                amt = tx.amount  # fallback to raw amount
-                logger.debug(
-                    f"Falling back to raw transaction amount for {tx.id}: {amt}"
-                )
+            amt = tx.amount
 
             if day_str not in day_map:
                 day_map[day_str] = {
