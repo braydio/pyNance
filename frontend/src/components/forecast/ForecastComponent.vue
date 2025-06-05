@@ -11,7 +11,7 @@
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
 
       <!-- Summary Panel -->
-      <div class="bg-white rounded-2xl shadow p-4">
+      <div class="card glass">
         <h2 class="text-xl font-semibold mb-2">Summary</h2>
         <p>Current Balance: $4,300.00</p>
         <p>Forecasted Net Delta: +$450.00</p>
@@ -27,13 +27,13 @@
       </div>
 
       <!-- Forecast Chart Placeholder -->
-      <div class="bg-white rounded-2xl shadow p-4 h-64 flex items-center justify-center text-gray-400">
+      <div class="card glass h-64 flex items-center justify-center text-gray-400">
         <span>[Chart will go here]</span>
       </div>
     </div>
 
     <!-- Forecast Breakdown -->
-    <div class="bg-white rounded-2xl shadow p-4">
+    <div class="card glass">
       <h2 class="text-xl font-semibold mb-4">Forecast Breakdown</h2>
       <ul class="space-y-1">
         <li>+ Salary: $2,500</li>
@@ -46,7 +46,7 @@
     </div>
 
     <!-- Custom Adjustments Form -->
-    <div class="bg-white rounded-2xl shadow p-4">
+    <div class="card glass">
       <h2 class="text-xl font-semibold mb-4">Custom Adjustments</h2>
       <form class="space-y-4">
         <div>
@@ -84,7 +84,8 @@ export default {
 
 <style scoped>
 .forecast-view {
-  background: #f9fafb;
+  background: var(--page-bg);
+  color: var(--theme-fg);
   min-height: 100vh;
 }
 </style>

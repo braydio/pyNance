@@ -9,10 +9,19 @@ import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
-from app.helpers.plaid_helpers import (get_accounts, get_transactions,
-                                       resolve_or_create_category)
-from app.models import (Account, AccountHistory, Category, PlaidAccount,
-                        TellerAccount, Transaction)
+from app.helpers.plaid_helpers import (
+    get_accounts,
+    get_transactions,
+    resolve_or_create_category,
+)
+from app.models import (
+    Account,
+    AccountHistory,
+    Category,
+    PlaidAccount,
+    TellerAccount,
+    Transaction,
+)
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
@@ -197,16 +206,27 @@ def fetch_url_with_backoff(url, cert, auth, max_retries=3, initial_delay=10):
 
 
 def refresh_data_for_teller_account(
-    account, access_token, teller_dot_cert, teller_dot_key, teller_api_base_url
+    account,
+    access_token,
+    teller_dot_cert,
+    teller_dot_key,
+    teller_api_base_url,
+    start_date=None,
+    end_date=None,
 ):
-    """
-    Refresh Teller-linked account by querying the Teller API to update balance and transactions.
-    Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
-    """
+    """Refresh a Teller account within an optional date range."""
+
     updated = False
     account_id = account.account_id
     user_id = account.user_id
     balance = account.balance
+
+    end_date_obj = end_date
+    start_date_obj = start_date
+    if isinstance(end_date_obj, str):
+        end_date_obj = datetime.strptime(end_date_obj, "%Y-%m-%d").date()
+    if isinstance(start_date_obj, str):
+        start_date_obj = datetime.strptime(start_date_obj, "%Y-%m-%d").date()
 
     # Refresh Balance
     url_balance = f"{teller_api_base_url}/accounts/{account_id}/balances"
@@ -294,6 +314,11 @@ def refresh_data_for_teller_account(
                 parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
             except ValueError:
                 parsed_date = pydate.today()
+
+            if start_date_obj and parsed_date < start_date_obj:
+                continue
+            if end_date_obj and parsed_date > end_date_obj:
+                continue
 
             category_list = txn.get("category", [])
             category = (
@@ -401,11 +426,12 @@ def get_paginated_transactions(
 
     serialized = []
     for tx, acc in results:
+        amount_signed = normalize_transaction_amount(tx.amount or 0, acc.type or "")
         serialized.append(
             {
                 "transaction_id": tx.transaction_id,
                 "date": tx.date.isoformat() if tx.date else None,
-                "amount": tx.amount or 0,
+                "amount": amount_signed,
                 "description": tx.description or tx.merchant_name or "N/A",
                 "category": (
                     tx.category.display_name
@@ -425,13 +451,24 @@ def get_paginated_transactions(
     return serialized, total
 
 
-def refresh_data_for_plaid_account(access_token, account_id):
+def refresh_data_for_plaid_account(
+    access_token, account_id, start_date=None, end_date=None
+):
+    """Refresh a single Plaid account within an optional date range."""
     updated = False
     now = datetime.utcnow()
 
     PLAID_MAX_LOOKBACK_DAYS = 680
-    end_date = now.date()
-    start_date = (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
+    end_date_obj = end_date or now.date()
+    start_date_obj = (
+        start_date or (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
+    )
+
+    if isinstance(end_date_obj, str):
+        end_date_obj = datetime.strptime(end_date_obj, "%Y-%m-%d").date()
+
+    if isinstance(start_date_obj, str):
+        start_date_obj = datetime.strptime(start_date_obj, "%Y-%m-%d").date()
 
     try:
         account = Account.query.filter_by(account_id=account_id).first()
@@ -460,8 +497,8 @@ def refresh_data_for_plaid_account(access_token, account_id):
 
         transactions = get_transactions(
             access_token=access_token,
-            start_date=start_date,
-            end_date=end_date,
+            start_date=start_date_obj,
+            end_date=end_date_obj,
         )
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
         # Only process transactions belonging to this specific account

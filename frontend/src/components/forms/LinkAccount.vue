@@ -1,5 +1,5 @@
 <template>
-  <div class="p-4 rounded-xl border bg-white shadow-md w-full max-w-2xl">
+  <div class="card glass w-full max-w-2xl">
     <button class="btn btn-pill btn-outline" @click="showLinkOptions = !showLinkOptions">
       {{ showLinkOptions ? 'Hide' : 'Link Account' }}
     </button>

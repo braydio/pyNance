@@ -1,4 +1,6 @@
 from datetime import timedelta, datetime
+from importlib import import_module
+
 from dateutil.parser import parse
 from app.services.recurring_detection import RecurringDetector
 from app.sql import recurring_logic
@@ -14,6 +16,12 @@ class RecurringBridge:
 
     def sync_to_db(self):
         """Detect recurring patterns and upsert them into the database."""
+        # Import DB session and models only when syncing to avoid heavy
+        # dependencies during module import. This also ensures models are
+        # registered with the SQLAlchemy instance used by tests.
+        import_module("app.extensions").db  # noqa: F401 - load session
+        import_module("app.models")
+
         candidates = self.detector.detect()
         actions = []
 
