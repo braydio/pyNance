@@ -1,0 +1,39 @@
+:root {
+  --page-bg: #0b0e14;
+  --background: var(--page-bg);
+  --color-bg: #131822;
+  --color-bg-dark: #0b0e14;
+  --color-bg-secondary: #1f252e;
+  --themed-bg: rgba(31, 37, 46, 0.65);
+  --themed-border: rgba(255, 255, 255, 0.12);
+  --surface: #212733;
+  --input-bg: #2b3140;
+  --divider: #363c47;
+  --color-border-secondary: #323844;
+
+  --theme-fg: #e5e7eb;
+  --color-text-dark: #000000;
+  --color-text-light: #f1f5f9;
+  --color-text-muted: #94a3b8;
+
+  --primary: #10b981;
+  --primary-dark: #059669;
+
+  --neon-mint: #2affb8;
+  --neon-purple: #c084fc;
+  --color-accent-mint: var(--neon-mint);
+  --color-accent-yellow: #f9f871;
+  --color-accent-magenta: #ff2cb1;
+  --color-accent-ice: #2fd7ff;
+  --color-accent-purple-hover: #d8b4fe;
+  --color-accent: var(--neon-mint);
+
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --color-hover-light: rgba(255, 255, 255, 0.1);
+  --hover-glow: 0 0 8px rgba(42, 255, 184, 0.6);
+
+  --button-bg: #2a303c;
+  --link-hover-color: var(--neon-mint);
+  --bar-gradient-end: #ff2cb1;
+  --accent-yellow-soft: rgba(249, 248, 113, 0.5);
+}
