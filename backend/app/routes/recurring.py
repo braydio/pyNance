@@ -5,6 +5,7 @@ from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
+from app.services.recurring_bridge import RecurringBridge
 
 recurring = Blueprint("recurring", __name__)
 
@@ -96,7 +97,42 @@ def update_recurring_tx(account_id):
 
 
 # -------------------------------------------------------------------
-# 2) Fetch merged recurring transactions (user + auto-detected), return reminders
+# 2) Scan account transactions to detect and persist recurring patterns
+# -------------------------------------------------------------------
+
+
+@recurring.route("/scan/<account_id>", methods=["POST"])
+def scan_account_for_recurring(account_id):
+    """Detect recurring transactions for an account and persist them."""
+    try:
+        cutoff = datetime.utcnow() - timedelta(days=90)
+        rows = (
+            Transaction.query.filter_by(account_id=account_id)
+            .filter(Transaction.date >= cutoff)
+            .order_by(Transaction.date.desc())
+            .all()
+        )
+        txs = [
+            {
+                "amount": float(tx.amount),
+                "description": tx.description or tx.merchant_name or "",
+                "date": tx.date.strftime("%Y-%m-%d"),
+            }
+            for tx in rows
+        ]
+
+        rb = RecurringBridge(txs)
+        actions = rb.sync_to_db()
+        return jsonify({"status": "success", "actions": actions}), 200
+    except Exception as e:
+        logger.error(
+            f"Error scanning account {account_id} for recurring: {e}", exc_info=True
+        )
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# -------------------------------------------------------------------
+# 3) Fetch merged recurring transactions (user + auto-detected), return reminders
 # -------------------------------------------------------------------
 
 
