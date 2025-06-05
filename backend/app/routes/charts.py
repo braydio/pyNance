@@ -115,7 +115,7 @@ def get_cash_flow():
 
         transactions = (
             db.session.query(Transaction)
-            .join(Account, Transaction.account_id == Account.id)
+            .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         )
         if start_date:
@@ -171,9 +171,11 @@ def get_cash_flow():
 
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
-    """
-    Return trended net asset values over time. Normalizes balances such that
-    liabilities reduce net worth (appear negative), and assets increase it.
+    """Return trended net asset values.
+
+    Balances are normalized so liabilities reduce net worth while assets
+    increase it. The response is wrapped in a ``{"status": "success", "data": ...}``
+    payload for frontend consumption.
     """
     today = datetime.utcnow().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
@@ -218,8 +220,8 @@ def get_net_assets():
             }
         )
 
-    return jsonify({"status": "success", "data": data}), 200
-
+)
+  return jsonify({"status": "success", "data": data}), 200
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():

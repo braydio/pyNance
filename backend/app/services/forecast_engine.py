@@ -61,7 +61,7 @@ class ForecastEngine:
 
         latest_balances = (
             self.db.query(AccountHistory.account_id, AccountHistory.balance)
-            .order_by(AccountHistory.account_id, AccountHistory.timestamp.desc())
+            .order_by(AccountHistory.account_id, AccountHistory.updated_at.desc())
             .distinct(AccountHistory.account_id)
             .all()
         )

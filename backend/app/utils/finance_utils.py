@@ -58,12 +58,9 @@ def display_transaction_amount(txn: Transaction) -> float:
 
 def transform_transaction(txn: Transaction):
     """Transform raw transaction amount for display based on account type."""
-    type = txn.transaction_type
-    if type:
-        print(f"Transaction type as {type}")
-        transaction_type = type
-    else:
-        transaction_type = "expense"
+    txn_type = txn.transaction_type or "expense"
+    if txn.transaction_type:
+        print(f"Transaction type as {txn_type}")
 
     return normalize_transaction_amount(
         amount=txn.amount,

@@ -25,7 +25,6 @@ def read_file(path):
 
 def detect_duplicates():
     files = list(get_vue_files(COMPONENTS_DIR))
-    seen = set()
     possible_dupes = []
 
     for i, file1 in enumerate(files):

@@ -8,7 +8,7 @@ from app.models import AccountHistory
 forecast = Blueprint("forecast", __name__)
 
 
-@forecast.route("/", methods=["GET"])
+@forecast.route("", methods=["GET"])
 def get_forecast():
     try:
         view_type = request.args.get("view_type", "Month")

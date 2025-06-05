@@ -127,8 +127,14 @@ def get_transactions_paginated():
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
 
-        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
-        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        start_date = (
+            datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if start_date_str
+            else None
+        )
+        end_date = (
+            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        )
 
         transactions, total = account_logic.get_paginated_transactions(
             page,
