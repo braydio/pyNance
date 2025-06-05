@@ -1,49 +1,71 @@
 from flask import Blueprint, jsonify, request
-from app.services.forecast_balance import ForecastSimulator
+from collections import defaultdict
+from datetime import datetime, timedelta
 from app.extensions import db
-from app.models import Account, RecurringTransaction, Transaction
-from datetime import datetime
+from app.services.forecast_orchestrator import ForecastOrchestrator
+from app.models import AccountHistory
 
 forecast = Blueprint("forecast", __name__)
 
 
-@forecast.route("/forecast", methods=["GET"])
+@forecast.route("", methods=["GET"])
 def get_forecast():
     try:
-        days = int(request.args.get("days", 30))
-        if not 1 <= days <= 90:
-            return jsonify({"error": "days must be between 1 and 90"}), 400
+        view_type = request.args.get("view_type", "Month")
+        manual_income = float(request.args.get("manual_income", 0))
+        liability_rate = float(request.args.get("liability_rate", 0))
 
-        primary_account = (
-            Account.query.filter_by(is_primary=True)
-            .filter(Account.is_hidden.is_(False))
-            .first()
-        )
-        if not primary_account:
-            return jsonify({"error": "Primary account not found"}), 404
+        horizon = 30 if view_type.lower() == "month" else 365
 
-        rec_events = []
-        recs = (
-            RecurringTransaction.query.join(Transaction)
-            .join(Account, Transaction.account_id == Account.account_id)
-            .filter(Account.is_hidden.is_(False))
+        orchestrator = ForecastOrchestrator(db.session)
+        projections = orchestrator.forecast(days=horizon)
+
+        daily_totals = defaultdict(float)
+        for p in projections:
+            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
+            daily_totals[day] += p.get("balance", 0)
+
+        labels = []
+        forecast_line = []
+        start = datetime.utcnow().date()
+        for i in range(horizon):
+            day = start + timedelta(days=i)
+            labels.append(day.strftime("%b %d"))
+            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+
+        adjustment = manual_income - liability_rate
+        if adjustment:
+            forecast_line = [round(f + adjustment, 2) for f in forecast_line]
+
+        actuals_map = defaultdict(float)
+        history_rows = (
+            db.session.query(AccountHistory)
+            .filter(AccountHistory.date >= start)
+            .filter(AccountHistory.date <= start + timedelta(days=horizon - 1))
             .all()
         )
-        for r in recs:
-            tx = r.transaction
-            if not tx:
-                continue
-            rec_events.append(
+        for row in history_rows:
+            key = row.date.date()
+            actuals_map[key] += row.balance
+
+        actuals = [actuals_map.get(start + timedelta(days=i)) for i in range(horizon)]
+
+        metadata = {
+            "account_count": len({p["account_id"] for p in projections}),
+            "recurring_count": 0,
+            "data_age_days": 0,
+        }
+
+        return (
+            jsonify(
                 {
-                    "amount": tx.amount,
-                    "next_due_date": r.next_due_date.isoformat(),
-                    "frequency": r.frequency,
+                    "labels": labels,
+                    "forecast": forecast_line,
+                    "actuals": actuals,
+                    "metadata": metadata,
                 }
-            )
-
-        sim = ForecastSimulator(primary_account.current_balance, rec_events)
-        result = sim.project(days=days)
-        return jsonify({"status": "success", "data": result})
-
+            ),
+            200,
+        )
     except Exception as e:
         return jsonify({"error": str(e)}), 500
