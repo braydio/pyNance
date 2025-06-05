@@ -38,7 +38,7 @@
       </thead>
 
       <tbody>
-        <tr v-for="(tx, index) in paginatedTransactions" :key="tx.transaction_id"
+        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id"
           :class="['text-sm', editingIndex === index ? 'bg-yellow-100' : 'hover:bg-gray-100']">
           <td class="px-3 py-2">
             <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
@@ -83,12 +83,6 @@
       </tbody>
     </table>
 
-    <!-- Pagination Controls -->
-    <div class="flex justify-between items-center mt-4">
-      <button @click="currentPage--" :disabled="currentPage === 1" class="btn-sm">Previous</button>
-      <span>Page {{ currentPage }} of {{ totalPages }}</span>
-      <button @click="currentPage++" :disabled="currentPage >= totalPages" class="btn-sm">Next</button>
-    </div>
 
     <!-- Empty State -->
     <div v-if="filteredTransactions.length === 0" class="text-center text-gray-500">
@@ -122,8 +116,6 @@ const editBuffer = ref({
 const categoryTree = ref([])
 const sortKey = ref('date')
 const sortOrder = ref('asc')
-const currentPage = ref(1)
-const itemsPerPage = 10
 
 const subcategoryOptions = computed(() => {
   const group = categoryTree.value.find(g => g.name === selectedPrimaryCategory.value)
@@ -219,25 +211,6 @@ const filteredTransactions = computed(() => {
   return txs
 })
 
-const totalPages = computed(() =>
-  Math.ceil(filteredTransactions.value.length / itemsPerPage)
-)
-
-const paginatedTransactions = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  const pageData = filteredTransactions.value.slice(start, end)
-
-  if (pageData.length === 0 && currentPage.value > 1) {
-    currentPage.value--
-    return filteredTransactions.value.slice(
-      (currentPage.value - 1) * itemsPerPage,
-      currentPage.value * itemsPerPage
-    )
-  }
-
-  return pageData
-})
 
 onMounted(async () => {
   try {
