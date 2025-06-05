@@ -79,9 +79,9 @@ API Routes
 
 Replace /api/forecast/forecast with routes:
 
-GET /api/forecast – returns forecast/actual lines using orchestrator.
+GET /api/forecast – returns forecast/actual lines using orchestrator. ✅ Implemented June 2025
 
-POST /api/forecast/calculate – accepts manual income/liability overrides.
+POST /api/forecast/calculate – accepts manual income/liability overrides. ✅ Implemented
 
 Optionally add GET /api/forecast/events and /api/forecast/account/{account_id} as per roadmap.
 
