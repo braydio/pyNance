@@ -170,6 +170,14 @@ def delete_plaid_account():
 def refresh_accounts_endpoint():
     data = request.get_json()
     user_id = data.get("user_id")
+    start_date_str = data.get("start_date")
+    end_date_str = data.get("end_date")
+    start_date = (
+        datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+    )
+    end_date = (
+        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+    )
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
 
@@ -185,6 +193,8 @@ def refresh_accounts_endpoint():
                 refreshed_flag = account_logic.refresh_data_for_plaid_account(
                     access_token=acct.plaid_account.access_token,
                     account_id=acct.account_id,
+                    start_date=start_date,
+                    end_date=end_date,
                 )
                 if refreshed_flag:
                     refreshed.append(
