@@ -114,8 +114,9 @@ def get_cash_flow():
         )
 
         transactions = (
-            db.session.query(Transaction)
+
             .join(Account, Transaction.account_id == Account.account_id)
+
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         )
         if start_date:
