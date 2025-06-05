@@ -9,10 +9,19 @@ import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
-from app.helpers.plaid_helpers import (get_accounts, get_transactions,
-                                       resolve_or_create_category)
-from app.models import (Account, AccountHistory, Category, PlaidAccount,
-                        TellerAccount, Transaction)
+from app.helpers.plaid_helpers import (
+    get_accounts,
+    get_transactions,
+    resolve_or_create_category,
+)
+from app.models import (
+    Account,
+    AccountHistory,
+    Category,
+    PlaidAccount,
+    TellerAccount,
+    Transaction,
+)
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
