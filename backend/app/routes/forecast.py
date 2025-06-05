@@ -22,7 +22,11 @@ def get_forecast():
 
         daily_totals = defaultdict(float)
         for p in projections:
-            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
+            day = (
+                p["date"].strftime("%Y-%m-%d")
+                if hasattr(p["date"], "strftime")
+                else str(p["date"])
+            )
             daily_totals[day] += p.get("balance", 0)
 
         labels = []
@@ -31,7 +35,9 @@ def get_forecast():
         for i in range(horizon):
             day = start + timedelta(days=i)
             labels.append(day.strftime("%b %d"))
-            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+            forecast_line.append(
+                round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2)
+            )
 
         adjustment = manual_income - liability_rate
         if adjustment:

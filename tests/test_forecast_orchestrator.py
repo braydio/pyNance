@@ -58,6 +58,7 @@ except Exception:
 class DummyDB:
     pass
 
+
 def test_orchestrator_forecast():
     orch = forecast_orchestrator.ForecastOrchestrator(DummyDB())
     orch.rule_engine = DummyRuleEngine()
