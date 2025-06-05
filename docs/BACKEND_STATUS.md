@@ -1,9 +1,9 @@
 
-## 🔄 Forecast Engine Status – May 10, 2025
+## 🔄 Forecast Engine Status – June 6, 2025
 
 ### ✅ Current Status - Backend Modules
 
-The backend is partially scaffolded with basic endpoint functionality (`/api/forecast`, `/api/forecast/calculate`) and mock logic for forecast vs actuals. Frontend structure, design, and module references are well-documented and chart rendering is prepped. However, the backend still lacks full integration with live financial data sources, forecast logic, and delta computations.
+The backend now exposes live forecast endpoints (`GET /api/forecast`, `POST /api/forecast/calculate`) powered by `ForecastOrchestrator`. These routes aggregate `recurring_transactions` and `account_history` to return forecast and actual lines. Basic recurring detection persistence has been wired via `recurring_bridge.py`. Further work is required for advanced analytics and error handling.
 
 ### 🌟 Goals – Next Development Phase
 
