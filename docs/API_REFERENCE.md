@@ -33,6 +33,14 @@ POST   /api/plaid/transactions/refresh_accounts
 POST   /api/teller/transactions/sync
 ```
 
+**POST /api/plaid/transactions/refresh_accounts**
+
+Optional JSON body parameters:
+
+- `user_id` – ID of the user whose accounts should refresh
+- `start_date` – optional ISO `YYYY-MM-DD` start date
+- `end_date` – optional ISO `YYYY-MM-DD` end date
+
 **Rule:**
 
 - Generic paths: shared or abstracted logic
