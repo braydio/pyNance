@@ -147,6 +147,7 @@ def get_manual_transactions():
             db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter(Account.link_type.in_(["manual", "pdf_import"]))
+            .filter(Account.is_hidden.is_(False))
             .order_by(Transaction.date.desc())
             .all()
         )

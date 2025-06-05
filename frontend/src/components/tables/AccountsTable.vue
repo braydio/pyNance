@@ -3,19 +3,34 @@
     <div class="accounts-table">
       <h2>Accounts</h2>
 
-      <!-- Filter & Controls Row -->
+      <!-- Filter Row -->
       <div class="filter-row">
-        <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter accounts..." />
+        <input
+          v-model="searchQuery"
+          class="filter-input"
+          type="text"
+          placeholder="Filter accounts..."
+        />
 
-        <button class="export-btn" @click="toggleDeleteButtons">
-          {{ showDeleteButtons ? "Hide Delete Buttons" : "Show Delete Buttons" }}
+        <button class="export-btn" @click="controlsVisible = !controlsVisible">
+          {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
         </button>
 
-        <button class="export-btn" @click="exportCSV">Export CSV</button>
+        <template v-if="controlsVisible">
+          <button class="export-btn" @click="toggleDeleteButtons">
+            {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
+          </button>
 
-        <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
-          Filter by Type
-        </button>
+          <button class="export-btn" @click="exportCSV">Export CSV</button>
+
+          <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
+            Filter by Type
+          </button>
+
+          <button class="export-btn" @click="showHidden = !showHidden">
+            {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
+          </button>
+        </template>
       </div>
 
       <!-- Type Filter Slide -->
@@ -51,9 +66,10 @@
               Link Type <span>{{ sortKey === 'link_type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
             <th @click="sortTable('last_refreshed')">
-              Last Refreshed <span>{{ sortKey === 'last_refreshed' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
+              Last Refreshed
+              <span>{{ sortKey === 'last_refreshed' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
             </th>
-            <th v-if="showDeleteButtons">Actions</th>
+            <th v-if="controlsVisible">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -64,8 +80,19 @@
             <td>{{ formatBalance(account.balance) }}</td>
             <td>{{ account.link_type || 'N/A' }}</td>
             <td>{{ formatDate(account.last_refreshed) }}</td>
-            <td v-if="showDeleteButtons">
-              <button class="btn btn-sm" @click="deleteAccount(account.account_id)">Delete</button>
+            <td v-if="controlsVisible">
+              <div class="btn-group">
+                <button class="btn btn-sm" @click="toggleHidden(account)">
+                  {{ account.is_hidden ? 'Unhide' : 'Hide' }}
+                </button>
+                <button
+                  v-if="showDeleteButtons"
+                  class="btn btn-sm"
+                  @click="deleteAccount(account.account_id)"
+                >
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -108,6 +135,8 @@ export default {
       showDeleteButtons: false,
       showTypeFilter: false,
       typeFilters: [],
+      showHidden: false,
+      controlsVisible: false,
     };
   },
   computed: {
@@ -116,6 +145,9 @@ export default {
     },
     filteredAccounts() {
       let results = [...this.accounts];
+      if (!this.showHidden) {
+        results = results.filter(acc => !acc.is_hidden);
+      }
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase();
         results = results.filter((acc) => {
@@ -151,7 +183,9 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const response = await axios.get("/api/accounts/get_accounts");
+        const response = await axios.get(
+          "/api/accounts/get_accounts?include_hidden=true"
+        );
         if (response.data?.status === "success") {
           this.accounts = response.data.accounts || [];
         } else {
@@ -173,6 +207,14 @@ export default {
         } else {
           alert("Error deleting account: " + res.message);
         }
+      } catch (err) {
+        alert("Error: " + err.message);
+      }
+    },
+    async toggleHidden(account) {
+      try {
+        await api.setAccountHidden(account.account_id, !account.is_hidden);
+        this.fetchAccounts();
       } catch (err) {
         alert("Error: " + err.message);
       }
@@ -301,6 +343,11 @@ export default {
 .btn.btn-sm:hover {
   background-color: var(--color-accent-purple-hover);
   color: white;
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.25rem;
 }
 
 .btn-delete {
