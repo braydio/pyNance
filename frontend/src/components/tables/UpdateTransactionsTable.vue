@@ -124,6 +124,7 @@
       </tbody>
     </table>
 
+
     <!-- Empty State -->
     <div v-if="filteredTransactions.length === 0" class="text-center text-gray-500">
       No transactions found.
@@ -248,6 +249,7 @@ const filteredTransactions = computed(() => {
   })
   return txs
 })
+
 
 onMounted(async () => {
   try {
