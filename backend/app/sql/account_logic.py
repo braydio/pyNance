@@ -203,6 +203,7 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
+
     updated = False
     account_id = account.account_id
     user_id = account.user_id
