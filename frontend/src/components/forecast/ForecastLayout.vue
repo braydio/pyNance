@@ -4,10 +4,10 @@
       :liability-rate="liabilityRate" :view-type="viewType" @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event" />
 
-    <ForecastChart :forecast-items="recurringTxs" :account-history="accountHistory" :manual-income="manualIncome"
+    <ForecastChart :forecast-items="forecastItems" :account-history="accountHistory" :manual-income="manualIncome"
       :liability-rate="liabilityRate" :view-type="viewType" @update:viewType="viewType = $event" />
 
-    <ForecastBreakdown :forecast-items="recurringTxs" :view-type="viewType" />
+    <ForecastBreakdown :forecast-items="forecastItems" :view-type="viewType" />
 
     <ForecastAdjustmentsForm @add-adjustment="addAdjustment" />
   </div>
@@ -20,20 +20,28 @@ import ForecastChart from './ForecastChart.vue'
 import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import { useForecastData } from '@/composables/useForecastData'
+import { computed } from 'vue'
 
 const viewType = ref<'Month' | 'Year'>('Month')
 const currentBalance = ref(0)
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 
-const { recurringTxs, accountHistory, loading, error, fetchData } = useForecastData()
+const { labels, forecast, actuals, loading, error, fetchData } = useForecastData()
+
+const forecastItems = computed(() =>
+  labels.value.map((label, i) => ({ label, amount: forecast.value[i] }))
+)
+const accountHistory = computed(() =>
+  labels.value.map((label, i) => ({ date: label, balance: actuals.value[i] ?? 0 }))
+)
 
 onMounted(() => {
   fetchData()
 })
 
 function addAdjustment(adjustment) {
-  recurringTxs.value.push(adjustment)
+  forecastItems.value.push(adjustment)
 }
 </script>
 
