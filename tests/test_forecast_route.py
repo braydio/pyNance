@@ -127,6 +127,8 @@ def dummy_forecast(self, method="rule", days=60, stat_input=None):
         {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
         for i in range(days)
     ]
+
+
 def test_forecast_route(client):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
