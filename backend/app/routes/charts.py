@@ -1,15 +1,15 @@
 # File: app/routes/charts.py
 # business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
-import random
-from datetime import datetime, timedelta
 import traceback
+from collections import defaultdict
+
+from app.services.forecast_orchestrator import ForecastOrchestrator
 
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Transaction
 from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
-from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -57,14 +57,7 @@ def category_breakdown():
         breakdown_map = {}
         for tx, category in transactions:
             key = category.display_name or "Uncategorized"
-            amt = abs(
-                tx.amount
-            )  # normalize_account_balance(abs(tx.amount), tx.account.type)
-
-            if hasattr(tx, "account") and tx.account and hasattr(tx.account, "type"):
-                amt = normalize_account_balance(abs(tx.amount), tx.account.type)
-            else:
-                amt = abs(tx.amount)
+            amt = abs(tx.amount)
 
             if key not in breakdown_map:
                 logger.debug("Initializing breakdown record for category: %s", key)
@@ -122,7 +115,7 @@ def get_cash_flow():
 
         transactions = (
             db.session.query(Transaction)
-            .join(Account, Transaction.account_id == Account.id)
+            .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         )
         if start_date:
@@ -139,7 +132,7 @@ def get_cash_flow():
                 if granularity == "daily"
                 else tx.date.strftime("%m-%Y")
             )
-            amt = normalize_account_balance(tx.amount, tx.account.type)
+            amt = tx.amount
             if key not in groups:
                 groups[key] = {"income": 0, "expenses": 0}
             if amt > 0:
@@ -178,9 +171,11 @@ def get_cash_flow():
 
 @charts.route("/net_assets", methods=["GET"])
 def get_net_assets():
-    """
-    Return trended net asset values over time. Normalizes balances such that
-    liabilities reduce net worth (appear negative), and assets increase it.
+    """Return trended net asset values.
+
+    Balances are normalized so liabilities reduce net worth while assets
+    increase it. The response is wrapped in a ``{"status": "success", "data": ...}``
+    payload for frontend consumption.
     """
     today = datetime.utcnow().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
@@ -225,8 +220,8 @@ def get_net_assets():
             }
         )
 
-    return jsonify(data)
-
+)
+  return jsonify({"status": "success", "data": data}), 200
 
 @charts.route("/daily_net", methods=["GET"])
 def get_daily_net():
@@ -253,21 +248,11 @@ def get_daily_net():
 
             # Safe access and fallback
             account = getattr(tx, "account", None)
-            subtype = getattr(account, "subtype", None)
-            if subtype is None:
+            if not account or getattr(account, "subtype", None) is None:
                 logger.warning(
-                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to neutral normalization."
+                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to raw amount."
                 )
-
-            try:
-                amt = normalize_account_balance(tx.amount, subtype)
-                logger.debug(f"Normalized transaction amount for {tx.id}: {amt}")
-            except Exception as e:
-                logger.error(f"Normalization failed for transaction {tx.id}: {e}")
-                amt = tx.amount  # fallback to raw amount
-                logger.debug(
-                    f"Falling back to raw transaction amount for {tx.id}: {amt}"
-                )
+            amt = tx.amount
 
             if day_str not in day_map:
                 day_map[day_str] = {
@@ -340,3 +325,57 @@ def accounts_snapshot():
         for acc in accounts
     ]
     return jsonify(result)
+
+
+@charts.route("/forecast", methods=["GET", "POST"])
+def forecast_route():
+    """Return forecast vs actual lines for the authenticated user."""
+    try:
+        view_type = request.args.get("view_type", "Month")
+        manual_income = float(request.args.get("manual_income", 0))
+        liability_rate = float(request.args.get("liability_rate", 0))
+
+        horizon = 30 if view_type.lower() == "month" else 365
+
+        orchestrator = ForecastOrchestrator(db.session)
+        projections = orchestrator.forecast(days=horizon)
+
+        daily_totals = defaultdict(float)
+        for p in projections:
+            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
+            daily_totals[day] += p.get("balance", 0)
+
+        labels = []
+        forecast_line = []
+        start = datetime.utcnow().date()
+        for i in range(horizon):
+            day = start + timedelta(days=i)
+            labels.append(day.strftime("%b %d"))
+            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+
+        adjustment = manual_income - liability_rate
+        if adjustment:
+            forecast_line = [round(f + adjustment, 2) for f in forecast_line]
+
+        actuals = [None for _ in range(horizon)]
+
+        metadata = {
+            "account_count": len({p["account_id"] for p in projections}),
+            "recurring_count": 0,
+            "data_age_days": 0,
+        }
+
+        return (
+            jsonify(
+                {
+                    "labels": labels,
+                    "forecast": forecast_line,
+                    "actuals": actuals,
+                    "metadata": metadata,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error generating forecast: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500

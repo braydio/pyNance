@@ -37,14 +37,14 @@
         <AssetsBarTrended />
       </div>
       <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
-        <AccountsReorderChart />
+        <AccountsReorderChart ref="reorderChart" />
       </div>
     </section>
 
     <!-- Accounts Table -->
     <transition name="slide-horizontal" mode="out-in">
       <div class="card section-container" :key="activeAccountGroup">
-        <AccountsTable :accountGroup="activeAccountGroup" />
+        <AccountsTable :accountGroup="activeAccountGroup" @refresh="refreshCharts" />
       </div>
     </transition>
 
@@ -82,6 +82,11 @@ import TokenUpload from '@/components/forms/TokenUpload.vue'
 
 // ✅ NEW: Import product scope selector
 import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
+
+const reorderChart = ref(null)
+function refreshCharts() {
+  reorderChart.value?.refresh()
+}
 
 // Meta & State
 const userName = import.meta.env.VITE_USER_ID_PLAID || ''
