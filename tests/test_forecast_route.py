@@ -21,7 +21,7 @@ extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.config"] = config_stub
 sys.modules["app.extensions"] = extensions_stub
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "forecast.py")
-spec = importlib.util.spec_from_file_location("forecast_module", ROUTE_PATH)
+spec = importlib.util.spec_from_file_location("app.routes.forecast", ROUTE_PATH)
 forecast_module = importlib.util.module_from_spec(spec)
 try:
     spec.loader.exec_module(forecast_module)
@@ -29,7 +29,9 @@ except Exception:  # pragma: no cover - skip if deps missing
     pytest.skip("forecast module import failed", allow_module_level=True)
 from flask import Flask
 SERVICES_PATH = os.path.join(BASE_BACKEND, "app", "services", "forecast_orchestrator.py")
-spec2 = importlib.util.spec_from_file_location("forecast_orchestrator", SERVICES_PATH)
+spec2 = importlib.util.spec_from_file_location(
+    "app.services.forecast_orchestrator", SERVICES_PATH
+)
 forecast_orchestrator = importlib.util.module_from_spec(spec2)
 spec2.loader.exec_module(forecast_orchestrator)
 
