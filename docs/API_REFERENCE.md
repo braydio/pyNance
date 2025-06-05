@@ -79,6 +79,23 @@ Examples:
 - Any changes to `/api/transactions/get_transactions` must notify frontend
 - ✅ These conventions **must be enforced via linting or pre-commit checks** to ensure consistency
 
+## ✅ Canonical Endpoint Designation
+
+The following route is the **canonical** source of paginated transaction data for all frontend views:
+
+```text
+GET /api/transactions/get_transactions
+```
+
+This endpoint:
+
+- Serves a unified view of transaction data across all providers
+- Returns a JSON body with the transaction list and a `total` count
+- Is consumed by dashboard components and paginated tables
+- Must remain stable in shape and behavior to prevent frontend regressions
+
+> Provider-specific filtering (e.g., only Plaid accounts) should be handled via query params or within the shared SQL layer—not by introducing new parallel routes.
+
 ---
 
 **Last Updated:** 2025-05-25

@@ -3,8 +3,8 @@
 # Import Helpers
 
 Provides `dispatch_import()` to route uploaded files to the appropriate parser.
-Currently supports CSV transaction imports with a parser tailored for Synchrony
-exports and a placeholder for PDF parsing.
+Supports CSV transaction imports (Synchrony CSV export format) and PDF imports
+using `pdfplumber` to read Synchrony statements.
 
-**Dependencies**: `csv`, `datetime`, `app.config.logger`.
+**Dependencies**: `csv`, `datetime`, `pdfplumber`, `app.config.logger`.
 ```

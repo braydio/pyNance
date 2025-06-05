@@ -91,6 +91,7 @@ class AccountHistory:
 
 
 models_stub.AccountHistory = AccountHistory
+models_stub.Account = type("Account", (), {})
 sys.modules["app.models"] = models_stub
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "forecast.py")
 spec = importlib.util.spec_from_file_location("app.routes.forecast", ROUTE_PATH)

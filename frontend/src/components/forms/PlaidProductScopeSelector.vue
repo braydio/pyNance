@@ -44,23 +44,11 @@ function capitalize(word) {
 </script>
 
 <style scoped>
-.btn {
-  @apply px-3 py-1 rounded-lg border text-sm cursor-pointer;
-}
-
-.btn-outline {
-  @apply border-gray-400 bg-white hover:bg-gray-100;
-}
-
-.btn-pill {
-  @apply rounded-full;
-}
-
+@reference "../../assets/css/main.css";
 .bg-primary {
-  @apply bg-blue-600;
+  background-color: var(--neon-purple);
 }
-
 .text-muted {
-  @apply text-gray-600;
+  color: var(--color-text-muted);
 }
 </style>
