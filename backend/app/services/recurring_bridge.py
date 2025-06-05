@@ -1,4 +1,5 @@
-from datetime import datetime, timedelta
+from datetime import timedelta, datetime
+from dateutil.parser import parse
 from app.services.recurring_detection import RecurringDetector
 from app.sql import recurring_logic
 
@@ -16,18 +17,25 @@ class RecurringBridge:
         candidates = self.detector.detect()
         actions = []
 
-        freq_map = {"daily": 1, "weekly": 7, "biweekly": 14, "monthly": 30}
+        freq_map = {
+            "daily": 1,
+            "weekly": 7,
+            "biweekly": 14,
+            "monthly": 30,
+        }
 
         for item in candidates:
-            last_seen = datetime.fromisoformat(item["last_seen"])
-            next_due = last_seen + timedelta(days=freq_map.get(item["frequency"], 30))
+            last_seen = parse(item.get("last_seen")).date()
+            freq_days = freq_map.get(item["frequency"].lower(), 30)
+            next_due = last_seen + timedelta(days=freq_days)
+            confidence = float(item.get("occurrences", 1)) / 10.0
 
             result = recurring_logic.upsert_recurring(
                 amount=item["amount"],
                 description=item["description"],
                 frequency=item["frequency"],
-                next_due_date=next_due.date(),
-                confidence=item.get("occurrences", 0),
+                next_due_date=next_due,
+                confidence=confidence,
             )
             actions.append(result)
 

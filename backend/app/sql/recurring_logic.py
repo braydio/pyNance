@@ -2,9 +2,13 @@
 
 from collections import defaultdict
 from datetime import datetime
+from typing import Optional
+
 from sqlalchemy import func
+
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
+import uuid
 
 
 def find_recurring_items(transactions):
@@ -45,49 +49,50 @@ def find_recurring_items(transactions):
     return recurring_items
 
 
-def upsert_recurring(amount, description, frequency, next_due_date, confidence=1):
-    """Insert or update a RecurringTransaction record.
-
-    Args:
-        amount (float): Transaction amount used to locate a matching transaction.
-        description (str): Transaction description signature.
-        frequency (str): Detected frequency string.
-        next_due_date (date): When the next instance is expected.
-        confidence (int): Optional indicator of match strength.
-
-    Returns:
-        dict: Result summary including created/updated status.
-    """
+def upsert_recurring(
+    *,
+    amount: float,
+    description: str,
+    frequency: str,
+    next_due_date: datetime,
+    confidence: Optional[float] = None,
+):
+    """Insert or update a RecurringTransaction linked to a matching Transaction."""
 
     tx = (
-        Transaction.query.filter(
-            func.lower(Transaction.description) == description.lower()
-        )
+        db.session.query(Transaction)
+        .filter(func.lower(Transaction.description) == description.lower())
         .filter(Transaction.amount == amount)
         .order_by(Transaction.date.desc())
         .first()
     )
 
     if not tx:
-        return {"status": "no_match"}
+        tx = Transaction(
+            transaction_id=str(uuid.uuid4())[:12],
+            amount=amount,
+            date=datetime.utcnow(),
+            description=description,
+            provider="detected",
+        )
+        db.session.add(tx)
+        db.session.flush()
 
-    existing = RecurringTransaction.query.filter_by(
-        transaction_id=tx.transaction_id
-    ).first()
+    rec = RecurringTransaction.query.filter_by(transaction_id=tx.transaction_id).first()
 
-    if existing:
-        existing.frequency = frequency
-        existing.next_due_date = next_due_date
-        existing.notes = f"confidence:{confidence}"
-        db.session.commit()
-        return {"status": "updated", "id": existing.id}
+    status = "updated" if rec else "inserted"
+    if rec:
+        rec.frequency = frequency
+        rec.next_due_date = next_due_date
+        rec.notes = f"confidence:{confidence}" if confidence is not None else None
+    else:
+        rec = RecurringTransaction(
+            transaction_id=tx.transaction_id,
+            frequency=frequency,
+            next_due_date=next_due_date,
+            notes=f"confidence:{confidence}" if confidence is not None else None,
+        )
+        db.session.add(rec)
 
-    rec = RecurringTransaction(
-        transaction_id=tx.transaction_id,
-        frequency=frequency,
-        next_due_date=next_due_date,
-        notes=f"confidence:{confidence}",
-    )
-    db.session.add(rec)
     db.session.commit()
-    return {"status": "inserted", "id": rec.id}
+    return {"status": status, "recurring_id": rec.id}

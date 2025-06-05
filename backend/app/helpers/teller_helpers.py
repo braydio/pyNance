@@ -4,7 +4,6 @@ import json
 import requests
 from app.sql.forecast_logic import update_account_history
 from app.config import FILES, TELLER_API_BASE_URL, logger
-from app.sql.forecast_logic import update_account_history
 
 TELLER_CERTIFICATE = FILES["TELLER_DOT_CERT"]
 TELLER_PRIVATE_KEY = FILES["TELLER_DOT_KEY"]
