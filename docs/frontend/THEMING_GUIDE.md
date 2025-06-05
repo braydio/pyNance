@@ -14,13 +14,17 @@ frontend/
    └─ styles/
       ├─ global-colors.css   # imports the active theme
       └─ themes/
-         └─ neon-dark.css    # default neon dark palette
+         ├─ neon-dark.css    # default neon dark palette
+         └─ dark-frost.css   # dark frost with neon accents
 ```
 
 * `global-colors.css` defines the variables that components rely on. It imports
   a theme file so new themes can be swapped without editing components.
 * `themes/neon-dark.css` is the initial theme with neon accents and frosted
   surfaces.
+* `themes/dark-frost.css` extends the palette with slightly darker backgrounds
+  but keeps the neon accent variables intact. It powers the "Dark Frost" look
+  used across components.
 
 ## Adding a New Theme
 
