@@ -118,6 +118,7 @@ import RefreshControls from "@/components/widgets/RefreshControls.vue";
 export default {
   name: "AccountsTable",
   components: { RefreshControls },
+  emits: ["refresh"],
   props: {
     provider: {
       type: String,
@@ -134,6 +135,7 @@ export default {
       sortOrder: 1,
       showDeleteButtons: false,
       showTypeFilter: false,
+      selectedType: "",
       typeFilters: [],
       showHidden: false,
       controlsVisible: false,
@@ -154,6 +156,9 @@ export default {
           const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status, acc.link_type].map(val => (val || '').toLowerCase());
           return fields.some(f => f.includes(query));
         });
+      }
+      if (this.selectedType) {
+        results = results.filter(acc => acc.type === this.selectedType);
       }
       if (this.typeFilters.length) {
         results = results.filter(acc => this.typeFilters.includes(acc.type));
@@ -195,6 +200,7 @@ export default {
         this.error = err.message || "Error fetching accounts.";
       } finally {
         this.loading = false;
+        this.$emit('refresh');
       }
     },
     async deleteAccount(accountId) {

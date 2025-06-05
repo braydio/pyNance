@@ -32,7 +32,8 @@ def refresh_all_accounts():
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
                 updated = account_logic.refresh_data_for_plaid_account(
-                    access_token, PLAID_BASE_URL
+                    access_token,
+                    account.account_id
                 )
                 if updated:
                     account.last_refreshed = datetime.utcnow()
@@ -108,6 +109,7 @@ def get_accounts():
                 data.append(
                     {
                         "id": a.id,
+                        "account_id": a.account_id,
                         "name": a.name,
                         "institution_name": a.institution_name,
                         "type": a.type,

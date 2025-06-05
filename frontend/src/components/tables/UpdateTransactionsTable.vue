@@ -1,6 +1,5 @@
 <template>
   <div class="transactions space-y-4 p-6 bg-gray-50 rounded-xl shadow">
-    <VueToast v-if="toast.message" :type="toast.type" :message="toast.message" @close="toast.message = ''" />
 
     <!-- Category Filters -->
     <div class="flex items-center gap-4">
@@ -219,6 +218,10 @@ const filteredTransactions = computed(() => {
   })
   return txs
 })
+
+const totalPages = computed(() =>
+  Math.ceil(filteredTransactions.value.length / itemsPerPage)
+)
 
 const paginatedTransactions = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
