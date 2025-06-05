@@ -29,7 +29,7 @@ import { Chart } from "chart.js/auto";
 
 export default {
   name: "DailyNetChart",
-  setup() {
+  setup(_, { emit }) {
     const chartInstance = ref(null);
     const chartCanvas = ref(null);
     const chartData = ref([]);
@@ -161,6 +161,19 @@ export default {
               borderWidth: 1,
             },
             legend: { display: true },
+          },
+          onClick: (evt) => {
+            const points = chartInstance.value.getElementsAtEventForMode(
+              evt,
+              "nearest",
+              { intersect: true },
+              false
+            );
+            if (points.length) {
+              const index = points[0].index;
+              const date = filtered[index].date;
+              emit("bar-click", date);
+            }
           },
         },
       });
