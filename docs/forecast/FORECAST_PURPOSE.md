@@ -101,7 +101,7 @@ It does **not yet cover**:
 
 ## Next Steps
 
-1. **Finalize API endpoint** to expose `forecast_orchestrator`
+1. **Refine API endpoint** – `/api/forecast` now uses `ForecastOrchestrator`; continue improving validation and metadata.
 2. **Wire frontend** to visualize net forecast trajectory
 3. **Integrate actual vs. projected comparison** using historical backtests
 4. Build `recurring_detection.py` to dynamically populate recurring records

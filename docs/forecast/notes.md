@@ -26,4 +26,8 @@ Response structure:
 ```
 
 The endpoint delegates calculation to `ForecastOrchestrator`, which compiles
-recurring transactions and account history on each request.
+recurring transactions and account history on each request.  The orchestrator
+uses `sql/forecast_logic.list_recurring_transactions` and
+`sql/forecast_logic.get_account_history_range` to gather data before assembling
+the payload.  Internal validation ensures the forecast horizon is positive, and
+unit tests cover the JSON shape and edge cases.

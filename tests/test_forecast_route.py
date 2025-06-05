@@ -121,14 +121,6 @@ def client():
         yield c
 
 
-def dummy_forecast(self, method="rule", days=60, stat_input=None):
-    today = datetime.utcnow().date()
-    return [
-        {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
-        for i in range(days)
-    ]
-
-
 def test_forecast_route(client):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
@@ -147,11 +139,6 @@ def test_forecast_route_missing_data(client, monkeypatch):
 
     monkeypatch.setattr(
         forecast_orchestrator.ForecastOrchestrator,
-        "build_forecast_payload",
-        empty_payload,
-    )
-    monkeypatch.setattr(
-        orch_stub.ForecastOrchestrator,
         "build_forecast_payload",
         empty_payload,
     )

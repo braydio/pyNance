@@ -21,6 +21,7 @@ def get_forecast():
             manual_income=manual_income,
             liability_rate=liability_rate,
         )
+
         return jsonify(payload), 200
-    except Exception as e:  # pragma: no cover - defensive
+    except Exception as e:
         return jsonify({"error": str(e)}), 500
