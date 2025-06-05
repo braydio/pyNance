@@ -1,9 +1,11 @@
 # backend/app/sql/forecast_logic.py
 from datetime import datetime, timedelta
-from app.models import AccountHistory
-from app.extensions import db
-from app.config import logger
+from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
+
+from app.extensions import db
+from app.models import Account, AccountHistory, RecurringTransaction, Transaction
+from app.config import logger
 
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
@@ -97,3 +99,32 @@ def calculate_deltas(forecast_line, actuals_line):
         round(f - a, 2) if a is not None else None
         for f, a in zip(forecast_line, actuals_line)
     ]
+
+
+def list_recurring_transactions(user_id):
+    """Return active recurring transactions for the user."""
+    return (
+        db.session.query(RecurringTransaction)
+        .join(
+            Transaction,
+            RecurringTransaction.transaction_id == Transaction.transaction_id,
+        )
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Transaction.user_id == user_id)
+        .filter(Account.is_hidden.is_(False))
+        .all()
+    )
+
+
+def get_account_history_range(user_id, start_date, end_date):
+    """Aggregate daily balances for the given range."""
+    data = (
+        db.session.query(
+            func.date(AccountHistory.date), func.sum(AccountHistory.balance)
+        )
+        .filter(AccountHistory.user_id == user_id)
+        .filter(AccountHistory.date >= start_date, AccountHistory.date <= end_date)
+        .group_by(func.date(AccountHistory.date))
+        .all()
+    )
+    return {d[0]: float(d[1]) for d in data}

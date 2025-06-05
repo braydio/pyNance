@@ -1,8 +1,8 @@
 Notes
 
-The repository contains a partial forecasting implementation. The core design is described in docs/forecast/FORECAST_PURPOSE.md, which introduces forecast_engine.py, forecast_stat_model.py, and forecast_orchestrator.py.
+The repository now provides a working forecasting implementation. The core design is described in docs/forecast/FORECAST_PURPOSE.md, which introduces forecast_engine.py, forecast_stat_model.py, and forecast_orchestrator.py.
 
-A status summary in docs/BACKEND_STATUS.md states that only basic endpoints exist with mock logic. Integration with live data and delta calculations is still pending.
+A status summary in docs/BACKEND_STATUS.md notes that the `/api/forecast` endpoint is live via `ForecastOrchestrator`. Further analytics and delta calculations are still pending.
 
 The detailed frontend checklist in frontend/src/components/forecast/03REF_Development_Planning.md shows that UI scaffolding and mock integration are complete, while live engine wiring, investment modeling, and error handling remain open tasks.
 
@@ -13,9 +13,9 @@ Summary
 Current State
 Backend
 
-Has a placeholder ForecastSimulator and a basic route /api/forecast/forecast returning projected balances using recurring transactions. It relies on forecast_balance.py, which still contains issues (e.g., self.freq_map.set bug) and does not leverage the more advanced ForecastEngine or ForecastOrchestrator.
+The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` to assemble labels, forecast values, actuals, and metadata.  The orchestrator queries recurring transactions and account history via helpers in `sql/forecast_logic.py`.
 
-ForecastEngine, ForecastStatModel, and ForecastOrchestrator are present but not wired into API endpoints.
+ForecastEngine and ForecastStatModel remain available for internal use, but rule-based orchestration is the default path.
 
 Account balances are updated via provider helpers (plaid_helpers.py, teller_helpers.py) to populate AccountHistory, forming the data source for forecasting.
 
@@ -32,9 +32,9 @@ AccountHistory integration – Ensure provider sync functions call update_accoun
 
 Recurring detection pipeline – Implement recurring_bridge.py to persist detected recurring transactions as planned in backend/app/services/FORECAST_RECURRING_ROADMAP.md.
 
-Forecast engines – Connect ForecastEngine and ForecastOrchestrator to new API routes for summary and per-account forecasts (roadmap lines 121‑134).
+Forecast engines are now wired through `ForecastOrchestrator` and exposed via the `/api/forecast` endpoint.
 
-Endpoint specification – Follow the /api/forecast design with query parameters user_id, view_type, manual_income, liability_rate and return labels, forecast, actuals, metadata as described in 02REF_API_Integration.md.
+Endpoint specification – `/api/forecast` accepts `view_type`, `manual_income`, `liability_rate`, and `user_id` as query parameters and returns labels, forecast, actuals, and metadata as described in 02REF_API_Integration.md.
 
 Response Structure
 {
@@ -77,7 +77,7 @@ Implement an internal service function such as build_forecast_payload(user_id, v
 
 API Routes
 
-Replace `/api/forecast/forecast` with a single endpoint:
+The old `/api/forecast/forecast` path has been replaced with a single endpoint:
 
 `GET /api/forecast` – returns `labels`, `forecast`, `actuals`, and `metadata` calculated by `ForecastOrchestrator`.
 
@@ -93,9 +93,7 @@ Replace mock data in ForecastLayout.vue with fetched results and wire the manual
 
 Testing & Validation
 
-Add unit tests for new endpoints (check correct JSON structure and edge cases).
-
-Create frontend E2E tests verifying the chart toggling, data rendering, and manual input flow.
+Unit tests verify the `/api/forecast` response structure and handle invalid input cases. Frontend E2E tests remain a future task.
 
 Documentation & Cleanup
 
