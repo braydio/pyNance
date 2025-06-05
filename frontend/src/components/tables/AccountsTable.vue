@@ -104,6 +104,7 @@ import RefreshControls from "@/components/widgets/RefreshControls.vue";
 export default {
   name: "AccountsTable",
   components: { RefreshControls },
+  emits: ["refresh"],
   props: {
     provider: {
       type: String,
@@ -184,6 +185,7 @@ export default {
         this.error = err.message || "Error fetching accounts.";
       } finally {
         this.loading = false;
+        this.$emit('refresh');
       }
     },
     async deleteAccount(accountId) {
