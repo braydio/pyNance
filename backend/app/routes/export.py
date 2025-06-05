@@ -1,5 +1,9 @@
 # backend/app/routes/export.py
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, Response
+from io import StringIO
+import csv
+from app.extensions import db
+from app.models import Account
 from app.sql.export_logic import export_csv_response, export_all_to_csv
 
 export = Blueprint("export", __name__)
@@ -40,7 +44,11 @@ def export_all_models():
 
 @export.route("/access_token_export", methods=["GET"])
 def export_accounts_csv():
-    accounts = db.session.query(Account.user_id, Account.access_token).all()
+    accounts = (
+        db.session.query(Account.user_id, Account.access_token)
+        .filter(Account.is_hidden.is_(False))
+        .all()
+    )
 
     si = StringIO()
     writer = csv.writer(si)
