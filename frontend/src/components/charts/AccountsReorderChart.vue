@@ -33,8 +33,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { toRef } from 'vue'
+import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
   accountSubtype: {
@@ -43,57 +43,21 @@ const props = defineProps({
   },
 })
 
-const accounts = ref([])
-const loading = ref(true)
-
 const format = val => new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 }).format(val)
 
-const filterSubtype = (acc) =>
-  props.accountSubtype
-    ? (acc.subtype || '').toLowerCase() === props.accountSubtype.toLowerCase()
-    : true
+const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } =
+  useTopAccounts(toRef(props, 'accountSubtype'))
 
-const positiveAccounts = computed(() =>
-  accounts.value
-    .filter(acc => !acc.is_hidden && filterSubtype(acc) && acc.adjusted_balance >= 0)
-    .sort((a, b) => b.adjusted_balance - a.adjusted_balance)
-    .slice(0, 5)
-)
-
-const negativeAccounts = computed(() =>
-  accounts.value
-    .filter(acc => !acc.is_hidden && filterSubtype(acc) && acc.adjusted_balance < 0)
-    .sort((a, b) => a.adjusted_balance - b.adjusted_balance)
-    .slice(0, 5)
-)
-
-const allVisibleAccounts = computed(() => [...positiveAccounts.value, ...negativeAccounts.value])
-
-const barWidth = (account) => {
-  const max = Math.max(...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)), 1)
+const barWidth = account => {
+  const max = Math.max(
+    ...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)),
+    1
+  )
   return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
 }
-
-const fetchAccounts = async () => {
-  try {
-    const { data } = await axios.get('/api/accounts/get_accounts')
-    if (data?.status === 'success') {
-      accounts.value = data.accounts.map(acc => ({
-        ...acc,
-        adjusted_balance: acc.balance ?? 0,
-      }))
-    }
-  } catch (err) {
-    console.error('Failed to load accounts:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchAccounts)
 
 defineExpose({
   refresh: fetchAccounts,
