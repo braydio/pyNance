@@ -188,7 +188,12 @@ def get_net_assets():
     data = []
 
     for month in months:
-        accounts = db.session.query(Account).filter(Account.created_at <= month).all()
+        accounts = (
+            db.session.query(Account)
+            .filter(Account.created_at <= month)
+            .filter(Account.is_hidden.is_(False))
+            .all()
+        )
 
         net = sum(
             normalize_account_balance(

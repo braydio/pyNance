@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 from app.services.forecast_balance import ForecastSimulator
 from app.extensions import db
-from app.models import Account, RecurringTransaction
+from app.models import Account, RecurringTransaction, Transaction
 from datetime import datetime
 
 forecast = Blueprint("forecast", __name__)
@@ -14,12 +14,21 @@ def get_forecast():
         if not 1 <= days <= 90:
             return jsonify({"error": "days must be between 1 and 90"}), 400
 
-        primary_account = Account.query.filter_by(is_primary=True).first()
+        primary_account = (
+            Account.query.filter_by(is_primary=True)
+            .filter(Account.is_hidden.is_(False))
+            .first()
+        )
         if not primary_account:
             return jsonify({"error": "Primary account not found"}), 404
 
         rec_events = []
-        recs = RecurringTransaction.query.all()
+        recs = (
+            RecurringTransaction.query.join(Transaction)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Account.is_hidden.is_(False))
+            .all()
+        )
         for r in recs:
             tx = r.transaction
             if not tx:
