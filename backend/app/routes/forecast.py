@@ -33,15 +33,16 @@ def get_forecast():
             tx = r.transaction
             if not tx:
                 continue
-            rec_events.append(
-                {
-                    "labels": labels,
-                    "forecast": forecast_line,
-                    "actuals": actuals,
-                    "metadata": metadata,
-                }
-            ),
-            200,
-        )
+            (
+                rec_events.append(
+                    {
+                        "labels": labels,
+                        "forecast": forecast_line,
+                        "actuals": actuals,
+                        "metadata": metadata,
+                    }
+                ),
+            )
+            (200,)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
