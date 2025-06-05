@@ -16,6 +16,7 @@ Handles detection, configuration, and tracking of recurring transactions such as
 - `GET /recurring`: Returns list of detected recurring transactions.
 - `POST /recurring/confirm`: Confirms a transaction pattern as recurring.
 - `DELETE /recurring/<id>`: Removes or disables tracking of a recurring item.
+- `POST /recurring/scan/<account_id>`: Scan an account and store any newly detected recurring entries.
 
 ## Inputs & Outputs
 
@@ -47,6 +48,15 @@ Handles detection, configuration, and tracking of recurring transactions such as
 
 - **DELETE /recurring/<id>`**
   - **Output:** `{ success: true }` on successful disable
+
+- **POST /recurring/scan/<account_id>**
+  - **Output:**
+    ```json
+    {
+      "status": "success",
+      "actions": []
+    }
+    ```
 
 ## Internal Dependencies
 
