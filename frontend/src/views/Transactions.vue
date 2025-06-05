@@ -1,54 +1,69 @@
 <template>
-  <div class="transactions-page">
+  <div class="transactions-page container space-y-8">
     <!-- Header -->
-    <header class="transactions-header">
+    <header class="flex-between">
       <div>
-        <h1 class="heading-lg">Transactions</h1>
+        <h1 class="text-3xl font-bold text-[var(--neon-purple)]">Transactions</h1>
         <h3 class="text-muted mb-2">View and manage your transactions</h3>
       </div>
     </header>
 
-    <main>
-      <!-- Top Controls -->
-      <div class="top-controls">
-        <ImportFileSelector class="import-section" />
-        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="search-input" />
-      </div>
+    <div class="grid gap-6 lg:grid-cols-2">
+      <DailyNetChart class="w-full" />
+      <CategoryBreakdownChart class="w-full" />
+    </div>
 
-      <!-- Main Table -->
-      <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-        @sort="setSort" @editRecurringFromTransaction="prefillRecurringFromTransaction" />
+    <!-- Top Controls -->
+    <div class="flex flex-wrap justify-between items-end gap-4">
+      <ImportFileSelector class="flex-1 min-w-[250px]" />
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search transactions..."
+        class="input flex-1 md:flex-none md:w-64"
+      />
+    </div>
 
-      <!-- Pagination -->
-      <div id="pagination-controls">
-        <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">
-          Prev
-        </button>
-        <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <button class="btn" @click="changePage(1)" :disabled="currentPage >= totalPages">
-          Next
-        </button>
-      </div>
+    <!-- Main Table -->
+    <div class="card overflow-x-auto">
+      <UpdateTransactionsTable
+        :transactions="filteredTransactions"
+        :sort-key="sortKey"
+        :sort-order="sortOrder"
+        @sort="setSort"
+        @editRecurringFromTransaction="prefillRecurringFromTransaction"
+      />
+    </div>
 
-      <!-- Recurring Transactions -->
-      <RecurringTransactionSection ref="recurringFormRef" provider="plaid" class="mt-8" />
-    </main>
+    <!-- Pagination -->
+    <div id="pagination-controls" class="flex items-center justify-center gap-4">
+      <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">Prev</button>
+      <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
+      <button class="btn" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</button>
+    </div>
+
+    <!-- Recurring Transactions -->
+    <RecurringTransactionSection ref="recurringFormRef" provider="plaid" class="card" />
   </div>
 </template>
 
 <script>
-import { ref } from "vue"
-import { useTransactions } from "@/composables/useTransactions.js"
-import UpdateTransactionsTable from "@/components/tables/UpdateTransactionsTable.vue"
-import RecurringTransactionSection from "@/components/recurring/RecurringTransactionSection.vue"
-import ImportFileSelector from "@/components/forms/ImportFileSelector.vue"
+import { ref } from 'vue'
+import { useTransactions } from '@/composables/useTransactions.js'
+import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
+import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
+import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
+import DailyNetChart from '@/components/charts/DailyNetChart.vue'
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 
 export default {
-  name: "Transactions",
+  name: 'Transactions',
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
+    DailyNetChart,
+    CategoryBreakdownChart,
   },
   setup() {
     const {
@@ -84,7 +99,7 @@ export default {
       sortOrder,
       setSort,
       recurringFormRef,
-      prefillRecurringFromTransaction
+      prefillRecurringFromTransaction,
     }
   },
 }
