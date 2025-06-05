@@ -1,5 +1,5 @@
 <template>
-  <div class="transactions space-y-4 p-6 bg-gray-50 rounded-xl shadow">
+  <div class="card space-y-4">
     <!-- Category Filters -->
     <div class="flex items-center gap-4">
       <select v-model="selectedPrimaryCategory" class="input">
@@ -17,8 +17,8 @@
     </div>
 
     <!-- Transactions Table -->
-    <table class="min-w-full divide-y divide-gray-200 mt-4">
-      <thead class="bg-gray-100 text-gray-700 text-sm font-semibold uppercase">
+    <table class="min-w-full divide-y mt-4">
+      <thead class="text-sm font-semibold uppercase">
         <tr>
           <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">
             Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
@@ -57,7 +57,12 @@
         <tr
           v-for="(tx, index) in filteredTransactions"
           :key="tx.transaction_id"
-          :class="['text-sm', editingIndex === index ? 'bg-yellow-100' : 'hover:bg-gray-100']"
+          :class="[
+            'text-sm',
+            editingIndex === index
+              ? 'bg-[var(--color-bg-sec)]'
+              : 'hover:bg-[var(--color-hover-light)]',
+          ]"
         >
           <td class="px-3 py-2">
             <input
@@ -262,15 +267,15 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.input {
-  @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
-}
-
-.input:focus {
-  @apply outline-none ring-2 ring-blue-300;
-}
-
 .btn-sm {
-  @apply inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700;
+  @apply inline-flex items-center px-2 py-1 text-xs rounded;
+  background-color: var(--neon-purple);
+  color: var(--color-bg-dark);
+  border: 1px solid var(--neon-purple);
+}
+
+.btn-sm:hover {
+  background-color: var(--neon-mint);
+  border-color: var(--neon-mint);
 }
 </style>
