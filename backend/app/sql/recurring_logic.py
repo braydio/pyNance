@@ -50,19 +50,20 @@ def find_recurring_items(transactions):
 
 
 def upsert_recurring(
-    *,
-    amount: float,
     description: str,
+    amount: float,
     frequency: str,
     next_due_date: datetime,
-    confidence: Optional[float] = None,
-):
+    confidence: Optional[float],
+    account_id: Optional[str],
+) -> int:
     """Insert or update a RecurringTransaction linked to a matching Transaction."""
 
     tx = (
         db.session.query(Transaction)
         .filter(func.lower(Transaction.description) == description.lower())
         .filter(Transaction.amount == amount)
+        .filter(Transaction.account_id == account_id)
         .order_by(Transaction.date.desc())
         .first()
     )
@@ -71,6 +72,7 @@ def upsert_recurring(
         tx = Transaction(
             transaction_id=str(uuid.uuid4())[:12],
             amount=amount,
+            account_id=account_id,
             date=datetime.utcnow(),
             description=description,
             provider="detected",
@@ -80,7 +82,6 @@ def upsert_recurring(
 
     rec = RecurringTransaction.query.filter_by(transaction_id=tx.transaction_id).first()
 
-    status = "updated" if rec else "inserted"
     if rec:
         rec.frequency = frequency
         rec.next_due_date = next_due_date
@@ -95,4 +96,4 @@ def upsert_recurring(
         db.session.add(rec)
 
     db.session.commit()
-    return {"status": status, "recurring_id": rec.id}
+    return rec.id
