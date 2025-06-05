@@ -1,9 +1,7 @@
 # File: app/routes/charts.py
 # business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
 import traceback
-from collections import defaultdict
-
-from app.services.forecast_orchestrator import ForecastOrchestrator
+from datetime import datetime, timedelta
 
 from app.config import logger
 from app.extensions import db
@@ -218,7 +216,7 @@ def get_net_assets():
             }
         )
 
-    return jsonify({"status": "success", "data": data}), 200
+    return jsonify({"status": "success", "data": data})
 
 
 @charts.route("/daily_net", methods=["GET"])
