@@ -80,13 +80,13 @@ Backend query      🌩 Needs stronger null/empty safety
 
 ### 😩 Next Steps
 
-](1] Improve frontend UX in CategoryChart.tsx.
-
-[1] Add backend test for breakdown route.
-[1] Verify DB seeding includes mock category data.
+1. Improve frontend UX in `CategoryChart.tsx`.
+2. Add backend test for the breakdown route.
+3. Verify DB seeding includes mock category data.
 
 ### 🛝 Feature: Exploratory chart types
+
 - Daily Net Income Chart
   :bar: shows net income daily; click bar to pop-up table
   :table: lists that day's transactions as table content
-  :animated: react-fragment toggles full/visibility
+  :animated: React fragment toggles visibility
