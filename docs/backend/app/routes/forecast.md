@@ -5,42 +5,37 @@
 
 ## Purpose
 
-Handles generation and delivery of forward-looking financial forecasts. This includes monthly budget projections, predicted spending trends, and income estimation.
+Serves the `/api/forecast` endpoint which provides projected balances and
+metadata. The route simply delegates to `ForecastOrchestrator` to assemble the
+response on demand.
 
-## Key Endpoints
+## Key Endpoint
 
-- `GET /forecast/summary`: Retrieve a forecasted overview of upcoming finances.
-- `GET /forecast/by-category`: Detailed forecast per spending category.
-- `POST /forecast/custom`: Accepts user input to customize forecasting models.
+- `GET /api/forecast`
 
 ## Inputs & Outputs
 
-- **GET /forecast/summary**
+- **Query Params**
 
-  - **Params:** `month`, `account_ids[]` (optional filters)
-  - **Output:**
-    ```json
-    {
-      "total_income": 3500,
-      "total_expense": 2850,
-      "net": 650,
-      "projected_savings": 500
+  - `view_type` – `'Month'` (30 days) or `'Year'` (365 days)
+  - `manual_income` – optional float adjustment
+  - `liability_rate` – optional float deduction
+  - `user_id` – passed from the frontend or session
+
+- **Output Example**
+
+  ```json
+  {
+    "labels": ["May 1", "May 2", "May 3"],
+    "forecast": [4200.0, 4250.0, 4300.0],
+    "actuals": [4180.0, null, null],
+    "metadata": {
+      "account_count": 2,
+      "recurring_count": 5,
+      "data_age_days": 0
     }
-    ```
-
-- **GET /forecast/by-category**
-
-  - **Output:**
-    ```json
-    [
-      { "category": "Groceries", "expected": 420 },
-      { "category": "Utilities", "expected": 150 }
-    ]
-    ```
-
-- **POST /forecast/custom**
-  - **Input:** `{ inputs: { income: number, goals: {...} } }`
-  - **Output:** Tailored forecast object
+  }
+  ```
 
 ## Internal Dependencies
 
