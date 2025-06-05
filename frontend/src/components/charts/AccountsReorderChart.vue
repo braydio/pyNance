@@ -2,8 +2,9 @@
   <div class="chart-container card">
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
 
-    <div v-if="filteredAccounts.length" class="bar-chart">
-      <div v-for="account in filteredAccounts" :key="account.id" class="bar-row">
+    <div v-if="positiveAccounts.length" class="bar-chart">
+      <h3 class="subheading">Assets</h3>
+      <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
           <div class="bar-fill" :style="{ width: barWidth(account) }">
@@ -13,58 +14,54 @@
       </div>
     </div>
 
-    <p v-else class="no-data-msg">No accounts available for this subtype.</p>
+    <div v-if="negativeAccounts.length" class="bar-chart">
+      <h3 class="subheading">Liabilities</h3>
+      <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
+        <span class="bar-label">{{ account.name }}</span>
+        <div class="bar-outer">
+          <div class="bar-fill" :style="{ width: barWidth(account) }">
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p v-if="!positiveAccounts.length && !negativeAccounts.length" class="no-data-msg">
+      No accounts available for this subtype.
+    </p>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { toRef } from 'vue'
+import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
   accountSubtype: {
     type: String,
-    required: true,
+    default: '',
   },
 })
-
-const accounts = ref([])
-const loading = ref(true)
 
 const format = val => new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
 }).format(val)
 
-const barWidth = (account) => {
-  const max = Math.max(...filteredAccounts.value.map(a => Math.abs(a.adjusted_balance)), 1)
+const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } =
+  useTopAccounts(toRef(props, 'accountSubtype'))
+
+const barWidth = account => {
+  const max = Math.max(
+    ...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)),
+    1
+  )
   return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
 }
 
-const filteredAccounts = computed(() =>
-  accounts.value
-    .filter(a => a.subtype?.toLowerCase() === props.accountSubtype.toLowerCase())
-    .sort((a, b) => b.adjusted_balance - a.adjusted_balance)
-    .slice(0, 5)
-)
-
-const fetchAccounts = async () => {
-  try {
-    const { data } = await axios.get('/api/accounts/get_accounts')
-    if (data?.status === 'success') {
-      accounts.value = data.accounts.map(acc => ({
-        ...acc,
-        adjusted_balance: Math.abs(acc.balance ?? 0),
-      }))
-    }
-  } catch (err) {
-    console.error('Failed to load accounts:', err)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchAccounts)
+defineExpose({
+  refresh: fetchAccounts,
+})
 </script>
 
 
@@ -121,6 +118,13 @@ onMounted(fetchAccounts)
   top: -1.5rem;
   font-size: 0.8rem;
   color: #ccd;
+}
+
+.subheading {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  margin-bottom: 0.75rem;
 }
 
 .no-data-msg {
