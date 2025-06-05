@@ -109,6 +109,7 @@ def get_accounts():
                 data.append(
                     {
                         "id": a.id,
+                        "account_id": a.account_id,
                         "name": a.name,
                         "institution_name": a.institution_name,
                         "type": a.type,
@@ -230,7 +231,6 @@ def set_account_hidden(account_id):
             balance=account.balance,
             is_hidden=account.is_hidden,
         )
-
         return jsonify({"status": "success", "hidden": account.is_hidden}), 200
     except Exception as e:
         db.session.rollback()
