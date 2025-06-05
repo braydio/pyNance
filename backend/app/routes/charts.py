@@ -115,9 +115,11 @@ def get_cash_flow():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        transactions = db.session.query(Transaction).join(
-            Account, Transaction.account_id == Account.id
-        ).filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        transactions = (
+            db.session.query(Transaction)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        )
         if start_date:
             transactions = transactions.filter(Transaction.date >= start_date)
         if end_date:
