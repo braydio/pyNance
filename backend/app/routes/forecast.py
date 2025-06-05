@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
-from app.services.forecast_balance import ForecastSimulator
+from collections import defaultdict
+from datetime import datetime, timedelta
 from app.extensions import db
 from app.models import Account, RecurringTransaction, Transaction
 from datetime import datetime
@@ -7,12 +8,11 @@ from datetime import datetime
 forecast = Blueprint("forecast", __name__)
 
 
-@forecast.route("/forecast", methods=["GET"])
+@forecast.route("", methods=["GET"])
 def get_forecast():
     try:
-        days = int(request.args.get("days", 30))
-        if not 1 <= days <= 90:
-            return jsonify({"error": "days must be between 1 and 90"}), 400
+        view_type = request.args.get("view_type", "Month")
+        horizon = 30 if view_type.lower() == "month" else 365
 
         primary_account = (
             Account.query.filter_by(is_primary=True)
@@ -33,17 +33,16 @@ def get_forecast():
             tx = r.transaction
             if not tx:
                 continue
-            rec_events.append(
-                {
-                    "amount": tx.amount,
-                    "next_due_date": r.next_due_date.isoformat(),
-                    "frequency": r.frequency,
-                }
+            (
+                rec_events.append(
+                    {
+                        "labels": labels,
+                        "forecast": forecast_line,
+                        "actuals": actuals,
+                        "metadata": metadata,
+                    }
+                ),
             )
-
-        sim = ForecastSimulator(primary_account.current_balance, rec_events)
-        result = sim.project(days=days)
-        return jsonify({"status": "success", "data": result})
-
+            (200,)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

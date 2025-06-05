@@ -1,27 +1,20 @@
 # account_logic.py
+from tempfile import NamedTemporaryFile
 import json
 import time
-from datetime import datetime, timedelta, date as pydate
-import requests
-from app.helpers.normalize import normalize_amount
-from app.extensions import db
-from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
-from app.models import (
-    Account,
-    AccountHistory,
-    Category,
-    Transaction,
-    PlaidAccount,
-    TellerAccount,
-)
-from app.helpers.plaid_helpers import (
-    get_transactions,
-    get_accounts,
-    resolve_or_create_category,
-)
+from datetime import date as pydate
+from datetime import datetime, timedelta
 
-from sqlalchemy.orm import aliased
+import requests
+from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.extensions import db
+from app.helpers.normalize import normalize_amount
+from app.helpers.plaid_helpers import (get_accounts, get_transactions,
+                                       resolve_or_create_category)
+from app.models import (Account, AccountHistory, Category, PlaidAccount,
+                        TellerAccount, Transaction)
 from sqlalchemy.dialects.sqlite import insert
+from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 
@@ -29,7 +22,13 @@ TRANSACTIONS_RAW = FILES["LAST_TX_REFRESH"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 
-def process_transaction_amount(amount, account_type):
+def process_transaction_amount(amount):
+    """Parse the transaction amount without adjusting signage."""
+    return normalize_amount(amount)
+
+
+def normalize_balance(amount, account_type):
+    """Normalize account balance sign based on account type."""
     return normalize_amount(
         {
             "amount": amount,
@@ -84,7 +83,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 or account.get("balance")
                 or 0
             )
-            balance = process_transaction_amount(balance_raw, acc_type)
+            balance = normalize_balance(balance_raw, acc_type)
             logger.debug(f"[UPSERT] Balance parsed for {account_id}: {balance}")
 
             subtype = str(account.get("subtype") or "Unknown").capitalize()
@@ -204,7 +203,7 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
-
+    
     updated = False
     account_id = account.account_id
     user_id = account.user_id
@@ -290,9 +289,7 @@ def refresh_data_for_teller_account(
                 )
                 existing_txn = None
 
-            new_amount = process_transaction_amount(
-                txn.get("amount") or 0, account.type
-            )
+            new_amount = process_transaction_amount(txn.get("amount") or 0)
             raw_date_str = txn.get("date") or ""
             try:
                 parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
@@ -453,7 +450,7 @@ def refresh_data_for_plaid_account(access_token, account_id):
                     or acct.get("balance")
                     or 0
                 )
-                account.balance = process_transaction_amount(raw_balance, account.type)
+                account.balance = normalize_balance(raw_balance, account.type)
                 account.updated_at = datetime.utcnow()
                 logger.debug(
                     f"[REFRESH] Updated balance for {account_id}: {account.balance}"
