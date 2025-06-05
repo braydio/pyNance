@@ -32,8 +32,7 @@ def refresh_all_accounts():
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
                 updated = account_logic.refresh_data_for_plaid_account(
-                    access_token,
-                    account.account_id
+                    access_token, account.account_id
                 )
                 if updated:
                     account.last_refreshed = datetime.utcnow()
@@ -86,9 +85,7 @@ def refresh_all_accounts():
 @accounts.route("/get_accounts", methods=["GET"])
 def get_accounts():
     try:
-        include_hidden = (
-            request.args.get("include_hidden", "false").lower() == "true"
-        )
+        include_hidden = request.args.get("include_hidden", "false").lower() == "true"
         query = Account.query
         if not include_hidden:
             query = query.filter(Account.is_hidden.is_(False))
