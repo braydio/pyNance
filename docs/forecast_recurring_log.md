@@ -5,3 +5,7 @@ Scaffolded `recurring_bridge.py` in `services/` to sync recurring detection resu
 - Uses `RecurringDetector.detect()` to extract recurring patterns  
 - Calls `sql.recurring_logic.upsert_recurring(...)` to persist results  
 - Placeholder structure for DB integration -- to be wired with live session and model hooks next
+
+### © 2025-06-05 13:20 UTC
+
+`RecurringBridge.sync_to_db` now loads the SQLAlchemy session and models at runtime. The bridge iterates over detected patterns and calls `sql.recurring_logic.upsert_recurring` for each. Unit tests use a temporary SQLite database to verify inserts.
