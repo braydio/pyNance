@@ -13,6 +13,7 @@ class RecurringBridge:
         self.detector = RecurringDetector(transactions)
 
     def sync_to_db(self):
+        """Detect recurring patterns and upsert them into the database."""
         candidates = self.detector.detect()
         actions = []
 
