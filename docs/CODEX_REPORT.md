@@ -291,23 +291,24 @@ automate mapping │
 #### 3.4.1 Backend Forecast API (Module 2)
 
 What’s there:
-A design doc for the /api/forecast route under
-frontend/src/components/forecast/02REF_API_Integration.md.
+A design doc for the /api/forecast route lives under
+frontend/src/components/forecast/02REF_API_Integration.md. The actual endpoint
+is implemented in `backend/app/routes/forecast.py` and delegates to
+`ForecastOrchestrator`.
 
     ## 🛠️ Next Steps (Module 2)
 
-    - [ ] Implement `/api/forecast` route in `charts.py`
-    - [ ] Reuse logic from `useForecastEngine.ts` (ported to Python)
-    - [ ] Add unit test coverage for forecast accuracy
+    - [x] Implement `/api/forecast` route
+    - [x] Reuse logic from `useForecastEngine.ts` (ported to Python)
+    - [x] Add unit test coverage for forecast accuracy
     - [ ] Document endpoint in API spec / Swagger
 
 frontend/src/components/forecast/02REF_API_Integration.md (/home/braydenchaffee/Projects/py
 Nance/frontend/src/components/forecast/02REF_API_Integration.md)
 
-There is also a scaffolded charts.py in the backend with chart endpoints
-(category_breakdown, cash_flow, net_assets, daily_net), but no /forecast endpoint yet:
-backend/app/routes/charts.py
-(/home/braydenchaffee/Projects/pyNance/backend/app/routes/charts.py)
+There is also a `charts.py` module in the backend with other chart endpoints
+(category_breakdown, cash_flow, net_assets, daily_net). The forecast API is served from
+`backend/app/routes/forecast.py` instead.
 
 #### 3.4.2 Full Goal-Based Checklist (Dev Checklist)
 
@@ -349,8 +350,7 @@ Checklist to Complete Forecast Engine:
  │
 ├───────────────────────────────────┼──────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────┤
-│ Backend API │ - Implement /api/forecast in charts.py<br>- Port
-useForecastEngine.ts logic to Python, call it from route<br>- Add unit tests │
+│ Backend API │ - `/api/forecast` implemented via ForecastOrchestrator<br>- Ported useForecastEngine.ts logic to Python<br>- Unit tests in place │
 ├───────────────────────────────────┼──────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────┤
 │ Balance Snapshot & Actuals │ - Persist daily account_history records<br>- Fallback

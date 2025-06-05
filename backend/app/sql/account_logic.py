@@ -9,7 +9,6 @@ import requests
 from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
-from app.utils.finance_utils import normalize_transaction_amount
 from app.helpers.plaid_helpers import (
     get_accounts,
     get_transactions,
