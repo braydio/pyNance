@@ -353,6 +353,10 @@ def forecast_route():
             labels.append(day.strftime("%b %d"))
             forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
 
+        adjustment = manual_income - liability_rate
+        if adjustment:
+            forecast_line = [round(f + adjustment, 2) for f in forecast_line]
+
         actuals = [None for _ in range(horizon)]
 
         metadata = {
