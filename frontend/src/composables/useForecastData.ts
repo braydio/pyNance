@@ -2,23 +2,17 @@
 
 import { ref, computed } from 'vue'
 
-interface RecurringTransaction {
-  account_id: string
-  description: string
-  amount: number
-  frequency: 'monthly' | 'weekly'
-  next_due_date: string
-}
-
-interface AccountHistoryPoint {
-  account_id: string
-  date: string
-  balance: number
+interface ForecastResponse {
+  labels: string[]
+  forecast: number[]
+  actuals: Array<number | null>
+  metadata: Record<string, any>
 }
 
 export function useForecastData() {
-  const recurringTxs = ref<RecurringTransaction[]>([])
-  const accountHistory = ref<AccountHistoryPoint[]>([])
+  const labels = ref<string[]>([])
+  const forecast = ref<number[]>([])
+  const actuals = ref<Array<number | null>>([])
   const loading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -26,17 +20,14 @@ export function useForecastData() {
     loading.value = true
     error.value = null
     try {
-      const [recurringRes, historyRes] = await Promise.all([
-        fetch('/api/recurring-transactions'),
-        fetch('/api/account-history')
-      ])
-
-      if (!recurringRes.ok || !historyRes.ok) {
-        throw new Error('Failed to fetch data')
+      const res = await fetch('/api/forecast')
+      if (!res.ok) {
+        throw new Error('Failed to fetch forecast data')
       }
-
-      recurringTxs.value = await recurringRes.json()
-      accountHistory.value = await historyRes.json()
+      const data: ForecastResponse = await res.json()
+      labels.value = data.labels
+      forecast.value = data.forecast
+      actuals.value = data.actuals
     } catch (err) {
       error.value = err as Error
     } finally {
@@ -45,8 +36,9 @@ export function useForecastData() {
   }
 
   return {
-    recurringTxs: computed(() => recurringTxs.value),
-    accountHistory: computed(() => accountHistory.value),
+    labels: computed(() => labels.value),
+    forecast: computed(() => forecast.value),
+    actuals: computed(() => actuals.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     fetchData
