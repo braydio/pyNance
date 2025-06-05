@@ -19,8 +19,8 @@ class RecurringBridge:
         # Import DB session and models only when syncing to avoid heavy
         # dependencies during module import. This also ensures models are
         # registered with the SQLAlchemy instance used by tests.
-        import_module("app.extensions").db  # noqa: F401 - load session
-        import_module("app.models")
+        import_module("app.extensions").db  # noqa: F401
+        import_module("app.models").RecurringTransaction  # noqa: F401
 
         candidates = self.detector.detect()
         actions = []
@@ -35,16 +35,17 @@ class RecurringBridge:
         for item in candidates:
             last_seen = parse(item.get("last_seen")).date()
             freq_days = freq_map.get(item["frequency"].lower(), 30)
-            next_due = last_seen + timedelta(days=freq_days)
+            next_due_date = last_seen + timedelta(days=freq_days)
             confidence = float(item.get("occurrences", 1)) / 10.0
 
-            result = recurring_logic.upsert_recurring(
-                amount=item["amount"],
-                description=item["description"],
-                frequency=item["frequency"],
-                next_due_date=next_due,
-                confidence=confidence,
+            rec_id = recurring_logic.upsert_recurring(
+                item["description"],
+                item["amount"],
+                item["frequency"],
+                next_due_date,
+                confidence,
+                item.get("account_id"),
             )
-            actions.append(result)
+            actions.append(rec_id)
 
         return actions

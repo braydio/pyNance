@@ -18,6 +18,8 @@ config_stub.logger = types.SimpleNamespace(
     error=lambda *a, **k: None,
 )
 config_stub.plaid_client = None
+config_stub.TELLER_API_BASE_URL = "https://example.com"
+config_stub.FILES = {}
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
@@ -30,6 +32,14 @@ sys.modules["app.config.environment"] = env_stub
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
+
+# Helpers stub
+helpers_pkg = types.ModuleType("app.helpers")
+teller_helpers_stub = types.ModuleType("app.helpers.teller_helpers")
+teller_helpers_stub.load_tokens = lambda: []
+helpers_pkg.teller_helpers = teller_helpers_stub
+sys.modules["app.helpers"] = helpers_pkg
+sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
 
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")

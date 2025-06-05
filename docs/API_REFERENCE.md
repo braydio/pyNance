@@ -87,6 +87,12 @@ The following route is the **canonical** source of paginated transaction data fo
 GET /api/transactions/get_transactions
 ```
 
+**Query Parameters**
+
+- `start_date` – optional ISO ``YYYY-MM-DD`` start date
+- `end_date` – optional ISO ``YYYY-MM-DD`` end date
+- `category` – optional transaction category filter
+
 This endpoint:
 
 - Serves a unified view of transaction data across all providers
