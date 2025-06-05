@@ -64,3 +64,10 @@ def test_orchestrator_forecast():
     orch.rule_engine = DummyRuleEngine()
     result = orch.forecast(days=5)
     assert len(result) == 5
+
+
+def test_orchestrator_invalid_days():
+    orch = forecast_orchestrator.ForecastOrchestrator(DummyDB())
+    orch.rule_engine = DummyRuleEngine()
+    with pytest.raises(ValueError):
+        orch.forecast(days=0)

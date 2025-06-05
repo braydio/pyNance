@@ -2,6 +2,8 @@
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from .forecast_engine import ForecastEngine as ForecastEngineRuleBased
+from app.models import Account, AccountHistory
+from app.sql import forecast_logic
 
 try:  # Optional dependency
     from .forecast_stat_model import ForecastEngine as ForecastEngineStatModel
@@ -18,6 +20,8 @@ class ForecastOrchestrator:
         )
 
     def forecast(self, method="rule", days=60, stat_input=None):
+        if days <= 0:
+            raise ValueError("days must be positive")
         if method == "rule":
             return self.rule_engine.forecast_balances(horizon_days=days)
         elif method == "stat":
@@ -41,17 +45,7 @@ class ForecastOrchestrator:
         horizon = 30 if view_type.lower() == "month" else 365
         end = start + timedelta(days=horizon - 1)
 
-        recs = (
-            self.db.session.query(RecurringTransaction)
-            .join(
-                Transaction,
-                RecurringTransaction.transaction_id == Transaction.transaction_id,
-            )
-            .join(Account, Transaction.account_id == Account.account_id)
-            .filter(Transaction.user_id == user_id)
-            .filter(Account.is_hidden.is_(False))
-            .all()
-        )
+        recs = forecast_logic.list_recurring_transactions(user_id)
 
         items = []
         for r in recs:
@@ -66,20 +60,11 @@ class ForecastOrchestrator:
                 }
             )
 
-        labels, forecast_line = generate_forecast_line(
+        labels, forecast_line = forecast_logic.generate_forecast_line(
             start, end, items, manual_income, liability_rate
         )
 
-        data = (
-            self.db.session.query(
-                func.date(AccountHistory.date), func.sum(AccountHistory.balance)
-            )
-            .filter(AccountHistory.user_id == user_id)
-            .filter(AccountHistory.date >= start, AccountHistory.date <= end)
-            .group_by(func.date(AccountHistory.date))
-            .all()
-        )
-        lookup = {d[0]: float(d[1]) for d in data}
+        lookup = forecast_logic.get_account_history_range(user_id, start, end)
         actual_line = []
         current = start
         while current <= end:

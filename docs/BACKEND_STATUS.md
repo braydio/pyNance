@@ -3,7 +3,7 @@
 
 ### ✅ Current Status - Backend Modules
 
-The backend now exposes live forecast endpoints (`GET /api/forecast`, `POST /api/forecast/calculate`) powered by `ForecastOrchestrator`. These routes aggregate `recurring_transactions` and `account_history` to return forecast and actual lines. Basic recurring detection persistence has been wired via `recurring_bridge.py`. Further work is required for advanced analytics and error handling.
+The backend now exposes live forecast endpoints (`GET /api/forecast`, `POST /api/forecast/calculate`) powered by `ForecastOrchestrator`. These routes aggregate `recurring_transactions` and `account_history` using SQL helpers `list_recurring_transactions` and `get_account_history_range` to return forecast and actual lines. Unit tests cover the JSON structure and invalid input cases. Basic recurring detection persistence has been wired via `recurring_bridge.py`. Further work is required for advanced analytics and error handling.
 
 ### 🌟 Goals – Next Development Phase
 

@@ -64,7 +64,12 @@ orch_stub.ForecastOrchestrator = type(
     (),
     {
         "__init__": lambda self, db=None: None,
-        "forecast": lambda self, method="rule", days=60, stat_input=None: [],
+        "build_forecast_payload": lambda self, **k: {
+            "labels": ["a", "b"],
+            "forecast": [1, 2],
+            "actuals": [None, None],
+            "metadata": {},
+        },
     },
 )
 sys.modules["app.services.forecast_orchestrator"] = orch_stub
@@ -86,6 +91,7 @@ class AccountHistory:
 
 
 models_stub.AccountHistory = AccountHistory
+models_stub.Account = type("Account", (), {})
 sys.modules["app.models"] = models_stub
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "forecast.py")
 spec = importlib.util.spec_from_file_location("app.routes.forecast", ROUTE_PATH)
@@ -130,6 +136,23 @@ def test_forecast_route(client, monkeypatch):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
     data = resp.get_json()
-    assert "labels" in data
-    assert "forecast" in data
-    assert len(data["labels"]) == len(data["forecast"])
+    assert data == {
+        "labels": ["a", "b"],
+        "forecast": [1, 2],
+        "actuals": [None, None],
+        "metadata": {},
+    }
+
+
+def test_forecast_route_missing_data(client, monkeypatch):
+    def empty_payload(self, **_):
+        return {"labels": [], "forecast": [], "actuals": [], "metadata": {}}
+
+    monkeypatch.setattr(
+        forecast_orchestrator.ForecastOrchestrator,
+        "build_forecast_payload",
+        empty_payload,
+    )
+    resp = client.get("/api/forecast")
+    assert resp.status_code == 200
+    assert resp.get_json()["labels"] == []
