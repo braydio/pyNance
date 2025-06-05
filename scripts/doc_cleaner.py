@@ -1,7 +1,5 @@
 # doc_cleaner.py
 import os
-import re
-import time
 from datetime import date
 
 METADATA_KEYS = ["title", "tags", "created", "last-reviewed", "status"]
@@ -53,4 +51,3 @@ with open(output_path, "w", encoding="utf-8") as out:
         out.write(line)
 
 print(f"** doc_cleaner ** Files scanned: {len(index_entries)} | Output: {output_path}")
-
