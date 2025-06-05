@@ -39,7 +39,7 @@ def generate_transactions_for_account(account, months=6, start_date=None):
 
                 transactions.append(
                     Transaction(
-                        account_id=account.id,
+                        account_id=account.account_id,
                         user_id=account.user_id,
                         amount=amount,
                         category_id=category_id,
@@ -57,7 +57,7 @@ def generate_transactions_for_account(account, months=6, start_date=None):
                 category_id = get_or_create_category(cat)
                 transactions.append(
                     Transaction(
-                        account_id=account.id,
+                        account_id=account.account_id,
                         user_id=account.user_id,
                         amount=-spike,
                         category_id=category_id,
@@ -76,7 +76,7 @@ def run(account_id=None):
     app = create_app()
     with app.app_context():
         if account_id:
-            accounts = Account.query.filter_by(id=account_id).all()
+            accounts = Account.query.filter_by(account_id=account_id).all()
         else:
             accounts = Account.query.all()
 
