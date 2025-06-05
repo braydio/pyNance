@@ -120,6 +120,7 @@ export default {
       sortOrder: 1,
       showDeleteButtons: false,
       showTypeFilter: false,
+      selectedType: "",
       typeFilters: [],
       showHidden: false,
     };
@@ -139,6 +140,9 @@ export default {
           const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status, acc.link_type].map(val => (val || '').toLowerCase());
           return fields.some(f => f.includes(query));
         });
+      }
+      if (this.selectedType) {
+        results = results.filter(acc => acc.type === this.selectedType);
       }
       if (this.typeFilters.length) {
         results = results.filter(acc => this.typeFilters.includes(acc.type));

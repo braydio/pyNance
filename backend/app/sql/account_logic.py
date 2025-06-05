@@ -204,9 +204,6 @@ def refresh_data_for_teller_account(
     Refresh Teller-linked account by querying the Teller API to update balance and transactions.
     Preserves user-modified transactions by skipping updates on transactions flagged as modified by the user.
     """
-    from datetime import datetime, date as pydate
-    import json
-    from tempfile import NamedTemporaryFile
 
     updated = False
     account_id = account.account_id
@@ -383,7 +380,9 @@ def refresh_data_for_teller_account(
     return updated
 
 
-def get_paginated_transactions(page, page_size, start_date=None, end_date=None, category=None):
+def get_paginated_transactions(
+    page, page_size, start_date=None, end_date=None, category=None
+):
     query = (
         db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
@@ -470,8 +469,12 @@ def refresh_data_for_plaid_account(access_token, account_id):
         )
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
         # Only process transactions belonging to this specific account
-        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
-        logger.info(f"Processing {len(transactions)} transactions for account {account_id}.")
+        transactions = [
+            txn for txn in transactions if txn.get("account_id") == account_id
+        ]
+        logger.info(
+            f"Processing {len(transactions)} transactions for account {account_id}."
+        )
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")
