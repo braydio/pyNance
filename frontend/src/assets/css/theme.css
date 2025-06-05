@@ -1,0 +1,25 @@
+:root {
+  /* Dark mode colors */
+  --color-bg-dark: #1e1e1e;
+  --color-bg-secondary: #242424;
+  --color-text-light: #f5f5f5;
+  --color-text-muted: #a1a1aa;
+  --color-border-secondary: #3f3f46;
+  --divider: rgba(255, 255, 255, 0.12);
+  --shadow: rgba(0, 0, 0, 0.6);
+
+  /* Neon accents */
+  --neon-purple: #c084fc;
+  --neon-mint: #2fffa7;
+  --color-accent-yellow: #facc15;
+  --color-accent-purple-hover: #d9a6fd;
+  --color-accent-mint: #2fffa7;
+  --hover-glow: rgba(192, 132, 252, 0.6);
+
+  /* Frosted glass */
+  --frosted-bg: rgba(255, 255, 255, 0.08);
+  --hover: rgba(255, 255, 255, 0.1);
+  --color-hover-light: rgba(255, 255, 255, 0.06);
+  --color-error: #f87171;
+  --color-bg-sec: rgba(255, 255, 255, 0.1);
+}

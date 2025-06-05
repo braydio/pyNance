@@ -1,12 +1,16 @@
-
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./index.html",
-    "./src/**/*.{vue,js,ts,jsx,tsx,css}"
-  ],
+  darkMode: 'class',
+  content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx,css}'],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        'bg-dark': '#1e1e1e',
+        'bg-secondary': '#242424',
+        'neon-purple': '#c084fc',
+        'neon-mint': '#2fffa7',
+      },
+    },
   },
   plugins: [
     require('@tailwindcss/forms'),
@@ -14,4 +18,3 @@ module.exports = {
     require('@tailwindcss/aspect-ratio'),
   ],
 }
-

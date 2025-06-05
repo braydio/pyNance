@@ -1,9 +1,7 @@
 from flask import Blueprint, jsonify, request
-from collections import defaultdict
-from datetime import datetime, timedelta
+
 from app.extensions import db
 from app.services.forecast_orchestrator import ForecastOrchestrator
-from app.models import AccountHistory
 
 forecast = Blueprint("forecast", __name__)
 
@@ -14,8 +12,6 @@ def get_forecast():
         view_type = request.args.get("view_type", "Month")
         manual_income = float(request.args.get("manual_income", 0))
         liability_rate = float(request.args.get("liability_rate", 0))
-
-        horizon = 30 if view_type.lower() == "month" else 365
 
         orchestrator = ForecastOrchestrator(db.session)
         projections = orchestrator.forecast(days=horizon)
@@ -50,28 +46,7 @@ def get_forecast():
             .filter(AccountHistory.date <= start + timedelta(days=horizon - 1))
             .all()
         )
-        for row in history_rows:
-            key = row.date.date()
-            actuals_map[key] += row.balance
 
-        actuals = [actuals_map.get(start + timedelta(days=i)) for i in range(horizon)]
-
-        metadata = {
-            "account_count": len({p["account_id"] for p in projections}),
-            "recurring_count": 0,
-            "data_age_days": 0,
-        }
-
-        return (
-            jsonify(
-                {
-                    "labels": labels,
-                    "forecast": forecast_line,
-                    "actuals": actuals,
-                    "metadata": metadata,
-                }
-            ),
-            200,
-        )
+        return jsonify(payload), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
