@@ -12,6 +12,9 @@ forecast = Blueprint("forecast", __name__)
 def get_forecast():
     try:
         view_type = request.args.get("view_type", "Month")
+        manual_income = float(request.args.get("manual_income", 0))
+        liability_rate = float(request.args.get("liability_rate", 0))
+
         horizon = 30 if view_type.lower() == "month" else 365
 
         orchestrator = ForecastOrchestrator(db.session)
@@ -29,6 +32,10 @@ def get_forecast():
             day = start + timedelta(days=i)
             labels.append(day.strftime("%b %d"))
             forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
+
+        adjustment = manual_income - liability_rate
+        if adjustment:
+            forecast_line = [round(f + adjustment, 2) for f in forecast_line]
 
         actuals_map = defaultdict(float)
         history_rows = (
