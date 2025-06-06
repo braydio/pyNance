@@ -22,6 +22,7 @@ from app.models import (
     TellerAccount,
     Transaction,
 )
+from app.utils.finance_utils import normalize_transaction_amount
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
