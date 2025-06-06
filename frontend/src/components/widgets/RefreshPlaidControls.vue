@@ -4,6 +4,21 @@
     <div class="button-group">
       <input type="date" v-model="startDate" class="date-picker" />
       <input type="date" v-model="endDate" class="date-picker" />
+      <div class="account-select">
+        <button type="button" @click="toggleDropdown">
+          Select Accounts
+        </button>
+        <div v-if="dropdownOpen" class="dropdown-menu">
+          <label v-for="acct in accounts" :key="acct.account_id">
+            <input
+              type="checkbox"
+              :value="acct.account_id"
+              v-model="selectedAccounts"
+            />
+            {{ acct.name }}
+          </label>
+        </div>
+      </div>
       <button @click="handlePlaidRefresh" :disabled="isRefreshing">
         <span v-if="isRefreshing">Refreshing Plaid Accounts…</span>
         <span v-else>Refresh Plaid Accounts</span>
@@ -25,9 +40,25 @@ export default {
       user_id: import.meta.env.VITE_USER_ID_PLAID,
       startDate: monthAgo.toISOString().slice(0, 10),
       endDate: today,
+      accounts: [],
+      selectedAccounts: [],
+      dropdownOpen: false,
     };
   },
   methods: {
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+    async loadAccounts() {
+      try {
+        const resp = await axios.get("/api/accounts/get_accounts");
+        if (resp.data?.accounts) {
+          this.accounts = resp.data.accounts;
+        }
+      } catch (err) {
+        console.error("Failed to load accounts", err);
+      }
+    },
     async handlePlaidRefresh() {
       this.isRefreshing = true;
       try {
@@ -35,6 +66,7 @@ export default {
           user_id: this.user_id,
           start_date: this.startDate,
           end_date: this.endDate,
+          account_ids: this.selectedAccounts,
         });
         if (response.data.status === "success") {
           alert("Plaid accounts refreshed: " + response.data.updated_accounts.join(", "));
@@ -48,6 +80,9 @@ export default {
         this.isRefreshing = false;
       }
     },
+  },
+  mounted() {
+    this.loadAccounts();
   },
 };
 </script>
@@ -98,6 +133,31 @@ export default {
   background-color: var(--themed-bg);
   border: 1px solid var(--divider);
   color: var(--color-text-light);
+}
+
+.account-select {
+  position: relative;
+}
+
+.account-select button {
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--divider);
+  color: var(--color-text-light);
+}
+
+.dropdown-menu {
+  position: absolute;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--divider);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
 }
 </style>
 

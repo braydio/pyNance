@@ -172,6 +172,7 @@ def refresh_accounts_endpoint():
     user_id = data.get("user_id")
     start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
+    account_ids = data.get("account_ids") or []
     start_date = (
         datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
     )
@@ -182,11 +183,12 @@ def refresh_accounts_endpoint():
         return jsonify({"error": "Missing user_id"}), 400
 
     try:
-        accounts = (
-            Account.query.options(joinedload(Account.plaid_account))
-            .filter_by(user_id=user_id)
-            .all()
+        query = Account.query.options(joinedload(Account.plaid_account)).filter_by(
+            user_id=user_id
         )
+        if account_ids:
+            query = query.filter(Account.account_id.in_(account_ids))
+        accounts = query.all()
         refreshed = []
         for acct in accounts:
             if acct.plaid_account and acct.plaid_account.access_token:
