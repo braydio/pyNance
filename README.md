@@ -105,6 +105,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ### 4. Run Backend
@@ -129,6 +130,14 @@ npm run dev
 ```
 
 (Starts Vue frontend at `http://127.0.0.1:5173`)
+
+### 7. Run Tests
+
+```bash
+pytest -q
+```
+
+All tests should pass when dependencies are installed.
 
 ---
 
