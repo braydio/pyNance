@@ -33,6 +33,15 @@ models_stub = types.ModuleType("app.models")
 
 
 class DummyTx:
+    class DateAttr:
+        def __ge__(self, other):
+            return True
+
+        def desc(self):
+            return self
+
+    date = DateAttr()
+
     def __init__(self):
         self.amount = 1.0
         self.description = "d"
@@ -95,7 +104,12 @@ def client():
 
 def test_scan_route_returns_list(client, monkeypatch):
     dummy_tx = models_stub.Transaction()
-    monkeypatch.setattr(recurring_module.Transaction, "query", QueryStub([dummy_tx]))
+    monkeypatch.setattr(
+        recurring_module.Transaction,
+        "query",
+        QueryStub([dummy_tx]),
+        raising=False,
+    )
     monkeypatch.setattr(recurring_module, "RecurringBridge", DummyBridge)
     resp = client.post("/api/recurring/scan/acc1")
     assert resp.status_code == 200
