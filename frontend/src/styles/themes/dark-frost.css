@@ -5,6 +5,7 @@
   --color-bg-dark: #0b0e14;
   --color-bg-secondary: #1f252e;
   --themed-bg: rgba(31, 37, 46, 0.65);
+  --frosted-bg: var(--themed-bg);
   --themed-border: rgba(255, 255, 255, 0.12);
   --surface: #212733;
   --input-bg: #2b3140;
