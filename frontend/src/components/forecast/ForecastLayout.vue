@@ -13,7 +13,7 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onMounted, watch } from 'vue'
 import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import ForecastChart from './ForecastChart.vue'
@@ -22,12 +22,12 @@ import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import { useForecastData } from '@/composables/useForecastData'
 import { computed } from 'vue'
 
-const viewType = ref<'Month' | 'Year'>('Month')
+const viewType = ref('Month')
 const currentBalance = ref(0)
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 
-const { labels, forecast, actuals, loading, error, fetchData } = useForecastData(
+const { labels, forecast, actuals, fetchData } = useForecastData(
   viewType,
   manualIncome,
   liabilityRate

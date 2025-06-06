@@ -3,7 +3,7 @@
     <h2>Okay Genius Go Ahead</h2>
 
     <transition name="fade">
-      <div class="upload-form-inline">
+      <div class="upload-form-inline" v-if="showForm">
         <label class="text-xs font-medium" for="userId">User ID</label>
         <input id="userId" v-model="userId" class="input-text" placeholder="Well?" />
 
