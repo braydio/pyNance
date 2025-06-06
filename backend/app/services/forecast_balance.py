@@ -36,7 +36,8 @@ class ForecastSimulator:
         schedule = defaultdict(list)
 
         for r in self.recurring:
-            freq = self.freq_map.get(r.get("frequency", ""), 30)
+            freq_key = r.get("frequency", "").lower()
+            freq = self.freq_map.get(freq_key, 30)
             next_date = datetime.fromisoformat(r["next_due_date"])
             for _ in range(days // freq + 1):
                 if (next_date - datetime.today()).days < 0:
