@@ -40,6 +40,7 @@ Optional JSON body parameters:
 - `user_id` – ID of the user whose accounts should refresh
 - `start_date` – optional ISO `YYYY-MM-DD` start date
 - `end_date` – optional ISO `YYYY-MM-DD` end date
+- `account_ids` – optional list of account IDs to refresh
 
 **Rule:**
 

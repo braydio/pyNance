@@ -46,7 +46,7 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows us
   - **Output:** `{ success: true, new_records: int }`
 
 - **POST /plaid/transactions/refresh_accounts**
-  - **Body:** `{ "user_id": "abc", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD" }`
+  - **Body:** `{ "user_id": "abc", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`
   - **Output:** `{ "status": "success", "updated_accounts": ["name"] }`
 
 ## Internal Dependencies
