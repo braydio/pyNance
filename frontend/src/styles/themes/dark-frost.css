@@ -1,18 +1,18 @@
 :root {
-  --page-bg: #0d1117;
+  --page-bg: #0b0e14;
   --background: var(--page-bg);
-  --color-bg: #15191e;
-  --color-bg-dark: #0d1117;
-  --color-bg-secondary: #1e242f;
-  --themed-bg: rgba(30, 36, 47, 0.75);
+  --color-bg: #131822;
+  --color-bg-dark: #0b0e14;
+  --color-bg-secondary: #1f252e;
+  --themed-bg: rgba(31, 37, 46, 0.65);
   --frosted-bg: var(--themed-bg);
-  --themed-border: rgba(255, 255, 255, 0.1);
-  --surface: #222733;
-  --input-bg: #2a303c;
+  --themed-border: rgba(255, 255, 255, 0.12);
+  --surface: #212733;
+  --input-bg: #2b3140;
   --divider: #363c47;
-  --color-border-secondary: #2f3540;
+  --color-border-secondary: #323844;
 
-  --theme-fg: #e2e8f0;
+  --theme-fg: #e5e7eb;
   --color-text-dark: #000000;
   --color-text-light: #f1f5f9;
   --color-text-muted: #94a3b8;
