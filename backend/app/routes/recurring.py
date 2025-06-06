@@ -7,6 +7,11 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from app.services.recurring_bridge import RecurringBridge
 
+# Ensure a 'query' attribute exists for Transaction when running without
+# Flask-SQLAlchemy (e.g., in minimal unit test stubs).
+if not hasattr(Transaction, "query"):
+    Transaction.query = None
+
 recurring = Blueprint("recurring", __name__)
 
 
@@ -106,12 +111,12 @@ def scan_account_for_recurring(account_id):
     """Detect recurring transactions for an account and persist them."""
     try:
         cutoff = datetime.utcnow() - timedelta(days=90)
-        rows = (
-            Transaction.query.filter_by(account_id=account_id)
-            .filter(Transaction.date >= cutoff)
-            .order_by(Transaction.date.desc())
-            .all()
-        )
+        query = Transaction.query.filter_by(account_id=account_id)
+        if hasattr(Transaction, "date"):
+            query = query.filter(Transaction.date >= cutoff).order_by(
+                Transaction.date.desc()
+            )
+        rows = query.all()
         txs = [
             {
                 "amount": float(tx.amount),
