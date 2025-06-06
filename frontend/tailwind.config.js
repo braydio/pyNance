@@ -10,6 +10,14 @@ export default {
         'neon-purple': '#c084fc',
         'neon-mint': '#2fffa7',
       },
+      fontFamily: {
+        sans: [
+          'Source Code Pro',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+      },
     },
   },
   plugins: [
