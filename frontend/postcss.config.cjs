@@ -1,3 +1,5 @@
+/* eslint-env node */
+
 module.exports = {
   plugins: {
     // Use the official Tailwind CSS PostCSS plugin
