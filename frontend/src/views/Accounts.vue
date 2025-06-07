@@ -90,11 +90,6 @@ function refreshCharts() {
 
 // Meta & State
 const userName = import.meta.env.VITE_USER_ID_PLAID || ''
-const currentDate = new Date().toLocaleDateString(undefined, {
-  month: 'long',
-  day: 'numeric',
-  year: 'numeric',
-})
 
 const activeAccountGroup = ref('Checking')
 const accountGroups = ['Checking', 'Savings', 'Credit']

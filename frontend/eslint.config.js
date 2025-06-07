@@ -26,4 +26,18 @@ export default [
     ],
   },
   skipFormatting,
+  {
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+  {
+    files: ['*.config.js', '*.config.cjs'],
+    languageOptions: {
+      globals: {
+        module: 'writable',
+        require: 'readonly',
+      },
+    },
+  },
 ]
