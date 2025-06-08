@@ -79,9 +79,23 @@ def generate_forecast_line(
         daily_expense = liability_rate / 30 if liability_rate else 0.0
 
         for item in recurring_items:
-            if item["frequency"] == "monthly" and current_date.day == item["day"]:
+            freq = item.get("frequency", "monthly").lower()
+            start = item.get("start_date", start_date)
+
+            if freq == "monthly" and current_date.day == item.get("day", 1):
                 balance += item["amount"]
-            # Extend for weekly, biweekly, etc.
+            elif freq == "weekly":
+                if (current_date - start).days % 7 == 0 and (
+                    current_date - start
+                ).days >= 0:
+                    balance += item["amount"]
+            elif freq == "biweekly":
+                if (current_date - start).days % 14 == 0 and (
+                    current_date - start
+                ).days >= 0:
+                    balance += item["amount"]
+            elif freq == "daily":
+                balance += item["amount"]
 
         balance += daily_income - daily_expense
         forecast_line.append(round(balance, 2))
@@ -127,4 +141,23 @@ def get_account_history_range(user_id, start_date, end_date):
         .group_by(func.date(AccountHistory.date))
         .all()
     )
-    return {d[0]: float(d[1]) for d in data}
+    if data:
+        return {d[0]: float(d[1]) for d in data}
+
+    # Fallback to transaction sums when no history exists
+    tx_data = (
+        db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
+        .filter(Transaction.user_id == user_id)
+        .filter(Transaction.date >= start_date, Transaction.date <= end_date)
+        .group_by(func.date(Transaction.date))
+        .all()
+    )
+
+    running = 0.0
+    lookup = {d[0]: float(d[1]) for d in tx_data}
+    out = {}
+    for i in range((end_date - start_date).days + 1):
+        day = start_date + timedelta(days=i)
+        running += lookup.get(day, 0.0)
+        out[day] = running
+    return out

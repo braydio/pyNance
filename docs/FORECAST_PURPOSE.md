@@ -90,6 +90,7 @@ This module currently covers:
 - Forecasting **recurring transaction schedules**
 - Forecasting **projected balances per account**
 - Statistical ARIMA-based forecasts of numeric series (optional)
+- Support for **weekly** and **biweekly** recurring intervals
 
 It does **not yet cover**:
 
@@ -106,6 +107,7 @@ It does **not yet cover**:
 3. **Integrate actual vs. projected comparison** using historical backtests
 4. Build `recurring_detection.py` to dynamically populate recurring records
 5. Extend orchestration to support **ensemble** or hybrid forecasts
+6. Implemented fallback to transaction sums when account history is missing
 
 ---
 

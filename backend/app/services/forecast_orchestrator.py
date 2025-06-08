@@ -57,6 +57,7 @@ class ForecastOrchestrator:
                     "amount": tx.amount,
                     "frequency": r.frequency,
                     "day": r.next_due_date.day,
+                    "start_date": r.next_due_date,
                 }
             )
 
