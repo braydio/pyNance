@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from app.services.recurring_bridge import RecurringBridge
 
+recurring = Blueprint("recurring", __name__)
 # -------------------------------------------------------------------
 # 1) Save or update a user-defined recurring transaction
 # -------------------------------------------------------------------
