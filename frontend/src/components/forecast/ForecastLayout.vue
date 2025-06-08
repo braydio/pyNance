@@ -13,8 +13,8 @@
   </div>
 </template>
 
-<script setup lang="ts">
-import { ref, onMounted } from 'vue'
+<script setup>
+import { ref, onMounted, watch } from 'vue'
 import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import ForecastChart from './ForecastChart.vue'
 import ForecastBreakdown from './ForecastBreakdown.vue'
@@ -22,12 +22,16 @@ import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import { useForecastData } from '@/composables/useForecastData'
 import { computed } from 'vue'
 
-const viewType = ref<'Month' | 'Year'>('Month')
+const viewType = ref('Month')
 const currentBalance = ref(0)
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 
-const { labels, forecast, actuals, loading, error, fetchData } = useForecastData()
+const { labels, forecast, actuals, fetchData } = useForecastData(
+  viewType,
+  manualIncome,
+  liabilityRate
+)
 
 const forecastItems = computed(() =>
   labels.value.map((label, i) => ({ label, amount: forecast.value[i] }))
@@ -36,9 +40,8 @@ const accountHistory = computed(() =>
   labels.value.map((label, i) => ({ date: label, balance: actuals.value[i] ?? 0 }))
 )
 
-onMounted(() => {
-  fetchData()
-})
+onMounted(fetchData)
+watch([viewType, manualIncome, liabilityRate], fetchData)
 
 function addAdjustment(adjustment) {
   forecastItems.value.push(adjustment)

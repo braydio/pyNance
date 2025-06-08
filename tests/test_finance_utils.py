@@ -35,6 +35,7 @@ finance_utils = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(finance_utils)
 
 transform_transaction = finance_utils.transform_transaction
+normalize_transaction_amount = finance_utils.normalize_transaction_amount
 
 
 class DummyAccount:
@@ -55,3 +56,13 @@ def test_transform_transaction_returns_float():
     )
     result = transform_transaction(txn)
     assert isinstance(result, float)
+
+
+def test_normalize_transaction_amount_preserves_debit_sign():
+    assert normalize_transaction_amount(-45, "checking") == -45
+    assert normalize_transaction_amount(75, "checking") == 75
+
+
+def test_normalize_transaction_amount_flips_credit_sign():
+    assert normalize_transaction_amount(20, "credit card") == -20
+    assert normalize_transaction_amount(-30, "credit card") == 30

@@ -113,11 +113,10 @@
 <script>
 import axios from "axios";
 import api from "@/services/api";
-import RefreshControls from "@/components/widgets/RefreshControls.vue";
+import accountLinkApi from "@/api/accounts_link";
 
 export default {
   name: "AccountsTable",
-  components: { RefreshControls },
   emits: ["refresh"],
   props: {
     provider: {

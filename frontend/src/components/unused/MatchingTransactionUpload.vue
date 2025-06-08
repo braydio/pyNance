@@ -95,7 +95,7 @@ const uploadFile = async () => {
       body: formData,
     });
     alert('File uploaded successfully.');
-  } catch (e) {
+  } catch {
     alert('Upload failed.');
   } finally {
     uploading.value = false;

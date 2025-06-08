@@ -22,6 +22,7 @@ from app.models import (
     TellerAccount,
     Transaction,
 )
+from app.utils.finance_utils import normalize_transaction_amount
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
@@ -426,12 +427,12 @@ def get_paginated_transactions(
 
     serialized = []
     for tx, acc in results:
-        amount_signed = normalize_transaction_amount(tx.amount or 0, acc.type or "")
+        display_amount = normalize_transaction_amount(tx.amount or 0, acc.type or "")
         serialized.append(
             {
                 "transaction_id": tx.transaction_id,
                 "date": tx.date.isoformat() if tx.date else None,
-                "amount": amount_signed,
+                "amount": display_amount,
                 "description": tx.description or tx.merchant_name or "N/A",
                 "category": (
                     tx.category.display_name

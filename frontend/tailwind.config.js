@@ -1,5 +1,9 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+import forms from '@tailwindcss/forms'
+import typography from '@tailwindcss/typography'
+import aspectRatio from '@tailwindcss/aspect-ratio'
+
+export default {
   darkMode: 'class',
   content: ['./index.html', './src/**/*.{vue,js,ts,jsx,tsx,css}'],
   theme: {
@@ -10,11 +14,15 @@ module.exports = {
         'neon-purple': '#c084fc',
         'neon-mint': '#2fffa7',
       },
+      fontFamily: {
+        sans: [
+          'Source Code Pro',
+          'ui-sans-serif',
+          'system-ui',
+          'sans-serif',
+        ],
+      },
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-    require('@tailwindcss/aspect-ratio'),
-  ],
+  plugins: [forms, typography, aspectRatio],
 }

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from app.extensions import db
-from app.services.forecast_orchestrator import ForecastOrchestrator
+import app.services.forecast_orchestrator as forecast_orchestrator
 
 forecast = Blueprint("forecast", __name__)
 
@@ -47,7 +47,6 @@ def get_forecast():
             .filter(AccountHistory.date <= start + timedelta(days=horizon - 1))
             .all()
         )
-
         return jsonify(payload), 200
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - defensive
         return jsonify({"error": str(e)}), 500

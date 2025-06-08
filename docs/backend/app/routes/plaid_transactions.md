@@ -16,6 +16,7 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows us
 - `GET /plaid/transactions`: Retrieve all synced transactions.
 - `GET /plaid/transactions/<id>`: Fetch a specific transaction by its ID.
 - `POST /plaid/transactions/sync`: Force-refresh Plaid transactions for the user.
+- `POST /plaid/transactions/refresh_accounts`: Refresh Plaid accounts and transactions.
 
 ## Inputs & Outputs
 
@@ -43,6 +44,10 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows us
 
 - **POST /plaid/transactions/sync**
   - **Output:** `{ success: true, new_records: int }`
+
+- **POST /plaid/transactions/refresh_accounts**
+  - **Body:** `{ "user_id": "abc", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`
+  - **Output:** `{ "status": "success", "updated_accounts": ["name"] }`
 
 ## Internal Dependencies
 

@@ -17,16 +17,25 @@ def normalize_account_balance(balance, account_type):
 
 
 def normalize_transaction_amount(amount, account_type):
+    """Return the transaction amount signed for display based on account type."""
     account_type = (account_type or "").lower()
-    amount = abs(amount)
+    amt = float(amount)
 
-    if account_type.lower() in ["credit card", "credit", "loan", "liability"]:
-        normalized_amount = -1 * (amount)
-        logger.info(f"Normalized transaction amount to {normalized_amount}")
-        return normalized_amount
-    else:
-        logger.info(f"Cannot determine for {account_type}, returning {amount}")
-        return amount
+    # Liability/credit accounts report positive amounts for charges and negative
+    # amounts for payments. For a net-worth view we flip the sign so that
+    # charges appear negative and payments appear positive.
+    if account_type in ["credit card", "credit", "loan", "liability"]:
+        adjusted = -amt
+        logger.info(
+            f"Normalized transaction amount for credit account to {adjusted}"
+        )
+        return adjusted
+
+    # For asset/depository accounts we keep the provider's sign intact.
+    logger.info(
+        f"Preserving transaction amount {amt} for account type {account_type}"
+    )
+    return amt
 
 
 def display_transaction_amount(txn: Transaction) -> float:

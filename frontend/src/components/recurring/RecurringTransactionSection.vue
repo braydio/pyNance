@@ -3,6 +3,7 @@
     <h2 class="heading-md mb-4">Recurring Transactions</h2>
     <!-- Form Modal Toggle -->
     <button @click="resetForm" class="btn">+ Add Recurring Transaction Rule</button>
+    <button @click="scanForRecurring" class="btn">Scan for Recurring</button>
     <!-- Form -->
     <div v-if="showForm" class="recurring-form">
       <input v-model="transactionId" placeholder="Transaction ID (e.g. tx_abc123)" />
@@ -56,7 +57,8 @@
       <h3 class="subheading">Detected Reminders</h3>
       <ul>
         <li v-for="(reminder, i) in autoReminders" :key="i" class="note">
-          {{ reminder.description }} (${{ reminder.amount.toFixed(2) }}) due on {{ reminder.next_due_date }}
+          {{ reminder.description }} (${{ reminder.amount.toFixed(2) }}) due on
+          {{ reminder.next_due_date }}
         </li>
       </ul>
     </div>
@@ -66,7 +68,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { createRecurringTransaction } from '@/api/recurring'
+import { scanRecurringTransactions } from '@/api/recurring'
 import axios from 'axios'
 
 const route = useRoute()
@@ -109,9 +111,23 @@ function editRule(rule) {
 async function deleteRule(rule) {
   try {
     await axios.delete(`/api/accounts/${accountId}/recurringTx`, { data: rule })
-    userRules.value = userRules.value.filter(r => r.description !== rule.description || r.amount !== rule.amount)
+    userRules.value = userRules.value.filter(
+      (r) => r.description !== rule.description || r.amount !== rule.amount,
+    )
   } catch (err) {
     console.error('Failed to delete rule:', err)
+  }
+}
+
+async function scanForRecurring() {
+  try {
+    const res = await scanRecurringTransactions(accountId)
+    if (Array.isArray(res?.reminders)) {
+      userRules.value = res.reminders.filter((r) => r.source === 'user')
+      autoReminders.value = res.reminders.filter((r) => r.source === 'auto')
+    }
+  } catch (err) {
+    console.error('Failed to scan recurring transactions:', err)
   }
 }
 
@@ -124,10 +140,12 @@ async function saveRecurring() {
       amount: amount.value,
       frequency: frequency.value,
       next_due_date: nextDueDate.value,
-      notes: notes.value || description.value || 'Untitled Recurring'
+      notes: notes.value || description.value || 'Untitled Recurring',
     }
     await axios.put(`/api/accounts/${accountId}/recurringTx`, payload)
-    userRules.value = userRules.value.filter(r => r.description !== payload.description || r.amount !== payload.amount)
+    userRules.value = userRules.value.filter(
+      (r) => r.description !== payload.description || r.amount !== payload.amount,
+    )
     userRules.value.push(payload)
     resetForm()
   } catch (err) {
@@ -139,7 +157,8 @@ async function saveRecurring() {
 
 const formatAmount = (val) => {
   return new Intl.NumberFormat('en-US', {
-    style: 'currency', currency: 'USD'
+    style: 'currency',
+    currency: 'USD',
   }).format(parseFloat(val || 0))
 }
 
@@ -147,15 +166,14 @@ onMounted(async () => {
   try {
     const res = await axios.get(`/api/accounts/${accountId}/recurring`)
     if (Array.isArray(res.data?.reminders)) {
-      userRules.value = res.data.reminders.filter(r => r.source === 'user')
-      autoReminders.value = res.data.reminders.filter(r => r.source === 'auto')
+      userRules.value = res.data.reminders.filter((r) => r.source === 'user')
+      autoReminders.value = res.data.reminders.filter((r) => r.source === 'auto')
     }
   } catch (err) {
     console.error('Failed to load recurring reminders:', err)
   }
 })
 </script>
-
 
 <style scoped>
 .recurring-manager {
