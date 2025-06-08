@@ -13,7 +13,7 @@
 import Modal from '../ui/Modal.vue'
 import TransactionsTable from '../tables/TransactionsTable.vue'
 
-const props = defineProps({
+defineProps({
   title: { type: String, default: '' },
   transactions: { type: Array, default: () => [] }
 })

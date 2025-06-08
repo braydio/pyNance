@@ -11,25 +11,25 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, watch, onMounted } from 'vue'
 import { Chart, registerables } from 'chart.js'
 import { useForecastEngine } from '@/composables/useForecastEngine'
 
 Chart.register(...registerables)
 
-const props = defineProps<{
-  forecastItems: any[]
-  viewType: string
-  manualIncome: number
-  liabilityRate: number
-  accountHistory: any[]
-}>()
+const props = defineProps({
+  forecastItems: Array,
+  viewType: String,
+  manualIncome: Number,
+  liabilityRate: Number,
+  accountHistory: Array,
+})
 
 const emit = defineEmits(['update:viewType'])
 
-const chartCanvas = ref<HTMLCanvasElement | null>(null)
-let chartInstance: Chart | null = null
+const chartCanvas = ref(null)
+let chartInstance = null
 
 const engine = useForecastEngine(
   ref(props.viewType),

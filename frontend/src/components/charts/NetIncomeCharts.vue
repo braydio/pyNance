@@ -59,7 +59,7 @@ export default {
 
       const netValues = chartData.value.map(item => item.income - item.expenses);
       const gradients = netValues.map(value => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvasEl.height);
+        const gradient = ctx.createLinearGradient(0, 0, 0, chartCanvas.value.height);
         if (value >= 0) {
           gradient.addColorStop(0, "#b8bb26");
           gradient.addColorStop(1, "#98971a");
