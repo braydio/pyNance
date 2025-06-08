@@ -7,14 +7,6 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 from app.services.recurring_bridge import RecurringBridge
 
-# Ensure a 'query' attribute exists for Transaction when running without
-# Flask-SQLAlchemy (e.g., in minimal unit test stubs).
-if not hasattr(Transaction, "query"):
-    Transaction.query = None
-
-recurring = Blueprint("recurring", __name__)
-
-
 # -------------------------------------------------------------------
 # 1) Save or update a user-defined recurring transaction
 # -------------------------------------------------------------------
