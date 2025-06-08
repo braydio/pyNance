@@ -1,8 +1,8 @@
-
 import ast
 import os
 
 PROJECT_DIR = "app"
+
 
 def is_top_level_query_use(filepath):
     with open(filepath) as f:
@@ -13,6 +13,7 @@ def is_top_level_query_use(filepath):
             if ast.dump(node).find("query") != -1:
                 return True
     return False
+
 
 def test_no_model_query_at_module_scope():
     violations = []
