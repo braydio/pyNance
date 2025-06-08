@@ -1,5 +1,8 @@
-@import './theme.css';
 @tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import './theme.css';
 
 /* Base styles */
 @layer base {
@@ -9,8 +12,6 @@
     color: var(--color-text-light);
   }
 }
-
-@tailwind components;
 
 /* Shared component classes */
 @layer components {
@@ -106,5 +107,3 @@
     @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
   }
 }
-
-@tailwind utilities;
