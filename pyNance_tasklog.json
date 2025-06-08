@@ -1,29 +1,15 @@
 {
-  "instances": {
-    "forecast_refractor": {
-      "lastAccessed": "2025-05-28T15:11:50Z",
-      "accessedBy": "arch",
-      "groups": {
-        "recurrence_based": {
-          "tasks": {
-            "refactor_engine": {
-              "items": [
-                {
-                  "name": "Consume RecurringTransactions",
-                  "completed": true
-                },
-                {
-                  "name": "Front-end forecast starts with recurring",
-                  "completed": true
-                },
-                {
-                  "name": "Encode and commit to main",
-                  "completed": true
-                }
-              ]
-            }
-          }
-        }
-      }
-    }
+  "instance": "arch-assistant",
+  "lastAccessed": "2025-06-08T02:09:49.858942+00:00",
+  "accessedBy": "arch-assistant",
+  "group": "recurring-transactions",
+  "task": "doc-refactor",
+  "item": "consolidate-docs",
+  "checklist": [
+    {"item": "Locate all related recurring transaction documentation", "completed": true},
+    {"item": "Merge files into a unified doc", "completed": true},
+    {"item": "Remove stale/duplicated docs", "completed": true},
+    {"item": "Assess implementation vs documentation", "completed": true},
+    {"item": "Write updated spec for recurring module", "completed": true}
+  ]
 }
