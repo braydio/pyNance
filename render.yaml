@@ -1,14 +1,9 @@
-
 services:
-
   - type: web
     name: pynance-backend
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python run.py
-    envVars:
-      - key: FLASK_ENV
-        value: production
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: gunicorn "backend.run:app" --bind 0.0.0.0:$PORT
     plan: free
     autoDeploy: true
     buildFilter:
@@ -22,7 +17,7 @@ services:
       cd frontend
       npm install
       npm run build
-    startCommand: npx serve -s dist
+    startCommand: npm run preview
     staticPublishPath: frontend/dist
     plan: free
     autoDeploy: true
