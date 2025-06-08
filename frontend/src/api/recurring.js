@@ -16,3 +16,8 @@ export const createRecurringTransaction = async (transactionId, payload) => {
   const response = await axios.post(`/api/transactions/${transactionId}/recurring`, payload);
   return response.data;
 };
+
+export const scanRecurringTransactions = async (accountId) => {
+  const response = await axios.post(`/api/recurring/scan/${accountId}`);
+  return response.data;
+};
