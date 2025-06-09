@@ -1,7 +1,8 @@
 # backend/app/config/constants.py
 import os
-from .paths import DIRECTORIES
+
 from .environment import PLAID_ENV
+from .paths import DIRECTORIES
 
 FILES = {
     "LINKED_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkAccounts.json",

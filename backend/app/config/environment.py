@@ -1,7 +1,9 @@
 # backend/app/config/environment.py
 
 import os
+
 from dotenv import load_dotenv
+
 from .paths import DIRECTORIES
 
 load_dotenv()
