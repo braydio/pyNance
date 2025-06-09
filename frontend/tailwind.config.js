@@ -18,6 +18,7 @@ export default {
         sans: [
           'Source Code Pro',
           'ui-sans-serif',
+          'Inter',
           'system-ui',
           'sans-serif',
         ],

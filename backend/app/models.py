@@ -108,6 +108,10 @@ class RecurringTransaction(db.Model):
     )
     transaction = db.relationship("Transaction", backref="recurrence_rule")
 
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False, index=True
+    )
+
     frequency = db.Column(db.String(64), nullable=False)
     next_due_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.String(256), nullable=True)
