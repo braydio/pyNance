@@ -121,7 +121,24 @@ def client():
         yield c
 
 
-def test_forecast_route(client):
+def dummy_forecast(self, method="rule", days=60, stat_input=None):
+    today = datetime.utcnow().date()
+    return [
+        {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
+        for i in range(days)
+    ]
+
+
+def test_forecast_route(client, monkeypatch):
+    monkeypatch.setattr(
+        forecast_orchestrator.ForecastOrchestrator, "forecast", dummy_forecast
+    )
+    monkeypatch.setattr(
+        sys.modules["app.services.forecast_orchestrator"].ForecastOrchestrator,
+        "forecast",
+        dummy_forecast,
+        raising=False,
+    )
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
     data = resp.get_json()
@@ -139,6 +156,11 @@ def test_forecast_route_missing_data(client, monkeypatch):
 
     monkeypatch.setattr(
         forecast_orchestrator.ForecastOrchestrator,
+        "build_forecast_payload",
+        empty_payload,
+    )
+    monkeypatch.setattr(
+        sys.modules["app.services.forecast_orchestrator"].ForecastOrchestrator,
         "build_forecast_payload",
         empty_payload,
     )
