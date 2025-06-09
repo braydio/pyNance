@@ -90,18 +90,6 @@ class DummyBridge:
 bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
-
-class DummyBridge:
-    def __init__(self, txs):
-        self.txs = txs
-
-    def sync_to_db(self):
-        return []
-
-
-bridge_stub.RecurringBridge = DummyBridge
-sys.modules["app.services.recurring_bridge"] = bridge_stub
-
 # ------------------------------
 # Load Target Route Module
 # ------------------------------
