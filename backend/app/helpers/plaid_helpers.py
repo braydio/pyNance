@@ -1,29 +1,26 @@
-from app.config import (
-    plaid_client,
-    PLAID_CLIENT_ID,
-    PLAID_SECRET,
-    PLAID_CLIENT_NAME,
-    FILES,
-)
-from app.sql.forecast_logic import update_account_history
-from app.models import Category
-from app.extensions import db
-from flask import Blueprint, jsonify, request as flask_request
-from app.config.log_setup import setup_logger
 import json
 
+from app.config import (
+    FILES,
+    PLAID_CLIENT_NAME,
+    plaid_client,
+)
+from app.config.log_setup import setup_logger
+from app.extensions import db
+from app.models import Category
+from app.sql.forecast_logic import update_account_history
 from plaid.model.accounts_get_request import AccountsGetRequest
+from plaid.model.country_code import CountryCode
+from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
+from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
 from plaid.model.item_get_request import ItemGetRequest
-from plaid.model.link_token_create_request import LinkTokenCreateRequest
-from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.item_public_token_exchange_request import (
     ItemPublicTokenExchangeRequest,
 )
-from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
-from plaid.model.country_code import CountryCode
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
 
 logger = setup_logger()
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]

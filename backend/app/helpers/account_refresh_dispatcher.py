@@ -1,10 +1,10 @@
 from datetime import datetime, timedelta
 
 from app import create_app
-from app.models import db, Account
-from app.helpers.teller_helpers import get_teller_accounts
-from app.helpers.plaid_helpers import get_accounts
 from app.config import logger  # uses app logger
+from app.helpers.plaid_helpers import get_accounts
+from app.helpers.teller_helpers import get_teller_accounts
+from app.models import Account, db
 
 SYNC_INTERVALS = {
     "teller": timedelta(hours=8),
@@ -64,9 +64,7 @@ def refresh_all_accounts():
                 acct.last_refreshed = datetime.utcnow()
                 db.session.commit()
                 updated += 1
-                logger.info(
-                    f"✅ Synced {provider} account {acct.id} for user {user_id}"
-                )
+                logger.info(f"✅ Synced {provider} account {acct.id} for user {user_id}")
 
             except Exception as e:
                 logger.error(
