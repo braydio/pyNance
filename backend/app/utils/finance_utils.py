@@ -26,15 +26,11 @@ def normalize_transaction_amount(amount, account_type):
     # charges appear negative and payments appear positive.
     if account_type in ["credit card", "credit", "loan", "liability"]:
         adjusted = -amt
-        logger.info(
-            f"Normalized transaction amount for credit account to {adjusted}"
-        )
+        logger.info(f"Normalized transaction amount for credit account to {adjusted}")
         return adjusted
 
     # For asset/depository accounts we keep the provider's sign intact.
-    logger.info(
-        f"Preserving transaction amount {amt} for account type {account_type}"
-    )
+    logger.info(f"Preserving transaction amount {amt} for account type {account_type}")
     return amt
 
 
