@@ -1,5 +1,5 @@
 # app/routes/recurring.py
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
@@ -142,7 +142,7 @@ def delete_recurring_tx(account_id):
 def scan_account_for_recurring(account_id):
     """Detect recurring transactions for an account and persist them."""
     try:
-        cutoff = datetime.utcnow() - timedelta(days=90)
+        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
         rows = (
             Transaction.query.filter_by(account_id=account_id)
             .filter(Transaction.date >= cutoff)
