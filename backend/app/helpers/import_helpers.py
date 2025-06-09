@@ -1,7 +1,7 @@
 import csv
-from datetime import datetime
-import traceback
 import re
+import traceback
+from datetime import datetime
 
 import pdfplumber
 from app.config import logger
