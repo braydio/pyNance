@@ -159,6 +159,16 @@ Base URL: `http://127.0.0.1:5000/api`
 
 Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
+## Running Tests
+
+Ensure backend dependencies are installed before executing the test suite:
+
+```bash
+pip install -r backend/requirements.txt
+pytest -q
+```
+
+
 ---
 
 ## Logs
