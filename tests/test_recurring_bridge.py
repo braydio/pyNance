@@ -23,7 +23,7 @@ def load_module(name, path):
         logger.debug(f"Loaded module: {name} from {path}")
         return module
     except Exception as e:
-        logger.exception(f"Failed to load module '{name}' at '{path}'")
+        logger.exception(f"Failed to load module '{name}' at '{path}' error: {e}")
         raise
 
 
@@ -39,7 +39,7 @@ def setup_sqlite_app(tmp_path):
         extensions.db.init_app(app)
         return app, extensions
     except Exception as e:
-        logger.exception("Failed to set up SQLite Flask app")
+        logger.exception(f"Failed to set up SQLite Flask app causing error: {e}")
         raise
 
 
@@ -67,7 +67,7 @@ def db_ctx(tmp_path):
             yield extensions.db, models, logic
 
         except Exception as e:
-            logger.exception("Error during DB fixture setup")
+            logger.exception(f"Fixture setup causing error: {e}")
             raise
         finally:
             extensions.db.drop_all()
@@ -137,5 +137,5 @@ def test_sync_to_db_inserts_recurring(db_ctx):
         raise
 
     except Exception as e:
-        logger.exception("Unexpected error during recurring sync test")
+        logger.exception(f"Unexpected error during recurring sync test {e}")
         raise
