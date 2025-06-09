@@ -3,7 +3,7 @@ import sys
 import argparse
 import chromadb
 from chromadb.errors import ChromaError, IDAlreadyExistsError
-from scripts.chroma_support import chunk_text, extract_metadata
+from chroma_support import chunk_text, extract_metadata
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Index source files into ChromaDB")
