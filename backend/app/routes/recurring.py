@@ -140,7 +140,7 @@ def delete_recurring_tx(account_id):
 
 @recurring.route("/scan/<account_id>", methods=["POST"])
 def scan_account_for_recurring(account_id):
-    """Scan an account for recurring patterns and return reminders."""
+    """Detect recurring transactions for an account and persist them."""
     try:
         cutoff = datetime.utcnow() - timedelta(days=90)
         rows = (
@@ -159,9 +159,8 @@ def scan_account_for_recurring(account_id):
         ]
 
         rb = RecurringBridge(txs)
-        rb.sync_to_db()
-        return get_structured_recurring(account_id)
-
+        actions = rb.sync_to_db()
+        return jsonify({"status": "success", "actions": actions}), 200
     except Exception as e:
         logger.error(
             f"Error scanning account {account_id} for recurring: {e}", exc_info=True
