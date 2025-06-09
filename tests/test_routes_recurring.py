@@ -7,17 +7,17 @@ from flask import Flask, jsonify
 import pytest
 
 # ------------------------------
-# Environment Setup
+# Setup Paths and Base Stubs
 # ------------------------------
 
-BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
-if BASE_DIR not in sys.path:
-    sys.path.insert(0, BASE_DIR)
-
-# Ensure clean re-import of app module
+BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
+sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
 
-# Minimal stubs
+# ------------------------------
+# Mock: app.config
+# ------------------------------
+
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(
     info=lambda *a, **k: None,
@@ -28,32 +28,35 @@ config_stub.logger = types.SimpleNamespace(
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
+# ------------------------------
+# Mock: app.config.environment
+# ------------------------------
+
 env_stub = types.ModuleType("app.config.environment")
 env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
+
+# ------------------------------
+# Mock: app.extensions
+# ------------------------------
 
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
 
+# ------------------------------
+# Mock: app.models
+# ------------------------------
+
 models_stub = types.ModuleType("app.models")
 
 
 class DummyTx:
-    class DateAttr:
-        def __ge__(self, other):
-            return True
-
-        def desc(self):
-            return self
-
     def __init__(self):
         self.amount = 1.0
         self.description = "d"
         self.merchant_name = ""
         self.date = datetime.now(UTC)
-
-    date = DateAttr()
 
 
 class DummyRecurring:
@@ -65,6 +68,10 @@ class DummyRecurring:
 models_stub.Transaction = DummyTransaction
 models_stub.RecurringTransaction = DummyRecurring
 sys.modules["app.models"] = models_stub
+
+# ------------------------------
+# Mock: app.services.recurring_bridge
+# ------------------------------
 
 services_pkg = types.ModuleType("app.services")
 sys.modules["app.services"] = services_pkg
@@ -95,14 +102,39 @@ class DummyBridge:
 bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
-# Load actual recurring route module
+# ------------------------------
+# Load Target Route Module
+# ------------------------------
+
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "recurring.py")
 spec = importlib.util.spec_from_file_location("app.routes.recurring", ROUTE_PATH)
 recurring_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(recurring_module)
 
 # ------------------------------
-# Flask Test Client Fixture
+# Query Stub
+# ------------------------------
+
+
+class QueryStub:
+    def __init__(self, results):
+        self._results = results
+
+    def filter_by(self, *a, **k):
+        return self
+
+    def filter(self, *a, **k):
+        return self
+
+    def order_by(self, *a, **k):
+        return self
+
+    def all(self):
+        return self._results
+
+
+# ------------------------------
+# Test Client Fixture
 # ------------------------------
 
 
@@ -115,6 +147,11 @@ def client():
         yield client
 
 
+# ------------------------------
+# Test: POST /scan/<account_id>
+# ------------------------------
+
+
 def test_scan_route_returns_list(client, monkeypatch):
     dummy_tx = models_stub.Transaction()
     monkeypatch.setattr(
@@ -125,7 +162,6 @@ def test_scan_route_returns_list(client, monkeypatch):
 
     monkeypatch.setattr(recurring_module, "RecurringBridge", DummyBridge)
 
-    # ✅ Patch get_structured_recurring to bypass DB lookups
     monkeypatch.setattr(
         recurring_module,
         "get_structured_recurring",
