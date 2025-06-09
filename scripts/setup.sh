@@ -23,6 +23,14 @@ else
   exit 1
 fi
 
+echo "Installing dev dependendencies..."
+if [ -f backend/requirements-dev.txt ]; then
+  pip install -r requirements-dev.txt
+else
+  echo "Dev requirements file not found: backend/requirements-dev.txt"
+  exit 1
+fi
+
 ## 3. Create .env if missing
 if [ ! -f backend/.env ]; then
   echo "Creating .env file from example.env..."
