@@ -68,7 +68,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { scanRecurringTransactions } from '@/api/recurring'
+import { createRecurringTransaction, scanRecurringTransactions } from '@/api/recurring'
 import axios from 'axios'
 
 const route = useRoute()

@@ -4,10 +4,8 @@ from datetime import datetime
 from app.extensions import db
 from app.models import RecurringTransaction, Account
 from app.sql.forecast_logic import update_account_history
-from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
-from app.helpers.teller_helpers import load_tokens
-from app.config import logger, FILES, TELLER_API_BASE_URL
+from app.config import logger
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -20,11 +18,16 @@ def refresh_all_accounts():
     Iterates through all accounts and refreshes data based on link_type.
     """
     try:
+        from app.sql import account_logic
+        from app.config import FILES, TELLER_API_BASE_URL
+
         logger.debug("Starting refresh of all linked accounts.")
         accounts = Account.query.all()
         updated_accounts = []
 
         # Load Teller tokens once
+        from app.helpers.teller_helpers import load_tokens
+
         teller_tokens = load_tokens()
 
         for account in accounts:
@@ -89,6 +92,9 @@ def refresh_all_accounts():
 @accounts.route("/<account_id>/refresh", methods=["POST"])
 def refresh_single_account(account_id):
     """Refresh a single account with an optional date range."""
+    from app.sql import account_logic
+    from app.config import FILES, TELLER_API_BASE_URL
+
     data = request.get_json() or {}
     start_date = data.get("start_date")
     end_date = data.get("end_date")
@@ -117,6 +123,8 @@ def refresh_single_account(account_id):
 
     elif account.link_type == "Teller":
         access_token = None
+        from app.helpers.teller_helpers import load_tokens
+
         tokens = load_tokens()
         for t in tokens:
             if t.get("user_id") == account.user_id:
