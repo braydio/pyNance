@@ -81,9 +81,10 @@ def update_recurring_tx(account_id):
             )
 
         db.session.commit()
-        return jsonify(
-            {"status": "success", "message": "Recurring transaction saved."}
-        ), 200
+        return (
+            jsonify({"status": "success", "message": "Recurring transaction saved."}),
+            200,
+        )
 
     except Exception as e:
         logger.error(f"Error saving recurring transaction: {e}", exc_info=True)
@@ -105,18 +106,22 @@ def delete_recurring_tx(account_id):
         amount = data.get("amount")
 
         if not description or amount is None:
-            return jsonify(
-                {"status": "error", "message": "Missing required fields."}
-            ), 400
+            return (
+                jsonify({"status": "error", "message": "Missing required fields."}),
+                400,
+            )
 
         match = RecurringTransaction.query.filter_by(
             account_id=account_id, description=description, amount=amount
         ).first()
 
         if not match:
-            return jsonify(
-                {"status": "error", "message": "No matching recurring rule found."}
-            ), 404
+            return (
+                jsonify(
+                    {"status": "error", "message": "No matching recurring rule found."}
+                ),
+                404,
+            )
 
         db.session.delete(match)
         db.session.commit()
