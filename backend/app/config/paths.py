@@ -7,6 +7,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 DIRECTORIES = {
     "DATA_DIR": BASE_DIR / "data",
+    "IMPORT_DIR": BASE_DIR / "data" / "imports`",
     "CERTS_DIR": BASE_DIR / "certs",
     "TEMP_DIR": BASE_DIR / "temp",
     "LOGS_DIR": BASE_DIR / "logs",

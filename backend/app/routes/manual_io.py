@@ -15,10 +15,9 @@ from app.helpers.teller_helpers import get_teller_accounts
 from app.helpers.import_helpers import dispatch_import
 from app.sql import account_logic
 from app.sql.manual_import_logic import upsert_imported_transactions
-from app.config import logger, BASE_DIR, CLIENT_NAME
+from app.config import logger, DIRECTORIES, CLIENT_NAME
 
-IMPORT_DIR = os.path.join(BASE_DIR, "data", "imports")
-
+IMPORT_DIR = DIRECTORIES["IMPORT_DIR"]
 manual_up = Blueprint("manual_up", __name__)
 
 
