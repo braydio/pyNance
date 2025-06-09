@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from app.services.forecast_orchestrator import ForecastOrchestrator
 
