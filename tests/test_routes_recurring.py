@@ -117,7 +117,12 @@ def client():
 
 def test_scan_route_returns_list(client, monkeypatch):
     dummy_tx = models_stub.Transaction()
-    monkeypatch.setattr(recurring_module.Transaction, "query", QueryStub([dummy_tx]))
+    monkeypatch.setattr(
+        recurring_module,
+        "Transaction",
+        type("Transaction", (), {"query": QueryStub([dummy_tx])}),
+    )
+
     monkeypatch.setattr(recurring_module, "RecurringBridge", DummyBridge)
 
     # ✅ Patch get_structured_recurring to bypass DB lookups
