@@ -1,7 +1,7 @@
 import os
 import chromadb
 from chromadb.errors import ChromaError, IDAlreadyExistsError
-from scripts.chroma_support import chunk_text, extract_metadata
+from chroma_support import chunk_text, extract_metadata
 
 # Configuration
 SOURCE_DIR = "backend"
