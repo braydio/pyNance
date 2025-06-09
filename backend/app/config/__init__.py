@@ -1,11 +1,5 @@
 # backend/app/config/__init__.py
 
-from .log_setup import setup_logger
-from .plaid_config import PLAID_BASE_URL, plaid_client
-from .constants import (
-    DATABASE_NAME,
-    SQLALCHEMY_DATABASE_URI,
-)
 from .environment import (
     CLIENT_NAME,
     FLASK_ENV,
