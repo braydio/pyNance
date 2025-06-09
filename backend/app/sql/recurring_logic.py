@@ -1,7 +1,7 @@
 # backend/app/sql/recurring_logic.py
 
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from sqlalchemy import func
@@ -73,7 +73,7 @@ def upsert_recurring(
             transaction_id=str(uuid.uuid4())[:12],
             amount=amount,
             account_id=account_id,
-            date=datetime.utcnow(),
+            date=datetime.now(timezone.utc),
             description=description,
             provider="detected",
         )
