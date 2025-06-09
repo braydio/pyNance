@@ -26,6 +26,8 @@ from .constants import (
     SQLALCHEMY_DATABASE_URI,
 )
 from .paths import BASE_DIR
+from .log_setup import setup_logger
+from .plaid_config import PLAID_BASE_URL, plaid_client
 
 env_check = PLAID_ENV.upper()
 
