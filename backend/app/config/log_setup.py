@@ -1,8 +1,8 @@
+import functools
 import logging
 import os
 import sys
-import functools
-from pathlib import Path
+
 from .paths import DIRECTORIES
 
 # --- Custom VERBOSE level

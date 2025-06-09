@@ -1,10 +1,11 @@
 # backend/app/config/plaid_config.py
 
-import os
-from plaid.configuration import Configuration
-from plaid.api_client import ApiClient
+
 from plaid.api import plaid_api
-from .environment import PLAID_CLIENT_ID, PLAID_SECRET, PLAID_ENV
+from plaid.api_client import ApiClient
+from plaid.configuration import Configuration
+
+from .environment import PLAID_CLIENT_ID, PLAID_ENV, PLAID_SECRET
 
 # Dynamically set base URL based on PLAID_ENV
 PLAID_BASE_URL = f"https://{PLAID_ENV}.plaid.com"

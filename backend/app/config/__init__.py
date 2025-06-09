@@ -19,15 +19,16 @@ from .environment import (
     PRODUCTS,
 )
 from .constants import (
-    FILES,
-    TELEMETRY,
-    DIRECTORIES,
     DATABASE_NAME,
     SQLALCHEMY_DATABASE_URI,
 )
-from .paths import BASE_DIR
+from .environment import (
+    FLASK_ENV,
+    PLAID_ENV,
+    TELLER_API_BASE_URL,
+)
 from .log_setup import setup_logger
-from .plaid_config import PLAID_BASE_URL, plaid_client
+from .plaid_config import PLAID_BASE_URL
 
 env_check = PLAID_ENV.upper()
 
