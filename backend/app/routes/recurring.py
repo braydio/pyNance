@@ -104,12 +104,12 @@ def scan_account_for_recurring(account_id):
     """Detect recurring transactions for an account and persist them."""
     try:
         cutoff = datetime.utcnow() - timedelta(days=90)
-        query = Transaction.query.filter_by(account_id=account_id)
-        if hasattr(Transaction, "date"):
-            query = query.filter(Transaction.date >= cutoff).order_by(
-                Transaction.date.desc()
-            )
-        rows = query.all()
+        rows = (
+            Transaction.query.filter_by(account_id=account_id)
+            .filter(Transaction.date >= cutoff)
+            .order_by(Transaction.date.desc())
+            .all()
+        )
         txs = [
             {
                 "amount": float(tx.amount),
