@@ -21,7 +21,7 @@ Exposes transaction data retrieved from the Teller API. Supports user access to 
 
 - **GET /teller/transactions**
 
-  - **Params:** `start_date`, `end_date`, `account_ids[]` (optional)
+  - **Params:** `start_date`, `end_date`, `category`, `account_ids[]` (optional)
   - **Output:**
     ```json
     [

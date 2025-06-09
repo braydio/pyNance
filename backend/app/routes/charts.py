@@ -1,9 +1,8 @@
 # File: app/routes/charts.py
 # business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
 import traceback
-from collections import defaultdict
-
 from datetime import datetime, timedelta
+from collections import defaultdict
 
 from app.services.forecast_orchestrator import ForecastOrchestrator
 
@@ -221,7 +220,6 @@ def get_net_assets():
                 "liabilities": liabilities,
             }
         )
-
     return jsonify({"status": "success", "data": data}), 200
 
 

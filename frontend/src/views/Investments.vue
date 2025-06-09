@@ -26,7 +26,7 @@
           </div>
           <ul v-else>
             <li v-for="account in accounts" :key="account.id">
-              <strong>{{ account.name }}</strong> – {{ account.balance | currency }}
+              <strong>{{ account.name }}</strong> – {{ formatCurrency(account.balance) }}
             </li>
           </ul>
         </div>

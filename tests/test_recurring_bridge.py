@@ -73,9 +73,24 @@ def test_sync_to_db_inserts_recurring(db_ctx):
     )
 
     txs = [
-        {"amount": 9.99, "description": "Netflix", "date": "2024-01-01"},
-        {"amount": 9.99, "description": "Netflix", "date": "2024-02-01"},
-        {"amount": 9.99, "description": "Netflix", "date": "2024-03-01"},
+        {
+            "amount": 9.99,
+            "description": "Netflix",
+            "date": "2024-01-01",
+            "account_id": "acc1",
+        },
+        {
+            "amount": 9.99,
+            "description": "Netflix",
+            "date": "2024-02-01",
+            "account_id": "acc1",
+        },
+        {
+            "amount": 9.99,
+            "description": "Netflix",
+            "date": "2024-03-01",
+            "account_id": "acc1",
+        },
     ]
 
     rb = bridge.RecurringBridge(txs)
@@ -83,5 +98,6 @@ def test_sync_to_db_inserts_recurring(db_ctx):
     assert len(results) == 1
     assert models.RecurringTransaction.query.count() == 1
     rec = models.RecurringTransaction.query.first()
+    assert rec.id == results[0]
     assert rec.frequency
     assert rec.transaction.amount == 9.99

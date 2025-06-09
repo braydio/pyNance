@@ -19,7 +19,7 @@
     },
     methods: {
       onYouTubeIframeAPIReady() {
-        this.player = new YT.Player('player', {
+        this.player = new window.YT.Player('player', {
           height: '315',
           width: '560',
           videoId: 'YOUR_VIDEO_ID', // Replace with your actual video ID

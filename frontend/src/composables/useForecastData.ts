@@ -1,6 +1,6 @@
 // src/composables/useForecastData.ts
 
-import { ref, computed } from 'vue'
+import { ref, computed, type Ref } from 'vue'
 
 interface ForecastResponse {
   labels: string[]
@@ -9,7 +9,11 @@ interface ForecastResponse {
   metadata: Record<string, any>
 }
 
-export function useForecastData() {
+export function useForecastData(
+  viewType: Ref<'Month' | 'Year'>,
+  manualIncome: Ref<number>,
+  liabilityRate: Ref<number>
+) {
   const labels = ref<string[]>([])
   const forecast = ref<number[]>([])
   const actuals = ref<Array<number | null>>([])
@@ -20,7 +24,12 @@ export function useForecastData() {
     loading.value = true
     error.value = null
     try {
-      const res = await fetch('/api/forecast')
+      const params = new URLSearchParams({
+        view_type: viewType.value,
+        manual_income: String(manualIncome.value || 0),
+        liability_rate: String(liabilityRate.value || 0)
+      })
+      const res = await fetch(`/api/forecast?${params.toString()}`)
       if (!res.ok) {
         throw new Error('Failed to fetch forecast data')
       }

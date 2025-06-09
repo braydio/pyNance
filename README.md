@@ -54,6 +54,10 @@ CLIENT_NAME=pyNance-Dash       # Optional client name
 LOG_LEVEL=INFO                 # Options: DEBUG, INFO, WARNING, ERROR, CRITICAL
 VERBOSE_LOGGING=false          # true enables custom 'VERBOSE' log level
 
+# Database
+DATABASE_NAME=example_database.db  # overrides default DB name
+# Run `python scripts/generate_example_db.py` to create this file
+
 # Plaid Configuration
 PLAID_CLIENT_ID=your_client_id_here
 PLAID_SECRET_KEY=your_secret_here
@@ -105,6 +109,7 @@ cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+pip install -r requirements-dev.txt
 ```
 
 ### 4. Run Backend
@@ -129,6 +134,14 @@ npm run dev
 ```
 
 (Starts Vue frontend at `http://127.0.0.1:5173`)
+
+### 7. Run Tests
+
+```bash
+pytest -q
+```
+
+All tests should pass when dependencies are installed.
 
 ---
 
@@ -170,6 +183,7 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 ## Troubleshooting
 
 - If you get database errors, check if `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). Otherwise initialize it manually.
+- If you get database errors, ensure the file specified by `DATABASE_NAME` exists in `backend/app/data/`. If not, generate it with `python scripts/generate_example_db.py`.
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
 

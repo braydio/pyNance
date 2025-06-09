@@ -61,6 +61,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .dashboard-top-bar {
   @apply flex justify-between items-center bg-white shadow px-6 py-4 rounded-b-md;
 }
