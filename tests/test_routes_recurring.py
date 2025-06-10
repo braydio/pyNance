@@ -51,7 +51,7 @@ sys.modules["app.extensions"] = extensions_stub
 
 models_stub = types.ModuleType("backend.app.models")
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
-sys.modules["app.models"] = models_stub
+sys.modules["backend.app.models"] = models_stub
 
 # ------------------------------
 # Mock: app.services.recurring_bridge
