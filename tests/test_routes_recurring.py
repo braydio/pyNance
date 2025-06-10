@@ -49,7 +49,7 @@ sys.modules["app.extensions"] = extensions_stub
 # Mock: app.models
 # ------------------------------
 
-models_stub = types.ModuleType("app.models")
+models_stub = types.ModuleType("models")
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
 sys.modules["app.models"] = models_stub
 
