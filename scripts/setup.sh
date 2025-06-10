@@ -79,26 +79,4 @@ else
   echo "pre-commit not found — skipping formatter pass"
 fi
 
-## 7. Start ChromaDB container if not already running
-if ! curl --silent --fail http://localhost:8055/heartbeat >/dev/null; then
-  if ! docker ps --format '{{.Names}}' | grep -q '^chromadb$'; then
-    echo "ChromaDB not running — starting Docker container..."
-    docker run -d --name chromadb -p 8055:8000 ghcr.io/chroma-core/chroma:latest
-    sleep 5 # Give Chroma time to initialize
-  else
-    echo "Docker container 'chromadb' is present but unreachable — check port bindings."
-  fi
-else
-  echo "ChromaDB is already running."
-fi
-
-## 8. Index documents if ChromaDB is reachable
-echo "Checking ChromaDB availability..."
-if curl --silent --fail http://localhost:8055/heartbeat >/dev/null; then
-  echo "ChromaDB is running — updating vector index..."
-  python scripts/chroma_index.py --diff-only
-else
-  echo "ChromaDB is still not available. Skipping index update."
-fi
-
 echo "Setup complete!"
