@@ -101,3 +101,29 @@ def test_sync_to_db_inserts_recurring(db_ctx):
     assert rec.id == results[0]
     assert rec.frequency
     assert rec.transaction.amount == 9.99
+
+
+def test_sync_to_db_no_candidates(db_ctx):
+    """Verify no DB rows are created when detection finds no recurring items."""
+    db, models, _ = db_ctx
+    services_pkg = types.ModuleType("app.services")
+    sys.modules["app.services"] = services_pkg
+    rec_det = load_module(
+        "app.services.recurring_detection",
+        os.path.join(BASE_BACKEND, "app", "services", "recurring_detection.py"),
+    )
+    sys.modules["app.services.recurring_detection"] = rec_det
+    bridge = load_module(
+        "app.services.recurring_bridge",
+        os.path.join(BASE_BACKEND, "app", "services", "recurring_bridge.py"),
+    )
+
+    txs = [
+        {"amount": 5.0, "description": "One-off", "date": "2024-01-01", "account_id": "acc1"},
+        {"amount": 7.0, "description": "Another", "date": "2024-02-01", "account_id": "acc1"},
+    ]
+
+    rb = bridge.RecurringBridge(txs)
+    results = rb.sync_to_db()
+    assert results == []
+    assert models.RecurringTransaction.query.count() == 0
