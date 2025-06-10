@@ -260,8 +260,8 @@ def delete_recurring_tx(account_id):
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@recurring.route("/scan/<account_id>", methods=["POST"])
-def scan_account_for_recurring(account_id):
+@recurring.route("/scan/reminders/<account_id>", methods=["POST"])
+def scan_account_return_reminders(account_id):
     """Scan account transactions for recurring patterns and return reminders."""
     try:
         from app.services.recurring_bridge import RecurringBridge
