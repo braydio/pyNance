@@ -4,8 +4,8 @@ import types
 import importlib.util
 from datetime import datetime, UTC
 from flask import Flask, jsonify
-import pytest
 from unittest.mock import MagicMock
+import pytest
 
 # ------------------------------
 # Setup Paths and Base Stubs
@@ -50,24 +50,7 @@ sys.modules["app.extensions"] = extensions_stub
 # ------------------------------
 
 models_stub = types.ModuleType("app.models")
-
-
-class DummyTx:
-    def __init__(self):
-        self.amount = 1.0
-        self.description = "d"
-        self.merchant_name = ""
-        self.date = datetime.now(UTC)
-
-
-class DummyRecurring:
-    def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
-
-
-models_stub.Transaction = DummyTransaction
-models_stub.RecurringTransaction = DummyRecurring
+models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
 sys.modules["app.models"] = models_stub
 
 # ------------------------------
@@ -78,17 +61,6 @@ services_pkg = types.ModuleType("app.services")
 sys.modules["app.services"] = services_pkg
 
 bridge_stub = types.ModuleType("app.services.recurring_bridge")
-
-
-class DummyBridge:
-    def __init__(self, txs):
-        self.txs = txs
-
-    def sync_to_db(self):
-        return [{"mock": "action"}]
-
-
-bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
 # ------------------------------
@@ -99,28 +71,6 @@ ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "recurring.py")
 spec = importlib.util.spec_from_file_location("app.routes.recurring", ROUTE_PATH)
 recurring_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(recurring_module)
-
-# ------------------------------
-# Query Stub
-# ------------------------------
-
-
-class QueryStub:
-    def __init__(self, results):
-        self._results = results
-
-    def filter_by(self, *a, **k):
-        return self
-
-    def filter(self, *a, **k):
-        return self
-
-    def order_by(self, *a, **k):
-        return self
-
-    def all(self):
-        return self._results
-
 
 # ------------------------------
 # Test Client Fixture
@@ -154,6 +104,9 @@ def test_scan_route_returns_list(client, monkeypatch):
 
     mock_transaction_model = MagicMock()
     mock_transaction_model.query = mock_query
+    # Patch class-level .date to support `.filter(Transaction.date >= cutoff)`
+    mock_transaction_model.date = MagicMock()
+    mock_transaction_model.date.__ge__.return_value = True
     monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
 
     # Patch RecurringBridge
