@@ -2,6 +2,21 @@ import os
 import ast
 
 
+def extract_functions(content):
+    """
+    Extract all top-level function names from Python source code.
+    """
+    functions = []
+    try:
+        tree = ast.parse(content)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef):
+                functions.append(node.name)
+    except Exception:
+        pass
+    return functions
+
+
 def chunk_text(text, max_length=1000):
     """
     Split input text into contiguous blocks, capped at roughly `max_length` characters.
@@ -58,10 +73,11 @@ def extract_metadata(path, content):
             if line.strip().startswith("#")
         )
 
+    functions = extract_functions(content)
     return {
-        "source": path,
         "relative_path": rel_path,
-        "ext": ext,
-        "tags": sorted(tags),
-        "docstring_summary": docstrings[0] if docstrings else "",
+        "file_extension": ext,
+        "tags": ", ".join(sorted(tags)),
+        "docstrings": " | ".join(docstrings),
+        "functions": ", ".join(functions),
     }
