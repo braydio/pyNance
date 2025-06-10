@@ -204,6 +204,8 @@ def get_structured_recurring(account_id):
                 else datetime.strptime(row.latest_date, "%Y-%m-%d").date()
             )
             next_due = add_months(latest_date, 1)
+            if isinstance(next_due, datetime):
+                next_due = next_due.date()
             if 0 <= (next_due - today).days <= 7:
                 reminders.append(
                     {
