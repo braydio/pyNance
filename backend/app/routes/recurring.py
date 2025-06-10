@@ -296,35 +296,3 @@ def delete_recurring_tx(account_id):
     except Exception as e:
         logger.error(f"Failed to delete recurring transaction: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
-
-
-@recurring.route("/scan/reminders/<account_id>", methods=["POST"])
-def scan_account_return_reminders(account_id):
-    """Scan account transactions for recurring patterns and return reminders."""
-    try:
-        from app.services.recurring_bridge import RecurringBridge
-
-        transactions = (
-            Transaction.query.with_entities(
-                Transaction.amount, Transaction.description, Transaction.date
-            )
-            .filter_by(account_id=account_id)
-            .all()
-        )
-
-        tx_list = [
-            {
-                "amount": float(t.amount),
-                "description": t.description or "",
-                "date": t.date.strftime("%Y-%m-%d"),
-            }
-            for t in transactions
-        ]
-
-        bridge = RecurringBridge(tx_list)
-        bridge.sync_to_db()
-
-        return get_structured_recurring(account_id)
-    except Exception as e:
-        logger.error(f"Error scanning recurring transactions: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
