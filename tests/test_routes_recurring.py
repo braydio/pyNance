@@ -49,9 +49,26 @@ sys.modules["app.extensions"] = extensions_stub
 # Mock: app.models
 # ------------------------------
 
-models_stub = types.ModuleType("backend.app.models")
-models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
-sys.modules["backend.app.models"] = models_stub
+models_stub = types.ModuleType("app.models")
+
+
+class DummyTransaction:
+    def __init__(self):
+        self.amount = 1.0
+        self.description = "d"
+        self.merchant_name = ""
+        self.date = datetime.now(UTC)
+
+
+class DummyRecurring:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+models_stub.Transaction = DummyTransaction
+models_stub.RecurringTransaction = DummyRecurring
+sys.modules["app.models"] = models_stub
 
 # ------------------------------
 # Mock: app.services.recurring_bridge
@@ -104,7 +121,6 @@ def test_scan_route_returns_list(client, monkeypatch):
 
     mock_transaction_model = MagicMock()
     mock_transaction_model.query = mock_query
-    # Patch class-level .date to support `.filter(Transaction.date >= cutoff)`
     mock_transaction_model.date = MagicMock()
     mock_transaction_model.date.__ge__.return_value = True
     monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
