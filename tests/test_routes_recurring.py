@@ -8,15 +8,18 @@ from unittest.mock import MagicMock
 import pytest
 
 # ------------------------------
-# Setup Paths and Base Stubs
+# Environment Setup
 # ------------------------------
 
-BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
-sys.path.insert(0, BASE_BACKEND)
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
+# Ensure clean re-import of app module
 sys.modules.pop("app", None)
 
 # ------------------------------
-# Mock: app.config
+# Mock: app.config and environment
 # ------------------------------
 
 config_stub = types.ModuleType("app.config")
@@ -28,10 +31,6 @@ config_stub.logger = types.SimpleNamespace(
 )
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
-
-# ------------------------------
-# Mock: app.config.environment
-# ------------------------------
 
 env_stub = types.ModuleType("app.config.environment")
 env_stub.TELLER_WEBHOOK_SECRET = "dummy"
@@ -62,8 +61,8 @@ class DummyTransaction:
 
 class DummyRecurring:
     def __init__(self, **kwargs):
-        for k, v in kwargs.items():
-            setattr(self, k, v)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 models_stub.Transaction = DummyTransaction
@@ -78,19 +77,30 @@ services_pkg = types.ModuleType("app.services")
 sys.modules["app.services"] = services_pkg
 
 bridge_stub = types.ModuleType("app.services.recurring_bridge")
+
+
+class DummyBridge:
+    def __init__(self, txs):
+        self.txs = txs
+
+    def sync_to_db(self):
+        return [{"mock": "action"}]
+
+
+bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
 # ------------------------------
 # Load Target Route Module
 # ------------------------------
 
-ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "recurring.py")
+ROUTE_PATH = os.path.join(BASE_DIR, "app", "routes", "recurring.py")
 spec = importlib.util.spec_from_file_location("app.routes.recurring", ROUTE_PATH)
 recurring_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(recurring_module)
 
 # ------------------------------
-# Test Client Fixture
+# Flask Test Client Fixture
 # ------------------------------
 
 
@@ -109,7 +119,7 @@ def client():
 
 
 def test_scan_route_returns_list(client, monkeypatch):
-    # Patch Transaction model and query
+    # Mock Transaction.query behavior
     mock_query = MagicMock()
     mock_tx = MagicMock(
         amount=1.0, description="d", merchant_name="", date=datetime.now(UTC)
@@ -125,14 +135,14 @@ def test_scan_route_returns_list(client, monkeypatch):
     mock_transaction_model.date.__ge__.return_value = True
     monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
 
-    # Patch RecurringBridge
+    # Mock RecurringBridge
     mock_bridge_class = MagicMock()
     mock_bridge_instance = MagicMock()
     mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
     mock_bridge_class.return_value = mock_bridge_instance
     monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
 
-    # Patch reminder response
+    # Mock get_structured_recurring
     monkeypatch.setattr(
         recurring_module,
         "get_structured_recurring",
