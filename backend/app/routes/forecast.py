@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request
 
 from app.extensions import db
-import app.services.forecast_orchestrator as forecast_orchestrator
+from app.services.forecast_orchestrator import ForecastOrchestrator
 
 forecast = Blueprint("forecast", __name__)
 
