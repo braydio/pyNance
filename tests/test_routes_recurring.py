@@ -5,6 +5,7 @@ import importlib.util
 from datetime import datetime, UTC
 from flask import Flask, jsonify
 import pytest
+from unittest.mock import MagicMock
 
 # ------------------------------
 # Setup Paths and Base Stubs
@@ -141,15 +142,28 @@ def client():
 
 
 def test_scan_route_returns_list(client, monkeypatch):
-    dummy_tx = models_stub.Transaction()
-    monkeypatch.setattr(
-        recurring_module,
-        "Transaction",
-        type("Transaction", (), {"query": QueryStub([dummy_tx])}),
+    # Patch Transaction model and query
+    mock_query = MagicMock()
+    mock_tx = MagicMock(
+        amount=1.0, description="d", merchant_name="", date=datetime.now(UTC)
     )
+    mock_query.filter_by.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.order_by.return_value = mock_query
+    mock_query.all.return_value = [mock_tx]
 
-    monkeypatch.setattr(recurring_module, "RecurringBridge", DummyBridge)
+    mock_transaction_model = MagicMock()
+    mock_transaction_model.query = mock_query
+    monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
 
+    # Patch RecurringBridge
+    mock_bridge_class = MagicMock()
+    mock_bridge_instance = MagicMock()
+    mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
+    mock_bridge_class.return_value = mock_bridge_instance
+    monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
+
+    # Patch reminder response
     monkeypatch.setattr(
         recurring_module,
         "get_structured_recurring",
@@ -158,5 +172,4 @@ def test_scan_route_returns_list(client, monkeypatch):
 
     resp = client.post("/api/recurring/scan/acc1")
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert isinstance(data.get("reminders"), list)
+    assert isinstance(resp.get_json()["reminders"], list)
