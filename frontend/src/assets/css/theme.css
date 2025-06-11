@@ -2,8 +2,10 @@
   /* Dark mode colors */
   --color-bg-dark: #1e1e1e;
   --color-bg-secondary: #242424;
-  --color-text-light: #f5f5f5;
-  --color-text-muted: #a1a1aa;
+  --text-primary: #f5f5f5;
+  --color-text-light: var(--text-primary);
+  --text-muted: #a1a1aa;
+  --color-text-muted: var(--text-muted);
   --color-border-secondary: #3f3f46;
   --divider: rgba(255, 255, 255, 0.12);
   --shadow: rgba(0, 0, 0, 0.6);
@@ -23,5 +25,5 @@
   --color-error: #f87171;
   --color-bg-sec: rgba(255, 255, 255, 0.1);
   /* Font family */
-  --var(--font-sans): 'Source Code Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Source Code Pro', ui-sans-serif, system-ui, sans-serif;
 }
