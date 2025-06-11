@@ -26,13 +26,13 @@ export default defineConfig({
     visualizer({
       filename: 'stats.html',
       template: 'treemap',
-      open: true,
+      open: false, // set to true only when analyzing
     }),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'My Cool App',
-        short_name: 'CoolApp',
+        name: 'pyNance',
+        short_name: 'pyNance',
         start_url: '/',
         display: 'standalone',
         background_color: '#ffffff',
@@ -51,6 +51,11 @@ export default defineConfig({
       },
     }),
   ],
+  resolve: {
+    alias: {
+      '@': fileURLToPath(new URL('./src', import.meta.url)),
+    },
+  },
   server: {
     host: '0.0.0.0',
     port: 3353,
@@ -58,15 +63,7 @@ export default defineConfig({
       '/api': {
         target: 'http://127.0.0.1:5000',
         changeOrigin: true,
-        // Optional rewrite example:
-        // rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
-    },
-    historyApiFallback: true,
-  },
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
 })
