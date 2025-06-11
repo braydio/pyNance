@@ -21,6 +21,7 @@ from .environment import (
 from .constants import (
     DATABASE_NAME,
     SQLALCHEMY_DATABASE_URI,
+    FILES,
 )
 
 env_check = PLAID_ENV.upper()
