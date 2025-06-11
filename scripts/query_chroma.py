@@ -10,13 +10,18 @@ import chromadb
 from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
 
+# Defaults
 DEFAULT_COLLECTION = os.getenv("CHROMA_COLLECTION", "pynance-code")
 DEFAULT_COUNT = int(os.getenv("CHROMA_RESULT_COUNT", 3))
 DEFAULT_HOST = os.getenv("CHROMA_HOST", "localhost")
 DEFAULT_PORT = int(os.getenv("CHROMA_PORT", 8055))
 DEFAULT_MODEL = os.getenv("CHROMA_MODEL", "all-MiniLM-L6-v2")
 
-parser = argparse.ArgumentParser(description="Query ChromaDB for similar documents.")
+# CLI Argument Parser
+parser = argparse.ArgumentParser(
+    description="Query ChromaDB for similar documents.",
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+)
 parser.add_argument("query", nargs="+", help="Query text")
 parser.add_argument(
     "-n", "--count", type=int, default=DEFAULT_COUNT, help="Number of results to return"
@@ -32,8 +37,8 @@ args = parser.parse_args()
 
 query_text = " ".join(args.query)
 
+# Connect to Chroma
 try:
-    print(f"[CHROMA] Connecting to Chroma server at http://{args.host}:{args.port}")
     client = chromadb.HttpClient(host=args.host, port=args.port)
     embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=args.model
@@ -45,8 +50,10 @@ except ChromaError as e:
     print(f"[ERROR] Could not connect to Chroma server: {e}")
     sys.exit(1)
 
-print(f'[SEARCH] Searching for: "{query_text}" (top {args.count})')
+# Execute query
 results = collection.query(query_texts=[query_text], n_results=args.count)
+documents = results["documents"][0]
+metadatas = results["metadatas"][0]
 
 print("\n[RESULTS]")
 for i, entry in enumerate(results["documents"][0]):

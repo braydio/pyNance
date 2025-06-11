@@ -1,7 +1,7 @@
 # cli.py
 import click
-from flask.cli import with_appcontext
 from app.helpers.refresh_dispatcher import refresh_all_accounts
+from flask.cli import with_appcontext
 
 
 @click.command("sync-accounts")

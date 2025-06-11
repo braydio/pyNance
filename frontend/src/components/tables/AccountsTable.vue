@@ -400,6 +400,6 @@ th {
 }
 
 tbody tr:hover {
-  background-color: var(--color-hover-light);
+  background-color: var(--hover)-light;
 }
 </style>

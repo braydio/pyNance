@@ -90,6 +90,7 @@ pyflakes==3.3.2
 Pygments==2.19.1
 PyPika==0.48.9
 pyproject_hooks==1.2.0
+pytest==8.4.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 PyYAML==6.0.2

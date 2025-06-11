@@ -1,16 +1,23 @@
+from datetime import datetime, UTC
+from flask import Flask
+from unittest.mock import MagicMock
+import pytest
+import types
 import os
 import sys
-import types
 import importlib.util
-from datetime import datetime
-from flask import Flask
-import pytest
 
-BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
-sys.path.insert(0, BASE_BACKEND)
+# ------------------------------
+# Import + Mock App Structure
+# ------------------------------
+
+BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+if BASE_DIR not in sys.path:
+    sys.path.insert(0, BASE_DIR)
+
 sys.modules.pop("app", None)
 
-# minimal stubs
+# Stub modules
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(
     info=lambda *a, **k: None,
@@ -32,29 +39,27 @@ sys.modules["app.extensions"] = extensions_stub
 models_stub = types.ModuleType("app.models")
 
 
-class DummyTx:
-    class DateAttr:
-        def __ge__(self, other):
-            return True
-
-        def desc(self):
-            return self
-
-    date = DateAttr()
-
+class DummyTransaction:
     def __init__(self):
         self.amount = 1.0
         self.description = "d"
         self.merchant_name = ""
-        self.date = datetime.utcnow()
+        self.date = datetime.now(UTC)
+        self.account_id = "acc1"
 
 
-models_stub.Transaction = DummyTx
-models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
+class DummyRecurring:
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+
+
+models_stub.Transaction = DummyTransaction
+models_stub.RecurringTransaction = DummyRecurring
 sys.modules["app.models"] = models_stub
 
-services_pkg = types.ModuleType("app.services")
-sys.modules["app.services"] = services_pkg
+services_stub = types.ModuleType("app.services")
+sys.modules["app.services"] = services_stub
 
 bridge_stub = types.ModuleType("app.services.recurring_bridge")
 
@@ -64,54 +69,67 @@ class DummyBridge:
         self.txs = txs
 
     def sync_to_db(self):
-        return []
+        return [{"mock": "action"}]
 
 
 bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
-ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "recurring.py")
+# ------------------------------
+# Load Route Module
+# ------------------------------
+
+ROUTE_PATH = os.path.join(BASE_DIR, "app", "routes", "recurring.py")
 spec = importlib.util.spec_from_file_location("app.routes.recurring", ROUTE_PATH)
 recurring_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(recurring_module)
 
-
-class QueryStub:
-    def __init__(self, results):
-        self._results = results
-
-    def filter_by(self, *a, **k):
-        return self
-
-    def filter(self, *a, **k):
-        return self
-
-    def order_by(self, *a, **k):
-        return self
-
-    def all(self):
-        return self._results
+# ------------------------------
+# Test Setup
+# ------------------------------
 
 
 @pytest.fixture
 def client():
     app = Flask(__name__)
-    app.register_blueprint(recurring_module.recurring, url_prefix="/api/recurring")
     app.config["TESTING"] = True
+    app.register_blueprint(recurring_module.recurring, url_prefix="/api/recurring")
     with app.test_client() as c:
         yield c
 
 
 def test_scan_route_returns_list(client, monkeypatch):
-    dummy_tx = models_stub.Transaction()
-    monkeypatch.setattr(
-        recurring_module.Transaction,
-        "query",
-        QueryStub([dummy_tx]),
-        raising=False,
+    mock_query = MagicMock()
+    mock_tx = MagicMock(
+        amount=1.0,
+        description="d",
+        merchant_name="",
+        date=datetime.now(UTC),
+        account_id="acc1",  # ✅ Required field
     )
-    monkeypatch.setattr(recurring_module, "RecurringBridge", DummyBridge)
+    mock_query.filter_by.return_value = mock_query
+    mock_query.filter.return_value = mock_query
+    mock_query.order_by.return_value = mock_query
+    mock_query.all.return_value = [mock_tx]
+
+    mock_transaction_model = MagicMock()
+    mock_transaction_model.query = mock_query
+    mock_transaction_model.date = MagicMock()
+    mock_transaction_model.date.__ge__.return_value = True
+    monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
+
+    mock_bridge_class = MagicMock()
+    mock_bridge_instance = MagicMock()
+    mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
+    mock_bridge_class.return_value = mock_bridge_instance
+    monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
+
+    monkeypatch.setattr(
+        recurring_module,
+        "get_structured_recurring",
+        lambda account_id: {"status": "success", "reminders": []},
+    )
+
     resp = client.post("/api/recurring/scan/acc1")
     assert resp.status_code == 200
-    data = resp.get_json()
-    assert isinstance(data.get("actions"), list)
+    assert isinstance(resp.get_json()["reminders"], list)

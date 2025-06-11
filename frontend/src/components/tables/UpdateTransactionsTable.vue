@@ -61,7 +61,7 @@
             'text-sm',
             editingIndex === index
               ? 'bg-[var(--color-bg-sec)]'
-              : 'hover:bg-[var(--color-hover-light)]',
+              : 'hover:bg-[var(--hover)-light]',
           ]"
         >
           <td class="px-3 py-2">

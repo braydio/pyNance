@@ -5,6 +5,7 @@ def exchange_public_token_for_product(public_token, product):
     **Note: this is a restructured replacement for plaid_helpers.exchange_public_token**
     """
     from plaid import Client
+
     from backend.api.keys import plaid_client_keys
 
     client = Client(

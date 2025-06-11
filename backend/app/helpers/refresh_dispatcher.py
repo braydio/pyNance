@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
-from app.models import db, Account
-from app.helpers.teller_helpers import get_teller_accounts
-from app.helpers.plaid_helpers import get_accounts
+
 from app.config import logger  # use app logger for consistency
+from app.helpers.plaid_helpers import get_accounts
+from app.helpers.teller_helpers import get_teller_accounts
+from app.models import Account, db
 
 SYNC_INTERVALS = {
     "teller": timedelta(hours=8),

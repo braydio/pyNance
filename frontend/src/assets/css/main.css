@@ -1,13 +1,12 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @import './theme.css';
+
+@import "tailwindcss/preflight";
+@import "tailwindcss/utilities";
 
 /* Base styles */
 @layer base {
   body {
-    @apply font-sans;
+    @import var(--font-sans);
     background-color: var(--color-bg-dark);
     color: var(--color-text-light);
   }
@@ -16,19 +15,19 @@
 /* Shared component classes */
 @layer components {
   .container {
-    @apply mx-auto px-4;
+    @import mx-auto px-4;
     max-width: 1200px;
   }
 
   .card {
-    @apply rounded-lg shadow-lg p-6;
+    @import rounded-lg shadow-lg p-6;
     background-color: var(--color-bg-secondary);
     border: 1px solid var(--divider);
     color: var(--color-text-light);
   }
 
   .btn {
-    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @import inline-flex items-center px-4 py-2 border rounded-md font-semibold;
     background-color: var(--neon-purple);
     border-color: var(--neon-purple);
     color: var(--color-bg-dark);
@@ -40,7 +39,7 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
+    @import inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
     color: var(--neon-purple);
     border-color: var(--neon-purple);
   }
@@ -51,7 +50,7 @@
   }
 
   .input {
-    @apply w-full px-2 py-1 rounded border text-sm;
+    @import w-full px-2 py-1 rounded border text-sm;
     background-color: var(--color-bg-dark);
     border-color: var(--divider);
     color: var(--color-text-light);
@@ -69,19 +68,19 @@
   }
 
   .flex-center {
-    @apply flex items-center justify-center;
+    @import flex items-center justify-center;
   }
 
   .flex-between {
-    @apply flex items-center justify-between;
+    @import flex items-center justify-between;
   }
 
   .grid-2col {
-    @apply grid grid-cols-2 gap-6;
+    @import grid grid-cols-2 gap-6;
   }
 
   table {
-    @apply w-full divide-y;
+    @import w-full divide-y;
     border-color: var(--divider);
   }
 
@@ -90,12 +89,12 @@
   }
 
   th {
-    @apply px-4 py-2 text-left font-semibold uppercase;
+    @import px-4 py-2 text-left font-semibold uppercase;
     color: var(--color-text-light);
   }
 
   td {
-    @apply px-4 py-2;
+    @import px-4 py-2;
     color: var(--color-text-light);
   }
 
@@ -104,6 +103,6 @@
   }
 
   .env-banner-dev {
-    @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
+    @import bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
   }
 }
