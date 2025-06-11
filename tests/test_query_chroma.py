@@ -9,6 +9,7 @@ import runpy
 import sys
 
 import chromadb
+from chromadb.utils import embedding_functions
 import pytest
 
 
@@ -45,10 +46,12 @@ def local_chroma(tmp_path):
 
 
 class LocalHttpClient:
+    """Mimic ``chromadb.HttpClient`` for local testing."""
+
     def __init__(self, *_, **__):
         self.collection = None
 
-    def get_or_create_collection(self, name):
+    def get_or_create_collection(self, name, **_):
         return self.collection
 
 
@@ -57,6 +60,11 @@ def test_query_chroma_outputs_results(monkeypatch, capsys, local_chroma):
     client_stub = LocalHttpClient()
     client_stub.collection = local_chroma
     monkeypatch.setattr("chromadb.HttpClient", lambda *a, **k: client_stub)
+    monkeypatch.setattr(
+        embedding_functions,
+        "SentenceTransformerEmbeddingFunction",
+        lambda *a, **k: DummyEmbeddingFunction(),
+    )
 
     orig_argv = sys.argv
     sys.argv = ["query_chroma.py", "hello", "-n", "1", "--collection", "test"]
