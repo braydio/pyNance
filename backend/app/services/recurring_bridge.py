@@ -37,7 +37,7 @@ class RecurringBridge:
             freq_days = freq_map.get(item["frequency"].lower(), 30)
             next_due_date = last_seen + timedelta(days=freq_days)
             confidence = float(item.get("occurrences", 1)) / 10.0
-            account_id = parse(item.get("account_it"))
+            account_id = item.get("account_id")
 
             rec_id = recurring_logic.upsert_recurring(
                 item["description"],
