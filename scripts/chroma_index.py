@@ -28,7 +28,7 @@ DEFAULT_PORT = int(os.getenv("CHROMA_PORT", 8055))
 DEFAULT_MODEL = os.getenv("CHROMA_MODEL", "all-MiniLM-L6-v2")
 
 parser = argparse.ArgumentParser(description="Index project files into ChromaDB")
-parser.add_argument("--source", default=DEFAULT_SOURCE, help="Source directory")
+parser.add_argument("--source", default=SOURCE_DIR, help="Source directory")
 parser.add_argument("--collection", default=DEFAULT_COLLECTION, help="Collection name")
 parser.add_argument("--host", default=DEFAULT_HOST, help="ChromaDB host")
 parser.add_argument("--port", type=int, default=DEFAULT_PORT, help="ChromaDB port")
