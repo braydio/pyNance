@@ -55,7 +55,7 @@ def upsert_recurring(
     frequency: str,
     next_due_date: datetime,
     confidence: Optional[float],
-    account_id: Optional[str],
+    account_id: str,
 ) -> int:
     """Insert or update a RecurringTransaction linked to a matching Transaction."""
 
@@ -92,6 +92,7 @@ def upsert_recurring(
             frequency=frequency,
             next_due_date=next_due_date,
             notes=f"confidence:{confidence}" if confidence is not None else None,
+            account_id=tx.account_id,
         )
         db.session.add(rec)
 
