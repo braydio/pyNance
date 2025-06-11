@@ -15,7 +15,6 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backen
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-# Ensure clean re-import of app module
 sys.modules.pop("app", None)
 
 # ------------------------------
@@ -57,6 +56,7 @@ class DummyTransaction:
         self.description = "d"
         self.merchant_name = ""
         self.date = datetime.now(UTC)
+        self.account_id = "acc1"  # ✅ ensure required field exists
 
 
 class DummyRecurring:
@@ -122,7 +122,11 @@ def test_scan_route_returns_list(client, monkeypatch):
     # Mock Transaction.query behavior
     mock_query = MagicMock()
     mock_tx = MagicMock(
-        amount=1.0, description="d", merchant_name="", date=datetime.now(UTC)
+        amount=1.0,
+        description="d",
+        merchant_name="",
+        date=datetime.now(UTC),
+        account_id="acc1",  # ✅ present field
     )
     mock_query.filter_by.return_value = mock_query
     mock_query.filter.return_value = mock_query
