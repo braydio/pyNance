@@ -1,14 +1,14 @@
-import os
-import sys
-import types
-import importlib.util
 from datetime import datetime, UTC
-from flask import Flask, jsonify
+from flask import Flask
 from unittest.mock import MagicMock
 import pytest
+import types
+import os
+import sys
+import importlib.util
 
 # ------------------------------
-# Environment Setup
+# Import + Mock App Structure
 # ------------------------------
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -17,10 +17,7 @@ if BASE_DIR not in sys.path:
 
 sys.modules.pop("app", None)
 
-# ------------------------------
-# Mock: app.config and environment
-# ------------------------------
-
+# Stub modules
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(
     info=lambda *a, **k: None,
@@ -35,17 +32,9 @@ env_stub = types.ModuleType("app.config.environment")
 env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
 
-# ------------------------------
-# Mock: app.extensions
-# ------------------------------
-
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
-
-# ------------------------------
-# Mock: app.models
-# ------------------------------
 
 models_stub = types.ModuleType("app.models")
 
@@ -56,25 +45,21 @@ class DummyTransaction:
         self.description = "d"
         self.merchant_name = ""
         self.date = datetime.now(UTC)
-        self.account_id = "acc1"  # ✅ ensure required field exists
+        self.account_id = "acc1"
 
 
 class DummyRecurring:
     def __init__(self, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
 models_stub.Transaction = DummyTransaction
 models_stub.RecurringTransaction = DummyRecurring
 sys.modules["app.models"] = models_stub
 
-# ------------------------------
-# Mock: app.services.recurring_bridge
-# ------------------------------
-
-services_pkg = types.ModuleType("app.services")
-sys.modules["app.services"] = services_pkg
+services_stub = types.ModuleType("app.services")
+sys.modules["app.services"] = services_stub
 
 bridge_stub = types.ModuleType("app.services.recurring_bridge")
 
@@ -91,7 +76,7 @@ bridge_stub.RecurringBridge = DummyBridge
 sys.modules["app.services.recurring_bridge"] = bridge_stub
 
 # ------------------------------
-# Load Target Route Module
+# Load Route Module
 # ------------------------------
 
 ROUTE_PATH = os.path.join(BASE_DIR, "app", "routes", "recurring.py")
@@ -100,7 +85,7 @@ recurring_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(recurring_module)
 
 # ------------------------------
-# Flask Test Client Fixture
+# Test Setup
 # ------------------------------
 
 
@@ -109,24 +94,18 @@ def client():
     app = Flask(__name__)
     app.config["TESTING"] = True
     app.register_blueprint(recurring_module.recurring, url_prefix="/api/recurring")
-    with app.test_client() as client:
-        yield client
-
-
-# ------------------------------
-# Test: POST /scan/<account_id>
-# ------------------------------
+    with app.test_client() as c:
+        yield c
 
 
 def test_scan_route_returns_list(client, monkeypatch):
-    # Mock Transaction.query behavior
     mock_query = MagicMock()
     mock_tx = MagicMock(
         amount=1.0,
         description="d",
         merchant_name="",
         date=datetime.now(UTC),
-        account_id="acc1",  # ✅ present field
+        account_id="acc1",  # ✅ Required field
     )
     mock_query.filter_by.return_value = mock_query
     mock_query.filter.return_value = mock_query
@@ -139,14 +118,12 @@ def test_scan_route_returns_list(client, monkeypatch):
     mock_transaction_model.date.__ge__.return_value = True
     monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
 
-    # Mock RecurringBridge
     mock_bridge_class = MagicMock()
     mock_bridge_instance = MagicMock()
     mock_bridge_instance.sync_to_db.return_value = [{"mock": "action"}]
     mock_bridge_class.return_value = mock_bridge_instance
     monkeypatch.setattr(recurring_module, "RecurringBridge", mock_bridge_class)
 
-    # Mock get_structured_recurring
     monkeypatch.setattr(
         recurring_module,
         "get_structured_recurring",
