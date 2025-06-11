@@ -146,7 +146,7 @@ def test_scan_route_returns_list(client, monkeypatch):
     monkeypatch.setattr(
         recurring_module,
         "get_structured_recurring",
-        lambda account_id: jsonify({"status": "success", "reminders": []}),
+        lambda account_id: {"status": "success", "reminders": []},
     )
 
     resp = client.post("/api/recurring/scan/acc1")
