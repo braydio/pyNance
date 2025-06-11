@@ -11,8 +11,6 @@ from app.config import (
     PLAID_SECRET,
     logger,
 )
-
-from app.sql.account_logic import save_account_balances, upsert_accounts
 from app.extensions import Session
 
 

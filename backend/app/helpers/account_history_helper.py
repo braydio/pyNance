@@ -1,8 +1,7 @@
-from datetime import datetime
 from collections import defaultdict
 
 from app.extensions import db
-from app.models import Transaction, AccountHistory
+from app.models import AccountHistory, Transaction
 
 
 def update_account_history():

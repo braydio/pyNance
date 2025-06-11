@@ -10,6 +10,7 @@ import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.v
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue';
 import AccountsTable from '@/components/tables/AccountsTable.vue';
 import ForecastMock from '@/views/ForecastMock.vue';
+import RecurringScanDemo from '@/views/RecurringScanDemo.vue';
 
 
 const routes = [
@@ -23,6 +24,7 @@ const routes = [
   { path: '/investments', name: 'Investments', component: Investments },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
+  { path: '/recurring-scan-demo/:accountId?', name: 'RecurringScanDemo', component: RecurringScanDemo },
   { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
 
 

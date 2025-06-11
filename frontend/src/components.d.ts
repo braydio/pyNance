@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountSnapshot: typeof import('./components/widgets/AccountSnapshot.vue')['default']
     AccountsReorderChart: typeof import('./components/charts/AccountsReorderChart.vue')['default']
     AccountsTable: typeof import('./components/tables/AccountsTable.vue')['default']
     AppLayout: typeof import('./components/layout/AppLayout.vue')['default']
@@ -48,6 +49,9 @@ declare module 'vue' {
     RefreshTellerControls: typeof import('./components/widgets/RefreshTellerControls.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ScanResultsList: typeof import('./components/recurring/ScanResultsList.vue')['default']
+    ScanResultsModal: typeof import('./components/recurring/ScanResultsModal.vue')['default']
+    ScanResultsTable: typeof import('./components/recurring/ScanResultsTable.vue')['default']
     Settings: typeof import('./components/unused/Settings.vue')['default']
     Toast: typeof import('./components/base/Toast.vue')['default']
     TokenUpload: typeof import('./components/forms/TokenUpload.vue')['default']

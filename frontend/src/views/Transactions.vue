@@ -8,31 +8,17 @@
       </div>
     </header>
 
-    <div class="grid gap-6 lg:grid-cols-2">
-      <DailyNetChart class="w-full" />
-      <CategoryBreakdownChart class="w-full" />
-    </div>
-
     <!-- Top Controls -->
     <div class="flex flex-wrap justify-between items-end gap-4">
       <ImportFileSelector class="flex-1 min-w-[250px]" />
-      <input
-        v-model="searchQuery"
-        type="text"
-        placeholder="Search transactions..."
-        class="input flex-1 md:flex-none md:w-64"
-      />
+      <input v-model="searchQuery" type="text" placeholder="Search transactions..."
+        class="input flex-1 md:flex-none md:w-64" />
     </div>
 
     <!-- Main Table -->
     <div class="card overflow-x-auto">
-      <UpdateTransactionsTable
-        :transactions="filteredTransactions"
-        :sort-key="sortKey"
-        :sort-order="sortOrder"
-        @sort="setSort"
-        @editRecurringFromTransaction="prefillRecurringFromTransaction"
-      />
+      <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
+        @sort="setSort" @editRecurringFromTransaction="prefillRecurringFromTransaction" />
     </div>
 
     <!-- Pagination -->

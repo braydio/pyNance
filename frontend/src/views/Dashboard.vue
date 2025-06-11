@@ -7,6 +7,7 @@
     </template>
 
     <div class="space-y-8">
+      <AccountSnapshot />
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <BaseCard>
           <DailyNetChart @bar-click="openDayModal" />
@@ -44,6 +45,7 @@ import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.v
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
+import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import axios from 'axios'
 import { ref } from 'vue'
 

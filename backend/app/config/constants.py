@@ -1,5 +1,7 @@
 # backend/app/config/constants.py
 import os
+
+from .environment import PLAID_ENV
 from .paths import DIRECTORIES
 from .environment import PLAID_ENV
 
