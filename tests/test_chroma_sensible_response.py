@@ -1,7 +1,8 @@
 # test/test_chroma_sensible_response.py
-import pytest
-import chromadb
 import logging
+
+import chromadb
+import pytest
 
 logger = logging.getLogger("test_chroma")
 logging.basicConfig(level=logging.INFO)
@@ -10,8 +11,15 @@ logging.basicConfig(level=logging.INFO)
 @pytest.mark.integration
 def test_chroma_query_with_logging():
     try:
-        client = chromadb.HttpClient(host="localhost", port=8055)
-        collection = client.get_or_create_collection(name="pynance-code")
+        try:
+            client = chromadb.HttpClient(host="localhost", port=8055)
+        except Exception as conn_err:  # pragma: no cover - external service
+            pytest.skip(f"Chroma server unavailable: {conn_err}")
+
+        try:
+            collection = client.get_or_create_collection(name="pynance-code")
+        except Exception as conn_err:  # pragma: no cover - external service
+            pytest.skip(f"Chroma server unavailable: {conn_err}")
 
         total_docs = collection.count()
         logger.info(f"[CHROMA] Collection 'pynance-code' has {total_docs} documents")
