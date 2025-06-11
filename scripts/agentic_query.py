@@ -20,7 +20,7 @@ import json
 import time
 
 # === Configuration ===
-LOCALAI_URL = os.getenv("LOCALAI_URL", "http://localhost:8080")
+LOCALAI_URL = os.getenv("LOCALAI_URL", "http://localhost:5051")
 QDRANT_URL = os.getenv("QDRANT_URL", "http://localhost:6333")
 MODEL_NAME = os.getenv("LOCALAI_MODEL", "my_model")  # adjust to your loaded model name
 QDRANT_COLLECTION = os.getenv("QDRANT_COLLECTION", "my_collection")
