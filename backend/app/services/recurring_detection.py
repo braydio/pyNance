@@ -27,6 +27,7 @@ class RecurringDetector:
             amt = round(tx["amount"], 2)
             desc = "".join(filter(str.isalnum, tx["description"].lower()))[:16]
             key = (amt, desc)
+            account_id = tx.account_id
             groups[key].append(parse(tx["date"]))
         return groups
 
