@@ -1,12 +1,12 @@
 # app/routes/recurring.py
 from datetime import date, datetime, timedelta, timezone
-from flask import Blueprint, jsonify, request
-from sqlalchemy import func
 
 from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
+from flask import Blueprint, jsonify, request
+from sqlalchemy import func
 
 recurring = Blueprint("recurring", __name__)
 
@@ -159,8 +159,8 @@ def scan_account_for_recurring(account_id):
         ]
 
         rb = RecurringBridge(txs)
-        actions = rb.sync_to_db()
-        return jsonify({"status": "success", "actions": actions}), 200
+        rb.sync_to_db()
+        return get_structured_recurring(account_id)
     except Exception as e:
         logger.error(
             f"Error scanning account {account_id} for recurring: {e}", exc_info=True
@@ -241,16 +241,3 @@ def get_structured_recurring(account_id):
             f"Error fetching structured recurring transactions: {e}", exc_info=True
         )
         return jsonify({"status": "error", "message": str(e)}), 500
-
-
-def add_months(original_date, months=1):
-    new_month = original_date.month + months
-    new_year = original_date.year
-    while new_month > 12:
-        new_month -= 12
-        new_year += 1
-    try:
-        return original_date.replace(year=new_year, month=new_month)
-    except ValueError:
-        day = min(original_date.day, 28)
-        return original_date.replace(year=new_year, month=new_month, day=day)

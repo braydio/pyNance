@@ -1,17 +1,17 @@
-from datetime import timedelta, datetime
+from datetime import timedelta
 from importlib import import_module
 
-from dateutil.parser import parse
 from app.services.recurring_detection import RecurringDetector
 from app.sql import recurring_logic
+from dateutil.parser import parse
 
 
 class RecurringBridge:
-    """
-    Links RecurringDetector output to DB persistence via recurring_logic helpers.
-    """
+    """Bridge recurring detection results to database persistence."""
 
     def __init__(self, transactions):
+        """Initialize with raw transaction dictionaries."""
+        self.transactions = transactions
         self.detector = RecurringDetector(transactions)
 
     def sync_to_db(self):
@@ -33,6 +33,18 @@ class RecurringBridge:
         }
 
         for item in candidates:
+            if not item.get("account_id"):
+                for tx in self.transactions:
+                    desc_sig = "".join(filter(str.isalnum, tx["description"].lower()))[
+                        :16
+                    ]
+                    if (
+                        round(tx["amount"], 2) == item["amount"]
+                        and desc_sig == item["description"]
+                    ):
+                        item["account_id"] = tx.get("account_id")
+                        break
+
             last_seen = parse(item.get("last_seen")).date()
             freq_days = freq_map.get(item["frequency"].lower(), 30)
             next_due_date = last_seen + timedelta(days=freq_days)
