@@ -3,6 +3,7 @@ import os
 
 from .environment import PLAID_ENV
 from .paths import DIRECTORIES
+from .environment import PLAID_ENV
 
 FILES = {
     "LINKED_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "LinkAccounts.json",
