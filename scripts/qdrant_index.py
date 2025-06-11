@@ -2,6 +2,7 @@
 import os
 import sys
 import argparse
+import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams
@@ -44,9 +45,9 @@ for root, dirs, files in os.walk(SOURCE_DIR):
 
                 payloads, vectors, ids = [], [], []
                 for i, chunk in enumerate(chunks):
-                    doc_id = f"{metadata_base['relative_path']}-{i}"
-                    if not args.reindex and doc_id in ids_indexed:
+                    if not chunk.strip():
                         continue
+                    doc_id = str(uuid.uuid4())  # Generate valid UUID
                     metadata = metadata_base.copy()
                     metadata.update({"chunk_index": i, "length": len(chunk)})
                     payloads.append(metadata)
