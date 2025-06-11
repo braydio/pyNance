@@ -1,9 +1,9 @@
 <template>
   <AppLayout>
     <template #header>
-      <h1 class="text-3xl font-bold text-blue-600">Hello {{ userName }}</h1>
-      <h2 class="mt-1 text-gray-600">Today is {{ currentDate }}</h2>
-      <h2 class="mt-1 text-gray-600 italic">and things are looking quite bleak.</h2>
+      <h1 class="text-3xl font-bold text-neon-purple">Hello {{ userName }}</h1>
+      <h2 class="mt-1 text-muted">Today is {{ currentDate }}</h2>
+      <h2 class="mt-1 text-muted italic">and things are looking quite bleak.</h2>
     </template>
 
     <div class="space-y-8">

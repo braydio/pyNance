@@ -6,7 +6,7 @@
 /* Base styles */
 @layer base {
   body {
-    @import var(--font-sans);
+    font-family: var(--font-sans);
     background-color: var(--color-bg-dark);
     color: var(--color-text-light);
   }
