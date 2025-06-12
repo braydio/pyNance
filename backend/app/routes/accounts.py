@@ -1,11 +1,13 @@
-from flask import Blueprint, jsonify, request
+"""Account management and refresh routes."""
+
 from datetime import datetime
 
+from app.config import logger
 from app.extensions import db
-from app.models import RecurringTransaction, Account
+from app.models import Account, RecurringTransaction
 from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import normalize_account_balance
-from app.config import logger
+from flask import Blueprint, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -18,11 +20,20 @@ def refresh_all_accounts():
     Iterates through all accounts and refreshes data based on link_type.
     """
     try:
-        from app.sql import account_logic
         from app.config import FILES, TELLER_API_BASE_URL
+        from app.sql import account_logic
+
+        data = request.get_json() or {}
+        account_ids = data.get("account_ids") or []
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
 
         logger.debug("Starting refresh of all linked accounts.")
-        accounts = Account.query.all()
+
+        query = Account.query
+        if account_ids:
+            query = query.filter(Account.account_id.in_(account_ids))
+        accounts = query.all()
         updated_accounts = []
 
         # Load Teller tokens once
@@ -32,17 +43,22 @@ def refresh_all_accounts():
 
         for account in accounts:
             if account.link_type == "Plaid":
-                access_token = account.access_token
+                access_token = None
+                if account.plaid_account:
+                    access_token = account.plaid_account.access_token
                 if not access_token:
                     logger.warning(f"No Plaid token for {account.account_id}")
                     continue
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
                 updated = account_logic.refresh_data_for_plaid_account(
-                    access_token, account.account_id
+                    access_token,
+                    account.account_id,
+                    start_date=start_date,
+                    end_date=end_date,
                 )
-                if updated:
-                    account.last_refreshed = datetime.utcnow()
+                if updated and account.plaid_account:
+                    account.plaid_account.last_refreshed = datetime.utcnow()
                     updated_accounts.append(account.name)
 
             elif account.link_type == "Teller":
@@ -51,6 +67,8 @@ def refresh_all_accounts():
                     if token.get("user_id") == account.user_id:
                         access_token = token.get("access_token")
                         break
+                if not access_token and account.teller_account:
+                    access_token = account.teller_account.access_token
                 if not access_token:
                     logger.warning(f"No Teller token for {account.account_id}")
                     continue
@@ -62,9 +80,11 @@ def refresh_all_accounts():
                     FILES["TELLER_DOT_CERT"],
                     FILES["TELLER_DOT_KEY"],
                     TELLER_API_BASE_URL,
+                    start_date=start_date,
+                    end_date=end_date,
                 )
-                if updated:
-                    account.last_refreshed = datetime.utcnow()
+                if updated and account.teller_account:
+                    account.teller_account.last_refreshed = datetime.utcnow()
                     updated_accounts.append(account.name)
 
             else:
@@ -92,8 +112,8 @@ def refresh_all_accounts():
 @accounts.route("/<account_id>/refresh", methods=["POST"])
 def refresh_single_account(account_id):
     """Refresh a single account with an optional date range."""
-    from app.sql import account_logic
     from app.config import FILES, TELLER_API_BASE_URL
+    from app.sql import account_logic
 
     data = request.get_json() or {}
     start_date = data.get("start_date")

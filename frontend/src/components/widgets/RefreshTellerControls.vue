@@ -2,6 +2,21 @@
   <div class="link-account">
     <h2>Refresh Teller</h2>
     <div class="button-group">
+      <input type="date" v-model="startDate" class="date-picker" />
+      <input type="date" v-model="endDate" class="date-picker" />
+      <div class="account-select">
+        <button type="button" @click="toggleDropdown">Select Accounts</button>
+        <div v-if="dropdownOpen" class="dropdown-menu">
+          <label v-for="acct in accounts" :key="acct.account_id">
+            <input
+              type="checkbox"
+              :value="acct.account_id"
+              v-model="selectedAccounts"
+            />
+            {{ acct.name }}
+          </label>
+        </div>
+      </div>
       <button @click="handleTellerRefresh" :disabled="isRefreshing">
         <span v-if="isRefreshing">Refreshing Teller Accounts…</span>
         <span v-else>Refresh Teller Accounts</span>
@@ -15,15 +30,40 @@ import axios from "axios";
 export default {
   name: "RefreshTellerControls",
   data() {
+    const today = new Date().toISOString().slice(0, 10);
+    const monthAgo = new Date();
+    monthAgo.setDate(monthAgo.getDate() - 30);
     return {
       isRefreshing: false,
+      startDate: monthAgo.toISOString().slice(0, 10),
+      endDate: today,
+      accounts: [],
+      selectedAccounts: [],
+      dropdownOpen: false,
     };
   },
   methods: {
+    toggleDropdown() {
+      this.dropdownOpen = !this.dropdownOpen;
+    },
+    async loadAccounts() {
+      try {
+        const resp = await axios.get("/api/accounts/get_accounts");
+        if (resp.data?.accounts) {
+          this.accounts = resp.data.accounts;
+        }
+      } catch (err) {
+        console.error("Failed to load accounts", err);
+      }
+    },
     async handleTellerRefresh() {
       this.isRefreshing = true;
       try {
-        const response = await axios.post("/api/accounts/refresh_accounts");
+        const response = await axios.post("/api/accounts/refresh_accounts", {
+          start_date: this.startDate,
+          end_date: this.endDate,
+          account_ids: this.selectedAccounts,
+        });
         if (response.data.status === "success") {
           const updated = response.data.updated_accounts;
           alert("Teller accounts refreshed: " + updated.join(", "));
@@ -37,6 +77,9 @@ export default {
         this.isRefreshing = false;
       }
     },
+  },
+  mounted() {
+    this.loadAccounts();
   },
 };
 </script>
@@ -78,6 +121,39 @@ export default {
 .button-group button:hover {
   background-color: var(--neon-mint);
   color: var(--themed-bg);
+}
+
+.date-picker {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--divider);
+  color: var(--color-text-light);
+}
+
+.account-select {
+  position: relative;
+}
+
+.account-select button {
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--divider);
+  color: var(--color-text-light);
+}
+
+.dropdown-menu {
+  position: absolute;
+  background-color: var(--themed-bg);
+  border: 1px solid var(--divider);
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
 }
 </style>
 
