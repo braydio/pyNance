@@ -62,7 +62,7 @@ export default {
     async handlePlaidRefresh() {
       this.isRefreshing = true;
       try {
-        const response = await axios.post("/api/plaid/transactions/refresh_accounts", {
+        const response = await axios.post("/api/accounts/refresh_accounts", {
           user_id: this.user_id,
           start_date: this.startDate,
           end_date: this.endDate,
