@@ -19,11 +19,13 @@ from .environment import (
     PRODUCTS,
 )
 from .constants import (
+    FILES,
     DATABASE_NAME,
     SQLALCHEMY_DATABASE_URI,
     FILES,
     DIRECTORIES,
 )
+from .paths import DIRECTORIES
 
 env_check = PLAID_ENV.upper()
 

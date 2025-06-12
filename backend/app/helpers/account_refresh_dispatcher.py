@@ -64,7 +64,9 @@ def refresh_all_accounts():
                 acct.last_refreshed = datetime.utcnow()
                 db.session.commit()
                 updated += 1
-                logger.info(f"✅ Synced {provider} account {acct.id} for user {user_id}")
+                logger.info(
+                    f"✅ Synced {provider} account {acct.id} for user {user_id}"
+                )
 
             except Exception as e:
                 logger.error(
