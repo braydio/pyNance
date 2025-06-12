@@ -1,13 +1,14 @@
 // src/api/accounts.js
+// Utility functions for interacting with the backend accounts endpoints.
 import axios from 'axios'
 
 export const getAccounts = async () => {
-  const response = await axios.get('/api/accounts/list')
+  const response = await axios.get('/api/accounts/get_accounts')
   return response.data
 }
 
 export const refreshAccounts = async () => {
-  const response = await axios.get('/api/accounts/refresh_accounts')
+  const response = await axios.post('/api/accounts/refresh_accounts')
   return response.data
 }
 

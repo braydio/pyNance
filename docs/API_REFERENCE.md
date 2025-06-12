@@ -22,6 +22,7 @@
 ```
 GET    /api/transactions/get_transactions
 GET    /api/accounts/get_accounts
+POST   /api/accounts/refresh_accounts
 DELETE /api/accounts/delete_account
 ```
 
