@@ -14,7 +14,7 @@
 * `plaid_helpers.py`: Pulls accounts, transactions from Plaid; does not persist balances
 * `teller_helpers.py`: Fetches Teller account objects, returns JSON only; does not persist balances
 * `account_refresh_dispatcher.py`: Handles periodic sync, routes to provider-specific logic
-* `refresh_dispatcher.py`: Redundant, likely legacy
+* `refresh_dispatcher.py`: Removed legacy dispatcher
 * `helpers.py`, `import_helpers.py`: Misc utilities, not relevant to forecast
 
 ### ⚠️ Issues & Observations
@@ -29,7 +29,7 @@
    `account_refresh_dispatcher.py` calls `get_teller_accounts()` without passing `user_id`, which prevents `update_account_history()` from executing correctly.
 
 4. **Redundant Dispatcher**
-   `refresh_dispatcher.py` appears to duplicate `account_refresh_dispatcher.py`. It should be deprecated.
+   `refresh_dispatcher.py` previously duplicated `account_refresh_dispatcher.py` and has been removed.
 
 ### ✅ Refactor Plan
 
@@ -66,7 +66,7 @@ sync_teller_account(account, user_id=account.user_id)
 
 #### ❌ Remove `refresh_dispatcher.py`
 
-* Archive this file unless it contains logic not present in `account_refresh_dispatcher.py`
+* File removed after migrating callers to `account_refresh_dispatcher`
 
 #### 🧪 Testing Required
 
