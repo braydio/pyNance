@@ -3,9 +3,9 @@
 # Account Refresh Dispatcher
 
 Provides `refresh_all_accounts()` which iterates through stored accounts and
-triggers synchronization for each via either `teller_helpers` or
-`plaid_helpers`. Runs within an application context and logs progress.
+invokes `sync_service.sync_account()` for each. The dispatcher no longer
+creates its own Flask application; callers must enter an app context first.
 
-**Dependencies**: `app`, `app.models.Account`, `app.helpers.teller_helpers`,
-`app.helpers.plaid_helpers`, `app.config.logger`.
+**Dependencies**: `app.models.Account`, `app.services.sync_service`,
+`app.config.logger`.
 ```
