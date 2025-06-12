@@ -28,6 +28,7 @@ Manages authentication and data ingestion from the Teller API. Facilitates linki
       "user_id": "user123"
     }
     ```
+    - `user_id` *(string, required)* – omitted will fall back to session
   - **Output:** `{ link_token: str }`
 
 - **POST /teller/link**
