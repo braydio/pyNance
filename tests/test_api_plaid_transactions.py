@@ -1,10 +1,11 @@
+import importlib.util
 import os
 import sys
 import types
-import importlib.util
 from datetime import datetime
-from flask import Flask
+
 import pytest
+from flask import Flask
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
@@ -127,9 +128,7 @@ plaid_module.joinedload = lambda *a, **k: None
 @pytest.fixture
 def client():
     app = Flask(__name__)
-    app.register_blueprint(
-        plaid_module.plaid_transactions, url_prefix="/api/plaid/transactions"
-    )
+    app.register_blueprint(plaid_module.plaid_transactions, url_prefix="/api/accounts")
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
@@ -153,7 +152,7 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
     )
 
     resp = client.post(
-        "/api/plaid/transactions/refresh_accounts",
+        "/api/accounts/refresh_accounts",
         json={
             "user_id": "u1",
             "start_date": "2024-01-01",
