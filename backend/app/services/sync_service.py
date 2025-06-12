@@ -1,8 +1,8 @@
 import logging
 
-from backend.app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
-from backend.app.helpers.teller_helpers import get_teller_accounts
-from backend.app.models import Account
+from app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
+from app.helpers.teller_helpers import get_teller_accounts
+from app.models import Account
 
 logger = logging.getLogger(__name__)
 
@@ -20,16 +20,12 @@ def sync_account(account: Account) -> None:
         if account.teller_account:
             access_token = account.teller_account.access_token
         else:
-            logger.warning(
-                f"Missing TellerAccount relation for account {account.id}"
-            )
+            logger.warning(f"Missing TellerAccount relation for account {account.id}")
     elif provider == "plaid":
         if account.plaid_account:
             access_token = account.plaid_account.access_token
         else:
-            logger.warning(
-                f"Missing PlaidAccount relation for account {account.id}"
-            )
+            logger.warning(f"Missing PlaidAccount relation for account {account.id}")
 
     if not provider or not access_token or not user_id:
         logger.warning(
