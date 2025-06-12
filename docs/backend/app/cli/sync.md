@@ -2,10 +2,11 @@
 ```markdown
 # CLI Sync Command
 
-Defines the `sync-accounts` Click command used for manual account refreshes.
-When executed, it calls `refresh_all_accounts()` from
-`app.helpers.account_refresh_dispatcher` within the Flask application context.
-Useful for scheduled jobs or development.
+Defines the `sync-accounts` Click command for manual refreshes. The command now
+creates the Flask application and context itself before invoking
+`refresh_all_accounts()`. This delegates actual syncing to
+`sync_service.sync_account()` for each stored account.
 
-**Dependencies**: `click`, `flask.cli`, `account_refresh_dispatcher.refresh_all_accounts`.
+**Dependencies**: `click`, `app.create_app`,
+`account_refresh_dispatcher.refresh_all_accounts`.
 ```
