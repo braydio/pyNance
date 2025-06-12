@@ -33,7 +33,9 @@ export function useTopAccounts(subtype = '') {
   const fetchAccounts = async () => {
     loading.value = true
     try {
-      const { data } = await axios.get('/api/accounts/get_accounts')
+      const { data } = await axios.get(
+        '/api/accounts/get_accounts?include_hidden=true'
+      )
       if (data?.status === 'success') {
         accounts.value = data.accounts.map(acc => ({
           ...acc,
@@ -41,7 +43,7 @@ export function useTopAccounts(subtype = '') {
         }))
       }
     } catch (err) {
-      console.error('Failed to load accounts:', err)
+      console.error('Failed to load accounts in useTopAccounts:', err)
     } finally {
       loading.value = false
     }
