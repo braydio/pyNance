@@ -23,7 +23,6 @@
 GET    /api/transactions/get_transactions
 GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
-DELETE /api/accounts/delete_account
 ```
 
 ### 🔹 Provider-Specific Resources
@@ -31,7 +30,9 @@ DELETE /api/accounts/delete_account
 ```
 POST   /api/plaid/transactions/exchange_public_token
 POST   /api/plaid/transactions/refresh_accounts
+DELETE /api/plaid/transactions/delete_account
 POST   /api/teller/transactions/sync
+DELETE /api/teller/transactions/delete_account
 ```
 
 **POST /api/plaid/transactions/refresh_accounts**
@@ -114,6 +115,6 @@ This endpoint:
 
 ---
 
-**Last Updated:** 2025-05-25
+**Last Updated:** 2025-06-12
 
 Tag: `MASTER_API_REFERENCE`
