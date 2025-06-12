@@ -1,3 +1,7 @@
+<!--
+  Displays user accounts in a sortable table with search and type filtering.
+  Type filtering uses a dynamic multi-select derived from account data.
+-->
 <template>
   <div class="accounts-section">
     <div class="accounts-table">
@@ -35,13 +39,14 @@
 
       <!-- Type Filter Slide -->
       <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
-        <select v-model="selectedType" class="filter-input">
-          <option value="">All Types</option>
-          <option value="checking">Checking</option>
-          <option value="savings">Savings</option>
-          <option value="credit">Credit</option>
-          <option value="loan">Loan</option>
-          <option value="investment">Investment</option>
+        <select multiple v-model="typeFilters" class="filter-input">
+          <option
+            v-for="type in uniqueTypes"
+            :key="type"
+            :value="type"
+          >
+            {{ formatType(type) }}
+          </option>
         </select>
       </div>
 
@@ -134,7 +139,6 @@ export default {
       sortOrder: 1,
       showDeleteButtons: false,
       showTypeFilter: false,
-      selectedType: "",
       typeFilters: [],
       showHidden: false,
       controlsVisible: false,
@@ -155,9 +159,6 @@ export default {
           const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status, acc.link_type].map(val => (val || '').toLowerCase());
           return fields.some(f => f.includes(query));
         });
-      }
-      if (this.selectedType) {
-        results = results.filter(acc => acc.type === this.selectedType);
       }
       if (this.typeFilters.length) {
         results = results.filter(acc => this.typeFilters.includes(acc.type));
