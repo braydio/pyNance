@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { toRef } from 'vue'
+import { toRef, onMounted } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
@@ -50,6 +50,8 @@ const format = val => new Intl.NumberFormat('en-US', {
 
 const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } =
   useTopAccounts(toRef(props, 'accountSubtype'))
+
+onMounted(fetchAccounts)
 
 const barWidth = account => {
   const max = Math.max(

@@ -211,6 +211,7 @@ def get_accounts():
                         "institution_name": a.institution_name,
                         "type": a.type,
                         "balance": normalized_balance,
+                        "adjusted_balance": normalized_balance,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
                         "last_refreshed": last_refreshed,
