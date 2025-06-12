@@ -8,7 +8,7 @@ import sys
 import importlib.util
 
 # ------------------------------
-# Import + Mock App Structure
+# Environment Setup
 # ------------------------------
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -100,6 +100,11 @@ def client():
     app.register_blueprint(recurring_module.recurring, url_prefix="/api/recurring")
     with app.test_client() as client:
         yield client
+
+
+# ------------------------------
+# Test: POST /scan/<account_id>
+# ------------------------------
 
 
 def test_scan_route_returns_list(client, monkeypatch):
