@@ -1,23 +1,29 @@
 # Teller Certificates
 
-This folder stores the TLS certificate and private key used to authenticate with the Teller API. The files are not committed to version control.
+This directory stores the TLS client credentials required to authenticate with the Teller API.
 
-## Obtaining the files
+## Required files
 
-1. Log into the Teller developer dashboard.
-2. Download the client certificate (`certificate.pem`) and the matching private key (`private_key.pem`).
-3. Copy both files into this directory.
+- `certificate.pem` – your Teller client certificate
+- `private_key.pem` – the private key paired with the certificate
 
-You may also generate a new certificate/key pair from the dashboard if you need to rotate credentials.
+## Generating or obtaining credentials
 
-## Permissions
+1. Log in to the [Teller dashboard](https://dashboard.teller.io/) and create a new certificate.
+2. Download the `certificate.pem` and `private_key.pem` files provided by Teller (or use `teller certificates create` if you have the Teller CLI installed).
+3. Copy both files into this folder.
 
-Protect the credentials so only the application can read them:
+## File permissions
+
+The certificate and key should only be readable by the application user:
 
 ```bash
 chmod 600 certificate.pem private_key.pem
 ```
 
-## Rotation
+Ensure the `certs` directory is not committed to version control.
 
-Teller recommends rotating client certificates periodically (for example every 90 days). When you issue a new pair, replace the files here and restart the backend service.
+## Rotation policy
+
+Teller certificates have limited lifetimes. Generate and deploy a new pair regularly—at least every 90 days or as recommended by Teller. Replace the files here with the new versions and restart the backend.
+
