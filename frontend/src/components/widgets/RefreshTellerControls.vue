@@ -23,7 +23,7 @@ export default {
     async handleTellerRefresh() {
       this.isRefreshing = true;
       try {
-        const response = await axios.post("/api/teller/transactions/refresh_accounts");
+        const response = await axios.post("/api/accounts/refresh_accounts");
         if (response.data.status === "success") {
           const updated = response.data.updated_accounts;
           alert("Teller accounts refreshed: " + updated.join(", "));
