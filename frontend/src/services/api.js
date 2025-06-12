@@ -15,7 +15,7 @@ export default {
   },
 
   async refreshAccounts() {
-    const response = await apiClient.post("/teller/transactions/refresh_balances");
+    const response = await apiClient.post('/accounts/refresh_accounts');
     return response.data;
   },
 
