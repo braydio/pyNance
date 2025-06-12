@@ -44,3 +44,10 @@ repos:
     hooks:
       - id: bandit
         args: ["-r", "backend"]
+
+  - repo: local
+    hooks:
+      - id: model-field-validation
+        name: Validate model fields
+        entry: pytest tests/test_model_field_validation.py
+        language: system
