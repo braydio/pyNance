@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 set -euo pipefail
 
@@ -33,30 +33,24 @@ fi
 
 ## 3. Create .env if missing
 if [ ! -f backend/.env ]; then
-  echo "Creating .env file from example.env..."
+  echo "Creating .env file from backend/example.env..."
   cp backend/example.env backend/.env
 fi
 
 ## 4. Set up Git hooks
 echo "Linking Git hooks..."
 git config core.hooksPath .githooks
-chmod +x .githooks/*
+chmod +x .githooks/* || true
 
-## 5. Set up frontend
-if [ -f frontend/package.json ]; then
+## 5. Frontend setup (if present)
+if [ -d frontend ] && [ -f frontend/package.json ]; then
   echo "Setting up frontend..."
   cd frontend
 
-  if [ -f ../.nvmrc ]; then
-    if command -v nvm &>/dev/null; then
-      echo "Using Node version from .nvmrc..."
-      nvm install
-      nvm use
-    else
-      echo ".nvmrc found but nvm not installed. Continuing with system Node.js."
-    fi
-  elif [ -f ../.tool-versions ]; then
-    echo "Found .tool-versions — consider using asdf for Node version management."
+  if [ -f ../.nvmrc ] && command -v nvm &>/dev/null; then
+    echo "Using Node version from .nvmrc..."
+    nvm install
+    nvm use
   fi
 
   if ! command -v npm &>/dev/null; then
@@ -68,15 +62,15 @@ if [ -f frontend/package.json ]; then
   npm install
   cd ..
 else
-  echo "frontend/package.json not found. Skipping frontend setup."
+  echo "No frontend setup detected. Skipping."
 fi
 
-## 6. Run formatters on all tracks if pre-commit available
+## 6. Run formatters on all files if pre-commit is installed
 echo "Running formatters (black, isort, ruff)..."
 if command -v pre-commit &>/dev/null; then
   pre-commit run --all-files || true
 else
-  echo "pre-commit not found — skipping formatter pass"
+  echo "pre-commit not found — skipping format check."
 fi
 
-echo "Setup complete!"
+echo "✅ pyNance setup complete!"
