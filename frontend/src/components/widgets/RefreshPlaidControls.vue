@@ -24,6 +24,12 @@
         <span v-else>Refresh Plaid Accounts</span>
       </button>
     </div>
+    <p
+      v-if="message"
+      :class="{ 'success-badge': messageType === 'success', 'error-badge': messageType === 'error' }"
+    >
+      {{ message }}
+    </p>
   </div>
 </template>
 
@@ -43,6 +49,8 @@ export default {
       accounts: [],
       selectedAccounts: [],
       dropdownOpen: false,
+      message: '',
+      messageType: '',
     };
   },
   methods: {
@@ -54,12 +62,15 @@ export default {
         const resp = await axios.get("/api/accounts/get_accounts");
         if (resp.data?.accounts) {
           this.accounts = resp.data.accounts;
+        } else {
+          this.accounts = [];
         }
       } catch (err) {
         console.error("Failed to load accounts", err);
       }
     },
     async handlePlaidRefresh() {
+      this.dropdownOpen = false;
       this.isRefreshing = true;
       try {
         const response = await axios.post("/api/accounts/refresh_accounts", {
@@ -69,13 +80,19 @@ export default {
           account_ids: this.selectedAccounts,
         });
         if (response.data.status === "success") {
-          alert("Plaid accounts refreshed: " + response.data.updated_accounts.join(", "));
+          this.message =
+            "Plaid accounts refreshed: " +
+            response.data.updated_accounts.join(", ");
+          this.messageType = "success";
         } else {
-          alert("Error refreshing Plaid accounts: " + response.data.message);
+          this.message =
+            "Error refreshing Plaid accounts: " + response.data.message;
+          this.messageType = "error";
         }
       } catch (err) {
         console.error("Error refreshing Plaid accounts:", err);
-        alert("Error refreshing Plaid accounts: " + err.message);
+        this.message = "Error refreshing Plaid accounts: " + err.message;
+        this.messageType = "error";
       } finally {
         this.isRefreshing = false;
       }
@@ -158,6 +175,20 @@ export default {
   max-height: 200px;
   overflow-y: auto;
   z-index: 10;
+}
+.success-badge,
+.error-badge {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: bold;
+  color: #fff;
+}
+.success-badge {
+  background-color: var(--color-bg-success, #2ecc71);
+}
+.error-badge {
+  background-color: var(--color-error, #e74c3c);
 }
 </style>
 
