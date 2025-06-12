@@ -27,6 +27,7 @@ logs/
 *.sqlite3
 chroma/*
 chroma.sqlite3/
+backend/chroma/
 # Manual transaction / account uploads
 imports/*
 !imports/README.md
