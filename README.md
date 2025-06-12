@@ -170,6 +170,12 @@ Base URL: `http://127.0.0.1:5000/api`
 - `/charts/category_breakdown`
 - `/accounts/refresh_accounts`
 
+  Optional JSON body fields:
+
+  - `account_ids` – list of account IDs to refresh
+  - `start_date` – optional `YYYY-MM-DD` start date
+  - `end_date` – optional `YYYY-MM-DD` end date
+
 Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Running Tests

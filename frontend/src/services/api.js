@@ -14,8 +14,8 @@ export default {
     return response.data;
   },
 
-  async refreshAccounts() {
-    const response = await apiClient.post('/accounts/refresh_accounts');
+  async refreshAccounts(payload = {}) {
+    const response = await apiClient.post('/accounts/refresh_accounts', payload);
     return response.data;
   },
 
