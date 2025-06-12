@@ -12,7 +12,7 @@
 - [x] Parsed `account_refresh_dispatcher.py` — sync orchestration confirmed, `user_id` not threaded
 - [x] Parsed `plaid_helpers.py` — `AccountHistory` update confirmed, `user_id` inferred
 - [x] Parsed `teller_helpers.py` — sync parity validated, explicit `user_id` usage
-- [x] Reviewed `refresh_dispatcher.py` — confirmed redundant
+- [x] Reviewed `refresh_dispatcher.py` — confirmed redundant and now removed
 - [x] Initiated user_id threading task group
 - [x] Created `sync_service.py` for unified sync interface
 - [ ] Refactor dispatcher to use sync service
