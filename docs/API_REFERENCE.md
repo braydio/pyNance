@@ -25,6 +25,14 @@ GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
 ```
 
+**POST /api/accounts/refresh_accounts**
+
+Optional JSON body parameters:
+
+- `account_ids` – optional list of account IDs to refresh
+- `start_date` – optional ISO `YYYY-MM-DD` start date
+- `end_date` – optional ISO `YYYY-MM-DD` end date
+
 ### 🔹 Provider-Specific Resources
 
 ```
