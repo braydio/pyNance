@@ -130,7 +130,6 @@ Directory Tree Mapping
 ├── production.env
 ├── __pycache__
 │   └── export_fields.cpython-313.pyc
-├── refreshtest.py
 ├── requirements.txt
 ├── run.py
 ├── sandbox.env
@@ -140,4 +139,3 @@ Directory Tree Mapping
 │   ├── plaid_config.json
 │   ├── plaid_manual_upsert.py
 │   └── teller_imports.py
-└── test.py
