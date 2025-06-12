@@ -19,5 +19,4 @@ backend/app/certs/
   └── private_key.pem
 ```
 
-The backend looks for these filenames when calling the Teller API.
-
+The sync logic and webhook routes reference these paths when making HTTPS requests to Teller.
