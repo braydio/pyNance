@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/services/api";
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Chart } from "chart.jsauto";
 
@@ -38,11 +38,11 @@ export default {
 
     const fetchData = async () => {
       try {
-        const response = await axios.get("/api/charts/cash_flow", {
-          params: { granularity: granularity.value },
+        const response = await api.fetchCashFlow({
+          granularity: granularity.value,
         });
-        if (response.data.status === "success") {
-          chartData.value = response.data.data;
+        if (response.status === "success") {
+          chartData.value = response.data;
           updateChart();
         }
       } catch (error) {
