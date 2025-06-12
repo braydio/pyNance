@@ -76,7 +76,7 @@ Manages authentication and data ingestion from the Teller API. Facilitates linki
 
 ## Related Docs
 
-- [`docs/dataflow/teller_sync.md`](../../dataflow/teller_sync.md)
+ - [`docs/dataflow/teller_transaction_sync.md`](../../dataflow/teller_transaction_sync.md)
 - [`docs/integrations/teller_config.md`](../../integrations/teller_config.md)
 ````
 
