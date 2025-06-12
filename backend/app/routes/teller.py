@@ -1,11 +1,11 @@
-# File: app/routes/teller.py
+"""Routes for Teller account linking and data ingestion."""
 
 import json
 
 import requests
 from app.config import FILES, TELLER_APP_ID, logger
 from app.helpers.teller_helpers import load_tokens  # Import helper
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 # File paths and API endpoints
 TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
@@ -28,8 +28,15 @@ def extract_accounts(data):
 
 @link_teller.route("/generate_link_token", methods=["POST"])
 def generate_link_token():
+    """Generate a Teller link token for the provided ``user_id``."""
     try:
         logger.debug("Generating Teller link token.")
+        data = request.get_json() or {}
+        user_id = data.get("user_id")
+        if not user_id:
+            logger.warning("Missing user_id in request body")
+            return jsonify({"status": "error", "message": "user_id is required"}), 400
+
         url = f"{TELLER_API_BASE_URL}/link_tokens"
         headers = {
             "Authorization": f"Bearer {TELLER_DOT_KEY}",
@@ -37,7 +44,7 @@ def generate_link_token():
         }
         payload = {
             "application_id": TELLER_APP_ID,
-            "user_id": "Brayden",
+            "user_id": user_id,
             "products": ["transactions", "balance"],
         }
         logger.debug(f"POST {url} with headers={headers} and payload={payload}")

@@ -13,11 +13,22 @@ Manages authentication and data ingestion from the Teller API. Facilitates linki
 
 ## Key Endpoints
 
+- `POST /teller/link-token`: Generates a link token for Teller Link.
 - `POST /teller/link`: Begins the Teller linking flow using a secure access token.
 - `GET /teller/accounts`: Returns user-linked accounts via Teller.
 - `GET /teller/balances`: Retrieves current balances from linked accounts.
 
 ## Inputs & Outputs
+
+- **POST /teller/link-token**
+
+  - **Input:**
+    ```json
+    {
+      "user_id": "user123"
+    }
+    ```
+  - **Output:** `{ link_token: str }`
 
 - **POST /teller/link**
 
