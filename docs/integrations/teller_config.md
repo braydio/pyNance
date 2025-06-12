@@ -1,17 +1,17 @@
-# 🔧 Teller Configuration
+# ⚙️ Teller Configuration
 
-This integration relies on a few environment variables and TLS certificates.
+This page summarizes the environment variables and certificate files required to enable Teller integration.
 
 ## Environment Variables
 
-- `TELLER_APP_ID` – your Teller application ID used when initiating Teller Link.
-- `TELLER_WEBHOOK_SECRET` – secret for verifying webhook signatures.
+- `TELLER_APP_ID` – application ID registered with Teller. Used by the frontend when launching the link flow and passed to backend routes for API requests.
+- `TELLER_WEBHOOK_SECRET` – secret used to validate Teller webhook signatures. If not set, the webhook route is disabled.
 
-These are loaded in `app.config.environment` and typically defined in `backend/.env`.
+These variables are loaded by `backend/app/config/environment.py` from your `.env` file.
 
-## Certificates
+## Certificate Placement
 
-Place your client certificate and private key in `backend/app/certs/`:
+Teller requests are authenticated with mutual TLS certificates. Place your certificate files inside `backend/app/certs/`:
 
 ```
 backend/app/certs/

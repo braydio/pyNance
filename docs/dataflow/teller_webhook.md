@@ -1,16 +1,19 @@
-# 📣 Teller Webhook Processing
+# 📢 Teller Webhook Processing
 
-**Module:** `app.routes.teller_webhook`
-**Purpose:** React to Teller events and trigger account refresh.
+This document outlines how incoming Teller webhook events are handled.
 
----
+## Processing Steps
 
-## 🔔 Workflow
+1. Webhooks arrive at `/api/webhooks/teller`.
+2. `teller_webhook.py` verifies the `Teller-Signature` header using `TELLER_WEBHOOK_SECRET`.
+3. The account is looked up and its stored access token is loaded.
+4. `refresh_data_for_teller_account` is invoked to pull the latest balances and transactions.
+5. If updates are made, the account's `last_refreshed` timestamp is saved.
 
-1. `verify_signature` checks the `Teller-Signature` header using `TELLER_WEBHOOK_SECRET`.
-2. Payload is parsed for `event` and `account_id`.
-3. The matching `Account` and access token are looked up via `teller_helpers.load_tokens`.
-4. `account_logic.refresh_data_for_teller_account` fetches the latest balances and transactions.
-5. On success, `account.last_refreshed` is updated and a simple `{"status": "ok"}` is returned.
+Unsupported events return a simple OK response so Teller considers them delivered.
 
-Webhook events keep Teller data in sync without manual intervention.
+## Key Modules
+
+- `backend/app/routes/teller_webhook.py`
+- `backend/app/sql/account_logic.py`
+- `backend/app/helpers/teller_helpers.py`

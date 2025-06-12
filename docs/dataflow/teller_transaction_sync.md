@@ -1,24 +1,20 @@
-# 📨 Teller Transaction Sync
+# 📈 Teller Transaction Sync
 
-**Module:** `app.sql.account_logic.refresh_data_for_teller_account`
-**Purpose:** Fetch balances and transactions from Teller and persist them.
+Describes how Teller transactions are retrieved and stored.
 
----
+## Flow Overview
 
-## 🔄 Flow Overview
+1. Routes in `teller_transactions.py` call `account_logic.refresh_data_for_teller_account`.
+2. `refresh_data_for_teller_account` uses `fetch_url_with_backoff` to request account balances and `/transactions` from the Teller API using the stored certificate pair and access token.
+3. Each returned transaction is inserted or updated in the `Transaction` table. User-modified fields are preserved.
+4. The latest balance for the account is recorded in both `Account` and `AccountHistory` tables.
 
-1. Tokens are loaded via `helpers.teller_helpers.load_tokens`.
-2. For each account token, the service requests:
-   - `GET /accounts/<id>/balances`
-   - `GET /accounts/<id>/transactions`
-   using the certificate pair in `backend/app/certs/`.
-3. Balances update `Account.balance` and create an `AccountHistory` record for the current day.
-4. Transactions are inserted or updated in the `Transaction` table. Records modified by users are preserved.
-5. Called by refresh routes and the Teller webhook to keep data current.
+Raw responses may be dumped to a temporary file for inspection during debugging.
 
-## 🗄️ Storage Details
+## Key Modules
 
-- **Balances:** stored on `Account` and mirrored in `AccountHistory`.
-- **Transactions:** stored in `Transaction` with amount, date, description and merchant info.
+- `backend/app/sql/account_logic.py`
+- `backend/app/routes/teller_transactions.py`
+- `backend/app/helpers/teller_helpers.py`
 
-This sync routine ensures the database reflects the latest Teller data.
+These components coordinate to maintain an up‑to‑date ledger of Teller activity.
