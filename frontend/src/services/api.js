@@ -26,13 +26,18 @@ export default {
     return response.data;
   },
 
-  async fetchCategoryBreakdown() {
-    const response = await apiClient.get("/charts/category_breakdown");
+  async fetchCategoryBreakdown(params = {}) {
+    const response = await apiClient.get("/charts/category_breakdown", { params });
     return response.data;
   },
 
   async fetchDailyNet() {
     const response = await apiClient.get("/charts/daily_net");
+    return response.data;
+  },
+
+  async fetchCashFlow(params = {}) {
+    const response = await apiClient.get("/charts/cash_flow", { params });
     return response.data;
   },
 

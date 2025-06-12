@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import axios from 'axios'
+import api from '@/services/api'
 import { ref, onMounted, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
 
@@ -58,7 +58,7 @@ function formatCurrency(val) {
 
 async function fetchData() {
   try {
-    const { data } = await axios.get('/api/charts/net_assets')
+    const data = await api.fetchNetAssets()
     chartData.value = Array.isArray(data?.data) ? data.data : []
     await nextTick()
     buildChart()

@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import axios from 'axios'
+import api from '@/services/api'
 import { Chart } from 'chart.js/auto'
 import { onMounted, ref, nextTick } from 'vue'
 
@@ -31,7 +31,7 @@ const parseDate = str =>
 
 async function fetchData() {
   try {
-    const { data } = await axios.get('/api/charts/net_assets')
+    const data = await api.fetchNetAssets()
     chartData.value = Array.isArray(data?.data) ? data.data : []
     await nextTick()
     render()

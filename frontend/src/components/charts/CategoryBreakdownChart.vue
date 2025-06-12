@@ -17,7 +17,7 @@
 <script setup>
 import { ref, onMounted, watch, computed } from 'vue'
 import { Chart } from 'chart.js/auto'
-import axios from 'axios'
+import api from '@/services/api'
 
 const emit = defineEmits(['bar-click'])
 
@@ -38,12 +38,13 @@ watch([startDate, endDate], () => fetchData())
 
 async function fetchData() {
   try {
-    const response = await axios.get('/api/charts/category_breakdown', {
-      params: { start_date: startDate.value, end_date: endDate.value },
+    const response = await api.fetchCategoryBreakdown({
+      start_date: startDate.value,
+      end_date: endDate.value,
     })
 
-    if (response.data.status === 'success') {
-      chartData.value.raw = (response.data.data || []).filter((entry) => {
+    if (response.status === 'success') {
+      chartData.value.raw = (response.data || []).filter((entry) => {
         const isValid = entry && typeof entry.amount === 'number' && !isNaN(entry.amount)
         if (!isValid) console.warn('Skipping invalid entry:', entry)
         return isValid

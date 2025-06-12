@@ -18,7 +18,7 @@
 </template>
 
 <script>
-import axios from 'axios'
+import api from '@/services/api'
 import { ref, onMounted, nextTick, computed } from 'vue'
 import { Chart } from 'chart.js/auto'
 
@@ -32,9 +32,9 @@ export default {
 
     const fetchData = async () => {
       try {
-        const response = await axios.get('/api/charts/daily_net')
-        if (response.data.status === 'success') {
-          chartData.value = response.data.data
+        const response = await api.fetchDailyNet()
+        if (response.status === 'success') {
+          chartData.value = response.data
           updateChart()
         }
       } catch (error) {
