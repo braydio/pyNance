@@ -60,10 +60,10 @@ We are decomposing the monolithic `services/api.js` file into logically grouped 
 - [x] MOVED: `getAccounts`
 - [x] MOVED: `refreshAccounts`
 - [x] MOVED: `deleteAccount`
-- [ ] DEPRECATION BEGIN
-- [ ] Check external files for old imports
-- [ ] Add deprecation warning
-- [ ] Confirm deletion
+- [x] DEPRECATION BEGIN
+- [x] Check external files for old imports
+- [x] Add deprecation warning
+- [x] Confirm deletion
 
 ### 🔹 `api/plaid.js`
 
@@ -99,7 +99,6 @@ After moving each function:
 
 ```sh
 frontend/src/api/
-├── accounts.js
 ├── charts.js
 ├── plaid.js
 ├── recurring.js
@@ -109,4 +108,4 @@ frontend/src/api/
 
 ---
 
-_Last updated: 2025-05-06_
+_Last updated: 2025-06-12_
