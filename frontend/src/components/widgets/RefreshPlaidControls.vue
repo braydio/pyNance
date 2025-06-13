@@ -34,7 +34,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/services/api";
 export default {
   name: "RefreshPlaidControls",
   data() {
@@ -59,34 +59,38 @@ export default {
     },
     async loadAccounts() {
       try {
-        const resp = await axios.get("/api/accounts/get_accounts");
-        if (resp.data?.accounts) {
-          this.accounts = resp.data.accounts;
+        const resp = await api.getAccounts();
+        if (resp?.status === "success" && resp.accounts) {
+          this.accounts = resp.accounts;
         } else {
           this.accounts = [];
+          this.message = "Error fetching accounts.";
+          this.messageType = "error";
         }
       } catch (err) {
         console.error("Failed to load accounts", err);
+        this.message = "Failed to load accounts: " + err.message;
+        this.messageType = "error";
       }
     },
     async handlePlaidRefresh() {
       this.dropdownOpen = false;
       this.isRefreshing = true;
       try {
-        const response = await axios.post("/api/accounts/refresh_accounts", {
+        const response = await api.refreshAccounts({
           user_id: this.user_id,
           start_date: this.startDate,
           end_date: this.endDate,
           account_ids: this.selectedAccounts,
         });
-        if (response.data.status === "success") {
+        if (response.status === "success") {
           this.message =
             "Plaid accounts refreshed: " +
-            response.data.updated_accounts.join(", ");
+            (response.updated_accounts || []).join(", ");
           this.messageType = "success";
         } else {
           this.message =
-            "Error refreshing Plaid accounts: " + response.data.message;
+            "Error refreshing Plaid accounts: " + response.message;
           this.messageType = "error";
         }
       } catch (err) {

@@ -4,6 +4,7 @@
  * Fetches account data and upcoming recurring reminders.
  */
 import { ref, computed, watch, onMounted } from 'vue'
+import api from '@/services/api'
 import axios from 'axios'
 
 export function useSnapshotAccounts(maxSelection = 5) {
@@ -16,7 +17,7 @@ export function useSnapshotAccounts(maxSelection = 5) {
     if (stored) {
       try {
         selectedIds.value = JSON.parse(stored).slice(0, maxSelection)
-      } catch (e) {
+      } catch {
         selectedIds.value = []
       }
     } else if (accounts.value.length) {
@@ -26,9 +27,9 @@ export function useSnapshotAccounts(maxSelection = 5) {
 
   const loadAccounts = async () => {
     try {
-      const res = await axios.get('/api/accounts/get_accounts')
-      if (res.data.status === 'success') {
-        accounts.value = res.data.accounts
+      const res = await api.getAccounts()
+      if (res.status === 'success') {
+        accounts.value = res.accounts
         initSelection()
       }
     } catch (err) {
