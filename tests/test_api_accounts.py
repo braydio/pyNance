@@ -39,23 +39,24 @@ sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
 
 
-# SQL stub
+# SQL package stub
 sql_pkg = types.ModuleType("app.sql")
-sql_pkg.__path__ = []  # Treat as package
+sql_pkg.__path__ = []  # Make it a package
 
+# Submodules
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
 
-# dummy functions
+# Mocks
 account_logic_stub.refresh_data_for_plaid_account = fake_plaid
 account_logic_stub.refresh_data_for_teller_account = fake_teller
 forecast_logic_stub.update_account_history = lambda *args, **kwargs: True
 
-# wire up submodules
+# Register submodules
 sql_pkg.account_logic = account_logic_stub
 sql_pkg.forecast_logic = forecast_logic_stub
 
-# register with sys.modules
+# Inject into sys.modules
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sys.modules["app.sql.forecast_logic"] = forecast_logic_stub
