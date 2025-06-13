@@ -46,8 +46,48 @@ ext_stub = types.ModuleType("app.extensions")
 ext_stub.db = SimpleNamespace(commit=lambda: None, rollback=lambda: None)
 sys.modules["app.extensions"] = ext_stub
 
-# app.models
+
+# --- Models stub ---
 models_stub = types.ModuleType("app.models")
+
+
+class DummyColumn:
+    def __init__(self, attr="val"):
+        self.attr = attr
+
+    def __get__(self, instance, owner):
+        if instance is None:
+            return self
+        return getattr(instance, self.attr)
+
+    def __set__(self, instance, value):
+        setattr(instance, self.attr, value)
+
+    def in_(self, vals):
+        return ("account_id_in", vals)
+
+
+class DummyAccount:
+    account_id = DummyColumn("_account_id")
+    user_id = DummyColumn("_user_id")
+
+    def __init__(
+        self, account_id, user_id, link_type, plaid_account=None, teller_account=None
+    ):
+        self._account_id = account_id
+        self._user_id = user_id
+        self.link_type = link_type
+        self.plaid_account = plaid_account
+        self.teller_account = teller_account
+
+
+DummyRT = type("RecurringTransaction", (), {})
+
+models_stub.Account = DummyAccount
+models_stub.RecurringTransaction = DummyRT
+
+sys.modules["app.models"] = models_stub
+
 sys.modules["app.models"] = models_stub
 
 # app.sql as package with account_logic and forecast_logic
