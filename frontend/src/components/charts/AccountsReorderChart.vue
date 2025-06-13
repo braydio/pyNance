@@ -7,7 +7,7 @@
       <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div class="bar-fill bar-fill-asset" :style="{ width: barWidth(account) }">
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -19,7 +19,7 @@
       <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div class="bar-fill bar-fill-liability" :style="{ width: barWidth(account) }">
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -108,10 +108,25 @@ defineExpose({
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(to right, #aad4ff, #78baff);
   border-radius: 6px;
   transition: width 0.6s ease-out;
   position: relative;
+}
+
+.bar-fill-asset {
+  background: linear-gradient(
+    to right,
+    var(--asset-gradient-start),
+    var(--asset-gradient-end)
+  );
+}
+
+.bar-fill-liability {
+  background: linear-gradient(
+    to right,
+    var(--liability-gradient-start),
+    var(--liability-gradient-end)
+  );
 }
 
 .bar-value {
