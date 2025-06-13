@@ -17,7 +17,6 @@
         </div>
       </div>
     </div>
-
     <div v-if="negativeAccounts.length" class="bar-chart">
       <h3 class="subheading">Liabilities</h3>
       <div
@@ -131,12 +130,10 @@ defineExpose({
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(to right, #aad4ff, #78baff);
   border-radius: 6px;
   transition: width 0.6s ease-out;
   position: relative;
 }
-
 
 .label-balance {
   margin-left: 0.25rem;
@@ -151,6 +148,7 @@ defineExpose({
 }
 
 .tick {
+
   position: absolute;
   top: 0;
   transform: translateX(-50%);
