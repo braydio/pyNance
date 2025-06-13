@@ -18,7 +18,16 @@ sys.modules.pop("app", None)
 # app.config (package)
 config_pkg = types.ModuleType("app.config")
 config_pkg.__path__ = []
+
+config_pkg.logger = SimpleNamespace(
+    info=lambda *args, **kwargs: None,
+    debug=lambda *args, **kwargs: None,
+    warning=lambda *args, **kwargs: None,
+    error=lambda *args, **kwargs: None,
+)
+
 sys.modules["app.config"] = config_pkg
+
 
 # app.config.environment
 env_stub = types.ModuleType("app.config.environment")
