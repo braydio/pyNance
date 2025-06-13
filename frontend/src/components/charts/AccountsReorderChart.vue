@@ -1,3 +1,7 @@
+<!--
+  AccountsReorderChart.vue
+  Displays top accounts split by assets and liabilities using gradient bars.
+-->
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
@@ -7,7 +11,7 @@
       <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div class="bar-fill asset-fill" :style="{ width: barWidth(account) }">
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -19,7 +23,7 @@
       <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div class="bar-fill liability-fill" :style="{ width: barWidth(account) }">
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -108,10 +112,25 @@ defineExpose({
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(to right, #aad4ff, #78baff);
   border-radius: 6px;
   transition: width 0.6s ease-out;
   position: relative;
+}
+
+.asset-fill {
+  background: linear-gradient(
+    to right,
+    var(--asset-gradient-start),
+    var(--asset-gradient-end)
+  );
+}
+
+.liability-fill {
+  background: linear-gradient(
+    to right,
+    var(--liability-gradient-start),
+    var(--liability-gradient-end)
+  );
 }
 
 .bar-value {
