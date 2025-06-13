@@ -4,36 +4,58 @@
 
     <div v-if="positiveAccounts.length" class="bar-chart">
       <h3 class="subheading">Assets</h3>
-      <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
+      <div
+        v-for="account in positiveAccounts"
+        :key="`p-${account.id}`"
+        class="bar-row"
+        :title="`${account.name}: ${format(account.adjusted_balance)}`"
+      >
         <span class="bar-label">{{ account.name }}</span>
+        <span class="label-balance">{{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
-            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
-          </div>
+          <div class="bar-fill" :style="{ width: barWidth(account) }"></div>
         </div>
       </div>
     </div>
 
     <div v-if="negativeAccounts.length" class="bar-chart">
       <h3 class="subheading">Liabilities</h3>
-      <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
+      <div
+        v-for="account in negativeAccounts"
+        :key="`n-${account.id}`"
+        class="bar-row"
+        :title="`${account.name}: ${format(account.adjusted_balance)}`"
+      >
         <span class="bar-label">{{ account.name }}</span>
+        <span class="label-balance">{{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
-            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
-          </div>
+          <div class="bar-fill" :style="{ width: barWidth(account) }"></div>
         </div>
       </div>
     </div>
 
-    <p v-if="!positiveAccounts.length && !negativeAccounts.length" class="no-data-msg">
+    <div class="bar-axis" v-if="allVisibleAccounts.length">
+      <span
+        v-for="n in 5"
+        :key="n"
+        class="tick"
+        :style="{ left: `${((n - 1) / 4) * 100}%` }"
+      >
+        {{ format(((n - 1) / 4) * maxValue) }}
+      </span>
+    </div>
+
+    <p
+      v-if="!positiveAccounts.length && !negativeAccounts.length"
+      class="no-data-msg"
+    >
       No accounts available for this subtype.
     </p>
   </div>
 </template>
 
 <script setup>
-import { toRef, onMounted } from 'vue'
+import { toRef, onMounted, computed } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
@@ -53,13 +75,14 @@ const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } 
 
 onMounted(fetchAccounts)
 
-const barWidth = account => {
-  const max = Math.max(
+const maxValue = computed(() =>
+  Math.max(
     ...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)),
     1
   )
-  return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
-}
+)
+
+const barWidth = account => `${(Math.abs(account.adjusted_balance) / maxValue.value) * 100}%`
 
 defineExpose({
   refresh: fetchAccounts,
@@ -114,12 +137,26 @@ defineExpose({
   position: relative;
 }
 
-.bar-value {
+
+.label-balance {
+  margin-left: 0.25rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.bar-axis {
+  position: relative;
+  height: 20px;
+  margin-top: 0.5rem;
+}
+
+.tick {
   position: absolute;
-  right: 0.5rem;
-  top: -1.5rem;
-  font-size: 0.8rem;
-  color: #ccd;
+  top: 0;
+  transform: translateX(-50%);
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
 }
 
 .subheading {
