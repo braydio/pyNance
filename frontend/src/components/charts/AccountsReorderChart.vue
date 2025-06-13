@@ -5,24 +5,50 @@
     <div v-if="positiveAccounts.length" class="bar-chart">
       <h3 class="subheading">Assets</h3>
       <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
-        <span class="bar-label">{{ account.name }}</span>
+        <span class="bar-label">{{ account.name }} {{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
-            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
-          </div>
+          <div
+            class="bar-fill"
+            :class="barColor(account)"
+            :style="{ width: barWidth(account) }"
+          />
         </div>
+      </div>
+      <div class="axis">
+        <div class="axis-line" />
+        <span
+          v-for="(tick, idx) in ticks"
+          :key="idx"
+          class="axis-tick"
+          :style="{ left: `${(idx / (ticks.length - 1)) * 100}%` }"
+        >
+          {{ format(tick) }}
+        </span>
       </div>
     </div>
 
     <div v-if="negativeAccounts.length" class="bar-chart">
       <h3 class="subheading">Liabilities</h3>
       <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
-        <span class="bar-label">{{ account.name }}</span>
+        <span class="bar-label">{{ account.name }} {{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
-            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
-          </div>
+          <div
+            class="bar-fill"
+            :class="barColor(account)"
+            :style="{ width: barWidth(account) }"
+          />
         </div>
+      </div>
+      <div class="axis">
+        <div class="axis-line" />
+        <span
+          v-for="(tick, idx) in ticks"
+          :key="idx"
+          class="axis-tick"
+          :style="{ left: `${(idx / (ticks.length - 1)) * 100}%` }"
+        >
+          {{ format(tick) }}
+        </span>
       </div>
     </div>
 
@@ -33,7 +59,9 @@
 </template>
 
 <script setup>
-import { toRef, onMounted } from 'vue'
+// Display top accounts grouped by subtype using simple bar charts.
+// Bars use Tailwind colors with optional axis ticks for context.
+import { toRef, onMounted, computed } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
@@ -48,18 +76,30 @@ const format = val => new Intl.NumberFormat('en-US', {
   currency: 'USD',
 }).format(val)
 
-const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } =
-  useTopAccounts(toRef(props, 'accountSubtype'))
+const {
+  positiveAccounts,
+  negativeAccounts,
+  allVisibleAccounts,
+  fetchAccounts,
+} = useTopAccounts(toRef(props, 'accountSubtype'))
 
 onMounted(fetchAccounts)
 
+const maxVal = computed(() =>
+  Math.max(...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)), 1)
+)
+
+const ticks = computed(() => {
+  const step = maxVal.value / 4
+  return Array.from({ length: 5 }, (_, i) => i * step)
+})
+
 const barWidth = account => {
-  const max = Math.max(
-    ...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)),
-    1
-  )
-  return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
+  return `${(Math.abs(account.adjusted_balance) / maxVal.value) * 100}%`
 }
+
+const barColor = account =>
+  account.adjusted_balance >= 0 ? 'bg-blue-500' : 'bg-red-500'
 
 defineExpose({
   refresh: fetchAccounts,
@@ -108,19 +148,46 @@ defineExpose({
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(to right, #aad4ff, #78baff);
   border-radius: 6px;
   transition: width 0.6s ease-out;
   position: relative;
 }
 
-.bar-value {
-  position: absolute;
-  right: 0.5rem;
-  top: -1.5rem;
-  font-size: 0.8rem;
-  color: #ccd;
+.axis {
+  position: relative;
+  height: 24px;
+  margin-top: 0.5rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
 }
+
+.axis-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--color-border-secondary);
+}
+
+.axis-tick {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.axis-tick::before {
+  content: '';
+  width: 1px;
+  height: 4px;
+  background: var(--color-border-secondary);
+  margin-bottom: 2px;
+}
+
+
 
 .subheading {
   font-size: 1.1rem;
