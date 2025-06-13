@@ -7,7 +7,11 @@
       <div v-for="account in positiveAccounts" :key="`p-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div
+            class="bar-fill"
+            :class="account.adjusted_balance >= 0 ? 'asset-bar' : 'liability-bar'"
+            :style="{ width: barWidth(account) }"
+          >
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -19,7 +23,11 @@
       <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
         <span class="bar-label">{{ account.name }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }">
+          <div
+            class="bar-fill"
+            :class="account.adjusted_balance >= 0 ? 'asset-bar' : 'liability-bar'"
+            :style="{ width: barWidth(account) }"
+          >
             <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
           </div>
         </div>
@@ -43,21 +51,20 @@ const props = defineProps({
   },
 })
 
-const format = val => new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-}).format(val)
+const format = (val) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(val)
 
-const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } =
-  useTopAccounts(toRef(props, 'accountSubtype'))
+const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } = useTopAccounts(
+  toRef(props, 'accountSubtype'),
+)
 
 onMounted(fetchAccounts)
 
-const barWidth = account => {
-  const max = Math.max(
-    ...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)),
-    1
-  )
+const barWidth = (account) => {
+  const max = Math.max(...allVisibleAccounts.value.map((a) => Math.abs(a.adjusted_balance)), 1)
   return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
 }
 
@@ -65,7 +72,6 @@ defineExpose({
   refresh: fetchAccounts,
 })
 </script>
-
 
 <style scoped>
 .chart-container {
@@ -108,10 +114,17 @@ defineExpose({
 
 .bar-fill {
   height: 100%;
-  background: linear-gradient(to right, #aad4ff, #78baff);
   border-radius: 6px;
   transition: width 0.6s ease-out;
   position: relative;
+}
+
+.asset-bar {
+  background: linear-gradient(to right, #aad4ff, #78baff);
+}
+
+.liability-bar {
+  background: linear-gradient(to right, #ffb3b3, #ff6868);
 }
 
 .bar-value {
