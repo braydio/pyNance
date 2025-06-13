@@ -38,28 +38,28 @@ helpers_pkg.teller_helpers = teller_helpers_stub
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
 
+
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")
+sql_pkg.__path__ = []  # Treat as package
+
 account_logic_stub = types.ModuleType("app.sql.account_logic")
+forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
 
-captured = []
-
-
-def fake_plaid(token, account_id, start_date=None, end_date=None):
-    captured.append(("plaid", account_id, start_date, end_date))
-    return True
-
-
-def fake_teller(account, token, cert, key, base_url, start_date=None, end_date=None):
-    captured.append(("teller", account.account_id, start_date, end_date))
-    return True
-
-
+# dummy functions
 account_logic_stub.refresh_data_for_plaid_account = fake_plaid
 account_logic_stub.refresh_data_for_teller_account = fake_teller
+forecast_logic_stub.update_account_history = lambda *args, **kwargs: True
+
+# wire up submodules
+sql_pkg.account_logic = account_logic_stub
+sql_pkg.forecast_logic = forecast_logic_stub
+
+# register with sys.modules
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
-sql_pkg.account_logic = account_logic_stub
+sys.modules["app.sql.forecast_logic"] = forecast_logic_stub
+
 
 # Models stub
 models_stub = types.ModuleType("app.models")
