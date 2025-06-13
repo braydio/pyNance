@@ -2,20 +2,21 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime
+from types import SimpleNamespace
 
 import pytest
 from flask import Flask
 
+# --- Setup path ---
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
 app_pkg = types.ModuleType("app")
 sys.modules["app"] = app_pkg
 
-# Config stub
+# --- app.config stub ---
 config_stub = types.ModuleType("app.config")
-config_stub.logger = types.SimpleNamespace(
+config_stub.logger = SimpleNamespace(
     info=lambda *a, **k: None,
     debug=lambda *a, **k: None,
     warning=lambda *a, **k: None,
@@ -26,7 +27,7 @@ config_stub.TELLER_API_BASE_URL = "https://example.com"
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
-# Extensions stub
+# --- app.extensions stub ---
 extensions_stub = types.ModuleType("app.extensions")
 session_ns = types.SimpleNamespace(commit=lambda: None, rollback=lambda: None)
 extensions_stub.db = types.SimpleNamespace(
@@ -34,7 +35,7 @@ extensions_stub.db = types.SimpleNamespace(
 )
 sys.modules["app.extensions"] = extensions_stub
 
-# Helpers stub
+# --- app.helpers stub ---
 helpers_pkg = types.ModuleType("app.helpers")
 teller_helpers_stub = types.ModuleType("app.helpers.teller_helpers")
 teller_helpers_stub.load_tokens = lambda: [{"user_id": "u1", "access_token": "tok"}]
@@ -51,6 +52,8 @@ sys.modules["app.utils.finance_utils"] = finance_utils_stub
 
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")
+sql_pkg.__path__ = []
+
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
 
@@ -79,12 +82,17 @@ def fake_teller(account, token, cert, key, base_url, start_date=None, end_date=N
 
 account_logic_stub.refresh_data_for_plaid_account = fake_plaid
 account_logic_stub.refresh_data_for_teller_account = fake_teller
+forecast_logic_stub.update_account_history = lambda *a, **kw: True
+
+sql_pkg.account_logic = account_logic_stub
+sql_pkg.forecast_logic = forecast_logic_stub
+
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sys.modules["app.sql.forecast_logic"] = forecast_logic_stub
 sql_pkg.account_logic = account_logic_stub
 
-# Models stub
+# --- Models stub ---
 models_stub = types.ModuleType("app.models")
 
 
@@ -93,9 +101,7 @@ class DummyColumn:
         self.attr = attr
 
     def __get__(self, instance, owner):
-        if instance is None:
-            return self
-        return getattr(instance, self.attr)
+        return getattr(instance, self.attr) if instance else self
 
     def __set__(self, instance, value):
         setattr(instance, self.attr, value)
@@ -136,8 +142,7 @@ class QueryStub:
 
     def filter(self, cond):
         if isinstance(cond, tuple) and cond[0] == "account_id_in":
-            ids = cond[1]
-            self.accts = [a for a in self.accts if a.account_id in ids]
+            self.accts = [a for a in self.accts if a.account_id in cond[1]]
         return self
 
     def all(self):
@@ -148,12 +153,14 @@ models_stub.Account = DummyAccount
 models_stub.RecurringTransaction = type("RT", (), {})
 sys.modules["app.models"] = models_stub
 
+# --- Load blueprint ---
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "accounts.py")
 spec = importlib.util.spec_from_file_location("app.routes.accounts", ROUTE_PATH)
 accounts_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(accounts_module)
 
 
+# --- Flask test client fixture ---
 @pytest.fixture
 def client():
     app = Flask(__name__)
@@ -163,13 +170,16 @@ def client():
         yield c
 
 
+# --- Test case ---
 def test_refresh_all_accounts_filters_and_dates(client):
     accounts = [
         DummyAccount("a1", "u1", "Plaid", "Bank A"),
         DummyAccount("a2", "u1", "Teller", "Bank A"),
     ]
+
     accounts_module.Account.query = QueryStub(accounts)
     captured.clear()
+
     resp = client.post(
         "/api/accounts/refresh_accounts",
         json={
