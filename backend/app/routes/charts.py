@@ -1,5 +1,6 @@
-# File: app/routes/charts.py
-# business logic in this module (database / data fetching) should be moved to accounts_logic , transactions_logic
+"""Charts API routes for financial dashboards."""
+
+# TODO: move business logic to accounts_logic and transactions_logic modules
 import traceback
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -181,15 +182,13 @@ def get_net_assets():
     today = datetime.utcnow().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
 
+    logger.debug("Computing net assets for months: %s", months)
+
     data = []
 
     for month in months:
-        accounts = (
-            db.session.query(Account)
-            .filter(Account.created_at <= month)
-            .filter(Account.is_hidden.is_(False))
-            .all()
-        )
+        accounts = db.session.query(Account).filter(Account.is_hidden.is_(False)).all()
+        logger.debug("Month %s - retrieved %d accounts", month, len(accounts))
 
         net = sum(
             normalize_account_balance(
@@ -219,6 +218,13 @@ def get_net_assets():
                 "assets": assets,
                 "liabilities": liabilities,
             }
+        )
+        logger.debug(
+            "Appended net asset record for %s: net=%s, assets=%s, liabilities=%s",
+            month.isoformat(),
+            net,
+            assets,
+            liabilities,
         )
     return jsonify({"status": "success", "data": data}), 200
 
