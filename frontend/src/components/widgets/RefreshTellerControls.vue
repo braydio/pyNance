@@ -66,8 +66,11 @@ export default {
           account_ids: this.selectedAccounts,
         });
         if (response.status === "success") {
-          const updated = response.updated_accounts;
-          alert("Teller accounts refreshed: " + updated.join(", "));
+          const counts = response.refreshed_counts || {};
+          const parts = Object.entries(counts).map(
+            ([inst, count]) => `${count} account${count > 1 ? "s" : ""} at ${inst}`
+          );
+          alert("Refreshed " + parts.join(", "));
         } else {
           alert("Error refreshing Teller accounts: " + response.message);
         }

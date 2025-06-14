@@ -33,6 +33,12 @@ Optional JSON body parameters:
 - `start_date` – optional ISO `YYYY-MM-DD` start date
 - `end_date` – optional ISO `YYYY-MM-DD` end date
 
+Response body on success:
+
+```json
+{ "status": "success", "updated_accounts": ["name"], "refreshed_counts": { "Bank A": 2 } }
+```
+
 ### 🔹 Provider-Specific Resources
 
 ```

@@ -84,9 +84,11 @@ export default {
           account_ids: this.selectedAccounts,
         });
         if (response.status === "success") {
-          this.message =
-            "Plaid accounts refreshed: " +
-            (response.updated_accounts || []).join(", ");
+          const counts = response.refreshed_counts || {};
+          const parts = Object.entries(counts).map(
+            ([inst, count]) => `${count} account${count > 1 ? "s" : ""} at ${inst}`
+          );
+          this.message = `Refreshed ${parts.join(", ")}`;
           this.messageType = "success";
         } else {
           this.message =
