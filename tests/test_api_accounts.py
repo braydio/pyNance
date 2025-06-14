@@ -18,16 +18,13 @@ sys.modules.pop("app", None)
 # app.config (package)
 config_pkg = types.ModuleType("app.config")
 config_pkg.__path__ = []
-
 config_pkg.logger = SimpleNamespace(
-    info=lambda *args, **kwargs: None,
-    debug=lambda *args, **kwargs: None,
-    warning=lambda *args, **kwargs: None,
-    error=lambda *args, **kwargs: None,
+    info=lambda *a, **k: None,
+    debug=lambda *a, **k: None,
+    warning=lambda *a, **k: None,
+    error=lambda *a, **k: None,
 )
-
 sys.modules["app.config"] = config_pkg
-
 
 # app.config.environment
 env_stub = types.ModuleType("app.config.environment")
@@ -46,8 +43,7 @@ ext_stub = types.ModuleType("app.extensions")
 ext_stub.db = SimpleNamespace(commit=lambda: None, rollback=lambda: None)
 sys.modules["app.extensions"] = ext_stub
 
-
-# --- Models stub ---
+# app.models
 models_stub = types.ModuleType("app.models")
 
 
@@ -82,12 +78,8 @@ class DummyAccount:
 
 
 DummyRT = type("RecurringTransaction", (), {})
-
 models_stub.Account = DummyAccount
 models_stub.RecurringTransaction = DummyRT
-
-sys.modules["app.models"] = models_stub
-
 sys.modules["app.models"] = models_stub
 
 # app.sql as package with account_logic and forecast_logic
