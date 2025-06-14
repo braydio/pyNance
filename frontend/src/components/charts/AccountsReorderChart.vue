@@ -1,3 +1,7 @@
+<!--
+  AccountsReorderChart.vue
+  Displays top accounts split by assets and liabilities using gradient bars.
+-->
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
@@ -13,7 +17,9 @@
         <span class="bar-label">{{ account.name }}</span>
         <span class="label-balance">{{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }"></div>
+          <div class="bar-fill asset-fill" :style="{ width: barWidth(account) }">
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -28,7 +34,9 @@
         <span class="bar-label">{{ account.name }}</span>
         <span class="label-balance">{{ format(account.adjusted_balance) }}</span>
         <div class="bar-outer">
-          <div class="bar-fill" :style="{ width: barWidth(account) }"></div>
+          <div class="bar-fill liability-fill" :style="{ width: barWidth(account) }">
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -135,20 +143,23 @@ defineExpose({
   position: relative;
 }
 
-.label-balance {
-  margin-left: 0.25rem;
-  font-weight: 500;
-  color: var(--color-text);
+.asset-fill {
+  background: linear-gradient(
+    to right,
+    var(--asset-gradient-start),
+    var(--asset-gradient-end)
+  );
 }
 
-.bar-axis {
-  position: relative;
-  height: 20px;
-  margin-top: 0.5rem;
+.liability-fill {
+  background: linear-gradient(
+    to right,
+    var(--liability-gradient-start),
+    var(--liability-gradient-end)
+  );
 }
 
-.tick {
-
+.bar-value {
   position: absolute;
   top: 0;
   transform: translateX(-50%);

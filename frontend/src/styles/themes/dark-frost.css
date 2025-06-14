@@ -41,4 +41,8 @@
   --liability-gradient-end: #ff6a6a;
   --bar-gradient-end: #ff2cb1;
   --accent-yellow-soft: rgba(249, 248, 113, 0.5);
+  --asset-gradient-start: #aad4ff;
+  --asset-gradient-end: #78baff;
+  --liability-gradient-start: #fb4934;
+  --liability-gradient-end: #cc241d;
 }
