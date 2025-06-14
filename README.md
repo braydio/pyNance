@@ -102,10 +102,9 @@ VITE_APP_API_BASE_URL=http://localhost:5000/api
 # ... other VITE_ variables as needed
 ```
 
-### 3. Install Backend Requirements
+### 3. Install Requirements
 
 ```bash
-cd backend
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -115,7 +114,7 @@ pip install -r requirements-dev.txt
 ### 4. Run Backend
 
 ```bash
-flask run --app app
+flask run --app backend.run
 ```
 
 (Starts Flask API at `http://127.0.0.1:5000`)
@@ -180,10 +179,10 @@ Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Running Tests
 
-Ensure backend dependencies are installed before executing the test suite:
+Ensure dependencies are installed before executing the test suite:
 
 ```bash
-pip install -r backend/requirements.txt
+pip install -r requirements.txt
 pytest -q
 ```
 

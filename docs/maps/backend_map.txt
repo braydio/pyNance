@@ -130,7 +130,6 @@ Directory Tree Mapping
 ├── production.env
 ├── __pycache__
 │   └── export_fields.cpython-313.pyc
-├── requirements.txt
 ├── run.py
 ├── sandbox.env
 ├── scripts
