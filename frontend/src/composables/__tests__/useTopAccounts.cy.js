@@ -11,7 +11,7 @@ const TestComponent = defineComponent({
 
 describe('useTopAccounts', () => {
   it('builds account data from API', () => {
-    cy.intercept('GET', '/api/accounts/get_accounts*', {
+    cy.intercept('GET', '/accounts/get_accounts*', {
       statusCode: 200,
       body: {
         status: 'success',
