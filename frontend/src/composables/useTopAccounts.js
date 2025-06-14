@@ -1,5 +1,5 @@
 import { ref, computed, onMounted, isRef } from 'vue'
-import axios from 'axios'
+import api from '@/services/api'
 
 export function useTopAccounts(subtype = '') {
   const subtypeRef = isRef(subtype) ? subtype : ref(subtype)
@@ -33,9 +33,7 @@ export function useTopAccounts(subtype = '') {
   const fetchAccounts = async () => {
     loading.value = true
     try {
-      const { data } = await axios.get(
-        '/api/accounts/get_accounts?include_hidden=true'
-      )
+      const data = await api.getAccounts({ include_hidden: true })
       if (data?.status === 'success') {
         accounts.value = data.accounts.map(acc => ({
           ...acc,

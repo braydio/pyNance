@@ -26,7 +26,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/services/api";
 export default {
   name: "RefreshTellerControls",
   data() {
@@ -48,27 +48,28 @@ export default {
     },
     async loadAccounts() {
       try {
-        const resp = await axios.get("/api/accounts/get_accounts");
-        if (resp.data?.accounts) {
-          this.accounts = resp.data.accounts;
+        const resp = await api.getAccounts();
+        if (resp?.status === "success" && resp.accounts) {
+          this.accounts = resp.accounts;
         }
       } catch (err) {
         console.error("Failed to load accounts", err);
+        alert("Failed to load accounts: " + err.message);
       }
     },
     async handleTellerRefresh() {
       this.isRefreshing = true;
       try {
-        const response = await axios.post("/api/accounts/refresh_accounts", {
+        const response = await api.refreshAccounts({
           start_date: this.startDate,
           end_date: this.endDate,
           account_ids: this.selectedAccounts,
         });
-        if (response.data.status === "success") {
-          const updated = response.data.updated_accounts;
+        if (response.status === "success") {
+          const updated = response.updated_accounts;
           alert("Teller accounts refreshed: " + updated.join(", "));
         } else {
-          alert("Error refreshing Teller accounts: " + response.data.message);
+          alert("Error refreshing Teller accounts: " + response.message);
         }
       } catch (err) {
         console.error("Error refreshing Teller accounts:", err);
