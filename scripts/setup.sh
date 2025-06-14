@@ -12,22 +12,22 @@ else
   echo "Virtual environment already exists."
 fi
 
-## 2. Activate and install backend dependencies
-echo "Installing backend dependencies..."
+## 2. Activate and install dependencies
+echo "Installing dependencies..."
 source .venv/bin/activate
-if [ -f backend/requirements.txt ]; then
+if [ -f requirements.txt ]; then
   pip install --upgrade pip
-  pip install -r backend/requirements.txt
+  pip install -r requirements.txt
 else
-  echo "Requirements file not found: backend/requirements.txt"
+  echo "Requirements file not found: requirements.txt"
   exit 1
 fi
 
-echo "Installing dev dependendencies..."
-if [ -f backend/requirements-dev.txt ]; then
-  pip install -r backend/requirements-dev.txt
+echo "Installing dev dependencies..."
+if [ -f requirements-dev.txt ]; then
+  pip install -r requirements-dev.txt
 else
-  echo "Dev requirements file not found: backend/requirements-dev.txt"
+  echo "Dev requirements file not found: requirements-dev.txt"
   exit 1
 fi
 
