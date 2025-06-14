@@ -116,7 +116,6 @@
 
 
 <script>
-import axios from "axios";
 import api from "@/services/api";
 import accountLinkApi from "@/api/accounts_link";
 
@@ -188,11 +187,9 @@ export default {
       this.loading = true;
       this.error = "";
       try {
-        const response = await axios.get(
-          "/api/accounts/get_accounts?include_hidden=true"
-        );
-        if (response.data?.status === "success") {
-          this.accounts = response.data.accounts || [];
+        const response = await api.getAccounts({ include_hidden: true });
+        if (response.status === "success") {
+          this.accounts = response.accounts || [];
         } else {
           this.error = "Error fetching accounts.";
         }

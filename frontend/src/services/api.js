@@ -9,8 +9,8 @@ const apiClient = axios.create({
 });
 
 export default {
-  async getAccounts() {
-    const response = await apiClient.get(`/accounts/get_accounts`);
+  async getAccounts(params = {}) {
+    const response = await apiClient.get('/accounts/get_accounts', { params });
     return response.data;
   },
 

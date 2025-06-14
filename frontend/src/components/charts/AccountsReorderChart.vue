@@ -1,3 +1,7 @@
+<!--
+  AccountsReorderChart.vue
+  Displays top accounts split by assets and liabilities using gradient bars.
+-->
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>
@@ -26,7 +30,6 @@
         </span>
       </div>
     </div>
-
     <div v-if="negativeAccounts.length" class="bar-chart">
       <h3 class="subheading">Liabilities</h3>
       <div v-for="account in negativeAccounts" :key="`n-${account.id}`" class="bar-row">
@@ -52,7 +55,21 @@
       </div>
     </div>
 
-    <p v-if="!positiveAccounts.length && !negativeAccounts.length" class="no-data-msg">
+    <div class="bar-axis" v-if="allVisibleAccounts.length">
+      <span
+        v-for="n in 5"
+        :key="n"
+        class="tick"
+        :style="{ left: `${((n - 1) / 4) * 100}%` }"
+      >
+        {{ format(((n - 1) / 4) * maxValue) }}
+      </span>
+    </div>
+
+    <p
+      v-if="!positiveAccounts.length && !negativeAccounts.length"
+      class="no-data-msg"
+    >
       No accounts available for this subtype.
     </p>
   </div>
