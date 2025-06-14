@@ -15,9 +15,11 @@ accounts = Blueprint("accounts", __name__)
 
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
-    """
-    Unified endpoint to refresh account data for all providers (Plaid + Teller).
-    Iterates through all accounts and refreshes data based on link_type.
+    """Refresh all linked accounts.
+
+    Iterates through every account and refreshes data for the appropriate
+    provider. Returns a list of updated account names and a mapping of
+    ``institution_name`` to refresh count under ``refreshed_counts``.
     """
     try:
         from app.config import FILES, TELLER_API_BASE_URL
@@ -35,6 +37,7 @@ def refresh_all_accounts():
             query = query.filter(Account.account_id.in_(account_ids))
         accounts = query.all()
         updated_accounts = []
+        refreshed_counts: dict[str, int] = {}
 
         # Load Teller tokens once
         from app.helpers.teller_helpers import load_tokens
@@ -60,6 +63,8 @@ def refresh_all_accounts():
                 if updated and account.plaid_account:
                     account.plaid_account.last_refreshed = datetime.utcnow()
                     updated_accounts.append(account.name)
+                    inst = account.institution_name or "Unknown"
+                    refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
             elif account.link_type == "Teller":
                 access_token = None
@@ -86,6 +91,8 @@ def refresh_all_accounts():
                 if updated and account.teller_account:
                     account.teller_account.last_refreshed = datetime.utcnow()
                     updated_accounts.append(account.name)
+                    inst = account.institution_name or "Unknown"
+                    refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
             else:
                 logger.info(
@@ -99,6 +106,7 @@ def refresh_all_accounts():
                     "status": "success",
                     "message": "All linked accounts refreshed.",
                     "updated_accounts": updated_accounts,
+                    "refreshed_counts": refreshed_counts,
                 }
             ),
             200,
