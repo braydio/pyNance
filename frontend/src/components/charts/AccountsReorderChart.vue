@@ -13,9 +13,11 @@
         <div class="bar-outer">
           <div
             class="bar-fill"
-            :class="barColor(account)"
+            :class="account.adjusted_balance >= 0 ? 'asset-bar' : 'liability-bar'"
             :style="{ width: barWidth(account) }"
-          />
+          >
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
         </div>
       </div>
       <div class="axis">
@@ -37,9 +39,11 @@
         <div class="bar-outer">
           <div
             class="bar-fill"
-            :class="barColor(account)"
+            :class="account.adjusted_balance >= 0 ? 'asset-bar' : 'liability-bar'"
             :style="{ width: barWidth(account) }"
-          />
+          >
+            <span class="bar-value">{{ format(account.adjusted_balance) }}</span>
+          </div>
         </div>
       </div>
       <div class="axis">
@@ -88,31 +92,21 @@ const props = defineProps({
   },
 })
 
-const format = val => new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-}).format(val)
+const format = (val) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(val)
 
-const {
-  positiveAccounts,
-  negativeAccounts,
-  allVisibleAccounts,
-  fetchAccounts,
-} = useTopAccounts(toRef(props, 'accountSubtype'))
+const { positiveAccounts, negativeAccounts, allVisibleAccounts, fetchAccounts } = useTopAccounts(
+  toRef(props, 'accountSubtype'),
+)
 
 onMounted(fetchAccounts)
 
-const maxVal = computed(() =>
-  Math.max(...allVisibleAccounts.value.map(a => Math.abs(a.adjusted_balance)), 1)
-)
-
-const ticks = computed(() => {
-  const step = maxVal.value / 4
-  return Array.from({ length: 5 }, (_, i) => i * step)
-})
-
-const barWidth = account => {
-  return `${(Math.abs(account.adjusted_balance) / maxVal.value) * 100}%`
+const barWidth = (account) => {
+  const max = Math.max(...allVisibleAccounts.value.map((a) => Math.abs(a.adjusted_balance)), 1)
+  return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
 }
 
 const barColor = account =>
@@ -122,7 +116,6 @@ defineExpose({
   refresh: fetchAccounts,
 })
 </script>
-
 
 <style scoped>
 .chart-container {
@@ -170,12 +163,20 @@ defineExpose({
   position: relative;
 }
 
-.axis {
-  position: relative;
-  height: 24px;
-  margin-top: 0.5rem;
-  font-size: 0.7rem;
-  color: var(--color-text-muted);
+.asset-bar {
+  background: linear-gradient(to right, #aad4ff, #78baff);
+}
+
+.liability-bar {
+  background: linear-gradient(to right, #ffb3b3, #ff6868);
+}
+
+.bar-value {
+  position: absolute;
+  right: 0.5rem;
+  top: -1.5rem;
+  font-size: 0.8rem;
+  color: #ccd;
 }
 
 .axis-line {
