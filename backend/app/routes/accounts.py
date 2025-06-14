@@ -112,9 +112,9 @@ def refresh_all_accounts():
             200,
         )
 
-    except Exception as e:
-        logger.error(f"Error in unified refresh_accounts: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as ex:
+        logger.error("Error in refresh_accounts")
+        return jsonify({"error": str(ex)}), 500
 
 
 @accounts.route("/<account_id>/refresh", methods=["POST"])
