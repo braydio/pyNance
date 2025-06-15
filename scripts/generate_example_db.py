@@ -37,6 +37,7 @@ sys.modules["app.models"] = models
 Account = models.Account
 Category = models.Category
 Transaction = models.Transaction
+Institution = models.Institution
 
 ah_path = BACKEND_DIR / "app" / "helpers" / "account_history_helper.py"
 ah_spec = importlib.util.spec_from_file_location(
@@ -59,12 +60,16 @@ def create_app(db_uri: str) -> Flask:
 
 def seed_data() -> None:
     """Populate the database with 12 months of mock records."""
+    example_bank = Institution(name="Example Bank", provider="manual")
+    db.session.add(example_bank)
+
     checking = Account(
         account_id="acc_checking",
         name="Checking Account",
         type="checking",
         subtype="checking",
         institution_name="Example Bank",
+        institution=example_bank,
         balance=1000,
         link_type="manual",
     )
@@ -74,6 +79,7 @@ def seed_data() -> None:
         type="credit",
         subtype="credit card",
         institution_name="Example Bank",
+        institution=example_bank,
         balance=-500,
         link_type="manual",
     )

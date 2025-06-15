@@ -1,4 +1,7 @@
+"""SQLAlchemy ORM models for the pyNance backend."""
+
 from datetime import datetime, timezone
+
 from app.extensions import db
 from sqlalchemy.ext.hybrid import hybrid_property
 
@@ -12,6 +15,19 @@ class TimestampMixin:
     )
 
 
+class Institution(db.Model, TimestampMixin):
+    """Grouping of accounts under the same financial provider."""
+
+    __tablename__ = "institutions"
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), nullable=False)
+    provider = db.Column(db.String(64), nullable=False)
+    last_refreshed = db.Column(db.DateTime, nullable=True)
+
+    accounts = db.relationship("Account", back_populates="institution")
+
+
 class Account(db.Model, TimestampMixin):
     __tablename__ = "accounts"
 
@@ -22,6 +38,7 @@ class Account(db.Model, TimestampMixin):
     type = db.Column(db.String(64), nullable=True)
     subtype = db.Column(db.String(64), nullable=True)
     institution_name = db.Column(db.String(128), nullable=True)
+    institution_id = db.Column(db.Integer, db.ForeignKey("institutions.id"))
     status = db.Column(db.String(64), default="active")
     is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0)
@@ -29,6 +46,7 @@ class Account(db.Model, TimestampMixin):
 
     plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False)
     teller_account = db.relationship("TellerAccount", backref="account", uselist=False)
+    institution = db.relationship("Institution", back_populates="accounts")
 
     @hybrid_property
     def is_visible(self):

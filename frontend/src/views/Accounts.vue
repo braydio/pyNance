@@ -42,21 +42,10 @@
     </section>
 
     <!-- Accounts Table -->
-    <transition name="slide-horizontal" mode="out-in">
-      <div class="card section-container" :key="activeAccountGroup">
-        <AccountsTable :accountGroup="activeAccountGroup" @refresh="refreshCharts" />
-      </div>
-    </transition>
+    <div class="card section-container">
+      <InstitutionTable @refresh="refreshCharts" />
+    </div>
 
-    <!-- Account Tabs -->
-    <section class="section-container">
-      <div class="account-tabs">
-        <button v-for="group in accountGroups" :key="group" class="btn btn-pill"
-          :class="{ 'active-tab': activeAccountGroup === group }" @click="activeAccountGroup = group">
-          {{ group }}
-        </button>
-      </div>
-    </section>
 
     <!-- Footer -->
     <footer class="accounts-footer">
@@ -72,7 +61,7 @@ import { ref } from 'vue'
 const selectedProducts = ref([])
 
 import LinkAccount from '@/components/forms/LinkAccount.vue'
-import AccountsTable from '@/components/tables/AccountsTable.vue'
+import InstitutionTable from '@/components/tables/InstitutionTable.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
 import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
@@ -91,8 +80,6 @@ function refreshCharts() {
 // Meta & State
 const userName = import.meta.env.VITE_USER_ID_PLAID || ''
 
-const activeAccountGroup = ref('Checking')
-const accountGroups = ['Checking', 'Savings', 'Credit']
 const showTokenForm = ref(false)
 
 function toggleManualTokenMode() {

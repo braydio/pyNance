@@ -23,7 +23,17 @@
 GET    /api/transactions/get_transactions
 GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
+GET    /api/institutions
+POST   /api/institutions/<id>/refresh
 ```
+
+**GET /api/institutions**
+
+Returns a list of institutions with their linked accounts and the most recent refresh timestamp.
+
+**POST /api/institutions/<id>/refresh**
+
+Refreshes all accounts under the specified institution. Accepts the same optional `start_date` and `end_date` parameters as `/api/accounts/refresh_accounts`.
 
 **POST /api/accounts/refresh_accounts**
 
