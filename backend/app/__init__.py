@@ -3,7 +3,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
-from app.config import logger, plaid_client, FLASK_ENV
+from app.config import logger, FLASK_ENV
 from app.extensions import db
 from app.config.environment import TELLER_WEBHOOK_SECRET
 from app.cli.sync import sync_accounts
@@ -29,6 +29,7 @@ def create_app():
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.teller_transactions import teller_transactions
+    from app.routes.institutions import institutions
     from app.routes.teller_webhook import webhooks, disabled_webhooks
 
     app.register_blueprint(frontend, url_prefix="/")
@@ -44,6 +45,7 @@ def create_app():
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
     app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
+    app.register_blueprint(institutions, url_prefix="/api/institutions")
 
     if TELLER_WEBHOOK_SECRET:
         app.register_blueprint(webhooks, url_prefix="/api/webhooks")

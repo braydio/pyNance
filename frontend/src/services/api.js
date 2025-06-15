@@ -19,6 +19,16 @@ export default {
     return response.data;
   },
 
+  async getInstitutions() {
+    const response = await apiClient.get('/institutions');
+    return response.data;
+  },
+
+  async refreshInstitution(id, payload = {}) {
+    const response = await apiClient.post(`/institutions/${id}/refresh`, payload);
+    return response.data;
+  },
+
   async fetchTransactions(page = 1, pageSize = 50) {
     const response = await apiClient.get(
       `/transactions/get_transactions?page=${page}&page_size=${pageSize}`
