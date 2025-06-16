@@ -17,7 +17,7 @@
 
   <script>
     async function renderNetAssets() {
-      const res = await fetch('http://localhost:5000/api/charts/net_assets');
+      const res = await fetch('/api/charts/net_assets');
       const { data, metadata } = await res.json();
 
       // Optional summary metadata display

@@ -63,10 +63,10 @@
     let transactions = [], currentTx = [], currentSort = 'amount', sortOrder = 1;
 
     async function renderNetChart() {
-      const res = await fetch('http://localhost:5000/api/charts/daily_net');
+      const res = await fetch('/api/charts/daily_net');
       const { data } = await res.json();
 
-      const txRes = await fetch('http://localhost:5000/api/teller/transactions/get_transactions');
+      const txRes = await fetch('/api/teller/transactions/get_transactions');
       const txJson = await txRes.json();
       transactions = txJson.data.transactions;
 
