@@ -161,7 +161,13 @@ All tests should pass when dependencies are installed.
 
 ## Backend APIs
 
-Base URL: `http://127.0.0.1:5000/api`
+Base URL: `/api`
+
+When using the Vue development server, requests to `/api` are automatically
+proxied to your Flask backend (default `http://127.0.0.1:5000`). This avoids
+CORS issues when accessing the frontend from another device. If you call the
+backend directly (without the proxy), prepend the host and port, e.g.
+`http://127.0.0.1:5000/api`.
 
 - `/accounts/get_accounts`
 - `/transactions/get_transactions`
