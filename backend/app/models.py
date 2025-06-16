@@ -26,6 +26,8 @@ class Institution(db.Model, TimestampMixin):
     last_refreshed = db.Column(db.DateTime, nullable=True)
 
     accounts = db.relationship("Account", back_populates="institution")
+    plaid_accounts = db.relationship("PlaidAccount", back_populates="institution")
+    teller_accounts = db.relationship("TellerAccount", back_populates="institution")
 
 
 class Account(db.Model, TimestampMixin):
@@ -60,16 +62,20 @@ class PlaidAccount(db.Model, TimestampMixin):
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
+    plaid_institution_id = db.Column(db.String(128), nullable=True)
     access_token = db.Column(db.String(256), nullable=False)
     item_id = db.Column(db.String(128), nullable=True)
     institution_id = db.Column(db.String(128), nullable=True)
     webhook = db.Column(db.String(256), nullable=True)
     last_refreshed = db.Column(db.DateTime, nullable=True)
+    institution_db_id = db.Column(
+        db.Integer, db.ForeignKey("institutions.id"), nullable=True
+    )
+    institution = db.relationship("Institution", back_populates="plaid_accounts")
 
-    # 🔧 Skeleton additions
-    sync_cursor = db.Column(db.String(256), nullable=True)  # for /transactions/sync
-    is_active = db.Column(db.Boolean, default=True)  # soft-disable broken tokens
-    last_error = db.Column(db.Text, nullable=True)  # last known error from Plaid
+    sync_cursor = db.Column(db.String(256), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    last_error = db.Column(db.Text, nullable=True)
 
 
 class PlaidWebhookLog(db.Model, TimestampMixin):
@@ -81,7 +87,7 @@ class PlaidWebhookLog(db.Model, TimestampMixin):
     webhook_code = db.Column(db.String(64))
     item_id = db.Column(db.String(128))
     payload = db.Column(db.JSON, nullable=True)
-    received_at = db.Column(db.DateTime, default=datetime.utcnow)
+    received_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
 
 
 class TellerAccount(db.Model, TimestampMixin):
@@ -93,9 +99,16 @@ class TellerAccount(db.Model, TimestampMixin):
     )
     access_token = db.Column(db.String(256), nullable=False)
     enrollment_id = db.Column(db.String(128), nullable=True)
-    institution_id = db.Column(db.String(128), nullable=True)
+    # External Teller institution ID (string)
+    teller_institution_id = db.Column(db.String(128), nullable=True)
     provider = db.Column(db.String(64), default="Teller")
     last_refreshed = db.Column(db.DateTime, nullable=True)
+
+    # Internal FK to your Institution table
+    institution_db_id = db.Column(
+        db.Integer, db.ForeignKey("institutions.id"), nullable=True
+    )
+    institution = db.relationship("Institution", back_populates="teller_accounts")
 
 
 class AccountHistory(db.Model, TimestampMixin):
