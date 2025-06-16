@@ -18,7 +18,7 @@
 
   <script>
     async function renderCategoryChart() {
-      const res = await fetch('http://localhost:5000/api/charts/category_breakdown');
+      const res = await fetch('/api/charts/category_breakdown');
       const { data } = await res.json();
 
       const top10 = data.sort((a, b) => b.amount - a.amount).slice(0, 10);
