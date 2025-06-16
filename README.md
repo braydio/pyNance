@@ -98,7 +98,7 @@ cp example.env .env
 Edit `frontend/.env` with:
 
 ```dotenv
-VITE_APP_API_BASE_URL=http://localhost:5000/api
+VITE_APP_API_BASE_URL=/api
 # ... other VITE_ variables as needed
 ```
 
