@@ -31,6 +31,9 @@ env_check = PLAID_ENV.upper()
 
 logger = setup_logger()
 
+if plaid_client:
+    logger.debug(f"Plaid client initialized for {env_check} environment.")
+
 logger.debug(f"Running in {FLASK_ENV} environment.")
 logger.debug(f"Loaded config from {__name__}")
 logger.debug(f"Initialized main database as {DATABASE_NAME}")

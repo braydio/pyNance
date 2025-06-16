@@ -3,7 +3,7 @@
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
-from app.config import logger, FLASK_ENV
+from app.config import logger, plaid_client, FLASK_ENV
 from app.extensions import db
 from app.config.environment import TELLER_WEBHOOK_SECRET
 from app.cli.sync import sync_accounts
@@ -59,6 +59,9 @@ def create_app():
     if FLASK_ENV == "development":
         with app.app_context():
             db.create_all()
+
+    if plaid_client:
+        logger.info("Plaid client initialized.")
 
     # Optional: always log routes
     with app.app_context():
