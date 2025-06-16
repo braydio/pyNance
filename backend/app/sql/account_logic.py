@@ -1,4 +1,5 @@
-# account_logic.py
+"""Database persistence and refresh helpers for account data."""
+
 from tempfile import NamedTemporaryFile
 import json
 import time
@@ -47,6 +48,29 @@ def normalize_balance(amount, account_type):
             ),
         }
     )
+
+
+def get_accounts_from_db(include_hidden: bool = False):
+    """Return serialized account rows from the database."""
+    query = Account.query
+    if not include_hidden:
+        query = query.filter(Account.is_hidden.is_(False))
+
+    accounts = []
+    for acc in query.all():
+        accounts.append(
+            {
+                "account_id": acc.account_id,
+                "user_id": acc.user_id,
+                "name": acc.name,
+                "type": acc.type,
+                "subtype": acc.subtype,
+                "institution_name": acc.institution_name,
+                "balance": acc.balance,
+                "status": acc.status,
+            }
+        )
+    return accounts
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):

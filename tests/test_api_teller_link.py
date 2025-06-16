@@ -74,7 +74,7 @@ def test_generate_link_token_sends_user_id(client, monkeypatch):
 
     monkeypatch.setattr(teller_module.requests, "post", fake_post)
 
-    resp = client.post("/api/teller/generate_link_token", json={"user_id": "u1"})
+    resp = client.post("/api/teller/link-token", json={"user_id": "u1"})
     assert resp.status_code == 200
     assert captured["payload"]["user_id"] == "u1"
     data = resp.get_json()
@@ -102,6 +102,18 @@ def test_generate_link_token_uses_session(client, monkeypatch):
     with client.session_transaction() as sess:
         sess["user_id"] = "sess1"
 
-    resp = client.post("/api/teller/generate_link_token")
+    resp = client.post("/api/teller/link-token")
     assert resp.status_code == 200
     assert captured["payload"]["user_id"] == "sess1"
+
+
+def test_get_accounts_returns_db_values(client, monkeypatch):
+    monkeypatch.setattr(
+        teller_module.account_logic,
+        "get_accounts_from_db",
+        lambda: [{"account_id": "a1"}],
+    )
+    resp = client.get("/api/teller/accounts")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["data"]["accounts"][0]["account_id"] == "a1"

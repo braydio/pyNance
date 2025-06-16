@@ -3,9 +3,14 @@
 import json
 
 import requests
+from datetime import datetime
+
 from app.config import FILES, TELLER_APP_ID, logger
-from app.helpers.teller_helpers import load_tokens  # Import helper
+from app.helpers.teller_helpers import load_tokens, save_tokens
 from flask import Blueprint, jsonify, request, session
+from app.extensions import db
+from app.models import TellerAccount
+from app.sql import account_logic
 
 # File paths and API endpoints
 TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
@@ -26,7 +31,7 @@ def extract_accounts(data):
     return data
 
 
-@link_teller.route("/generate_link_token", methods=["POST"])
+@link_teller.route("/link-token", methods=["POST"])
 def generate_link_token():
     """Generate a Teller link token for the provided ``user_id``."""
     try:
@@ -65,6 +70,59 @@ def generate_link_token():
     except Exception as e:
         logger.error(f"Unexpected error generating link token: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@link_teller.route("/link", methods=["POST"])
+def link_account():
+    """Persist a Teller access token and ingest account metadata."""
+    data = request.get_json(silent=True) or {}
+    access_token = data.get("access_token")
+    user_id = data.get("user_id") or session.get("user_id")
+    if not access_token or not user_id:
+        return (
+            jsonify(
+                {"status": "error", "message": "access_token and user_id required"}
+            ),
+            400,
+        )
+
+    tokens = load_tokens()
+    tokens.append({"user_id": user_id, "access_token": access_token})
+    save_tokens(tokens)
+
+    url = f"{TELLER_API_BASE_URL}/accounts"
+    resp = requests.get(
+        url, cert=(TELLER_DOT_CERT, TELLER_DOT_KEY), auth=(access_token, "")
+    )
+    if resp.status_code != 200:
+        logger.error("Failed to fetch accounts during link: %s", resp.text)
+        return (
+            jsonify({"status": "error", "message": "Failed to fetch accounts"}),
+            resp.status_code,
+        )
+
+    accounts_data = extract_accounts(resp.json())
+    account_logic.upsert_accounts(
+        user_id, accounts_data, provider="Teller", access_token=access_token
+    )
+
+    for acct in accounts_data:
+        acct_id = acct.get("id") or acct.get("account_id")
+        if not acct_id:
+            continue
+        rec = TellerAccount.query.filter_by(account_id=acct_id).first()
+        if rec:
+            rec.access_token = access_token
+            rec.updated_at = datetime.utcnow()
+        else:
+            db.session.add(TellerAccount(account_id=acct_id, access_token=access_token))
+
+    db.session.commit()
+
+    return (
+        jsonify({"status": "success", "accounts_linked": len(accounts_data)}),
+        200,
+    )
 
 
 @link_teller.route("/get_initial_info", methods=["GET"])
@@ -125,7 +183,7 @@ def get_item_details():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
-@link_teller.route("/get_accounts", methods=["GET"])
+@link_teller.route("/accounts", methods=["GET"])
 def get_accounts():
     try:
         logger.debug("Fetching accounts from the database.")
@@ -136,4 +194,18 @@ def get_accounts():
         return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
     except Exception as e:
         logger.error(f"Error fetching accounts from DB: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@link_teller.route("/balances", methods=["GET"])
+def get_balances():
+    """Return a mapping of account_id to current balance."""
+    try:
+        accounts = account_logic.get_accounts_from_db(include_hidden=True)
+        balances = {
+            acc["account_id"]: {"available": acc["balance"]} for acc in accounts
+        }
+        return jsonify({"status": "success", "balances": balances}), 200
+    except Exception as e:
+        logger.error("Error fetching balances: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
