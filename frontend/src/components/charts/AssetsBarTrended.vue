@@ -112,10 +112,8 @@ onMounted(fetchData)
 
 <style scoped>
 .chart-container {
-  flex: 1 1 48%;
+  width: 100%;
   padding: 0.75rem;
-  max-width: 48%;
-  min-width: 300px;
   background-color: var(--color-bg-secondary);
   border-radius: 12px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
@@ -137,10 +135,5 @@ canvas {
   height: 100% !important;
 }
 
-@media (max-width: 768px) {
-  .chart-container {
-    flex-basis: 100%;
-    max-width: 100%;
-  }
-}
+
 </style>
