@@ -105,4 +105,10 @@
   .env-banner-dev {
     @import bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
   }
+
+  .heading-md {
+    @import text-center text-xl font-bold mb-3;
+    color: var(--neon-mint);
+    text-shadow: 0 0 6px var(--neon-purple);
+  }
 }
