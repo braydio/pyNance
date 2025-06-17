@@ -25,7 +25,7 @@
     <!-- Charts -->
     <section class="flex flex-col gap-6">
       <div class="flex flex-wrap gap-2 justify-between items-start">
-        <div class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
+        <div class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
           <NetYearComparisonChart />
         </div>
         <div class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] bg-[var(--color-bg-secondary)] rounded-lg shadow-md p-3">
@@ -215,5 +215,6 @@ function toggleManualTokenMode() {
   font-size: 0.9rem;
   border-top: 1px solid var(--themed-border);
   padding-top: 1rem;
+  text-shadow: 0 0 4px var(--neon-purple);
 }
 </style>
