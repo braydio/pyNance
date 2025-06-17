@@ -1,4 +1,3 @@
 #!/bin/bash
 
-echo "[CHROMA] Running index update after commit..."
-python scripts/chroma_index.py
+# Indexing has been moved to post-merge to avoid multiple runs during git pull
