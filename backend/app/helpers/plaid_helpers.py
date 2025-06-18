@@ -21,6 +21,9 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
+from plaid.model.transactions_get_request_options import (
+    TransactionsGetRequestOptions,
+)
 
 logger = setup_logger()
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
@@ -141,15 +144,39 @@ def refresh_plaid_categories():
 
 
 def get_transactions(access_token: str, start_date: str, end_date: str):
-    try:
-        plaid_request = TransactionsGetRequest(
-            access_token=access_token, start_date=start_date, end_date=end_date
-        )
-        response = plaid_client.transactions_get(plaid_request)
-        transactions = [tx.to_dict() for tx in response.transactions]
+    """Return all transactions between ``start_date`` and ``end_date``.
 
-        save_transactions_json(transactions)
-        return transactions
+    The Plaid ``/transactions/get`` endpoint returns a maximum of 500
+    transactions per request. This helper automatically paginates the
+    results by incrementing the ``offset`` parameter until all
+    ``total_transactions`` are retrieved.
+    """
+
+    try:
+        all_transactions = []
+        offset = 0
+        count = 500
+
+        while True:
+            options = TransactionsGetRequestOptions(count=count, offset=offset)
+            plaid_request = TransactionsGetRequest(
+                access_token=access_token,
+                start_date=start_date,
+                end_date=end_date,
+                options=options,
+            )
+            response = plaid_client.transactions_get(plaid_request)
+
+            batch = [tx.to_dict() for tx in response.transactions]
+            all_transactions.extend(batch)
+
+            if len(all_transactions) >= response.total_transactions:
+                break
+
+            offset += len(batch)
+
+        save_transactions_json(all_transactions)
+        return all_transactions
     except Exception as e:
         logger.error(f"Error fetching transactions: {e}", exc_info=True)
         raise
