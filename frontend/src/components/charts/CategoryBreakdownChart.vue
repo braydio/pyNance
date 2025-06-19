@@ -8,6 +8,16 @@
         <span>Total Spending: {{ totalSpending.toLocaleString() }}</span>
       </div>
     </div>
+    <div class="legend" v-if="availableCategories.length">
+      <label
+        v-for="cat in availableCategories"
+        :key="cat"
+        class="legend-item"
+      >
+        <input type="checkbox" v-model="selectedCategories" :value="cat" />
+        <span>{{ cat }}</span>
+      </label>
+    </div>
     <div class="canvas-wrapper">
       <canvas ref="chartCanvas"></canvas>
     </div>
@@ -24,6 +34,10 @@ const emit = defineEmits(['bar-click'])
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const chartData = ref({ labels: [], amounts: [], raw: [] })
+const selectedCategories = ref([])
+const availableCategories = computed(() =>
+  chartData.value.raw.map((e) => e.category || 'Uncategorized'),
+)
 
 const endDate = ref(new Date().toISOString().slice(0, 10))
 const startDate = ref(
@@ -35,6 +49,7 @@ const totalSpending = computed(() => {
 })
 
 watch([startDate, endDate], () => fetchData())
+watch(selectedCategories, () => updateChart())
 
 async function fetchData() {
   try {
@@ -49,6 +64,7 @@ async function fetchData() {
         if (!isValid) console.warn('Skipping invalid entry:', entry)
         return isValid
       })
+      selectedCategories.value = availableCategories.value.slice()
       updateChart()
     }
   } catch (err) {
@@ -63,21 +79,12 @@ function updateChart() {
   if (!ctx) return
   if (chartInstance.value) chartInstance.value.destroy()
 
-  const sorted = [...chartData.value.raw].sort((a, b) => b.amount - a.amount)
-  const topN = 5
-  const top = sorted.slice(0, topN)
-  const others = sorted.slice(topN)
+  const filtered = chartData.value.raw
+    .filter((e) => selectedCategories.value.includes(e.category || 'Uncategorized'))
+    .sort((a, b) => b.amount - a.amount)
 
-  const labels = top.map((e) => e.category || 'Uncategorized')
-  const data = top.map((e) => Math.round(Number(e.amount) || 0))
-
-  if (others.length > 0) {
-    const otherTotal = others.reduce((sum, entry) => sum + (Number(entry.amount) || 0), 0)
-    if (otherTotal > 0) {
-      labels.push('Other')
-      data.push(Math.round(otherTotal))
-    }
-  }
+  const labels = filtered.map((e) => e.category || 'Uncategorized')
+  const data = filtered.map((e) => Math.round(Number(e.amount) || 0))
 
   chartData.value.labels = labels
   chartData.value.amounts = data
@@ -194,6 +201,21 @@ onMounted(fetchData)
   border-radius: 6px;
   background-color: var(--themed-bg);
   border: 1px solid var(--divider);
+  color: var(--color-text-light);
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.85rem;
   color: var(--color-text-light);
 }
 </style>
