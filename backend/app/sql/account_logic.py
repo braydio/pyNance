@@ -479,7 +479,12 @@ def get_paginated_transactions(
 def refresh_data_for_plaid_account(
     access_token, account_id, start_date=None, end_date=None
 ):
-    """Refresh a single Plaid account within an optional date range."""
+    """Refresh a single Plaid account within an optional date range.
+
+    Transactions are fetched using ``get_transactions`` which now
+    paginates the Plaid API so that the full history between
+    ``start_date`` and ``end_date`` is retrieved.
+    """
     updated = False
     now = datetime.utcnow()
 

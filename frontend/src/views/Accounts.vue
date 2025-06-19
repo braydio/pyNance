@@ -43,7 +43,7 @@
 
     <!-- Accounts Table -->
     <div class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
-      <InstitutionTable @refresh="refreshCharts" />
+     <InstitutionTable @refresh="refreshCharts" />
     </div>
 
 
@@ -57,7 +57,6 @@
 <script setup>
 import { ref } from 'vue'
 
-// ✅ NEW: State for selected Plaid products
 const selectedProducts = ref([])
 
 import LinkAccount from '@/components/forms/LinkAccount.vue'
@@ -69,7 +68,6 @@ import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vu
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
 
-// ✅ NEW: Import product scope selector
 import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
 
 const reorderChart = ref(null)
