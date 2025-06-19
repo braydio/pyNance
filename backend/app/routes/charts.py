@@ -2,14 +2,13 @@
 
 # TODO: move business logic to accounts_logic and transactions_logic modules
 import traceback
-from datetime import datetime, timedelta
 from collections import defaultdict
-
-from app.services.forecast_orchestrator import ForecastOrchestrator
+from datetime import datetime, timedelta
 
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Transaction
+from app.services.forecast_orchestrator import ForecastOrchestrator
 from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
 
@@ -52,6 +51,7 @@ def category_breakdown():
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .distinct(Transaction.id)
             .all()
         )
         logger.debug("Fetched %d transactions for processing", len(transactions))
