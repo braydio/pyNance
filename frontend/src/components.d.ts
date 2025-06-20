@@ -30,6 +30,7 @@ declare module 'vue' {
     ForecastLayout: typeof import('./components/forecast/ForecastLayout.vue')['default']
     ForecastSummaryPanel: typeof import('./components/forecast/ForecastSummaryPanel.vue')['default']
     ImportFileSelector: typeof import('./components/forms/ImportFileSelector.vue')['default']
+    InstitutionTable: typeof import('./components/tables/InstitutionTable.vue')['default']
     LinkAccount: typeof import('./components/forms/LinkAccount.vue')['default']
     LinkAccountFullProducts: typeof import('./components/forms/LinkAccountFullProducts.vue')['default']
     LinkProviderLauncher: typeof import('./components/forms/LinkProviderLauncher.vue')['default']
