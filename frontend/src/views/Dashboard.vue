@@ -2,12 +2,13 @@
 <template>
   <AppLayout>
     <template #header>
-      <div class="text-center space-y-1">
-        <h1 class="text-3xl font-bold text-neon-purple">
-          Hello <span class="text-neon-mint">{{ userName }}</span>
+      <div class="text-center space-y-1 py-4">
+        <h1 class="text-4xl font-extrabold tracking-wide text-neon-purple">
+          Welcome,
+          <span class="text-neon-mint">{{ userName }}</span>!
         </h1>
-        <h2 class="text-muted">Today is {{ currentDate }}</h2>
-        <h2 class="italic text-muted">and things are looking quite bleak.</h2>
+        <p class="text-sm text-muted">Today is {{ currentDate }}</p>
+        <p class="italic text-muted">and things are looking quite bleak.</p>
       </div>
     </template>
 
