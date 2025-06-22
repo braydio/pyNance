@@ -2,21 +2,26 @@ import os
 import sys
 import importlib.util
 from datetime import datetime, timedelta
-
 import pytest
-
-BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
-sys.path.insert(0, BASE_BACKEND)
-sys.modules.pop("app", None)
 import types
 
+# ---- Paths and Imports ----
+BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
+if BASE_BACKEND not in sys.path:
+    sys.path.insert(0, BASE_BACKEND)
+sys.modules.pop("app", None)
+
+# ---- app.config/environment/extensions stubs ----
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(info=lambda *a, **k: None)
 config_stub.plaid_client = None
 config_stub.FLASK_ENV = "test"
+sys.modules["app.config"] = config_stub
+
 env_stub = types.ModuleType("app.config.environment")
 env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
+
 extensions_stub = types.ModuleType("app.extensions")
 
 
@@ -31,12 +36,21 @@ class QueryStub:
 extensions_stub.db = types.SimpleNamespace(
     session=types.SimpleNamespace(query=lambda *a, **k: QueryStub())
 )
-sys.modules["app.config"] = config_stub
 sys.modules["app.extensions"] = extensions_stub
 
+# ---- app.sql as package + forecast_logic ----
+sql_pkg = types.ModuleType("app.sql")
+sql_pkg.__path__ = []
+forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
+sql_pkg.forecast_logic = forecast_logic_stub
+sys.modules["app.sql"] = sql_pkg
+sys.modules["app.sql.forecast_logic"] = forecast_logic_stub
+
+# ---- app.services.forecast_engine etc ----
 services_pkg = types.ModuleType("app.services")
 services_pkg.__path__ = []
 sys.modules["app.services"] = services_pkg
+
 fe_stub = types.ModuleType("app.services.forecast_engine")
 
 
@@ -58,6 +72,7 @@ sys.modules["app.services.forecast_engine"] = fe_stub
 fs_stub = types.ModuleType("app.services.forecast_stat_model")
 fs_stub.ForecastEngine = DummyRuleEngine
 sys.modules["app.services.forecast_stat_model"] = fs_stub
+
 orch_stub = types.ModuleType("app.services.forecast_orchestrator")
 orch_stub.ForecastOrchestrator = type(
     "ForecastOrchestrator",
@@ -74,6 +89,7 @@ orch_stub.ForecastOrchestrator = type(
 )
 sys.modules["app.services.forecast_orchestrator"] = orch_stub
 
+# ---- app.models stub ----
 models_stub = types.ModuleType("app.models")
 
 
@@ -93,15 +109,19 @@ class AccountHistory:
 models_stub.AccountHistory = AccountHistory
 models_stub.Account = type("Account", (), {})
 sys.modules["app.models"] = models_stub
+
+# ---- Import and load the blueprint ----
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "forecast.py")
 spec = importlib.util.spec_from_file_location("app.routes.forecast", ROUTE_PATH)
 forecast_module = importlib.util.module_from_spec(spec)
 try:
     spec.loader.exec_module(forecast_module)
-except Exception:  # pragma: no cover - skip if deps missing
+except Exception:
     pytest.skip("forecast module import failed", allow_module_level=True)
+
 from flask import Flask
 
+# ---- Load forecast orchestrator for monkeypatching ----
 SERVICES_PATH = os.path.join(
     BASE_BACKEND, "app", "services", "forecast_orchestrator.py"
 )
