@@ -18,9 +18,6 @@ BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backen
 if BASE_DIR not in sys.path:
     sys.path.insert(0, BASE_DIR)
 
-# Ensure clean re-import of app module
-sys.modules.pop("app", None)
-
 # ------------------------------
 # Mock: app.config and environment
 # ------------------------------
