@@ -7,6 +7,9 @@ import os
 import sys
 import importlib.util
 
+# Patch 'app' into sys.modules so Flask can load Blueprints
+if "app" not in sys.modules:
+    sys.modules["app"] = types.ModuleType("app")
 # ------------------------------
 # Environment Setup
 # ------------------------------
