@@ -129,4 +129,8 @@ def client():
 
 def test_refresh_accounts_sanity(client):
     resp = client.post("/api/accounts/refresh_accounts", json={})
-    assert resp.status_code in {200, 400}
+    print("\n=== DEBUG (refresh_accounts_sanity) ===")
+    print("Status code:", resp.status_code)
+    print("Response data:", resp.get_data(as_text=True))
+    print("=======================================")
+    assert resp.status_code in {200, 400}, f"Got 500: {resp.get_data(as_text=True)}"
