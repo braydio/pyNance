@@ -28,10 +28,11 @@ config_stub.TELLER_API_BASE_URL = "https://example.com"  # type: ignore[attr-def
 config_stub.FLASK_ENV = "test"  # type: ignore[attr-defined]
 sys.modules["app.config"] = config_stub
 
-# Helper stub
+# Helper stub (***ADD save_tokens here!***)
 helpers_pkg = types.ModuleType("app.helpers")
 helpers_pkg.teller_helpers = types.ModuleType("app.helpers.teller_helpers")  # type: ignore[attr-defined]
 helpers_pkg.teller_helpers.load_tokens = lambda: []  # type: ignore[attr-defined]
+helpers_pkg.teller_helpers.save_tokens = lambda tokens: None  # type: ignore[attr-defined]
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.teller_helpers"] = helpers_pkg.teller_helpers
 
