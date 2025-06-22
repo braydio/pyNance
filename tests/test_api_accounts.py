@@ -24,7 +24,8 @@ config_pkg.logger = SimpleNamespace(
     warning=lambda *a, **k: None,
     error=lambda *a, **k: None,
 )
-sys.modules["app.config"] = config_pkg
+sys.modules["app.config"] = config_stub
+sys.modules["app.config"].FILES = config_stub.FILES
 
 # app.config.environment
 env_stub = types.ModuleType("app.config.environment")
