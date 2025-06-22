@@ -6,11 +6,12 @@ import types
 import pytest
 from flask import Flask
 
+# -------------------- PATH & MODULE STUBS --------------------
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
 
-# Config stub
+# --- Config stub ---
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(
     info=lambda *a, **k: None,
@@ -28,7 +29,7 @@ config_stub.TELLER_API_BASE_URL = "https://example.com"
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
-# Helper stub
+# --- Helper stub ---
 helpers_pkg = types.ModuleType("app.helpers")
 helpers_pkg.teller_helpers = types.ModuleType("app.helpers.teller_helpers")
 helpers_pkg.teller_helpers.load_tokens = lambda: []
@@ -36,25 +37,29 @@ helpers_pkg.teller_helpers.save_tokens = lambda tokens: None
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.teller_helpers"] = helpers_pkg.teller_helpers
 
-# Extensions stub
+# --- Extensions stub ---
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
 
-# ---- MODELS STUB (THIS FIXES YOUR NEW ERROR) ----
+# --- Models stub ---
 models_stub = types.ModuleType("app.models")
-# Create dummy TellerAccount (add any other models needed for imports)
-models_stub.TellerAccount = type("TellerAccount", (), {})  # simple dummy class
+models_stub.TellerAccount = type("TellerAccount", (), {})
 sys.modules["app.models"] = models_stub
 
-# ---- END MODELS STUB ----
+# --- Account Logic stub ---
+account_logic_stub = types.ModuleType("app.sql.account_logic")
+account_logic_stub.get_accounts_from_db = lambda: [{"account_id": "a1"}]
+sys.modules["app.sql.account_logic"] = account_logic_stub
 
+# -------------------- LOAD ROUTE UNDER TEST --------------------
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "teller.py")
 spec = importlib.util.spec_from_file_location("app.routes.teller", ROUTE_PATH)
 teller_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(teller_module)  # type: ignore[union-attr]
 
 
+# -------------------- TESTS --------------------
 @pytest.fixture
 def client():
     app = Flask(__name__)
@@ -117,6 +122,7 @@ def test_generate_link_token_uses_session(client, monkeypatch):
 
 
 def test_get_accounts_returns_db_values(client, monkeypatch):
+    # Patch the account logic stub method (should already exist from sys.modules)
     monkeypatch.setattr(
         teller_module.account_logic,
         "get_accounts_from_db",
