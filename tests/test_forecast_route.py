@@ -1,3 +1,5 @@
+"""Unit tests for the forecast API route."""
+
 import os
 import sys
 import importlib.util
@@ -10,6 +12,8 @@ BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ba
 if BASE_BACKEND not in sys.path:
     sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
+app_pkg = types.ModuleType("app")
+sys.modules["app"] = app_pkg
 
 # ---- app.config/environment/extensions stubs ----
 config_stub = types.ModuleType("app.config")
