@@ -1,5 +1,12 @@
 """Validate model attribute usage in routes and helpers."""
 
+import pytest
+
+# Skip this test suite entirely if Flask-SQLAlchemy is missing.  Pre-commit
+# environments may lack optional dependencies, and this check avoids import
+# errors during collection.
+pytest.importorskip("flask_sqlalchemy")
+
 # pylint: disable=import-error
 
 import ast
