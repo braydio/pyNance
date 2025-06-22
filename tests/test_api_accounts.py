@@ -18,6 +18,9 @@ sys.modules.pop("app", None)
 # app.config (package)
 config_pkg = types.ModuleType("app.config")
 config_pkg.__path__ = []
+config_pkg.FILES = {"TELLER_DOT_CERT": "cert", "TELLER_DOT_KEY": "key"}
+config_pkg.TELLER_API_BASE_URL = "https://example.com"
+config_pkg.FLASK_ENV = "test"
 config_pkg.logger = SimpleNamespace(
     info=lambda *a, **k: None,
     debug=lambda *a, **k: None,
@@ -25,7 +28,7 @@ config_pkg.logger = SimpleNamespace(
     error=lambda *a, **k: None,
 )
 sys.modules["app.config"] = config_pkg
-sys.modules["app.config"].FILES = config_pkg.FILES
+
 
 # app.config.environment
 env_stub = types.ModuleType("app.config.environment")
