@@ -18,21 +18,29 @@ sys.modules.pop("app", None)
 # app.config stub (with FILES and logger!)
 # -------------------------
 config_stub = types.ModuleType("app.config")
-config_stub.FILES = {
-    "TELLER_DOT_CERT": "dummy_cert",
-    "TELLER_DOT_KEY": "dummy_key",
-    "TELLER_TOKENS": "dummy_tokens.json",
-    # Add any other FILES keys needed by your app here!
-}
-config_stub.TELLER_API_BASE_URL = "https://example.com"
-config_stub.FLASK_ENV = "test"
-config_stub.logger = SimpleNamespace(
-    info=lambda *a, **k: None,
-    debug=lambda *a, **k: None,
-    warning=lambda *a, **k: None,
-    error=lambda *a, **k: None,
+setattr(
+    config_stub,
+    "FILES",
+    {
+        "TELLER_DOT_CERT": "dummy_cert",
+        "TELLER_DOT_KEY": "dummy_key",
+        "TELLER_TOKENS": "dummy_tokens.json",
+    },
+)
+setattr(config_stub, "TELLER_API_BASE_URL", "https://example.com")
+setattr(config_stub, "FLASK_ENV", "test")
+setattr(
+    config_stub,
+    "logger",
+    types.SimpleNamespace(
+        info=lambda *a, **k: None,
+        debug=lambda *a, **k: None,
+        warning=lambda *a, **k: None,
+        error=lambda *a, **k: None,
+    ),
 )
 sys.modules["app.config"] = config_stub
+
 
 # -------------------------
 # app.config.environment stub
