@@ -1,9 +1,14 @@
+<!-- Dashboard view: main user landing page displaying finance overview -->
 <template>
   <AppLayout>
     <template #header>
-      <h1 class="text-3xl font-bold text-neon-purple">Hello {{ userName }}</h1>
-      <h2 class="mt-1 text-muted">Today is {{ currentDate }}</h2>
-      <h2 class="mt-1 text-muted italic">and things are looking quite bleak.</h2>
+      <div class="text-center space-y-1">
+        <h1 class="text-3xl font-bold text-neon-purple">
+          Hello <span class="text-neon-mint">{{ userName }}</span>
+        </h1>
+        <h2 class="text-muted">Today is {{ currentDate }}</h2>
+        <h2 class="italic text-muted">and things are looking quite bleak.</h2>
+      </div>
     </template>
 
     <div class="space-y-8">
