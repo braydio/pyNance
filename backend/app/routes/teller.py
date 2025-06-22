@@ -1,16 +1,15 @@
 """Routes for Teller account linking and data ingestion."""
 
 import json
-
-import requests
 from datetime import datetime
 
+import requests
 from app.config import FILES, TELLER_APP_ID, logger
-from app.helpers.teller_helpers import load_tokens, save_tokens
-from flask import Blueprint, jsonify, request, session
 from app.extensions import db
+from app.helpers.teller_helpers import load_tokens, save_tokens
 from app.models import TellerAccount
 from app.sql import account_logic
+from flask import Blueprint, jsonify, request, session
 
 # File paths and API endpoints
 TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
@@ -185,11 +184,10 @@ def get_item_details():
 
 @link_teller.route("/accounts", methods=["GET"])
 def get_accounts():
+    """Return all Teller accounts stored in the database."""
     try:
         logger.debug("Fetching accounts from the database.")
-        from app.sql.account_logic import get_accounts_from_db
-
-        accounts = get_accounts_from_db()
+        accounts = account_logic.get_accounts_from_db()
         logger.debug(f"Fetched {len(accounts)} accounts from DB.")
         return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
     except Exception as e:
