@@ -31,7 +31,8 @@ class DummyRuleEngine:
         self.db = db
 
     def forecast_balances(self, horizon_days=60):
-        today = datetime.utcnow().date()
+        # Use non-deprecated current date
+        today = datetime.now().date()
         return [
             {"date": today + timedelta(days=i), "account_id": "acc", "balance": i}
             for i in range(horizon_days)
