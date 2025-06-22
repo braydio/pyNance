@@ -1,73 +1,53 @@
-import importlib.util
-import os
 import sys
 import types
+import os
+import importlib.util
 from types import SimpleNamespace
 import pytest
 from flask import Flask
 
 # -------------------------
-# Add backend/app to sys.path for direct imports
+# Setup: Patch sys.modules for app + config stubs
 # -------------------------
 BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
 if BASE_BACKEND not in sys.path:
     sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
 
-# -------------------------
-# app.config stub (with FILES and logger!)
-# -------------------------
-config_stub = types.ModuleType("app.config")
-setattr(
-    config_stub,
-    "FILES",
-    {
-        "TELLER_DOT_CERT": "dummy_cert",
-        "TELLER_DOT_KEY": "dummy_key",
-        "TELLER_TOKENS": "dummy_tokens.json",
-    },
+# Patch 'app' as package
+sys.modules["app"] = types.ModuleType("app")
+sys.modules["app"].__path__ = []
+
+# Patch 'app.config' as package with FILES at top-level (matches app/config/__init__.py)
+config_pkg = types.ModuleType("app.config")
+config_pkg.__path__ = []
+config_pkg.FILES = {
+    "TELLER_DOT_CERT": "dummy_cert",
+    "TELLER_DOT_KEY": "dummy_key",
+    "TELLER_TOKENS": "dummy_tokens.json",
+    # Add any additional keys your code might expect!
+}
+config_pkg.TELLER_API_BASE_URL = "https://example.com"
+config_pkg.FLASK_ENV = "test"
+config_pkg.logger = SimpleNamespace(
+    info=lambda *a, **k: None,
+    debug=lambda *a, **k: None,
+    warning=lambda *a, **k: None,
+    error=lambda *a, **k: None,
 )
-setattr(config_stub, "TELLER_API_BASE_URL", "https://example.com")
-setattr(config_stub, "FLASK_ENV", "test")
-setattr(
-    config_stub,
-    "logger",
-    types.SimpleNamespace(
-        info=lambda *a, **k: None,
-        debug=lambda *a, **k: None,
-        warning=lambda *a, **k: None,
-        error=lambda *a, **k: None,
-    ),
-)
-sys.modules["app.config"] = config_stub
+sys.modules["app.config"] = config_pkg
 
+# (If you ever do from app.config.constants import FILES, also add this:)
+constants_stub = types.ModuleType("app.config.constants")
+constants_stub.FILES = config_pkg.FILES
+sys.modules["app.config.constants"] = constants_stub
 
-# -------------------------
-# app.config.environment stub
-# -------------------------
-env_stub = types.ModuleType("app.config.environment")
-env_stub.TELLER_WEBHOOK_SECRET = "stub"
-sys.modules["app.config.environment"] = env_stub
-
-# -------------------------
-# app.config.plaid_config stub
-# -------------------------
-plaid_stub = types.ModuleType("app.config.plaid_config")
-plaid_stub.plaid_client = SimpleNamespace(
-    Accounts=SimpleNamespace(get=lambda *a, **kw: {"accounts": []})
-)
-sys.modules["app.config.plaid_config"] = plaid_stub
-
-# -------------------------
 # app.extensions stub
-# -------------------------
 ext_stub = types.ModuleType("app.extensions")
 ext_stub.db = SimpleNamespace(commit=lambda: None, rollback=lambda: None)
 sys.modules["app.extensions"] = ext_stub
 
-# -------------------------
 # app.models stub
-# -------------------------
 models_stub = types.ModuleType("app.models")
 
 
@@ -112,40 +92,27 @@ models_stub.Account = DummyAccount
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
 sys.modules["app.models"] = models_stub
 
-# -------------------------
-# app.sql stub (account_logic, forecast_logic)
-# -------------------------
+# app.sql/account_logic stub (needed for blueprint import)
 sql_pkg = types.ModuleType("app.sql")
 sql_pkg.__path__ = []
 sys.modules["app.sql"] = sql_pkg
-
 account_logic_stub = types.ModuleType("app.sql.account_logic")
-forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
-
-
-def fake_plaid(token, account_id, start_date=None, end_date=None):
-    return True
-
-
-account_logic_stub.refresh_data_for_plaid_account = fake_plaid
-account_logic_stub.get_accounts_from_db = lambda: [{"account_id": "a1"}]
-forecast_logic_stub.update_account_history = lambda *args, **kwargs: True
-
+account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: True
 sys.modules["app.sql.account_logic"] = account_logic_stub
+
+# app.sql.forecast_logic stub
+forecast_logic_stub = types.ModuleType("app.sql.forecast_logic")
+forecast_logic_stub.update_account_history = lambda *a, **k: True
 sys.modules["app.sql.forecast_logic"] = forecast_logic_stub
 
-# -------------------------
-# app.utils stub
-# -------------------------
+# app.utils/finance_utils stub
 utils_pkg = types.ModuleType("app.utils")
 finance_utils_stub = types.ModuleType("app.utils.finance_utils")
 finance_utils_stub.normalize_account_balance = lambda acct: acct
 sys.modules["app.utils"] = utils_pkg
 sys.modules["app.utils.finance_utils"] = finance_utils_stub
 
-# -------------------------
-# CLI dispatcher stub (for CLI sync tests)
-# -------------------------
+# Dispatcher logger for CLI sync test (if needed by your app)
 dispatcher_stub = types.ModuleType("app.helpers.account_refresh_dispatcher")
 dispatcher_stub.refresh_all_accounts = lambda: []
 dispatcher_stub.logger = SimpleNamespace(
