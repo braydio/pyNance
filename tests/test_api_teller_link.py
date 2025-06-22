@@ -12,34 +12,42 @@ sys.modules.pop("app", None)
 
 # Config stub
 config_stub = types.ModuleType("app.config")
-config_stub.logger = types.SimpleNamespace(  # type: ignore[attr-defined]
+config_stub.logger = types.SimpleNamespace(
     info=lambda *a, **k: None,
     debug=lambda *a, **k: None,
     warning=lambda *a, **k: None,
     error=lambda *a, **k: None,
 )
-config_stub.FILES = {  # type: ignore[attr-defined]
+config_stub.FILES = {
     "TELLER_DOT_KEY": "dummy",
     "TELLER_DOT_CERT": "",
     "TELLER_ACCOUNTS": "",
 }
-config_stub.TELLER_APP_ID = "app123"  # type: ignore[attr-defined]
-config_stub.TELLER_API_BASE_URL = "https://example.com"  # type: ignore[attr-defined]
-config_stub.FLASK_ENV = "test"  # type: ignore[attr-defined]
+config_stub.TELLER_APP_ID = "app123"
+config_stub.TELLER_API_BASE_URL = "https://example.com"
+config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
-# Helper stub (***ADD save_tokens here!***)
+# Helper stub
 helpers_pkg = types.ModuleType("app.helpers")
-helpers_pkg.teller_helpers = types.ModuleType("app.helpers.teller_helpers")  # type: ignore[attr-defined]
-helpers_pkg.teller_helpers.load_tokens = lambda: []  # type: ignore[attr-defined]
-helpers_pkg.teller_helpers.save_tokens = lambda tokens: None  # type: ignore[attr-defined]
+helpers_pkg.teller_helpers = types.ModuleType("app.helpers.teller_helpers")
+helpers_pkg.teller_helpers.load_tokens = lambda: []
+helpers_pkg.teller_helpers.save_tokens = lambda tokens: None
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.teller_helpers"] = helpers_pkg.teller_helpers
 
 # Extensions stub
 extensions_stub = types.ModuleType("app.extensions")
-extensions_stub.db = types.SimpleNamespace()  # type: ignore[attr-defined]
+extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
+
+# ---- MODELS STUB (THIS FIXES YOUR NEW ERROR) ----
+models_stub = types.ModuleType("app.models")
+# Create dummy TellerAccount (add any other models needed for imports)
+models_stub.TellerAccount = type("TellerAccount", (), {})  # simple dummy class
+sys.modules["app.models"] = models_stub
+
+# ---- END MODELS STUB ----
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "teller.py")
 spec = importlib.util.spec_from_file_location("app.routes.teller", ROUTE_PATH)
