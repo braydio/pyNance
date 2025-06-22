@@ -1,0 +1,53 @@
+name: query_chroma
+description: |
+  CLI tool for querying a Chroma vector database collection for semantically similar documents. 
+  Supports parameterized queries, collection name, result count, model, and output format. 
+  Intended to reduce LLM token usage by offloading semantic search to local infrastructure.
+entrypoint: python scripts/query_chroma.py
+arguments:
+  - name: query
+    type: string
+    required: true
+    description: "The text to semantically search for (quoted if containing spaces)."
+  - name: --count, -n
+    type: integer
+    default: 3
+    description: "Number of results to return."
+  - name: --collection
+    type: string
+    default: "pynance-code"
+    description: "Chroma collection name to query."
+  - name: --host
+    type: string
+    default: "localhost"
+    description: "Chroma server host."
+  - name: --port
+    type: integer
+    default: 8055
+    description: "Chroma server port."
+  - name: --model
+    type: string
+    default: "all-MiniLM-L6-v2"
+    description: "SentenceTransformer embedding model to use."
+  - name: --show-distance
+    type: boolean
+    default: false
+    description: "Show distance scores in results."
+usage_examples:
+  - command: |
+      python scripts/query_chroma.py "What is a recurring transaction?" --count 5 --collection finance-qa --show-distance
+    description: |
+      Query the Chroma DB for up to 5 semantically similar documents from the 'finance-qa' collection,
+      displaying the distance for each result.
+outputs:
+  - name: results
+    description: "Prints a list of semantically similar documents to stdout, including (optionally) their distance from the query."
+agent_guidance: |
+  Use this tool whenever you need to find relevant code, docs, or data from the Chroma vector database.
+  This avoids costly LLM context lookups by delegating semantic search to local compute.
+  Provide the most relevant query text and adjust the count/collection/model as needed.
+dependencies:
+  - chromadb
+  - sentence-transformers
+  - Python 3.8+
+  - (optional) OS environment variables: CHROMA_COLLECTION, CHROMA_RESULT_COUNT, CHROMA_HOST, CHROMA_PORT, CHROMA_MODEL

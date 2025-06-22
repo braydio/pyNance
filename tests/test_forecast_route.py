@@ -59,7 +59,8 @@ class DummyRuleEngine:
         self.db = db
 
     def forecast_balances(self, horizon_days=60):
-        today = datetime.utcnow().date()
+        # Use non-deprecated current date
+        today = datetime.now().date()
         return [
             {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
             for i in range(horizon_days)
@@ -142,7 +143,8 @@ def client():
 
 
 def dummy_forecast(self, method="rule", days=60, stat_input=None):
-    today = datetime.utcnow().date()
+    # Use non-deprecated current date for dummy forecast
+    today = datetime.now().date()
     return [
         {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
         for i in range(days)

@@ -63,7 +63,8 @@ class DummyAccount:
     def __init__(self, balance, typ):
         self.balance = balance
         self.type = typ
-        self.created_at = datetime.utcnow()
+        # Use non-deprecated current time
+        self.created_at = datetime.now()
         self.is_hidden = False
 
 

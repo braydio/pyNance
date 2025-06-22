@@ -179,7 +179,8 @@ def get_net_assets():
     increase it. The response is wrapped in a ``{"status": "success", "data": ...}``
     payload for frontend consumption.
     """
-    today = datetime.utcnow().date()
+    # Use non-deprecated current date
+    today = datetime.now().date()
     months = [today - timedelta(days=30 * i) for i in reversed(range(6))]
 
     logger.debug("Computing net assets for months: %s", months)
@@ -357,7 +358,8 @@ def forecast_route():
 
         labels = []
         forecast_line = []
-        start = datetime.utcnow().date()
+        # Use non-deprecated current date for forecast labels
+        start = datetime.now().date()
         for i in range(horizon):
             day = start + timedelta(days=i)
             labels.append(day.strftime("%b %d"))

@@ -78,7 +78,8 @@ def refresh_institution(institution_id: int):
                 end_date=end_date,
             )
             if updated and account.plaid_account:
-                account.plaid_account.last_refreshed = datetime.utcnow()
+                # Use non-deprecated current time
+                account.plaid_account.last_refreshed = datetime.now()
         elif account.link_type == "Teller":
             access_token = None
             for t in tokens:
@@ -99,12 +100,14 @@ def refresh_institution(institution_id: int):
                 end_date=end_date,
             )
             if updated and account.teller_account:
-                account.teller_account.last_refreshed = datetime.utcnow()
+                # Use non-deprecated current time
+                account.teller_account.last_refreshed = datetime.now()
         if updated:
             updated_accounts.append(account.name)
             refreshed_counts[inst.name] = refreshed_counts.get(inst.name, 0) + 1
     if updated_accounts:
-        inst.last_refreshed = datetime.utcnow()
+        # Use non-deprecated current time
+        inst.last_refreshed = datetime.now()
         db.session.commit()
     else:
         db.session.rollback()

@@ -29,6 +29,10 @@ class DummyEmbeddingFunction:
 
     def embed_query(self, text):
         return self([text])[0]
+    
+    def is_legacy(self):
+        """Indicate legacy embedding function to suppress deprecation warnings."""
+        return True
 
 
 @pytest.fixture()
