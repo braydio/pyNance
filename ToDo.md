@@ -26,15 +26,19 @@
   - The axis labels are too small and are difficult to read
   - The legend is not necessary, everyone knows that green is positive and red is negative
 - `Spending by Category Chart` -- Requested
-
   - This chart does not show any data and needs to be fixed
   - The axis labels are too small and are difficult to read
   - The title should be styled to illustrate that it is the title
   - The legend / category selectors take up far too much of the visual. They should be moved to an expandable / collapsible tab
   - The category selectors should fuzzy find / match on existing categories
   - The axis labels overlap into the transactions table below. This needs to be fixed with tailwindcss stylings
-
-- ## `Accounts Table`
+- `Accounts Tables`
+  - The table needs the Balance column to be styled with accounting style ($2,000.51) parenthesis, dollar sign, red font for negative balance (and liabilities with positive balance)
+  - Account type should have uniform capitalization - normalize to capitalize first letter of each word
+  - Normalize Account Name as well
+  - Need columns spaced to fit all on one line per entry
+  - Think about adding Plaid Institution Icon per line item for different institutions
+  - Table needs to be paginated and/or scrollable
 
 #### Issues / TODOs
 
