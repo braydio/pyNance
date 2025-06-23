@@ -4,11 +4,21 @@
       <h2 class="text-xl font-semibold mb-2">Spending by Category</h2>
       <input type="date" v-model="startDate" class="date-picker" />
       <input type="date" v-model="endDate" class="date-picker" />
+      <button
+        class="legend-toggle ml-auto px-2 py-1 text-xs rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-dark)] transition-colors"
+        @click="showLegend = !showLegend"
+      >
+        {{ showLegend ? 'Hide Legend' : 'Show Legend' }}
+      </button>
       <div class="chart-summary">
         <span>Total Spending: {{ totalSpending.toLocaleString() }}</span>
       </div>
     </div>
-    <div class="legend" v-if="availableCategories.length">
+    <div
+      class="legend transition-all duration-300"
+      v-if="availableCategories.length"
+      v-show="showLegend"
+    >
       <label
         v-for="cat in availableCategories"
         :key="cat"
@@ -35,6 +45,7 @@ const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const chartData = ref({ labels: [], amounts: [], raw: [] })
 const selectedCategories = ref([])
+const showLegend = ref(true)
 const availableCategories = computed(() =>
   chartData.value.raw.map((e) => e.category || 'Uncategorized'),
 )
@@ -161,6 +172,8 @@ onMounted(fetchData)
     0 4px 16px var(--shadow),
     0 0 6px var(--hover-glow);
   position: relative;
+  display: flex;
+  flex-direction: column;
   height: 400px;
   min-width: 300px;
   width: 100%;
@@ -191,7 +204,7 @@ onMounted(fetchData)
 }
 
 .canvas-wrapper {
-  height: 100%;
+  flex: 1;
   background: var(--themed-bg);
   border-radius: 1rem;
 }
@@ -205,10 +218,7 @@ onMounted(fetchData)
 }
 
 .legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  @apply flex flex-wrap gap-2 mb-2 transition-all;
 }
 
 .legend-item {
