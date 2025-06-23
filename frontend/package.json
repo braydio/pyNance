@@ -16,7 +16,6 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
-    "@openai/codex": "^0.1.2505291658",
     "axios": "^1.7.9",
     "chart.js": "^4.4.9",
     "date-fns": "^4.1.0",
