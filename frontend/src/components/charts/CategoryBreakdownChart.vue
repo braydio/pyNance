@@ -1,7 +1,7 @@
 <template>
   <div class="category-breakdown-chart">
     <div class="header-row">
-      <h2>Spending by Category</h2>
+      <h2 class="text-xl font-semibold mb-2">Spending by Category</h2>
       <input type="date" v-model="startDate" class="date-picker" />
       <input type="date" v-model="endDate" class="date-picker" />
       <div class="chart-summary">
@@ -177,8 +177,7 @@ onMounted(fetchData)
 }
 
 .header-row h2 {
-  margin: 0;
-  color: var(--neon-purple);
+  @apply text-xl font-semibold mb-2 mt-0 text-neon-purple;
 }
 
 .chart-summary {
