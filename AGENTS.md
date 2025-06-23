@@ -9,7 +9,7 @@ This repository has a main goal: to streamline fintech and personal financial da
 ```
 Folders:
 - `backend/` - Flask Backend app code, including tellers, plaid, sync)
-- `frontend` - React app with JS and Typescript
+- `frontend` - Vue 3 + Vite + TypeScript frontend
 - `docs` - Documentation sync, Internal tracks for helpers like ChatMpdb
 - `scripts` - Useful bash setup scripts
 - `tests` - Test suite for api, models, dispatchers
@@ -20,12 +20,13 @@ Folders:
 - Use PEP 8.1 and beyond, TypeAnnotations
 - Docs should match existing deployment types
 - Use `lint`, `black`, `ruff` for style
-- Please add an empty config shell to `scripts/
-setup.sh` which boots a virtual env
+- Run `bash scripts/setup.sh` to prepare the environment (creates `.venv`, installs deps, links hooks)
+- Copy `backend/example.env` to `backend/.env` (and `frontend/example.env` to `frontend/.env`)
 
 ## Validation
 
-- Python 3.12 recommended
+- Python 3.11 is used
+- Node 20 required for the frontend
 - Run `pytest` from root to validate
 - `pre-commit` is configured
 - Run `pre-commit run --all-files` before pushing
@@ -44,6 +45,7 @@ git config core.hooksPath .githooks
 - Description must include affected modules (backend/frontend/test)
 - If adding API, reflect in docs and add test coverage
 - Use `scripts/entr_docsync.sh` if syncing doc updates automatically
+- Commit messages: `<type>(<scope>): <description>` (e.g. `feat(auth): add token helper`)
 
 ## Agents Should
 
@@ -52,6 +54,8 @@ git config core.hooksPath .githooks
 - Assume backend is Flask modular app (factory pattern)
 - Consider `.nvmrc` and `frontend/package.json` for JS contexts
 - Consult `.pre-commit-config.yaml` for formatting enforcement
+- Review `docs/index/INDEX.md` for documentation map
+- Consult `docs/maintenance/cleanup_checklist.md` for repo organization tasks
 
 ## Migration Areas
 
