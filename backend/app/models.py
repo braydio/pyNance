@@ -31,6 +31,8 @@ class Institution(db.Model, TimestampMixin):
 
 
 class Account(db.Model, TimestampMixin):
+    """Financial account belonging to a user."""
+
     __tablename__ = "accounts"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -40,7 +42,9 @@ class Account(db.Model, TimestampMixin):
     type = db.Column(db.String(64), nullable=True)
     subtype = db.Column(db.String(64), nullable=True)
     institution_name = db.Column(db.String(128), nullable=True)
-    institution_id = db.Column(db.Integer, db.ForeignKey("institutions.id"))
+    institution_db_id = db.Column(
+        db.Integer, db.ForeignKey("institutions.id"), nullable=True, index=True
+    )
     status = db.Column(db.String(64), default="active")
     is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Float, default=0)
