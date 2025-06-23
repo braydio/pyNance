@@ -18,8 +18,9 @@
 </template>
 
 <script>
+// Chart component visualizing daily net income trends
 import api from '@/services/api'
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { Chart } from 'chart.js/auto'
 
 export default {
@@ -181,6 +182,12 @@ export default {
 
     onMounted(() => {
       fetchData()
+    })
+    onUnmounted(() => {
+      if (chartInstance.value) {
+        chartInstance.value.destroy()
+        chartInstance.value = null
+      }
     })
 
     return {
