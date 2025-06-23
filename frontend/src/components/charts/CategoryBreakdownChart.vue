@@ -119,7 +119,7 @@ function updateChart() {
         x: {
           ticks: {
             color: '#c4b5fd',
-            font: { size: 12 },
+            font: { size: 14 },
           },
         },
         y: {
@@ -127,7 +127,7 @@ function updateChart() {
           ticks: {
             callback: (value) => `$${value}`,
             color: '#c4b5fd',
-            font: { size: 12 },
+            font: { size: 14 },
           },
         },
       },
