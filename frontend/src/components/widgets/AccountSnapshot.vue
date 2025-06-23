@@ -2,23 +2,18 @@
   <div class="card space-y-4">
     <div class="flex-between">
       <h2 class="text-xl font-semibold">Account Snapshot</h2>
-      <button class="btn btn-sm btn-outline" @click="showConfig = !showConfig">
+      <button class="btn btn-sm btn-outline" @click="toggleConfig">
         {{ showConfig ? 'Done' : 'Configure' }}
       </button>
     </div>
 
-    <div v-if="showConfig" class="space-y-2">
-      <p class="text-sm text-gray-400">Select up to 5 accounts</p>
-      <div v-for="acc in accounts" :key="acc.account_id" class="flex items-center gap-2">
-        <input
-          type="checkbox"
-          :id="acc.account_id"
-          v-model="selectedIds"
-          :value="acc.account_id"
-          :disabled="!selectedIds.includes(acc.account_id) && selectedIds.length >= 5"
-        />
-        <label :for="acc.account_id">{{ acc.institution_name || acc.name }}</label>
-      </div>
+    <div v-if="showConfig" class="relative">
+      <FuzzyDropdown
+        :options="accounts"
+        v-model="selectedIds"
+        :max="5"
+        class="w-64"
+      />
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -46,15 +41,27 @@
         <p v-else class="text-sm text-gray-500 mt-2 italic">No upcoming bills</p>
       </div>
     </div>
+    <div class="text-right font-semibold pt-2">
+      Total Balance: {{ formatCurrency(totalBalance) }}
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
 
 const showConfig = ref(false)
 const { accounts, selectedAccounts, selectedIds, reminders } = useSnapshotAccounts()
+
+function toggleConfig() {
+  showConfig.value = !showConfig.value
+}
+
+const totalBalance = computed(() =>
+  selectedAccounts.value.reduce((sum, acc) => sum + parseFloat(acc.balance || 0), 0)
+)
 
 function formatCurrency(val) {
   const num = parseFloat(val || 0)
@@ -67,4 +74,7 @@ function formatCurrency(val) {
 </script>
 
 <style scoped>
+.card {
+  @apply bg-[var(--color-bg-secondary)] border border-[var(--divider)] p-4 rounded-lg shadow;
+}
 </style>
