@@ -1,6 +1,8 @@
 # pyNance Dashboard Setup (2025)
 
-**pyNance** is a personal finance dashboard integrating **Plaid** and **Teller** APIs to visualize and manage your financial data. It uses **Flask** for the backend and **Vue.js** for the frontend.
+**pyNance** is a personal finance dashboard integrating **Plaid** and **Teller** APIs to visualize and manage your financial data. It uses **Flask** for the backend and **Vue&nbsp;3** with **Vite** and **TypeScript** for the frontend.
+
+This project targets **Python&nbsp;3.11** and **Node&nbsp;20**.
 
 ---
 
@@ -102,14 +104,14 @@ VITE_APP_API_BASE_URL=/api
 # ... other VITE_ variables as needed
 ```
 
-### 3. Install Requirements
+### 3. Run the setup script
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+bash scripts/setup.sh
 ```
+
+This command creates the virtual environment, installs Python and Node dependencies,
+links pre-commit hooks and copies the example `.env` files if needed.
 
 ### 4. Run Backend
 
@@ -119,14 +121,7 @@ flask run --app backend.run
 
 (Starts Flask API at `http://127.0.0.1:5000`)
 
-### 5. Install Frontend Requirements
-
-```bash
-cd frontend
-npm install
-```
-
-### 6. Run Frontend
+### 5. Run Frontend
 
 ```bash
 npm run dev
@@ -134,10 +129,11 @@ npm run dev
 
 (Starts Vue frontend at `http://127.0.0.1:5173`)
 
-### 7. Run Tests
+### 6. Run Tests
 
 ```bash
 pytest -q
+pre-commit run --all-files
 ```
 
 All tests should pass when dependencies are installed.
@@ -156,6 +152,8 @@ All tests should pass when dependencies are installed.
 | `/backend/app/certs/README.md`          | Instructions for placing Teller certificate.pem & private_key.pem |
 | `/frontend/example.env`                 | Frontend environment variables example |
 | `/frontend/.env`                        | Frontend environment variables |
+
+Refer to [`docs/index/INDEX.md`](docs/index/INDEX.md) for a full documentation map.
 
 ---
 
