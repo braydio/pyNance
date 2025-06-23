@@ -4,65 +4,103 @@
 
 ## Dashboard.vue
 
-### Components
+### Components & Tasks
 
-- `Title & Greeting`
-  - Update styling to be in line with expected title & greeting
-  - Theme the username a different color
-  - Lines should be different font size
-  - The custom message on the third row should update based on the total net worth of the user
-    - Below $0 shows concerned message
-    - Above $1,000 shows encouraging message etc.
-    - Message should be amusing, sarcastic, humorous, even insulting
-- `Account Snapshot`
-  - Theme the Account Snapshot title to demonstrate it is a distinct module/section
-  - The 'configure' button should be themed to match design
-  - The submenu (Select up to 5 accounts) should be themed as a dropdown
-  - The configuration button should be a fuzzyfind supported dropdown menu selection
-  - Currently it does not display anything. This broken module needs to be fixed and styled per above
-  - The Account Snapshot should display additional information in line with what a user would expect a snapshot to display
-- `Daily Net Income Chart`
-  - This chart currently does not display any information and needs to be fixed
-  - The axis labels are too small and are difficult to read
-  - The legend is not necessary, everyone knows that green is positive and red is negative
-- `Spending by Category Chart` -- Requested
-  - This chart does not show any data and needs to be fixed
-  - The axis labels are too small and are difficult to read
-  - The title should be styled to illustrate that it is the title
-  - The legend / category selectors take up far too much of the visual. They should be moved to an expandable / collapsible tab
-  - The category selectors should fuzzy find / match on existing categories
-  - The axis labels overlap into the transactions table below. This needs to be fixed with tailwindcss stylings
-- `Accounts Tables`
-  - The table needs the Balance column to be styled with accounting style ($2,000.51) parenthesis, dollar sign, red font for negative balance (and liabilities with positive balance)
-  - Account type should have uniform capitalization - normalize to capitalize first letter of each word
-  - Normalize Account Name as well
-  - Need columns spaced to fit all on one line per entry
-  - Think about adding Plaid Institution Icon per line item for different institutions
-  - Table needs to be paginated and/or scrollable
+#### Title & Greeting
 
-#### Issues / TODOs
+- Update styling to match design standards.
+- Theme username with distinct color.
+- Use varying font sizes for multi-line layout.
+- Third-line message should change based on total net worth:
 
-- ***
+  - Below \$0 → Display concerned, humorous, or sarcastic message.
+  - Above \$1,000 → Display encouraging or smug commentary.
+  - Message tone: amusing, insulting, sarcastic.
+
+#### Account Snapshot
+
+- Style section title to emphasize module distinction.
+- Match 'Configure' button with UI theme.
+- Submenu ("Select up to 5 accounts") should be a styled dropdown.
+- Enable fuzzy find functionality in dropdown.
+- Fix current display issue (module is not rendering).
+- Show relevant snapshot info: account name, type, balance, etc.
+
+#### Daily Net Income Chart
+
+- Currently broken—no data displayed.
+- Increase font size of axis labels.
+- Remove legend (green/red is self-explanatory).
+
+#### Spending by Category Chart _(Requested)_
+
+- Currently not displaying any data.
+- Axis labels too small—increase for readability.
+- Style the chart title appropriately.
+- Legend and category selectors are too large:
+
+  - Move to a collapsible tab.
+  - Add fuzzy search for categories.
+
+- Fix layout overlap with transactions table using TailwindCSS.
+
+#### Transactions Table
+
+- Does not currently display data—requires fixing.
+- Style amounts:
+
+  - Expenses → Red font, parentheses (e.g. (\$1,250.00)).
+  - Incomes → Green font.
+
+#### Accounts Table
+
+- Style balances using accounting format:
+
+  - Dollar sign, 2 decimals, parentheses for negatives, red for negative or liability values.
+
+- Normalize capitalization for 'Account Type' and 'Account Name'.
+- Adjust spacing to ensure single-line entries.
+- Consider adding Plaid Institution Icons per entry.
+- Add pagination and/or scrolling.
+
+### Global Dashboard TODOs
+
+- Fix non-functional components.
+- Refactor for consistent UI/UX.
+- Audit data display logic per component.
+
+---
 
 ## Accounts.vue
 
-### Components
+### Components & Tasks
 
-- `Header Greeting`
-  - Update styling for different font sizes
-  - Colorize fonts to be in theme
-- `Link Account Section`
-  - Menu should be an expandable / collapsible dropdown with selection visible on expanded view
-  - 'Refresh Plaid/Teller' subtitles should be styled and themed
-  - Date selectors, Account Selectors, Refresh Buttons should be styled and themed
-  - Layout should be designed with aesthetics
-  - Products Selection should have Teller products selection
-  - There is no Link Account button. It should be in the same section as the Select Products. Button only clickable if a product is selected
-  - This whole section is collapse/expandable
-- `Assets Year Comparison Chart`
-  - Currently has no display
-- `Net Assets Trend Chart`
-  - Currently has no display
+#### Header Greeting
+
+- Adjust font sizing for visual hierarchy.
+- Apply themed colors to font.
+
+#### Link Account Section
+
+- Make menu an expandable/collapsible dropdown.
+- Style "Refresh Plaid/Teller" subtitles.
+- Style and theme: date pickers, account selectors, refresh buttons.
+- Improve section layout and aesthetic.
+- Implement Teller-specific product selection.
+- Add 'Link Account' button:
+
+  - Place near Product selection.
+  - Only enabled when a product is selected.
+
+- Make entire section expandable/collapsible.
+
+#### Assets Year Comparison Chart
+
+- Component is non-functional—fix rendering.
+
+#### Net Assets Trend Chart
+
+- Component is non-functional—fix rendering.
 
 #### Issues / TODOs
 
