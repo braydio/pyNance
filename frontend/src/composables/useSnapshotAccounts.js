@@ -30,6 +30,12 @@ export function useSnapshotAccounts(maxSelection = 5) {
       const res = await api.getAccounts()
       if (res.status === 'success') {
         accounts.value = res.accounts
+          .slice()
+          .sort((a, b) => {
+            const aName = `${a.institution_name || ''} ${a.name}`.trim()
+            const bName = `${b.institution_name || ''} ${b.name}`.trim()
+            return aName.localeCompare(bName)
+          })
         initSelection()
       }
     } catch (err) {
