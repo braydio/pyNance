@@ -1,5 +1,5 @@
 <template>
-  <div class="card space-y-4">
+  <div class="card space-y-4 mb-6">
     <div class="flex-between">
       <h2 class="text-xl font-semibold">Account Snapshot</h2>
       <button class="btn btn-sm btn-outline" @click="toggleConfig">
@@ -7,7 +7,10 @@
       </button>
     </div>
 
-    <div v-if="showConfig" class="relative">
+    <div
+      v-if="showConfig"
+      class="relative p-4 mb-4 border border-[var(--divider)] rounded-lg bg-[var(--color-bg-dark)]"
+    >
       <FuzzyDropdown
         :options="accounts"
         v-model="selectedIds"

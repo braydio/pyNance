@@ -61,7 +61,9 @@ const fuse = computed(
 )
 
 const filtered = computed(() => {
-  if (!query.value) return props.options
+  if (!query.value) {
+    return props.options.slice(0, props.max)
+  }
   return fuse.value.search(query.value).map(r => r.item)
 })
 </script>
