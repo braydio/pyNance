@@ -1,7 +1,7 @@
 <template>
   <div class="daily-net-chart">
     <div class="header-row">
-      <h2>Daily Net Income</h2>
+      <h2 class="text-xl font-semibold mb-2">Daily Net Income</h2>
       <button class="zoom-toggle" @click="toggleZoom">
         {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
       </button>
@@ -226,6 +226,10 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.5rem;
+}
+
+.header-row h2 {
+  @apply text-xl font-semibold mb-2 mt-0 text-neon-purple;
 }
 
 .zoom-toggle {
