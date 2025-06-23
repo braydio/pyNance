@@ -26,6 +26,7 @@
   - The axis labels are too small and are difficult to read
   - The legend is not necessary, everyone knows that green is positive and red is negative
 - `Spending by Category Chart` -- Requested
+
   - This chart does not show any data and needs to be fixed
   - The axis labels are too small and are difficult to read
   - The title should be styled to illustrate that it is the title
@@ -33,8 +34,7 @@
   - The category selectors should fuzzy find / match on existing categories
   - The axis labels overlap into the transactions table below. This needs to be fixed with tailwindcss stylings
 
-- `Accounts Table`
-  -
+- ## `Accounts Table`
 
 #### Issues / TODOs
 
@@ -44,7 +44,21 @@
 
 ### Components
 
-- `AccountToggle` (`Mock/AccountToggle.vue`)
+- `Header Greeting`
+  - Update styling for different font sizes
+  - Colorize fonts to be in theme
+- `Link Account Section`
+  - Menu should be an expandable / collapsible dropdown with selection visible on expanded view
+  - 'Refresh Plaid/Teller' subtitles should be styled and themed
+  - Date selectors, Account Selectors, Refresh Buttons should be styled and themed
+  - Layout should be designed with aesthetics
+  - Products Selection should have Teller products selection
+  - There is no Link Account button. It should be in the same section as the Select Products. Button only clickable if a product is selected
+  - This whole section is collapse/expandable
+- `Assets Year Comparison Chart`
+  - Currently has no display
+- `Net Assets Trend Chart`
+  - Currently has no display
 
 #### Issues / TODOs
 
