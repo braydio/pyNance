@@ -25,7 +25,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed } from 'vue'
+import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
 import api from '@/services/api'
 
@@ -64,6 +64,7 @@ async function fetchData() {
         if (!isValid) console.warn('Skipping invalid entry:', entry)
         return isValid
       })
+      await nextTick()
       selectedCategories.value = availableCategories.value.slice()
       updateChart()
     }
