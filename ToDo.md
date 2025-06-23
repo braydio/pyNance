@@ -26,6 +26,12 @@
   - The axis labels are too small and are difficult to read
   - The legend is not necessary, everyone knows that green is positive and red is negative
 - `Spending by Category Chart`
+  - This chart does not show any data and needs to be fixed
+  - The axis labels are too small and are difficult to read
+  - The title should be styled to illustrate that it is the title
+  - The legend / category selectors take up far too much of the visual. They should be moved to an expandable / collapsible tab
+  - The category selectors should fuzzy find / match on existing categories
+  - The axis labels overlap into the transactions table below. This needs to be fixed with tailwindcss stylings
 
 #### Issues / TODOs
 
