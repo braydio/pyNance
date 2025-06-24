@@ -1,26 +1,24 @@
 """Database persistence and refresh helpers for account data."""
 
-from tempfile import NamedTemporaryFile
 import json
 import time
 from datetime import date as pydate
 from datetime import datetime, timedelta
+from tempfile import NamedTemporaryFile
 
 import requests
-from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import (
     get_accounts,
     get_transactions,
-    resolve_or_create_category,
 )
 from app.models import (
     Account,
     AccountHistory,
     Category,
-    PlaidAccount,
-    TellerAccount,
+    PlaidItem,
     Transaction,
 )
 from app.utils.finance_utils import normalize_transaction_amount
@@ -314,7 +312,9 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json if isinstance(txns_json, list) else []
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
         )
 
         for txn in txns_list:

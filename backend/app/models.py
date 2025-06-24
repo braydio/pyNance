@@ -82,6 +82,20 @@ class PlaidAccount(db.Model, TimestampMixin):
     last_error = db.Column(db.Text, nullable=True)
 
 
+class PlaidItem(db.Model, TimestampMixin):
+    """Plaid item linking a user to a product access token."""
+
+    __tablename__ = "plaid_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=False, index=True)
+    item_id = db.Column(db.String(128), unique=True, nullable=False)
+    access_token = db.Column(db.String(256), nullable=False)
+    institution_name = db.Column(db.String(128), nullable=True)
+    product = db.Column(db.String(64), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+
 class PlaidWebhookLog(db.Model, TimestampMixin):
     __tablename__ = "plaid_webhook_logs"
 
