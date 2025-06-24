@@ -16,17 +16,15 @@
     </div>
     <div
       class="legend transition-all duration-300"
-      v-if="availableCategories.length"
+      v-if="categoryOptions.length"
       v-show="showLegend"
     >
-      <label
-        v-for="cat in availableCategories"
-        :key="cat"
-        class="legend-item"
-      >
-        <input type="checkbox" v-model="selectedCategories" :value="cat" />
-        <span>{{ cat }}</span>
-      </label>
+      <FuzzyDropdown
+        :options="categoryOptions"
+        v-model="selectedCategories"
+        :max="categoryOptions.length"
+        class="w-64"
+      />
     </div>
     <div class="canvas-wrapper">
       <canvas ref="chartCanvas"></canvas>
@@ -35,8 +33,11 @@
 </template>
 
 <script setup>
+// CategoryBreakdownChart.vue
+// Displays spending by category with a selectable legend using FuzzyDropdown.
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
+import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import api from '@/services/api'
 
 const emit = defineEmits(['bar-click'])
@@ -48,6 +49,9 @@ const selectedCategories = ref([])
 const showLegend = ref(true)
 const availableCategories = computed(() =>
   chartData.value.raw.map((e) => e.category || 'Uncategorized'),
+)
+const categoryOptions = computed(() =>
+  availableCategories.value.map((c) => ({ account_id: c, name: c })),
 )
 
 const endDate = ref(new Date().toISOString().slice(0, 10))
