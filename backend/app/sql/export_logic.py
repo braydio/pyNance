@@ -1,19 +1,31 @@
 # backend/app/sql/export_logic.py
+"""CSV export helpers for streaming large tables.
+
+This module provides helpers to export model data to CSV without loading all
+rows into memory at once. Queries are streamed using ``yield_per`` to avoid
+excessive memory usage.
+"""
+
 import csv
 import io
-from flask import current_app, send_file
+
 from app.extensions import db
-from app.models import Account, Transaction, RecurringTransaction
+from app.models import Account, RecurringTransaction, Transaction
+from flask import current_app, send_file
+
+CHUNK_SIZE = 500
 
 
-def generate_csv_bytes(model):
+def generate_csv_bytes(model, chunk_size: int = CHUNK_SIZE) -> io.StringIO:
+    """Return CSV contents for ``model`` streamed in chunks."""
+
     output = io.StringIO()
     writer = csv.writer(output)
     headers = [col.name for col in model.__table__.columns]
     writer.writerow(headers)
 
-    rows = model.query.all()
-    for row in rows:
+    query = db.session.query(model).yield_per(chunk_size)
+    for row in query:
         writer.writerow([getattr(row, col) for col in headers])
 
     output.seek(0)
@@ -39,7 +51,9 @@ def export_csv_response(model_name):
     )
 
 
-def export_all_to_csv():
+def export_all_to_csv(chunk_size: int = CHUNK_SIZE) -> None:
+    """Export all configured models to CSV files in streaming fashion."""
+
     with current_app.app_context():
         tables = {
             "accounts.csv": Account,
@@ -48,22 +62,26 @@ def export_all_to_csv():
         }
 
         for filename, model in tables.items():
-            rows = model.query.all()
-            if not rows:
-                print(f"No data for {model.__name__}")
-                continue
+            query = db.session.query(model).yield_per(chunk_size)
 
             with open(filename, "w", newline="") as f:
                 writer = csv.writer(f)
                 headers = [col.name for col in model.__table__.columns]
                 writer.writerow(headers)
-                for row in rows:
+                count = 0
+                for row in query:
                     writer.writerow([getattr(row, col) for col in headers])
+                    count += 1
 
-            print(f"Exported {len(rows)} rows to {filename}")
+            if count:
+                print(f"Exported {count} rows to {filename}")
+            else:
+                print(f"No data for {model.__name__}")
 
 
-def run_export():
+def run_export() -> None:
+    """Run :func:`export_all_to_csv` using an application context."""
+
     from app import create_app
 
     app = create_app()
