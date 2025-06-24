@@ -1,5 +1,5 @@
 <template>
-  <div class="category-breakdown-chart pb-6">
+  <div class="category-breakdown-chart p-4 pb-6">
     <div class="header-row">
       <h2 class="text-xl font-semibold mb-2">Spending by Category</h2>
       <input type="date" v-model="startDate" class="date-picker" />
@@ -170,7 +170,6 @@ onMounted(fetchData)
 .category-breakdown-chart {
   margin: 1rem;
   background-color: var(--color-bg-sec);
-  padding: 1rem;
   border-radius: 12px;
   box-shadow:
     0 4px 16px var(--shadow),
