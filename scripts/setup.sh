@@ -15,11 +15,18 @@ fi
 ## 2. Activate and install dependencies
 echo "Installing dependencies..."
 source .venv/bin/activate
-if [ -f requirements.txt ]; then
+
+# Allow using a slimmed-down requirements file with the --slim flag
+REQ_FILE="requirements.txt"
+if [[ ${1:-} == "--slim" ]]; then
+  REQ_FILE="requirements-slim.txt"
+fi
+
+if [ -f "$REQ_FILE" ]; then
   pip install --upgrade pip
-  pip install -r requirements.txt
+  pip install -r "$REQ_FILE"
 else
-  echo "Requirements file not found: requirements.txt"
+  echo "Requirements file not found: $REQ_FILE"
   exit 1
 fi
 
