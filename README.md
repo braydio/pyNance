@@ -184,7 +184,9 @@ Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Running Tests
 
-Ensure dependencies are installed before executing the test suite:
+Ensure dependencies are installed before executing the test suite.
+For a lightweight install without forecasting or LLM modules, use
+`requirements-slim.txt`:
 
 ```bash
 pip install -r requirements.txt
