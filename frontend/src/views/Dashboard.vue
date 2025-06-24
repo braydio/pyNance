@@ -8,7 +8,7 @@
           <span class="text-neon-mint">{{ userName }}</span>!
         </h1>
         <p class="text-sm text-muted">Today is {{ currentDate }}</p>
-        <p class="italic text-muted">and things are looking quite bleak.</p>
+        <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
     </template>
 
@@ -53,7 +53,8 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import axios from 'axios'
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import api from '@/services/api'
 
 import { useTransactions } from '@/composables/useTransactions.js'
 
@@ -71,6 +72,7 @@ const {
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalTitle = ref('')
+const netWorth = ref(0)
 
 async function openDayModal(date) {
   modalTitle.value = `Transactions for ${date}`
@@ -97,6 +99,43 @@ async function openCategoryModal(category) {
   }
   showModal.value = true
 }
+
+/**
+ * Display a context-aware greeting based on the latest net worth value.
+ * Negative balances pull from `NEGATIVE_MESSAGES`, values above $1000 from
+ * `POSITIVE_MESSAGES`, and everything else from `NEUTRAL_MESSAGES`.
+ */
+const NEGATIVE_MESSAGES = [
+  "Yikes! You're in the red.",
+  'Looks like debts outweigh assets.'
+]
+const POSITIVE_MESSAGES = [
+  'Awesome! Your fortune grows.',
+  "You're well in the black."
+]
+const NEUTRAL_MESSAGES = ['Steady as she goes.', 'Room for growth ahead.']
+
+const netWorthMessage = computed(() => {
+  const worth = Number(netWorth.value || 0)
+  if (worth < 0) {
+    return NEGATIVE_MESSAGES[Math.floor(Math.random() * NEGATIVE_MESSAGES.length)]
+  }
+  if (worth > 1000) {
+    return POSITIVE_MESSAGES[Math.floor(Math.random() * POSITIVE_MESSAGES.length)]
+  }
+  return NEUTRAL_MESSAGES[Math.floor(Math.random() * NEUTRAL_MESSAGES.length)]
+})
+
+onMounted(async () => {
+  try {
+    const res = await api.fetchNetAssets()
+    if (res.status === 'success' && Array.isArray(res.data) && res.data.length) {
+      netWorth.value = res.data[res.data.length - 1].net_assets
+    }
+  } catch (e) {
+    console.error('Failed to fetch net assets:', e)
+  }
+})
 
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
