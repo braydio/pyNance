@@ -1,30 +1,28 @@
-from collections import defaultdict
+"""Helper for aggregating daily account balances."""
 
 from app.extensions import db
 from app.models import AccountHistory, Transaction
+from sqlalchemy import func
 
 
 def update_account_history():
-    """
-    Aggregate daily transaction totals into AccountHistory entries per account.
-    This is used as the backend data source for forecasting.
-    """
+    """Aggregate transactions into daily ``AccountHistory`` records."""
     print("🔁 Starting account history aggregation...")
 
-    # Daily sum per account_id → {account_id: {date: balance}}
-    daily_balances = defaultdict(lambda: defaultdict(float))
-    transactions = Transaction.query.all()
+    grouped = (
+        db.session.query(
+            Transaction.account_id,
+            func.date(Transaction.date).label("tx_date"),
+            func.sum(Transaction.amount).label("balance"),
+        )
+        .group_by(Transaction.account_id, func.date(Transaction.date))
+        .all()
+    )
 
-    for tx in transactions:
-        tx_date = tx.date.date() if hasattr(tx.date, "date") else tx.date
-        daily_balances[tx.account_id][tx_date] += tx.amount
-
-    records = []
-    for account_id, dated in daily_balances.items():
-        for tx_date, total in dated.items():
-            records.append(
-                AccountHistory(account_id=account_id, date=tx_date, balance=total)
-            )
+    records = [
+        AccountHistory(account_id=acc_id, date=tx_date, balance=bal)
+        for acc_id, tx_date, bal in grouped
+    ]
 
     db.session.bulk_save_objects(records)
     db.session.commit()

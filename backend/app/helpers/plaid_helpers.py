@@ -1,10 +1,8 @@
+"""Helper utilities for interacting with the Plaid API."""
+
 import json
 
-from app.config import (
-    FILES,
-    PLAID_CLIENT_NAME,
-    plaid_client,
-)
+from app.config import FILES, PLAID_CLIENT_NAME, plaid_client
 from app.config.log_setup import setup_logger
 from app.extensions import db
 from app.models import Category
@@ -21,12 +19,43 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
-from plaid.model.transactions_get_request_options import (
-    TransactionsGetRequestOptions,
-)
+from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
 logger = setup_logger()
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
+PLAID_TOKENS = FILES["PLAID_TOKENS"]
+
+
+def load_plaid_tokens():
+    """Load Plaid tokens from the designated JSON file."""
+    try:
+        logger.debug(f"Loading Plaid tokens from {PLAID_TOKENS}")
+        with open(PLAID_TOKENS, "r") as f:
+            tokens = json.load(f)
+        logger.debug(f"Loaded Plaid tokens: {tokens}")
+        return tokens
+    except FileNotFoundError:
+        logger.warning(
+            f"Tokens file not found at {PLAID_TOKENS}, returning empty list."
+        )
+        return []
+    except json.JSONDecodeError as e:
+        logger.error(
+            f"Error decoding tokens file at {PLAID_TOKENS}: {e}",
+            exc_info=True,
+        )
+        return []
+
+
+def save_plaid_tokens(tokens):
+    """Save Plaid tokens to the designated JSON file."""
+    try:
+        logger.debug(f"Saving Plaid tokens to {PLAID_TOKENS}: {tokens}")
+        with open(PLAID_TOKENS, "w") as f:
+            json.dump(tokens, f, indent=4)
+        logger.debug("Plaid tokens saved successfully.")
+    except Exception as e:
+        logger.error(f"Error saving tokens to {PLAID_TOKENS}: {e}", exc_info=True)
 
 
 def save_transactions_json(transactions):

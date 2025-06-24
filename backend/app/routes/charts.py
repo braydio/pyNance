@@ -11,6 +11,7 @@ from app.models import Account, Category, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
 from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
+from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -115,41 +116,41 @@ def get_cash_flow():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        transactions = (
-            db.session.query(Transaction)
+        date_fmt = "%Y-%m-%d" if granularity == "daily" else "%m-%Y"
+        date_expr = func.strftime(date_fmt, Transaction.date).label("period")
+
+        income_sum = func.sum(
+            case((Transaction.amount > 0, Transaction.amount), else_=0)
+        ).label("income")
+        expense_sum = func.sum(
+            case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
+        ).label("expenses")
+        tx_count = func.count(Transaction.id).label("txn_count")
+
+        aggregated = (
+            db.session.query(date_expr, income_sum, expense_sum, tx_count)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         )
         if start_date:
-            transactions = transactions.filter(Transaction.date >= start_date)
+            aggregated = aggregated.filter(Transaction.date >= start_date)
         if end_date:
-            transactions = transactions.filter(Transaction.date <= end_date)
+            aggregated = aggregated.filter(Transaction.date <= end_date)
 
-        all_tx = transactions.all()
-
-        groups = {}
-        for tx in all_tx:
-            key = (
-                tx.date.strftime("%Y-%m-%d")
-                if granularity == "daily"
-                else tx.date.strftime("%m-%Y")
-            )
-            amt = tx.amount
-            if key not in groups:
-                groups[key] = {"income": 0, "expenses": 0}
-            if amt > 0:
-                groups[key]["income"] += amt
-            else:
-                groups[key]["expenses"] += abs(amt)
+        rows = aggregated.group_by(date_expr).order_by(date_expr).all()
 
         data = [
-            {"date": k, "income": v["income"], "expenses": v["expenses"]}
-            for k, v in sorted(groups.items())
+            {
+                "date": row.period,
+                "income": row.income or 0,
+                "expenses": row.expenses or 0,
+            }
+            for row in rows
         ]
 
-        total_income = sum(item["income"] for item in data)
-        total_expenses = sum(item["expenses"] for item in data)
-        total_transactions = len(all_tx)
+        total_income = sum(row.income or 0 for row in rows)
+        total_expenses = sum(row.expenses or 0 for row in rows)
+        total_transactions = sum(row.txn_count or 0 for row in rows)
 
         return (
             jsonify(
