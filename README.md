@@ -108,7 +108,7 @@ VITE_APP_API_BASE_URL=/api
 ### 3. Run the setup script
 
 ```bash
-bash scripts/setup.sh
+bash scripts/setup.sh [--slim]
 ```
 
 This command creates the virtual environment, installs Python and Node dependencies,
@@ -184,10 +184,12 @@ Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Running Tests
 
-Ensure dependencies are installed before executing the test suite:
+Ensure dependencies are installed before executing the test suite.
+For a lightweight install without forecasting or LLM modules, use
+`requirements-slim.txt`:
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-slim.txt
 pytest -q
 ```
 
