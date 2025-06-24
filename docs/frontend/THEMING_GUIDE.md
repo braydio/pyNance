@@ -69,8 +69,8 @@ all of them:
 | `--hover-bg` | hover background for buttons |
 | `--hover-glow` | drop shadow for hover effects |
 
-Additional variables such as `--color-accent-magenta`, `--bar-gradient-end`,
-`--asset-gradient-start`/`--asset-gradient-end`, and
+Additional variables such as `--color-accent-magenta`, `--color-accent-ice`,
+`--bar-gradient-end`, `--asset-gradient-start`/`--asset-gradient-end`, and
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.
 
