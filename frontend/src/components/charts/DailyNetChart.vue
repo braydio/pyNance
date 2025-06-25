@@ -20,7 +20,7 @@
 <script>
 // Chart component visualizing daily net income trends
 import api from '@/services/api'
-import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 
 export default {
@@ -120,7 +120,7 @@ export default {
               ticks: {
                 maxTicksLimit: 14,
                 color: getStyle('--color-text-muted'),
-                font: { family: "'Fira Code', monospace", size: 10 },
+                font: { family: "'Fira Code', monospace", size: 14 },
               },
               grid: { color: getStyle('--divider') },
             },
@@ -129,7 +129,7 @@ export default {
               ticks: {
                 callback: (value) => `$${value}`,
                 color: getStyle('--color-text-muted'),
-                font: { family: "'Fira Code', monospace", size: 10 },
+                font: { family: "'Fira Code', monospace", size: 14 },
               },
               grid: { color: getStyle('--divider') },
             },
@@ -154,7 +154,7 @@ export default {
               borderColor: getStyle('--color-accent-yellow'),
               borderWidth: 1,
             },
-            legend: { display: true },
+            legend: { display: false },
           },
           onClick: (evt) => {
             const points = chartInstance.value.getElementsAtEventForMode(
@@ -179,6 +179,8 @@ export default {
       const totalNet = chartData.value.reduce((sum, d) => sum + d.net, 0)
       return { totalIncome, totalExpenses, totalNet }
     })
+
+    watch(chartData, updateChart)
 
     onMounted(() => {
       fetchData()

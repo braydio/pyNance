@@ -28,9 +28,9 @@
 
 #### Daily Net Income Chart
 
-- Currently broken—no data displayed.
-- Increase font size of axis labels.
-- Remove legend (green/red is self-explanatory).
+- ✅ Chart renders data correctly.
+- ✅ Axis label font size increased for readability.
+- ✅ Legend removed (green/red is self-explanatory).
 
 #### Spending by Category Chart _(Requested)_
 
