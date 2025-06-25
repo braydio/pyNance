@@ -34,8 +34,11 @@
 
 #### Spending by Category Chart _(Requested)_
 
-- Currently not displaying any data.
-- Axis labels too small—increase for readability.
+- Not displaying graphics still
+- This should be Category-Tree style category filtering. Support for General Category Selection , Detailed Subcategory Selection without duping.
+- Needs a 'Select All' option for categories.
+- Should load with top 5 categories (by total transaction value) rendered.
+- Category selector should be scrollable dropdown menu
 - Style the chart title appropriately.
 - Legend and category selectors are too large:
 
