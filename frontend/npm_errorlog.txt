@@ -1,0 +1,88 @@
+Error: Cannot apply unknown utility class `text-lg`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `text-lg`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `text-xl`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `text-xl`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `p-2`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `p-4`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `p-2`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
+Error: Cannot apply unknown utility class `px-2`. Are you using CSS modules or similar and missing `@reference`? https://tailwindcss.com/docs/functions-and-directives#reference-directive
+    at onInvalidCandidate (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:1312)
+    at ge (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:13:29803)
+    at /home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:373
+    at z (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:3:1656)
+    at Le (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:18:172)
+    at ki (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:780)
+    at async bi (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/tailwindcss/dist/lib.js:35:1123)
+    at async _r (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/node/dist/index.js:10:3384)
+    at async p (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4019)
+    at async Object.Once (/home/braydenchaffee/Projects/Finance/pyNance/frontend/node_modules/@tailwindcss/postcss/dist/index.js:10:4290)
