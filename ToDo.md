@@ -9,13 +9,7 @@
 #### Title & Greeting
 
 - Update styling to match design standards.
-- Theme username with distinct color.
 - Use varying font sizes for multi-line layout.
-- Third-line message should change based on total net worth:
-
-  - Below \$0 → Display concerned, humorous, or sarcastic message.
-  - Above \$1,000 → Display encouraging or smug commentary.
-  - Message tone: amusing, insulting, sarcastic.
 
 #### Account Snapshot
 
@@ -28,9 +22,27 @@
 
 #### Daily Net Income Chart
 
-- ✅ Chart renders data correctly.
-- ✅ Axis label font size increased for readability.
-- ✅ Legend removed (green/red is self-explanatory).
+- Chart does not render data correctly. Inspected API response follows:
+
+```json
+{
+ "0": {
+  "date": "2025-05-27",
+  "expenses": 0,
+  "income": 0,
+  "net": 0,
+  "transaction_count": 0
+ },
+  1: {
+..Same as above..
+}
+
+Status: "Success"
+
+```
+
+- Axis label font size increased for readability. (Unverified)
+- Legend removed (green/red is self-explanatory). (Unverified)
 
 #### Spending by Category Chart _(Requested)_
 
