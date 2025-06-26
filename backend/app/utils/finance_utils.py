@@ -1,6 +1,7 @@
-# app/utils/finance_utils.py
-from app.models import Transaction
+"""Utility helpers for normalizing financial data."""
+
 from app.config import logger
+from app.models import Transaction
 
 
 def normalize_account_balance(balance, account_type):
@@ -65,7 +66,7 @@ def transform_transaction(txn: Transaction):
     """Transform raw transaction amount for display based on account type."""
     txn_type = txn.transaction_type or "expense"
     if txn.transaction_type:
-        print(f"Transaction type as {txn_type}")
+        logger.debug(f"Transaction type as {txn_type}")
 
     return normalize_transaction_amount(
         amount=txn.amount,

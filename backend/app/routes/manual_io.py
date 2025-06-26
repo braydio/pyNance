@@ -1,21 +1,16 @@
-import csv
 import json
 import os
-import traceback
-from io import TextIOWrapper
-from flask import Blueprint, request, jsonify
+
+from app.config import CLIENT_NAME, DIRECTORIES, logger
 from app.extensions import db
-from app.models import Account
-from app.helpers.plaid_helpers import (
-    get_item,
-    get_institution_name,
-    get_accounts as get_plaid_accounts,
-)
-from app.helpers.teller_helpers import get_teller_accounts
 from app.helpers.import_helpers import dispatch_import
+from app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
+from app.helpers.plaid_helpers import get_institution_name, get_item
+from app.helpers.teller_helpers import get_teller_accounts
+from app.models import Account
 from app.sql import account_logic
 from app.sql.manual_import_logic import upsert_imported_transactions
-from app.config import logger, DIRECTORIES, CLIENT_NAME
+from flask import Blueprint, jsonify, request
 
 IMPORT_DIR = DIRECTORIES["IMPORT_DIR"]
 manual_up = Blueprint("manual_up", __name__)
@@ -190,7 +185,7 @@ def import_selected_file():
         return jsonify({"error": "Missing file name."}), 400
 
     filepath = os.path.join(IMPORT_DIR, filename)
-    print(f"[IMPORT] Attempting to load file from: {filepath}")
+    logger.info(f"[IMPORT] Attempting to load file from: {filepath}")
 
     if not os.path.exists(filepath):
         return jsonify({"error": "File does not exist."}), 404
@@ -223,16 +218,15 @@ def import_selected_file():
 @manual_up.route("/files", methods=["GET"])
 def list_import_files():
     try:
-        print(f"[IMPORT FILES] Scanning: {IMPORT_DIR}")
+        logger.info(f"[IMPORT FILES] Scanning: {IMPORT_DIR}")
         files = [
             f
             for f in os.listdir(IMPORT_DIR)
             if f.endswith((".csv", ".pdf"))
             and os.path.isfile(os.path.join(IMPORT_DIR, f))
         ]
-        print(f"[IMPORT FILES] Found: {files}")
+        logger.info(f"[IMPORT FILES] Found: {files}")
         return jsonify(sorted(files))
     except Exception as e:
-        print(f"[IMPORT FILES ERROR] {e}")
-        traceback.print_exc()
+        logger.error(f"[IMPORT FILES ERROR] {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

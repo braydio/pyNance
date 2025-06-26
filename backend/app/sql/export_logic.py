@@ -9,6 +9,7 @@ excessive memory usage.
 import csv
 import io
 
+from app.config import logger
 from app.extensions import db
 from app.models import Account, RecurringTransaction, Transaction
 from flask import current_app, send_file
@@ -74,9 +75,9 @@ def export_all_to_csv(chunk_size: int = CHUNK_SIZE) -> None:
                     count += 1
 
             if count:
-                print(f"Exported {count} rows to {filename}")
+                logger.info(f"Exported {count} rows to {filename}")
             else:
-                print(f"No data for {model.__name__}")
+                logger.info(f"No data for {model.__name__}")
 
 
 def run_export() -> None:
