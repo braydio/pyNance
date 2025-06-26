@@ -1,10 +1,9 @@
 # file: app/routes/plaid_transactions.py
-from datetime import datetime
+from datetime import datetime, timezone
 
-from app.config import PLAID_CLIENT_ID, PLAID_CLIENT_NAME, CLIENT_NAME, logger
+from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
-    refresh_plaid_categories,
     exchange_public_token,
     generate_link_token,
     get_accounts,
@@ -106,7 +105,7 @@ def exchange_public_token_endpoint():
                 access_token=access_token,
                 item_id=item_id,
                 institution_id=institution_id,
-                last_refreshed=datetime.utcnow(),
+                last_refreshed=datetime.now(timezone.utc),
             )
             db.session.add(new_plaid_account)
 

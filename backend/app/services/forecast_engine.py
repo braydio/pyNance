@@ -1,9 +1,10 @@
 # forecast_engine.py
-from datetime import datetime, timedelta
-from typing import List
 from collections import defaultdict
+from datetime import datetime, timedelta, timezone
+from typing import List
+
+from app.models import AccountHistory, RecurringTransaction
 from sqlalchemy.orm import Session
-from app.models import RecurringTransaction, AccountHistory
 
 
 class ForecastEngine:
@@ -74,7 +75,7 @@ class ForecastEngine:
 
         output = []
         for i in range(horizon_days):
-            day = (datetime.utcnow() + timedelta(days=i)).date()
+            day = (datetime.now(timezone.utc) + timedelta(days=i)).date()
             for acc_id in balances:
                 delta = daily_txns[day][acc_id]
                 balances[acc_id] += delta

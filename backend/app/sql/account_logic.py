@@ -1,26 +1,23 @@
 """Database persistence and refresh helpers for account data."""
 
-from tempfile import NamedTemporaryFile
 import json
 import time
 from datetime import date as pydate
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from tempfile import NamedTemporaryFile
 
 import requests
-from app.config import FILES, PLAID_CLIENT_ID, PLAID_SECRET, logger
+from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import (
     get_accounts,
     get_transactions,
-    resolve_or_create_category,
 )
 from app.models import (
     Account,
     AccountHistory,
     Category,
-    PlaidAccount,
-    TellerAccount,
     Transaction,
 )
 from app.utils.finance_utils import normalize_transaction_amount
@@ -78,7 +75,7 @@ def save_plaid_item(user_id, item_id, access_token, institution_name, product):
     if item:
         item.access_token = access_token
         item.institution_name = institution_name
-        item.updated_at = datetime.utcnow()
+        item.updated_at = datetime.now(timezone.utc)
     else:
         item = PlaidItem(
             user_id=user_id,
@@ -144,7 +141,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                     logger.warning(
                         f"Failed to refresh institution for {account_id}: {e}"
                     )
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             filtered_account = {
                 "account_id": account_id,
                 "user_id": user_id,
@@ -178,7 +175,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
             # Existing AccountHistory logic follows...
 
             # Patched: safely upsert AccountHistory with conflict resolution
-            today = datetime.utcnow().date()
+            today = datetime.now(timezone.utc).date()
             stmt = (
                 insert(AccountHistory)
                 .values(
@@ -186,14 +183,14 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                     user_id=user_id,
                     date=today,
                     balance=balance,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc),
                 )
                 .on_conflict_do_update(
                     index_elements=["account_id", "date"],
                     set_={
                         "balance": balance,
-                        "updated_at": datetime.utcnow(),
+                        "updated_at": datetime.now(timezone.utc),
                     },
                 )
             )
@@ -314,7 +311,9 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json if isinstance(txns_json, list) else []
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
         )
 
         for txn in txns_list:
@@ -397,7 +396,7 @@ def refresh_data_for_teller_account(
         )
 
     # Finalize AccountHistory
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     existing_history = AccountHistory.query.filter_by(
         account_id=account_id, date=today
     ).first()
@@ -407,7 +406,7 @@ def refresh_data_for_teller_account(
         )
         existing_history.balance = balance
         existing_history.is_hidden = account.is_hidden
-        existing_history.updated_at = datetime.utcnow()
+        existing_history.updated_at = datetime.now(timezone.utc)
     else:
         logger.debug(
             f"[CREATING] AccountHistory for account_id={account_id} on {today}"
@@ -418,8 +417,8 @@ def refresh_data_for_teller_account(
             date=today,
             balance=balance,
             is_hidden=account.is_hidden,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
         )
         db.session.add(new_history)
 
@@ -486,7 +485,7 @@ def refresh_data_for_plaid_account(
     ``start_date`` and ``end_date`` is retrieved.
     """
     updated = False
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
 
     PLAID_MAX_LOOKBACK_DAYS = 680
     end_date_obj = end_date or now.date()
@@ -517,7 +516,7 @@ def refresh_data_for_plaid_account(
                     or 0
                 )
                 account.balance = normalize_balance(raw_balance, account.type)
-                account.updated_at = datetime.utcnow()
+                account.updated_at = datetime.now(timezone.utc)
                 logger.debug(
                     f"[REFRESH] Updated balance for {account_id}: {account.balance}"
                 )

@@ -1,11 +1,11 @@
 # backend/app/sql/forecast_logic.py
-from datetime import datetime, timedelta
-from sqlalchemy import func
-from sqlalchemy.dialects.sqlite import insert
+from datetime import datetime, timedelta, timezone
 
+from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, RecurringTransaction, Transaction
-from app.config import logger
+from sqlalchemy import func
+from sqlalchemy.dialects.sqlite import insert
 
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
@@ -27,8 +27,8 @@ def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
 
 
 def update_account_history(account_id, user_id, balance, is_hidden=None):
-    today = datetime.utcnow().date()
-    now = datetime.utcnow()
+    today = datetime.now(timezone.utc).date()
+    now = datetime.now(timezone.utc)
 
     try:
         stmt = (
