@@ -11,10 +11,12 @@
       </h3>
       <p class="text-[var(--color-accent-magenta)] italic text-sm">Why don't you take a seat.</p>
     </header>
+
     <!-- Account Actions -->
     <section class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
       <div class="flex flex-wrap gap-4 justify-center">
         <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
+
         <button @click="togglePlaidRefresh"
           class="px-4 py-2 rounded bg-[var(--color-accent-blue)] text-white font-semibold shadow hover:bg-opacity-80 transition">
           {{ showPlaidRefresh ? 'Hide' : 'Refresh' }} Plaid Accounts
@@ -39,18 +41,12 @@
       </div>
     </section>
 
-
-
     <!-- Charts -->
     <section class="flex flex-col gap-6">
       <div class="flex flex-wrap gap-2 justify-between items-start">
         <div
           class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
           <NetYearComparisonChart />
-        </div>
-        <div
-          class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] bg-[var(--color-bg-secondary)] rounded-lg shadow-md p-3">
-          <PlaidProductScopeSelector v-model="selectedProducts" />
         </div>
       </div>
 
@@ -83,13 +79,12 @@ const selectedProducts = ref([])
 const showTokenForm = ref(false)
 const showPlaidRefresh = ref(false)
 const showTellerRefresh = ref(false)
-
 const reorderChart = ref(null)
 
-// Environment info
+// Environment
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 
-// Actions
+// Methods
 function toggleManualTokenMode() {
   showTokenForm.value = !showTokenForm.value
 }
@@ -115,7 +110,6 @@ import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
-import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
 </script>
 
 <style scoped>
