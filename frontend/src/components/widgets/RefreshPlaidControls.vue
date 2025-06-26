@@ -111,6 +111,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .control-block {
   background-color: var(--themed-bg);
   color: var(--color-text-light);

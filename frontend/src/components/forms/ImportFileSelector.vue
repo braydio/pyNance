@@ -64,6 +64,7 @@ onMounted(loadFiles)
 
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .import-selector {
   padding: 1rem;
   background-color: var(--color-bg-secondary);

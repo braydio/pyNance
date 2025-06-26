@@ -18,6 +18,7 @@ defineProps({
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .breakdown-panel {
   background: var(--surface);
   padding: 1rem;

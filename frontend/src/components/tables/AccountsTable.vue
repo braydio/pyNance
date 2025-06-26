@@ -262,6 +262,7 @@ export default {
 
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .accounts-section {
   background-color: var(--color-bg-secondary);
   padding: 1.5rem;

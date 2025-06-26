@@ -83,6 +83,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .forecast-view {
   background: var(--page-bg);
   color: var(--theme-fg);

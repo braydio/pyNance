@@ -91,6 +91,7 @@ watch(
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .chart-container {
   background-color: var(--surface);
   color: var(--theme-fg);

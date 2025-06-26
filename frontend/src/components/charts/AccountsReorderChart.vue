@@ -118,6 +118,7 @@ defineExpose({
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .chart-container {
   padding: 1rem 1.25rem;
   background: var(--color-bg-secondary);
