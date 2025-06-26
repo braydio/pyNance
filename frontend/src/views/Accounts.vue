@@ -11,27 +11,34 @@
       </h3>
       <p class="text-[var(--color-accent-magenta)] italic text-sm">Why don't you take a seat.</p>
     </header>
-
     <!-- Account Actions -->
     <section class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
       <div class="flex flex-wrap gap-4 justify-center">
         <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
-
         <button @click="togglePlaidRefresh"
           class="px-4 py-2 rounded bg-[var(--color-accent-blue)] text-white font-semibold shadow hover:bg-opacity-80 transition">
           {{ showPlaidRefresh ? 'Hide' : 'Refresh' }} Plaid Accounts
         </button>
-        <RefreshPlaidControls v-if="showPlaidRefresh" />
+        <Transition name="fade-slide" mode="out-in">
+          <div v-if="showPlaidRefresh" class="w-full">
+            <RefreshPlaidControls />
+          </div>
+        </Transition>
 
         <button @click="toggleTellerRefresh"
           class="px-4 py-2 rounded bg-[var(--color-accent-mint)] text-black font-semibold shadow hover:bg-opacity-80 transition">
           {{ showTellerRefresh ? 'Hide' : 'Refresh' }} Teller Accounts
         </button>
-        <RefreshTellerControls v-if="showTellerRefresh" />
+        <Transition name="fade-slide" mode="out-in">
+          <div v-if="showTellerRefresh" class="w-full">
+            <RefreshTellerControls />
+          </div>
+        </Transition>
 
         <TokenUpload v-if="showTokenForm" @cancel="toggleManualTokenMode" />
       </div>
     </section>
+
 
 
     <!-- Charts -->
@@ -115,5 +122,30 @@ import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelec
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);
+}
+
+.fade-slide-enter-active,
+.fade-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.fade-slide-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.fade-slide-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-slide-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.fade-slide-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 </style>
