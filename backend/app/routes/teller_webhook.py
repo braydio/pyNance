@@ -1,14 +1,16 @@
 # teller_webhook.py
-import hmac
-import hashlib
 import base64
+import hashlib
+import hmac
 import json
-from flask import Blueprint, request, jsonify, current_app
+from datetime import datetime, timezone
+
 from app.config import FILES, logger
-from app.helpers.teller_helpers import load_tokens
-from app.sql import account_logic
 from app.extensions import db
+from app.helpers.teller_helpers import load_tokens
 from app.models import Account
+from app.sql import account_logic
+from flask import Blueprint, jsonify, request
 
 TELLER_WEBHOOK_SECRET = FILES.get("TELLER_WEBHOOK_SECRET")
 
@@ -89,7 +91,7 @@ def teller_webhook():
                 FILES["TELLER_API_BASE_URL"],
             )
             if updated:
-                account.last_refreshed = datetime.utcnow()
+                account.last_refreshed = datetime.now(timezone.utc)
                 db.session.commit()
 
         return jsonify({"status": "ok"}), 200

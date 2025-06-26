@@ -1,8 +1,7 @@
 # teller_transactions.py
 import json
-import os
-from datetime import datetime
-import requests
+from datetime import datetime, timezone
+
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens  # Use the shared helper
@@ -96,7 +95,7 @@ def teller_refresh_accounts():
             )
             if updated:
                 updated_accounts.append(account.name)
-                account.last_refreshed = datetime.utcnow()
+                account.last_refreshed = datetime.now(timezone.utc)
         db.session.commit()
         return (
             jsonify(

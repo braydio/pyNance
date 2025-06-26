@@ -1,9 +1,11 @@
 # forecast_orchestrator.py
-from datetime import datetime, timedelta
-from sqlalchemy import func
-from .forecast_engine import ForecastEngine as ForecastEngineRuleBased
+from datetime import datetime, timedelta, timezone
+
 from app.models import Account, AccountHistory
 from app.sql import forecast_logic
+from sqlalchemy import func
+
+from .forecast_engine import ForecastEngine as ForecastEngineRuleBased
 
 try:  # Optional dependency
     from .forecast_stat_model import ForecastEngine as ForecastEngineStatModel
@@ -41,7 +43,7 @@ class ForecastOrchestrator:
     ):
         """Assemble forecast and actual lines with metadata."""
 
-        start = datetime.utcnow().date()
+        start = datetime.now(timezone.utc).date()
         horizon = 30 if view_type.lower() == "month" else 365
         end = start + timedelta(days=horizon - 1)
 
