@@ -13,22 +13,36 @@
     </header>
 
     <!-- Account Actions -->
-    <div class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
+    <section class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
       <div class="flex flex-wrap gap-4 justify-center">
         <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
-        <RefreshPlaidControls />
-        <RefreshTellerControls />
+
+        <button @click="togglePlaidRefresh"
+          class="px-4 py-2 rounded bg-[var(--color-accent-blue)] text-white font-semibold shadow hover:bg-opacity-80 transition">
+          {{ showPlaidRefresh ? 'Hide' : 'Refresh' }} Plaid Accounts
+        </button>
+        <RefreshPlaidControls v-if="showPlaidRefresh" />
+
+        <button @click="toggleTellerRefresh"
+          class="px-4 py-2 rounded bg-[var(--color-accent-mint)] text-black font-semibold shadow hover:bg-opacity-80 transition">
+          {{ showTellerRefresh ? 'Hide' : 'Refresh' }} Teller Accounts
+        </button>
+        <RefreshTellerControls v-if="showTellerRefresh" />
+
         <TokenUpload v-if="showTokenForm" @cancel="toggleManualTokenMode" />
       </div>
-    </div>
+    </section>
+
 
     <!-- Charts -->
     <section class="flex flex-col gap-6">
       <div class="flex flex-wrap gap-2 justify-between items-start">
-        <div class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
+        <div
+          class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
           <NetYearComparisonChart />
         </div>
-        <div class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] bg-[var(--color-bg-secondary)] rounded-lg shadow-md p-3">
+        <div
+          class="flex-1 shrink basis-[48%] max-w-[48%] min-w-[300px] bg-[var(--color-bg-secondary)] rounded-lg shadow-md p-3">
           <PlaidProductScopeSelector v-model="selectedProducts" />
         </div>
       </div>
@@ -43,12 +57,12 @@
 
     <!-- Accounts Table -->
     <div class="p-6 bg-[var(--color-bg-secondary)] rounded-lg shadow-lg border border-[var(--divider)]">
-     <InstitutionTable @refresh="refreshCharts" />
+      <InstitutionTable @refresh="refreshCharts" />
     </div>
 
-
     <!-- Footer -->
-    <footer class="mt-12 text-center text-sm text-[var(--color-text-muted)] border-t border-[var(--themed-border)] pt-4">
+    <footer
+      class="mt-12 text-center text-sm text-[var(--color-text-muted)] border-t border-[var(--themed-border)] pt-4">
       &copy; good dashroad.
     </footer>
   </div>
@@ -57,8 +71,35 @@
 <script setup>
 import { ref } from 'vue'
 
+// State
 const selectedProducts = ref([])
+const showTokenForm = ref(false)
+const showPlaidRefresh = ref(false)
+const showTellerRefresh = ref(false)
 
+const reorderChart = ref(null)
+
+// Environment info
+const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
+
+// Actions
+function toggleManualTokenMode() {
+  showTokenForm.value = !showTokenForm.value
+}
+
+function togglePlaidRefresh() {
+  showPlaidRefresh.value = !showPlaidRefresh.value
+}
+
+function toggleTellerRefresh() {
+  showTellerRefresh.value = !showTellerRefresh.value
+}
+
+function refreshCharts() {
+  reorderChart.value?.refresh?.()
+}
+
+// Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
 import InstitutionTable from '@/components/tables/InstitutionTable.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
@@ -67,22 +108,7 @@ import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
-
-import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
-
-const reorderChart = ref(null)
-function refreshCharts() {
-  reorderChart.value?.refresh()
-}
-
-// Meta & State
-const userName = import.meta.env.VITE_USER_ID_PLAID || ''
-
-const showTokenForm = ref(false)
-
-function toggleManualTokenMode() {
-  showTokenForm.value = !showTokenForm.value
-}
+import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
 </script>
 
 <style scoped>
