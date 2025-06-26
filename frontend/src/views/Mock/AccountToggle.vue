@@ -51,6 +51,7 @@ const toggleAccount = (account) => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 select:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);

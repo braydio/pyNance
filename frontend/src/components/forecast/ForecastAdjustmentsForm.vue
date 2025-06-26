@@ -27,6 +27,7 @@ function submitAdjustment() {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .adjustments-form {
   background: var(--surface);
   padding: 1rem;

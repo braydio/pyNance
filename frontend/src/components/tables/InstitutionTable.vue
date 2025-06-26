@@ -85,5 +85,6 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 th, td { @apply p-2; }
 </style>

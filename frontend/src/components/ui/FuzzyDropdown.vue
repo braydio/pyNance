@@ -69,6 +69,7 @@ const filtered = computed(() => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .dropdown-menu {
   @apply absolute bg-[var(--themed-bg)] border border-[var(--divider)] p-2 flex flex-col gap-1 max-h-48 overflow-y-auto z-10;
 }

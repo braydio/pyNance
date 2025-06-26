@@ -70,6 +70,7 @@
   </script>
   
   <style scoped>
+@reference "../../assets/css/main.css";
 @import '@/styles/global-colors.css';
 
   .video-container {

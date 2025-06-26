@@ -204,6 +204,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .daily-net-chart {
   margin: 1rem;
   background-color: var(--color-bg-sec);

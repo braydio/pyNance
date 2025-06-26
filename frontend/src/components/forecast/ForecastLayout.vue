@@ -49,6 +49,7 @@ function addAdjustment(adjustment) {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .forecast-layout {
   display: flex;
   flex-direction: column;

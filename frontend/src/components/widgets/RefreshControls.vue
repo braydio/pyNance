@@ -16,6 +16,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .refresh-controls {
   display: flex;
   gap: 1rem;

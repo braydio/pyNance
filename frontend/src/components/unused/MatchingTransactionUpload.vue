@@ -104,6 +104,7 @@ const uploadFile = async () => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 select {
   min-width: 240px;
 }

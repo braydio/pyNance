@@ -9,6 +9,7 @@ import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
 </script>
 
 <style scoped>
+@reference "../assets/css/main.css";
 .forecast-view {
   background-color: var(--page-bg);
   color: var(--theme-fg);

@@ -176,6 +176,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .recurring-manager {
   width: 100%;
   margin-top: 2rem;
