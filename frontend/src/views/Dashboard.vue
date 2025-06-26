@@ -33,7 +33,8 @@
           <AccountsTable />
         </div>
       </BaseCard>
-      <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions" @close="showModal = false" />
+      <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
+        @close="showModal = false" />
     </div>
 
     <template #footer>
@@ -106,14 +107,15 @@ async function openCategoryModal(category) {
  * `POSITIVE_MESSAGES`, and everything else from `NEUTRAL_MESSAGES`.
  */
 const NEGATIVE_MESSAGES = [
-  "Yikes! You're in the red.",
-  'Looks like debts outweigh assets.'
+  "How terribly grim...",
+  'and things are looking quite bleak.'
 ]
 const POSITIVE_MESSAGES = [
-  'Awesome! Your fortune grows.',
-  "You're well in the black."
+  'Your fortune grows...',
+  "Ahh... well in the black."
 ]
-const NEUTRAL_MESSAGES = ['Steady as she goes.', 'Room for growth ahead.']
+const NEUTRAL_MESSAGES = ["It's a beige alert!", "How very... neutral."]
+
 
 const netWorthMessage = computed(() => {
   const worth = Number(netWorth.value || 0)
