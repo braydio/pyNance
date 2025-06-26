@@ -13,3 +13,7 @@ export const updateTransaction = async (transactionData) => {
   return response.data
 }
 
+export async function fetchCategoryBreakdownTree(params = {}) {
+  const response = await axios.get('/api/charts/category_breakdown_tree', { params })
+  return response.data
+}
