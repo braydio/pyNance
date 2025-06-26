@@ -1,14 +1,14 @@
 # app/cli/get_plaid_institutions.py
 
 import csv
-import sys
 import os
+import sys
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # for local imports
 
-from config import plaid_client
-from plaid.model.institutions_get_request import InstitutionsGetRequest
+from config import logger, plaid_client
 from plaid.model.country_code import CountryCode
+from plaid.model.institutions_get_request import InstitutionsGetRequest
 
 
 def fetch_plaid_institutions(count=500, country_codes=["US"]):
@@ -45,7 +45,7 @@ def save_as_csv(institutions, path="plaid_institutions.csv"):
                     inst.get("url", ""),
                 ]
             )
-    print(f"Saved {len(institutions)} institutions to {path}")
+    logger.info(f"Saved {len(institutions)} institutions to {path}")
 
 
 if __name__ == "__main__":
