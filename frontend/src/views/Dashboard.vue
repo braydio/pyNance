@@ -114,7 +114,7 @@ const POSITIVE_MESSAGES = [
   'Your fortune grows...',
   "Ahh... well in the black."
 ]
-const NEUTRAL_MESSAGES = ["It's a beige alert!", "How very... neutral."]
+const NEUTRAL_MESSAGES = ["Uh... keep up the... whatever this is.", "How very... neutral."]
 
 
 const netWorthMessage = computed(() => {
