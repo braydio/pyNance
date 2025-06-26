@@ -1,9 +1,11 @@
+"""CLI utilities for mapping and updating institutions across providers."""
+
 import csv
 import json
 
 from app.config import logger
+from app.extensions import db
 from app.models import Institution, PlaidAccount, TellerAccount
-from extensions import db
 
 
 # --- Step 1: Build mapping from institution names to DB IDs ---
