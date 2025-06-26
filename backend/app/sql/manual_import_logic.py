@@ -1,5 +1,5 @@
 # manual_import_logic.py
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.extensions import db
 from app.models import Transaction
@@ -19,9 +19,9 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
             try:
                 parsed_date = datetime.fromisoformat(raw_date)
             except (TypeError, ValueError):
-                parsed_date = datetime.utcnow()
+                parsed_date = datetime.now(timezone.utc)
         else:
-            parsed_date = datetime.utcnow()
+            parsed_date = datetime.now(timezone.utc)
 
         txn = Transaction(
             transaction_id=tx.get("transaction_id"),

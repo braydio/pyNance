@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from app.config import logger  # uses app logger
 from app.models import Account, db
@@ -14,7 +14,7 @@ def is_due(last_synced, provider):
     """Returns True if the account should be refreshed."""
     if not last_synced:
         return True
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return now - last_synced >= SYNC_INTERVALS.get(provider, timedelta(days=1))
 
 
@@ -53,7 +53,7 @@ def refresh_all_accounts():
             )
             sync_service.sync_account(acct)
             if rel:
-                rel.last_refreshed = datetime.utcnow()
+                rel.last_refreshed = datetime.now(timezone.utc)
             db.session.commit()
             updated += 1
             logger.info(
@@ -65,6 +65,4 @@ def refresh_all_accounts():
                 f"❌ Sync failed for account {acct.id}: {str(e)}", exc_info=True
             )
 
-    logger.info(
-        f"🔚 Account refresh complete: {updated} updated, {skipped} skipped."
-    )
+    logger.info(f"🔚 Account refresh complete: {updated} updated, {skipped} skipped.")

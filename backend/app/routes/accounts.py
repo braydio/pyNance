@@ -1,6 +1,6 @@
 """Account management and refresh routes."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from app.config import logger
 from app.extensions import db
@@ -61,7 +61,7 @@ def refresh_all_accounts():
                     end_date=end_date,
                 )
                 if updated and account.plaid_account:
-                    account.plaid_account.last_refreshed = datetime.utcnow()
+                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
                     updated_accounts.append(account.name)
                     inst = account.institution_name or "Unknown"
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
@@ -89,7 +89,7 @@ def refresh_all_accounts():
                     end_date=end_date,
                 )
                 if updated and account.teller_account:
-                    account.teller_account.last_refreshed = datetime.utcnow()
+                    account.teller_account.last_refreshed = datetime.now(timezone.utc)
                     updated_accounts.append(account.name)
                     inst = account.institution_name or "Unknown"
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
@@ -147,7 +147,7 @@ def refresh_single_account(account_id):
             end_date=end_date,
         )
         if updated and account.plaid_account:
-            account.plaid_account.last_refreshed = datetime.utcnow()
+            account.plaid_account.last_refreshed = datetime.now(timezone.utc)
 
     elif account.link_type == "Teller":
         access_token = None
@@ -175,7 +175,7 @@ def refresh_single_account(account_id):
             end_date=end_date,
         )
         if updated and account.teller_account:
-            account.teller_account.last_refreshed = datetime.utcnow()
+            account.teller_account.last_refreshed = datetime.now(timezone.utc)
     else:
         return (
             jsonify({"status": "error", "message": "Unsupported link type"}),

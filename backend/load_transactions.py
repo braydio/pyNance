@@ -1,7 +1,8 @@
 import random
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+
 from app import create_app, db
-from app.models import Account, Transaction, Category
+from app.models import Account, Category, Transaction
 
 CATEGORIES = {
     "groceries": (-80, -150),
@@ -24,7 +25,7 @@ def get_or_create_category(name):
 
 def generate_transactions_for_account(account, months=6, start_date=None):
     if not start_date:
-        start_date = datetime.utcnow() - timedelta(days=30 * months)
+        start_date = datetime.now(timezone.utc) - timedelta(days=30 * months)
 
     transactions = []
     for month_offset in range(months):

@@ -1,7 +1,7 @@
 """Routes for Teller account linking and data ingestion."""
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 from app.config import FILES, TELLER_APP_ID, logger
@@ -112,7 +112,7 @@ def link_account():
         rec = TellerAccount.query.filter_by(account_id=acct_id).first()
         if rec:
             rec.access_token = access_token
-            rec.updated_at = datetime.utcnow()
+            rec.updated_at = datetime.now(timezone.utc)
         else:
             db.session.add(TellerAccount(account_id=acct_id, access_token=access_token))
 
