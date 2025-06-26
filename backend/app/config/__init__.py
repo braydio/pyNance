@@ -1,31 +1,51 @@
 # backend/app/config/__init__.py
 
-from .log_setup import setup_logger
-from .plaid_config import PLAID_BASE_URL, plaid_client
+"""Expose configuration constants and logger setup across the app."""
+
+from .constants import DATABASE_NAME, FILES, SQLALCHEMY_DATABASE_URI
 from .environment import (
     CLIENT_NAME,
     FLASK_ENV,
-    PLAID_CLIENT_NAME,
     PLAID_CLIENT_ID,
-    PLAID_SECRET,
+    PLAID_CLIENT_NAME,
     PLAID_ENV,
+    PLAID_SECRET,
+    PRODUCTS,
     TELLER_API_BASE_URL,
     TELLER_APP_ID,
     TELLER_CERTIFICATE,
     TELLER_PRIVATE_KEY,
     TELLER_WEBHOOK_SECRET,
-    VARIABLE_ENV_TOKEN,
     VARIABLE_ENV_ID,
-    PRODUCTS,
+    VARIABLE_ENV_TOKEN,
 )
-from .constants import (
-    FILES,
-    DATABASE_NAME,
-    SQLALCHEMY_DATABASE_URI,
-    FILES,
-    DIRECTORIES,
-)
+from .log_setup import setup_logger
 from .paths import DIRECTORIES
+from .plaid_config import PLAID_BASE_URL, plaid_client
+
+__all__ = [
+    "CLIENT_NAME",
+    "FLASK_ENV",
+    "PLAID_CLIENT_NAME",
+    "PLAID_CLIENT_ID",
+    "PLAID_SECRET",
+    "PLAID_ENV",
+    "TELLER_API_BASE_URL",
+    "TELLER_APP_ID",
+    "TELLER_CERTIFICATE",
+    "TELLER_PRIVATE_KEY",
+    "TELLER_WEBHOOK_SECRET",
+    "VARIABLE_ENV_TOKEN",
+    "VARIABLE_ENV_ID",
+    "PRODUCTS",
+    "FILES",
+    "DATABASE_NAME",
+    "SQLALCHEMY_DATABASE_URI",
+    "DIRECTORIES",
+    "plaid_client",
+    "PLAID_BASE_URL",
+    "logger",
+]
 
 env_check = PLAID_ENV.upper()
 
