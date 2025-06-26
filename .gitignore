@@ -1,8 +1,6 @@
 # Legacy directory
-Dash/
 *.pem
-*dev
-dev*
+
 
 # Flask Alembic Migrate files
 migrations/
@@ -10,13 +8,16 @@ migrations/
 # Byte-compiled / compiled Python files
 *.py[cod]
 __pycache__/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 
 # Virtual environment
 env/
 venv/
 .venv/
 *.env
-!example.env
+!*/example.env
 
 # Logs
 *.log
@@ -63,3 +64,7 @@ app/temp/
 *.egg-info/
 *.lock
 *.local
+.coverage
+htmlcov/
+.nox/
+.tox/
