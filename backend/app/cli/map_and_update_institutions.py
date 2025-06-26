@@ -1,10 +1,9 @@
 import csv
 import json
-import os
-import sys
 
-from extensions import db
+from app.config import logger
 from app.models import Institution, PlaidAccount, TellerAccount
+from extensions import db
 
 
 # --- Step 1: Build mapping from institution names to DB IDs ---
@@ -46,7 +45,7 @@ def update_plaid_accounts(institution_name_to_id, plaid_name_to_id):
                     pa.institution_db_id = institution_id
                     updated += 1
     db.session.commit()
-    print(f"Updated {updated} plaid_accounts rows.")
+    logger.info(f"Updated {updated} plaid_accounts rows.")
 
 
 def update_teller_accounts(institution_name_to_id, teller_name_to_id):
@@ -59,7 +58,7 @@ def update_teller_accounts(institution_name_to_id, teller_name_to_id):
                     ta.institution_db_id = institution_id
                     updated += 1
     db.session.commit()
-    print(f"Updated {updated} teller_accounts rows.")
+    logger.info(f"Updated {updated} teller_accounts rows.")
 
 
 def main():
