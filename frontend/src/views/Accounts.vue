@@ -86,6 +86,7 @@ function toggleManualTokenMode() {
 </script>
 
 <style scoped>
+@reference "../assets/css/main.css";
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);

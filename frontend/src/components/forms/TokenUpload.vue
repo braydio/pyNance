@@ -57,6 +57,7 @@ const submit = async () => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .link-account {
   margin: 0 auto;
   background-color: var(--themed-bg);
@@ -133,6 +134,7 @@ const submit = async () => {
 
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .link-account {
   margin: 0 auto;
   background-color: var(--themed-bg);

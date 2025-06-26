@@ -44,6 +44,7 @@ const netDelta = computed(() => {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .summary-panel {
   background: var(--surface);
   padding: 1rem;

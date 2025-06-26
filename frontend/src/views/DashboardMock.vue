@@ -118,6 +118,7 @@ function handleChartClick({ index }) {
 </script>
 
 <style scoped>
+@reference "../assets/css/main.css";
 table {
   border-collapse: collapse;
 }

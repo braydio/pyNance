@@ -29,6 +29,7 @@ function emitClose() {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .modal-fade-enter-active,
 .modal-fade-leave-active {
   transition: opacity 0.2s ease;

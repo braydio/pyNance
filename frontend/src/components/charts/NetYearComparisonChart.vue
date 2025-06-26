@@ -143,6 +143,7 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .chart-container {
   width: 100%;
   padding: 0.75rem;

@@ -167,6 +167,7 @@ onMounted(fetchData)
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .category-breakdown-chart {
   margin: 1rem;
   background-color: var(--color-bg-sec);

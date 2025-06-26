@@ -68,5 +68,6 @@ const { labels, forecastLine, actualLine } = useForecastEngine(
 </script>
 
 <style scoped>
+@reference "../assets/css/main.css";
 /* Matches dashboard vibe */
 </style>

@@ -77,6 +77,7 @@ function formatCurrency(val) {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
 .card {
   @apply bg-[var(--color-bg-secondary)] border border-[var(--divider)] p-4 rounded-lg shadow;
 }

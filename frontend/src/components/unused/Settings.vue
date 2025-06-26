@@ -67,6 +67,7 @@ export default {
   };
 </script>
 <style scoped>
+@reference "../../assets/css/main.css";
 .gallery-container {
   padding: 1rem;
   font-family: "Fira Code", monospace;
