@@ -92,7 +92,6 @@ Directory Tree Mapping
 │   │   ├── teller.py
 │   │   ├── teller_transactions.py
 │   │   ├── teller_webhook.py
-│   │   ├── teller_webhoook_disabled.py
 │   │   └── transactions.py
 │   ├── run_api.py
 │   ├── sql
