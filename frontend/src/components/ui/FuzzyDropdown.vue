@@ -1,12 +1,12 @@
 <template>
   <div class="relative">
-    <input v-model="query" type="text" placeholder="Search accounts..." class="input w-full mb-2"
-      @focus="open = true" />
+    <input v-model="query" type="text" :placeholder="placeholder" class="input w-full mb-2" @focus="open = true"
+      @keydown.esc="open = false" @blur="onBlur" />
     <div v-show="open" class="dropdown-menu w-full">
-      <label v-for="item in filtered" :key="item.account_id" class="flex items-center gap-2 py-1">
-        <input type="checkbox" :value="item.account_id" v-model="localValue"
-          :disabled="!localValue.includes(item.account_id) && localValue.length >= max" />
-        <span>{{ item.institution_name || item.name }}</span>
+      <label v-for="item in filtered" :key="item.id" class="flex items-center gap-2 py-1">
+        <input type="checkbox" :value="item.id" v-model="localValue"
+          :disabled="max > 0 && !localValue.includes(item.id) && localValue.length >= max" />
+        <span>{{ item.name }}</span>
       </label>
       <p v-if="!filtered.length" class="text-sm text-gray-500 py-2">No matches</p>
     </div>
@@ -18,19 +18,17 @@ import { ref, computed, watch } from 'vue'
 import Fuse from 'fuse.js'
 
 const props = defineProps({
-  options: { type: Array, default: () => [] },
-  modelValue: {
-    type: Array,
-    default: () => [], // ensures it’s never null by default
-  },
-  max: { type: Number, default: 5 },
+  options: { type: Array, default: () => [] }, // [{id, name}]
+  modelValue: { type: Array, default: () => [] }, // Multi-select
+  max: { type: Number, default: 0 }, // 0 = unlimited
+  placeholder: { type: String, default: 'Search…' },
 })
 const emit = defineEmits(['update:modelValue'])
 
 const query = ref('')
 const open = ref(false)
 
-// ✅ Ensure safe copy even if modelValue is null or not iterable
+// Safe copy for controlled multi-select
 const safeModel = computed(() =>
   Array.isArray(props.modelValue) ? props.modelValue : []
 )
@@ -46,22 +44,25 @@ watch(
   { deep: true }
 )
 
-const fuse = computed(
-  () =>
-    new Fuse(props.options, { keys: ['name', 'institution_name'], threshold: 0.3 })
+const fuse = computed(() =>
+  new Fuse(props.options, { keys: ['name'], threshold: 0.3 })
 )
-
 const filtered = computed(() => {
   if (!query.value) {
-    return props.options.slice(0, props.max)
+    return props.options.slice(0, props.max || 50)
   }
   return fuse.value.search(query.value).map(r => r.item)
 })
+
+// UX: close on blur unless clicking into dropdown
+function onBlur(e) {
+  setTimeout(() => {
+    open.value = false
+  }, 180)
+}
 </script>
 
 <style scoped>
-@reference "../../assets/css/main.css";
-
 .dropdown-menu {
   @apply absolute bg-[var(--themed-bg)] border border-[var(--divider)] p-2 flex flex-col gap-1 max-h-48 overflow-y-auto z-10;
 }
