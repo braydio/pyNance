@@ -68,14 +68,15 @@ This has implications:
 
 ```vue
 <style>
-@reference "../../app.css";
+@reference "../assets/css/main.css";    /* if used inside /src/views */
+@reference "../../assets/css/main.css"; /* if used inside /src/components */
 .my-class {
   @apply text-red-500 font-bold;
 }
 </style>
 ```
 
-> 📌 `@reference` makes global utility classes available to CSS blocks without duplicating them in the bundle.
+> 📌 `@reference` makes global utility classes available to CSS blocks without duplicating them in the bundle. Views live directly under `/src`, while components are one directory deeper, requiring an extra `../` in the path.
 
 #### Option 2: CSS Variables (Preferred for Performance)
 
