@@ -15,10 +15,9 @@
       </div>
     </div>
 
-    <!-- Multi-select dropdown filter -->
-    <FuzzyDropdown :options="flattenedCategories" :modelValue="selectedCategoryIds"
-      @update:modelValue="onCategoryFilter" placeholder="Filter by main/subcategory (multi)…" class="w-80 mb-3"
-      :max="50" />
+    <!-- Grouped Multi-select Dropdown Filter -->
+    <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="selectedCategoryIds"
+      @update:modelValue="onCategoryFilter" class="w-96 mb-3" />
 
     <div class="relative w-full h-[400px]">
       <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
@@ -27,11 +26,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
-import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
+import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
@@ -54,7 +53,6 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-// Fetch & data
 onMounted(fetchData)
 watch(
   [startDate, endDate],
@@ -86,64 +84,38 @@ function sumAmounts(nodes) {
   }, 0)
 }
 
-// -- FLATTENING FOR SELECTOR --
-const flattenedCategories = computed(() => {
-  const flat = []
-  function traverse(node, parentLabel = '') {
-    // Main/root
-    if (!node.parent_id) {
-      flat.push({
-        id: node.id,
-        name: node.label,
-        isRoot: true,
-      })
-      if (node.children) {
-        node.children.forEach(child =>
-          traverse(child, node.label)
-        )
-      }
-    } else {
-      // Subcategory
-      flat.push({
-        id: node.id,
-        name: parentLabel ? `${parentLabel}: ${node.label}` : node.label,
-        isRoot: false,
-      })
-      if (node.children) {
-        node.children.forEach(child =>
-          traverse(child, parentLabel)
-        )
-      }
-    }
-  }
-  (categoryTree.value || []).forEach(root => traverse(root))
-  return flat
+const categoryGroups = computed(() => {
+  // [{id, label, children: [{id, label}]}]
+  return (categoryTree.value || []).map(root => ({
+    id: root.id,
+    label: root.label,
+    children: (root.children || []).map(child => ({
+      id: child.id,
+      label: child.label,
+    })),
+  }))
 })
 
-// -- FILTER --
 function onCategoryFilter(val) {
   selectedCategoryIds.value = Array.isArray(val) ? val : (val ? [val] : [])
   renderChart()
 }
 
-// -- CHART --
 function extractBars(tree, selectedIds = []) {
-  if (Array.isArray(selectedIds) && selectedIds.length) {
-    // Find selected nodes (roots/subcats)
+  // Show only selected detailed cats if any, else all main cats
+  if (selectedIds && selectedIds.length) {
     const found = []
     function findNodes(nodes) {
       for (const node of nodes) {
-        if (selectedIds.includes(node.id) || selectedIds.includes(String(node.id))) {
+        if (selectedIds.includes(node.id)) {
           found.push(node)
         }
         if (node.children) findNodes(node.children)
       }
     }
     findNodes(tree)
-    // Group by root color
     const bars = []
     for (const node of found) {
-      // Find root group index for color
       let rootIdx = tree.findIndex(root => {
         if (root.id === node.id) return true
         function hasDescendant(n) {
@@ -168,7 +140,7 @@ function extractBars(tree, selectedIds = []) {
       colors: bars.map(b => b.color),
     }
   }
-  // No filter: just main cats as bars
+  // No filter: main cats as bars
   const labels = []
   const data = []
   const colors = []
@@ -237,5 +209,7 @@ function renderChart() {
 </script>
 
 <style scoped>
-/* Simple, chart-focused, no legend */
+.dropdown-menu {
+  @apply absolute bg-[var(--themed-bg)] border border-[var(--divider)] p-2 flex flex-col gap-1 max-h-80 overflow-y-auto z-30 min-w-[270px] shadow;
+}
 </style>
