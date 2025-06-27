@@ -8,22 +8,18 @@
           class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
         <input type="date" v-model="endDate"
           class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
-        <button
-          class="legend-toggle px-2 py-1 text-xs rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-dark)] transition-colors"
-          @click="showLegend = !showLegend">
-          {{ showLegend ? 'Hide Legend' : 'Show Legend' }}
-        </button>
       </div>
       <div
         class="chart-summary bg-[var(--color-bg-secondary)] px-3 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto">
         <span>Total: {{ totalSpending.toLocaleString() }}</span>
       </div>
     </div>
-    <div v-if="showLegend"
-      class="legend flex flex-wrap gap-1 mb-2 text-sm text-[var(--color-text-light)] transition-all duration-300">
-      <FuzzyDropdown :options="flattenedCategories" :modelValue="selectedCategoryId"
-        @update:modelValue="val => selectedCategoryId = val" placeholder="Filter by category..." class="w-64" />
-    </div>
+
+    <!-- Multi-select dropdown filter -->
+    <FuzzyDropdown :options="flattenedCategories" :modelValue="selectedCategoryIds"
+      @update:modelValue="onCategoryFilter" placeholder="Filter by main/subcategory (multi)…" class="w-80 mb-3"
+      :max="50" />
+
     <div class="relative w-full h-[400px]">
       <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
     </div>
@@ -39,10 +35,8 @@ import { fetchCategoryBreakdownTree } from '@/api/charts'
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
-const chartData = ref([])
 const categoryTree = ref([])
-const selectedCategoryId = ref(null)
-const showLegend = ref(true)
+const selectedCategoryIds = ref([])
 
 const today = new Date()
 const endDate = ref(today.toISOString().slice(0, 10))
@@ -50,13 +44,20 @@ const startDate = ref(
   new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
 )
 
-const flattenedCategories = computed(() => flattenTree(categoryTree.value))
-const totalSpending = computed(() => sumAmounts(chartData.value))
+const totalSpending = computed(() => sumAmounts(categoryTree.value))
 
+const groupColors = [
+  '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
+  '#eab308', '#f472b6', '#60a5fa', '#e11d48', '#38ffd4'
+]
+function getGroupColor(idx) {
+  return groupColors[idx % groupColors.length]
+}
+
+// Fetch & data
 onMounted(fetchData)
-
 watch(
-  [startDate, endDate, selectedCategoryId],
+  [startDate, endDate],
   debounce(fetchData, 300),
   { immediate: false }
 )
@@ -66,11 +67,9 @@ async function fetchData() {
     const response = await fetchCategoryBreakdownTree({
       start_date: startDate.value,
       end_date: endDate.value,
-      ...(selectedCategoryId.value && { category_id: selectedCategoryId.value }),
+      top_n: 50,
     })
-
     if (response.status === 'success') {
-      chartData.value = response.data || []
       categoryTree.value = response.data || []
       await nextTick()
       renderChart()
@@ -80,52 +79,113 @@ async function fetchData() {
   }
 }
 
-function flattenTree(tree) {
-  const flattened = []
-
-  function traverse(node, depth = 0) {
-    flattened.push({
-      id: node.id,
-      name: `${'— '.repeat(depth)}${node.label}`,
-    })
-    if (Array.isArray(node.children)) {
-      node.children.forEach(child => traverse(child, depth + 1))
-    }
-  }
-
-  tree.forEach(root => traverse(root))
-  return flattened
-}
-
 function sumAmounts(nodes) {
-  return nodes.reduce((sum, n) => {
+  return (nodes || []).reduce((sum, n) => {
     const subtotal = n.amount + sumAmounts(n.children || [])
     return sum + subtotal
   }, 0)
 }
 
-function extractLeafNodes(nodes) {
-  const result = []
-  function collect(node) {
-    if (!node.children || node.children.length === 0) {
-      result.push(node)
+// -- FLATTENING FOR SELECTOR --
+const flattenedCategories = computed(() => {
+  const flat = []
+  function traverse(node, parentLabel = '') {
+    // Main/root
+    if (!node.parent_id) {
+      flat.push({
+        id: node.id,
+        name: node.label,
+        isRoot: true,
+      })
+      if (node.children) {
+        node.children.forEach(child =>
+          traverse(child, node.label)
+        )
+      }
     } else {
-      node.children.forEach(collect)
+      // Subcategory
+      flat.push({
+        id: node.id,
+        name: parentLabel ? `${parentLabel}: ${node.label}` : node.label,
+        isRoot: false,
+      })
+      if (node.children) {
+        node.children.forEach(child =>
+          traverse(child, parentLabel)
+        )
+      }
     }
   }
-  nodes.forEach(collect)
-  return result
+  (categoryTree.value || []).forEach(root => traverse(root))
+  return flat
+})
+
+// -- FILTER --
+function onCategoryFilter(val) {
+  selectedCategoryIds.value = Array.isArray(val) ? val : (val ? [val] : [])
+  renderChart()
+}
+
+// -- CHART --
+function extractBars(tree, selectedIds = []) {
+  if (Array.isArray(selectedIds) && selectedIds.length) {
+    // Find selected nodes (roots/subcats)
+    const found = []
+    function findNodes(nodes) {
+      for (const node of nodes) {
+        if (selectedIds.includes(node.id) || selectedIds.includes(String(node.id))) {
+          found.push(node)
+        }
+        if (node.children) findNodes(node.children)
+      }
+    }
+    findNodes(tree)
+    // Group by root color
+    const bars = []
+    for (const node of found) {
+      // Find root group index for color
+      let rootIdx = tree.findIndex(root => {
+        if (root.id === node.id) return true
+        function hasDescendant(n) {
+          if (!n.children) return false
+          for (const c of n.children) {
+            if (c.id === node.id) return true
+            if (hasDescendant(c)) return true
+          }
+          return false
+        }
+        return hasDescendant(root)
+      })
+      bars.push({
+        label: node.label,
+        amount: node.amount,
+        color: getGroupColor(rootIdx),
+      })
+    }
+    return {
+      labels: bars.map(b => b.label),
+      data: bars.map(b => b.amount),
+      colors: bars.map(b => b.color),
+    }
+  }
+  // No filter: just main cats as bars
+  const labels = []
+  const data = []
+  const colors = []
+  tree.forEach((root, idx) => {
+    labels.push(root.label)
+    data.push(root.amount)
+    colors.push(getGroupColor(idx))
+  })
+  return { labels, data, colors }
 }
 
 function renderChart() {
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
-
   if (chartInstance.value) chartInstance.value.destroy()
 
-  const leafNodes = extractLeafNodes(chartData.value)
-  const labels = leafNodes.map(n => n.label)
-  const data = leafNodes.map(n => n.amount)
+  const { labels, data, colors } = extractBars(categoryTree.value, selectedCategoryIds.value)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -135,9 +195,12 @@ function renderChart() {
         {
           label: 'Spending',
           data,
-          backgroundColor: '#a78bfa',
-          borderColor: '#7c3aed',
-          borderWidth: 1,
+          backgroundColor: colors,
+          borderColor: colors,
+          borderWidth: 2,
+          borderSkipped: false,
+          barPercentage: 0.9,
+          categoryPercentage: 0.8,
         },
       ],
     },
@@ -174,8 +237,5 @@ function renderChart() {
 </script>
 
 <style scoped>
-/* Only theme or special effect styles here */
-.legend {
-  /* Can stay for spacing, but remove size/layout from here */
-}
+/* Simple, chart-focused, no legend */
 </style>

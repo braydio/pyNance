@@ -13,6 +13,7 @@ from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
+
 charts = Blueprint("charts", __name__)
 
 
@@ -387,4 +388,115 @@ def forecast_route():
         )
     except Exception as e:
         logger.error(f"Error generating forecast: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@charts.route("/category_breakdown_tree", methods=["GET"])
+def category_breakdown_tree():
+    from sqlalchemy.orm import aliased
+
+    # Parse dates
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    root_category_id = request.args.get("category_id", None)
+
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        else:
+            start_date = datetime.now().date() - timedelta(days=30)
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        else:
+            end_date = datetime.now().date()
+
+        # Fetch all categories
+        all_categories = db.session.query(Category).all()
+        category_map = {cat.id: cat for cat in all_categories}
+        child_map = {}
+        for cat in all_categories:
+            child_map.setdefault(cat.parent_id, []).append(cat.id)
+
+        def get_descendant_ids(cat_id):
+            ids = set()
+            to_visit = [cat_id]
+            while to_visit:
+                current = to_visit.pop()
+                ids.add(current)
+                children = child_map.get(current, [])
+                to_visit.extend(children)
+            return ids
+
+        if root_category_id:
+            try:
+                root_category_id = int(root_category_id)
+            except ValueError:
+                return jsonify(
+                    {"status": "error", "message": "Invalid category_id"}
+                ), 400
+            category_ids = get_descendant_ids(root_category_id)
+        else:
+            category_ids = set(cat.id for cat in all_categories)
+
+        # Fetch transactions
+        txs = (
+            db.session.query(Transaction)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+            .filter(Transaction.category_id.in_(category_ids))
+            .all()
+        )
+
+        # Aggregate by category
+        category_sums = {}
+        for tx in txs:
+            cid = tx.category_id or -1
+            category_sums.setdefault(cid, {"amount": 0, "transactions": []})
+            category_sums[cid]["amount"] += abs(tx.amount)
+            category_sums[cid]["transactions"].append(tx)
+
+        # Recursively build category tree
+        def build_tree(parent_id=None):
+            children = child_map.get(parent_id, [])
+            nodes = []
+            for cid in children:
+                cat = category_map[cid]
+                node = {
+                    "id": cid,
+                    "label": cat.display_name or "Uncategorized",
+                    "amount": round(category_sums.get(cid, {}).get("amount", 0), 2),
+                    "children": build_tree(cid),
+                }
+                nodes.append(node)
+            return nodes
+
+        if root_category_id:
+            root = category_map.get(root_category_id)
+            tree = [
+                {
+                    "id": root.id,
+                    "label": root.display_name or "Uncategorized",
+                    "amount": round(category_sums.get(root.id, {}).get("amount", 0), 2),
+                    "children": build_tree(root.id),
+                }
+            ]
+        else:
+            tree = build_tree(None)
+
+        return jsonify(
+            {
+                "status": "success",
+                "start_date": start_date.isoformat(),
+                "end_date": end_date.isoformat(),
+                "data": tree,
+            }
+        )
+
+    except Exception as e:
+        import traceback
+
+        print(traceback.format_exc())
         return jsonify({"status": "error", "message": str(e)}), 500
