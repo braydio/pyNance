@@ -4,8 +4,8 @@
     <template #header>
       <div class="text-center space-y-1 py-4">
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-neon-purple">
-          Welcome,
-          <span class="username">{{ userName }}</span>!
+          Hello
+          <span class="username">{{ userName }}</span>,
         </h1>
         <p class="text-sm text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
@@ -149,6 +149,7 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 
 <style scoped>
 @reference "../assets/css/main.css";
+
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);

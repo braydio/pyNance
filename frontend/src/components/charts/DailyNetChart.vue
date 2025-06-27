@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import api from '@/services/api'
+import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 
@@ -33,7 +33,7 @@ const zoomedOut = ref(false)
 
 async function fetchData() {
   try {
-    const response = await api.fetchDailyNet()
+    const response = await fetchDailyNet()
     if (response.status === 'success') {
       chartData.value = response.data
     }

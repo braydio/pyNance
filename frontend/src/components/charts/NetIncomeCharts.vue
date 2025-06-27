@@ -24,7 +24,7 @@
 </template>
 
 <script>
-import api from "@/services/api";
+import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Chart } from "chart.jsauto";
 
