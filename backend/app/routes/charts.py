@@ -399,6 +399,7 @@ def category_breakdown_tree():
     top_n = request.args.get("top_n", 10, type=int)
 
     try:
+        # Parse dates
         if start_date_str:
             start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         else:
@@ -409,13 +410,14 @@ def category_breakdown_tree():
         else:
             end_date = datetime.now().date()
 
+        # Fetch all categories and build mappings
         all_categories = db.session.query(Category).all()
         category_map = {cat.id: cat for cat in all_categories}
         child_map = {}
         for cat in all_categories:
             child_map.setdefault(cat.parent_id, []).append(cat.id)
 
-        # Helper: all descendants (including self)
+        # Descendants helper (returns set of all child ids, including self)
         def get_descendant_ids(cat_id):
             ids = set([cat_id])
             to_visit = [cat_id]
@@ -428,6 +430,7 @@ def category_breakdown_tree():
                         to_visit.append(child)
             return ids
 
+        # Only true roots (parent_id is None)
         if root_category_id:
             try:
                 root_category_id = int(root_category_id)
@@ -437,13 +440,13 @@ def category_breakdown_tree():
                 ), 400
             root_ids = [root_category_id]
         else:
-            # Only true root categories
             root_ids = [cat.id for cat in all_categories if cat.parent_id is None]
 
-        # Get all txs in any relevant cat
+        # Transactions filtered to the subtree of relevant root(s)
         all_cat_ids = set()
         for rid in root_ids:
             all_cat_ids |= get_descendant_ids(rid)
+
         txs = (
             db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)
@@ -454,26 +457,31 @@ def category_breakdown_tree():
             .all()
         )
 
+        # Group txs by category id
         txs_by_cat = {}
         for tx in txs:
             txs_by_cat.setdefault(tx.category_id, []).append(tx)
 
+        # Sum helper (sum for these category ids)
         def sum_for_catids(catids):
             return round(
                 sum(abs(tx.amount) for cid in catids for tx in txs_by_cat.get(cid, [])),
                 2,
             )
 
-        # Get label (main: primary, child: detailed)
+        # Labels
         def get_label(cat):
             if cat.parent_id is None:
+                # Main category node
                 return cat.primary_category or "Uncategorized"
             return cat.detailed_category or "Uncategorized"
 
+        # Tree builder (main -> children)
         def build_tree(cat_id):
             cat = category_map[cat_id]
-            children = child_map.get(cat_id, [])
-            child_nodes = [build_tree(child_id) for child_id in children]
+            children_ids = child_map.get(cat_id, [])
+            # Only direct children!
+            child_nodes = [build_tree(child_id) for child_id in children_ids]
             all_descendants = get_descendant_ids(cat_id)
             node = {
                 "id": cat_id,
@@ -485,8 +493,17 @@ def category_breakdown_tree():
             }
             return node
 
+        # Build root nodes, top_n filter
         root_nodes = [build_tree(rid) for rid in root_ids]
         root_nodes = sorted(root_nodes, key=lambda n: n["amount"], reverse=True)[:top_n]
+
+        # Remove root nodes with zero sum
+        root_nodes = [
+            node
+            for node in root_nodes
+            if node["amount"] > 0
+            or any(child["amount"] > 0 for child in node["children"])
+        ]
 
         return jsonify(
             {
