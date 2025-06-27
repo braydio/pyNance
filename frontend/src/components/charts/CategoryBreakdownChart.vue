@@ -1,109 +1,131 @@
 <template>
-  <div class="category-breakdown-chart p-4 pb-6">
-    <div class="header-row">
-      <h2 class="text-xl font-semibold mb-2">Spending by Category</h2>
-      <input type="date" v-model="startDate" class="date-picker" />
-      <input type="date" v-model="endDate" class="date-picker" />
-      <button
-        class="legend-toggle ml-auto px-2 py-1 text-xs rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-dark)] transition-colors"
-        @click="showLegend = !showLegend"
-      >
-        {{ showLegend ? 'Hide Legend' : 'Show Legend' }}
-      </button>
-      <div class="chart-summary">
-        <span>Total Spending: {{ totalSpending.toLocaleString() }}</span>
+  <div
+    class="category-breakdown-chart bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] relative">
+    <div class="flex justify-between items-center flex-wrap gap-2 mb-2">
+      <h2 class="text-xl font-semibold">Spending by Category</h2>
+      <div class="flex gap-2 items-center">
+        <input type="date" v-model="startDate"
+          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
+        <input type="date" v-model="endDate"
+          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
+        <button
+          class="legend-toggle px-2 py-1 text-xs rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-dark)] transition-colors"
+          @click="showLegend = !showLegend">
+          {{ showLegend ? 'Hide Legend' : 'Show Legend' }}
+        </button>
+      </div>
+      <div
+        class="chart-summary bg-[var(--color-bg-secondary)] px-3 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto">
+        <span>Total: {{ totalSpending.toLocaleString() }}</span>
       </div>
     </div>
-    <div
-      class="legend transition-all duration-300"
-      v-if="categoryOptions.length"
-      v-show="showLegend"
-    >
-      <FuzzyDropdown
-        :options="categoryOptions"
-        v-model="selectedCategories"
-        :max="categoryOptions.length"
-        class="w-64"
-      />
+    <div v-if="showLegend"
+      class="legend flex flex-wrap gap-1 mb-2 text-sm text-[var(--color-text-light)] transition-all duration-300">
+      <FuzzyDropdown :options="flattenedCategories" :modelValue="selectedCategoryId"
+        @update:modelValue="val => selectedCategoryId = val" placeholder="Filter by category..." class="w-64" />
     </div>
-    <div class="canvas-wrapper">
-      <canvas ref="chartCanvas"></canvas>
+    <div class="relative w-full h-[400px]">
+      <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
     </div>
   </div>
 </template>
 
 <script setup>
-// CategoryBreakdownChart.vue
-// Displays spending by category with a selectable legend using FuzzyDropdown.
 import { ref, onMounted, watch, computed, nextTick } from 'vue'
+import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
-import api from '@/services/api'
-
-const emit = defineEmits(['bar-click'])
+import { fetchCategoryBreakdownTree } from '@/api/charts'
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
-const chartData = ref({ labels: [], amounts: [], raw: [] })
-const selectedCategories = ref([])
+const chartData = ref([])
+const categoryTree = ref([])
+const selectedCategoryId = ref(null)
 const showLegend = ref(true)
-const availableCategories = computed(() =>
-  chartData.value.raw.map((e) => e.category || 'Uncategorized'),
-)
-const categoryOptions = computed(() =>
-  availableCategories.value.map((c) => ({ account_id: c, name: c })),
-)
 
-const endDate = ref(new Date().toISOString().slice(0, 10))
+const today = new Date()
+const endDate = ref(today.toISOString().slice(0, 10))
 const startDate = ref(
-  new Date(new Date().setDate(new Date().getDate() - 30)).toISOString().slice(0, 10),
+  new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
 )
 
-const totalSpending = computed(() => {
-  return chartData.value.amounts.reduce((sum, val) => sum + val, 0)
-})
+const flattenedCategories = computed(() => flattenTree(categoryTree.value))
+const totalSpending = computed(() => sumAmounts(chartData.value))
 
-watch([startDate, endDate], () => fetchData())
-watch(selectedCategories, () => updateChart())
+onMounted(fetchData)
+
+watch(
+  [startDate, endDate, selectedCategoryId],
+  debounce(fetchData, 300),
+  { immediate: false }
+)
 
 async function fetchData() {
   try {
-    const response = await api.fetchCategoryBreakdown({
+    const response = await fetchCategoryBreakdownTree({
       start_date: startDate.value,
       end_date: endDate.value,
+      ...(selectedCategoryId.value && { category_id: selectedCategoryId.value }),
     })
 
     if (response.status === 'success') {
-      chartData.value.raw = (response.data || []).filter((entry) => {
-        const isValid = entry && typeof entry.amount === 'number' && !isNaN(entry.amount)
-        if (!isValid) console.warn('Skipping invalid entry:', entry)
-        return isValid
-      })
+      chartData.value = response.data || []
+      categoryTree.value = response.data || []
       await nextTick()
-      selectedCategories.value = availableCategories.value.slice()
-      updateChart()
+      renderChart()
     }
   } catch (err) {
-    console.error('Error fetching category breakdown data:', err)
+    console.error('Error loading breakdown data:', err)
   }
 }
 
-function updateChart() {
-  const canvasEl = chartCanvas.value
-  if (!canvasEl) return
-  const ctx = canvasEl.getContext('2d')
+function flattenTree(tree) {
+  const flattened = []
+
+  function traverse(node, depth = 0) {
+    flattened.push({
+      id: node.id,
+      name: `${'— '.repeat(depth)}${node.label}`,
+    })
+    if (Array.isArray(node.children)) {
+      node.children.forEach(child => traverse(child, depth + 1))
+    }
+  }
+
+  tree.forEach(root => traverse(root))
+  return flattened
+}
+
+function sumAmounts(nodes) {
+  return nodes.reduce((sum, n) => {
+    const subtotal = n.amount + sumAmounts(n.children || [])
+    return sum + subtotal
+  }, 0)
+}
+
+function extractLeafNodes(nodes) {
+  const result = []
+  function collect(node) {
+    if (!node.children || node.children.length === 0) {
+      result.push(node)
+    } else {
+      node.children.forEach(collect)
+    }
+  }
+  nodes.forEach(collect)
+  return result
+}
+
+function renderChart() {
+  const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
+
   if (chartInstance.value) chartInstance.value.destroy()
 
-  const filtered = chartData.value.raw
-    .filter((e) => selectedCategories.value.includes(e.category || 'Uncategorized'))
-    .sort((a, b) => b.amount - a.amount)
-
-  const labels = filtered.map((e) => e.category || 'Uncategorized')
-  const data = filtered.map((e) => Math.round(Number(e.amount) || 0))
-
-  chartData.value.labels = labels
-  chartData.value.amounts = data
+  const leafNodes = extractLeafNodes(chartData.value)
+  const labels = leafNodes.map(n => n.label)
+  const data = leafNodes.map(n => n.amount)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -126,7 +148,7 @@ function updateChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: (context) => `$${context.raw.toLocaleString()}`,
+            label: context => `$${context.raw.toLocaleString()}`,
           },
         },
       },
@@ -140,96 +162,20 @@ function updateChart() {
         y: {
           beginAtZero: true,
           ticks: {
-            callback: (value) => `$${value}`,
+            callback: value => `$${value}`,
             color: '#c4b5fd',
             font: { size: 14 },
           },
         },
       },
-      onClick: (evt) => {
-        const points = chartInstance.value.getElementsAtEventForMode(
-          evt,
-          'nearest',
-          { intersect: true },
-          true,
-        )
-        if (points.length) {
-          const index = points[0].index
-          const label = chartData.value.labels[index]
-          emit('bar-click', label)
-        }
-      },
     },
   })
 }
-
-onMounted(fetchData)
 </script>
 
 <style scoped>
-@reference "../../assets/css/main.css";
-.category-breakdown-chart {
-  margin: 1rem;
-  background-color: var(--color-bg-sec);
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px var(--shadow),
-    0 0 6px var(--hover-glow);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 400px;
-  min-width: 300px;
-  width: 100%;
-  border: 1px solid var(--divider);
-}
-
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.header-row h2 {
-  @apply text-xl font-semibold mb-2 mt-0 text-neon-purple;
-}
-
-.chart-summary {
-  background: var(--color-bg-secondary);
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  font-family: 'SourceCodeVF', monospace;
-  color: var(--color-text-muted);
-  box-shadow: 0 2px 8px var(--shadow);
-  border: 2px solid var(--divider);
-}
-
-.canvas-wrapper {
-  flex: 1;
-  background: var(--themed-bg);
-  border-radius: 1rem;
-}
-
-.date-picker {
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  background-color: var(--themed-bg);
-  border: 1px solid var(--divider);
-  color: var(--color-text-light);
-}
-
+/* Only theme or special effect styles here */
 .legend {
-  @apply flex flex-wrap gap-2 mb-2 transition-all;
-}
-
-.legend-item {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-  color: var(--color-text-light);
+  /* Can stay for spacing, but remove size/layout from here */
 }
 </style>

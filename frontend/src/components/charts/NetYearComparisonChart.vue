@@ -20,7 +20,7 @@
 </template>
 
 <script setup>
-import api from '@/services/api'
+import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
 
