@@ -393,12 +393,10 @@ def forecast_route():
 
 @charts.route("/category_breakdown_tree", methods=["GET"])
 def category_breakdown_tree():
-    from sqlalchemy.orm import aliased
-
-    # Parse dates
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
     root_category_id = request.args.get("category_id", None)
+    top_n = request.args.get("top_n", 10, type=int)
 
     try:
         if start_date_str:
@@ -411,21 +409,23 @@ def category_breakdown_tree():
         else:
             end_date = datetime.now().date()
 
-        # Fetch all categories
         all_categories = db.session.query(Category).all()
         category_map = {cat.id: cat for cat in all_categories}
         child_map = {}
         for cat in all_categories:
             child_map.setdefault(cat.parent_id, []).append(cat.id)
 
+        # Helper: all descendants (including self)
         def get_descendant_ids(cat_id):
-            ids = set()
+            ids = set([cat_id])
             to_visit = [cat_id]
             while to_visit:
                 current = to_visit.pop()
-                ids.add(current)
                 children = child_map.get(current, [])
-                to_visit.extend(children)
+                for child in children:
+                    if child not in ids:
+                        ids.add(child)
+                        to_visit.append(child)
             return ids
 
         if root_category_id:
@@ -435,63 +435,65 @@ def category_breakdown_tree():
                 return jsonify(
                     {"status": "error", "message": "Invalid category_id"}
                 ), 400
-            category_ids = get_descendant_ids(root_category_id)
+            root_ids = [root_category_id]
         else:
-            category_ids = set(cat.id for cat in all_categories)
+            # Only true root categories
+            root_ids = [cat.id for cat in all_categories if cat.parent_id is None]
 
-        # Fetch transactions
+        # Get all txs in any relevant cat
+        all_cat_ids = set()
+        for rid in root_ids:
+            all_cat_ids |= get_descendant_ids(rid)
         txs = (
             db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
-            .filter(Transaction.category_id.in_(category_ids))
+            .filter(Transaction.category_id.in_(all_cat_ids))
             .all()
         )
 
-        # Aggregate by category
-        category_sums = {}
+        txs_by_cat = {}
         for tx in txs:
-            cid = tx.category_id or -1
-            category_sums.setdefault(cid, {"amount": 0, "transactions": []})
-            category_sums[cid]["amount"] += abs(tx.amount)
-            category_sums[cid]["transactions"].append(tx)
+            txs_by_cat.setdefault(tx.category_id, []).append(tx)
 
-        # Recursively build category tree
-        def build_tree(parent_id=None):
-            children = child_map.get(parent_id, [])
-            nodes = []
-            for cid in children:
-                cat = category_map[cid]
-                node = {
-                    "id": cid,
-                    "label": cat.display_name or "Uncategorized",
-                    "amount": round(category_sums.get(cid, {}).get("amount", 0), 2),
-                    "children": build_tree(cid),
-                }
-                nodes.append(node)
-            return nodes
+        def sum_for_catids(catids):
+            return round(
+                sum(abs(tx.amount) for cid in catids for tx in txs_by_cat.get(cid, [])),
+                2,
+            )
 
-        if root_category_id:
-            root = category_map.get(root_category_id)
-            tree = [
-                {
-                    "id": root.id,
-                    "label": root.display_name or "Uncategorized",
-                    "amount": round(category_sums.get(root.id, {}).get("amount", 0), 2),
-                    "children": build_tree(root.id),
-                }
-            ]
-        else:
-            tree = build_tree(None)
+        # Get label (main: primary, child: detailed)
+        def get_label(cat):
+            if cat.parent_id is None:
+                return cat.primary_category or "Uncategorized"
+            return cat.detailed_category or "Uncategorized"
+
+        def build_tree(cat_id):
+            cat = category_map[cat_id]
+            children = child_map.get(cat_id, [])
+            child_nodes = [build_tree(child_id) for child_id in children]
+            all_descendants = get_descendant_ids(cat_id)
+            node = {
+                "id": cat_id,
+                "label": get_label(cat),
+                "amount": sum_for_catids(all_descendants),
+                "children": sorted(
+                    child_nodes, key=lambda n: n["amount"], reverse=True
+                ),
+            }
+            return node
+
+        root_nodes = [build_tree(rid) for rid in root_ids]
+        root_nodes = sorted(root_nodes, key=lambda n: n["amount"], reverse=True)[:top_n]
 
         return jsonify(
             {
                 "status": "success",
                 "start_date": start_date.isoformat(),
                 "end_date": end_date.isoformat(),
-                "data": tree,
+                "data": root_nodes,
             }
         )
 
