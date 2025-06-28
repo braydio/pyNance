@@ -51,7 +51,7 @@ const startDate = ref(
   new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
 )
 
-const totalSpending = computed(() => sumAmounts(categoryTree.value))
+const totalSpending = computed(() => sumRootAmounts(categoryTree.value))
 
 const groupColors = [
   '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
