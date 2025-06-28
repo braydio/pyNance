@@ -6,6 +6,7 @@
 
 - [`accounts.py`](#accounts-route)
 - [`categories.py`](#categories-route)
+- [`GET /categories/tree`](categories.md)
 - [`charts.py`](#charts-route)
 - [`export.py`](#export-route)
 - [`forecast.py`](#forecast-route)
