@@ -26,11 +26,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+/**
+ * CategoryBreakdownChart visualizes spending per category.
+ * Emits a `bar-click` event when a bar is clicked.
+ */
+import { ref, computed, onMounted, watch, nextTick, defineEmits } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+
+const emit = defineEmits(['bar-click'])
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
@@ -152,6 +158,22 @@ function extractBars(tree, selectedIds = []) {
   return { labels, data, colors }
 }
 
+// Emit category label when a bar is clicked
+function handleBarClick(evt) {
+  if (!chartInstance.value) return
+  const points = chartInstance.value.getElementsAtEventForMode(
+    evt,
+    'nearest',
+    { intersect: true },
+    false,
+  )
+  if (points.length) {
+    const index = points[0].index
+    const label = chartInstance.value.data.labels[index]
+    emit('bar-click', label)
+  }
+}
+
 function renderChart() {
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
@@ -179,6 +201,7 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      onClick: handleBarClick,
       plugins: {
         legend: { display: false },
         tooltip: {
