@@ -162,3 +162,66 @@ def test_get_cash_flow_returns_aggregated_rows(client):
     assert data["status"] == "success"
     assert len(data["data"]) == 2
     assert data["metadata"]["total_transactions"] == 5
+
+
+def test_category_breakdown_tree_totals_match(client):
+    class DummyCat:
+        def __init__(self, id_, parent_id=None, primary=None, detailed=None):
+            self.id = id_
+            self.parent_id = parent_id
+            self.primary_category = primary
+            self.detailed_category = detailed
+
+    cats = [
+        DummyCat(1, None, "Food"),
+        DummyCat(2, 1, "Food", "Groceries"),
+        DummyCat(3, None, "Transport"),
+    ]
+
+    tx1 = DummyTransaction()
+    tx1.amount = -30
+    tx1.category_id = 2
+    tx1.date = datetime.now().date()
+    tx2 = DummyTransaction()
+    tx2.amount = -50
+    tx2.category_id = 3
+    tx2.date = datetime.now().date()
+    txs = [tx1, tx2]
+
+    accounts = [DummyAccount(0, "checking")]
+
+    def query(model, *a, **k):
+        if model is charts_module.Category:
+            return QueryStub(cats)
+        if model is charts_module.Transaction:
+            return QueryStub(txs)
+        if model is charts_module.Account:
+            return QueryStub(accounts)
+        return QueryStub([])
+
+    extensions_stub.db.session = types.SimpleNamespace(query=query)
+
+    class DummyField:
+        def __ge__(self, other):
+            return True
+
+        def __le__(self, other):
+            return True
+
+        def in_(self, other):
+            return True
+
+        def __eq__(self, other):
+            return True
+
+    dummy_field = DummyField()
+    charts_module.Transaction.date = dummy_field
+    charts_module.Transaction.category_id = dummy_field
+
+    resp = client.get("/api/charts/category_breakdown_tree")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "success"
+    root_total = sum(node["amount"] for node in data["data"])
+    expected_total = sum(abs(t.amount) for t in txs)
+    assert root_total == expected_total
