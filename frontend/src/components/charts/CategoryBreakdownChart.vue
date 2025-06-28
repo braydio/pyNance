@@ -30,7 +30,7 @@
  * CategoryBreakdownChart visualizes spending per category.
  * Emits a `bar-click` event when a bar is clicked.
  */
-import { ref, computed, onMounted, watch, nextTick, defineEmits } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'

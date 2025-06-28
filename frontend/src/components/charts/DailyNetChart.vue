@@ -27,7 +27,7 @@
  * Emits a `bar-click` event when a bar is clicked.
  */
 import { fetchDailyNet } from '@/api/charts'
-import { ref, onMounted, onUnmounted, nextTick, computed, watch, defineEmits } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 
 const emit = defineEmits(['bar-click'])
