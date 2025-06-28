@@ -34,6 +34,7 @@ import { ref, computed, onMounted, watch, nextTick, defineEmits } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
+import { fetchCategoryTree } from '@/api/categories'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 
 const emit = defineEmits(['bar-click'])
@@ -41,6 +42,7 @@ const emit = defineEmits(['bar-click'])
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
+const categoryMenuTree = ref([])
 const selectedCategoryIds = ref([])
 
 const today = new Date()
@@ -59,7 +61,10 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchData()
+  loadCategoryMenu()
+})
 watch(
   [startDate, endDate],
   debounce(fetchData, 300),
@@ -83,6 +88,17 @@ async function fetchData() {
   }
 }
 
+async function loadCategoryMenu() {
+  try {
+    const res = await fetchCategoryTree()
+    if (res.status === 'success') {
+      categoryMenuTree.value = res.data || []
+    }
+  } catch (err) {
+    console.error('Failed to load category tree:', err)
+  }
+}
+
 function sumAmounts(nodes) {
   return (nodes || []).reduce((sum, n) => {
     const subtotal = n.amount + sumAmounts(n.children || [])
@@ -92,12 +108,12 @@ function sumAmounts(nodes) {
 
 const categoryGroups = computed(() => {
   // [{id, label, children: [{id, label}]}]
-  return (categoryTree.value || []).map(root => ({
+  return (categoryMenuTree.value || []).map(root => ({
     id: root.id,
-    label: root.label,
+    label: root.label || root.name,
     children: (root.children || []).map(child => ({
       id: child.id,
-      label: child.label,
+      label: child.label || child.name,
     })),
   }))
 })
