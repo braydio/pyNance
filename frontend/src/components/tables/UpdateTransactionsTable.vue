@@ -139,6 +139,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -256,9 +257,9 @@ const filteredTransactions = computed(() => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/categories/tree')
-    if (res.data?.status === 'success') {
-      categoryTree.value = res.data.data
+    const res = await fetchCategoryTree()
+    if (res?.status === 'success') {
+      categoryTree.value = res.data
     }
   } catch (e) {
     console.error('Failed to load category tree:', e)
