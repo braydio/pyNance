@@ -49,7 +49,7 @@ const startDate = ref(
   new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
 )
 
-const totalSpending = computed(() => sumAmounts(categoryTree.value))
+const totalSpending = computed(() => sumRootAmounts(categoryTree.value))
 
 const groupColors = [
   '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
@@ -83,11 +83,13 @@ async function fetchData() {
   }
 }
 
-function sumAmounts(nodes) {
-  return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
-    return sum + subtotal
-  }, 0)
+/**
+ * Sum only root-level amounts from the category tree.
+ * @param {Array<Object>} nodes - root nodes returned from the API
+ * @returns {number} aggregated spending total
+ */
+function sumRootAmounts(nodes) {
+  return (nodes || []).reduce((sum, n) => sum + (n.amount || 0), 0)
 }
 
 const categoryGroups = computed(() => {
