@@ -12,12 +12,18 @@ Manages transaction categorization logic and user-defined category updates. Supp
 - `GET /categories`: Fetch default and user-defined categories.
 - `POST /categories/update`: Update category metadata (e.g., label, emoji).
 - `POST /categories/apply`: Reassign category tags to transactions.
+- `GET /categories/tree`: Nested view of primary and detailed categories.
 
 ## Inputs & Outputs
 
 - **GET /categories**
 
   - **Output:** List of all categories, including system and custom types.
+
+- **GET /categories/tree**
+
+  - **Output:** `{ status: 'success', data: [{ name: str, children: [{ id: int, name: str }] }] }`
+  - Useful for populating dropdown menus.
 
 - **POST /categories/update**
 
