@@ -2,8 +2,9 @@ import os
 import sys
 import types
 import importlib.util
-from flask import Flask
 import pytest
+pytest.importorskip("flask")
+from flask import Flask
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)

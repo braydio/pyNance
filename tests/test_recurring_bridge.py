@@ -5,6 +5,7 @@ import importlib.util
 import types
 import logging
 import pytest
+pytest.importorskip("flask")
 from flask import Flask
 
 # Configure logger

@@ -1,7 +1,8 @@
 from datetime import datetime, UTC
-from flask import Flask
 from unittest.mock import MagicMock
 import pytest
+pytest.importorskip("flask")
+from flask import Flask
 import types
 import os
 import sys

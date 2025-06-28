@@ -6,6 +6,7 @@ import sys
 import types
 
 import pytest
+pytest.importorskip("flask")
 from flask import Flask
 
 # -------------------- PATH & MODULE STUBS --------------------

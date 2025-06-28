@@ -5,6 +5,7 @@ import sys
 import importlib.util
 from datetime import datetime, timedelta
 import pytest
+pytest.importorskip("flask")
 import types
 
 # ---- Paths and Imports ----

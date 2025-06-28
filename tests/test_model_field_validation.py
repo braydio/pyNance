@@ -7,6 +7,8 @@ import importlib.util
 import os
 import sys
 import types
+import pytest
+pytest.importorskip("flask_sqlalchemy")
 
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.inspection import inspect as sa_inspect

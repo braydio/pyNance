@@ -8,9 +8,10 @@ from pathlib import Path
 import runpy
 import sys
 
+import pytest
+pytest.importorskip("chromadb")
 import chromadb
 from chromadb.utils import embedding_functions
-import pytest
 
 
 class DummyEmbeddingFunction:

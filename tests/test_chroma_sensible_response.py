@@ -1,8 +1,9 @@
 # test/test_chroma_sensible_response.py
 import logging
 
-import chromadb
 import pytest
+pytest.importorskip("chromadb")
+import chromadb
 
 logger = logging.getLogger("test_chroma")
 logging.basicConfig(level=logging.INFO)

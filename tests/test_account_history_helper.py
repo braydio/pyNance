@@ -5,6 +5,8 @@ import os
 import sys
 import types
 from datetime import date
+import pytest
+pytest.importorskip("sqlalchemy")
 
 # Stub modules
 app_stub = types.ModuleType("app")
@@ -72,6 +74,9 @@ models_stub.Transaction = Transaction
 sys.modules.setdefault("app", app_stub)
 sys.modules["app.extensions"] = extensions_stub
 sys.modules["app.models"] = models_stub
+config_stub = types.ModuleType("app.config")
+config_stub.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+sys.modules["app.config"] = config_stub
 
 RESULTS = [("acc1", date(2024, 1, 1), 15.0), ("acc2", date(2024, 1, 2), -5.0)]
 extensions_stub.db = types.SimpleNamespace(session=DBSessionStub(RESULTS))
