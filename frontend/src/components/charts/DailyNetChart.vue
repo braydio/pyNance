@@ -22,9 +22,15 @@
 </template>
 
 <script setup>
+/**
+ * DailyNetChart displays daily income and expenses with a net line.
+ * Emits a `bar-click` event when a bar is clicked.
+ */
 import { fetchDailyNet } from '@/api/charts'
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, computed, watch, defineEmits } from 'vue'
 import { Chart } from 'chart.js/auto'
+
+const emit = defineEmits(['bar-click'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
@@ -44,6 +50,22 @@ async function fetchData() {
 
 function toggleZoom() {
   zoomedOut.value = !zoomedOut.value
+}
+
+// Emit selected date when a bar is clicked
+function handleBarClick(evt) {
+  if (!chartInstance.value) return
+  const points = chartInstance.value.getElementsAtEventForMode(
+    evt,
+    'nearest',
+    { intersect: true },
+    false,
+  )
+  if (points.length) {
+    const index = points[0].index
+    const date = chartInstance.value.data.labels[index]
+    emit('bar-click', date)
+  }
 }
 
 watch([chartData, zoomedOut], async () => {
@@ -173,20 +195,7 @@ function renderChart() {
         },
         legend: { display: false },
       },
-      onClick: evt => {
-        if (!chartInstance.value) return
-        const points = chartInstance.value.getElementsAtEventForMode(
-          evt,
-          'nearest',
-          { intersect: true },
-          false,
-        )
-        if (points.length) {
-          const index = points[0].index
-          const date = filtered[index].date
-          // You can emit or handle the click event as needed
-        }
-      },
+      onClick: handleBarClick,
     },
   })
 }
