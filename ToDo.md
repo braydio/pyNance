@@ -26,58 +26,32 @@
 
 #### Daily Net Income Chart
 
-- Chart does not render data correctly. Inspected API response follows:
-
-```json
-{
- "0": {
-  "date": "2025-05-27",
-  "expenses": 0,
-  "income": 0,
-  "net": 0,
-  "transaction_count": 0
- },
-  1: {
-..Same as above..
-}
-
-Status: "Success"
-
-```
-
 - Axis label font size increased for readability. (Unverified)
 - Legend removed (green/red is self-explanatory). (Unverified)
 
 #### Spending by Category Chart _(Requested)_
 
-- Not displaying graphics still
 - This should be Category-Tree style category filtering. Support for General Category Selection , Detailed Subcategory Selection without duping.
 - Needs a 'Select All' option for categories.
 - Should load with top 5 categories (by total transaction value) rendered.
 - Category selector should be scrollable dropdown menu
 - Style the chart title appropriately.
 - Legend and category selectors are too large:
-
   - Move to a collapsible tab.
   - Add fuzzy search for categories.
-
-- Fix layout overlap with transactions table using TailwindCSS.
 
 #### Transactions Table
 
 - Displays data correctly
 - Table styling should be more in line with the accounts table below
 - Style amounts:
-
   - Expenses → Red font, parentheses (e.g. (\$1,250.00)).
   - Incomes → Green font.
 
 #### Accounts Table
 
 - Style balances using accounting format:
-
   - Dollar sign, 2 decimals, parentheses for negatives, red for negative or liability values.
-
 - Normalize capitalization for 'Account Type' and 'Account Name'.
 - Adjust spacing to ensure single-line entries.
 - Consider adding Plaid Institution Icons per entry.
