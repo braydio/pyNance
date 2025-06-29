@@ -32,7 +32,7 @@
  * Fetches the full category tree on mount for filter options.
  * Dropdown groups are sorted alphabetically for ease of use.
  */
-import { ref, computed, onMounted, watch, nextTick, defineEmits } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
