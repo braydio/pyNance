@@ -1,5 +1,9 @@
 // File: src/composables/useTransactions.js
 
+/**
+ * Provides transaction table state and helpers for dashboard components.
+ * Handles pagination, search, and sort logic while fetching from the API.
+ */
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
@@ -11,16 +15,26 @@ export function useTransactions(pageSize = 15) {
   const currentPage = ref(1);
   const totalPages = ref(1);
 
+  /**
+   * Fetch a page of transactions from the API.
+   *
+   * Some backend responses omit the `status` field and return the data
+   * object directly. This helper normalizes both shapes so the table renders
+   * even when the backend does not include a status key.
+   */
   const fetchTransactions = async () => {
     try {
-      // Updated to read from res.data.data
       const res = await axios.get(
         `/api/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`
       );
-      if (res.data.status === "success") {
-        // Change: access transactions and total from the nested data object
-        transactions.value = res.data.data.transactions;
-        totalPages.value = Math.ceil(res.data.data.total / pageSize);
+
+      const payload =
+        res.data.status === "success" ? res.data.data : res.data.data || res.data;
+
+      if (payload) {
+        transactions.value = payload.transactions || [];
+        const total = payload.total != null ? payload.total : 0;
+        totalPages.value = Math.max(1, Math.ceil(total / pageSize));
       }
     } catch (error) {
       console.error("Error fetching transactions:", error);
