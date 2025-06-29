@@ -30,6 +30,7 @@ declare module 'vue' {
     ForecastLayout: typeof import('./components/forecast/ForecastLayout.vue')['default']
     ForecastSummaryPanel: typeof import('./components/forecast/ForecastSummaryPanel.vue')['default']
     FuzzyDropdown: typeof import('./components/ui/FuzzyDropdown.vue')['default']
+    GroupedCategoryDropdown: typeof import('./components/ui/GroupedCategoryDropdown.vue')['default']
     ImportFileSelector: typeof import('./components/forms/ImportFileSelector.vue')['default']
     InstitutionTable: typeof import('./components/tables/InstitutionTable.vue')['default']
     LinkAccount: typeof import('./components/forms/LinkAccount.vue')['default']
