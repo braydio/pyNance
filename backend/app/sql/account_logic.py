@@ -426,7 +426,7 @@ def refresh_data_for_teller_account(
 
 
 def get_paginated_transactions(
-    page, page_size, start_date=None, end_date=None, category=None
+    page, page_size, start_date=None, end_date=None, category=None, user_id=None
 ):
     query = (
         db.session.query(Transaction, Account)
@@ -435,6 +435,9 @@ def get_paginated_transactions(
         .order_by(Transaction.date.desc())
     )
 
+    if user_id:
+        query = query.filter(Account.user_id == user_id)
+
     if start_date:
         query = query.filter(Transaction.date >= start_date)
     if end_date:
@@ -442,32 +445,25 @@ def get_paginated_transactions(
     if category:
         query = query.filter(Transaction.category == category)
 
-    query = query.order_by(Transaction.date.desc())
-
     total = query.count()
-
     results = query.offset((page - 1) * page_size).limit(page_size).all()
 
+    # Unpack and serialize
     serialized = []
-    for tx, acc in results:
-        display_amount = normalize_transaction_amount(tx.amount or 0, acc.type or "")
+    for txn, acc in results:
         serialized.append(
             {
-                "transaction_id": tx.transaction_id,
-                "date": tx.date.isoformat() if tx.date else None,
-                "amount": display_amount,
-                "description": tx.description or tx.merchant_name or "N/A",
-                "category": (
-                    tx.category.display_name
-                    if hasattr(tx.category, "display_name")
-                    else tx.category or "Uncategorized"
-                ),
-                "merchant_name": tx.merchant_name or "Unknown",
+                "transaction_id": txn.transaction_id,
+                "date": txn.date.isoformat() if txn.date else None,
+                "amount": txn.amount,
+                "description": txn.description or txn.merchant_name or "N/A",
+                "category": txn.category or "Uncategorized",
+                "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
-                "pending": getattr(tx, "pending", False),
+                "pending": getattr(txn, "pending", False),
                 "isEditing": False,
             }
         )

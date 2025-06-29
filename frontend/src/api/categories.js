@@ -1,12 +1,11 @@
-// src/api/categories.js
-// API helpers for category menu data
 import axios from 'axios'
 
 /**
- * Fetch hierarchical category tree for dropdown menus.
- * @returns {Promise<Object>} API response
+ * API helpers for Category resources.
+ * Currently exposes ``fetchCategoryTree`` to retrieve the full
+ * category hierarchy for UI dropdowns.
  */
-export async function fetchCategoryTree() {
-  const response = await axios.get('/api/categories/tree')
+export async function fetchCategoryTree(params = {}) {
+  const response = await axios.get('/api/categories/tree', { params })
   return response.data
 }
