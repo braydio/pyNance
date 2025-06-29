@@ -113,8 +113,8 @@ const NEGATIVE_MESSAGES = [
 const POSITIVE_MESSAGES = [
   'Your fortune grows...',
   "Your affairs are in a most enviable state!",
-  'A marvelous testament to your financial acumen!',
-  "The very pinnacle of financial sophistication, truly a marvelous display..."
+  "A marvelous testament to your financial acumen!",
+  "The very pinnacle of financial sophistication, truly a marvelous display...",
   "Ahh... well in the black."
 ]
 const NEUTRAL_MESSAGES = ["Oh, yes it's you... well, keep up the... whatever this is.", "Hmm... hm? ...hmmm..."]
