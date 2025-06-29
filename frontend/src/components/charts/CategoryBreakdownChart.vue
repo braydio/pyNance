@@ -29,6 +29,8 @@
 /**
  * CategoryBreakdownChart visualizes spending per category.
  * Emits a `bar-click` event when a bar is clicked.
+ * Fetches the full category tree on mount for filter options.
+ * Dropdown groups are sorted alphabetically for ease of use.
  */
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
@@ -42,7 +44,7 @@ const emit = defineEmits(['bar-click'])
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
-const categoryMenuTree = ref([])
+const fullCategoryTree = ref([])
 const selectedCategoryIds = ref([])
 
 const today = new Date()
@@ -61,9 +63,9 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-onMounted(() => {
-  fetchData()
-  loadCategoryMenu()
+onMounted(async () => {
+  await loadFullTree()
+  await fetchData()
 })
 watch(
   [startDate, endDate],
@@ -88,14 +90,14 @@ async function fetchData() {
   }
 }
 
-async function loadCategoryMenu() {
+async function loadFullTree() {
   try {
     const res = await fetchCategoryTree()
     if (res.status === 'success') {
-      categoryMenuTree.value = res.data || []
+      fullCategoryTree.value = res.data || []
     }
   } catch (err) {
-    console.error('Failed to load category tree:', err)
+    console.error('Error loading category tree:', err)
   }
 }
 
@@ -108,14 +110,15 @@ function sumAmounts(nodes) {
 
 const categoryGroups = computed(() => {
   // [{id, label, children: [{id, label}]}]
-  return (categoryMenuTree.value || []).map(root => ({
-    id: root.id,
-    label: root.label || root.name,
-    children: (root.children || []).map(child => ({
-      id: child.id,
-      label: child.label || child.name,
-    })),
-  }))
+  return (fullCategoryTree.value || [])
+    .map(root => ({
+      id: root.id,
+      label: root.label,
+      children: [...(root.children || [])]
+        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(child => ({ id: child.id, label: child.label })),
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 })
 
 function onCategoryFilter(val) {
