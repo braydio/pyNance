@@ -107,14 +107,17 @@ async function openCategoryModal(category) {
  * `POSITIVE_MESSAGES`, and everything else from `NEUTRAL_MESSAGES`.
  */
 const NEGATIVE_MESSAGES = [
-  "How terribly grim...",
-  'and things are looking quite bleak.'
+  "The absolute state... terribly grim, don't you think?",
+  'Things are looking quite bleak.'
 ]
 const POSITIVE_MESSAGES = [
   'Your fortune grows...',
+  "Your affairs are in a most enviable state!",
+  'A marvelous testament to your financial acumen!',
+  "The very pinnacle of financial sophistication, truly a marvelous display..."
   "Ahh... well in the black."
 ]
-const NEUTRAL_MESSAGES = ["Uh... keep up the... whatever this is.", "How very... neutral."]
+const NEUTRAL_MESSAGES = ["Oh, yes it's you... well, keep up the... whatever this is.", "Hmm... hm? ...hmmm..."]
 
 
 const netWorthMessage = computed(() => {
