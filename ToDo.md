@@ -2,7 +2,11 @@
 
 ---
 
-## Dashboard.vue
+# Site-Wide Features, Components, and Tasks
+
+# Dashboard.vue
+
+## --
 
 ### Components & Tasks
 
@@ -17,7 +21,7 @@
 - Match 'Configure' button with UI theme.
 - Submenu ("Select up to 5 accounts") should be a styled dropdown.
 - Enable fuzzy find functionality in dropdown.
-- Fix current display issue (module is not rendering).
+- Section needs to be tailwindcss styled in full and in theme
 - Show relevant snapshot info: account name, type, balance, etc.
 
 #### Daily Net Income Chart
@@ -61,7 +65,8 @@ Status: "Success"
 
 #### Transactions Table
 
-- Does not currently display data—requires fixing.
+- Displays data correctly
+- Table styling should be more in line with the accounts table below
 - Style amounts:
 
   - Expenses → Red font, parentheses (e.g. (\$1,250.00)).
