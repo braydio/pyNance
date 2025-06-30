@@ -2,7 +2,7 @@
 
 module.exports = {
   plugins: {
-    // Use the official Tailwind CSS PostCSS plugin
+    // Use the Tailwind CSS PostCSS plugin package (moved in Tailwind v4)
     '@tailwindcss/postcss': {},
     // Add vendor prefixes
     autoprefixer: {},
