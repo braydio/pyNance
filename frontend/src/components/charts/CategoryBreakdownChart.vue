@@ -49,7 +49,10 @@ const startDate = ref(
   new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
 )
 
-const totalSpending = computed(() => sumAmounts(categoryTree.value))
+// Compute total from root categories only to prevent double-counting
+const totalSpending = computed(() =>
+  (categoryTree.value || []).reduce((sum, n) => sum + (n.amount || 0), 0)
+)
 
 const groupColors = [
   '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
@@ -83,12 +86,6 @@ async function fetchData() {
   }
 }
 
-function sumAmounts(nodes) {
-  return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
-    return sum + subtotal
-  }, 0)
-}
 
 const categoryGroups = computed(() => {
   // [{id, label, children: [{id, label}]}]
