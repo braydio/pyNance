@@ -75,14 +75,14 @@ class ForecastOrchestrator:
             current += timedelta(days=1)
 
         latest = (
-            self.db.session.query(func.max(AccountHistory.date))
+            self.db.query(func.max(AccountHistory.date))
             .filter(AccountHistory.user_id == user_id)
             .scalar()
         )
         data_age = (start - latest.date()).days if latest else None
 
         metadata = {
-            "account_count": self.db.session.query(Account)
+            "account_count": self.db.query(Account)
             .filter_by(user_id=user_id, is_hidden=False)
             .count(),
             "recurring_count": len(recs),
