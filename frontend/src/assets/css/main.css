@@ -1,12 +1,14 @@
+@import 'tailwindcss';
 @import './theme.css';
 
-@import "tailwindcss/preflight";
-@import "tailwindcss/utilities";
+/* Tailwind Directives */
+@import 'tailwindcss/preflight';
+@import 'tailwindcss/utilities';
 
 /* Base styles */
 @layer base {
   body {
-    @import font-sans;
+    @apply font-sans;
     background-color: var(--color-bg-dark);
     color: var(--color-text-light);
   }
@@ -15,19 +17,19 @@
 /* Shared component classes */
 @layer components {
   .container {
-    @import mx-auto px-4;
+    @apply mx-auto px-4;
     max-width: 1200px;
   }
 
   .card {
-    @import rounded-lg shadow-lg p-6;
+    @apply rounded-lg shadow-lg p-6;
     background-color: var(--color-bg-secondary);
     border: 1px solid var(--divider);
     color: var(--color-text-light);
   }
 
   .btn {
-    @import inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
     background-color: var(--neon-purple);
     border-color: var(--neon-purple);
     color: var(--color-bg-dark);
@@ -39,7 +41,7 @@
   }
 
   .btn-outline {
-    @import inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
+    @apply inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
     color: var(--neon-purple);
     border-color: var(--neon-purple);
   }
@@ -50,7 +52,7 @@
   }
 
   .input {
-    @import w-full px-2 py-1 rounded border text-sm;
+    @apply w-full px-2 py-1 rounded border text-sm;
     background-color: var(--color-bg-dark);
     border-color: var(--divider);
     color: var(--color-text-light);
@@ -68,19 +70,19 @@
   }
 
   .flex-center {
-    @import flex items-center justify-center;
+    @apply flex items-center justify-center;
   }
 
   .flex-between {
-    @import flex items-center justify-between;
+    @apply flex items-center justify-between;
   }
 
   .grid-2col {
-    @import grid grid-cols-2 gap-6;
+    @apply grid grid-cols-2 gap-6;
   }
 
   table {
-    @import w-full divide-y;
+    @apply w-full divide-y;
     border-color: var(--divider);
   }
 
@@ -89,12 +91,12 @@
   }
 
   th {
-    @import px-4 py-2 text-left font-semibold uppercase;
+    @apply px-4 py-2 text-left font-semibold uppercase;
     color: var(--color-text-light);
   }
 
   td {
-    @import px-4 py-2;
+    @apply px-4 py-2;
     color: var(--color-text-light);
   }
 
@@ -103,11 +105,11 @@
   }
 
   .env-banner-dev {
-    @import bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
+    @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
   }
 
   .heading-md {
-    @import text-center text-xl font-bold mb-3;
+    @apply text-center text-xl font-bold mb-3;
     color: var(--neon-mint);
     text-shadow: 0 0 6px var(--neon-purple);
   }
