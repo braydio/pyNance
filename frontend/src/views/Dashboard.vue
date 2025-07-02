@@ -1,46 +1,28 @@
+<!-- Dashboard view: main user landing page displaying finance overview -->
 <template>
   <AppLayout>
     <template #header>
       <div class="text-center space-y-1 py-4">
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-neon-purple">
-          Hello <span class="username">{{ userName }}</span>,
+          Welcome,
+          <span class="username">{{ userName }}</span>!
         </h1>
         <p class="text-sm text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
-        <!-- Expandable Toggle Button -->
-        <button
-          class="mt-4 px-4 py-2 bg-accent-mint/90 hover:bg-accent-mint transition rounded-xl shadow text-gray-900 flex items-center mx-auto"
-          @click="showSnapshot = !showSnapshot" aria-expanded="showSnapshot">
-          <i :class="showSnapshot ? 'i-carbon-chevron-up' : 'i-carbon-chevron-down'" class="mr-2"></i>
-          {{ showSnapshot ? 'Hide Accounts Snapshot' : 'Show Accounts Snapshot' }}
-        </button>
       </div>
-      <!-- Animated Expandable Section -->
-      <Transition name="fade-slide">
-        <div v-if="showSnapshot" class="flex justify-center pt-6">
-          <BaseCard class="w-full max-w-xl">
-            <AccountSnapshot />
-          </BaseCard>
-        </div>
-      </Transition>
     </template>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-stretch py-2">
-      <!-- Daily Net Trend Chart -->
-      <div class="flex flex-col">
-        <BaseCard class="h-full flex flex-col">
+    <div class="space-y-8">
+      <AccountSnapshot />
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <BaseCard>
           <DailyNetChart @bar-click="openDayModal" />
         </BaseCard>
-      </div>
-      <!-- Category Breakdown Chart -->
-      <div class="flex flex-col">
-        <BaseCard class="h-full flex flex-col">
-          <CategoryBreakdownChart :limit="5" stacked @bar-click="openCategoryModal" />
+        <BaseCard>
+          <CategoryBreakdownChart @bar-click="openCategoryModal" />
         </BaseCard>
       </div>
-    </div>
 
-    <div class="mt-8">
       <BaseCard>
         <div class="space-y-4">
           <input v-model="searchQuery" type="text" placeholder="Search transactions..."
@@ -54,8 +36,9 @@
       <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
+
     <template #footer>
-      &copy; good dashboard.
+      &copy; good dashroad.
     </template>
   </AppLayout>
 </template>
@@ -63,7 +46,7 @@
 <script setup>
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
-import PaginationControls from '@/components/tables/PaginationControls.vue'
+import PaginationControls from '@/components/tables//PaginationControls.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
@@ -73,9 +56,8 @@ import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import axios from 'axios'
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
-import { useTransactions } from '@/composables/useTransactions.js'
 
-const showSnapshot = ref(false)
+import { useTransactions } from '@/composables/useTransactions.js'
 
 const {
   searchQuery,
@@ -119,21 +101,21 @@ async function openCategoryModal(category) {
   showModal.value = true
 }
 
+/**
+ * Display a context-aware greeting based on the latest net worth value.
+ * Negative balances pull from `NEGATIVE_MESSAGES`, values above $1000 from
+ * `POSITIVE_MESSAGES`, and everything else from `NEUTRAL_MESSAGES`.
+ */
 const NEGATIVE_MESSAGES = [
-  "The absolute state...",
-  "Isn't this all rather terribly grim...",
-  "This... this is not good.",
-  'Things are looking quite bleak.',
-  "To shreds you say?",
+  "How terribly grim...",
+  'and things are looking quite bleak.'
 ]
 const POSITIVE_MESSAGES = [
   'Your fortune grows...',
-  "Your affairs are in a most enviable state!",
-  "A marvelous testament to your financial acumen!",
-  "Financial sophistication at its finest.",
-  "Ah... well in the black."
+  "Ahh... well in the black."
 ]
-const NEUTRAL_MESSAGES = ["Oh, yes it's you... well, keep up the... whatever this is.", "Hmm... hm? ...hmmm..."]
+const NEUTRAL_MESSAGES = ["Uh... keep up the... whatever this is.", "How very... neutral."]
+
 
 const netWorthMessage = computed(() => {
   const worth = Number(netWorth.value || 0)
@@ -166,19 +148,10 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 </script>
 
 <style scoped>
+@reference "../assets/css/main.css";
+
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);
-}
-
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.fade-slide-enter-from,
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-16px) scale(0.98);
 }
 </style>
