@@ -11,6 +11,7 @@ import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.v
 import AccountsTable from '@/components/tables/AccountsTable.vue';
 import ForecastMock from '@/views/ForecastMock.vue';
 import RecurringScanDemo from '@/views/RecurringScanDemo.vue';
+import TsuStu from '@/views/TsuStu.vue';
 
 
 const routes = [
@@ -26,6 +27,7 @@ const routes = [
   { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
   { path: '/recurring-scan-demo/:accountId?', name: 'RecurringScanDemo', component: RecurringScanDemo },
   { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
+  { path: '/TsuStu', name: 'TsuStu', component: TsuStu },
 
 
 ]

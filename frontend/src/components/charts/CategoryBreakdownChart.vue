@@ -26,12 +26,6 @@
 </template>
 
 <script setup>
-/**
- * CategoryBreakdownChart visualizes spending per category.
- * Emits a `bar-click` event when a bar is clicked.
- * Fetches the full category tree on mount for filter options.
- * Dropdown groups are sorted alphabetically for ease of use.
- */
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
@@ -63,18 +57,61 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-onMounted(async () => {
-  await loadFullTree()
-  await fetchData()
-})
-watch(
-  [startDate, endDate],
-  debounce(fetchData, 300),
-  { immediate: false }
+// ---- FIXED LOGIC ----
+
+// Just use the root nodes as parent categories
+const parentCategories = computed(() => fullCategoryTree.value || [])
+
+// For the dropdown
+const categoryGroups = computed(() =>
+  parentCategories.value
+    .map(root => ({
+      id: root.id,
+      label: root.label,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label))
 )
 
+// --- Default select top 5 parents by amount (from breakdown tree) ---
+// Only set the default ONCE per load
+const defaultSet = ref(false);
+
+watch(categoryTree, () => {
+  if (!defaultSet.value && categoryTree.value.length) {
+    // Always use the order from your breakdown API (categoryTree), which has .amount
+    selectedCategoryIds.value = categoryTree.value
+      .slice(0, 5)
+      .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+      .map(cat => cat.id)
+    defaultSet.value = true
+    // renderChart will be called after fetchData, not here!
+  }
+})
+
+function onCategoryFilter(val) {
+  // Only allow selecting parents that exist in the dropdown
+  const allowed = parentCategories.value.map(c => c.id)
+  const asArray = Array.isArray(val) ? val : (val ? [val] : [])
+  selectedCategoryIds.value = asArray.filter((id, i, arr) => allowed.includes(id) && arr.indexOf(id) === i)
+  renderChart()
+}
+
+// Fetch all categories for dropdown
+async function loadFullTree() {
+  try {
+    const res = await fetchCategoryTree()
+    if (res.status === 'success') {
+      fullCategoryTree.value = res.data || []
+    }
+  } catch (err) {
+    console.error('Error loading category tree:', err)
+  }
+}
+
+// Fetch chart breakdown data
 async function fetchData() {
   try {
+    defaultSet.value = false; // Reset so watcher runs after data load
     const response = await fetchCategoryBreakdownTree({
       start_date: startDate.value,
       end_date: endDate.value,
@@ -90,17 +127,6 @@ async function fetchData() {
   }
 }
 
-async function loadFullTree() {
-  try {
-    const res = await fetchCategoryTree()
-    if (res.status === 'success') {
-      fullCategoryTree.value = res.data || []
-    }
-  } catch (err) {
-    console.error('Error loading category tree:', err)
-  }
-}
-
 function sumAmounts(nodes) {
   return (nodes || []).reduce((sum, n) => {
     const subtotal = n.amount + sumAmounts(n.children || [])
@@ -108,76 +134,21 @@ function sumAmounts(nodes) {
   }, 0)
 }
 
-const categoryGroups = computed(() => {
-  // [{id, label, children: [{id, label}]}]
-  return (fullCategoryTree.value || [])
-    .map(root => ({
-      id: root.id,
-      label: root.label,
-      children: [...(root.children || [])]
-        .sort((a, b) => a.label.localeCompare(b.label))
-        .map(child => ({ id: child.id, label: child.label })),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-})
-
-function onCategoryFilter(val) {
-  selectedCategoryIds.value = Array.isArray(val) ? val : (val ? [val] : [])
-  renderChart()
-}
-
+// Only show parent categories as bars, based on selected ids
 function extractBars(tree, selectedIds = []) {
-  // Show only selected detailed cats if any, else all main cats
+  let bars
   if (selectedIds && selectedIds.length) {
-    const found = []
-    function findNodes(nodes) {
-      for (const node of nodes) {
-        if (selectedIds.includes(node.id)) {
-          found.push(node)
-        }
-        if (node.children) findNodes(node.children)
-      }
-    }
-    findNodes(tree)
-    const bars = []
-    for (const node of found) {
-      let rootIdx = tree.findIndex(root => {
-        if (root.id === node.id) return true
-        function hasDescendant(n) {
-          if (!n.children) return false
-          for (const c of n.children) {
-            if (c.id === node.id) return true
-            if (hasDescendant(c)) return true
-          }
-          return false
-        }
-        return hasDescendant(root)
-      })
-      bars.push({
-        label: node.label,
-        amount: node.amount,
-        color: getGroupColor(rootIdx),
-      })
-    }
-    return {
-      labels: bars.map(b => b.label),
-      data: bars.map(b => b.amount),
-      colors: bars.map(b => b.color),
-    }
+    bars = tree.filter(node => selectedIds.includes(node.id))
+  } else {
+    bars = tree
   }
-  // No filter: main cats as bars
-  const labels = []
-  const data = []
-  const colors = []
-  tree.forEach((root, idx) => {
-    labels.push(root.label)
-    data.push(root.amount)
-    colors.push(getGroupColor(idx))
-  })
-  return { labels, data, colors }
+  return {
+    labels: bars.map(b => b.label),
+    data: bars.map(b => b.amount),
+    colors: bars.map((b, idx) => getGroupColor(idx)),
+  }
 }
 
-// Emit category label when a bar is clicked
 function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(
@@ -248,10 +219,22 @@ function renderChart() {
     },
   })
 }
+
+onMounted(async () => {
+  await loadFullTree()
+  await fetchData()
+})
+watch(
+  [startDate, endDate],
+  debounce(fetchData, 300),
+  { immediate: false }
+)
 </script>
+
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .dropdown-menu {
   @apply absolute bg-[var(--themed-bg)] border border-[var(--divider)] p-2 flex flex-col gap-1 max-h-80 overflow-y-auto z-30 min-w-[270px] shadow;
 }
