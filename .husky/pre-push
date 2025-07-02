@@ -1,13 +1,12 @@
-#!/bin/sh
-. "$(git rev-parse --show-toplevel)/.husky/_/husky.sh"
+# NO header lines
 
-# Run backend tests if any Python has changed
+# Backend
 if git diff --cached --name-only | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$'; then
   echo "==> Running backend pytest..."
   pytest || exit 1
 fi
 
-# Run frontend tests if any frontend files changed
+# Frontend
 if git diff --cached --name-only | grep -q '^frontend/'; then
   echo "==> Running frontend npm run check..."
   cd frontend && npm run check || exit 1
