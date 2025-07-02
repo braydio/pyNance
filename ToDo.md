@@ -18,6 +18,7 @@
 #### Account Snapshot
 
 - Style section title to emphasize module distinction.
+
 - Match 'Configure' button with UI theme.
 - Submenu ("Select up to 5 accounts") should be a styled dropdown.
 - Enable fuzzy find functionality in dropdown.
