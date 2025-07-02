@@ -6,7 +6,7 @@ from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens  # Use the shared helper
 from app.models import Account, Transaction
-from app.sql import account_logic
+from app.sql import account_logic, transactions_logic
 from flask import Blueprint, jsonify, request
 
 teller_transactions = Blueprint("teller_transactions", __name__)
@@ -86,7 +86,7 @@ def teller_refresh_accounts():
             logger.debug(
                 f"Refreshing Teller account {account.name} ({account.account_id}) with token: {access_token}"
             )
-            updated = account_logic.refresh_data_for_teller_account(
+            updated = transactions_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 FILES["TELLER_DOT_CERT"],
@@ -134,7 +134,7 @@ def teller_get_transactions():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        transactions_list, total = account_logic.get_paginated_transactions(
+        transactions_list, total = transactions_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,
@@ -189,7 +189,7 @@ def refresh_balances():
             if not access_token:
                 logger.warning(f"No access token found for account {acc['account_id']}")
                 continue
-            updated = account_logic.refresh_data_for_teller_account(
+            updated = transactions_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 FILES["TELLER_DOT_CERT"],

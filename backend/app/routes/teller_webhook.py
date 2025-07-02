@@ -9,7 +9,7 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens
 from app.models import Account
-from app.sql import account_logic
+from app.sql import transactions_logic
 from flask import Blueprint, jsonify, request
 
 TELLER_WEBHOOK_SECRET = FILES.get("TELLER_WEBHOOK_SECRET")
@@ -83,7 +83,7 @@ def teller_webhook():
         logger.info(f"Handling webhook event: {event} for account {account_id}")
 
         if event in ["transaction.posted", "transaction.updated", "account.updated"]:
-            updated = account_logic.refresh_data_for_teller_account(
+            updated = transactions_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 FILES["TELLER_DOT_CERT"],

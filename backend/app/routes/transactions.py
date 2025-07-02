@@ -5,7 +5,7 @@ import json
 import traceback
 from app.config import FILES, logger
 from app.models import Account, Transaction
-from app.sql import account_logic
+from app.sql import transactions_logic
 from app.extensions import db
 
 transactions = Blueprint("transactions", __name__)
@@ -136,7 +136,7 @@ def get_transactions_paginated():
             datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
         )
 
-        transactions, total = account_logic.get_paginated_transactions(
+        transactions, total = transactions_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,

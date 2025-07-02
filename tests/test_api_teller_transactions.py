@@ -41,17 +41,16 @@ sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
 
 # SQL package and logic
 sql_pkg = types.ModuleType("app.sql")
-account_logic_stub = types.ModuleType("app.sql.account_logic")
+transactions_logic_stub = types.ModuleType("app.sql.transactions_logic")
 
 
 def fake_get_paginated(page, page_size, start_date=None, end_date=None, category=None):
     return [{"id": "t1"}], 1
 
-
-account_logic_stub.get_paginated_transactions = fake_get_paginated
+transactions_logic_stub.get_paginated_transactions = fake_get_paginated
 sys.modules["app.sql"] = sql_pkg
-sys.modules["app.sql.account_logic"] = account_logic_stub
-sql_pkg.account_logic = account_logic_stub
+sys.modules["app.sql.transactions_logic"] = transactions_logic_stub
+sql_pkg.transactions_logic = transactions_logic_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
@@ -85,7 +84,7 @@ def test_get_transactions_filters_passed(client, monkeypatch):
         return [{"id": "tx"}], 1
 
     monkeypatch.setattr(
-        teller_module.account_logic, "get_paginated_transactions", capture_args
+        teller_module.transactions_logic, "get_paginated_transactions", capture_args
     )
     resp = client.get(
         "/api/teller/get_transactions?start_date=2024-01-01&end_date=2024-02-01&category=Food"

@@ -34,11 +34,11 @@ sys.modules["app.config.environment"] = env_stub
 
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")
-account_logic_stub = types.ModuleType("app.sql.account_logic")
-account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: True
+transactions_logic_stub = types.ModuleType("app.sql.transactions_logic")
+transactions_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: True
 sys.modules["app.sql"] = sql_pkg
-sys.modules["app.sql.account_logic"] = account_logic_stub
-sql_pkg.account_logic = account_logic_stub
+sys.modules["app.sql.transactions_logic"] = transactions_logic_stub
+sql_pkg.transactions_logic = transactions_logic_stub
 
 # Helpers stub
 helpers_pkg = types.ModuleType("app.helpers")
@@ -148,7 +148,7 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
         return True
 
     monkeypatch.setattr(
-        plaid_module.account_logic, "refresh_data_for_plaid_account", fake_refresh
+        plaid_module.transactions_logic, "refresh_data_for_plaid_account", fake_refresh
     )
 
     resp = client.post(

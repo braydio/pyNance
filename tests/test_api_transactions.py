@@ -31,11 +31,11 @@ sys.modules["app.extensions"] = extensions_stub
 
 # SQL package and logic
 sql_pkg = types.ModuleType("app.sql")
-account_logic_stub = types.ModuleType("app.sql.account_logic")
-account_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1)
+transactions_logic_stub = types.ModuleType("app.sql.transactions_logic")
+transactions_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1)
 sys.modules["app.sql"] = sql_pkg
-sys.modules["app.sql.account_logic"] = account_logic_stub
-sql_pkg.account_logic = account_logic_stub
+sys.modules["app.sql.transactions_logic"] = transactions_logic_stub
+sql_pkg.transactions_logic = transactions_logic_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
@@ -62,7 +62,7 @@ def client():
 
 def test_get_transactions_returns_data(client, monkeypatch):
     monkeypatch.setattr(
-        transactions_module.account_logic,
+        transactions_module.transactions_logic,
         "get_paginated_transactions",
         lambda *a, **k: ([{"txn": 1}], 1),
     )

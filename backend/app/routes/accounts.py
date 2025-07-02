@@ -23,7 +23,7 @@ def refresh_all_accounts():
     """
     try:
         from app.config import FILES, TELLER_API_BASE_URL
-        from app.sql import account_logic
+        from app.sql import account_logic, transactions_logic
 
         data = request.get_json() or {}
         account_ids = data.get("account_ids") or []
@@ -54,7 +54,7 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
-                updated = account_logic.refresh_data_for_plaid_account(
+                updated = transactions_logic.refresh_data_for_plaid_account(
                     access_token,
                     account.account_id,
                     start_date=start_date,
@@ -79,7 +79,7 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug(f"Refreshing Teller account {account.account_id}")
-                updated = account_logic.refresh_data_for_teller_account(
+                updated = transactions_logic.refresh_data_for_teller_account(
                     account,
                     access_token,
                     FILES["TELLER_DOT_CERT"],
@@ -121,7 +121,7 @@ def refresh_all_accounts():
 def refresh_single_account(account_id):
     """Refresh a single account with an optional date range."""
     from app.config import FILES, TELLER_API_BASE_URL
-    from app.sql import account_logic
+    from app.sql import account_logic, transactions_logic
 
     data = request.get_json() or {}
     start_date = data.get("start_date")
@@ -140,7 +140,7 @@ def refresh_single_account(account_id):
                 jsonify({"status": "error", "message": "Missing Plaid token"}),
                 400,
             )
-        updated = account_logic.refresh_data_for_plaid_account(
+        updated = transactions_logic.refresh_data_for_plaid_account(
             token,
             account_id,
             start_date=start_date,
@@ -165,7 +165,7 @@ def refresh_single_account(account_id):
                 jsonify({"status": "error", "message": "Missing Teller token"}),
                 400,
             )
-        updated = account_logic.refresh_data_for_teller_account(
+        updated = transactions_logic.refresh_data_for_teller_account(
             account,
             access_token,
             FILES["TELLER_DOT_CERT"],

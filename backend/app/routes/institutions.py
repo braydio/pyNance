@@ -10,7 +10,7 @@ from app.extensions import db
 from app.config import FILES, TELLER_API_BASE_URL
 from app.models import Institution
 from app.helpers.teller_helpers import load_tokens
-from app.sql import account_logic
+from app.sql import account_logic, transactions_logic
 from app.utils.finance_utils import normalize_account_balance
 
 institutions = Blueprint("institutions", __name__)
@@ -71,7 +71,7 @@ def refresh_institution(institution_id: int):
             token = getattr(account.plaid_account, "access_token", None)
             if not token:
                 continue
-            updated = account_logic.refresh_data_for_plaid_account(
+            updated = transactions_logic.refresh_data_for_plaid_account(
                 token,
                 account.account_id,
                 start_date=start_date,
@@ -90,7 +90,7 @@ def refresh_institution(institution_id: int):
                 access_token = account.teller_account.access_token
             if not access_token:
                 continue
-            updated = account_logic.refresh_data_for_teller_account(
+            updated = transactions_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
                 FILES["TELLER_DOT_CERT"],

@@ -11,7 +11,8 @@ from app.helpers.plaid_helpers import (
     get_item,
 )
 from app.models import Account, PlaidAccount
-from app.sql import account_logic  # for upserting accounts and processing transactions
+# account_logic provides upsert helpers; transactions_logic handles refresh logic
+from app.sql import account_logic, transactions_logic
 from flask import Blueprint, jsonify, request
 from sqlalchemy.orm import joinedload
 
@@ -191,7 +192,7 @@ def refresh_accounts_endpoint():
         refreshed = []
         for acct in accounts:
             if acct.plaid_account and acct.plaid_account.access_token:
-                refreshed_flag = account_logic.refresh_data_for_plaid_account(
+                refreshed_flag = transactions_logic.refresh_data_for_plaid_account(
                     access_token=acct.plaid_account.access_token,
                     account_id=acct.account_id,
                     start_date=start_date,
