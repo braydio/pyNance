@@ -15,3 +15,4 @@ if echo "$STAGED" | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$|\.pre-co
   pre-commit run --files $(echo "$STAGED" | grep -E '\.py$' | tr '\n' ' ')
   [ $? -ne 0 ] && exit 1
 fi
+

@@ -1,5 +1,3 @@
-# NO header lines
-
 # Backend
 if git diff --cached --name-only | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$'; then
   echo "==> Running backend pytest..."
@@ -12,3 +10,4 @@ if git diff --cached --name-only | grep -q '^frontend/'; then
   cd frontend && npm run check || exit 1
   cd ..
 fi
+
