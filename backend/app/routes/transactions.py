@@ -1,12 +1,18 @@
-# File: app/routes/transactions.py
-from flask import Blueprint, jsonify, request
-from datetime import datetime
+"""HTTP routes for transaction management.
+
+This blueprint exposes endpoints for updating and retrieving transaction
+records across all linked accounts.
+"""
+
 import json
 import traceback
-from app.config import FILES, logger
+from datetime import datetime
+
+from app.config import logger
+from app.extensions import db
 from app.models import Account, Transaction
 from app.sql import account_logic
-from app.extensions import db
+from flask import Blueprint, jsonify, request
 
 transactions = Blueprint("transactions", __name__)
 
@@ -156,6 +162,54 @@ def get_transactions_paginated():
 
     except Exception as e:
         logger.error(f"Error in get_transactions_paginated: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/<account_id>/transactions", methods=["GET"])
+def get_account_transactions(account_id):
+    """Return transactions for a specific account."""
+    try:
+        page = int(request.args.get("page", 1))
+        page_size = int(request.args.get("page_size", 15))
+
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+        category = request.args.get("category")
+        recent = request.args.get("recent") == "true"
+        limit = int(request.args.get("limit", 10))
+
+        start_date = (
+            datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if start_date_str
+            else None
+        )
+        end_date = (
+            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        )
+
+        transactions, total = account_logic.get_paginated_transactions(
+            page,
+            page_size,
+            start_date=start_date,
+            end_date=end_date,
+            category=category,
+            account_id=account_id,
+            recent=recent,
+            limit=limit,
+        )
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "data": {"transactions": transactions, "total": total},
+                }
+            ),
+            200,
+        )
+
+    except Exception as e:
+        logger.error(f"Error in get_account_transactions: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

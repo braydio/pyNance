@@ -10,17 +10,9 @@ import requests
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
-from app.helpers.plaid_helpers import (
-    get_accounts,
-    get_transactions,
-)
-from app.models import (
-    Account,
-    AccountHistory,
-    Category,
-    Transaction,
-)
-from app.utils.finance_utils import normalize_transaction_amount
+from app.helpers.plaid_helpers import get_accounts, get_transactions
+from app.models import Account, AccountHistory, Category, Transaction
+from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
@@ -426,7 +418,15 @@ def refresh_data_for_teller_account(
 
 
 def get_paginated_transactions(
-    page, page_size, start_date=None, end_date=None, category=None, user_id=None
+    page,
+    page_size,
+    start_date=None,
+    end_date=None,
+    category=None,
+    user_id=None,
+    account_id=None,
+    recent=False,
+    limit=None,
 ):
     query = (
         db.session.query(Transaction, Account)
@@ -444,9 +444,14 @@ def get_paginated_transactions(
         query = query.filter(Transaction.date <= end_date)
     if category:
         query = query.filter(Transaction.category == category)
+    if account_id:
+        query = query.filter(Transaction.account_id == account_id)
 
     total = query.count()
-    results = query.offset((page - 1) * page_size).limit(page_size).all()
+    if recent:
+        results = query.limit(limit or page_size).all()
+    else:
+        results = query.offset((page - 1) * page_size).limit(page_size).all()
 
     # Unpack and serialize
     serialized = []
@@ -469,6 +474,30 @@ def get_paginated_transactions(
         )
 
     return serialized, total
+
+
+def get_net_changes(account_id, start_date=None, end_date=None):
+    """Return net income and expense totals for the given account."""
+    base_query = Transaction.query.filter(Transaction.account_id == account_id)
+    if start_date:
+        base_query = base_query.filter(Transaction.date >= start_date)
+    if end_date:
+        base_query = base_query.filter(Transaction.date <= end_date)
+
+    income = (
+        base_query.filter(Transaction.amount > 0)
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+        or 0
+    )
+    expense = (
+        base_query.filter(Transaction.amount < 0)
+        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
+        .scalar()
+        or 0
+    )
+
+    return {"income": income, "expense": expense, "net": income + expense}
 
 
 def refresh_data_for_plaid_account(
