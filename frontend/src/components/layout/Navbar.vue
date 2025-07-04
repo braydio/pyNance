@@ -5,6 +5,8 @@
     <router-link to="/transactions" class="nav-link">Transactions</router-link>
     <router-link to="/forecast" class="nav-link">Forecasting</router-link>
     <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link>
+    <router-link to="/TsuStu " class="nav-link">TueStu</router-link>
+
 
   </nav>
 </template>
@@ -18,6 +20,7 @@ export default {
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .nav-link.router-link-exact-active {
   background-color: var(--hover);
   color: var(--color-accent-yellow);

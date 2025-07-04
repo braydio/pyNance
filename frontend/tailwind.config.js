@@ -1,4 +1,5 @@
 /** @type {import('tailwindcss').Config} */
+import defaultTheme from 'tailwindcss/defaultTheme'
 import forms from '@tailwindcss/forms'
 import typography from '@tailwindcss/typography'
 import aspectRatio from '@tailwindcss/aspect-ratio'
@@ -41,6 +42,7 @@ export default {
           'Inter',
           'system-ui',
           'sans-serif',
+          ...defaultTheme.fontFamily.sans,
         ],
       },
       typography: ({ theme }) => ({

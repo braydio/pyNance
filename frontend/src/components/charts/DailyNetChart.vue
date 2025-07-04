@@ -210,6 +210,7 @@ const summary = computed(() => {
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 /* Only theme stuff, NO height, width, min-width, min-height here */
 .chart-summary .summary-line.net {
   text-shadow: 0 0 4px var(--neon-mint);

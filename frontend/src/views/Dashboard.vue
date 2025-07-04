@@ -4,8 +4,8 @@
     <template #header>
       <div class="text-center space-y-1 py-4">
         <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-neon-purple">
-          Hello
-          <span class="username">{{ userName }}</span>,
+          Welcome,
+          <span class="username">{{ userName }}</span>!
         </h1>
         <p class="text-sm text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
@@ -107,20 +107,14 @@ async function openCategoryModal(category) {
  * `POSITIVE_MESSAGES`, and everything else from `NEUTRAL_MESSAGES`.
  */
 const NEGATIVE_MESSAGES = [
-  "The absolute state...",
-  'How terribly grim...',
-  "This... this is not good.",
-  'Things are looking quite bleak.',
-  "To shreds you say?",
+  "How terribly grim...",
+  'and things are looking quite bleak.'
 ]
 const POSITIVE_MESSAGES = [
   'Your fortune grows...',
-  "Your affairs are in a most enviable state!",
-  "A marvelous testament to your financial acumen!",
-  "Financial sophistication at its finest.",
   "Ahh... well in the black."
 ]
-const NEUTRAL_MESSAGES = ["Oh, yes it's you... well, keep up the... whatever this is.", "Hmm... hm? ...hmmm..."]
+const NEUTRAL_MESSAGES = ["Uh... keep up the... whatever this is.", "How very... neutral."]
 
 
 const netWorthMessage = computed(() => {
