@@ -5,17 +5,13 @@
     <router-link to="/transactions" class="nav-link">Transactions</router-link>
     <router-link to="/forecast" class="nav-link">Forecasting</router-link>
     <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link>
-    <router-link to="/TsuStu " class="nav-link">TueStu</router-link>
-
-
   </nav>
 </template>
 
 <script>
-
 export default {
-  name: "Navbar",
-};
+  name: 'Navbar',
+}
 </script>
 
 <style scoped>
@@ -47,7 +43,10 @@ export default {
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  transition: color 0.3s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    color 0.3s ease,
+    background-color 0.25s ease,
+    box-shadow 0.25s ease;
   text-decoration: none;
   cursor: pointer;
 }
