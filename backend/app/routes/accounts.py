@@ -384,3 +384,26 @@ def match_account_by_fields():
         )
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/<account_id>/net_changes", methods=["GET"])
+def account_net_changes(account_id):
+    """Return net income and expense totals for an account."""
+    try:
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+
+        start_date = (
+            datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            if start_date_str
+            else None
+        )
+        end_date = (
+            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        )
+
+        data = account_logic.get_net_changes(account_id, start_date, end_date)
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as e:
+        logger.error(f"Error in account_net_changes: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
