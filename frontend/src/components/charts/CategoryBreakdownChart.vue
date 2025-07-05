@@ -26,6 +26,11 @@
 </template>
 
 <script setup>
+/**
+ * CategoryBreakdownChart visualizes spending by parent category and
+ * allows filtering by top-level category groups. Emits `bar-click`
+ * with the selected category label.
+ */
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
@@ -57,6 +62,13 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
+// Retrieve a CSS custom property value
+function getStyle(name) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+}
+
 // ---- FIXED LOGIC ----
 
 // Just use the root nodes as parent categories
@@ -64,10 +76,14 @@ const parentCategories = computed(() => fullCategoryTree.value || [])
 
 // For the dropdown
 const categoryGroups = computed(() =>
-  parentCategories.value
+  (parentCategories.value || [])
     .map(root => ({
       id: root.id,
       label: root.label,
+      children: (root.children || []).map(c => ({
+        id: c.id,
+        label: c.label ?? c.name,
+      })),
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 )
@@ -191,6 +207,7 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 20, bottom: 20 } },
       onClick: handleBarClick,
       plugins: {
         legend: { display: false },
@@ -203,17 +220,19 @@ function renderChart() {
       scales: {
         x: {
           ticks: {
-            color: '#c4b5fd',
-            font: { size: 14 },
+            color: getStyle('--color-text-muted'),
+            font: { family: "'Fira Code', monospace", size: 14 },
           },
+          grid: { color: getStyle('--divider') },
         },
         y: {
           beginAtZero: true,
           ticks: {
             callback: value => `$${value}`,
-            color: '#c4b5fd',
-            font: { size: 14 },
+            color: getStyle('--color-text-muted'),
+            font: { family: "'Fira Code', monospace", size: 14 },
           },
+          grid: { color: getStyle('--divider') },
         },
       },
     },

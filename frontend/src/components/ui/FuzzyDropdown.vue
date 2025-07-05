@@ -1,3 +1,7 @@
+<!--
+  FuzzyDropdown.vue
+  Multi-select dropdown with fuzzy search.
+-->
 <template>
   <div class="relative">
     <input v-model="query" type="text" :placeholder="placeholder" class="input w-full mb-2" @focus="open = true"
@@ -55,7 +59,7 @@ const filtered = computed(() => {
 })
 
 // UX: close on blur unless clicking into dropdown
-function onBlur(e) {
+function onBlur() {
   setTimeout(() => {
     open.value = false
   }, 180)
