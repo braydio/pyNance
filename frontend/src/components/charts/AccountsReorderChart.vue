@@ -82,7 +82,7 @@
 <script setup>
 // Display top accounts grouped by subtype using simple bar charts.
 // Bars use Tailwind colors with optional axis ticks for context.
-import { toRef, onMounted, computed } from 'vue'
+import { toRef, onMounted } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 
 const props = defineProps({
@@ -109,8 +109,6 @@ const barWidth = (account) => {
   return `${(Math.abs(account.adjusted_balance) / max) * 100}%`
 }
 
-const barColor = account =>
-  account.adjusted_balance >= 0 ? 'bg-blue-500' : 'bg-red-500'
 
 defineExpose({
   refresh: fetchAccounts,
