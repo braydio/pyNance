@@ -96,6 +96,13 @@ spec = importlib.util.spec_from_file_location("app.routes.charts", ROUTE_PATH)
 charts_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(charts_module)
 
+CATEGORIES_PATH = os.path.join(BASE_BACKEND, "app", "routes", "categories.py")
+spec_cats = importlib.util.spec_from_file_location(
+    "app.routes.categories", CATEGORIES_PATH
+)
+categories_module = importlib.util.module_from_spec(spec_cats)
+spec_cats.loader.exec_module(categories_module)
+
 
 class QueryStub:
     def __init__(self, rows):
@@ -124,6 +131,7 @@ class QueryStub:
 def client():
     app = Flask(__name__)
     app.register_blueprint(charts_module.charts, url_prefix="/api/charts")
+    app.register_blueprint(categories_module.categories, url_prefix="/api/categories")
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
@@ -225,3 +233,30 @@ def test_category_breakdown_tree_totals_match(client):
     root_total = sum(node["amount"] for node in data["data"])
     expected_total = sum(abs(t.amount) for t in txs)
     assert root_total == expected_total
+
+
+def test_category_tree_shape_has_ids(client):
+    class DummyCat:
+        def __init__(self, id_, primary, detailed=None):
+            self.id = id_
+            self.primary_category = primary
+            self.detailed_category = detailed
+            self.display_name = detailed or primary
+            self.plaid_category_id = f"plaid-{id_}"
+
+    cats = [
+        DummyCat(1, "Food"),
+        DummyCat(2, "Food", "Groceries"),
+        DummyCat(3, "Transport"),
+    ]
+
+    models_stub.Category.query = types.SimpleNamespace(all=lambda: cats)
+
+    resp = client.get("/api/categories/tree")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "success"
+    assert isinstance(data["data"], list)
+    first = data["data"][0]
+    assert set(first.keys()) == {"id", "label", "children"}
+    assert all("label" in child for child in first["children"])
