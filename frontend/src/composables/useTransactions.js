@@ -5,7 +5,7 @@
  * Handles pagination, search, and sort logic while fetching from the API.
  */
 import { ref, computed, onMounted } from "vue";
-import axios from "axios";
+import { fetchTransactions as fetchTransactionsApi } from "@/api/transactions";
 
 export function useTransactions(pageSize = 15) {
   const transactions = ref([]);
@@ -24,9 +24,10 @@ export function useTransactions(pageSize = 15) {
    */
   const fetchTransactions = async () => {
     try {
-      const res = await axios.get(
-        `/api/transactions/get_transactions?page=${currentPage.value}&page_size=${pageSize}`
-      );
+      const res = await fetchTransactionsApi({
+        page: currentPage.value,
+        page_size: pageSize,
+      });
 
       const payload =
         res.data.status === "success" ? res.data.data : res.data.data || res.data;
