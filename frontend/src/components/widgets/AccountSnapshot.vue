@@ -74,7 +74,7 @@ import { ref, computed } from 'vue'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
 
 const hovered = ref(null)
-const { accounts, selectedAccounts, selectedIds, reminders } = useSnapshotAccounts()
+const { selectedAccounts, reminders } = useSnapshotAccounts()
 
 function formatAccounting(val) {
   const num = parseFloat(val || 0)
