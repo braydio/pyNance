@@ -1,8 +1,8 @@
 # File: app/helpers/teller_helpers.py
 
 import json
-import requests
 
+import requests
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.sql.forecast_logic import update_account_history
 
