@@ -39,8 +39,6 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
-import DailyNetChart from '@/components/charts/DailyNetChart.vue'
-import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 
 export default {
   name: 'Transactions',
@@ -48,8 +46,6 @@ export default {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
-    DailyNetChart,
-    CategoryBreakdownChart,
   },
   setup() {
     const {
