@@ -4,7 +4,7 @@
       @keydown.esc="open = false" tabindex="0">
       <span class="flex-1 truncate text-left">
         <template v-if="selectedNames.length">{{ selectedNames.join(', ') }}</template>
-        <template v-else class="text-gray-400">{{ placeholder }}</template>
+        <span v-else class="text-gray-400">{{ placeholder }}</span>
       </span>
       <span class="ml-2">&or;</span>
     </div>
