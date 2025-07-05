@@ -28,6 +28,8 @@
 </template>
 
 <script setup>
+// Multi-select dropdown for selecting categories grouped by parent.
+// Emits `update:modelValue` with the selected category IDs.
 import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
@@ -38,15 +40,29 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const open = ref(false)
 const expanded = ref(new Set())
+// Local copy of selected ids; kept in sync with the parent via v-model
 const selectedIds = ref(new Set(props.modelValue))
+// Flag prevents prop updates from triggering a feedback loop
+const updatingFromProps = ref(false)
 
+// When parent updates the modelValue, sync our local set
 watch(
   () => props.modelValue,
-  val => (selectedIds.value = new Set(val))
+  val => {
+    updatingFromProps.value = true
+    selectedIds.value = new Set(val)
+  }
 )
+// Emit changes only when they originate from user interaction
 watch(
   selectedIds,
-  val => emit('update:modelValue', Array.from(val)),
+  val => {
+    if (updatingFromProps.value) {
+      updatingFromProps.value = false
+      return
+    }
+    emit('update:modelValue', Array.from(val))
+  },
   { deep: true }
 )
 
