@@ -139,6 +139,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
+import { updateTransaction } from '@/api/transactions'
 import { useToast } from 'vue-toastification'
 
 const toast = useToast()
@@ -183,7 +184,7 @@ function cancelEdit() {
 
 async function saveEdit(tx) {
   try {
-    await axios.put('/api/transactions/update', {
+    await updateTransaction({
       transaction_id: tx.transaction_id,
       ...editBuffer.value,
     })
