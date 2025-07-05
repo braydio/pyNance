@@ -1,8 +1,11 @@
-from sqlalchemy.orm import aliased
-from flask import Blueprint, jsonify
-from app.models import Category
-from app import db, plaid_client
+"""Category management endpoints."""
+
 import logging
+
+from app import db, plaid_client
+from app.models import Category
+from flask import Blueprint, jsonify
+from sqlalchemy.orm import aliased
 
 logger = logging.getLogger(__name__)
 
@@ -11,20 +14,30 @@ categories = Blueprint("categories", __name__)
 
 @categories.route("/tree", methods=["GET"])
 def get_category_tree():
-    tree = {}
-    categories = Category.query.all()
-    for cat in categories:
+    """Return categories grouped by primary category.
+
+    Each root node contains a unique ``id`` and ``label`` so the frontend
+    dropdown can correctly track selections. Children retain their database
+    identifiers and Plaid mapping.
+    """
+
+    grouped: dict[str, list[dict]] = {}
+    rows = Category.query.all()
+    for cat in rows:
         primary = cat.primary_category or "Unknown"
         detailed = cat.detailed_category or cat.display_name or "Other"
 
-        if primary not in tree:
-            tree[primary] = []
+        if primary not in grouped:
+            grouped[primary] = []
 
-        tree[primary].append(
-            {"name": detailed, "id": cat.id, "plaid_id": cat.plaid_category_id}
+        grouped[primary].append(
+            {"id": cat.id, "label": detailed, "plaid_id": cat.plaid_category_id}
         )
 
-    nested = [{"name": k, "children": v} for k, v in tree.items()]
+    nested = [
+        {"id": idx + 1, "label": label, "children": children}
+        for idx, (label, children) in enumerate(grouped.items())
+    ]
     return jsonify({"status": "success", "data": nested})
 
 
