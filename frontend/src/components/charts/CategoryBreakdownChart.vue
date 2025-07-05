@@ -64,10 +64,14 @@ const parentCategories = computed(() => fullCategoryTree.value || [])
 
 // For the dropdown
 const categoryGroups = computed(() =>
-  parentCategories.value
+  (parentCategories.value || [])
     .map(root => ({
       id: root.id,
       label: root.label,
+      children: (root.children || []).map(c => ({
+        id: c.id,
+        label: c.label ?? c.name,
+      })),
     }))
     .sort((a, b) => a.label.localeCompare(b.label))
 )
