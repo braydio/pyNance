@@ -1,1 +1,18 @@
-npx lint-staged
+STAGED=$(git diff --cached --name-only)
+
+# Frontend staged
+if echo "$STAGED" | grep -q '^frontend/'; then
+  echo "==> Running frontend lint-staged checks..."
+  cd frontend && npx lint-staged
+  STATUS=$?
+  cd ..
+  [ $STATUS -ne 0 ] && exit 1
+fi
+
+# Backend Python staged
+if echo "$STAGED" | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$|\.pre-commit-config\.yaml'; then
+  echo "==> Running backend Python pre-commit hooks..."
+  pre-commit run --files $(echo "$STAGED" | grep -E '\.py$' | tr '\n' ' ')
+  [ $? -ne 0 ] && exit 1
+fi
+
