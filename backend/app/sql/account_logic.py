@@ -11,7 +11,8 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
-from app.models import Account, AccountHistory, Category, Transaction
+from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
+from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
@@ -500,14 +501,62 @@ def get_net_changes(account_id, start_date=None, end_date=None):
     return {"income": income, "expense": expense, "net": income + expense}
 
 
+def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url):
+    """
+    Ensures no duplicate (primary, detailed). Returns the correct Category row.
+    """
+    # Try PFC first
+    category = (
+        db.session.query(Category)
+        .filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed)
+        .first()
+    )
+    # Fallback legacy
+    if not category:
+        category = (
+            db.session.query(Category)
+            .filter_by(primary_category=primary, detailed_category=detailed)
+            .first()
+        )
+    # If another Category exists for this (primary, detailed), use it instead of updating!
+    if category and (
+        category.primary_category != primary or category.detailed_category != detailed
+    ):
+        duplicate = (
+            db.session.query(Category)
+            .filter_by(primary_category=primary, detailed_category=detailed)
+            .first()
+        )
+        if duplicate and duplicate.id != category.id:
+            return duplicate  # point to the duplicate!
+    if not category:
+        category = Category(
+            primary_category=primary,
+            detailed_category=detailed,
+            pfc_primary=pfc_primary,
+            pfc_detailed=pfc_detailed,
+            pfc_icon_url=pfc_icon_url,
+            display_name=f"{pfc_primary} > {pfc_detailed}",
+        )
+        db.session.add(category)
+        db.session.flush()
+    else:
+        # Update icon/display if changed, not primary/detailed if it would collide
+        if pfc_icon_url and category.pfc_icon_url != pfc_icon_url:
+            category.pfc_icon_url = pfc_icon_url
+        display_name = f"{pfc_primary} > {pfc_detailed}"
+        if category.display_name != display_name:
+            category.display_name = display_name
+    return category
+
+
 def refresh_data_for_plaid_account(
     access_token, account_id, start_date=None, end_date=None
 ):
-    """Refresh a single Plaid account within an optional date range.
-
-    Transactions are fetched using ``get_transactions`` which now
-    paginates the Plaid API so that the full history between
-    ``start_date`` and ``end_date`` is retrieved.
+    """
+    Refresh a single Plaid account within an optional date range.
+    Fetches all transactions and updates both category (with PFC) and transaction rows,
+    and writes PlaidTransactionMeta for every transaction.
     """
     updated = False
     now = datetime.now(timezone.utc)
@@ -520,7 +569,6 @@ def refresh_data_for_plaid_account(
 
     if isinstance(end_date_obj, str):
         end_date_obj = datetime.strptime(end_date_obj, "%Y-%m-%d").date()
-
     if isinstance(start_date_obj, str):
         start_date_obj = datetime.strptime(start_date_obj, "%Y-%m-%d").date()
 
@@ -530,7 +578,7 @@ def refresh_data_for_plaid_account(
             logger.warning(f"[DB Lookup] No account found for account_id={account_id}")
             return False
 
-        # ✅ Refresh balance via get_accounts()
+        # Refresh balance
         accounts_data = get_accounts(access_token, account.user_id)
         for acct in accounts_data:
             if acct.get("account_id") == account_id:
@@ -555,13 +603,16 @@ def refresh_data_for_plaid_account(
             end_date=end_date_obj,
         )
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
-        # Only process transactions belonging to this specific account
+
+        # Only process transactions for this specific account
         transactions = [
             txn for txn in transactions if txn.get("account_id") == account_id
         ]
         logger.info(
             f"Processing {len(transactions)} transactions for account {account_id}."
         )
+
+        plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")
@@ -579,26 +630,21 @@ def refresh_data_for_plaid_account(
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue
 
+            # Plaid PFC fields
+            pfc_obj = txn.get("personal_finance_category", {})
+            pfc_primary = pfc_obj.get("primary") or "Unknown"
+            pfc_detailed = pfc_obj.get("detailed") or "Unknown"
+            pfc_icon_url = txn.get("personal_finance_category_icon_url")
+
+            # Legacy Plaid category
             category_path = txn.get("category", [])
             primary = category_path[0] if len(category_path) > 0 else "Unknown"
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 
-            existing_category = (
-                db.session.query(Category)
-                .filter_by(primary_category=primary, detailed_category=detailed)
-                .first()
+            # Use robust category upsert logic
+            category = get_or_create_category(
+                primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url
             )
-
-            if existing_category:
-                category = existing_category
-            else:
-                category = Category(
-                    primary_category=primary,
-                    detailed_category=detailed,
-                    display_name=f"{primary} > {detailed}",
-                )
-                db.session.add(category)
-                db.session.flush()
 
             merchant_name = txn.get("merchant_name") or "Unknown"
             merchant_type = (
@@ -625,7 +671,7 @@ def refresh_data_for_plaid_account(
                     existing_txn.description = description
                     existing_txn.pending = pending
                     existing_txn.category_id = category.id
-                    existing_txn.category = category.computed_display_name
+                    existing_txn.category = category.display_name
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
                     existing_txn.provider = "Plaid"
@@ -633,6 +679,11 @@ def refresh_data_for_plaid_account(
                         f"Updated transaction {txn_id} for account {account_label}"
                     )
                     updated = True
+                # -- Update Plaid metadata on every refresh (even if not updating Transaction) --
+                if plaid_account_obj:
+                    refresh_or_insert_plaid_metadata(
+                        txn, existing_txn, plaid_account_obj.account_id
+                    )
             else:
                 new_txn = Transaction(
                     transaction_id=txn_id,
@@ -642,7 +693,7 @@ def refresh_data_for_plaid_account(
                     pending=pending,
                     account_id=account_id,
                     category_id=category.id,
-                    category=category.computed_display_name,
+                    category=category.display_name,
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
                     provider="Plaid",
@@ -652,6 +703,10 @@ def refresh_data_for_plaid_account(
                     f"➕ Inserted new transaction {txn_id} for account {account_label}"
                 )
                 updated = True
+                if plaid_account_obj:
+                    refresh_or_insert_plaid_metadata(
+                        txn, new_txn, plaid_account_obj.account_id
+                    )
 
         db.session.commit()
         return updated

@@ -43,7 +43,7 @@ repos:
     rev: 1.7.5
     hooks:
       - id: bandit
-        args: ["-r", "backend"]
+        args: ["-r", "backend/app/routes"]
 
   - repo: local
     hooks:

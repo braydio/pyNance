@@ -1,14 +1,13 @@
 # backend/app/sql/recurring_logic.py
 
+import uuid
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import func
-
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
-import uuid
+from sqlalchemy import func
 
 
 def find_recurring_items(transactions):
