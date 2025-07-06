@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-const props = defineProps({
+const { results } = defineProps({
   results: { type: Array, default: () => [] }
 });
 </script>

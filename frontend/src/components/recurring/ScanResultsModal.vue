@@ -15,7 +15,7 @@ import { ref } from 'vue';
 import Modal from '../ui/Modal.vue';
 import ScanResultsTable from './ScanResultsTable.vue';
 
-const props = defineProps({
+const { results } = defineProps({
   results: { type: Array, default: () => [] }
 });
 const open = ref(false);
