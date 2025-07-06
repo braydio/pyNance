@@ -3,14 +3,15 @@ import Dashboard from '../views/Dashboard.vue'
 import Accounts from '../views/Accounts.vue'
 import Transactions from '../views/Transactions.vue'
 import RecurringTX from '../views/RecurringTX.vue'
-import Forecast from '@/views/Forecast.vue'
-import Investments from '../views/Investments.vue'
-import DailyNetChart from '@/components/charts/DailyNetChart.vue'
-import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
-import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
-import AccountsTable from '@/components/tables/AccountsTable.vue'
-import ForecastMock from '@/views/ForecastMock.vue'
-import RecurringScanDemo from '@/views/RecurringScanDemo.vue'
+import Forecast from '@/views/Forecast.vue';
+import Investments from '../views/Investments.vue';
+import DailyNetChart from '@/components/charts/DailyNetChart.vue';
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue';
+import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue';
+import AccountsTable from '@/components/tables/AccountsTable.vue';
+import ForecastMock from '@/views/ForecastMock.vue';
+import RecurringScanDemo from '@/views/RecurringScanDemo.vue';
+
 
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -33,6 +34,7 @@ const routes = [
     component: RecurringScanDemo,
   },
   { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
+
 ]
 
 const router = createRouter({
