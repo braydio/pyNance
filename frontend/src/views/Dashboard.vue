@@ -53,9 +53,9 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
-import axios from 'axios'
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
+import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
 import { useTransactions } from '@/composables/useTransactions.js'
 
@@ -77,8 +77,10 @@ const netWorth = ref(0)
 
 async function openDayModal(date) {
   modalTitle.value = `Transactions for ${date}`
-  const res = await axios.get('/api/transactions/get_transactions', {
-    params: { start_date: date, end_date: date, page_size: 100 }
+  const res = await fetchTransactionsApi({
+    start_date: date,
+    end_date: date,
+    page_size: 100,
   })
   if (res.data.status === 'success') {
     modalTransactions.value = res.data.data.transactions
@@ -90,8 +92,9 @@ async function openDayModal(date) {
 
 async function openCategoryModal(category) {
   modalTitle.value = `Transactions for ${category}`
-  const res = await axios.get('/api/transactions/get_transactions', {
-    params: { category, page_size: 100 }
+  const res = await fetchTransactionsApi({
+    category,
+    page_size: 100,
   })
   if (res.data.status === 'success') {
     modalTransactions.value = res.data.data.transactions
