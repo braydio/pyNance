@@ -83,9 +83,8 @@ MODULE_PATH = os.path.join(
     "helpers",
     "account_history_helper.py",
 )
-spec = importlib.util.spec_from_file_location("account_history_helper", MODULE_PATH)
-account_history_helper = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(account_history_helper)
+
+from app.helpers import account_history_helper
 
 
 # ---- Tests ----
