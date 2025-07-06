@@ -1,42 +1,48 @@
 <template>
   <div
     class="category-breakdown-chart bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] relative">
-    <div class="flex justify-between items-center flex-wrap gap-2 mb-2">
-      <h2 class="text-xl font-semibold">Spending by Category</h2>
-      <div class="flex gap-2 items-center">
+    <ChartWidgetTopBar>
+      <template #icon>
+        <!-- Use any relevant SVG icon you want here -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-mint)]" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 10h4V3H3v7zm0 0v11h4v-4h6v4h4V3h-4v7H3zm7 4h2v2h-2v-2z" />
+        </svg>
+      </template>
+      <template #title>
+        Spending by Category
+      </template>
+      <template #controls>
         <input type="date" v-model="startDate"
-          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
+          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
         <input type="date" v-model="endDate"
-          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]" />
-      </div>
-      <div
-        class="chart-summary bg-[var(--color-bg-secondary)] px-3 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto">
-        <span>Total: {{ totalSpending.toLocaleString() }}</span>
-      </div>
-    </div>
+          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
+      </template>
+      <template #summary>
+        <span class="text-sm">Total:</span>
+        <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ totalSpending.toLocaleString() }}</span>
+      </template>
+    </ChartWidgetTopBar>
 
-    <!-- Grouped Multi-select Dropdown Filter -->
     <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="selectedCategoryIds"
-      @update:modelValue="onCategoryFilter" class="w-96 mb-3" />
+      @update:modelValue="onCategoryFilter" class="w-96 mb-4" />
 
-    <div class="relative w-full h-[400px]">
+    <div
+      class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
       <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
     </div>
   </div>
 </template>
 
 <script setup>
-/**
- * CategoryBreakdownChart visualizes spending by parent category and
- * allows filtering by top-level category groups. Emits `bar-click`
- * with the selected category label.
- */
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
 import { fetchCategoryTree } from '@/api/categories'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
 
 const emit = defineEmits(['bar-click'])
 
@@ -69,12 +75,8 @@ function getStyle(name) {
     .trim()
 }
 
-// ---- FIXED LOGIC ----
-
-// Just use the root nodes as parent categories
 const parentCategories = computed(() => fullCategoryTree.value || [])
 
-// For the dropdown
 const categoryGroups = computed(() =>
   (parentCategories.value || [])
     .map(root => ({
@@ -88,31 +90,25 @@ const categoryGroups = computed(() =>
     .sort((a, b) => a.label.localeCompare(b.label))
 )
 
-// --- Default select top 5 parents by amount (from breakdown tree) ---
-// Only set the default ONCE per load
 const defaultSet = ref(false);
 
 watch(categoryTree, () => {
   if (!defaultSet.value && categoryTree.value.length) {
-    // Always use the order from your breakdown API (categoryTree), which has .amount
     selectedCategoryIds.value = categoryTree.value
       .slice(0, 5)
       .sort((a, b) => (b.amount || 0) - (a.amount || 0))
       .map(cat => cat.id)
     defaultSet.value = true
-    // renderChart will be called after fetchData, not here!
   }
 })
 
 function onCategoryFilter(val) {
-  // Only allow selecting parents that exist in the dropdown
   const allowed = parentCategories.value.map(c => c.id)
   const asArray = Array.isArray(val) ? val : (val ? [val] : [])
   selectedCategoryIds.value = asArray.filter((id, i, arr) => allowed.includes(id) && arr.indexOf(id) === i)
   renderChart()
 }
 
-// Fetch all categories for dropdown
 async function loadFullTree() {
   try {
     const res = await fetchCategoryTree()
@@ -124,10 +120,9 @@ async function loadFullTree() {
   }
 }
 
-// Fetch chart breakdown data
 async function fetchData() {
   try {
-    defaultSet.value = false; // Reset so watcher runs after data load
+    defaultSet.value = false;
     const response = await fetchCategoryBreakdownTree({
       start_date: startDate.value,
       end_date: endDate.value,
@@ -150,7 +145,6 @@ function sumAmounts(nodes) {
   }, 0)
 }
 
-// Only show parent categories as bars, based on selected ids
 function extractBars(tree, selectedIds = []) {
   let bars
   if (selectedIds && selectedIds.length) {
@@ -215,6 +209,11 @@ function renderChart() {
           callbacks: {
             label: context => `$${context.raw.toLocaleString()}`,
           },
+          backgroundColor: getStyle('--theme-bg'),
+          titleColor: getStyle('--color-accent-yellow'),
+          bodyColor: getStyle('--color-text-light'),
+          borderColor: getStyle('--color-accent-yellow'),
+          borderWidth: 1,
         },
       },
       scales: {
@@ -250,11 +249,12 @@ watch(
 )
 </script>
 
-
 <style scoped>
-@reference "../../assets/css/main.css";
+@import "../../assets/css/main.css";
 
-.dropdown-menu {
-  @apply absolute bg-[var(--themed-bg)] border border-[var(--divider)] p-2 flex flex-col gap-1 max-h-80 overflow-y-auto z-30 min-w-[270px] shadow;
+.category-breakdown-chart .relative {
+  background: var(--theme-bg);
+  border-radius: 1rem;
+  box-shadow: 0 1px 8px 0 rgb(30 41 59 / 10%);
 }
 </style>
