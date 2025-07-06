@@ -4,9 +4,9 @@ import argparse
 import os
 
 import chromadb
+from chroma_support import chunk_text, extract_metadata
 from chromadb.errors import ChromaError, IDAlreadyExistsError
 from chromadb.utils import embedding_functions
-from chroma_support import chunk_text, extract_metadata
 
 
 def parse_args() -> argparse.Namespace:

@@ -1,7 +1,8 @@
+import importlib.util
 import os
 import sys
-import importlib.util
 from datetime import datetime, timedelta
+
 import pytest
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")

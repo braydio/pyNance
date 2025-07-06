@@ -1,5 +1,5 @@
-import os
 import difflib
+import os
 
 COMPONENTS_DIR = "frontend/src/components"
 EXTENSIONS = {".vue"}

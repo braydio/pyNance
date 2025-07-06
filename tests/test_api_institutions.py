@@ -1,6 +1,6 @@
+import importlib.util
 import os
 import sys
-import importlib.util
 import types
 
 import pytest
@@ -28,7 +28,9 @@ sys.modules["app.config"] = config_stub
 # Extensions stub
 extensions_stub = types.ModuleType("app.extensions")
 session_ns = types.SimpleNamespace(commit=lambda: None, rollback=lambda: None)
-extensions_stub.db = types.SimpleNamespace(session=session_ns, commit=lambda: None, rollback=lambda: None)
+extensions_stub.db = types.SimpleNamespace(
+    session=session_ns, commit=lambda: None, rollback=lambda: None
+)
 sys.modules["app.extensions"] = extensions_stub
 
 # Helpers stub
@@ -69,8 +71,16 @@ class DummyAccount:
         self.balance = 0
         self.link_type = link_type
         self.user_id = "u1"
-        self.plaid_account = types.SimpleNamespace(access_token="tok", last_refreshed=None) if link_type == "Plaid" else None
-        self.teller_account = types.SimpleNamespace(access_token="tok", last_refreshed=None) if link_type == "Teller" else None
+        self.plaid_account = (
+            types.SimpleNamespace(access_token="tok", last_refreshed=None)
+            if link_type == "Plaid"
+            else None
+        )
+        self.teller_account = (
+            types.SimpleNamespace(access_token="tok", last_refreshed=None)
+            if link_type == "Teller"
+            else None
+        )
 
 
 class DummyInstitution:

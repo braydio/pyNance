@@ -1,9 +1,9 @@
-import os
-import sys
 import argparse
+import os
+
 import chromadb
-from chromadb.errors import ChromaError, IDAlreadyExistsError
 from chroma_support import chunk_text, extract_metadata
+from chromadb.errors import ChromaError, IDAlreadyExistsError
 
 # Argument parsing
 parser = argparse.ArgumentParser(description="Index source files into ChromaDB")

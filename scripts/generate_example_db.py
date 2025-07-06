@@ -3,18 +3,17 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import random
+import sys
+import types
 from datetime import datetime, timedelta
 from pathlib import Path
 
 from dateutil.relativedelta import relativedelta
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
-
-import sys
-import types
-import importlib.util
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
 sys.path.insert(0, str(BACKEND_DIR))

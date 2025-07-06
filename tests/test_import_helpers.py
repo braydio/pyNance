@@ -1,7 +1,7 @@
+import importlib.util
 import os
 import sys
 import types
-import importlib.util
 
 # Stub minimal app.config with logger
 app_stub = types.ModuleType("app")

@@ -4,13 +4,13 @@ This test runs the script against a temporary Chroma collection using a
 lightweight embedding function to avoid heavy downloads.
 """
 
-from pathlib import Path
 import runpy
 import sys
+from pathlib import Path
 
 import chromadb
-from chromadb.utils import embedding_functions
 import pytest
+from chromadb.utils import embedding_functions
 
 
 class DummyEmbeddingFunction:
@@ -29,7 +29,7 @@ class DummyEmbeddingFunction:
 
     def embed_query(self, text):
         return self([text])[0]
-    
+
     def is_legacy(self):
         """Indicate legacy embedding function to suppress deprecation warnings."""
         return True
