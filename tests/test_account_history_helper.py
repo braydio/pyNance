@@ -3,6 +3,7 @@
 import sys
 import types
 from datetime import date
+from backend.app.helpers import account_history_helper
 
 # ---- Stub Modules for app, extensions, and models ----
 app_stub = types.ModuleType("app")
@@ -60,8 +61,6 @@ sys.modules["app.models"] = models_stub
 
 RESULTS = [("acc1", date(2024, 1, 1), 15.0), ("acc2", date(2024, 1, 2), -5.0)]
 extensions_stub.db = types.SimpleNamespace(session=DBSessionStub(RESULTS))
-
-from app.helpers import account_history_helper
 
 
 def test_update_account_history_creates_account_history():
