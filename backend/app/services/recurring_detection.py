@@ -1,7 +1,7 @@
-from collections import defaultdict, Counter
-from datetime import datetime
+from collections import Counter, defaultdict
+from statistics import StatisticsError, mode
+
 from dateutil.parser import parse
-from statistics import mode, StatisticsError
 
 
 class RecurringDetector:
