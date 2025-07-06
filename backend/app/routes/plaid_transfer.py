@@ -1,6 +1,7 @@
 import os
+
 import requests
-from flask import Flask, request, jsonify, Blueprint
+from flask import Blueprint, Flask, jsonify, request
 
 app = Flask(__name__)
 

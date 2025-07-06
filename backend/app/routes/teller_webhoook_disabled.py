@@ -1,6 +1,6 @@
 # File: app/routes/teller_webhook_disabled.py
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify
 
 # Fallback blueprint if webhook is not configured
 disabled_webhooks = Blueprint("webhooks_disabled", __name__)

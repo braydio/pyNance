@@ -1,7 +1,7 @@
 import json
 
+from app.helpers.plaid_helpers import exchange_public_token, generate_link_token
 from flask import Blueprint, request
-from app.helpers.plaid_helpers import generate_link_token, exchange_public_token
 
 plaid_routes = Blueprint("plaid_routes", __name__)
 

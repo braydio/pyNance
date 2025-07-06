@@ -15,7 +15,7 @@ CLIENT_NAME = os.getenv("CLIENT_NAME", "pyNance-Dash")
 # Plaid client ID and API secret for authentication
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
-PLAID_CLIENT_NAME = os.getenv("PLAID_CLIENT_NAME")
+PLAID_CLIENT_NAME = os.getenv("CLIENT_NAME")
 
 # Misc Plaid environment setup
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
