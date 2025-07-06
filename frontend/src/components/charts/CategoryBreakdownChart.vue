@@ -1,64 +1,26 @@
 <template>
-  <div
-    class="category-breakdown-chart bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] relative">
-    <ChartWidgetTopBar>
-      <template #icon>
-        <!-- Use any relevant SVG icon you want here -->
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-mint)]" fill="none"
-          viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-            d="M3 10h4V3H3v7zm0 0v11h4v-4h6v4h4V3h-4v7H3zm7 4h2v2h-2v-2z" />
-        </svg>
-      </template>
-      <template #title>
-        Spending by Category
-      </template>
-      <template #controls>
-        <input type="date" v-model="startDate"
-          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-        <input type="date" v-model="endDate"
-          class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-      </template>
-      <template #summary>
-        <span class="text-sm">Total:</span>
-        <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ totalSpending.toLocaleString() }}</span>
-      </template>
-    </ChartWidgetTopBar>
-
-    <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="selectedCategoryIds"
-      @update:modelValue="onCategoryFilter" class="w-96 mb-4" />
-
-    <div
-      class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
-      <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
-    </div>
+  <div class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
+    <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
-import { fetchCategoryTree } from '@/api/categories'
-import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
-import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
 
-const emit = defineEmits(['bar-click'])
+const props = defineProps({
+  startDate: { type: String, required: true },
+  endDate: { type: String, required: true },
+  selectedCategoryIds: { type: Array, default: () => [] }
+})
+
+const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
-const fullCategoryTree = ref([])
-const selectedCategoryIds = ref([])
-
-const today = new Date()
-const endDate = ref(today.toISOString().slice(0, 10))
-const startDate = ref(
-  new Date(today.setDate(today.getDate() - 30)).toISOString().slice(0, 10)
-)
-
-const totalSpending = computed(() => sumAmounts(categoryTree.value))
 
 const groupColors = [
   '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
@@ -68,75 +30,13 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-// Retrieve a CSS custom property value
 function getStyle(name) {
   return getComputedStyle(document.documentElement)
     .getPropertyValue(name)
     .trim()
 }
 
-const parentCategories = computed(() => fullCategoryTree.value || [])
-
-const categoryGroups = computed(() =>
-  (parentCategories.value || [])
-    .map(root => ({
-      id: root.id,
-      label: root.label,
-      children: (root.children || []).map(c => ({
-        id: c.id,
-        label: c.label ?? c.name,
-      })),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
-)
-
-const defaultSet = ref(false);
-
-watch(categoryTree, () => {
-  if (!defaultSet.value && categoryTree.value.length) {
-    selectedCategoryIds.value = categoryTree.value
-      .slice(0, 5)
-      .sort((a, b) => (b.amount || 0) - (a.amount || 0))
-      .map(cat => cat.id)
-    defaultSet.value = true
-  }
-})
-
-function onCategoryFilter(val) {
-  const allowed = parentCategories.value.map(c => c.id)
-  const asArray = Array.isArray(val) ? val : (val ? [val] : [])
-  selectedCategoryIds.value = asArray.filter((id, i, arr) => allowed.includes(id) && arr.indexOf(id) === i)
-  renderChart()
-}
-
-async function loadFullTree() {
-  try {
-    const res = await fetchCategoryTree()
-    if (res.status === 'success') {
-      fullCategoryTree.value = res.data || []
-    }
-  } catch (err) {
-    console.error('Error loading category tree:', err)
-  }
-}
-
-async function fetchData() {
-  try {
-    defaultSet.value = false;
-    const response = await fetchCategoryBreakdownTree({
-      start_date: startDate.value,
-      end_date: endDate.value,
-      top_n: 50,
-    })
-    if (response.status === 'success') {
-      categoryTree.value = response.data || []
-      await nextTick()
-      renderChart()
-    }
-  } catch (err) {
-    console.error('Error loading breakdown data:', err)
-  }
-}
+const totalSpending = computed(() => sumAmounts(categoryTree.value))
 
 function sumAmounts(nodes) {
   return (nodes || []).reduce((sum, n) => {
@@ -145,11 +45,16 @@ function sumAmounts(nodes) {
   }, 0)
 }
 
+// Always use all parents if selection empty
 function extractBars(tree, selectedIds = []) {
   let bars
   if (selectedIds && selectedIds.length) {
     bars = tree.filter(node => selectedIds.includes(node.id))
   } else {
+    bars = tree
+  }
+  // If still empty, fallback to tree
+  if (!bars.length && tree.length) {
     bars = tree
   }
   return {
@@ -174,23 +79,34 @@ function handleBarClick(evt) {
   }
 }
 
-function renderChart() {
-  const ctx = chartCanvas.value?.getContext('2d')
-  if (!ctx) return
-  if (chartInstance.value) chartInstance.value.destroy()
+async function renderChart() {
+  await nextTick();
+  const canvasEl = chartCanvas.value;
+  if (!canvasEl) {
+    console.warn('Chart canvas not ready!');
+    return;
+  }
+  const ctx = canvasEl.getContext('2d');
+  if (!ctx) {
+    console.warn('Chart context not available!');
+    return;
+  }
+  // (continue Chart.js setup)
 
-  const { labels, data, colors } = extractBars(categoryTree.value, selectedCategoryIds.value)
+
+
+  const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
+      labels: labels.length ? labels : [' '],
       datasets: [
         {
           label: 'Spending',
-          data,
-          backgroundColor: colors,
-          borderColor: colors,
+          data: data.length ? data : [0],
+          backgroundColor: colors.length ? colors : [getGroupColor(0)],
+          borderColor: colors.length ? colors : [getGroupColor(0)],
           borderWidth: 2,
           borderSkipped: false,
           barPercentage: 0.9,
@@ -207,7 +123,7 @@ function renderChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: context => `$${context.raw.toLocaleString()}`,
+            label: context => `$${context.raw?.toLocaleString?.() ?? 0}`,
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -218,41 +134,61 @@ function renderChart() {
       },
       scales: {
         x: {
+          display: true,
+          grid: { display: true, color: getStyle('--divider') },
           ticks: {
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
-          grid: { color: getStyle('--divider') },
         },
         y: {
+          display: true,
           beginAtZero: true,
+          grid: { display: true, color: getStyle('--divider') },
           ticks: {
             callback: value => `$${value}`,
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
-          grid: { color: getStyle('--divider') },
         },
       },
     },
   })
 }
 
-onMounted(async () => {
-  await loadFullTree()
-  await fetchData()
-})
+async function fetchData() {
+  try {
+    const response = await fetchCategoryBreakdownTree({
+      start_date: props.startDate,
+      end_date: props.endDate,
+      top_n: 50,
+    })
+    if (response.status === 'success') {
+      categoryTree.value = response.data || []
+      emit('categories-change', categoryTree.value.map(cat => cat.id))
+      emit('summary-change', {
+        total: totalSpending.value,
+        startDate: props.startDate,
+        endDate: props.endDate,
+      })
+      await renderChart()
+    }
+  } catch (err) {
+    console.error('Error loading breakdown data:', err)
+  }
+}
+
 watch(
-  [startDate, endDate],
-  debounce(fetchData, 300),
-  { immediate: false }
+  () => [props.startDate, props.endDate, props.selectedCategoryIds],
+  debounce(fetchData, 200),
+  { immediate: true }
 )
 </script>
 
 <style scoped>
 @import "../../assets/css/main.css";
 
-.category-breakdown-chart .relative {
+.relative {
   background: var(--theme-bg);
   border-radius: 1rem;
   box-shadow: 0 1px 8px 0 rgb(30 41 59 / 10%);
