@@ -1,11 +1,12 @@
-from datetime import datetime, UTC
-from flask import Flask
-from unittest.mock import MagicMock
-import pytest
-import types
+import importlib.util
 import os
 import sys
-import importlib.util
+import types
+from datetime import UTC, datetime
+from unittest.mock import MagicMock
+
+import pytest
+from flask import Flask
 
 # Patch 'app' into sys.modules so Flask can load Blueprints
 if "app" not in sys.modules:

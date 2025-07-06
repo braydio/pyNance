@@ -6,9 +6,9 @@ Iterative RAG using TextGen Web UI and Qdrant.
 
 import os
 import sys
-import requests
-import json
 import time
+
+import requests
 
 # === Config ===
 TGI_URL = os.getenv("TEXTGEN_URL", "http://localhost:5051")

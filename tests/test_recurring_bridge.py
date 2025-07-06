@@ -1,9 +1,10 @@
 # tests/test_recurring_bridge.py
+import importlib.util
+import logging
 import os
 import sys
-import importlib.util
 import types
-import logging
+
 import pytest
 from flask import Flask
 

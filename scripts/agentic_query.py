@@ -15,9 +15,9 @@ Workflow:
 
 import os
 import sys
-import requests
-import json
 import time
+
+import requests
 
 # === Configuration ===
 LOCALAI_URL = os.getenv("LOCALAI_URL", "http://localhost:5051")

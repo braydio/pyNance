@@ -1,11 +1,12 @@
 """Unit tests for the forecast API route."""
 
+import importlib.util
 import os
 import sys
-import importlib.util
-from datetime import datetime, timedelta
-import pytest
 import types
+from datetime import datetime, timedelta
+
+import pytest
 
 # ---- Paths and Imports ----
 BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))

@@ -4,11 +4,11 @@ import argparse
 import os
 import uuid
 
+from chroma_support import chunk_text, extract_metadata
 from qdrant_client import QdrantClient
 from qdrant_client.http import models
 from qdrant_client.models import Distance, VectorParams
 from sentence_transformers import SentenceTransformer
-from chroma_support import chunk_text, extract_metadata
 
 # Init encoder
 encoder = SentenceTransformer("all-MiniLM-L6-v2")

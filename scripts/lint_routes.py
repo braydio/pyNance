@@ -1,6 +1,6 @@
 # scripts/lint_routes.py
-import os
 import ast
+import os
 import sys
 
 VIOLATIONS = []
