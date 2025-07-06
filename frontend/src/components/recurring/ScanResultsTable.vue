@@ -20,6 +20,6 @@
 
 <script setup>
 const { results } = defineProps({
-  results: { type: Array, default: () => [] },
-})
+  results: { type: Array, default: () => [] }
+});
 </script>
