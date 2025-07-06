@@ -1,6 +1,5 @@
-from app.models import Category
 from app.extensions import db
-
+from app.models import Category
 from sqlalchemy.exc import IntegrityError
 
 

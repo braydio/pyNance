@@ -1,7 +1,8 @@
 # backend/scripts/cron_sync.py
 
-from app.config import DIRECTORIES
 import logging
+
+from app.config import DIRECTORIES
 from app.helpers.account_refresh_dispatcher import refresh_all_accounts
 
 # Ensure log directory exists

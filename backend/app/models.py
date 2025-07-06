@@ -15,9 +15,10 @@ class TimestampMixin:
     )
 
 
-class Institution(db.Model, TimestampMixin):
-    """Grouping of accounts under the same financial provider."""
+# --- Institution Model ---
 
+
+class Institution(db.Model, TimestampMixin):
     __tablename__ = "institutions"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -25,18 +26,25 @@ class Institution(db.Model, TimestampMixin):
     provider = db.Column(db.String(64), nullable=False)
     last_refreshed = db.Column(db.DateTime, nullable=True)
 
-    accounts = db.relationship("Account", back_populates="institution")
-    plaid_accounts = db.relationship("PlaidAccount", back_populates="institution")
-    teller_accounts = db.relationship("TellerAccount", back_populates="institution")
+    accounts = db.relationship(
+        "Account", back_populates="institution", cascade="all, delete"
+    )
+    plaid_accounts = db.relationship(
+        "PlaidAccount", back_populates="institution", cascade="all, delete"
+    )
+    teller_accounts = db.relationship(
+        "TellerAccount", back_populates="institution", cascade="all, delete"
+    )
+
+
+# --- Account Model ---
 
 
 class Account(db.Model, TimestampMixin):
-    """Financial account belonging to a user."""
-
     __tablename__ = "accounts"
 
     id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String(64), unique=True, nullable=False)
+    account_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     user_id = db.Column(db.String(64), nullable=True)
     name = db.Column(db.String(128), nullable=False)
     type = db.Column(db.String(64), nullable=True)
@@ -50,8 +58,12 @@ class Account(db.Model, TimestampMixin):
     balance = db.Column(db.Float, default=0)
     link_type = db.Column(db.String(64), default="manual")
 
-    plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False)
-    teller_account = db.relationship("TellerAccount", backref="account", uselist=False)
+    plaid_account = db.relationship(
+        "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"
+    )
+    teller_account = db.relationship(
+        "TellerAccount", backref="account", uselist=False, cascade="all, delete-orphan"
+    )
     institution = db.relationship("Institution", back_populates="accounts")
 
     @hybrid_property
@@ -59,12 +71,15 @@ class Account(db.Model, TimestampMixin):
         return not self.is_hidden
 
 
+# --- PlaidAccount Model ---
+
+
 class PlaidAccount(db.Model, TimestampMixin):
     __tablename__ = "plaid_accounts"
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False, index=True
     )
     plaid_institution_id = db.Column(db.String(128), nullable=True)
     access_token = db.Column(db.String(256), nullable=False)
@@ -76,10 +91,12 @@ class PlaidAccount(db.Model, TimestampMixin):
         db.Integer, db.ForeignKey("institutions.id"), nullable=True
     )
     institution = db.relationship("Institution", back_populates="plaid_accounts")
-
     sync_cursor = db.Column(db.String(256), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
     last_error = db.Column(db.Text, nullable=True)
+
+
+# --- PlaidWebhookLog Model ---
 
 
 class PlaidWebhookLog(db.Model, TimestampMixin):
@@ -94,6 +111,9 @@ class PlaidWebhookLog(db.Model, TimestampMixin):
     received_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
 
 
+# --- TellerAccount Model ---
+
+
 class TellerAccount(db.Model, TimestampMixin):
     __tablename__ = "teller_accounts"
 
@@ -103,29 +123,26 @@ class TellerAccount(db.Model, TimestampMixin):
     )
     access_token = db.Column(db.String(256), nullable=False)
     enrollment_id = db.Column(db.String(128), nullable=True)
-    # External Teller institution ID (string)
     teller_institution_id = db.Column(db.String(128), nullable=True)
     provider = db.Column(db.String(64), default="Teller")
     last_refreshed = db.Column(db.DateTime, nullable=True)
-
-    # Internal FK to your Institution table
     institution_db_id = db.Column(
         db.Integer, db.ForeignKey("institutions.id"), nullable=True
     )
     institution = db.relationship("Institution", back_populates="teller_accounts")
 
 
+# --- AccountHistory Model ---
+
+
 class AccountHistory(db.Model, TimestampMixin):
     __tablename__ = "account_history"
-
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
     )
-
     user_id = db.Column(db.String(64), nullable=True, index=True)
-
-    date = db.Column(db.DateTime, nullable=False)  # Domain field
+    date = db.Column(db.DateTime, nullable=False)
     balance = db.Column(db.Float, default=0)
     is_hidden = db.Column(db.Boolean, default=None)
 
@@ -134,19 +151,19 @@ class AccountHistory(db.Model, TimestampMixin):
     )
 
 
+# --- RecurringTransaction Model ---
+
+
 class RecurringTransaction(db.Model):
     __tablename__ = "recurring_transactions"
-
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(
         db.String(64), db.ForeignKey("transactions.transaction_id"), nullable=False
     )
     transaction = db.relationship("Transaction", backref="recurrence_rule")
-
     account_id = db.Column(
         db.String(64), db.ForeignKey("accounts.account_id"), nullable=False, index=True
     )
-
     frequency = db.Column(db.String(64), nullable=False)
     next_due_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.String(256), nullable=True)
@@ -158,13 +175,19 @@ class RecurringTransaction(db.Model):
     next_instance_id = db.Column(db.String(64), nullable=True)
 
 
+# --- Category Model ---
+
+
 class Category(db.Model):
     __tablename__ = "categories"
-
     id = db.Column(db.Integer, primary_key=True)
     plaid_category_id = db.Column(db.String(64), unique=True, nullable=True)
     primary_category = db.Column(db.String(128), default="Unknown")
     detailed_category = db.Column(db.String(128), default="Unknown")
+    # New Plaid personal finance categories
+    pfc_primary = db.Column(db.String(64), nullable=True)
+    pfc_detailed = db.Column(db.String(64), nullable=True)
+    pfc_icon_url = db.Column(db.String(256), nullable=True)
     display_name = db.Column(db.String(256), default="Unknown")
     parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     parent = db.relationship("Category", remote_side=[id])
@@ -182,14 +205,17 @@ class Category(db.Model):
         return self.primary_category
 
 
+# --- Transaction Model ---
+
+
 class Transaction(db.Model):
     __tablename__ = "transactions"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(64), nullable=True, index=True)
-    transaction_id = db.Column(db.String(64), unique=True, nullable=False)
+    transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
     amount = db.Column(db.Float, default=0)
-    date = db.Column(db.DateTime, nullable=False)  # ✅ UPDATED
+    date = db.Column(db.DateTime, nullable=False)
     description = db.Column(db.String(256))
     provider = db.Column(db.String(64), default="manual")
     merchant_name = db.Column(db.String(128), default="Unknown")
@@ -198,9 +224,70 @@ class Transaction(db.Model):
     user_modified_fields = db.Column(db.Text)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     category = db.Column(db.String(128))
+    personal_finance_category = db.Column(db.JSON, nullable=True)
+    personal_finance_category_icon_url = db.Column(db.String, nullable=True)
     pending = db.Column(db.Boolean, default=False)
+
+    plaid_meta = db.relationship(
+        "PlaidTransactionMeta",
+        uselist=False,
+        back_populates="transaction",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self):
         return (
             f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
         )
+
+    __table_args__ = (db.UniqueConstraint("transaction_id"),)
+
+
+# --- PlaidTransactionMeta Model ---
+
+
+class PlaidTransactionMeta(db.Model, TimestampMixin):
+    __tablename__ = "plaid_transaction_meta"
+    id = db.Column(db.Integer, primary_key=True)
+    transaction_id = db.Column(
+        db.String(64),
+        db.ForeignKey("transactions.transaction_id"),
+        unique=True,
+        nullable=False,
+    )
+    transaction = db.relationship(
+        "Transaction", back_populates="plaid_meta", uselist=False
+    )
+
+    plaid_account_id = db.Column(
+        db.String(64), db.ForeignKey("plaid_accounts.account_id"), nullable=False
+    )
+    plaid_account = db.relationship("PlaidAccount", backref="transaction_meta")
+
+    # All Plaid fields (raw)
+    account_owner = db.Column(db.String(128), nullable=True)
+    authorized_date = db.Column(db.Date, nullable=True)
+    authorized_datetime = db.Column(db.DateTime, nullable=True)
+    category = db.Column(db.JSON, nullable=True)
+    category_id = db.Column(db.String(64), nullable=True)
+    check_number = db.Column(db.String(64), nullable=True)
+    counterparties = db.Column(db.JSON, nullable=True)
+    datetime = db.Column(db.DateTime, nullable=True)
+    iso_currency_code = db.Column(db.String(8), nullable=True)
+    location = db.Column(db.JSON, nullable=True)
+    logo_url = db.Column(db.String(256), nullable=True)
+    merchant_entity_id = db.Column(db.String(128), nullable=True)
+    payment_channel = db.Column(db.String(32), nullable=True)
+    payment_meta = db.Column(db.JSON, nullable=True)
+    pending_transaction_id = db.Column(db.String(64), nullable=True)
+    transaction_code = db.Column(db.String(64), nullable=True)
+    transaction_type = db.Column(db.String(32), nullable=True)
+    unofficial_currency_code = db.Column(db.String(8), nullable=True)
+    website = db.Column(db.String(256), nullable=True)
+    pfc_confidence_level = db.Column(db.String(32), nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+
+    __table_args__ = (db.UniqueConstraint("transaction_id"),)
+
+
+# End of models.py
