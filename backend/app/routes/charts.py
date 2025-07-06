@@ -13,7 +13,6 @@ from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
-
 charts = Blueprint("charts", __name__)
 
 
@@ -435,9 +434,10 @@ def category_breakdown_tree():
             try:
                 root_category_id = int(root_category_id)
             except ValueError:
-                return jsonify(
-                    {"status": "error", "message": "Invalid category_id"}
-                ), 400
+                return (
+                    jsonify({"status": "error", "message": "Invalid category_id"}),
+                    400,
+                )
             root_ids = [root_category_id]
         else:
             root_ids = [cat.id for cat in all_categories if cat.parent_id is None]

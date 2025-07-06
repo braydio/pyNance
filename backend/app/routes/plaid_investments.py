@@ -5,7 +5,6 @@ from app.helpers.plaid_helpers import (
     get_investments,
 )
 from app.sql.account_logic import save_plaid_item
-
 from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)

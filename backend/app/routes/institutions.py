@@ -4,14 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
-
-from app.extensions import db
 from app.config import FILES, TELLER_API_BASE_URL
-from app.models import Institution
+from app.extensions import db
 from app.helpers.teller_helpers import load_tokens
+from app.models import Institution
 from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
+from flask import Blueprint, jsonify, request
 
 institutions = Blueprint("institutions", __name__)
 
