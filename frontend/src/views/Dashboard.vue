@@ -11,87 +11,101 @@
       </div>
     </template>
 
-    <div class="space-y-8">
-      <AccountSnapshot />
-
-      <div class="grid md:grid-cols-2 gap-8">
-        <!-- DAILY NET INCOME CARD -->
-        <div class="bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)]">
-          <ChartWidgetTopBar>
-            <template #icon>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-mint)]" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 8c-2.21 0-4-1.343-4-3s1.79-3 4-3 4 1.343 4 3c0 1.216-1.024 2.207-2.342 2.707M12 12c2.21 0 4 1.343 4 3s-1.79 3-4 3-4-1.343-4-3c0-1.216 1.024-2.207 2.342-2.707" />
-              </svg>
-            </template>
-            <template #title>
-              Daily Net Income
-            </template>
-            <template #controls>
-              <button
-                class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105"
-                @click="zoomedOut = !zoomedOut">
-                {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
-              </button>
-            </template>
-            <template #summary>
-              <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">${{
-                netSummary.totalIncome?.toLocaleString() }}</span></div>
-              <div>Expenses: <span class="font-bold text-[var(--color-accent-red)]">${{
-                netSummary.totalExpenses?.toLocaleString() }}</span></div>
-              <div class="font-bold text-lg text-[var(--color-accent-mint)]">Net Total: ${{
-                netSummary.totalNet?.toLocaleString() }}</div>
-            </template>
-          </ChartWidgetTopBar>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" />
+    <div class="dashboard-outer flex flex-col items-center min-h-screen w-full px-2">
+      <!-- Account Snapshot -->
+      <div class="w-full flex justify-center">
+        <div class="max-w-3xl w-full">
+          <AccountSnapshot />
         </div>
+      </div>
 
-        <!-- SPENDING BY CATEGORY CARD -->
-        <div class="bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)]">
-          <ChartWidgetTopBar>
-            <template #icon>
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-yellow)]" fill="none"
-                viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M3 10h4V3H3v7zm0 0v11h4v-4h6v4h4V3h-4v7H3zm7 4h2v2h-2v-2z" />
-              </svg>
-            </template>
-            <template #title>
-              Spending by Category
-            </template>
-            <template #controls>
-              <input type="date" v-model="catRange.start"
-                class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-              <input type="date" v-model="catRange.end"
-                class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-              <!-- Multi-select dropdown for category parents -->
-              <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
-                @update:modelValue="onCatSelected" class="w-64" />
-            </template>
-            <template #summary>
-              <span class="text-sm">Total:</span>
-              <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ catSummary.total?.toLocaleString()
+      <!-- Chart Cards Row -->
+      <div class="w-full flex justify-center my-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
+          <!-- DAILY NET INCOME CARD -->
+          <div
+            class="bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] flex flex-col">
+            <ChartWidgetTopBar>
+              <template #icon>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-mint)]" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-2.21 0-4-1.343-4-3s1.79-3 4-3 4 1.343 4 3c0 1.216-1.024 2.207-2.342 2.707M12 12c2.21 0 4 1.343 4 3s-1.79 3-4 3-4-1.343-4-3c0-1.216 1.024-2.207 2.342-2.707" />
+                </svg>
+              </template>
+              <template #title>
+                Daily Net Income
+              </template>
+              <template #controls>
+                <button
+                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105"
+                  @click="zoomedOut = !zoomedOut">
+                  {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
+                </button>
+              </template>
+              <template #summary>
+                <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">${{
+                  netSummary.totalIncome?.toLocaleString() }}</span></div>
+                <div>Expenses: <span class="font-bold text-[var(--color-accent-red)]">${{
+                  netSummary.totalExpenses?.toLocaleString() }}</span></div>
+                <div class="font-bold text-lg text-[var(--color-accent-mint)]">Net Total: ${{
+                  netSummary.totalNet?.toLocaleString() }}</div>
+              </template>
+            </ChartWidgetTopBar>
+            <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" />
+          </div>
+
+          <!-- SPENDING BY CATEGORY CARD -->
+          <div
+            class="bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] flex flex-col">
+            <ChartWidgetTopBar>
+              <template #icon>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-yellow)]" fill="none"
+                  viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M3 10h4V3H3v7zm0 0v11h4v-4h6v4h4V3h-4v7H3zm7 4h2v2h-2v-2z" />
+                </svg>
+              </template>
+              <template #title>
+                Spending by Category
+              </template>
+              <template #controls>
+                <input type="date" v-model="catRange.start"
+                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
+                <input type="date" v-model="catRange.end"
+                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
+                <!-- Multi-select dropdown for category parents -->
+                <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
+                  @update:modelValue="onCatSelected" class="w-64" />
+              </template>
+              <template #summary>
+                <span class="text-sm">Total:</span>
+                <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ catSummary.total?.toLocaleString()
                 }}</span>
-            </template>
-          </ChartWidgetTopBar>
-          <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
-            :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-            @categories-change="allCategoryIds = $event" />
+              </template>
+            </ChartWidgetTopBar>
+            <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
+              :selected-category-ids="catSelected" @summary-change="catSummary = $event"
+              @categories-change="allCategoryIds = $event" />
+          </div>
         </div>
       </div>
 
       <!-- TABLES/OTHER WIDGETS -->
-      <BaseCard>
-        <div class="space-y-4">
-          <input v-model="searchQuery" type="text" placeholder="Search transactions..."
-            class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
-          <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-            @sort="setSort" />
-          <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
-          <AccountsTable />
+      <div class="w-full flex justify-center">
+        <div class="max-w-4xl w-full">
+          <BaseCard>
+            <div class="space-y-4">
+              <input v-model="searchQuery" type="text" placeholder="Search transactions..."
+                class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+              <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
+                @sort="setSort" />
+              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
+              <AccountsTable />
+            </div>
+          </BaseCard>
         </div>
-      </BaseCard>
+      </div>
       <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
@@ -116,7 +130,6 @@ import TransactionModal from '@/components/modals/TransactionModal.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
-import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 
@@ -196,6 +209,13 @@ function onCatSelected(newIds) {
 
 <style scoped>
 @import "../assets/css/main.css";
+
+.dashboard-outer {
+  /* Vertically and horizontally center, with a max width for the dashboard content */
+  min-height: 100vh;
+  width: 100vw;
+  background: var(--theme-bg);
+}
 
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
