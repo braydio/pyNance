@@ -1,21 +1,37 @@
 <template>
   <div
     class="daily-net-chart bg-[var(--color-bg-sec)] p-4 rounded-2xl shadow w-full border border-[var(--divider)] relative">
-    <div class="flex justify-between items-center mb-2">
-      <h2 class="text-xl font-semibold">Daily Net Income</h2>
-      <button class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold"
-        @click="toggleZoom">
-        {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
-      </button>
-    </div>
+    <ChartWidgetTopBar>
+      <template #icon>
+        <!-- Mint/green dollar sign as visual cue -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[var(--color-accent-mint)]" fill="none"
+          viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M12 8c-2.21 0-4-1.343-4-3s1.79-3 4-3 4 1.343 4 3c0 1.216-1.024 2.207-2.342 2.707M12 12c2.21 0 4 1.343 4 3s-1.79 3-4 3-4-1.343-4-3c0-1.216 1.024-2.207 2.342-2.707" />
+        </svg>
+      </template>
+      <template #title>
+        Daily Net Income
+      </template>
+      <template #controls>
+        <button
+          class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105"
+          @click="toggleZoom">
+          {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
+        </button>
+      </template>
+      <template #summary>
+        <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">${{ summary.totalIncome.toLocaleString()
+        }}</span></div>
+        <div>Expenses: <span class="font-bold text-[var(--color-accent-red)]">${{ summary.totalExpenses.toLocaleString()
+        }}</span></div>
+        <div class="font-bold text-lg text-[var(--color-accent-mint)]">Net Total: ${{ summary.totalNet.toLocaleString()
+        }}</div>
+      </template>
+    </ChartWidgetTopBar>
+
     <div
-      class="chart-summary absolute top-2 right-2 bg-[var(--color-bg-secondary)] px-3 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition">
-      <div class="summary-line income">Income: ${{ summary.totalIncome.toLocaleString() }}</div>
-      <div class="summary-line expenses">Expenses: ${{ summary.totalExpenses.toLocaleString() }}</div>
-      <div class="summary-line net font-bold text-lg text-[var(--color-accent-mint)]">Net Total: ${{
-        summary.totalNet.toLocaleString() }}</div>
-    </div>
-    <div class="relative w-full h-[400px]">
+      class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
       <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
     </div>
   </div>
@@ -23,12 +39,13 @@
 
 <script setup>
 /**
- * DailyNetChart displays daily income and expenses with a net line.
- * Emits a `bar-click` event when a bar is clicked.
+ * DailyNetChart - unified style widget for net income per day.
+ * Now uses ChartWidgetTopBar for visual/structural consistency.
  */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
+import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
 
 const emit = defineEmits(['bar-click'])
 
@@ -52,7 +69,6 @@ function toggleZoom() {
   zoomedOut.value = !zoomedOut.value
 }
 
-// Emit selected date when a bar is clicked
 function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(
@@ -84,12 +100,16 @@ onUnmounted(() => {
   }
 })
 
+function getStyle(name) {
+  return getComputedStyle(document.documentElement)
+    .getPropertyValue(name)
+    .trim()
+}
+
 function renderChart() {
   const canvasEl = chartCanvas.value
   if (!canvasEl) return
   const ctx = canvasEl.getContext('2d')
-  if (!ctx) return
-
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
@@ -112,9 +132,6 @@ function renderChart() {
   const netValues = filtered.map(item => item.net)
   const incomeValues = filtered.map(item => item.income)
   const expenseValues = filtered.map(item => item.expenses)
-
-  const getStyle = name =>
-    getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -142,7 +159,7 @@ function renderChart() {
           label: 'Net',
           data: netValues,
           borderColor: getStyle('--color-accent-mint') || '#38ffd4',
-          backgroundColor: getStyle('--color-accent-mint') || '#38ffd4',
+          backgroundColor: (getStyle('--color-accent-mint') || '#38ffd4') + '55',
           tension: 0.3,
           borderWidth: 2,
           pointRadius: 0,
@@ -153,6 +170,21 @@ function renderChart() {
       responsive: true,
       maintainAspectRatio: false,
       layout: { padding: { top: 20, bottom: 20 } },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: (context) => {
+              return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
+            },
+          },
+          backgroundColor: getStyle('--theme-bg'),
+          titleColor: getStyle('--color-accent-yellow'),
+          bodyColor: getStyle('--color-text-light'),
+          borderColor: getStyle('--color-accent-yellow'),
+          borderWidth: 1,
+        },
+        legend: { display: false },
+      },
       scales: {
         x: {
           stacked: true,
@@ -173,28 +205,6 @@ function renderChart() {
           grid: { color: getStyle('--divider') },
         },
       },
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: context => {
-              const index = context.dataIndex
-              const dataPoint = filtered[index]
-              return [
-                `Net: $${dataPoint.net.toLocaleString()}`,
-                `Income: $${dataPoint.income.toLocaleString()}`,
-                `Expenses: $${dataPoint.expenses.toLocaleString()}`,
-                `Transactions: ${dataPoint.transaction_count}`,
-              ]
-            },
-          },
-          backgroundColor: getStyle('--themed-bg'),
-          titleColor: getStyle('--color-accent-yellow'),
-          bodyColor: getStyle('--color-text-light'),
-          borderColor: getStyle('--color-accent-yellow'),
-          borderWidth: 1,
-        },
-        legend: { display: false },
-      },
       onClick: handleBarClick,
     },
   })
@@ -209,10 +219,11 @@ const summary = computed(() => {
 </script>
 
 <style scoped>
-@reference "../../assets/css/main.css";
+@import "../../assets/css/main.css";
 
-/* Only theme stuff, NO height, width, min-width, min-height here */
-.chart-summary .summary-line.net {
-  text-shadow: 0 0 4px var(--neon-mint);
+.daily-net-chart .relative {
+  background: var(--theme-bg);
+  border-radius: 1rem;
+  box-shadow: 0 1px 8px 0 rgb(30 41 59 / 10%);
 }
 </style>
