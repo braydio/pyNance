@@ -1,12 +1,12 @@
 # File: app/__init__.py
 
+from app.cli.sync import sync_accounts
+from app.config import FLASK_ENV, logger, plaid_client
+from app.config.environment import TELLER_WEBHOOK_SECRET
+from app.extensions import db
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
-from app.config import logger, plaid_client, FLASK_ENV
-from app.extensions import db
-from app.config.environment import TELLER_WEBHOOK_SECRET
-from app.cli.sync import sync_accounts
 
 
 def create_app():
@@ -16,22 +16,22 @@ def create_app():
     db.init_app(app)
     Migrate(app, db)
     # Always register routes (for all environments)
-    from app.routes.frontend import frontend
-    from app.routes.transactions import transactions
     from app.routes.accounts import accounts
-    from app.routes.recurring import recurring
-    from app.routes.forecast import forecast
-    from app.routes.manual_io import manual_up
-    from app.routes.charts import charts
     from app.routes.categories import categories
+    from app.routes.charts import charts
     from app.routes.export import export
+    from app.routes.forecast import forecast
+    from app.routes.frontend import frontend
+    from app.routes.institutions import institutions
+    from app.routes.manual_io import manual_up
     from app.routes.plaid import plaid_routes
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
+    from app.routes.recurring import recurring
     from app.routes.teller import link_teller
     from app.routes.teller_transactions import teller_transactions
-    from app.routes.institutions import institutions
-    from app.routes.teller_webhook import webhooks, disabled_webhooks
+    from app.routes.teller_webhook import disabled_webhooks, webhooks
+    from app.routes.transactions import transactions
 
     app.register_blueprint(frontend, url_prefix="/")
     app.register_blueprint(export, url_prefix="/api/export")
