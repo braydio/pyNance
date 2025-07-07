@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -90,6 +90,10 @@ async function renderChart() {
   if (!ctx) {
     console.warn('Chart context not available!');
     return;
+  }
+  if (chartInstance.value) {
+    chartInstance.value.destroy();
+    chartInstance.value = null;
   }
   // (continue Chart.js setup)
 
@@ -183,6 +187,13 @@ watch(
   debounce(fetchData, 200),
   { immediate: true }
 )
+
+onUnmounted(() => {
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
+    chartInstance.value = null
+  }
+})
 </script>
 
 <style scoped>
