@@ -1,4 +1,6 @@
 # forecast_engine.py
+
+"""Rule-based forecast engine for projecting account balances."""
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -8,12 +10,15 @@ from sqlalchemy.orm import Session
 
 
 class ForecastEngine:
+    """Generate recurring transaction forecasts and projected balances."""
+
     def __init__(self, db: Session):
         self.db = db
 
     def _generate_projection_dates(
         self, start: datetime, freq: str, horizon: int
     ) -> List[datetime]:
+        """Build a list of projection dates using a frequency string."""
         delta_map = {
             "daily": 1,
             "weekly": 7,
@@ -30,6 +35,7 @@ class ForecastEngine:
         return dates
 
     def forecast(self, horizon_days: int = 60):
+        """Return forecasted transaction events for the given horizon."""
         forecast = []
         recurrences = self.db.query(RecurringTransaction).all()
 
@@ -57,6 +63,7 @@ class ForecastEngine:
         return forecast
 
     def forecast_balances(self, horizon_days: int = 60):
+        """Aggregate forecasted transactions into daily account balances."""
         forecast_txns = self.forecast(horizon_days=horizon_days)
         balances = {}
 

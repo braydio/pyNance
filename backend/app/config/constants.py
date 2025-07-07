@@ -1,4 +1,6 @@
 # backend/app/config/constants.py
+
+"""Centralized file paths and runtime constants for the Flask backend."""
 import os
 
 from .environment import PLAID_ENV
