@@ -1,3 +1,5 @@
+"""Logging configuration utilities and helpers used across the backend."""
+
 import functools
 import logging
 import os

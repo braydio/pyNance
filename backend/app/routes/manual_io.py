@@ -1,3 +1,5 @@
+"""Routes for uploading and processing manual financial data."""
+
 import json
 import os
 
