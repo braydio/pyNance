@@ -1,4 +1,6 @@
 # forecast_orchestrator.py
+
+"""High-level orchestration for rule-based and statistical forecasts."""
 from datetime import datetime, timedelta, timezone
 
 from app.models import Account, AccountHistory
@@ -14,6 +16,8 @@ except Exception:  # pragma: no cover - allow missing heavy deps
 
 
 class ForecastOrchestrator:
+    """Compose forecast data from multiple prediction engines."""
+
     def __init__(self, db):
         self.db = db
         self.rule_engine = ForecastEngineRuleBased(db)
@@ -22,6 +26,7 @@ class ForecastOrchestrator:
         )
 
     def forecast(self, method="rule", days=60, stat_input=None):
+        """Run either rule-based or statistical forecasts."""
         if days <= 0:
             raise ValueError("days must be positive")
         if method == "rule":
