@@ -15,19 +15,15 @@ fi
 ## 2. Activate and install dependencies
 echo "Installing dependencies..."
 source .venv/bin/activate
-if [ -f requirements.txt ]; then
-  pip install --upgrade pip
-  pip install -r requirements.txt
-else
-  echo "Requirements file not found: requirements.txt"
-  exit 1
-fi
 
-echo "Installing dev dependencies..."
-if [ -f requirements-dev.txt ]; then
-  pip install -r requirements-dev.txt
+if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
+  pip install --upgrade pip
+  if ! pip install -r requirements.txt -r requirements-dev.txt; then
+    echo "Dependency installation failed. Please check requirements." >&2
+    exit 1
+  fi
 else
-  echo "Dev requirements file not found: requirements-dev.txt"
+  echo "Requirements file not found: requirements.txt or requirements-dev.txt" >&2
   exit 1
 fi
 
