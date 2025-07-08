@@ -1,9 +1,3 @@
-<template>
-  <div class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
-    <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
-  </div>
-</template>
-
 <script setup>
 import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
@@ -28,6 +22,14 @@ const groupColors = [
 ]
 function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
+}
+
+// Destroys any previous chart attached to this canvas (robust, Chart.js v4+)
+function destroyPreviousChart(canvasEl) {
+  if (!canvasEl) return
+  const prev = Chart.getChart(canvasEl)
+  if (prev) prev.destroy()
+  chartInstance.value = null
 }
 
 function getStyle(name) {
@@ -82,10 +84,8 @@ function handleBarClick(evt) {
 async function renderChart() {
   await nextTick();
   const canvasEl = chartCanvas.value;
-  if (!canvasEl) {
-    console.warn('Chart canvas not ready!');
-    return;
-  }
+  if (!canvasEl) return;
+  destroyPreviousChart(canvasEl); // <--- destroy any previous chart using this canvas
   const ctx = canvasEl.getContext('2d');
   if (!ctx) {
     console.warn('Chart context not available!');
@@ -195,13 +195,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-<style scoped>
-@import "../../assets/css/main.css";
-
-.relative {
-  background: var(--theme-bg);
-  border-radius: 1rem;
-  box-shadow: 0 1px 8px 0 rgb(30 41 59 / 10%);
-}
-</style>
