@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -91,6 +91,10 @@ async function renderChart() {
     console.warn('Chart context not available!');
     return;
   }
+  if (chartInstance.value) {
+    chartInstance.value.destroy();
+    chartInstance.value = null;
+  }
   // (continue Chart.js setup)
 
 
@@ -156,6 +160,9 @@ async function renderChart() {
   })
 }
 
+/**
+ * Retrieve category breakdown data and update the chart and summary.
+ */
 async function fetchData() {
   try {
     const response = await fetchCategoryBreakdownTree({
@@ -178,11 +185,23 @@ async function fetchData() {
   }
 }
 
+// Fetch data whenever range or selected categories change
 watch(
   () => [props.startDate, props.endDate, props.selectedCategoryIds],
-  debounce(fetchData, 200),
-  { immediate: true }
+  debounce(fetchData, 200)
 )
+
+onMounted(() => {
+  // Ensure the canvas element is available before fetching data
+  fetchData()
+})
+
+onUnmounted(() => {
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
+    chartInstance.value = null
+  }
+})
 </script>
 
 <style scoped>

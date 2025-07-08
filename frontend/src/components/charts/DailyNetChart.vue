@@ -160,8 +160,7 @@ async function fetchData() {
     const response = await fetchDailyNet()
     if (response.status === 'success') {
       chartData.value = response.data
-      updateSummary()
-      await renderChart()
+      // Summary and chart will update through the watch handler
     }
   } catch (error) {
     console.error('Error fetching daily net data:', error)
