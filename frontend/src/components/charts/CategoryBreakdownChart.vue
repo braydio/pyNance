@@ -160,6 +160,9 @@ async function renderChart() {
   })
 }
 
+/**
+ * Retrieve category breakdown data and update the chart and summary.
+ */
 async function fetchData() {
   try {
     const response = await fetchCategoryBreakdownTree({
@@ -182,11 +185,16 @@ async function fetchData() {
   }
 }
 
+// Fetch data whenever range or selected categories change
 watch(
   () => [props.startDate, props.endDate, props.selectedCategoryIds],
-  debounce(fetchData, 200),
-  { immediate: true }
+  debounce(fetchData, 200)
 )
+
+onMounted(() => {
+  // Ensure the canvas element is available before fetching data
+  fetchData()
+})
 
 onUnmounted(() => {
   if (chartInstance.value) {
