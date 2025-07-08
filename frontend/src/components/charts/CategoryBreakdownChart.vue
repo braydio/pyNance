@@ -87,7 +87,17 @@ async function renderChart() {
   if (!canvasEl) return;
   destroyPreviousChart(canvasEl); // <--- destroy any previous chart using this canvas
   const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    console.warn('Chart context not available!');
+    return;
+  }
+  if (chartInstance.value) {
+    chartInstance.value.destroy();
+    chartInstance.value = null;
+  }
+  // (continue Chart.js setup)
+
+
 
   const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
 
@@ -178,16 +188,10 @@ watch(
   { immediate: true }
 )
 
-// --- CLEANUP ---
 onUnmounted(() => {
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
   }
-  const canvasEl = chartCanvas.value;
-  if (canvasEl && Chart.getChart) {
-    const existing = Chart.getChart(canvasEl);
-    if (existing) existing.destroy();
-  }
-});
+})
 </script>
