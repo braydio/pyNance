@@ -112,7 +112,10 @@ bash scripts/setup.sh [--slim]
 ```
 
 This command creates the virtual environment, installs Python and Node dependencies,
-links pre-commit hooks and copies the example `.env` files if needed.
+links pre-commit hooks and copies the example `.env` files if needed. Passing
+`--slim` installs only the core packages from `requirements-slim.txt` and skips
+the heavier development dependencies. Running without the flag installs the full
+set from `requirements.txt`.
 
 ### 4. Run Backend
 
