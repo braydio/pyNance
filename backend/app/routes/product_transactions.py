@@ -1,3 +1,5 @@
+"""FastAPI endpoints for product-specific transaction sync."""
+
 from app.services import transactions as txn_service
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel

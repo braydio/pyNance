@@ -1,4 +1,6 @@
 # backend/app/config/constants.py
+
+"""Centralized file paths and runtime constants for the Flask backend."""
 import os
 
 from .environment import PLAID_ENV
@@ -28,7 +30,7 @@ FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/d
 # Allow overriding the database name via environment variable for demos/tests
 DATABASE_NAME = os.getenv(
     "DATABASE_NAME",
-    "developing_dash.db" if PLAID_ENV == "sandbox" else "main_dash.db",
+    "developing_dash.db" if PLAID_ENV == "sandbox" else "dashboard_database.db",
 )
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR']}/{DATABASE_NAME}"
 TELEMETRY = {"enabled": True, "track_modifications": False}

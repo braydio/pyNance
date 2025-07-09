@@ -87,7 +87,17 @@ async function renderChart() {
   if (!canvasEl) return;
   destroyPreviousChart(canvasEl); // <--- destroy any previous chart using this canvas
   const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
+  if (!ctx) {
+    console.warn('Chart context not available!');
+    return;
+  }
+  if (chartInstance.value) {
+    chartInstance.value.destroy();
+    chartInstance.value = null;
+  }
+  // (continue Chart.js setup)
+
+
 
   const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
 
@@ -150,6 +160,9 @@ async function renderChart() {
   })
 }
 
+/**
+ * Retrieve category breakdown data and update the chart and summary.
+ */
 async function fetchData() {
   try {
     const response = await fetchCategoryBreakdownTree({
@@ -172,22 +185,21 @@ async function fetchData() {
   }
 }
 
+// Fetch data whenever range or selected categories change
 watch(
   () => [props.startDate, props.endDate, props.selectedCategoryIds],
-  debounce(fetchData, 200),
-  { immediate: true }
+  debounce(fetchData, 200)
 )
 
-// --- CLEANUP ---
+onMounted(() => {
+  // Ensure the canvas element is available before fetching data
+  fetchData()
+})
+
 onUnmounted(() => {
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
   }
-  const canvasEl = chartCanvas.value;
-  if (canvasEl && Chart.getChart) {
-    const existing = Chart.getChart(canvasEl);
-    if (existing) existing.destroy();
-  }
-});
+})
 </script>

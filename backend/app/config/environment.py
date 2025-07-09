@@ -1,5 +1,10 @@
 # backend/app/config/environment.py
 
+"""Load environment variables and define global settings for the Flask application.
+
+This module reads `.env` files using `python-dotenv` and exposes constants that
+other packages import for configuration."""
+
 import os
 
 from dotenv import load_dotenv
