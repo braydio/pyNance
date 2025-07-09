@@ -33,33 +33,15 @@ fi
 
 ## 2. Activate and install dependencies
 source .venv/bin/activate
-
-if [ "$USE_SLIM" -eq 1 ]; then
-  REQ_FILE="requirements-slim.txt"
-  echo "Installing slim dependencies from $REQ_FILE..."
-else
-  REQ_FILE="requirements.txt"
-  echo "Installing dependencies from $REQ_FILE..."
-fi
-
-if [ -f "$REQ_FILE" ]; then
+if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
   pip install --upgrade pip
-  pip install -r "$REQ_FILE"
-else
-  echo "Requirements file not found: $REQ_FILE"
-  exit 1
-fi
-
-if [ "$USE_SLIM" -eq 0 ]; then
-  echo "Installing dev dependencies..."
-  if [ -f requirements-dev.txt ]; then
-    pip install -r requirements-dev.txt
-  else
-    echo "Dev requirements file not found: requirements-dev.txt"
+  if ! pip install -r requirements.txt -r requirements-dev.txt; then
+    echo "Dependency installation failed. Please check requirements." >&2
     exit 1
   fi
 else
-  echo "Slim mode: skipping dev dependency installation."
+  echo "Requirements file not found: requirements.txt or requirements-dev.txt" >&2
+  exit 1
 fi
 
 ## 3. Create .env if missing
