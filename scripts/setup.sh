@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 
+# Setup script for pyNance.
+# Creates a virtual environment, installs dependencies, links Git hooks
+# and prepares the frontend. Use the --slim flag to install only core
+# dependencies from requirements-slim.txt and skip heavy development
+# packages.
+
 set -euo pipefail
+
+USE_SLIM=0
+for arg in "$@"; do
+  case "$arg" in
+    --slim)
+      USE_SLIM=1
+      ;;
+    *)
+      echo "Usage: $0 [--slim]"
+      exit 1
+      ;;
+  esac
+done
 
 echo "Setting up braydio/pyNance..."
 
@@ -13,22 +32,34 @@ else
 fi
 
 ## 2. Activate and install dependencies
-echo "Installing dependencies..."
 source .venv/bin/activate
-if [ -f requirements.txt ]; then
-  pip install --upgrade pip
-  pip install -r requirements.txt
+
+if [ "$USE_SLIM" -eq 1 ]; then
+  REQ_FILE="requirements-slim.txt"
+  echo "Installing slim dependencies from $REQ_FILE..."
 else
-  echo "Requirements file not found: requirements.txt"
+  REQ_FILE="requirements.txt"
+  echo "Installing dependencies from $REQ_FILE..."
+fi
+
+if [ -f "$REQ_FILE" ]; then
+  pip install --upgrade pip
+  pip install -r "$REQ_FILE"
+else
+  echo "Requirements file not found: $REQ_FILE"
   exit 1
 fi
 
-echo "Installing dev dependencies..."
-if [ -f requirements-dev.txt ]; then
-  pip install -r requirements-dev.txt
+if [ "$USE_SLIM" -eq 0 ]; then
+  echo "Installing dev dependencies..."
+  if [ -f requirements-dev.txt ]; then
+    pip install -r requirements-dev.txt
+  else
+    echo "Dev requirements file not found: requirements-dev.txt"
+    exit 1
+  fi
 else
-  echo "Dev requirements file not found: requirements-dev.txt"
-  exit 1
+  echo "Slim mode: skipping dev dependency installation."
 fi
 
 ## 3. Create .env if missing
@@ -66,8 +97,8 @@ else
 fi
 
 ## 6. Run formatters on all files if pre-commit is installed
-echo "Running formatters (black, isort, ruff)..."
 if command -v pre-commit &>/dev/null; then
+  echo "Running formatters (black, isort, ruff)..."
   pre-commit run --all-files || true
 else
   echo "pre-commit not found — skipping format check."
