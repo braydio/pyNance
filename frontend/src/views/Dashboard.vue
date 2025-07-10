@@ -81,7 +81,7 @@
               <template #summary>
                 <span class="text-sm">Total:</span>
                 <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ catSummary.total?.toLocaleString()
-                }}</span>
+                  }}</span>
               </template>
             </ChartWidgetTopBar>
             <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
@@ -163,14 +163,35 @@ onMounted(async () => {
 const netSummary = ref({ totalIncome: 0, totalExpenses: 0, totalNet: 0 })
 const zoomedOut = ref(false)
 
-/** --- CATEGORY BREAKDOWN STATE --- */
+// --- CATEGORY BREAKDOWN STATE ---
 const today = new Date()
 const catRange = ref({
   start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30).toISOString().slice(0, 10),
   end: new Date().toISOString().slice(0, 10)
 })
+
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
-const allCategoryIds = ref([]) // for storing all parents returned by CategoryBreakdownChart
+const catSelected = ref([])           // user selected
+const allCategoryIds = ref([])        // from chart data
+const defaultSet = ref(false)         // only auto-select ONCE per data load
+
+// When CategoryBreakdownChart fetches, auto-select top 5 ONCE per fetch. (No repopulate on clear)
+watch(allCategoryIds, (ids) => {
+  if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
+    catSelected.value = ids.slice(0, 5)
+    defaultSet.value = true
+  }
+})
+
+// When user clears selection, do NOT re-select (unless new data is fetched)
+function onCatSelected(newIds) {
+  catSelected.value = Array.isArray(newIds) ? newIds : [newIds]
+}
+
+// When user changes date range, let next data load re-apply auto-select
+watch(() => [catRange.value.start, catRange.value.end], () => {
+  defaultSet.value = false
+})
 
 // For dropdown: fetch full tree for grouped dropdown (not just breakdown result)
 const categoryGroups = ref([])
@@ -190,20 +211,6 @@ async function loadCategoryGroups() {
   } catch (e) {
     categoryGroups.value = []
   }
-}
-
-// Which parent categories to show as bars? Default: top 5 by amount, but allow dropdown to override.
-const catSelected = ref([])
-// When the CategoryBreakdownChart fetches, it emits all category ids. If catSelected empty, default to first 5.
-watch(allCategoryIds, (ids) => {
-  if ((!catSelected.value || !catSelected.value.length) && ids.length) {
-    catSelected.value = ids.slice(0, 5)
-  }
-})
-
-// If the user changes selection via dropdown
-function onCatSelected(newIds) {
-  catSelected.value = Array.isArray(newIds) ? newIds : [newIds]
 }
 </script>
 
