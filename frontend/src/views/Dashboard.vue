@@ -52,7 +52,7 @@
                   netSummary.totalNet?.toLocaleString() }}</div>
               </template>
             </ChartWidgetTopBar>
-            <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" />
+            <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
           </div>
 
           <!-- SPENDING BY CATEGORY CARD -->
@@ -86,7 +86,7 @@
             </ChartWidgetTopBar>
             <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
               :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-              @categories-change="allCategoryIds = $event" />
+              @categories-change="allCategoryIds = $event" @bar-click="onCategoryBarClick" />
           </div>
         </div>
       </div>
@@ -211,6 +211,25 @@ async function loadCategoryGroups() {
   } catch (e) {
     categoryGroups.value = []
   }
+}
+// For Daily Net Chart clicks
+function onNetBarClick(label) {
+  // label is usually a date string ("2024-07-09" etc)
+  modalTransactions.value = filteredTransactions.value.filter(tx =>
+    tx.date === label
+  )
+  modalTitle.value = `Transactions on ${label}`
+  showModal.value = true
+}
+
+// For Category Chart clicks
+function onCategoryBarClick(label) {
+  // label is category name (may match parent or child label)
+  modalTransactions.value = filteredTransactions.value.filter(tx =>
+    tx.category_label === label || tx.category_parent === label
+  )
+  modalTitle.value = `Transactions: ${label}`
+  showModal.value = true
 }
 </script>
 
