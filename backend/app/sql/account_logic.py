@@ -12,6 +12,7 @@ from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
 from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
+from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
@@ -64,13 +65,13 @@ def get_accounts_from_db(include_hidden: bool = False):
 
 
 def save_plaid_item(user_id, item_id, access_token, institution_name, product):
-    item = PlaidItem.query.filter_by(item_id=item_id).first()
+    item = PlaidItem.query.filter_by(item_id=item_id).first()  # noqa: F821
     if item:
         item.access_token = access_token
         item.institution_name = institution_name
         item.updated_at = datetime.now(timezone.utc)
     else:
-        item = PlaidItem(
+        item = PlaidItem(  # noqa: F821
             user_id=user_id,
             item_id=item_id,
             access_token=access_token,
@@ -602,6 +603,11 @@ def refresh_data_for_plaid_account(
             start_date=start_date_obj,
             end_date=end_date_obj,
         )
+        # Apply user-defined rules before upserting
+        transactions = [
+            transaction_rules_logic.apply_rules(account.user_id, dict(tx))
+            for tx in transactions
+        ]
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
 
         # Only process transactions for this specific account

@@ -222,6 +222,7 @@ class Transaction(db.Model):
     merchant_type = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)
+    updated_by_rule = db.Column(db.Boolean, default=False)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
     category = db.Column(db.String(128))
     personal_finance_category = db.Column(db.JSON, nullable=True)
@@ -241,6 +242,21 @@ class Transaction(db.Model):
         )
 
     __table_args__ = (db.UniqueConstraint("transaction_id"),)
+
+
+# --- TransactionRule Model ---
+
+
+class TransactionRule(db.Model, TimestampMixin):
+    """Pattern-based rule for auto-updating transactions."""
+
+    __tablename__ = "transaction_rules"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), index=True)
+    match_criteria = db.Column(db.JSON, nullable=False)
+    action = db.Column(db.JSON, nullable=False)
+    is_active = db.Column(db.Boolean, default=True)
 
 
 # --- PlaidTransactionMeta Model ---
