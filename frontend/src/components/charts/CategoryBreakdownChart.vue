@@ -4,6 +4,7 @@
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
@@ -85,16 +86,14 @@ function handleBarClick(evt) {
 }
 
 async function renderChart() {
-  await nextTick();
-  const canvasEl = chartCanvas.value;
-  if (!canvasEl) return;
-  destroyPreviousChart(canvasEl);
-  const ctx = canvasEl.getContext('2d');
-  if (!ctx) return;
+  await nextTick()
+  const canvasEl = chartCanvas.value
+  if (!canvasEl) return
+  destroyPreviousChart(canvasEl)
+  const ctx = canvasEl.getContext('2d')
+  if (!ctx) return
 
   const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
-  // Debug logs (can remove in prod):
-  // console.log('ExtractBars result:', { labels, data, colors })
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -122,7 +121,12 @@ async function renderChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: context => `$${context.raw?.toLocaleString?.() ?? 0}`,
+            label: context => {
+              const val = context.raw ?? 0
+              return val < 0
+                ? `($${Math.abs(val).toLocaleString()})`
+                : `$${val.toLocaleString()}`
+            },
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -164,11 +168,8 @@ async function fetchData() {
       end_date: props.endDate,
       top_n: 50,
     })
-    // Debug logs (can remove in prod):
-    // console.log('API response:', response)
     if (response.status === 'success') {
       categoryTree.value = response.data || []
-      // console.log('categoryTree.value:', categoryTree.value)
       emit('categories-change', categoryTree.value.map(cat => cat.id))
       emit('summary-change', {
         total: totalSpending.value,
@@ -193,10 +194,10 @@ onUnmounted(() => {
     chartInstance.value.destroy()
     chartInstance.value = null
   }
-  const canvasEl = chartCanvas.value;
+  const canvasEl = chartCanvas.value
   if (canvasEl && Chart.getChart) {
-    const existing = Chart.getChart(canvasEl);
-    if (existing) existing.destroy();
+    const existing = Chart.getChart(canvasEl)
+    if (existing) existing.destroy()
   }
-});
+})
 </script>
