@@ -1,27 +1,33 @@
 <template>
-  <div class="mt-6 text-primary font-mono">
-    <h3 class="text-xl font-bold mb-4 text-accent-yellow">Transactions</h3>
+  <div class="card mt-6 font-mono space-y-4">
+    <h3 class="heading-md text-left">Transactions</h3>
 
     <!-- Search -->
-    <div class="mb-4">
-      <input v-model="searchQuery"
-        class="w-[250px] py-2 px-3 border border-secondary rounded bg-dark text-primary focus:outline-none focus:border-accent-yellow transition"
-        type="text" placeholder="Search transactions, account, institution..." />
-    </div>
+    <input
+      v-model="searchQuery"
+      class="input md:w-72"
+      type="text"
+      placeholder="Search transactions, account, institution..."
+    />
 
-    <div class="overflow-auto rounded-xl border border-secondary bg-dark shadow-none">
-      <table class="min-w-full table-auto border-collapse">
-        <thead>
+    <div class="overflow-auto rounded border border-[var(--divider)]">
+      <table class="min-w-full divide-y divide-[var(--divider)]">
+        <thead class="bg-[var(--color-bg-secondary)]">
           <tr>
-            <th v-for="col in columns" :key="col.key" @click="sortTable(col.key)"
-              class="px-4 py-3 text-left select-none cursor-pointer font-bold uppercase text-xs tracking-wide border-b border-secondary bg-secondary transition"
+            <th
+              v-for="col in columns"
+              :key="col.key"
+              @click="sortTable(col.key)"
+              class="px-3 py-2 text-left select-none cursor-pointer font-bold uppercase text-xs tracking-wide transition"
               :class="[
                 col.key === 'amount' ? 'text-accent-green' :
                   col.key === 'date' ? 'text-accent-cyan' :
                     col.key === 'account' ? 'text-accent-yellow' :
                       col.key === 'descriptionMerchant' ? 'text-accent-orange' :
                         'text-primary'
-              ]" :style="{ minWidth: col.key === 'descriptionMerchant' ? '220px' : '120px' }">
+              ]"
+              :style="{ minWidth: col.key === 'descriptionMerchant' ? '220px' : '120px' }"
+            >
               {{ col.label }}
               <span v-if="sortKey === col.key" class="ml-1 font-black text-accent-yellow">
                 {{ sortOrder === 1 ? '▲' : '▼' }}
@@ -30,10 +36,11 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(tx, idx) in sortedTransactions" :key="tx.transaction_id" :class="[
-            idx % 2 === 0 ? 'bg-dark' : 'bg-secondary',
-            'hover:bg-frosted-bg transition'
-          ]">
+          <tr
+            v-for="tx in sortedTransactions"
+            :key="tx.transaction_id"
+            class="even:bg-[var(--color-bg-secondary)] hover:bg-[var(--color-hover-light)] transition"
+          >
             <td class="px-4 py-2 text-xs text-accent-cyan font-mono">
               {{ formatDate(tx.date) || "N/A" }}
             </td>
@@ -168,3 +175,7 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+@reference "../../assets/css/main.css";
+</style>

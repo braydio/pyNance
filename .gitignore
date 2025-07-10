@@ -2,9 +2,6 @@
 *.pem
 
 
-# Flask Alembic Migrate files
-migrations/
-
 # Byte-compiled / compiled Python files
 *.py[cod]
 __pycache__/
