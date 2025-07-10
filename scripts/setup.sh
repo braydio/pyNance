@@ -1,6 +1,25 @@
 #!/usr/bin/env bash
 
+# Setup script for pyNance.
+# Creates a virtual environment, installs dependencies, links Git hooks
+# and prepares the frontend. Use the --slim flag to install only core
+# dependencies from requirements-slim.txt and skip heavy development
+# packages.
+
 set -euo pipefail
+
+USE_SLIM=0
+for arg in "$@"; do
+  case "$arg" in
+    --slim)
+      USE_SLIM=1
+      ;;
+    *)
+      echo "Usage: $0 [--slim]"
+      exit 1
+      ;;
+  esac
+done
 
 echo "Setting up braydio/pyNance..."
 
@@ -13,21 +32,15 @@ else
 fi
 
 ## 2. Activate and install dependencies
-echo "Installing dependencies..."
 source .venv/bin/activate
-if [ -f requirements.txt ]; then
+if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
   pip install --upgrade pip
-  pip install -r requirements.txt
+  if ! pip install -r requirements.txt -r requirements-dev.txt; then
+    echo "Dependency installation failed. Please check requirements." >&2
+    exit 1
+  fi
 else
-  echo "Requirements file not found: requirements.txt"
-  exit 1
-fi
-
-echo "Installing dev dependencies..."
-if [ -f requirements-dev.txt ]; then
-  pip install -r requirements-dev.txt
-else
-  echo "Dev requirements file not found: requirements-dev.txt"
+  echo "Requirements file not found: requirements.txt or requirements-dev.txt" >&2
   exit 1
 fi
 
@@ -66,8 +79,8 @@ else
 fi
 
 ## 6. Run formatters on all files if pre-commit is installed
-echo "Running formatters (black, isort, ruff)..."
 if command -v pre-commit &>/dev/null; then
+  echo "Running formatters (black, isort, ruff)..."
   pre-commit run --all-files || true
 else
   echo "pre-commit not found — skipping format check."

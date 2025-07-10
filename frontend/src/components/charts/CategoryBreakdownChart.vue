@@ -1,5 +1,11 @@
+<template>
+  <div class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
+    <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
+  </div>
+</template>
+
 <script setup>
-import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -24,7 +30,6 @@ function getGroupColor(idx) {
   return groupColors[idx % groupColors.length]
 }
 
-// Destroys any previous chart attached to this canvas (robust, Chart.js v4+)
 function destroyPreviousChart(canvasEl) {
   if (!canvasEl) return
   const prev = Chart.getChart(canvasEl)
@@ -47,7 +52,6 @@ function sumAmounts(nodes) {
   }, 0)
 }
 
-// Always use all parents if selection empty
 function extractBars(tree, selectedIds = []) {
   let bars
   if (selectedIds && selectedIds.length) {
@@ -55,7 +59,6 @@ function extractBars(tree, selectedIds = []) {
   } else {
     bars = tree
   }
-  // If still empty, fallback to tree
   if (!bars.length && tree.length) {
     bars = tree
   }
@@ -85,21 +88,13 @@ async function renderChart() {
   await nextTick();
   const canvasEl = chartCanvas.value;
   if (!canvasEl) return;
-  destroyPreviousChart(canvasEl); // <--- destroy any previous chart using this canvas
+  destroyPreviousChart(canvasEl);
   const ctx = canvasEl.getContext('2d');
-  if (!ctx) {
-    console.warn('Chart context not available!');
-    return;
-  }
-  if (chartInstance.value) {
-    chartInstance.value.destroy();
-    chartInstance.value = null;
-  }
-  // (continue Chart.js setup)
-
-
+  if (!ctx) return;
 
   const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
+  // Debug logs (can remove in prod):
+  // console.log('ExtractBars result:', { labels, data, colors })
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -150,7 +145,9 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => `$${value}`,
+            callback: value => value < 0
+              ? `($${Math.abs(value).toLocaleString()})`
+              : `$${value.toLocaleString()}`,
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -160,9 +157,6 @@ async function renderChart() {
   })
 }
 
-/**
- * Retrieve category breakdown data and update the chart and summary.
- */
 async function fetchData() {
   try {
     const response = await fetchCategoryBreakdownTree({
@@ -170,8 +164,11 @@ async function fetchData() {
       end_date: props.endDate,
       top_n: 50,
     })
+    // Debug logs (can remove in prod):
+    // console.log('API response:', response)
     if (response.status === 'success') {
       categoryTree.value = response.data || []
+      // console.log('categoryTree.value:', categoryTree.value)
       emit('categories-change', categoryTree.value.map(cat => cat.id))
       emit('summary-change', {
         total: totalSpending.value,
@@ -185,21 +182,21 @@ async function fetchData() {
   }
 }
 
-// Fetch data whenever range or selected categories change
 watch(
   () => [props.startDate, props.endDate, props.selectedCategoryIds],
-  debounce(fetchData, 200)
+  debounce(fetchData, 200),
+  { immediate: true }
 )
-
-onMounted(() => {
-  // Ensure the canvas element is available before fetching data
-  fetchData()
-})
 
 onUnmounted(() => {
   if (chartInstance.value) {
     chartInstance.value.destroy()
     chartInstance.value = null
   }
-})
+  const canvasEl = chartCanvas.value;
+  if (canvasEl && Chart.getChart) {
+    const existing = Chart.getChart(canvasEl);
+    if (existing) existing.destroy();
+  }
+});
 </script>
