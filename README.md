@@ -111,8 +111,10 @@ VITE_APP_API_BASE_URL=/api
 bash scripts/setup.sh [--slim]
 ```
 
-This command creates the virtual environment, installs Python and Node dependencies,
+
+This command creates the virtual environment, installs all Python (including dev) and Node dependencies,
 links pre-commit hooks and copies the example `.env` files if needed.
+This command creates the virtual environment, installs Python and Nod
 
 ### 4. Run Backend
 

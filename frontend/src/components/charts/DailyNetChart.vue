@@ -144,7 +144,9 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => `$${value}`,
+            callback: value => value < 0
+              ? `($${Math.abs(value).toLocaleString()})`
+              : `$${value.toLocaleString()}`,
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -160,8 +162,7 @@ async function fetchData() {
     const response = await fetchDailyNet()
     if (response.status === 'success') {
       chartData.value = response.data
-      updateSummary()
-      await renderChart()
+      // Summary and chart will update through the watch handler
     }
   } catch (error) {
     console.error('Error fetching daily net data:', error)
