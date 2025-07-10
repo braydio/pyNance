@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from app.extensions import db
 from app.models import Transaction
+from app.sql import transaction_rules_logic
 
 
 def upsert_imported_transactions(transactions, user_id=None, account_id=None):
@@ -13,6 +14,7 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
     inserted = 0
 
     for tx in transactions:
+        tx = transaction_rules_logic.apply_rules(user_id, dict(tx))
         # Safely parse the transaction date if provided
         raw_date = tx.get("date")
         if raw_date:
@@ -30,9 +32,12 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
             amount=tx.get("amount", 0),
             date=parsed_date,
             description=tx.get("name"),
-            category=tx.get("type"),
+            category=tx.get("category"),
+            category_id=tx.get("category_id"),
+            merchant_name=tx.get("merchant_name"),
             provider=tx.get("provider", "manual"),
             pending=False,
+            updated_by_rule=tx.get("updated_by_rule", False),
         )
         db.session.add(txn)
         inserted += 1

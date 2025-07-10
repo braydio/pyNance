@@ -28,6 +28,7 @@ def create_app():
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.recurring import recurring
+    from app.routes.rules import rules as rules_bp
     from app.routes.teller import link_teller
     from app.routes.teller_transactions import teller_transactions
     from app.routes.teller_webhook import disabled_webhooks, webhooks
@@ -37,6 +38,7 @@ def create_app():
     app.register_blueprint(export, url_prefix="/api/export")
     app.register_blueprint(categories, url_prefix="/api/categories")
     app.register_blueprint(transactions, url_prefix="/api/transactions")
+    app.register_blueprint(rules_bp, url_prefix="/api/rules")
     app.register_blueprint(accounts, url_prefix="/api/accounts")
     app.register_blueprint(manual_up, url_prefix="/api/import")
     app.register_blueprint(charts, url_prefix="/api/charts")

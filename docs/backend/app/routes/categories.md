@@ -13,6 +13,10 @@ Manages transaction categorization logic and user-defined category updates. Supp
 - `POST /categories/update`: Update category metadata (e.g., label, emoji).
 - `POST /categories/apply`: Reassign category tags to transactions.
 - `GET /categories/tree`: Nested view of primary and detailed categories.
+- `GET /rules`: List saved transaction rules.
+- `POST /rules`: Create a new rule.
+- `PATCH /rules/<id>`: Modify or disable a rule.
+- `DELETE /rules/<id>`: Remove a rule.
 
 ## Inputs & Outputs
 
@@ -33,6 +37,16 @@ Manages transaction categorization logic and user-defined category updates. Supp
 - **POST /categories/apply**
   - **Input:** `{ transaction_ids: [str], category_id: str }`
   - **Output:** `{ success: boolean, updated: int }`
+- **GET /rules**
+  - **Output:** List of saved rules.
+- **POST /rules**
+  - **Input:** { match_criteria: {...}, action: {...} }
+  - **Output:** Newly created rule object.
+- **PATCH /rules/<id>**
+  - **Input:** Partial updates or { is_active: bool }
+  - **Output:** Updated rule object.
+- **DELETE /rules/<id>**
+  - **Output:** { success: boolean }
 
 ## Internal Dependencies
 

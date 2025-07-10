@@ -182,6 +182,10 @@ backend directly (without the proxy), prepend the host and port, e.g.
   - `start_date` – optional `YYYY-MM-DD` start date
   - `end_date` – optional `YYYY-MM-DD` end date
 
+### Transaction Rules
+
+Transaction rules let you define patterns for merchant names or amounts and apply category changes automatically. Manage rules at `/api/rules`. See [docs/backend/features/transaction_rules.md](docs/backend/features/transaction_rules.md) for details.
+
 Plaid and Teller integrations handled in `/backend/app/helpers/`.
 
 ## Running Tests
