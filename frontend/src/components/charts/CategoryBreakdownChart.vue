@@ -145,7 +145,9 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => `$${value}`,
+            callback: value => value < 0
+              ? `($${Math.abs(value).toLocaleString()})`
+              : `$${value.toLocaleString()}`,
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
