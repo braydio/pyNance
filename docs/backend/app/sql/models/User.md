@@ -32,7 +32,7 @@ Represents an authenticated user in the system. Each user is the owner of a full
 ## Related Logic
 
 - Auth, token management, and user-scoped filters
-- `account_logic.py`, `transactions_logic.py`
+ - `account_logic.py`
 - Admin tools for impersonation or override
 
 ## Related Docs
