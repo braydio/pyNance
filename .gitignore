@@ -1,9 +1,9 @@
 # Legacy directory
 *.pem
 
-
-# Flask Alembic Migrate files
-migrations/
+# Migrations
+backend/migrations/
+!backend/migrations/versions
 
 # Byte-compiled / compiled Python files
 *.py[cod]

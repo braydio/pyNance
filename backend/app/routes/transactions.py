@@ -11,7 +11,7 @@ from datetime import datetime
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Transaction
-from app.sql import account_logic
+from app.sql import account_logic, transaction_rules_logic
 from flask import Blueprint, jsonify, request
 
 transactions = Blueprint("transactions", __name__)
@@ -64,6 +64,11 @@ def update_transaction():
         txn.user_modified_fields = json.dumps(existing_fields)
 
         db.session.commit()
+
+        if data.get("save_as_rule"):
+            criteria = {"merchant_name": txn.merchant_name}
+            action = {"category": txn.category, "category_id": txn.category_id}
+            transaction_rules_logic.create_rule(txn.user_id, criteria, action)
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logger.error(f"Error updating transaction: {e}", exc_info=True)
