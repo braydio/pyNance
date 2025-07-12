@@ -19,6 +19,57 @@
         </div>
       </div>
 
+      <!-- Recent Activity Summary -->
+      <div class="w-full flex justify-center my-4">
+        <BaseCard class="max-w-3xl w-full p-4">
+          <template v-if="activityLoading">Loading...</template>
+          <template v-else-if="activityError">
+            <p class="text-red-500">{{ activityError }}</p>
+          </template>
+          <template v-else>
+            <div class="grid grid-cols-3 gap-4 text-center mb-4">
+              <div>
+                <div class="text-sm">Income</div>
+                <div class="font-bold text-[var(--color-accent-mint)]">
+                  {{ formatMoney(activitySummary.income) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-sm">Expenses</div>
+                <div class="font-bold text-[var(--color-accent-red)]">
+                  {{ formatMoney(activitySummary.expense) }}
+                </div>
+              </div>
+              <div>
+                <div class="text-sm">Net</div>
+                <div class="font-bold">
+                  {{ formatMoney(activitySummary.net) }}
+                </div>
+              </div>
+            </div>
+            <table class="w-full text-sm text-left">
+              <thead>
+                <tr>
+                  <th class="pb-1">Date</th>
+                  <th class="pb-1">Description</th>
+                  <th class="pb-1 text-right">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="tx in recentTransactions" :key="tx.transaction_id" class="border-b last:border-0">
+                  <td class="py-1">{{ tx.date }}</td>
+                  <td class="py-1">{{ tx.description }}</td>
+                  <td class="py-1 text-right">{{ formatMoney(tx.amount) }}</td>
+                </tr>
+                <tr v-if="!recentTransactions.length">
+                  <td colspan="3" class="text-center py-2 text-gray-400">No recent transactions.</td>
+                </tr>
+              </tbody>
+            </table>
+          </template>
+        </BaseCard>
+      </div>
+
       <!-- Chart Cards Row -->
       <div class="w-full flex justify-center my-6">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-5xl">
@@ -131,6 +182,8 @@ import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
+import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
+import { useAccountActivity } from '@/composables/useAccountActivity.js'
 import { fetchCategoryTree } from '@/api/categories'
 
 // Transactions and user
@@ -138,6 +191,15 @@ const { searchQuery, currentPage, totalPages, filteredTransactions, sortKey, sor
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalTitle = ref('')
+// Selected accounts for activity summary
+const { selectedAccounts } = useSnapshotAccounts()
+const activeAccountId = computed(() => selectedAccounts.value[0]?.account_id || null)
+const {
+  loading: activityLoading,
+  error: activityError,
+  summary: activitySummary,
+  transactions: recentTransactions,
+} = useAccountActivity(activeAccountId)
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
 const netWorth = ref(0)
@@ -208,9 +270,20 @@ async function loadCategoryGroups() {
         })),
       })).sort((a, b) => a.label.localeCompare(b.label))
     }
-  } catch (e) {
+  } catch (error) {
+    console.error('Failed to load categories', error)
     categoryGroups.value = []
   }
+}
+
+function formatMoney(val) {
+  const num = parseFloat(val || 0)
+  const abs = Math.abs(num).toLocaleString('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  return num < 0 ? `-$${abs}` : `$${abs}`
 }
 </script>
 
