@@ -96,11 +96,13 @@
         <div class="max-w-4xl w-full">
           <BaseCard>
             <div class="space-y-4">
-              <input v-model="searchQuery" type="text" placeholder="Search transactions..."
+              <input v-model="searchQuery" type="text" placeholder="Search transactions, account, institution..."
                 class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-                @sort="setSort" />
-              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
+                :search="searchQuery" @sort="setSort" :current-page="currentPage" :total-pages="totalPages"
+                @change-page="changePage" />
+
+              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change-page="changePage" />
               <AccountsTable />
             </div>
           </BaseCard>
