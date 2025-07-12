@@ -268,7 +268,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-@reference "../../assets/css/main.css";
+@import "../../assets/css/main.css";
 .input {
   @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
 }

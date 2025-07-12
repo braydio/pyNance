@@ -1,6 +1,8 @@
+"""Utilities for Plaid integration and local file management."""
+
 import json
-import os
 from pathlib import Path
+from typing import Any
 
 import requests
 from app.config import (
@@ -12,6 +14,41 @@ from app.config import (
     logger,
 )
 from app.extensions import Session
+from app.models import Category
+
+
+def ensure_directory_exists(path: str | Path) -> None:
+    """Create directories recursively if they do not exist."""
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+
+def ensure_file_exists(path: str | Path, default_content: Any | None = None) -> None:
+    """Ensure that a file exists, optionally writing default JSON content."""
+    file_path = Path(path)
+    if not file_path.exists():
+        ensure_directory_exists(file_path.parent)
+        with file_path.open("w", encoding="utf-8") as f:
+            if default_content is not None:
+                json.dump(default_content, f, indent=2)
+
+
+def load_json(path: str | Path) -> Any:
+    """Load JSON from ``path`` and return the parsed object."""
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def save_json_with_backup(path: str | Path, data: Any) -> None:
+    """Save JSON to ``path`` and keep a ``.bak`` backup of existing data."""
+    file_path = Path(path)
+    ensure_directory_exists(file_path.parent)
+
+    if file_path.exists():
+        backup_path = file_path.with_suffix(file_path.suffix + ".bak")
+        file_path.replace(backup_path)
+
+    with file_path.open("w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
 
 
 # -------------------------
@@ -56,7 +93,7 @@ def save_and_parse_response(response: requests.Response, file_path: str):
     """
     Save the API response to disk and then load it.
     """
-    ensure_directory_exists(os.path.dirname(file_path))
+    ensure_directory_exists(Path(file_path).parent)
     with open(file_path, "w") as f:
         json.dump(response.json(), f, indent=2)
     resolved_path = Path(file_path).resolve()

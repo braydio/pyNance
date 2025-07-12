@@ -52,7 +52,7 @@
                   netSummary.totalNet?.toLocaleString() }}</div>
               </template>
             </ChartWidgetTopBar>
-            <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" />
+            <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
           </div>
 
           <!-- SPENDING BY CATEGORY CARD -->
@@ -86,7 +86,7 @@
             </ChartWidgetTopBar>
             <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
               :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-              @categories-change="allCategoryIds = $event" />
+              @categories-change="allCategoryIds = $event" @bar-click="onCategoryBarClick" />
           </div>
         </div>
       </div>
@@ -96,11 +96,13 @@
         <div class="max-w-4xl w-full">
           <BaseCard>
             <div class="space-y-4">
-              <input v-model="searchQuery" type="text" placeholder="Search transactions..."
+              <input v-model="searchQuery" type="text" placeholder="Search transactions, account, institution..."
                 class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
               <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-                @sort="setSort" />
-              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change="changePage" />
+                :search="searchQuery" @sort="setSort" :current-page="currentPage" :total-pages="totalPages"
+                @change-page="changePage" />
+
+              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change-page="changePage" />
               <AccountsTable />
             </div>
           </BaseCard>
@@ -211,6 +213,25 @@ async function loadCategoryGroups() {
   } catch (e) {
     categoryGroups.value = []
   }
+}
+// For Daily Net Chart clicks
+function onNetBarClick(label) {
+  // label is usually a date string ("2024-07-09" etc)
+  modalTransactions.value = filteredTransactions.value.filter(tx =>
+    tx.date === label
+  )
+  modalTitle.value = `Transactions on ${label}`
+  showModal.value = true
+}
+
+// For Category Chart clicks
+function onCategoryBarClick(label) {
+  // label is category name (may match parent or child label)
+  modalTransactions.value = filteredTransactions.value.filter(tx =>
+    tx.category_label === label || tx.category_parent === label
+  )
+  modalTitle.value = `Transactions: ${label}`
+  showModal.value = true
 }
 </script>
 

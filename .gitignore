@@ -1,6 +1,9 @@
 # Legacy directory
 *.pem
 
+# Migrations
+backend/migrations/
+!backend/migrations/versions
 
 # Byte-compiled / compiled Python files
 *.py[cod]
