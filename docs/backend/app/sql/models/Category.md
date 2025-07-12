@@ -33,7 +33,6 @@ Represents a labeled classification used to group transactions. Can be system-de
 
 - [`category_logic.py`](../../backend/app/sql/category_logic.py)
 - [`forecast_stat_model.py`](../../backend/app/services/forecast_stat_model.py)
-- [`transactions_logic.py`](../../backend/app/sql/transactions_logic.py)
 
 ## Related Docs
 
