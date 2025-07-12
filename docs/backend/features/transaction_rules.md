@@ -36,3 +36,6 @@ When a rule updates a transaction, the record is marked with `updated_by_rule=tr
 
 These endpoints complement the existing `/transactions/update` flow.
 
+## Migration
+
+See [../temp_migrations/versions/transaction_rules_add_table.md](../temp_migrations/versions/transaction_rules_add_table.md) for Alembic instructions to create the table.
