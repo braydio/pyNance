@@ -160,5 +160,5 @@ export default {
 </script>
 
 <style scoped>
-@reference "../../assets/css/main.css";
+@import "../../assets/css/main.css";
 </style>
