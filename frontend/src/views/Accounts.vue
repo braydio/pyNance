@@ -41,6 +41,26 @@
       </div>
     </section>
 
+    <!-- Net Change Summary -->
+    <section class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md space-y-2">
+      <h2 class="font-bold text-lg">Net Change Summary</h2>
+      <p v-if="summaryError" class="text-red-500">{{ summaryError }}</p>
+      <p v-else-if="loadingSummary">Loading...</p>
+      <div v-else class="flex gap-6">
+        <div>Income: {{ formatCurrency(netSummary.income) }}</div>
+        <div>Expense: {{ formatCurrency(netSummary.expense) }}</div>
+        <div>Net: {{ formatCurrency(netSummary.net) }}</div>
+      </div>
+    </section>
+
+    <!-- Recent Transactions -->
+    <section class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md space-y-2">
+      <h2 class="font-bold text-lg">Recent Transactions</h2>
+      <p v-if="transactionsError" class="text-red-500">{{ transactionsError }}</p>
+      <p v-else-if="loadingTransactions">Loading...</p>
+      <TransactionsTable v-else :transactions="recentTransactions" />
+    </section>
+
     <!-- Charts -->
     <section class="flex flex-col gap-6">
       <div class="flex flex-wrap gap-2 justify-between items-start">
@@ -72,7 +92,10 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import api from '@/services/api'
+import TransactionsTable from '@/components/tables/TransactionsTable.vue'
+import { fetchNetChanges, fetchRecentTransactions } from '@/api/accounts'
 
 // State
 const selectedProducts = ref([])
@@ -80,6 +103,14 @@ const showTokenForm = ref(false)
 const showPlaidRefresh = ref(false)
 const showTellerRefresh = ref(false)
 const reorderChart = ref(null)
+
+const loadingSummary = ref(false)
+const loadingTransactions = ref(false)
+const summaryError = ref('')
+const transactionsError = ref('')
+const netSummary = ref({ income: 0, expense: 0, net: 0 })
+const recentTransactions = ref([])
+const selectedAccountId = ref(null)
 
 // Environment
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
@@ -100,6 +131,64 @@ function toggleTellerRefresh() {
 function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
+
+function formatCurrency(val) {
+  const num = parseFloat(val || 0)
+  return num.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+
+async function loadSummary(accountId) {
+  loadingSummary.value = true
+  summaryError.value = ''
+  try {
+    const res = await fetchNetChanges(accountId)
+    if (res.status === 'success') {
+      netSummary.value = {
+        income: res.data.income || 0,
+        expense: res.data.expense || 0,
+        net: res.data.net || 0,
+      }
+    } else {
+      summaryError.value = res.message || 'Error loading summary'
+    }
+  } catch (err) {
+    summaryError.value = err.message || 'Error loading summary'
+  } finally {
+    loadingSummary.value = false
+  }
+}
+
+async function loadTransactions(accountId) {
+  loadingTransactions.value = true
+  transactionsError.value = ''
+  try {
+    const res = await fetchRecentTransactions(accountId, 10)
+    if (res.status === 'success') {
+      recentTransactions.value = res.data.transactions || []
+    } else {
+      transactionsError.value = res.message || 'Error loading transactions'
+    }
+  } catch (err) {
+    transactionsError.value = err.message || 'Error loading transactions'
+  } finally {
+    loadingTransactions.value = false
+  }
+}
+
+onMounted(async () => {
+  try {
+    const res = await api.getAccounts()
+    if (res.status === 'success' && res.accounts.length) {
+      selectedAccountId.value = res.accounts[0].account_id
+      await Promise.all([
+        loadSummary(selectedAccountId.value),
+        loadTransactions(selectedAccountId.value),
+      ])
+    }
+  } catch (err) {
+    summaryError.value = 'Failed to load account list'
+  }
+})
 
 // Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
