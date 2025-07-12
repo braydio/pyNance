@@ -41,6 +41,25 @@
       </div>
     </section>
 
+    <!-- Net Change Summary -->
+    <section class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md">
+      <div v-if="loadingSummary">Loading summary...</div>
+      <div v-else-if="summaryError" class="text-error">Failed to load summary</div>
+      <div v-else class="flex justify-around">
+        <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">{{ formatAmount(netSummary.income) }}</span></div>
+        <div>Expense: <span class="font-bold text-[var(--color-accent-red)]">{{ formatAmount(netSummary.expense) }}</span></div>
+        <div>Net: <span class="font-bold text-[var(--color-accent-yellow)]">{{ formatAmount(netSummary.net) }}</span></div>
+      </div>
+    </section>
+
+    <!-- Recent Transactions -->
+    <section class="p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md space-y-2">
+      <h3 class="font-bold text-lg">Recent Transactions</h3>
+      <div v-if="loadingTransactions">Loading...</div>
+      <div v-else-if="transactionsError" class="text-error">Failed to load transactions</div>
+      <TransactionsTable v-else :transactions="recentTransactions" />
+    </section>
+
     <!-- Charts -->
     <section class="flex flex-col gap-6">
       <div class="flex flex-wrap gap-2 justify-between items-start">
@@ -72,7 +91,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import { fetchNetChanges, fetchRecentTransactions } from '@/api/accounts'
 
 // State
 const selectedProducts = ref([])
@@ -80,6 +101,16 @@ const showTokenForm = ref(false)
 const showPlaidRefresh = ref(false)
 const showTellerRefresh = ref(false)
 const reorderChart = ref(null)
+const route = useRoute()
+const accountId = route.params.accountId || 'acc1'
+
+// Net changes and recent transactions
+const netSummary = ref({ income: 0, expense: 0, net: 0 })
+const recentTransactions = ref([])
+const loadingSummary = ref(false)
+const loadingTransactions = ref(false)
+const summaryError = ref(null)
+const transactionsError = ref(null)
 
 // Environment
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
@@ -101,6 +132,36 @@ function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
 
+function formatAmount(val) {
+  const num = Number(val || 0)
+  return num.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+
+onMounted(async () => {
+  loadingSummary.value = true
+  loadingTransactions.value = true
+  try {
+    const res = await fetchNetChanges(accountId)
+    if (res?.status === 'success') {
+      netSummary.value = res.data
+    }
+  } catch (e) {
+    summaryError.value = e
+  } finally {
+    loadingSummary.value = false
+  }
+
+  try {
+    const res = await fetchRecentTransactions(accountId, 10)
+    const payload = res.data || res
+    recentTransactions.value = payload.transactions || []
+  } catch (e) {
+    transactionsError.value = e
+  } finally {
+    loadingTransactions.value = false
+  }
+})
+
 // Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
 import InstitutionTable from '@/components/tables/InstitutionTable.vue'
@@ -110,6 +171,7 @@ import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
+import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 </script>
 
 <style scoped>
