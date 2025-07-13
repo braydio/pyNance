@@ -153,7 +153,7 @@ const selectedNames = computed(() => {
 </script>
 
 <style scoped>
-@import "../../assets/css/main.css";
+@reference "../../assets/css/main.css";
 
 .dropdown-menu {
   background: var(--color-bg-sec, #181924);
