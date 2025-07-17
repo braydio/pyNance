@@ -21,6 +21,7 @@ from app.models import (
 )
 from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
+from app.utils.finance_utils import display_transaction_amount
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
@@ -470,7 +471,7 @@ def get_paginated_transactions(
             {
                 "transaction_id": txn.transaction_id,
                 "date": txn.date.isoformat() if txn.date else None,
-                "amount": txn.amount,
+                "amount": display_transaction_amount(txn),
                 "description": txn.description or txn.merchant_name or "N/A",
                 "category": txn.category or "Uncategorized",
                 "merchant_name": txn.merchant_name or "Unknown",
