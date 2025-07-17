@@ -4,6 +4,7 @@ from app.helpers.plaid_helpers import (
     generate_link_token,
     get_investments,
 )
+from app.models import PlaidItem
 from app.sql.account_logic import save_plaid_item
 from flask import Blueprint, jsonify, request
 
@@ -82,8 +83,6 @@ def refresh_investments_endpoint():
     if not user_id or not item_id:
         return jsonify({"error": "Missing user_id or item_id"}), 400
     try:
-        from app.models import PlaidItem
-
         item = PlaidItem.query.filter_by(
             item_id=item_id, user_id=user_id, product="investments"
         ).first()
