@@ -114,7 +114,25 @@ bash scripts/setup.sh [--slim]
 
 This command creates the virtual environment, installs all Python (including dev) and Node dependencies,
 links pre-commit hooks and copies the example `.env` files if needed.
-This command creates the virtual environment, installs Python and Nod
+
+### Manual dependency install
+
+If you prefer to configure the environment yourself, run:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt  # installs Flask, pre-commit and other packages
+npm install
+pre-commit install
+```
+
+Install these before running tests or formatting hooks:
+
+```bash
+pre-commit run --all-files
+pytest -q
+```
 
 ### 4. Run Backend
 
@@ -215,6 +233,11 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 - If you already have Plaid tokens saved, run `python scripts/plaid_link_from_token.py` to seed accounts.
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
+- If you see `ModuleNotFoundError` for packages like `flask` or `chromadb`, ensure the virtual environment is active and run:
+  ```bash
+  pip install -r requirements-dev.txt
+  npm install
+  ```
 
 ---
 
