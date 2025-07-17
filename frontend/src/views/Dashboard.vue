@@ -236,7 +236,7 @@ function onCategoryBarClick(label) {
 </script>
 
 <style scoped>
-@import "../assets/css/main.css";
+@reference "../assets/css/main.css";
 
 .dashboard-outer {
   /* Vertically and horizontally center, with a max width for the dashboard content */
