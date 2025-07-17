@@ -71,8 +71,8 @@ export default {
       columns: [
         { key: 'date', label: 'Date' },
         { key: 'amount', label: 'Amount' },
-        { key: 'account', label: 'Account' },
-        { key: 'description', label: 'Description' },
+        { key: 'account', label: 'Institution & Account' },
+        { key: 'description', label: 'Merchant & Description' },
         { key: 'category', label: 'Category' }
       ]
     }
