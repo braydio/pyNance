@@ -1,3 +1,7 @@
+"""Tests for transaction rule helpers."""
+# mypy: ignore-errors
+# pylint: disable=all
+
 import importlib.util
 import os
 import sys
@@ -15,6 +19,10 @@ extensions_stub.db = types.SimpleNamespace(
 app_pkg.extensions = extensions_stub
 sys.modules["app"] = app_pkg
 sys.modules["app.extensions"] = extensions_stub
+models_stub = types.ModuleType("app.models")
+models_stub.Category = type("Category", (), {})
+models_stub.TransactionRule = type("TransactionRule", (), {})
+sys.modules["app.models"] = models_stub
 
 spec = importlib.util.spec_from_file_location(
     "app.sql.transaction_rules_logic",

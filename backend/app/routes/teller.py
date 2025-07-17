@@ -55,7 +55,7 @@ def generate_link_token():
             "products": ["transactions", "balance"],
         }
         logger.debug(f"POST {url} with headers={headers} and payload={payload}")
-        resp = requests.post(url, headers=headers, json=payload)
+        resp = requests.post(url, headers=headers, json=payload, timeout=30)
         logger.debug(f"Response status: {resp.status_code}, body: {resp.text}")
         if resp.status_code != 200:
             logger.error(f"Error generating link token: {resp.json()}")
@@ -91,7 +91,10 @@ def link_account():
 
     url = f"{TELLER_API_BASE_URL}/accounts"
     resp = requests.get(
-        url, cert=(TELLER_DOT_CERT, TELLER_DOT_KEY), auth=(access_token, "")
+        url,
+        cert=(TELLER_DOT_CERT, TELLER_DOT_KEY),
+        auth=(access_token, ""),
+        timeout=30,
     )
     if resp.status_code != 200:
         logger.error("Failed to fetch accounts during link: %s", resp.text)

@@ -1,4 +1,6 @@
 """Tests for transaction-related API routes."""
+# mypy: ignore-errors
+# pylint: disable=all
 
 import importlib.util
 import os
@@ -36,9 +38,13 @@ sys.modules["app.extensions"] = extensions_stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 account_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1)
+transaction_rules_stub = types.ModuleType("app.sql.transaction_rules_logic")
+transaction_rules_stub.create_rule = lambda *a, **k: None
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
+sys.modules["app.sql.transaction_rules_logic"] = transaction_rules_stub
 sql_pkg.account_logic = account_logic_stub
+sql_pkg.transaction_rules_logic = transaction_rules_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})

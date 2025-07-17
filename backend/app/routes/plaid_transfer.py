@@ -45,7 +45,7 @@ def pay_credit_card():
         },
     }
     auth_url = f"{PLAID_BASE_URL}/transfer/authorization/create"
-    auth_response = requests.post(auth_url, json=auth_payload)
+    auth_response = requests.post(auth_url, json=auth_payload, timeout=30)
     if auth_response.status_code != 200:
         return (
             jsonify({"error": "Authorization failed", "details": auth_response.text}),
@@ -71,7 +71,7 @@ def pay_credit_card():
         "description": "Credit Card Payment",  # Something descriptive
     }
     transfer_url = f"{PLAID_BASE_URL}/transfer/create"
-    transfer_resp = requests.post(transfer_url, json=transfer_payload)
+    transfer_resp = requests.post(transfer_url, json=transfer_payload, timeout=30)
     if transfer_resp.status_code != 200:
         return (
             jsonify(
