@@ -91,6 +91,9 @@ This usually means Tailwind's CSS is not loading correctly.
 
 - Avoid using `filters` in Vue 3; these are deprecated.
 - Do not use `@tailwind` directives; use `@import` as per v4 conventions.
+- When referencing shared utility classes in component `<style>` blocks use
+  `@reference "../assets/css/main.css"` instead of `@import` to avoid
+  duplicating styles.
 
 ---
 
