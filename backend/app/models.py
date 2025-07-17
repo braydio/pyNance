@@ -96,6 +96,25 @@ class PlaidAccount(db.Model, TimestampMixin):
     last_error = db.Column(db.Text, nullable=True)
 
 
+# --- PlaidItem Model ---
+
+
+class PlaidItem(db.Model, TimestampMixin):
+    """A linked Plaid item representing one or more accounts."""
+
+    __tablename__ = "plaid_items"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), index=True, nullable=False)
+    item_id = db.Column(db.String(128), unique=True, index=True, nullable=False)
+    access_token = db.Column(db.String(256), nullable=False)
+    institution_name = db.Column(db.String(128), nullable=True)
+    product = db.Column(db.String(64), nullable=False)
+    last_refreshed = db.Column(db.DateTime, nullable=True)
+    is_active = db.Column(db.Boolean, default=True)
+    last_error = db.Column(db.Text, nullable=True)
+
+
 # --- PlaidWebhookLog Model ---
 
 

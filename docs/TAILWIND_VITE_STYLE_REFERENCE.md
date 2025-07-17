@@ -1,6 +1,6 @@
 # Styling Architecture Reference: Tailwind CSS + Vite Integration
 
-_Last updated: 2025-05-30_
+_Last updated: 2025-07-12_
 
 ## Overview
 
@@ -33,7 +33,7 @@ This document provides a detailed reference for how styling is configured in the
 npm install -D @tailwindcss/vite
 ```
 
-**Configured in `vite.config.ts`:**
+**Configured in `vite.config.js`:**
 
 ```ts
 import { defineConfig } from "vite";
@@ -98,7 +98,6 @@ This has implications:
 ## Deprecated
 
 - `postcss.config.js` — no longer used.
-- `vite.config.js` — redundant if `vite.config.ts` is present and should be removed.
 
 ## Action Log Summary
 

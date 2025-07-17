@@ -71,8 +71,8 @@ export default {
       columns: [
         { key: 'date', label: 'Date' },
         { key: 'amount', label: 'Amount' },
-        { key: 'account', label: 'Account' },
-        { key: 'description', label: 'Description' },
+        { key: 'account', label: 'Institution & Account' },
+        { key: 'description', label: 'Merchant & Description' },
         { key: 'category', label: 'Category' }
       ]
     }
@@ -160,5 +160,5 @@ export default {
 </script>
 
 <style scoped>
-@import "../../assets/css/main.css";
+@reference "../../assets/css/main.css";
 </style>
