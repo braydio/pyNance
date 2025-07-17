@@ -14,6 +14,7 @@
 - [`manual_io.py`](#manual-io-route)
 - [`plaid.py`](#plaid-integration-route)
 - [`plaid_investments.py`](#plaid-investments-route)
+- [Plaid Investments Integration](../../integrations/plaid_investments.md)
 - [`plaid_transactions.py`](#plaid-transactions-route)
 - [`plaid_transfer.py`](#plaid-transfer-route)
 - [`product_transactions.py`](#product-transactions-route)
