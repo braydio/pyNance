@@ -1,7 +1,7 @@
 <template>
-  <div class="transactions space-y-4 p-6 bg-gray-50 rounded-xl shadow">
+  <div class="transactions space-y-4 p-6 bg-[var(--color-bg-secondary)] rounded-xl shadow">
     <!-- Filter Row -->
-    <div class="flex gap-4 items-center text-sm text-gray-700">
+    <div class="flex gap-4 items-center text-sm text-[var(--theme-fg)]">
       <div>
         <label class="block mb-1 font-medium">Category Group</label>
         <select v-model="selectedPrimaryCategory" class="input">
@@ -22,8 +22,8 @@
         </select>
       </div>
     </div>
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-100 text-gray-700 text-sm font-semibold uppercase">
+    <table class="min-w-full divide-y divide-[var(--divider)]">
+      <thead class="bg-[var(--color-bg)] text-[var(--theme-fg)] text-sm font-semibold uppercase">
         <tr>
           <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">
             Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
@@ -51,7 +51,7 @@
 
         <tr v-for="tx in paginatedTransactions" :key="tx.transaction_id">
 
-          :class="['text-sm', editingIndex === index ? 'bg-yellow-100' : 'hover:bg-gray-100']">
+          :class="['text-sm', editingIndex === index ? 'bg-yellow-100' : 'hover:bg-[var(--color-bg)]']">
           <td class="px-3 py-2">
             <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
             <span v-else>{{ formatDate(tx.date) }}</span>
@@ -97,7 +97,7 @@
       </tbody>
     </table>
 
-    <div v-if="filteredTransactions.length === 0" class="text-gray-500 text-sm">
+    <div v-if="filteredTransactions.length === 0" class="text-[var(--color-text-muted)] text-sm">
       No transactions found.
     </div>
   </div>
@@ -242,14 +242,14 @@ onMounted(async () => {
 <style scoped>
 @reference "../../assets/css/main.css";
 .input {
-  @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
+  @apply w-full px-2 py-1 rounded border border-[var(--divider)] bg-[var(--surface)] text-[var(--theme-fg)] text-sm;
 }
 
 .input:focus {
-  @apply outline-none ring-2 ring-blue-300;
+  @apply outline-none ring-2 ring-[var(--primary)];
 }
 
 .btn-sm {
-  @apply inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700;
+  @apply inline-flex items-center px-2 py-1 bg-[var(--primary)] text-white text-xs rounded hover:bg-[var(--primary-dark)];
 }
 </style>

@@ -4,17 +4,17 @@
     <div class="mt-2 space-y-1">
       <table class="w-full text-sm">
         <thead>
-          <tr class="text-left text-xs text-gray-400">
+          <tr class="text-left text-xs text-[var(--color-text-muted)]">
             <th class="pb-1">Account</th>
-            <th class="pb-1">Balance / <span class="italic text-gray-400">Upcoming</span></th>
+            <th class="pb-1">Balance / <span class="italic text-[var(--color-text-muted)]">Upcoming</span></th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="acc in selectedAccounts" :key="acc.account_id" class="border-b border-gray-100 last:border-none">
+          <tr v-for="acc in selectedAccounts" :key="acc.account_id" class="border-b border-[var(--divider)] last:border-none">
             <td class="py-1">
               <span class="block font-semibold text-base truncate max-w-[170px] text-blue-950 dark:text-blue-100"
                 :title="acc.name">{{ acc.name }}</span>
-              <span class="block text-xs text-gray-500 font-medium mt-0.5 leading-tight">{{ acc.institution_name
+              <span class="block text-xs text-[var(--color-text-muted)] font-medium mt-0.5 leading-tight">{{ acc.institution_name
                 }}</span>
             </td>
             <td class="py-1 min-w-[180px] relative group">
@@ -30,13 +30,13 @@
                 {{ formatUpcoming(netUpcoming(acc)) }}
                 <!-- Tooltip on hover -->
                 <div v-if="hovered === acc.account_id && upcomingForAccount(acc).length"
-                  class="absolute left-1/2 z-10 min-w-[220px] -translate-x-1/2 mt-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-lg rounded-xl p-2 text-xs">
+                  class="absolute left-1/2 z-10 min-w-[220px] -translate-x-1/2 mt-2 bg-[var(--surface)] dark:bg-gray-900 border border-[var(--divider)] dark:border-gray-700 shadow-lg rounded-xl p-2 text-xs">
                   <div v-for="(tx, idx) in upcomingForAccount(acc)"
                     :key="tx.id || tx.description + tx.next_due_date + idx"
-                    class="flex justify-between gap-2 py-1 border-b border-gray-100 last:border-0">
+                    class="flex justify-between gap-2 py-1 border-b border-[var(--divider)] last:border-0">
                     <span>
                       <span class="font-semibold">{{ tx.description }}</span>
-                      <span v-if="tx.next_due_date" class="ml-1 text-gray-400">[{{ tx.next_due_date }}]</span>
+                      <span v-if="tx.next_due_date" class="ml-1 text-[var(--color-text-muted)]">[{{ tx.next_due_date }}]</span>
                     </span>
                     <span class="font-mono" :class="upcomingClass(tx.amount)">
                       {{ formatUpcoming(tx.amount) }}
@@ -47,11 +47,11 @@
             </td>
           </tr>
           <tr v-if="!selectedAccounts.length">
-            <td colspan="2" class="text-center text-gray-400 text-sm py-2">No selected accounts.</td>
+            <td colspan="2" class="text-center text-[var(--color-text-muted)] text-sm py-2">No selected accounts.</td>
           </tr>
         </tbody>
         <tfoot>
-          <tr class="font-bold border-t border-gray-200 dark:border-gray-800">
+          <tr class="font-bold border-t border-[var(--divider)] dark:border-gray-800">
             <td class="pt-2">Total</td>
             <td class="pt-2 min-w-[180px] relative">
               <span class="font-mono">
@@ -96,7 +96,7 @@ function upcomingClass(val) {
     'faded-upcoming',
     num > 0 ? 'text-green-700 dark:text-green-400' : '',
     num < 0 ? 'text-red-400' : '',
-    num === 0 ? 'text-gray-400' : '',
+    num === 0 ? 'text-[var(--color-text-muted)]' : '',
   ]
 }
 

@@ -9,7 +9,7 @@
             {{ tx.name }} - ${{ tx.amount }}
           </div>
         </div>
-        <div v-else class="text-xs text-gray-400">No events</div>
+        <div v-else class="text-xs text-[var(--color-text-muted)]">No events</div>
       </div>
     </div>
   </div>

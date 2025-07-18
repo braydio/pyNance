@@ -4,7 +4,7 @@
       <span class="font-semibold">ID:</span> {{ action.recurring_id }} -
       <span class="italic">{{ action.status }}</span>
     </li>
-    <li v-if="!results.length" class="text-gray-500">No actions detected.</li>
+    <li v-if="!results.length" class="text-[var(--color-text-muted)]">No actions detected.</li>
   </ul>
 </template>
 

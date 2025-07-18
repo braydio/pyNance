@@ -12,7 +12,7 @@
 
     <main class="max-w-[960px] mx-auto">
       <!-- Account Details Section -->
-      <section id="account-details" class="bg-white p-5 mb-5 rounded shadow">
+      <section id="account-details" class="bg-[var(--surface)] p-5 mb-5 rounded shadow">
         <h2 class="mt-0">Account Details</h2>
         <button @click="refreshInvestments"
           class="bg-[#3498db] text-white border-none py-[10px] px-[20px] rounded cursor-pointer">
@@ -33,7 +33,7 @@
       </section>
 
       <!-- Visual Selections Section -->
-      <section id="visuals" class="bg-white p-5 mb-5 rounded shadow">
+      <section id="visuals" class="bg-[var(--surface)] p-5 mb-5 rounded shadow">
         <h2 class="mt-0">Investment Visuals</h2>
         <!-- Investment Performance Chart -->
         <div id="performance-chart" class="text-center mt-5">

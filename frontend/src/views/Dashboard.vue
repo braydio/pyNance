@@ -97,7 +97,7 @@
           <BaseCard>
             <div class="space-y-4">
               <input v-model="searchQuery" type="text" placeholder="Search transactions, account, institution..."
-                class="w-full p-2 border border-gray-200 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                class="w-full p-2 border border-[var(--divider)] rounded focus:outline-none focus:ring-2 focus:ring-[var(--primary)]" />
               <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
                 :search="searchQuery" @sort="setSort" :current-page="currentPage" :total-pages="totalPages"
                 @change-page="changePage" />

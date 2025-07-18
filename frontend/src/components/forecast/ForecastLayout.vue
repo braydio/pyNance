@@ -1,5 +1,5 @@
 <template>
-  <div class="forecast-layout p-6 bg-gray-50 space-y-6">
+  <div class="forecast-layout p-6 bg-[var(--color-bg-secondary)] space-y-6">
     <ForecastSummaryPanel :current-balance="currentBalance" :manual-income="manualIncome"
       :liability-rate="liabilityRate" :view-type="viewType" @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event" />

@@ -1,0 +1,45 @@
+:root {
+  --page-bg: #0d1b2a;
+  --background: var(--page-bg);
+  --color-bg: #1b263b;
+  --color-bg-dark: #0d1b2a;
+  --color-bg-secondary: #243447;
+  --themed-bg: rgba(36, 52, 71, 0.75);
+  --frosted-bg: var(--themed-bg);
+  --themed-border: rgba(255, 255, 255, 0.12);
+  --surface: #28354a;
+  --input-bg: #33465c;
+  --divider: #3f536a;
+  --color-border-secondary: #3a4c63;
+
+  --theme-fg: #e2e8f0;
+  --color-text-dark: #000000;
+  --color-text-light: #f1f5f9;
+  --color-text-muted: #94a3b8;
+
+  --primary: #14b8a6;
+  --primary-dark: #0d9488;
+
+  --neon-mint: #5eead4;
+  --neon-purple: #c084fc;
+  --color-accent-mint: var(--neon-mint);
+  --color-accent-yellow: #f9f871;
+  --color-accent-magenta: #ff2cb1;
+  --color-accent-ice: #2fd7ff;
+  --color-accent-purple-hover: #d8b4fe;
+  --color-accent: var(--neon-mint);
+
+  --hover-bg: rgba(255, 255, 255, 0.08);
+  --color-hover-light: rgba(255, 255, 255, 0.1);
+  --hover-glow: 0 0 8px rgba(20, 184, 166, 0.6);
+
+  --button-bg: #334155;
+  --link-hover-color: var(--neon-mint);
+
+  --asset-gradient-start: #60a5fa;
+  --asset-gradient-end: #3b82f6;
+  --liability-gradient-start: #fb7185;
+  --liability-gradient-end: #f43f5e;
+  --bar-gradient-end: #f472b6;
+  --accent-yellow-soft: rgba(249, 248, 113, 0.5);
+}

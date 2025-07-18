@@ -12,7 +12,7 @@
           :disabled="max > 0 && !localValue.includes(item.id) && localValue.length >= max" />
         <span>{{ item.name }}</span>
       </label>
-      <p v-if="!filtered.length" class="text-sm text-gray-500 py-2">No matches</p>
+      <p v-if="!filtered.length" class="text-sm text-[var(--color-text-muted)] py-2">No matches</p>
     </div>
   </div>
 </template>

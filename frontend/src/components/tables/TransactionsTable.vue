@@ -1,9 +1,9 @@
 <template>
   <div class="card mt-6 font-mono space-y-4">
     <h3 class="heading-md text-left">Transactions</h3>
-    <div class="overflow-auto rounded-2xl border border-gray-200 shadow">
-      <table class="min-w-full divide-y divide-gray-200 rounded-2xl overflow-hidden">
-        <thead class="bg-gray-50">
+    <div class="overflow-auto rounded-2xl border border-[var(--divider)] shadow">
+      <table class="min-w-full divide-y divide-[var(--divider)] rounded-2xl overflow-hidden">
+        <thead class="bg-[var(--color-bg-secondary)]">
           <tr>
             <th v-for="col in columns" :key="col.key" @click="sortTable(col.key)"
               class="px-3 py-2 text-left select-none cursor-pointer font-bold uppercase text-xs tracking-wide transition"

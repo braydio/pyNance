@@ -1,18 +1,18 @@
 <template>
   <div class="flex items-center justify-center gap-3 mt-4">
     <button
-      class="rounded-2xl px-4 py-1 shadow text-lg bg-gray-100 border border-gray-300 text-gray-700 transition hover:bg-accent-cyan hover:text-white focus:ring-2 focus:ring-cyan-500"
+      class="rounded-2xl px-4 py-1 shadow text-lg bg-[var(--color-bg)] border border-[var(--divider)] text-[var(--theme-fg)] transition hover:bg-accent-cyan hover:text-white focus:ring-2 focus:ring-cyan-500"
       :disabled="currentPage <= 1" @click="goToPrev">
       Previous
     </button>
     <span class="flex items-center gap-1 text-sm">
       Page
       <input type="number" min="1" :max="totalPages" v-model.number="editablePage" @keyup.enter="jumpToPage"
-        class="w-14 mx-1 text-center border border-gray-300 rounded px-1 py-0.5 focus:ring-2 focus:ring-accent-cyan outline-none" />
+        class="w-14 mx-1 text-center border border-[var(--divider)] rounded px-1 py-0.5 focus:ring-2 focus:ring-accent-cyan outline-none" />
       of <span class="font-bold">{{ totalPages }}</span>
     </span>
     <button
-      class="rounded-2xl px-4 py-1 shadow text-lg bg-gray-100 border border-gray-300 text-gray-700 transition hover:bg-accent-cyan hover:text-white focus:ring-2 focus:ring-cyan-500"
+      class="rounded-2xl px-4 py-1 shadow text-lg bg-[var(--color-bg)] border border-[var(--divider)] text-[var(--theme-fg)] transition hover:bg-accent-cyan hover:text-white focus:ring-2 focus:ring-cyan-500"
       :disabled="currentPage >= totalPages" @click="goToNext">
       Next
     </button>

@@ -9,7 +9,7 @@
       <slot />
     </main>
     <footer class="glass border-t" style="border-color: var(--divider);">
-      <div class="container py-4 text-center text-gray-600 text-sm">
+      <div class="container py-4 text-center text-[var(--color-text-muted)] text-sm">
         <slot name="footer" />
       </div>
     </footer>

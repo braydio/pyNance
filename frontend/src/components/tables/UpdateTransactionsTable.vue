@@ -130,7 +130,7 @@
     </table>
 
     <!-- Empty State -->
-    <div v-if="filteredTransactions.length === 0" class="text-center text-gray-500">
+    <div v-if="filteredTransactions.length === 0" class="text-center text-[var(--color-text-muted)]">
       No transactions found.
     </div>
   </div>
@@ -270,11 +270,11 @@ onMounted(async () => {
 <style scoped>
 @reference "../../assets/css/main.css";
 .input {
-  @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
+  @apply w-full px-2 py-1 rounded border border-[var(--divider)] bg-[var(--surface)] text-[var(--theme-fg)] text-sm;
 }
 
 .input:focus {
-  @apply outline-none ring-2 ring-blue-300;
+  @apply outline-none ring-2 ring-[var(--primary)];
 }
 
 .btn-sm {

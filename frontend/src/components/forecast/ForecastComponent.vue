@@ -4,7 +4,7 @@
     <!-- Header -->
     <header class="text-center">
       <h1 class="text-3xl font-bold">Financial Forecast</h1>
-      <p class="text-gray-500">Simulate your future net delta and balance shifts</p>
+      <p class="text-[var(--color-text-muted)]">Simulate your future net delta and balance shifts</p>
     </header>
 
     <!-- Top Grid: Summary + Chart -->
@@ -27,7 +27,7 @@
       </div>
 
       <!-- Forecast Chart Placeholder -->
-      <div class="card glass h-64 flex items-center justify-center text-gray-400">
+      <div class="card glass h-64 flex items-center justify-center text-[var(--color-text-muted)]">
         <span>[Chart will go here]</span>
       </div>
     </div>
@@ -69,7 +69,7 @@
             <option>One-Time</option>
           </select>
         </div>
-        <button type="button" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">Add</button>
+        <button type="button" class="mt-2 px-4 py-2 bg-[var(--primary)] text-white rounded">Add</button>
       </form>
     </div>
 

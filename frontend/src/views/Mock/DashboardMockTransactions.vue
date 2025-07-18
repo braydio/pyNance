@@ -1,5 +1,5 @@
 <template>
-  <div class="w-full bg-white shadow p-4 rounded-xl flex flex-col gap-6">
+  <div class="w-full bg-[var(--surface)] shadow p-4 rounded-xl flex flex-col gap-6">
     <!-- Daily Net Income Chart -->
     <div>
       <h2 class="text-lg font-semibold mb-2">Daily Net Income</h2>
