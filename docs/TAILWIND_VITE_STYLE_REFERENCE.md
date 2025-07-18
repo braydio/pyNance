@@ -1,6 +1,6 @@
-# Styling Architecture Reference: Tailwind CSS + Vite Integration
+# Styling Architecture Reference: Tailwind CSS + Vite & PostCSS Integration
 
-_Last updated: 2025-07-12_
+_Last updated: 2025-07-17_
 
 ## Overview
 
@@ -23,32 +23,30 @@ This document provides a detailed reference for how styling is configured in the
 - Rapid prototyping with utility classes
 - Easily themeable and extensible
 
-### ✅ **@tailwindcss/vite Plugin**
+### ✅ **@tailwindcss/postcss Plugin**
 
-**Why:** Official Tailwind plugin for Vite. Replaces legacy `postcss.config.js` for better performance and developer experience.
+**Why:** This project relies on the official PostCSS plugin so we can keep using `postcss.config.cjs` for Autoprefixer and any additional PostCSS transforms.
 
 **Installation:**
 
 ```bash
-npm install -D @tailwindcss/vite
+npm install -D @tailwindcss/postcss
 ```
 
-**Configured in `vite.config.js`:**
+**Configured in `postcss.config.cjs`:**
 
-```ts
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import tailwindcss from "@tailwindcss/vite";
-
-export default defineConfig({
-  plugins: [vue(), tailwindcss()],
-});
+```js
+module.exports = {
+  plugins: {
+    '@tailwindcss/postcss': {},
+    autoprefixer: {},
+  },
+}
 ```
 
-**Why not PostCSS:**
+**Why not `@tailwindcss/vite`:**
 
-- Tailwind no longer requires `postcss.config.js` when using this plugin.
-- Simplifies the toolchain and reduces plugin runtime.
+- Keeping PostCSS allows compatibility with existing tooling and custom processing steps.
 
 ## Framework Context
 
@@ -97,12 +95,12 @@ This has implications:
 
 ## Deprecated
 
-- `postcss.config.js` — no longer used.
+- `vite.config.js` — redundant if `vite.config.ts` is present and should be removed.
 
 ## Action Log Summary
 
-- 🟢 PostCSS configuration confirmed absent — no need to migrate or clean up.
-- 🟢 Tailwind Vite plugin is in place.
+- 🟢 PostCSS configuration retained for Autoprefixer support.
+- 🟡 Tailwind Vite plugin not enabled.
 - ✅ Styling conventions aligned with Tailwind 4 best practices.
 - 📄 This document added as a styling reference.
 
