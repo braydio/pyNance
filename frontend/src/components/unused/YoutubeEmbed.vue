@@ -1,3 +1,4 @@
+<!-- Deprecated component: retained only for historical reference -->
 <template>
     <div class="video-container">
       <!-- The YouTube player will be embedded in this div -->
@@ -71,7 +72,7 @@
   
   <style scoped>
 @reference "../../assets/css/main.css";
-@import '@/styles/global-colors.css';
+@reference '@/styles/global-colors.css';
 
   .video-container {
     position: relative;
