@@ -11,14 +11,7 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
-from app.models import (
-    Account,
-    AccountHistory,
-    Category,
-    PlaidAccount,
-    PlaidItem,
-    Transaction,
-)
+from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
 from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
@@ -72,24 +65,25 @@ def get_accounts_from_db(include_hidden: bool = False):
     return accounts
 
 
-def save_plaid_item(user_id, item_id, access_token, institution_name, product):
-    """Insert or update a PlaidItem record."""
-    item = PlaidItem.query.filter_by(item_id=item_id).first()
-    if item:
-        item.access_token = access_token
-        item.institution_name = institution_name
-        item.updated_at = datetime.now(timezone.utc)
+def save_plaid_account(account_id, item_id, access_token, product):
+    """Insert or update a :class:`PlaidAccount` row."""
+
+    plaid_acct = PlaidAccount.query.filter_by(account_id=account_id).first()
+    if plaid_acct:
+        plaid_acct.access_token = access_token
+        plaid_acct.item_id = item_id
+        plaid_acct.product = product
+        plaid_acct.updated_at = datetime.now(timezone.utc)
     else:
-        item = PlaidItem(
-            user_id=user_id,
-            item_id=item_id,
+        plaid_acct = PlaidAccount(
+            account_id=account_id,
             access_token=access_token,
-            institution_name=institution_name,
+            item_id=item_id,
             product=product,
         )
-        db.session.add(item)
+        db.session.add(plaid_acct)
     db.session.commit()
-    return item
+    return plaid_acct
 
 
 def upsert_accounts(user_id, account_list, provider, access_token=None):

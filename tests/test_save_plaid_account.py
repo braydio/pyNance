@@ -42,28 +42,35 @@ def db_ctx(tmp_path):
         extensions.db.drop_all()
 
 
-def test_save_plaid_item_inserts_and_updates(db_ctx):
+def test_save_plaid_account_inserts_and_updates(db_ctx):
     db, models, logic = db_ctx
 
-    # Insert
-    item = logic.save_plaid_item(
+    # minimal account record to satisfy FK
+    acc = models.Account(
+        account_id="acct1",
         user_id="u1",
+        name="Test",
+        type="brokerage",
+    )
+    db.session.add(acc)
+    db.session.commit()
+
+    account = logic.save_plaid_account(
+        account_id="acct1",
         item_id="item123",
         access_token="tok1",
-        institution_name="InvestCo",
         product="investments",
     )
-    assert item.id
-    assert db.session.query(models.PlaidItem).count() == 1
+    assert account.id
+    assert account.product == "investments"
+    assert db.session.query(models.PlaidAccount).count() == 1
 
-    # Update
-    item2 = logic.save_plaid_item(
-        user_id="u1",
+    account2 = logic.save_plaid_account(
+        account_id="acct1",
         item_id="item123",
         access_token="tok2",
-        institution_name="InvestCo",
         product="investments",
     )
-    assert item2.id == item.id
-    assert item2.access_token == "tok2"
-    assert db.session.query(models.PlaidItem).count() == 1
+    assert account2.id == account.id
+    assert account2.access_token == "tok2"
+    assert db.session.query(models.PlaidAccount).count() == 1
