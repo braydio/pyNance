@@ -1,100 +1,97 @@
-<!--
-  Displays user accounts in a sortable table with search and type filtering.
-  Type filtering uses a dynamic multi-select derived from account data.
--->
 <template>
-  <div class="accounts-section">
-    <div class="accounts-table">
-      <h2>Accounts</h2>
-
-      <!-- Filter Row -->
-      <div class="filter-row">
-        <input
-          v-model="searchQuery"
-          class="filter-input"
-          type="text"
-          placeholder="Filter accounts..."
-        />
-
-        <button class="export-btn" @click="controlsVisible = !controlsVisible">
-          {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
+  <div class="card bg-neutral-950 border border-neutral-800 shadow-xl rounded-2xl p-4 md:p-6">
+    <h2 class="font-bold text-xl mb-6 text-left tracking-wide text-blue-300 flex items-center">
+      <span class="i-ph:bank-duotone text-2xl mr-2 text-blue-400"></span>
+      Accounts
+    </h2>
+    <!-- Controls/Filters -->
+    <div class="mb-4 flex gap-2 flex-wrap items-center">
+      <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter accounts..." />
+      <button class="export-btn" @click="controlsVisible = !controlsVisible">
+        {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
+      </button>
+      <template v-if="controlsVisible">
+        <button class="export-btn" @click="toggleDeleteButtons">
+          {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
         </button>
-
-        <template v-if="controlsVisible">
-          <button class="export-btn" @click="toggleDeleteButtons">
-            {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
-          </button>
-
-          <button class="export-btn" @click="exportCSV">Export CSV</button>
-
-          <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
-            Filter by Type
-          </button>
-
-          <button class="export-btn" @click="showHidden = !showHidden">
-            {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
-          </button>
-        </template>
-      </div>
-
-      <!-- Type Filter Slide -->
-      <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
-        <select multiple v-model="typeFilters" class="filter-input">
-          <option
-            v-for="type in uniqueTypes"
-            :key="type"
-            :value="type"
-          >
-            {{ formatType(type) }}
-          </option>
-        </select>
-      </div>
-
-      <!-- Main Table -->
-
-      <table v-if="!loading && sortedAccounts.length">
-        <thead>
+        <button class="export-btn" @click="exportCSV">Export CSV</button>
+        <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
+          Filter by Type
+        </button>
+        <button class="export-btn" @click="showHidden = !showHidden">
+          {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
+        </button>
+      </template>
+    </div>
+    <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
+      <select multiple v-model="typeFilters" class="filter-input">
+        <option v-for="type in uniqueTypes" :key="type" :value="type">
+          {{ formatType(type) }}
+        </option>
+      </select>
+    </div>
+    <!-- Table -->
+    <div class="overflow-x-auto rounded-xl border border-neutral-800">
+      <table class="min-w-full text-sm divide-y divide-neutral-800">
+        <thead class="bg-neutral-900 border-b border-blue-800">
           <tr>
-            <th @click="sortTable('institution_name')">
-              Institution <span>{{ sortKey === 'institution_name' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
+            <th
+              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Last Refreshed</th>
+            <th
+              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Institution</th>
+            <th
+              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Name</th>
+            <th
+              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Account Type</th>
+            <th
+              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Link Type</th>
+            <th
+              class="py-2 px-4 text-right font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
+              Balance</th>
+            <th v-if="controlsVisible" class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200">
+              Actions
             </th>
-            <th @click="sortTable('name')">
-              Name <span>{{ sortKey === 'name' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th @click="sortTable('type')">
-              Account Type <span>{{ sortKey === 'type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th @click="sortTable('balance')">
-              Balance <span>{{ sortKey === 'balance' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th @click="sortTable('link_type')">
-              Link Type <span>{{ sortKey === 'link_type' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th @click="sortTable('last_refreshed')">
-              Last Refreshed
-              <span>{{ sortKey === 'last_refreshed' ? (sortOrder === 1 ? '▲' : '▼') : '▲▼' }}</span>
-            </th>
-            <th v-if="controlsVisible">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="account in sortedAccounts" :key="account.account_id">
-            <td>{{ account.institution_name || 'N/A' }}</td>
-            <td>{{ account.name || 'N/A' }}</td>
-            <td>{{ formatType(account.subtype || account.type) }}</td>
-            <td>{{ formatBalance(account.balance) }}</td>
-            <td>{{ account.link_type || 'N/A' }}</td>
-            <td>{{ formatDate(account.last_refreshed) }}</td>
-            <td v-if="controlsVisible">
+          <tr v-for="account in sortedAccounts" :key="account.account_id" :class="[
+            'border-b border-neutral-800',
+            'hover:bg-blue-950/50 transition-colors duration-100'
+          ]">
+            <!-- Last Refreshed -->
+            <td class="px-4 py-2 text-xs text-neutral-400">{{ formatDate(account.last_refreshed) }}</td>
+            <!-- Institution with icon -->
+            <td class="px-4 py-2 flex items-center gap-2">
+              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt=""
+                class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain" loading="lazy" />
+              <span class="font-medium text-blue-100">{{ account.institution_name || 'N/A' }}</span>
+            </td>
+            <!-- Name -->
+            <td class="px-4 py-2 text-blue-50">{{ account.name || 'N/A' }}</td>
+            <!-- Account Type (capitalize first/last) -->
+            <td class="px-4 py-2">
+              <span
+                class="inline-block rounded-xl border border-blue-700 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200">
+                {{ capitalizeFirstLast(account.subtype || account.type) }}
+              </span>
+            </td>
+            <!-- Link Type -->
+            <td class="px-4 py-2 text-blue-200">{{ account.link_type || 'N/A' }}</td>
+            <!-- Balance -->
+            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-300">{{ formatBalance(account.balance) }}
+            </td>
+            <!-- Actions -->
+            <td v-if="controlsVisible" class="px-4 py-2">
               <div class="btn-group">
                 <button class="btn btn-sm" @click="toggleHidden(account)">
                   {{ account.is_hidden ? 'Unhide' : 'Hide' }}
                 </button>
-                <button
-                  v-if="showDeleteButtons"
-                  class="btn btn-sm"
-                  @click="deleteAccount(account.account_id)"
-                >
+                <button v-if="showDeleteButtons" class="btn btn-sm" @click="deleteAccount(account.account_id)">
                   Delete
                 </button>
               </div>
@@ -102,18 +99,11 @@
           </tr>
         </tbody>
       </table>
-
-      <div v-else-if="!loading && !sortedAccounts.length">
-        No accounts found.
-      </div>
-
-      <div v-else>
-        Loading accounts...
-      </div>
     </div>
+    <div v-if="!loading && !sortedAccounts.length" class="p-6 text-blue-200">No accounts found.</div>
+    <div v-else-if="loading" class="p-6 text-blue-200">Loading accounts...</div>
   </div>
 </template>
-
 
 <script>
 import api from "@/services/api";
@@ -123,10 +113,7 @@ export default {
   name: "AccountsTable",
   emits: ["refresh"],
   props: {
-    provider: {
-      type: String,
-      default: "teller",
-    },
+    provider: { type: String, default: "teller" },
   },
   data() {
     return {
@@ -233,11 +220,22 @@ export default {
     },
     formatDate(dateString) {
       if (!dateString) return "N/A";
-      return new Date(dateString).toLocaleString();
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', {
+        year: '2-digit',
+        month: 'short',
+        day: 'numeric'
+      }).replace(/,/, ''); // Ensures format like 'Jul 16 25'
     },
     formatType(type) {
       if (!type) return 'Unknown';
       return type.charAt(0).toUpperCase() + type.slice(1);
+    },
+    capitalizeFirstLast(type) {
+      if (!type || typeof type !== "string") return 'Unknown';
+      const clean = type.toLowerCase();
+      if (clean.length < 2) return clean.toUpperCase();
+      return clean.charAt(0).toUpperCase() + clean.slice(1, -1) + clean.charAt(clean.length - 1).toUpperCase();
     },
     sortTable(key) {
       if (this.sortKey === key) {
@@ -260,145 +258,6 @@ export default {
 };
 </script>
 
-
 <style scoped>
-@reference "../../assets/css/main.css";
-.accounts-section {
-  background-color: var(--color-bg-secondary);
-  padding: 1.5rem;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px var(--shadow);
-  color: var(--color-text-light);
-}
-
-.accounts-table h2 {
-  margin-bottom: 1rem;
-  font-size: 1.5rem;
-  color: var(--neon-purple);
-}
-
-.filter-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-  flex-wrap: wrap;
-}
-
-.filter-input {
-  padding: 0.4rem 0.9rem;
-  border-radius: 2rem;
-  border: 1px solid var(--neon-purple);
-  background-color: transparent;
-  color: var(--neon-purple);
-  font-size: 0.9rem;
-  transition: all 0.2s ease-in-out;
-}
-
-.filter-input:hover,
-.filter-input:focus {
-  background-color: var(--neon-purple);
-  color: var(--color-bg-dark);
-  outline: none;
-}
-
-.export-btn {
-  background-color: transparent;
-  color: var(--neon-purple);
-  border: 1px solid var(--neon-purple);
-  border-radius: 2rem;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.85rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.export-btn:hover {
-  background-color: var(--neon-purple);
-  color: var(--color-bg-dark);
-  border-color: var(--neon-purple);
-}
-
-/* Slide-in filter row */
-.type-filter-row {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, margin-top 0.3s ease;
-}
-
-.type-filter-row.slide-in {
-  max-height: 80px;
-  margin-top: 0.5rem;
-}
-
-.btn.btn-sm {
-  padding: 0.25rem 0.6rem;
-  font-size: 0.8rem;
-  border: none;
-  border-radius: 0.2rem;
-  background-color: var(--neon-purple);
-  color: var(--);
-  cursor: pointer;
-  margin-right: 0.25rem;
-  transition: background-color 0.2s ease-in-out;
-}
-
-.btn.btn-sm:hover {
-  background-color: var(--color-accent-purple-hover);
-  color: white;
-}
-
-.btn-group {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.btn-delete {
-  background-color: var(--color-bg-dark);
-  color: var(--color-error);
-  border: 1px solid var(--color-error);
-  border-radius: 2rem;
-  padding: 0.35rem 0.9rem;
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-}
-
-.btn-delete:hover {
-  background-color: var(--color-error);
-  color: white;
-}
-
-th {
-  cursor: pointer;
-  user-select: none;
-  font-weight: 500;
-}
-
-th span {
-  margin-left: 0.4rem;
-  color: var(--color-text-muted);
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-thead {
-  background-color: var(--color-bg-dark);
-  color: white;
-}
-
-td,
-th {
-  padding: 0.6rem 1rem;
-  border-bottom: 1px solid var(--divider);
-}
-
-tbody tr:hover {
-  background-color: var(--hover)-light;
-}
+/* Use blue analytic styles, card/table borders, and hover/active transitions as above */
 </style>
