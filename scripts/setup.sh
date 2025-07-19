@@ -2,8 +2,8 @@
 
 # Setup script for pyNance.
 # Creates a virtual environment, installs dependencies, links Git hooks
-# and prepares the frontend. Use the --slim flag to install only core
-# dependencies from requirements-slim.txt and skip heavy development
+# and prepares the frontend. Pass the --slim flag to install only the
+# core dependencies from requirements-slim.txt and skip development
 # packages.
 
 set -euo pipefail
@@ -33,15 +33,27 @@ fi
 
 ## 2. Activate and install dependencies
 source .venv/bin/activate
-if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
-  pip install --upgrade pip
-  if ! pip install -r requirements.txt -r requirements-dev.txt; then
-    echo "Dependency installation failed. Please check requirements." >&2
+pip install --upgrade pip
+if [ "$USE_SLIM" -eq 1 ]; then
+  if [ -f requirements-slim.txt ]; then
+    if ! pip install -r requirements-slim.txt; then
+      echo "Dependency installation failed. Please check requirements." >&2
+      exit 1
+    fi
+  else
+    echo "Requirements file not found: requirements-slim.txt" >&2
     exit 1
   fi
 else
-  echo "Requirements file not found: requirements.txt or requirements-dev.txt" >&2
-  exit 1
+  if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
+    if ! pip install -r requirements.txt -r requirements-dev.txt; then
+      echo "Dependency installation failed. Please check requirements." >&2
+      exit 1
+    fi
+  else
+    echo "Requirements file not found: requirements.txt or requirements-dev.txt" >&2
+    exit 1
+  fi
 fi
 
 ## 3. Create .env if missing
