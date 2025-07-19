@@ -111,9 +111,10 @@ VITE_APP_API_BASE_URL=/api
 bash scripts/setup.sh [--slim]
 ```
 
-
-This command creates the virtual environment, installs all Python (including dev) and Node dependencies,
-links pre-commit hooks and copies the example `.env` files if needed.
+Running without flags installs everything from `requirements.txt` and
+`requirements-dev.txt`. Add `--slim` to install only the packages in
+`requirements-slim.txt` and skip dev dependencies. The script also
+links pre-commit hooks and copies example `.env` files when needed.
 
 ### Manual dependency install
 
