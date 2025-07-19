@@ -111,10 +111,21 @@ VITE_APP_API_BASE_URL=/api
 bash scripts/setup.sh [--slim]
 ```
 
-
 This command creates the virtual environment, installs all Python (including dev) and Node dependencies,
-links pre-commit hooks and copies the example `.env` files if needed.
-This command creates the virtual environment, installs Python and Nod
+links pre-commit hooks, and copies the example `.env` files.
+
+### 3a. Manual dependency install
+If you prefer manual setup, activate your virtual environment and run:
+
+```bash
+pip install -r requirements-dev.txt
+pip install pre-commit flask
+npm install
+pre-commit install
+```
+
+Run `pip install -r requirements-dev.txt` and `npm install` **before** executing
+`pre-commit run --all-files` or `pytest`.
 
 ### 4. Run Backend
 
@@ -215,6 +226,8 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 - If you already have Plaid tokens saved, run `python scripts/plaid_link_from_token.py` to seed accounts.
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
+- If `pre-commit` or `flask` are missing, activate your virtual environment and run `pip install -r requirements-dev.txt`.
+- If frontend commands fail due to missing packages, run `npm install` inside `frontend/`.
 
 ---
 
