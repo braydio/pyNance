@@ -120,9 +120,20 @@ If you prefer manual setup, activate your virtual environment and run:
 ```bash
 pip install -r requirements-dev.txt
 pip install pre-commit flask
+links pre-commit hooks and copies the example `.env` files if needed.
+
+### Manual dependency install
+
+If you prefer to configure the environment yourself, run:
+
+```bash
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements-dev.txt  # installs Flask, pre-commit and other packages
 npm install
 pre-commit install
 ```
+
 
 Run `pip install -r requirements-dev.txt` and `npm install` **before** executing
 `pre-commit run --all-files` or `pytest`.
@@ -228,7 +239,6 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
 - If `pre-commit` or `flask` are missing, activate your virtual environment and run `pip install -r requirements-dev.txt`.
 - If frontend commands fail due to missing packages, run `npm install` inside `frontend/`.
-
 ---
 
 ## License

@@ -12,6 +12,7 @@ from app.config import logger
 from app.extensions import db
 from app.models import Account, Transaction
 from app.sql import account_logic, transaction_rules_logic
+from app.utils.finance_utils import display_transaction_amount
 from flask import Blueprint, jsonify, request
 
 transactions = Blueprint("transactions", __name__)
@@ -220,6 +221,7 @@ def get_account_transactions(account_id):
 
 @transactions.route("/manual", methods=["GET"])
 def get_manual_transactions():
+    """Return all transactions from manually managed accounts."""
     try:
         manual_txns = (
             db.session.query(Transaction)
@@ -235,7 +237,7 @@ def get_manual_transactions():
                 "transaction_id": t.transaction_id,
                 "date": t.date.isoformat(),
                 "name": t.description,
-                "amount": t.amount,
+                "amount": display_transaction_amount(t),
                 "type": t.merchant_type,
                 "provider": t.account.link_type if t.account else None,
                 "account_id": t.account_id,
