@@ -36,30 +36,25 @@ def normalize_transaction_amount(amount, account_type):
 
 
 def display_transaction_amount(txn: Transaction) -> float:
+    """Return the signed amount for display.
+
+    Blade reports expenses as positive values and income as negative values. For
+    a more intuitive UI, expenses should appear negative and income positive.
+    If ``transaction_type`` is available it will be honored, otherwise the sign
+    of ``txn.amount`` is used to infer the type.
     """
-    Returns a formatted version of the transaction amount for display purposes.
 
-    This function converts the transaction’s amount into a float and then applies a sign
-    convention based on the transaction type. It assumes that the Transaction object has
-    an 'amount' attribute (which can be converted to float) and a 'transaction_type' attribute,
-    where 'expense' transactions are displayed as negative (money out) and any other type
-    (e.g. income) is displayed as a positive amount.
-
-    Args:
-        txn (Transaction): The transaction instance containing financial data.
-
-    Returns:
-        float: The properly signed amount for display.
-    """
-    # Convert the raw amount to a float.
     amount = float(txn.amount)
 
-    # If the transaction is an expense, return the negative absolute value.
-    if getattr(txn, "transaction_type", "").lower() == "expense":
+    raw_type = getattr(txn, "transaction_type", "") or ""
+    txn_type = raw_type.lower()
+    if txn_type == "expense":
         return -abs(amount)
+    if txn_type == "income":
+        return abs(amount)
 
-    # Otherwise, return the absolute value (assuming income or similar).
-    return abs(amount)
+    # Fallback: infer from stored sign (Blade uses positive for expenses)
+    return -amount
 
 
 def transform_transaction(txn: Transaction):
