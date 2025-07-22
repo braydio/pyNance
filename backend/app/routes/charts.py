@@ -9,7 +9,10 @@ from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
-from app.utils.finance_utils import normalize_account_balance
+from app.utils.finance_utils import (
+    display_transaction_amount,
+    normalize_account_balance,
+)
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func
 
@@ -254,7 +257,7 @@ def get_daily_net():
                 logger.warning(
                     f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to raw amount."
                 )
-            amt = tx.amount
+            amt = display_transaction_amount(tx)
 
             if day_str not in day_map:
                 day_map[day_str] = {
