@@ -164,16 +164,16 @@ All tests should pass when dependencies are installed.
 
 ## Important Configuration Files
 
-| File | Purpose |
-|:--|:--|
-| `/backend/app/config/environment.py`    | Loads environment variables (FLASK_ENV, CLIENT_NAME, PLAID_*, TELLER_*, etc.) |
-| `/backend/app/config/plaid_config.py`   | Plaid API client setup (PLAID_CLIENT_ID, PLAID_SECRET_KEY & PLAID_ENV) |
-| `/backend/app/config/log_setup.py`      | Logging configuration (LOG_LEVEL, VERBOSE_LOGGING, handlers) |
-| `/backend/app/config/constants.py`      | Application constants & database URI (data paths, themes, etc.) |
-| `/backend/app/config/paths.py`          | Directory paths auto-creation (DATA_DIR, LOGS_DIR, CERTS_DIR, etc.) |
-| `/backend/app/certs/README.md`          | Instructions for placing Teller certificate.pem & private_key.pem |
-| `/frontend/example.env`                 | Frontend environment variables example |
-| `/frontend/.env`                        | Frontend environment variables |
+| File                                  | Purpose                                                                        |
+| :------------------------------------ | :----------------------------------------------------------------------------- |
+| `/backend/app/config/environment.py`  | Loads environment variables (FLASK*ENV, CLIENT_NAME, PLAID**, TELLER\_*, etc.) |
+| `/backend/app/config/plaid_config.py` | Plaid API client setup (PLAID_CLIENT_ID, PLAID_SECRET_KEY & PLAID_ENV)         |
+| `/backend/app/config/log_setup.py`    | Logging configuration (LOG_LEVEL, VERBOSE_LOGGING, handlers)                   |
+| `/backend/app/config/constants.py`    | Application constants & database URI (data paths, themes, etc.)                |
+| `/backend/app/config/paths.py`        | Directory paths auto-creation (DATA_DIR, LOGS_DIR, CERTS_DIR, etc.)            |
+| `/backend/app/certs/README.md`        | Instructions for placing Teller certificate.pem & private_key.pem              |
+| `/frontend/example.env`               | Frontend environment variables example                                         |
+| `/frontend/.env`                      | Frontend environment variables                                                 |
 
 Refer to [`docs/index/INDEX.md`](docs/index/INDEX.md) for a full documentation map.
 
@@ -218,7 +218,6 @@ pip install -r requirements-slim.txt
 pytest -q
 ```
 
-
 ---
 
 ## Logs
@@ -235,8 +234,10 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
 - If you see `ModuleNotFoundError` for packages like `flask` or `chromadb`, ensure the virtual environment is active and run:
+
   ```bash
-  pip install -r requirements-dev.txt
+
+  pip install -r requirements.txt -r requirements-dev.txt
   npm install
   ```
 

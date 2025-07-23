@@ -67,13 +67,13 @@ def test_get_transactions_returns_data(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module.account_logic,
         "get_paginated_transactions",
-        lambda *a, **k: ([{"txn": 1}], 1),
+        lambda *a, **k: ([{"txn": 1, "category_icon_url": "url"}], 1),
     )
     resp = client.get("/api/transactions/get_transactions")
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["status"] == "success"
-    assert data["data"]["transactions"] == [{"txn": 1}]
+    assert data["data"]["transactions"] == [{"txn": 1, "category_icon_url": "url"}]
     assert data["data"]["total"] == 1
 
 

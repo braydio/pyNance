@@ -433,9 +433,11 @@ def get_paginated_transactions(
     recent=False,
     limit=None,
 ):
+    """Return paginated transaction rows with account and category info."""
     query = (
-        db.session.query(Transaction, Account)
+        db.session.query(Transaction, Account, Category)
         .join(Account, Transaction.account_id == Account.account_id)
+        .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
         .order_by(Transaction.date.desc())
     )
@@ -460,7 +462,7 @@ def get_paginated_transactions(
 
     # Unpack and serialize
     serialized = []
-    for txn, acc in results:
+    for txn, acc, cat in results:
         serialized.append(
             {
                 "transaction_id": txn.transaction_id,
@@ -468,6 +470,7 @@ def get_paginated_transactions(
                 "amount": display_transaction_amount(txn),
                 "description": txn.description or txn.merchant_name or "N/A",
                 "category": txn.category or "Uncategorized",
+                "category_icon_url": getattr(cat, "pfc_icon_url", None),
                 "merchant_name": txn.merchant_name or "Unknown",
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
