@@ -254,12 +254,12 @@ def get_recurring(account_id):
         ).all()
         data = []
         for tx in recurring_txs:
-            display_tx = getattr(tx, "transaction", tx)
+            amount = display_transaction_amount(getattr(tx, "transaction", tx))
             data.append(
                 {
                     "id": tx.id,
                     "description": tx.description,
-                    "amount": display_transaction_amount(display_tx),
+                    "amount": amount,
                     "frequency": tx.frequency,
                     "next_due_date": (
                         tx.next_due_date.isoformat() if tx.next_due_date else None
