@@ -44,12 +44,24 @@
                 </button>
               </template>
               <template #summary>
-                <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">${{
-                  netSummary.totalIncome?.toLocaleString() }}</span></div>
-                <div>Expenses: <span class="font-bold text-[var(--color-accent-red)]">${{
-                  netSummary.totalExpenses?.toLocaleString() }}</span></div>
-                <div class="font-bold text-lg text-[var(--color-accent-mint)]">Net Total: ${{
-                  netSummary.totalNet?.toLocaleString() }}</div>
+                <div>
+                  Income:
+                  <span class="font-bold text-[var(--color-accent-mint)]">
+                    {{ formatAmount(netSummary.totalIncome) }}
+                  </span>
+                </div>
+                <div>
+                  Expenses:
+                  <span class="font-bold text-red-400">
+                    {{ formatAmount(netSummary.totalExpenses) }}
+                  </span>
+                </div>
+                <div
+                  class="font-bold text-lg"
+                  :class="{ 'text-red-400': netSummary.totalNet < 0, 'text-[var(--color-accent-mint)]': netSummary.totalNet >= 0 }"
+                >
+                  Net Total: {{ formatAmount(netSummary.totalNet) }}
+                </div>
               </template>
             </ChartWidgetTopBar>
             <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
@@ -80,8 +92,9 @@
               </template>
               <template #summary>
                 <span class="text-sm">Total:</span>
-                <span class="font-bold text-lg text-[var(--color-accent-mint)]">${{ catSummary.total?.toLocaleString()
-                  }}</span>
+                <span class="font-bold text-lg text-[var(--color-accent-mint)]">
+                  {{ formatAmount(catSummary.total) }}
+                </span>
               </template>
             </ChartWidgetTopBar>
             <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
@@ -130,6 +143,7 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
