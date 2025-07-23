@@ -1,4 +1,5 @@
 # app/routes/recurring.py
+import types
 from datetime import date, datetime, timedelta, timezone
 from types import SimpleNamespace
 
@@ -209,12 +210,12 @@ def get_structured_recurring(account_id):
             if isinstance(next_due, datetime):
                 next_due = next_due.date()
             if 0 <= (next_due - today).days <= 7:
-                amt = display_transaction_amount(SimpleNamespace(amount=row.amount))
+                dummy_tx = types.SimpleNamespace(amount=row.amount)
                 reminders.append(
                     {
                         "source": "auto",
                         "description": row.description,
-                        "amount": amt,
+                        "amount": display_transaction_amount(dummy_tx),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                     }
                 )
@@ -231,7 +232,7 @@ def get_structured_recurring(account_id):
                     {
                         "source": "user",
                         "description": row.description,
-                        "amount": display_transaction_amount(display_tx),
+                        "amount": display_transaction_amount(row),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                         "notes": row.notes,
                         "frequency": row.frequency,
