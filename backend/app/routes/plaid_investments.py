@@ -2,10 +2,11 @@ from app.config import logger
 from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
+    get_accounts,
     get_investments,
 )
-from app.models import PlaidItem
-from app.sql.account_logic import save_plaid_item
+from app.models import PlaidAccount
+from app.sql.account_logic import save_plaid_account, upsert_accounts
 from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
@@ -46,15 +47,12 @@ def exchange_public_token_investments():
         item_id = exchange_resp.get("item_id")
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
-        # For investments, you might fetch additional metadata if needed.
-        # Save the investments item in the DB.
-        save_plaid_item(
-            user_id,
-            item_id,
-            access_token,
-            institution_name="Investments",
-            product="investments",
-        )
+        accounts = get_accounts(access_token, user_id)
+        upsert_accounts(user_id, accounts, provider="Plaid", access_token=access_token)
+        for acct in accounts:
+            acct_id = acct.get("account_id")
+            if acct_id:
+                save_plaid_account(acct_id, item_id, access_token, "investments")
         # Save initial investments data (if you have specific logic, call it here)
         # e.g., account_logic.save_investments_data(user_id, access_token)
         return (
@@ -83,12 +81,12 @@ def refresh_investments_endpoint():
     if not user_id or not item_id:
         return jsonify({"error": "Missing user_id or item_id"}), 400
     try:
-        item = PlaidItem.query.filter_by(
-            item_id=item_id, user_id=user_id, product="investments"
+        account = PlaidAccount.query.filter_by(
+            item_id=item_id, product="investments"
         ).first()
-        if not item:
-            return jsonify({"error": "Investments item not found"}), 404
-        investments_data = get_investments(item.access_token)
+        if not account:
+            return jsonify({"error": "Investments account not found"}), 404
+        investments_data = get_investments(account.access_token)
         # Process and save investments data as needed.
         # For example, you might call account_logic.process_investments(user_id, investments_data)
         return (
