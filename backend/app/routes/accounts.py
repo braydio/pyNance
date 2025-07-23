@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 from app.config import logger
 from app.extensions import db
 from app.models import Account, RecurringTransaction
+from app.sql import account_logic
 from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import (
     display_transaction_amount,

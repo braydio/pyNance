@@ -38,10 +38,10 @@ def normalize_transaction_amount(amount, account_type):
 def display_transaction_amount(txn: Transaction) -> float:
     """Return the signed amount for display.
 
-    Blade reports expenses as positive values and income as negative values. For
-    a more intuitive UI, expenses should appear negative and income positive.
-    If ``transaction_type`` is available it will be honored, otherwise the sign
-    of ``txn.amount`` is used to infer the type.
+    Plaid reports expenses as positive values and income as negative values.
+    For a more intuitive UI, expenses should appear negative and income
+    positive. If ``transaction_type`` is available it will be honored,
+    otherwise the sign of ``txn.amount`` is used to infer the type.
     """
 
     amount = float(txn.amount)
@@ -53,7 +53,7 @@ def display_transaction_amount(txn: Transaction) -> float:
     if txn_type == "income":
         return abs(amount)
 
-    # Fallback: infer from stored sign (Blade uses positive for expenses)
+    # Fallback: infer from stored sign (Plaid uses positive for expenses)
     return -amount
 
 
