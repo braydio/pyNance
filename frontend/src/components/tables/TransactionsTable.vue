@@ -34,8 +34,10 @@
             <!-- Date -->
             <td class="px-4 py-2 font-mono text-xs text-neutral-400">{{ formatDate(tx.date) }}</td>
             <!-- Category -->
-            <td class="px-4 py-2">
-              <span
+            <td class="px-4 py-2 text-center">
+              <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="category icon"
+                class="h-5 w-5 mx-auto" loading="lazy" />
+              <span v-else
                 class="inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm">
                 {{ formatCategory(tx) }}
               </span>
