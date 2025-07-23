@@ -1,10 +1,12 @@
 # app/routes/recurring.py
 from datetime import date, datetime, timedelta, timezone
+from types import SimpleNamespace
 
 from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
+from app.utils.finance_utils import display_transaction_amount
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
@@ -151,7 +153,7 @@ def scan_account_for_recurring(account_id):
         )
         txs = [
             {
-                "amount": float(tx.amount),
+                "amount": display_transaction_amount(tx),
                 "description": tx.description or tx.merchant_name or "",
                 "date": tx.date.strftime("%Y-%m-%d"),
             }
@@ -207,11 +209,12 @@ def get_structured_recurring(account_id):
             if isinstance(next_due, datetime):
                 next_due = next_due.date()
             if 0 <= (next_due - today).days <= 7:
+                amt = display_transaction_amount(SimpleNamespace(amount=row.amount))
                 reminders.append(
                     {
                         "source": "auto",
                         "description": row.description,
-                        "amount": float(row.amount),
+                        "amount": amt,
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                     }
                 )
@@ -223,11 +226,12 @@ def get_structured_recurring(account_id):
                 continue
             next_due = row.next_due_date
             if 0 <= (next_due - today).days <= 7:
+                display_tx = getattr(row, "transaction", row)
                 reminders.append(
                     {
                         "source": "user",
                         "description": row.description,
-                        "amount": float(row.amount),
+                        "amount": display_transaction_amount(display_tx),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                         "notes": row.notes,
                         "frequency": row.frequency,
