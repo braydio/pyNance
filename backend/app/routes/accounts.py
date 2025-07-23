@@ -6,7 +6,10 @@ from app.config import logger
 from app.extensions import db
 from app.models import Account, RecurringTransaction
 from app.sql.forecast_logic import update_account_history
-from app.utils.finance_utils import normalize_account_balance
+from app.utils.finance_utils import (
+    display_transaction_amount,
+    normalize_account_balance,
+)
 from flask import Blueprint, jsonify, request
 
 # Blueprint for generic accounts routes
@@ -250,11 +253,12 @@ def get_recurring(account_id):
         ).all()
         data = []
         for tx in recurring_txs:
+            amount = display_transaction_amount(getattr(tx, "transaction", tx))
             data.append(
                 {
                     "id": tx.id,
                     "description": tx.description,
-                    "amount": tx.amount,
+                    "amount": amount,
                     "frequency": tx.frequency,
                     "next_due_date": (
                         tx.next_due_date.isoformat() if tx.next_due_date else None

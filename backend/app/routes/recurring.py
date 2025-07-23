@@ -1,10 +1,12 @@
 # app/routes/recurring.py
+import types
 from datetime import date, datetime, timedelta, timezone
 
 from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
+from app.utils.finance_utils import display_transaction_amount
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
@@ -151,7 +153,7 @@ def scan_account_for_recurring(account_id):
         )
         txs = [
             {
-                "amount": float(tx.amount),
+                "amount": display_transaction_amount(tx),
                 "description": tx.description or tx.merchant_name or "",
                 "date": tx.date.strftime("%Y-%m-%d"),
             }
@@ -207,11 +209,12 @@ def get_structured_recurring(account_id):
             if isinstance(next_due, datetime):
                 next_due = next_due.date()
             if 0 <= (next_due - today).days <= 7:
+                dummy_tx = types.SimpleNamespace(amount=row.amount)
                 reminders.append(
                     {
                         "source": "auto",
                         "description": row.description,
-                        "amount": float(row.amount),
+                        "amount": display_transaction_amount(dummy_tx),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                     }
                 )
@@ -227,7 +230,7 @@ def get_structured_recurring(account_id):
                     {
                         "source": "user",
                         "description": row.description,
-                        "amount": float(row.amount),
+                        "amount": display_transaction_amount(row),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
                         "notes": row.notes,
                         "frequency": row.frequency,
