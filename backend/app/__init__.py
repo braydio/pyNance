@@ -23,6 +23,7 @@ def create_app():
     from app.routes.forecast import forecast
     from app.routes.frontend import frontend
     from app.routes.institutions import institutions
+    from app.routes.investments import investments
     from app.routes.manual_io import manual_up
     from app.routes.plaid import plaid_routes
     from app.routes.plaid_investments import plaid_investments
@@ -47,6 +48,7 @@ def create_app():
     app.register_blueprint(plaid_routes, url_prefix="/api/plaid")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
+    app.register_blueprint(investments, url_prefix="/api/investments")
     app.register_blueprint(link_teller, url_prefix="/api/teller")
     app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
     app.register_blueprint(institutions, url_prefix="/api/institutions")
