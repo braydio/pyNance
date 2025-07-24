@@ -11,7 +11,11 @@ export default {
   async generateLinkToken(provider, payload = {}) {
     let url = ""
     if (provider === "plaid") {
-      url = "/plaid/transactions/generate_link_token"
+      const products = payload.products || []
+      const isInvestments = products.length === 1 && products[0] === "investments"
+      url = isInvestments
+        ? "/plaid/investments/generate_link_token"
+        : "/plaid/transactions/generate_link_token"
     } else if (provider === "teller") {
       url = "/teller/transactions/generate_link_token"
     }
@@ -29,7 +33,14 @@ export default {
       console.warn("Teller does not use public token exchange.")
       return { error: "Not supported for Teller" }
     }
-    const response = await apiClient.post(`/${provider}/transactions/exchange_public_token`, payload)
+    let url = `/${provider}/transactions/exchange_public_token`
+    if (provider === "plaid") {
+      const products = payload.products || []
+      if (products.length === 1 && products[0] === "investments") {
+        url = "/plaid/investments/exchange_public_token"
+      }
+    }
+    const response = await apiClient.post(url, payload)
     return response.data
   },
 
