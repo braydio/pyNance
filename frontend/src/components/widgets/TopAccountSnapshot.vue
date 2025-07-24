@@ -1,5 +1,5 @@
 <template>
-  <div class="bank-statement-list card bs-collapsible">
+  <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
       <button :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']" @click="toggle('assets')"
         aria-label="Show Assets">
@@ -9,9 +9,6 @@
         @click="toggle('liabilities')" aria-label="Show Liabilities">
         Liabilities
       </button>
-      <span class="bs-net-amount" :class="netTotal >= 0 ? 'bs-net-green' : 'bs-net-red'">
-        Net: {{ format(netTotal) }}
-      </span>
     </div>
 
     <Transition name="bs-slide">
@@ -31,6 +28,14 @@
             <span class="bs-amount bs-amount-green">
               +{{ format(account.adjusted_balance) }}
             </span>
+          </div>
+        </li>
+        <!-- Assets summary footer -->
+        <li v-if="assetAccounts.length" class="bs-summary-row">
+          <div></div>
+          <div class="bs-summary-label">Total Assets</div>
+          <div class="bs-summary-amount bs-amount-green">
+            {{ format(totalAssets) }}
           </div>
         </li>
       </ul>
@@ -53,6 +58,14 @@
             <span class="bs-amount bs-amount-yellow">
               –{{ format(account.adjusted_balance) }}
             </span>
+          </div>
+        </li>
+        <!-- Liabilities summary footer -->
+        <li v-if="liabilityAccounts.length" class="bs-summary-row">
+          <div></div>
+          <div class="bs-summary-label">Total Liabilities</div>
+          <div class="bs-summary-amount bs-amount-yellow">
+            {{ format(totalLiabilities) }}
           </div>
         </li>
       </ul>
@@ -88,7 +101,7 @@ const assetAccounts = computed(() =>
     ? [...allVisibleAccounts.value]
       .filter(a => a.adjusted_balance >= 0)
       .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
-      .slice(0, 5)
+      .slice(0, 7)
     : []
 )
 const liabilityAccounts = computed(() =>
@@ -96,11 +109,16 @@ const liabilityAccounts = computed(() =>
     ? [...allVisibleAccounts.value]
       .filter(a => a.adjusted_balance < 0)
       .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
-      .slice(0, 5)
+      .slice(0, 7)
     : []
 )
-const netTotal = computed(() => assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0) +
-  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0))
+
+const totalAssets = computed(() =>
+  assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0)
+)
+const totalLiabilities = computed(() =>
+  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0)
+)
 
 const format = val =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val)
@@ -117,14 +135,16 @@ function initials(name) {
 
 <style scoped>
 .bank-statement-list {
-  max-width: 550px;
-  margin: 1.5rem auto;
-  padding: 0.1rem 0.1rem 1.1rem 0.1rem;
+  max-width: unset;
+  margin: 0;
+  padding: 0;
   border-radius: 1.3rem;
-  background: var(--color-bg-sec);
-  box-shadow: 0 4px 32px var(--shadow, rgba(25, 62, 133, 0.18));
-  border: 2px solid var(--color-accent-ice);
   user-select: none;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  box-shadow: none;
+  border: none;
 }
 
 .bs-toggle-row {
@@ -132,18 +152,18 @@ function initials(name) {
   align-items: center;
   justify-content: flex-start;
   gap: 0.7rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.1rem;
   background: transparent;
   border-radius: 1rem 1rem 0 0;
 }
 
 .bs-tab {
-  padding: 1.05rem 2.2rem 1.05rem 1.5rem;
+  padding: 0.7rem 1.5rem 0.7rem 1.1rem;
   background: var(--color-bg-dark);
   color: var(--color-accent-ice);
   border: none;
   border-radius: 0.9rem 0.9rem 0 0;
-  font-size: 1.11rem;
+  font-size: 1.03rem;
   font-weight: 600;
   transition: background 0.17s, color 0.17s;
   cursor: pointer;
@@ -175,48 +195,28 @@ function initials(name) {
   color: var(--color-accent-yellow);
 }
 
-.bs-net-amount {
-  margin-left: auto;
-  padding: 0.7rem 1.1rem 0.7rem 1.2rem;
-  font-size: 1.11rem;
-  font-weight: 700;
-  border-radius: 0.7rem;
-  background: var(--color-bg-dark);
-  color: var(--color-accent-mint);
-  border: 1.5px solid var(--color-accent-ice);
-  letter-spacing: 0.01em;
-}
-
-.bs-net-green {
-  color: var(--color-accent-mint);
-  background: rgba(40, 255, 200, 0.07);
-}
-
-.bs-net-red {
-  color: var(--color-accent-yellow);
-  background: rgba(255, 220, 40, 0.08);
-}
-
 .bs-list {
   display: flex;
   flex-direction: column;
-  gap: 1.11rem;
+  gap: 1.46rem;
+  /* Increased gap for more separation */
   margin: 0;
-  padding: 0.5rem 0.6rem 0.3rem 0.2rem;
+  padding: 0.22rem 0.22rem 0.22rem 0.16rem;
   list-style: none;
 }
 
 .bs-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
-  padding: 0.89rem 1.1rem 0.89rem 0.1rem;
+  padding: 0.39rem 0.45rem 0.39rem 0.1rem;
   box-shadow: 0 2px 14px var(--shadow, #1c274055);
   position: relative;
   border: 2px solid var(--color-accent-ice);
-  min-height: 54px;
-  gap: 1.08rem;
+  min-height: 36px;
+  gap: 0.45rem;
   will-change: transform, box-shadow;
   overflow: hidden;
 }
@@ -250,23 +250,22 @@ function initials(name) {
 }
 
 .bs-logo-container {
-  width: 42px;
-  height: 42px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: var(--color-bg-dark);
   box-shadow: 0 2px 10px var(--shadow, #364b7a16);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 0.59rem;
   z-index: 2;
   border: 1.7px solid var(--color-accent-ice);
   overflow: hidden;
 }
 
 .bs-logo {
-  width: 34px;
-  height: 34px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
   display: block;
   border-radius: 50%;
@@ -274,12 +273,12 @@ function initials(name) {
 }
 
 .bs-logo-fallback {
-  font-size: 1.08rem;
+  font-size: 0.89rem;
   font-weight: 700;
   color: var(--color-accent-ice);
   text-align: center;
-  width: 32px;
-  height: 32px;
+  width: 18px;
+  height: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -288,48 +287,55 @@ function initials(name) {
 }
 
 .bs-details {
+  min-width: 0;
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
-  min-width: 0;
+  justify-content: center;
   z-index: 2;
+  overflow: hidden;
 }
 
 .bs-name {
-  font-size: 1.10rem;
+  font-size: 0.97rem;
   font-weight: 600;
   color: var(--color-accent-ice);
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
   overflow: hidden;
+  max-width: 100%;
 }
 
 .bs-mask {
-  font-size: 0.98rem;
+  font-size: 0.81rem;
   color: var(--color-accent-mint);
   opacity: 0.87;
-  margin-top: 2.5px;
+  margin-top: 1px;
   letter-spacing: 0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .bs-amount-section {
   display: flex;
-  align-items: center;
-  gap: 0.22rem;
-  margin-left: 1.1rem;
+  align-items: flex-end;
+  justify-content: flex-end;
+  height: 100%;
   z-index: 2;
 }
 
 .bs-amount {
-  font-size: 1.22rem;
+  font-size: 1.01rem;
   font-weight: 700;
   letter-spacing: 0.01em;
-  min-width: 5.3ch;
-  display: inline-block;
+  min-width: 4.6ch;
   text-align: right;
-  padding-right: 0.15em;
-  margin-left: 0.1em;
+  padding-right: 0.13em;
+  margin-left: 0.2em;
+  word-break: keep-all;
 }
 
 .bs-amount-green {
@@ -345,7 +351,31 @@ function initials(name) {
   font-style: italic;
   padding: 1.2rem 0 0.7rem 0;
   text-align: center;
-  font-size: 1.07rem;
+  font-size: 1.01rem;
+}
+
+.bs-summary-row {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  border-top: 1.5px solid var(--color-accent-ice);
+  margin-top: 0.12rem;
+  padding: 0.18rem 0.12rem 0.12rem 0.06rem;
+  background: transparent;
+  min-height: 24px;
+}
+
+.bs-summary-label {
+  font-size: 0.91rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-align: right;
+}
+
+.bs-summary-amount {
+  font-size: 1.02rem;
+  font-weight: 700;
+  text-align: right;
 }
 
 /* Animations */
@@ -367,23 +397,26 @@ function initials(name) {
 /* Responsive */
 @media (max-width: 630px) {
   .bank-statement-list {
-    padding: 0.25rem 0.08rem 0.6rem 0.08rem;
+    padding: 0.18rem 0.08rem 0.45rem 0.08rem;
     max-width: 99vw;
   }
 
-  .bs-tab,
-  .bs-net-amount {
-    padding: 0.66rem 0.9rem 0.66rem 0.9rem;
-    font-size: 0.96rem;
+  .bs-tab {
+    padding: 0.54rem 0.9rem 0.54rem 0.8rem;
+    font-size: 0.89rem;
   }
 
   .bs-list {
-    padding: 0.1rem 0.05rem 0.2rem 0.08rem;
+    padding: 0.1rem 0.05rem 0.1rem 0.05rem;
   }
 
   .bs-row {
-    padding: 0.62rem 0.35rem 0.62rem 0.05rem;
-    min-height: 42px;
+    padding: 0.32rem 0.22rem 0.32rem 0.05rem;
+    min-height: 27px;
+  }
+
+  .bs-summary-row {
+    padding: 0.12rem 0.08rem 0.09rem 0.04rem;
   }
 }
 </style>

@@ -14,13 +14,13 @@
     </div>
     <div class="w-20 h-3 rounded bg-[var(--color-accent-ice)] mb-6"></div>
     <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
-      <!-- TOP ROW: Net Snapshot & Net Income -->
+      <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
-        <!-- Account Snapshot Card -->
+        <!-- Top Accounts Snapshot Card -->
         <div
           class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-ice)] p-6 flex flex-col justify-between">
-          <h2 class="text-xl font-bold mb-2 text-[var(--color-accent-ice)]">Accounts Overview</h2>
-          <AccountSnapshot />
+          <h2 class="text-xl font-bold mb-2 text-[var(--color-accent-ice)]">Top Accounts</h2>
+          <TopAccountSnapshot />
         </div>
         <!-- Net Income Summary Card -->
         <div
@@ -163,6 +163,7 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
+import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'

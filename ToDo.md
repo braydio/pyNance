@@ -63,6 +63,8 @@
 - Fix non-functional components.
 - Refactor for consistent UI/UX.
 - Audit data display logic per component.
+- Properly handle account deactivation + deletions
+- Integrate the Plaid removal endpoint upon deletion in the Accounts table
 
 ---
 
