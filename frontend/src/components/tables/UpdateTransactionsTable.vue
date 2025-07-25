@@ -142,6 +142,7 @@ import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
 import { useToast } from 'vue-toastification'
 
+import { formatAmount } from '@/utils/format'
 const toast = useToast()
 const emit = defineEmits(['editRecurringFromTransaction'])
 const props = defineProps({ transactions: Array })
@@ -219,16 +220,6 @@ function formatDate(dateStr) {
   })
 }
 
-function formatAmount(amount) {
-  const number = parseFloat(amount)
-  const formatter = new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    currencySign: 'accounting',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })
-  return formatter.format(number)
 }
 
 function sortBy(key) {

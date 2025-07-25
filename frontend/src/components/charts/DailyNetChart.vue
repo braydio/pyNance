@@ -8,6 +8,7 @@
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
+import { formatAmount } from "@/utils/format"
 
 const props = defineProps({
   zoomedOut: { type: Boolean, default: false }
@@ -117,7 +118,7 @@ async function renderChart() {
         tooltip: {
           callbacks: {
             label: (context) => {
-              return `${context.dataset.label}: $${context.parsed.y.toLocaleString()}`
+              return `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
             },
           },
           backgroundColor: getStyle('--theme-bg'),
@@ -144,9 +145,7 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => value < 0
-              ? `($${Math.abs(value).toLocaleString()})`
-              : `$${value.toLocaleString()}`,
+            callback: value => formatAmount(value),
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },

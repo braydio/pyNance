@@ -94,6 +94,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchNetChanges, fetchRecentTransactions } from '@/api/accounts'
+import { formatAmount } from "@/utils/format"
 
 // State
 const selectedProducts = ref([])
@@ -132,9 +133,6 @@ function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
 
-function formatAmount(val) {
-  const num = Number(val || 0)
-  return num.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
 }
 
 onMounted(async () => {

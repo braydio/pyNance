@@ -390,6 +390,8 @@ def match_account_by_fields():
 def account_net_changes(account_id):
     """Return net income and expense totals for an account."""
     try:
+        from app.sql import account_logic
+
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
 

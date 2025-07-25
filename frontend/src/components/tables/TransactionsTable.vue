@@ -55,7 +55,7 @@
             <!-- Amount -->
             <td class="px-4 py-2 font-mono text-right text-base font-semibold" :class="{
               'text-blue-300': tx.amount > 0,
-              'text-pink-400': tx.amount < 0,
+              'text-red-400': tx.amount < 0,
               'text-neutral-500': tx.amount === 0 || !tx.amount
             }">
               {{ formatAmount(tx.amount) }}
@@ -75,6 +75,7 @@
 <script>
 import { onMounted, ref, computed } from 'vue'
 import Chart from 'chart.js/auto'
+import { formatAmount as formatCurrency } from '@/utils/format'
 
 export default {
   name: "TransactionsTable",
@@ -165,14 +166,7 @@ export default {
       })
     }
     const formatAmount = amount => {
-      const number = parseFloat(amount)
-      if (isNaN(number)) return "N/A"
-      return number.toLocaleString('en-US', {
-        style: 'currency',
-        currency: 'USD',
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      })
+      return formatCurrency(amount)
     }
     const formatAccount = tx => {
       let parts = []

@@ -10,6 +10,7 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
+import { formatAmount } from "@/utils/format"
 
 const props = defineProps({
   startDate: { type: String, required: true },
@@ -122,10 +123,8 @@ async function renderChart() {
         tooltip: {
           callbacks: {
             label: context => {
-              const val = context.raw ?? 0
-              return val < 0
-                ? `($${Math.abs(val).toLocaleString()})`
-                : `$${val.toLocaleString()}`
+              const val = context.raw ?? 0;
+              return formatAmount(val);
             },
           },
           backgroundColor: getStyle('--theme-bg'),
@@ -149,9 +148,7 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => value < 0
-              ? `($${Math.abs(value).toLocaleString()})`
-              : `$${value.toLocaleString()}`,
+            callback: value => formatAmount(value),
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
