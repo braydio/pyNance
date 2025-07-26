@@ -1,0 +1,11 @@
+services:
+  fidelity_worker:
+    build:
+      context: ./fidelity_worker
+    env_file:
+      - ./.env
+    volumes:
+      - ./fidelity_worker:/app
+    ports:
+      - "5001:5001"
+    restart: unless-stopped

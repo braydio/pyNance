@@ -4,6 +4,8 @@ import os
 import sys
 import types
 
+import pytest
+
 
 def load_plaid_helpers(tmp_path):
     """Load plaid_helpers with stubs and return module and token path."""
@@ -73,6 +75,16 @@ def load_plaid_helpers(tmp_path):
     plaid_helpers = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(plaid_helpers)  # type: ignore[attr-defined]
     return plaid_helpers, token_path
+
+
+@pytest.fixture(autouse=True)
+def restore_extensions():
+    original = sys.modules.get("app.extensions")
+    yield
+    if original is not None:
+        sys.modules["app.extensions"] = original
+    else:
+        sys.modules.pop("app.extensions", None)
 
 
 def test_load_tokens_returns_empty_when_missing(tmp_path):

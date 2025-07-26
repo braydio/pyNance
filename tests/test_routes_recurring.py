@@ -9,8 +9,13 @@ import pytest
 from flask import Flask
 
 # Patch 'app' into sys.modules so Flask can load Blueprints
-if "app" not in sys.modules:
-    sys.modules["app"] = types.ModuleType("app")
+pkg = types.ModuleType("app")
+pkg.__path__ = [
+    os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "backend", "app")
+]
+sys.modules["app"] = pkg
+
+_orig_extensions = sys.modules.get("app.extensions")
 # ------------------------------
 # Environment Setup
 # ------------------------------
@@ -40,6 +45,19 @@ sys.modules["app.config.environment"] = env_stub
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
+finance_stub = types.ModuleType("app.utils.finance_utils")
+finance_stub.display_transaction_amount = lambda tx: getattr(tx, "amount", 0)
+sys.modules["app.utils.finance_utils"] = finance_stub
+
+
+@pytest.fixture(autouse=True)
+def restore_modules():
+    yield
+    if _orig_extensions is not None:
+        sys.modules["app.extensions"] = _orig_extensions
+    else:
+        sys.modules.pop("app.extensions", None)
+
 
 models_stub = types.ModuleType("app.models")
 

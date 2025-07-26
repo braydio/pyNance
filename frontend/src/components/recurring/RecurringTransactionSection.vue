@@ -70,6 +70,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { scanRecurringTransactions } from '@/api/recurring'
 import axios from 'axios'
+import { formatAmount } from "@/utils/format"
 
 const route = useRoute()
 const accountId = route.params.accountId || '1'
@@ -155,13 +156,6 @@ async function saveRecurring() {
   }
 }
 
-const formatAmount = (val) => {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-  }).format(parseFloat(val || 0))
-}
-
 onMounted(async () => {
   try {
     const res = await axios.get(`/api/accounts/${accountId}/recurring`)
@@ -177,6 +171,7 @@ onMounted(async () => {
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .recurring-manager {
   width: 100%;
   margin-top: 2rem;
