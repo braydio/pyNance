@@ -22,4 +22,3 @@ export function formatAmount(amount) {
 
   return num < 0 ? `(${formatted})` : formatted;
 }
-  

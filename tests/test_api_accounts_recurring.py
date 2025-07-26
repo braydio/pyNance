@@ -2,7 +2,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime, date
+from datetime import date, datetime
 
 import pytest
 from flask import Flask
