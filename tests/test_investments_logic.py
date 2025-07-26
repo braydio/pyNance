@@ -1,5 +1,7 @@
 import importlib.util
 import os
+import sys
+import types
 
 import pytest
 from flask import Flask
@@ -11,6 +13,7 @@ def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    sys.modules[name] = module
     return module
 
 
@@ -18,6 +21,17 @@ def setup_app(tmp_path):
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path}/test.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    config_stub = types.ModuleType("app.config")
+    config_stub.logger = types.SimpleNamespace(
+        info=lambda *a, **k: None,
+        debug=lambda *a, **k: None,
+        warning=lambda *a, **k: None,
+        error=lambda *a, **k: None,
+    )
+    config_stub.plaid_client = None
+    config_stub.FILES = {}
+    sys.modules["app.config"] = config_stub
 
     extensions = load_module(
         "app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py")
@@ -34,6 +48,7 @@ def db_ctx(tmp_path):
             "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
         )
         import sys
+
         sys.modules["app.models"] = models
         logic = load_module(
             "app.sql.investments_logic",
