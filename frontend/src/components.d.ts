@@ -59,6 +59,8 @@ declare module 'vue' {
     Settings: typeof import('./components/unused/Settings.vue')['default']
     Toast: typeof import('./components/base/Toast.vue')['default']
     TokenUpload: typeof import('./components/forms/TokenUpload.vue')['default']
+    TopAccountsChart: typeof import('./components/charts/TopAccountsChart.vue')['default']
+    TopAccountSnapshot: typeof import('./components/widgets/TopAccountSnapshot.vue')['default']
     TransactionModal: typeof import('./components/modals/TransactionModal.vue')['default']
     TransactionsTable: typeof import('./components/tables/TransactionsTable.vue')['default']
     UpdateTransactionsTable: typeof import('./components/tables/UpdateTransactionsTable.vue')['default']

@@ -54,42 +54,23 @@
       </thead>
 
       <tbody>
-        <tr
-          v-for="(tx, index) in filteredTransactions"
-          :key="tx.transaction_id"
-          :class="[
-            'text-sm',
-            editingIndex === index
-              ? 'bg-[var(--color-bg-sec)]'
-              : 'hover:bg-[var(--hover)-light]',
-          ]"
-        >
+        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id" :class="[
+          'text-sm',
+          editingIndex === index
+            ? 'bg-[var(--color-bg-sec)]'
+            : 'hover:bg-[var(--hover)-light]',
+        ]">
           <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.date"
-              type="date"
-              class="input"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
             <span v-else>{{ formatDate(tx.date) }}</span>
           </td>
           <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model.number="editBuffer.amount"
-              type="number"
-              step="0.01"
-              class="input"
-            />
+            <input v-if="editingIndex === index" v-model.number="editBuffer.amount" type="number" step="0.01"
+              class="input" />
             <span v-else>{{ formatAmount(tx.amount) }}</span>
           </td>
           <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.description"
-              type="text"
-              class="input"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.description" type="text" class="input" />
             <span v-else>{{ tx.description }}</span>
           </td>
           <td class="px-3 py-2">
@@ -104,12 +85,7 @@
             <span v-else>{{ tx.category }}</span>
           </td>
           <td class="px-3 py-2">
-            <input
-              v-if="editingIndex === index"
-              v-model="editBuffer.merchant_name"
-              type="text"
-              class="input"
-            />
+            <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text" class="input" />
             <span v-else>{{ tx.merchant_name }}</span>
           </td>
           <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
@@ -220,8 +196,6 @@ function formatDate(dateStr) {
   })
 }
 
-}
-
 function sortBy(key) {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
@@ -260,6 +234,7 @@ onMounted(async () => {
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .input {
   @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
 }

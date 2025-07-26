@@ -73,6 +73,7 @@ const linkPlaid = async () => {
         await accountLinkApi.exchangePublicToken('plaid', {
           public_token,
           user_id: props.userId,
+          products: props.selectedProducts,
         })
         emit('refresh')
       },
