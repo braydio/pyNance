@@ -156,8 +156,6 @@ async function saveRecurring() {
   }
 }
 
-}
-
 onMounted(async () => {
   try {
     const res = await axios.get(`/api/accounts/${accountId}/recurring`)
@@ -173,6 +171,7 @@ onMounted(async () => {
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .recurring-manager {
   width: 100%;
   margin-top: 2rem;

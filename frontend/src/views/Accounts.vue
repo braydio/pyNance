@@ -46,9 +46,12 @@
       <div v-if="loadingSummary">Loading summary...</div>
       <div v-else-if="summaryError" class="text-error">Failed to load summary</div>
       <div v-else class="flex justify-around">
-        <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">{{ formatAmount(netSummary.income) }}</span></div>
-        <div>Expense: <span class="font-bold text-[var(--color-accent-red)]">{{ formatAmount(netSummary.expense) }}</span></div>
-        <div>Net: <span class="font-bold text-[var(--color-accent-yellow)]">{{ formatAmount(netSummary.net) }}</span></div>
+        <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">{{ formatAmount(netSummary.income)
+        }}</span></div>
+        <div>Expense: <span class="font-bold text-[var(--color-accent-red)]">{{ formatAmount(netSummary.expense)
+        }}</span></div>
+        <div>Net: <span class="font-bold text-[var(--color-accent-yellow)]">{{ formatAmount(netSummary.net) }}</span>
+        </div>
       </div>
     </section>
 
@@ -133,8 +136,6 @@ function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
 
-}
-
 onMounted(async () => {
   loadingSummary.value = true
   loadingTransactions.value = true
@@ -174,6 +175,7 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 
 <style scoped>
 @reference "../assets/css/main.css";
+
 .username {
   @apply text-[var(--color-accent-ice)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);
