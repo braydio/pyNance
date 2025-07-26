@@ -1,7 +1,7 @@
 # File: app/__init__.py
 
 from app.cli.sync import sync_accounts
-from app.config import FLASK_ENV, logger, plaid_client
+from app.config import logger, plaid_client
 from app.config.environment import TELLER_WEBHOOK_SECRET
 from app.extensions import db
 from flask import Flask
@@ -58,11 +58,6 @@ def create_app():
     else:
         app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
     app.cli.add_command(sync_accounts)
-
-    # DEV-only DB setup
-    if FLASK_ENV == "development":
-        with app.app_context():
-            db.create_all()
 
     if plaid_client:
         logger.info("Plaid client initialized.")

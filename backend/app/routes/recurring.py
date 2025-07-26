@@ -1,7 +1,6 @@
 # app/routes/recurring.py
 import types
 from datetime import date, datetime, timedelta, timezone
-from types import SimpleNamespace
 
 from app.config import logger
 from app.extensions import db
@@ -227,7 +226,7 @@ def get_structured_recurring(account_id):
                 continue
             next_due = row.next_due_date
             if 0 <= (next_due - today).days <= 7:
-                display_tx = getattr(row, "transaction", row)
+                getattr(row, "transaction", row)
                 reminders.append(
                     {
                         "source": "user",
