@@ -6,7 +6,6 @@ from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
-from app.utils.finance_utils import display_transaction_amount
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
@@ -151,6 +150,8 @@ def scan_account_for_recurring(account_id):
             .order_by(Transaction.date.desc())
             .all()
         )
+        from app.utils.finance_utils import display_transaction_amount
+
         txs = [
             {
                 "amount": display_transaction_amount(tx),
@@ -180,6 +181,8 @@ def scan_account_for_recurring(account_id):
 def get_structured_recurring(account_id):
     """Return a list of upcoming recurring payment reminders (user-defined + auto-detected)."""
     try:
+        from app.utils.finance_utils import display_transaction_amount
+
         today = date.today()
         recent_cutoff = today - timedelta(days=90)
         reminders = []
