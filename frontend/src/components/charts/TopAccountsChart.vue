@@ -39,7 +39,7 @@
     <Transition name="bs-slide">
       <ul v-if="expanded === 'liabilities'" class="bs-list">
         <li v-for="account in liabilityAccounts" :key="account.id" class="bs-row bs-row-liability">
-          <div class="bs-stripe bs-stripe-yellow"></div>
+          <div class="bs-stripe bs-stripe-red"></div>
           <div class="bs-logo-container">
             <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
               loading="lazy" />
@@ -50,7 +50,7 @@
             <div class="bs-mask">•••• {{ mask(account.mask) }}</div>
           </div>
           <div class="bs-amount-section">
-            <span class="bs-amount bs-amount-yellow">
+            <span class="bs-amount bs-amount-red">
               –{{ format(account.adjusted_balance) }}
             </span>
           </div>
@@ -116,14 +116,16 @@ function initials(name) {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
+
 .bank-statement-list {
   max-width: 550px;
   margin: 1.5rem auto;
-  padding: 0.1rem 0.1rem 1.1rem 0.1rem;
+  padding: 0.1rem 0.1rem 1rem 0.1rem;
   border-radius: 1.3rem;
-  background: var(--color-bg-sec);
-  box-shadow: 0 4px 32px var(--shadow, rgba(25, 62, 133, 0.18));
-  border: 2px solid var(--color-accent-ice);
+  background: #1a2340;
+  box-shadow: 0 4px 36px #193e854d;
+  border: 1.5px solid #22356a;
   user-select: none;
 }
 
@@ -139,40 +141,40 @@ function initials(name) {
 
 .bs-tab {
   padding: 1.05rem 2.2rem 1.05rem 1.5rem;
-  background: var(--color-bg-dark);
-  color: var(--color-accent-ice);
+  background: #232f53;
+  color: #b5cdf6;
   border: none;
   border-radius: 0.9rem 0.9rem 0 0;
   font-size: 1.11rem;
   font-weight: 600;
   transition: background 0.17s, color 0.17s;
   cursor: pointer;
-  box-shadow: 0 1px 6px var(--shadow, #2a448a0d);
+  box-shadow: 0 1px 6px #2a448a0d;
   position: relative;
 }
 
 .bs-tab-active.bs-tab-assets {
-  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
+  background: linear-gradient(90deg, #182e5d 60%, #19e68a23 100%);
+  color: #7cf2bf;
   z-index: 2;
 }
 
 .bs-tab-active.bs-tab-liabilities {
-  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-yellow) 100%);
-  color: var(--color-accent-yellow);
+  background: linear-gradient(90deg, #213b6a 60%, #fa606023 100%);
+  color: #ffa9a9;
   z-index: 2;
 }
 
 .bs-tab-assets:hover,
 .bs-tab-assets:focus-visible {
-  background: linear-gradient(90deg, var(--color-bg-dark) 90%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
+  background: linear-gradient(90deg, #233d7a 90%, #19e68a23 100%);
+  color: #8df6c5;
 }
 
 .bs-tab-liabilities:hover,
 .bs-tab-liabilities:focus-visible {
-  background: linear-gradient(90deg, var(--color-bg-dark) 85%, var(--color-accent-yellow) 100%);
-  color: var(--color-accent-yellow);
+  background: linear-gradient(90deg, #25417e 80%, #fa606023 100%);
+  color: #ffb1b1;
 }
 
 .bs-net-amount {
@@ -181,20 +183,20 @@ function initials(name) {
   font-size: 1.11rem;
   font-weight: 700;
   border-radius: 0.7rem;
-  background: var(--color-bg-dark);
-  color: var(--color-accent-mint);
-  border: 1.5px solid var(--color-accent-ice);
+  background: #203059;
+  color: #a7f1e8;
+  border: 1.1px solid #344e86;
   letter-spacing: 0.01em;
 }
 
 .bs-net-green {
-  color: var(--color-accent-mint);
-  background: rgba(40, 255, 200, 0.07);
+  color: #78ffc9;
+  background: #243f3c;
 }
 
 .bs-net-red {
-  color: var(--color-accent-yellow);
-  background: rgba(255, 220, 40, 0.08);
+  color: #ffb2b2;
+  background: #3d2525;
 }
 
 .bs-list {
@@ -206,15 +208,17 @@ function initials(name) {
   list-style: none;
 }
 
+/* Bank row styling */
 .bs-row {
   display: flex;
   align-items: center;
-  background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
+  background: linear-gradient(90deg, #242f4d 80%, #253e70 100%);
   border-radius: 11px;
   padding: 0.89rem 1.1rem 0.89rem 0.1rem;
-  box-shadow: 0 2px 14px var(--shadow, #1c274055);
+  box-shadow: 0 2px 14px #1c274055;
   position: relative;
-  border: 2px solid var(--color-accent-ice);
+  border: 1.5px solid #263c66;
+  transition: box-shadow 0.17s, background 0.16s, transform 0.12s;
   min-height: 54px;
   gap: 1.08rem;
   will-change: transform, box-shadow;
@@ -222,11 +226,11 @@ function initials(name) {
 }
 
 .bs-row-asset {
-  border-left: 6px solid var(--color-accent-mint);
+  border-left: 6px solid #3cf8b2;
 }
 
 .bs-row-liability {
-  border-left: 6px solid var(--color-accent-yellow);
+  border-left: 6px solid #ff8e8e;
 }
 
 .bs-stripe {
@@ -242,25 +246,25 @@ function initials(name) {
 }
 
 .bs-stripe-green {
-  background: linear-gradient(180deg, var(--color-accent-mint) 20%, var(--color-accent-ice) 100%);
+  background: linear-gradient(180deg, #39ffab 20%, #19e68a 100%);
 }
 
-.bs-stripe-yellow {
-  background: linear-gradient(180deg, var(--color-accent-yellow) 20%, #ffe89b 100%);
+.bs-stripe-red {
+  background: linear-gradient(180deg, #ff6262 20%, #fa6060 100%);
 }
 
 .bs-logo-container {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  background: var(--color-bg-dark);
-  box-shadow: 0 2px 10px var(--shadow, #364b7a16);
+  background: #222c4b;
+  box-shadow: 0 2px 10px #364b7a16;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-right: 0.59rem;
   z-index: 2;
-  border: 1.7px solid var(--color-accent-ice);
+  border: 1.3px solid #243266;
   overflow: hidden;
 }
 
@@ -276,7 +280,8 @@ function initials(name) {
 .bs-logo-fallback {
   font-size: 1.08rem;
   font-weight: 700;
-  color: var(--color-accent-ice);
+  color: #bac3de;
+  letter-spacing: 0.04em;
   text-align: center;
   width: 32px;
   height: 32px;
@@ -284,7 +289,7 @@ function initials(name) {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--color-bg-sec);
+  background: #37446d;
 }
 
 .bs-details {
@@ -298,7 +303,7 @@ function initials(name) {
 .bs-name {
   font-size: 1.10rem;
   font-weight: 600;
-  color: var(--color-accent-ice);
+  color: #e4f1ff;
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -307,8 +312,8 @@ function initials(name) {
 
 .bs-mask {
   font-size: 0.98rem;
-  color: var(--color-accent-mint);
-  opacity: 0.87;
+  color: #8ca1d6;
+  opacity: 0.83;
   margin-top: 2.5px;
   letter-spacing: 0.03em;
 }
@@ -333,15 +338,15 @@ function initials(name) {
 }
 
 .bs-amount-green {
-  color: var(--color-accent-mint);
+  color: #39ffab;
 }
 
-.bs-amount-yellow {
-  color: var(--color-accent-yellow);
+.bs-amount-red {
+  color: #ff8e8e;
 }
 
 .bs-empty {
-  color: var(--color-text-muted);
+  color: #acb7d1;
   font-style: italic;
   padding: 1.2rem 0 0.7rem 0;
   text-align: center;

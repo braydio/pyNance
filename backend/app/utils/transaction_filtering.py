@@ -1,6 +1,5 @@
 # backend/app/utils/transaction_filtering.py
 
-from datetime import timedelta
 
 
 def collapse_internal_transfers(transactions, date_epsilon=1, amount_epsilon=0.01):
@@ -59,7 +58,6 @@ def deduplicate_transactions(transactions, amount_epsilon=0.01, date_epsilon=1):
     for i, txn in enumerate(transactions):
         if txn in seen:
             continue
-        is_duplicate = False
         for other in transactions[i + 1 :]:
             if other in seen:
                 continue
@@ -69,6 +67,5 @@ def deduplicate_transactions(transactions, amount_epsilon=0.01, date_epsilon=1):
                 and txn.description == other.description
             ):
                 seen.add(other)
-                is_duplicate = True
         deduped.append(txn)
     return deduped
