@@ -35,26 +35,6 @@
                   {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
                 </button>
               </template>
-              <template #summary>
-                <div>
-                  Income:
-                  <span class="font-bold text-[var(--color-accent-mint)]">
-                    {{ formatAmount(netSummary.totalIncome) }}
-                  </span>
-                </div>
-                <div>
-                  Expenses:
-                  <span class="font-bold text-red-400">
-                    {{ formatAmount(netSummary.totalExpenses) }}
-                  </span>
-                </div>
-                <div
-                  class="font-bold text-lg"
-                  :class="{ 'text-red-400': netSummary.totalNet < 0, 'text-[var(--color-accent-mint)]': netSummary.totalNet >= 0 }"
-                >
-                  Net Total: {{ formatAmount(netSummary.totalNet) }}
-                </div>
-              </template>
             </ChartWidgetTopBar>
           </div>
           <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
@@ -89,13 +69,7 @@
                 <input type="date" v-model="catRange.end"
                   class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
-                  @update:modelValue="onCatSelected" class="w-64" />
-              </template>
-              <template #summary>
-                <span class="text-sm">Total:</span>
-                <span class="font-bold text-lg text-[var(--color-accent-mint)]">
-                  {{ formatAmount(catSummary.total) }}
-                </span>
+                  @update:modelValue="onCatSelected" class="w-64 ml-2" />
               </template>
             </ChartWidgetTopBar>
           </div>

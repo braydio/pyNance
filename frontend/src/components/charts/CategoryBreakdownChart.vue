@@ -4,9 +4,8 @@
   </div>
 </template>
 
-
 <script setup>
-import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -45,45 +44,35 @@ function getStyle(name) {
     .trim()
 }
 
-const totalSpending = computed(() => sumAmounts(categoryTree.value))
-
-function sumAmounts(nodes) {
-  return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
-    return sum + subtotal
-  }, 0)
-}
-
-function extractBars(tree, selectedIds = []) {
-  let bars
-  if (selectedIds && selectedIds.length) {
-    bars = tree.filter(node => selectedIds.includes(node.id))
-  } else {
-    bars = tree
-  }
-  if (!bars.length && tree.length) {
-    bars = tree
-  }
-  return {
-    labels: bars.map(b => b.label),
-    data: bars.map(b => b.amount),
-    colors: bars.map((b, idx) => getGroupColor(idx)),
-  }
-}
-
-function handleBarClick(evt) {
-  if (!chartInstance.value) return
-  const points = chartInstance.value.getElementsAtEventForMode(
-    evt,
-    'nearest',
-    { intersect: true },
-    false,
+function extractStackedBarData(tree, selectedIds = []) {
+  // Show parent only if any of its children is selected
+  const parents = tree.filter(
+    node =>
+      node.children && node.children.some(child => selectedIds.includes(child.id))
   )
-  if (points.length) {
-    const index = points[0].index
-    const label = chartInstance.value.data.labels[index]
-    emit('bar-click', label)
-  }
+  const labels = parents.map(p => p.label)
+  // All visible children (segments)
+  const allChildLabels = [
+    ...new Set(
+      parents.flatMap(p =>
+        (p.children || []).filter(c => selectedIds.includes(c.id)).map(c => c.label)
+      )
+    )
+  ]
+  // Datasets: Only selected children
+  const datasets = allChildLabels.map((childLabel, colorIdx) => ({
+    label: childLabel,
+    data: parents.map(p => {
+      const child = (p.children || []).find(c => c.label === childLabel)
+      return (child && selectedIds.includes(child.id)) ? child.amount : 0
+    }),
+    backgroundColor: getGroupColor(colorIdx),
+    borderWidth: 2,
+    borderSkipped: false,
+    barPercentage: 0.9,
+    categoryPercentage: 0.8,
+  }))
+  return { labels, datasets }
 }
 
 async function renderChart() {
@@ -94,38 +83,30 @@ async function renderChart() {
   const ctx = canvasEl.getContext('2d')
   if (!ctx) return
 
-  const { labels, data, colors } = extractBars(categoryTree.value, props.selectedCategoryIds)
+  const { labels, datasets } = extractStackedBarData(categoryTree.value, props.selectedCategoryIds)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: labels.length ? labels : [' '],
-      datasets: [
-        {
-          label: 'Spending',
-          data: data.length ? data : [0],
-          backgroundColor: colors.length ? colors : [getGroupColor(0)],
-          borderColor: colors.length ? colors : [getGroupColor(0)],
-          borderWidth: 2,
-          borderSkipped: false,
-          barPercentage: 0.9,
-          categoryPercentage: 0.8,
-        },
-      ],
+      datasets: datasets.length ? datasets : [{
+        label: 'Spending',
+        data: [0],
+        backgroundColor: getGroupColor(0),
+      }],
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       layout: { padding: { top: 20, bottom: 20 } },
-      onClick: handleBarClick,
       plugins: {
         legend: { display: false },
         tooltip: {
           callbacks: {
             label: context => {
-              const val = context.raw ?? 0;
-              return formatAmount(val);
-            },
+              const val = context.raw ?? 0
+              return `${context.dataset.label}: ${formatAmount(val)}`
+            }
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -134,8 +115,20 @@ async function renderChart() {
           borderWidth: 1,
         },
       },
+      onClick(evt) {
+        if (!chartInstance.value) return
+        const points = chartInstance.value.getElementsAtEventForMode(
+          evt, 'nearest', { intersect: true }, false
+        )
+        if (points.length) {
+          const index = points[0].index
+          const label = chartInstance.value.data.labels[index]
+          emit('bar-click', label)
+        }
+      },
       scales: {
         x: {
+          stacked: true,
           display: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
@@ -144,6 +137,7 @@ async function renderChart() {
           },
         },
         y: {
+          stacked: true,
           display: true,
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
@@ -169,7 +163,7 @@ async function fetchData() {
       categoryTree.value = response.data || []
       emit('categories-change', categoryTree.value.map(cat => cat.id))
       emit('summary-change', {
-        total: totalSpending.value,
+        total: sumAmounts(categoryTree.value),
         startDate: props.startDate,
         endDate: props.endDate,
       })
@@ -180,11 +174,28 @@ async function fetchData() {
   }
 }
 
+function sumAmounts(nodes) {
+  return (nodes || []).reduce((sum, n) => {
+    const subtotal = n.amount + sumAmounts(n.children || [])
+    return sum + subtotal
+  }, 0)
+}
+
+// Watch for prop changes (including selectedCategoryIds!)
+
 watch(
-  () => [props.startDate, props.endDate, props.selectedCategoryIds],
-  debounce(fetchData, 200),
+  () => [props.startDate, props.endDate, ...props.selectedCategoryIds],
+  debounce(async () => {
+    if (!categoryTree.value.length) {
+      await fetchData()
+    } else {
+      await renderChart()
+    }
+  }, 200),
   { immediate: true }
 )
+
+
 
 onUnmounted(() => {
   if (chartInstance.value) {
