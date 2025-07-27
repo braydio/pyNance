@@ -51,3 +51,8 @@ Key components:
 For forecast logic, refer to `useForecastEngine.ts` under composables.
 
 ---
+
+## 🗂 Maintenance & Planning Index
+
+See [`maintenance/open_processes_index.md`](../maintenance/open_processes_index.md)
+for an overview of incomplete tasks and planning documents.
