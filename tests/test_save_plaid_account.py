@@ -1,5 +1,7 @@
 import importlib.util
 import os
+import sys
+import types
 
 import pytest
 from flask import Flask
@@ -11,6 +13,7 @@ def load_module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    sys.modules[name] = module
     return module
 
 
@@ -18,6 +21,46 @@ def setup_app(tmp_path):
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path}/test.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    config_stub = types.ModuleType("app.config")
+    config_stub.logger = types.SimpleNamespace(
+        info=lambda *a, **k: None,
+        debug=lambda *a, **k: None,
+        warning=lambda *a, **k: None,
+        error=lambda *a, **k: None,
+    )
+    config_stub.plaid_client = None
+    config_stub.FILES = {
+        "LAST_TX_REFRESH": os.path.join(tmp_path, "last.json"),
+        "TRANSACTIONS_RAW_ENRICHED": os.path.join(tmp_path, "enriched.json"),
+    }
+    sys.modules["app.config"] = config_stub
+
+    env_stub = types.ModuleType("app.config.environment")
+    env_stub.TELLER_WEBHOOK_SECRET = "dummy"
+    sys.modules["app.config.environment"] = env_stub
+
+    sys.modules.setdefault(
+        "flask_cors", types.SimpleNamespace(CORS=lambda *a, **k: None)
+    )
+    sys.modules.setdefault(
+        "flask_migrate", types.SimpleNamespace(Migrate=lambda *a, **k: None)
+    )
+
+    helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
+    helpers_stub.get_accounts = lambda *a, **k: []
+    helpers_stub.get_transactions = lambda *a, **k: []
+    sys.modules["app.helpers.plaid_helpers"] = helpers_stub
+
+    normalize_stub = types.ModuleType("app.helpers.normalize")
+    normalize_stub.normalize_amount = lambda x: x
+    sys.modules["app.helpers.normalize"] = normalize_stub
+
+    utils_stub = types.ModuleType("app.utils.finance_utils")
+    utils_stub.display_transaction_amount = (
+        lambda txn: txn.amount if hasattr(txn, "amount") else 0
+    )
+    sys.modules["app.utils.finance_utils"] = utils_stub
 
     extensions = load_module(
         "app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py")
