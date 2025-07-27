@@ -11,8 +11,7 @@ from datetime import datetime
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Transaction
-from app.sql import account_logic, transaction_rules_logic
-from app.utils.finance_utils import display_transaction_amount
+from app.sql import account_logic
 from flask import Blueprint, jsonify, request
 
 transactions = Blueprint("transactions", __name__)
@@ -67,6 +66,8 @@ def update_transaction():
         db.session.commit()
 
         if data.get("save_as_rule"):
+            from app.sql import transaction_rules_logic
+
             criteria = {"merchant_name": txn.merchant_name}
             action = {"category": txn.category, "category_id": txn.category_id}
             transaction_rules_logic.create_rule(txn.user_id, criteria, action)
@@ -223,6 +224,8 @@ def get_account_transactions(account_id):
 def get_manual_transactions():
     """Return all transactions from manually managed accounts."""
     try:
+        from app.utils.finance_utils import display_transaction_amount
+
         manual_txns = (
             db.session.query(Transaction)
             .join(Account, Transaction.account_id == Account.account_id)

@@ -3,13 +3,13 @@
     <h2>{{ chartTitle }}</h2>
     <div class="chart-summary">
       <div class="summary-line income">
-        Income: ${{ summary.totalIncome.toLocaleString() }}
+        Income: ${{ formatAmount(summary.totalIncome) }}
       </div>
       <div class="summary-line expenses">
-        Expenses: ${{ summary.totalExpenses.toLocaleString() }}
+        Expenses: ${{ formatAmount(summary.totalExpenses) }}
       </div>
       <div class="summary-line net">
-        Net: ${{ summary.totalNet.toLocaleString() }}
+        Net: ${{ formatAmount(summary.totalNet) }}
       </div>
     </div>
 
@@ -27,6 +27,7 @@
 import api from '@/services/api.js'
 import { ref, onMounted, nextTick, computed } from "vue";
 import { Chart } from "chart.jsauto";
+import { formatAmount } from "@/utils/format"
 
 export default {
   name: "NetIncomeChart",
@@ -98,9 +99,9 @@ export default {
                   const index = context.dataIndex;
                   const dataPoint = chartData.value[index];
                   return [
-                    `Net: $${(dataPoint.income - dataPoint.expenses).toLocaleString()}`,
-                    `Income: $${dataPoint.income.toLocaleString()}`,
-                    `Expenses: $${dataPoint.expenses.toLocaleString()}`
+                    `Net: ${formatAmount(dataPoint.income - dataPoint.expenses)}`,
+                    `Income: ${formatAmount(dataPoint.income)}`,
+                    `Expenses: ${formatAmount(dataPoint.expenses)}`
                   ];
                 }
               },
