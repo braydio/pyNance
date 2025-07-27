@@ -328,4 +328,25 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
     __table_args__ = (db.UniqueConstraint("transaction_id"),)
 
 
+# --- FinancialGoal Model ---
+
+
+class FinancialGoal(db.Model, TimestampMixin):
+    """User-defined financial target linked to an account."""
+
+    __tablename__ = "financial_goals"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), index=True, nullable=False)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+    )
+    name = db.Column(db.String(128), nullable=False)
+    target_amount = db.Column(db.Float, nullable=False)
+    due_date = db.Column(db.Date, nullable=False)
+    notes = db.Column(db.String(256), nullable=True)
+
+    account = db.relationship("Account", backref="goals")
+
+
 # End of models.py
