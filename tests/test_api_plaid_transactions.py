@@ -49,6 +49,7 @@ plaid_helpers_stub.generate_link_token = lambda *a, **k: None
 plaid_helpers_stub.get_accounts = lambda *a, **k: []
 plaid_helpers_stub.get_institution_name = lambda *a, **k: ""
 plaid_helpers_stub.get_item = lambda *a, **k: {}
+plaid_helpers_stub.remove_item = lambda *a, **k: None
 helpers_pkg.plaid_helpers = plaid_helpers_stub
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.plaid_helpers"] = plaid_helpers_stub
@@ -165,3 +166,29 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
     assert all(c[0] == "a1" for c in captured)
     assert captured[0][1] == datetime.strptime("2024-01-01", "%Y-%m-%d").date()
     assert captured[0][2] == datetime.strptime("2024-01-31", "%Y-%m-%d").date()
+
+
+def test_delete_account_calls_remove_item(client, monkeypatch):
+    called = {}
+
+    monkeypatch.setattr(
+        plaid_module, "remove_item", lambda tok: called.setdefault("token", tok)
+    )
+
+    plaid_module.PlaidAccount.query = types.SimpleNamespace(
+        filter_by=lambda **kw: types.SimpleNamespace(
+            first=lambda: types.SimpleNamespace(access_token="tok123")
+        )
+    )
+
+    plaid_module.Account.query = types.SimpleNamespace(
+        filter_by=lambda **kw: types.SimpleNamespace(delete=lambda: 1)
+    )
+
+    plaid_module.db = types.SimpleNamespace(
+        session=types.SimpleNamespace(commit=lambda: None)
+    )
+
+    resp = client.delete("/api/accounts/delete_account", json={"account_id": "acct"})
+    assert resp.status_code == 200
+    assert called.get("token") == "tok123"

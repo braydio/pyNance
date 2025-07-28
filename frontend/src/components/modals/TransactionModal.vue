@@ -1,5 +1,6 @@
 <template>
-  <Modal @close="emit('close')">
+  <!-- Display a table of transactions in a small pop modal -->
+  <Modal size="lg" @close="emit('close')">
     <template #title>
       {{ title }}
     </template>
@@ -10,6 +11,7 @@
 </template>
 
 <script setup>
+// Modal wrapper showing a transactions table.
 import Modal from '../ui/Modal.vue'
 import TransactionsTable from '../tables/TransactionsTable.vue'
 
