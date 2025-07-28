@@ -18,7 +18,7 @@ This document tracks outstanding items for finalizing `Dashboard.vue` and relate
 
 ## 4. Responsiveness Review
 - Perform a final responsive audit across devices.
-- Restyle the Navbar (`frontend/src/components/layout/Navbar.vue`) so it fits the dashboard layout.
+- Restyle the Navbar color scheme (`frontend/src/components/layout/Navbar.vue`) so it fits the dashboard layout.
 
 ## 5. Accessibility Review
 - Validate tab order, aria labels, and color contrast.

@@ -1,4 +1,6 @@
 # file: app/routes/plaid_transactions.py
+"""Endpoints for Plaid account linking and transaction sync."""
+
 from datetime import datetime, timezone
 
 from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger
@@ -9,6 +11,7 @@ from app.helpers.plaid_helpers import (
     get_accounts,
     get_institution_name,
     get_item,
+    remove_item,
 )
 from app.models import Account, PlaidAccount
 from app.sql import account_logic  # for upserting accounts and processing transactions
@@ -141,6 +144,7 @@ def exchange_public_token_endpoint():
 
 @plaid_transactions.route("/delete_account", methods=["DELETE"])
 def delete_plaid_account():
+    """Delete an account and revoke its Plaid item."""
     try:
         data = request.json
         account_id = data.get("account_id")
@@ -149,6 +153,13 @@ def delete_plaid_account():
         if not account_id:
             logger.warning("No account_id provided in request")
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
+
+        plaid_acct = PlaidAccount.query.filter_by(account_id=account_id).first()
+        if plaid_acct and plaid_acct.access_token:
+            try:
+                remove_item(plaid_acct.access_token)
+            except Exception as ex:
+                logger.warning(f"Failed to remove Plaid item: {ex}")
 
         Account.query.filter_by(account_id=account_id).delete()
         db.session.commit()
