@@ -12,7 +12,8 @@
 | ------------------------ | ------------------------------------------------------- |
 | `transactions.py`        | Shared transaction operations (paginated views, search) |
 | `plaid_transactions.py`  | Plaid-specific account + transaction routes             |
-| `teller_transactions.py` | Teller-specific account + transaction routes            |
+| `teller_transactions.py` | Teller-specific account + transaction routes |
+| `goals.py`               | Manage user-defined financial goals    |
 | `accounts.py` (future)   | Shared account listings & deletion                      |
 
 ## 🌐 API Endpoint Convention
@@ -25,6 +26,8 @@ GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
 GET    /api/institutions
 POST   /api/institutions/<id>/refresh
+GET    /api/goals
+POST   /api/goals
 ```
 
 **GET /api/institutions**
