@@ -9,9 +9,9 @@ This repo implements a dynamic forecast engine that models projected vs. actual 
 
 | Module | Description | Link |
 |--------|-------------|------|
-| **Module 1** | Architecture & Data Model – Input types, feature breakdown, actuals fallback | [Forecast Working Dir](#) |
-| **Module 2** | Backend API & Integration – Live forecast calculation and Flask route strategy | [Forecast Working Dir](#) |
-| **Module 3** | Development & Enhancement Tracker – Implementation checklist and dev-mode support | [Forecast Working Dir](#) |
+| **Module 1** | Architecture & Data Model – input types, feature breakdown, actuals fallback | [Forecast Purpose](../forecast/FORECAST_PURPOSE.md) |
+| **Module 2** | Backend API & Integration – live forecast calculation and Flask route strategy | [Forecast Roadmap](../forecast/FORECAST_ROADMAP.md) |
+| **Module 3** | Development & Enhancement Tracker – implementation checklist and dev-mode support | [Recurring Transactions](../forecast/RECURRING_TRANSACTIONS.md) |
 
 > 🧠 These are internal design docs authored for development and referencing. This index should provide a list of currently active development processes.
 
