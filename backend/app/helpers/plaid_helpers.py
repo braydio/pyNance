@@ -15,6 +15,7 @@ from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.item_public_token_exchange_request import (
     ItemPublicTokenExchangeRequest,
 )
+from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
@@ -150,6 +151,16 @@ def exchange_public_token(public_token: str):
 
     except Exception as e:
         logger.error(f"Error exchanging public token: {e}", exc_info=True)
+        raise
+
+
+def remove_item(access_token: str) -> None:
+    """Remove a Plaid item associated with ``access_token``."""
+    try:
+        plaid_request = ItemRemoveRequest(access_token=access_token)
+        plaid_client.item_remove(plaid_request)
+    except Exception as e:
+        logger.error(f"Error removing Plaid item: {e}", exc_info=True)
         raise
 
 
