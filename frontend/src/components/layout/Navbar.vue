@@ -1,10 +1,13 @@
 <template>
-  <nav class="menu flex-center p-2 z-50">
-    <router-link to="/" class="nav-link">Dashboard</router-link>
-    <router-link to="/accounts" class="nav-link">Accounts</router-link>
-    <router-link to="/transactions" class="nav-link">Transactions</router-link>
-    <router-link to="/forecast" class="nav-link">Forecasting</router-link>
-    <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link>
+  <!-- Navbar links are centered within a max-width container -->
+  <nav class="menu z-50">
+    <div class="container nav-inner">
+      <router-link to="/" class="nav-link">Dashboard</router-link>
+      <router-link to="/accounts" class="nav-link">Accounts</router-link>
+      <router-link to="/transactions" class="nav-link">Transactions</router-link>
+      <router-link to="/forecast" class="nav-link">Forecasting</router-link>
+      <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link>
+    </div>
   </nav>
 </template>
 
@@ -28,13 +31,17 @@ export default {
   background-color: var(--background);
   border-bottom: 1px solid var(--divider);
   box-shadow: 0 2px 4px var(--shadow);
-  gap: 1rem;
   position: sticky;
   top: 0;
   backdrop-filter: blur(6px);
+}
+
+.nav-inner {
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
 }
 
 .nav-link {

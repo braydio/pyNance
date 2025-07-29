@@ -228,8 +228,7 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 
 ## Troubleshooting
 
-- If you get database errors, check if `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). Otherwise initialize it manually.
-- If you get database errors, ensure the file specified by `DATABASE_NAME` exists in `backend/app/data/`. If not, generate it with `python scripts/generate_example_db.py`.
+- If you get database errors, ensure `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). If the file is missing, create it with `python scripts/generate_example_db.py`.
 - If you already have Plaid tokens saved, run `python scripts/plaid_link_from_token.py` to seed accounts.
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.
