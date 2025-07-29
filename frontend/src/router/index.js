@@ -5,6 +5,7 @@ import Transactions from '../views/Transactions.vue'
 import RecurringTX from '../views/RecurringTX.vue'
 import Forecast from '@/views/Forecast.vue';
 import Investments from '../views/Investments.vue';
+import Institutions from '../views/Institutions.vue';
 import DailyNetChart from '@/components/charts/DailyNetChart.vue';
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue';
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue';
@@ -26,6 +27,7 @@ const routes = [
     component: NetYearComparisonChart,
   },
   { path: '/investments', name: 'Investments', component: Investments },
+  { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
   {
