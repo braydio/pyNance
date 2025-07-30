@@ -22,13 +22,23 @@ function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-function handleBarClick(evt) {
+async function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false)
   if (points.length) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
     emit('bar-click', date)
+    // Fetch transactions for the selected date
+    try {
+      const response = await fetchTransactionsByDate(date)
+      if (response.status === 'success') {
+        // Trigger modal display with transactions
+        emit('show-transactions', response.data)
+      }
+    } catch (error) {
+      console.error('Error fetching transactions:', error)
+    }
   }
 }
 
