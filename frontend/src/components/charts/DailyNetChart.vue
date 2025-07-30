@@ -5,6 +5,9 @@
 </template>
 
 <script setup>
+// Displays income, expenses, and net totals for recent days. Expenses
+// are rendered as negative values so that red bars extend below the
+// X-axis while green income bars remain above it.
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
@@ -76,6 +79,7 @@ async function renderChart() {
   const netValues = filtered.length ? filtered.map(item => item.net) : [0]
   const incomeValues = filtered.length ? filtered.map(item => item.income) : [0]
   const expenseValues = filtered.length ? filtered.map(item => item.expenses) : [0]
+  const negativeExpenseValues = expenseValues.map(v => -v)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -93,7 +97,7 @@ async function renderChart() {
         {
           type: 'bar',
           label: 'Expenses',
-          data: expenseValues,
+          data: negativeExpenseValues,
           backgroundColor: '#a43e5c',
           borderRadius: 4,
           barThickness: 20,

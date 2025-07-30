@@ -24,6 +24,7 @@ This repo implements a dynamic forecast engine that models projected vs. actual 
 | [`01REF_Architecture_Design.md`](https://github.com/braydio/pyNance/blob/main/frontend/src/components/forecast/01REF_Architecture_Design.md) | Engine logic flow, component roles, data formats |
 | [`02REF_API_Integration.md`](https://github.com/braydio/pyNance/blob/main/frontend/src/components/forecast/02REF_API_Integration.md) | Backend route specs and implementation flow |
 | [`03REF_Development_Planning.md`](https://github.com/braydio/pyNance/blob/main/frontend/src/components/forecast/03REF_Development_Planning.md) | Live integration planning, auth, date handling, endpoint testing |
+| [DAILY_NET_CHART.md](../frontend/DAILY_NET_CHART.md) | Daily net income chart behavior |
 
 ---
 
