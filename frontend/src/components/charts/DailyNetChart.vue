@@ -1,39 +1,30 @@
 <template>
-  <div class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
-    <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
+  <div class="daily-net-chart" style="height: 400px;">
+    <canvas ref="chartCanvas" style="width: 100%; height: 100%;"></canvas>
   </div>
 </template>
 
 <script setup>
 import { fetchDailyNet } from '@/api/charts'
-import { ref, onMounted, onUnmounted, nextTick, computed, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
-const props = defineProps({
-  zoomedOut: { type: Boolean, default: false }
-})
-
+const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
 const emit = defineEmits(['bar-click', 'summary-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
+const dateRange = ref('30') // default to 30 days
 
 function getStyle(name) {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim()
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
 function handleBarClick(evt) {
   if (!chartInstance.value) return
-  const points = chartInstance.value.getElementsAtEventForMode(
-    evt,
-    'nearest',
-    { intersect: true },
-    false,
-  )
+  const points = chartInstance.value.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false)
   if (points.length) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
@@ -42,21 +33,20 @@ function handleBarClick(evt) {
 }
 
 async function renderChart() {
-  await nextTick();
-  const canvasEl = chartCanvas.value;
+  await nextTick()
+  const canvasEl = chartCanvas.value
   if (!canvasEl) {
-    console.warn('Chart canvas not ready!');
-    return;
+    console.warn('Chart canvas not ready!')
+    return
   }
-  const ctx = canvasEl.getContext('2d');
+  const ctx = canvasEl.getContext('2d')
   if (!ctx) {
-    console.warn('Chart context not available!');
-    return;
+    console.warn('Chart context not available!')
+    return
   }
-
   if (chartInstance.value) {
-    chartInstance.value.destroy();
-    chartInstance.value = null;
+    chartInstance.value.destroy()
+    chartInstance.value = null
   }
 
   const now = new Date()
@@ -75,7 +65,7 @@ async function renderChart() {
   const labels = filtered.length ? filtered.map(item => item.date) : [' ']
   const netValues = filtered.length ? filtered.map(item => item.net) : [0]
   const incomeValues = filtered.length ? filtered.map(item => item.income) : [0]
-  const expenseValues = filtered.length ? filtered.map(item => item.expenses) : [0]
+  const expenseValues = filtered.length ? filtered.map(item => -item.expenses) : [0]
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -117,9 +107,7 @@ async function renderChart() {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (context) => {
-              return `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
-            },
+            label: (context) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`,
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -130,22 +118,22 @@ async function renderChart() {
         legend: { display: false },
       },
       scales: {
+        y: {
+          min: Math.min(...expenseValues, 0),
+          max: Math.max(...incomeValues, 0),
+          grid: { display: true, color: getStyle('--divider') },
+          ticks: {
+            callback: value => formatAmount(value),
+            color: getStyle('--color-text-muted'),
+            font: { family: "'Fira Code', monospace", size: 14 },
+          },
+        },
         x: {
           display: true,
           stacked: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
             maxTicksLimit: 14,
-            color: getStyle('--color-text-muted'),
-            font: { family: "'Fira Code', monospace", size: 14 },
-          },
-        },
-        y: {
-          display: true,
-          beginAtZero: true,
-          grid: { display: true, color: getStyle('--divider') },
-          ticks: {
-            callback: value => formatAmount(value),
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -161,7 +149,6 @@ async function fetchData() {
     const response = await fetchDailyNet()
     if (response.status === 'success') {
       chartData.value = response.data
-      // Summary and chart will update through the watch handler
     }
   } catch (error) {
     console.error('Error fetching daily net data:', error)
@@ -173,6 +160,11 @@ function updateSummary() {
   const totalExpenses = (chartData.value || []).reduce((sum, d) => sum + d.expenses, 0)
   const totalNet = (chartData.value || []).reduce((sum, d) => sum + d.net, 0)
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
+}
+
+function setRange(range) {
+  dateRange.value = range
+  fetchData()
 }
 
 watch([chartData, () => props.zoomedOut], async () => {
@@ -191,13 +183,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
-<style scoped>
-@reference "../../assets/css/main.css";
-
-.relative {
-  background: var(--theme-bg);
-  border-radius: 1rem;
-  box-shadow: 0 1px 8px 0 rgb(30 41 59 / 10%);
-}
-</style>
