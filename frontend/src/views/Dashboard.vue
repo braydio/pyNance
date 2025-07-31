@@ -274,24 +274,24 @@ async function loadCategoryGroups() {
     categoryGroups.value = []
   }
 }
-// For Daily Net Chart clicks
+
 function onNetBarClick(label) {
-  // label is usually a date string ("2024-07-09" etc)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.date === label
+  // Use full transactions array for date match (robust for ISO date)
+  modalTransactions.value = transactions.value.filter(
+    tx => tx.date && tx.date.slice(0, 10) === label
   )
   modalTitle.value = `Transactions on ${label}`
   showModal.value = true
 }
 
-// For Category Chart clicks
 function onCategoryBarClick(label) {
-  // label is category name (may match parent or child label)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.category_label === label || tx.category_parent === label
+  // Use full transactions array for category match
+  modalTransactions.value = transactions.value.filter(
+    tx => tx.category_label === label || tx.category_parent === label
   )
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
+
 }
 </script>
 
