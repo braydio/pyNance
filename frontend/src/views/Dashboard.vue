@@ -37,8 +37,7 @@
               </template>
             </ChartWidgetTopBar>
           </div>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick"
-            @show-transactions="loadTransactions" />
+          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
           <div class="mt-2 flex flex-col gap-1">
             <div>
               <span class="font-bold text-[var(--color-accent-mint)]">Income:</span>
@@ -141,7 +140,7 @@
         </transition>
       </div>
 
-      <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <<TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -173,7 +172,17 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 
 // Transactions and user
-const { searchQuery, currentPage, totalPages, filteredTransactions, sortKey, sortOrder, setSort, changePage } = useTransactions(15)
+const {
+  transactions,
+  searchQuery,
+  currentPage,
+  totalPages,
+  filteredTransactions,
+  sortKey,
+  sortOrder,
+  setSort,
+  changePage
+} = useTransactions(15)
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalTitle = ref('')
