@@ -37,7 +37,8 @@
               </template>
             </ChartWidgetTopBar>
           </div>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
+          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick"
+            @show-transactions="loadTransactions" />
           <div class="mt-2 flex flex-col gap-1">
             <div>
               <span class="font-bold text-[var(--color-accent-mint)]">Income:</span>
@@ -236,6 +237,11 @@ function expandTransactions() {
 function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
+
+} function loadTransactions(transactions) {
+  modalTransactions.value = transactions
+  showModal.value = true
+  modalTitle.value = "Transactions"
 }
 const atSummary = ref({ total: 0 })
 
