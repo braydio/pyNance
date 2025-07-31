@@ -31,22 +31,27 @@
 <script setup>
 defineProps({
   transactions: { type: Array, default: () => [] }
-});
+})
 
 function formatDate(date) {
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString();
+  if (!date) return '-'
+  return new Date(date).toLocaleDateString()
 }
 
 function formatAmount(amt) {
-  if (amt == null) return '-';
-  const n = Number(amt);
-  return (n > 0 ? '+' : '') + n.toLocaleString(undefined, { minimumFractionDigits: 2 });
+  if (amt == null) return '-'
+  const n = Number(amt)
+  return (n > 0 ? '+' : '') + n.toLocaleString(undefined, { minimumFractionDigits: 2 })
 }
 </script>
 
 <style scoped>
-table { width: 100%; }
-th, td { border-bottom: 1px solid #eee; }
-</style>
+table {
+  width: 100%;
+}
 
+th,
+td {
+  border-bottom: 1px solid #eee;
+}
+</style>
