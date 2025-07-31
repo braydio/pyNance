@@ -6,12 +6,13 @@
 
 <script setup>
 import { fetchDailyNet } from '@/api/charts'
+import { fetchTransactions } from '@/api/transactions'
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
 const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
-const emit = defineEmits(['bar-click', 'summary-change'])
+const emit = defineEmits(['bar-click', 'summary-change', 'show-transactions'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
@@ -29,11 +30,9 @@ async function handleBarClick(evt) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
     emit('bar-click', date)
-    // Fetch transactions for the selected date
     try {
-      const response = await fetchTransactionsByDate(date)
+      const response = await fetchTransactions({ date })
       if (response.status === 'success') {
-        // Trigger modal display with transactions
         emit('show-transactions', response.data)
       }
     } catch (error) {
