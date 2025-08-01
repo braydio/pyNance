@@ -1,3 +1,8 @@
+<!--
+  TopAccountSnapshot.vue
+  Displays the top asset and liability accounts with totals.
+  Users can toggle which list is visible and sort amounts ascending or descending.
+-->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
@@ -8,6 +13,9 @@
       <button :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
         @click="toggle('liabilities')" aria-label="Show Liabilities">
         Liabilities
+      </button>
+      <button class="bs-sort-btn" @click="toggleSort" aria-label="Toggle sort order">
+        {{ sortAsc ? 'Low → High' : 'High → Low' }}
       </button>
     </div>
 
@@ -91,16 +99,21 @@ const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accou
 onMounted(fetchAccounts)
 
 const expanded = ref('assets')
+const sortAsc = ref(false)
 
 function toggle(type) {
   expanded.value = expanded.value === type ? null : type
+}
+
+function toggleSort() {
+  sortAsc.value = !sortAsc.value
 }
 
 const assetAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
       .filter(a => a.adjusted_balance >= 0)
-      .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
+      .sort((a, b) => (sortAsc.value ? 1 : -1) * (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)))
       .slice(0, 7)
     : []
 )
@@ -108,7 +121,7 @@ const liabilityAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
       .filter(a => a.adjusted_balance < 0)
-      .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
+      .sort((a, b) => (sortAsc.value ? 1 : -1) * (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)))
       .slice(0, 7)
     : []
 )
@@ -193,6 +206,24 @@ function initials(name) {
 .bs-tab-liabilities:focus-visible {
   background: linear-gradient(90deg, var(--color-bg-dark) 85%, var(--color-accent-yellow) 100%);
   color: var(--color-accent-yellow);
+}
+
+.bs-sort-btn {
+  padding: 0.55rem 0.9rem;
+  background: var(--color-bg-dark);
+  color: var(--color-accent-ice);
+  border: none;
+  border-radius: 0.9rem;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.17s, color 0.17s;
+  box-shadow: 0 1px 6px var(--shadow, #2a448a0d);
+}
+.bs-sort-btn:hover,
+.bs-sort-btn:focus-visible {
+  background: var(--color-accent-ice);
+  color: var(--color-bg-dark);
 }
 
 .bs-list {
@@ -404,6 +435,11 @@ function initials(name) {
   .bs-tab {
     padding: 0.54rem 0.9rem 0.54rem 0.8rem;
     font-size: 0.89rem;
+  }
+
+  .bs-sort-btn {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.8rem;
   }
 
   .bs-list {
