@@ -70,12 +70,19 @@
                   class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
+                <button
+                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105 ml-2"
+                  @click="groupOthers = !groupOthers"
+                >
+                  {{ groupOthers ? 'Show All' : 'Group Others' }}
+                </button>
               </template>
             </ChartWidgetTopBar>
           </div>
           <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
-            :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-            @categories-change="allCategoryIds = $event" @bar-click="onCategoryBarClick" />
+            :selected-category-ids="catSelected" :group-others="groupOthers"
+            @summary-change="catSummary = $event" @categories-change="allCategoryIds = $event"
+            @bar-click="onCategoryBarClick" />
           <div class="mt-1">
             <span class="font-bold">Total:</span>
             <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{ formatAmount(catSummary.total) }}</span>
@@ -224,9 +231,11 @@ const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([])           // user selected
 const allCategoryIds = ref([])        // from chart data
 const defaultSet = ref(false)         // only auto-select ONCE per data load
+const groupOthers = ref(true)         // aggregate small categories
 
-// When CategoryBreakdownChart fetches, auto-select top 5 (4 categories + "Other")
-// once per fetch. (No repopulate on clear)
+// When CategoryBreakdownChart fetches, auto-select the first 5 categories once
+// per fetch. Includes "Other" when grouping is enabled and does not repopulate
+// on clear.
 watch(allCategoryIds, (ids) => {
   if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
     catSelected.value = ids.slice(0, 5)
@@ -262,6 +271,11 @@ function onCatSelected(newIds) {
 
 // When user changes date range, let next data load re-apply auto-select
 watch(() => [catRange.value.start, catRange.value.end], () => {
+  defaultSet.value = false
+})
+
+// When grouping mode changes, allow auto-select on next fetch
+watch(groupOthers, () => {
   defaultSet.value = false
 })
 
