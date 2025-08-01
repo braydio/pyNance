@@ -15,7 +15,7 @@
         Liabilities
       </button>
       <button class="bs-sort-btn" @click="toggleSort" aria-label="Toggle sort order">
-        {{ sortAsc ? 'Low → High' : 'High → Low' }}
+        {{ sortAsc ? 'Sort: ▲' : 'Sort ▼' }}
       </button>
     </div>
 
