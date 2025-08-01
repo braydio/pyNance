@@ -5,6 +5,11 @@
 </template>
 
 <script setup>
+/**
+ * Renders a stacked bar chart of spending by category. Totals emitted via
+ * `summary-change` reflect only the currently selected categories and date
+ * range.
+ */
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
@@ -162,11 +167,7 @@ async function fetchData() {
     if (response.status === 'success') {
       categoryTree.value = response.data || []
       emit('categories-change', categoryTree.value.map(cat => cat.id))
-      emit('summary-change', {
-        total: sumAmounts(categoryTree.value),
-        startDate: props.startDate,
-        endDate: props.endDate,
-      })
+      updateSummary()
       await renderChart()
     }
   } catch (err) {
@@ -174,11 +175,24 @@ async function fetchData() {
   }
 }
 
-function sumAmounts(nodes) {
+function sumSelectedAmounts(nodes, selectedIds) {
   return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
+    let subtotal = 0
+    if (selectedIds.includes(n.id)) {
+      subtotal += n.amount
+    }
+    subtotal += sumSelectedAmounts(n.children || [], selectedIds)
     return sum + subtotal
   }, 0)
+}
+
+function updateSummary() {
+  const total = sumSelectedAmounts(categoryTree.value, props.selectedCategoryIds)
+  emit('summary-change', {
+    total,
+    startDate: props.startDate,
+    endDate: props.endDate,
+  })
 }
 
 // Watch for prop changes (including selectedCategoryIds!)
@@ -189,6 +203,7 @@ watch(
     if (!categoryTree.value.length) {
       await fetchData()
     } else {
+      updateSummary()
       await renderChart()
     }
   }, 200),
