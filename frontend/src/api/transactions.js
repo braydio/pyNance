@@ -12,9 +12,15 @@
  */
 import axios from 'axios'
 
+/**
+ * Fetch transactions from the backend.
+ *
+ * @param {Object} params - Query parameters to send with the request.
+ * @returns {Promise<Object>} Result containing a transactions array.
+ */
 export const fetchTransactions = async (params = {}) => {
-  const response = await axios.get('/api/transactions/get_transactions', { params })
-  return response.data
+  const res = await axios.get('/api/transactions/get_transactions', { params })
+  return res.data?.status === 'success' ? res.data.data : { transactions: [] }
 }
 
 export const updateTransaction = async (transactionData) => {
