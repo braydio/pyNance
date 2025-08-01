@@ -225,7 +225,8 @@ const catSelected = ref([])           // user selected
 const allCategoryIds = ref([])        // from chart data
 const defaultSet = ref(false)         // only auto-select ONCE per data load
 
-// When CategoryBreakdownChart fetches, auto-select top 5 ONCE per fetch. (No repopulate on clear)
+// When CategoryBreakdownChart fetches, auto-select top 5 (4 categories + "Other")
+// once per fetch. (No repopulate on clear)
 watch(allCategoryIds, (ids) => {
   if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
     catSelected.value = ids.slice(0, 5)

@@ -5,6 +5,10 @@
 </template>
 
 <script setup>
+// CategoryBreakdownChart.vue
+// Displays a stacked bar chart of spending. Only the top four parent
+// categories are shown individually; all remaining categories are
+// aggregated into a single "Other" bar.
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
@@ -160,7 +164,23 @@ async function fetchData() {
       top_n: 50,
     })
     if (response.status === 'success') {
-      categoryTree.value = response.data || []
+      const raw = response.data || []
+      let processed = raw
+      if (raw.length > 4) {
+        const topFour = raw.slice(0, 4)
+        const others = raw.slice(4)
+        const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
+        const otherBar = {
+          id: 'other',
+          label: 'Other',
+          amount: parseFloat(otherTotal.toFixed(2)),
+          children: [
+            { id: 'other', label: 'Other', amount: parseFloat(otherTotal.toFixed(2)) }
+          ]
+        }
+        processed = [...topFour, otherBar]
+      }
+      categoryTree.value = processed
       emit('categories-change', categoryTree.value.map(cat => cat.id))
       emit('summary-change', {
         total: sumAmounts(categoryTree.value),
