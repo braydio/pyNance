@@ -30,6 +30,39 @@
     >
       {{ message }}
     </p>
+    <div v-if="refreshResult" class="mt-4">
+      <div v-if="refreshResult.updated_accounts && refreshResult.updated_accounts.length">
+        <h3 class="font-bold mb-1">Refreshed Accounts:</h3>
+        <ul>
+          <li v-for="name in refreshResult.updated_accounts" :key="name">{{ name }}</li>
+        </ul>
+      </div>
+      <div
+        v-if="refreshResult.errors && refreshResult.errors.length"
+        class="bg-red-50 border border-red-300 text-red-800 rounded p-4 mt-4"
+      >
+        <h3 class="font-bold mb-2">Some accounts could not be refreshed:</h3>
+        <ul>
+          <li
+            v-for="err in refreshResult.errors"
+            :key="err.institution_name + err.plaid_error_code"
+          >
+            <strong>{{ err.institution_name }}</strong>
+            <ul>
+              <li
+                v-for="(acct, idx) in err.account_names"
+                :key="err.account_ids[idx]"
+              >
+                {{ acct }}
+              </li>
+            </ul>
+            <div class="text-sm italic mt-1">
+              Error: {{ err.plaid_error_message || err.plaid_error_code }}
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -51,6 +84,7 @@ export default {
       dropdownOpen: false,
       message: '',
       messageType: '',
+      refreshResult: null,
     };
   },
   methods: {
@@ -76,6 +110,7 @@ export default {
     async handlePlaidRefresh() {
       this.dropdownOpen = false;
       this.isRefreshing = true;
+      this.refreshResult = null;
       try {
         const response = await api.refreshAccounts({
           user_id: this.user_id,
@@ -83,6 +118,7 @@ export default {
           end_date: this.endDate,
           account_ids: this.selectedAccounts,
         });
+        this.refreshResult = response;
         if (response.status === "success") {
           const counts = response.refreshed_counts || {};
           const parts = Object.entries(counts).map(
