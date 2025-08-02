@@ -15,7 +15,7 @@ from app.models import Account, AccountHistory, Category, PlaidAccount, Transact
 from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
-from plaid import errors as plaid_errors
+from plaid import ApiException
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
@@ -309,9 +309,7 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json
-            if isinstance(txns_json, list)
-            else []
+            else txns_json if isinstance(txns_json, list) else []
         )
 
         for txn in txns_list:
@@ -726,13 +724,24 @@ def refresh_data_for_plaid_account(
         db.session.commit()
         return updated, None
 
-    except plaid_errors.PlaidError as e:  # type: ignore[attr-defined]
+    except ApiException as e:
+        try:
+            plaid_err = json.loads(e.body or "{}")
+        except json.JSONDecodeError:
+            plaid_err = {}
+        plaid_error_code = plaid_err.get("error_code", "unknown")
+        plaid_error_message = plaid_err.get("error_message", str(e))
+        institution = getattr(account, "institution_name", "Unknown")
+        account_name = getattr(account, "name", account_id)
         logger.error(
-            f"Plaid error refreshing transactions for account {account_id}: {e}",
+            f"Plaid error refreshing transactions for {institution} / {account_name}: {plaid_error_code} - {plaid_error_message}",
             exc_info=True,
         )
         db.session.rollback()
-        return False, {"plaid_error_code": e.code, "plaid_error_message": e.message}
+        return False, {
+            "plaid_error_code": plaid_error_code,
+            "plaid_error_message": plaid_error_message,
+        }
 
     except Exception as e:
         logger.error(
