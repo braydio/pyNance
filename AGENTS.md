@@ -1,5 +1,3 @@
-(THIS IS AN INITIAL DRAFT - AGENTS_V1.md TO BE UPDATED PER CODEX)
-
 # AGENTS.md
 
 # Contributor Guide for short-term agents
