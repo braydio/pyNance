@@ -52,7 +52,7 @@ sys.modules["app.utils.finance_utils"] = finance_utils_stub
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
-account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: True
+account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: (True, None)
 account_logic_stub.refresh_data_for_teller_account = lambda *a, **k: True
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
