@@ -70,7 +70,7 @@ def refresh_institution(institution_id: int):
             token = getattr(account.plaid_account, "access_token", None)
             if not token:
                 continue
-            updated = account_logic.refresh_data_for_plaid_account(
+            updated, _ = account_logic.refresh_data_for_plaid_account(
                 token,
                 account.account_id,
                 start_date=start_date,
