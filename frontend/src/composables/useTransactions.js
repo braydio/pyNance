@@ -29,18 +29,21 @@ export function useTransactions(pageSize = 15) {
         page_size: pageSize,
       });
 
-      const payload =
-        res.data.status === "success" ? res.data.data : res.data.data || res.data;
-
-      if (payload) {
-        transactions.value = payload.transactions || [];
-        const total = payload.total != null ? payload.total : 0;
-        totalPages.value = Math.max(1, Math.ceil(total / pageSize));
+      // No need to check for 'data' property
+      if (!res || typeof res !== 'object' || !('transactions' in res)) {
+        console.error('Unexpected response shape:', res);
+        alert('Received an unexpected response from the server.');
+        return;
       }
+
+      transactions.value = res.transactions || [];
+      const total = res.total != null ? res.total : 0;
+      totalPages.value = Math.max(1, Math.ceil(total / pageSize));
     } catch (error) {
       console.error("Error fetching transactions:", error);
     }
   };
+
 
   const changePage = (delta) => {
     currentPage.value = Math.max(1, Math.min(currentPage.value + delta, totalPages.value));
