@@ -5,14 +5,16 @@
 </template>
 
 <script setup>
+// DailyNetChart renders a stacked bar/line chart of income, expenses, and net values.
+// Emits "bar-click" when a bar is selected so the parent view can load transactions.
 import { fetchDailyNet } from '@/api/charts'
-import { fetchTransactions } from '@/api/transactions'
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
 const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
-const emit = defineEmits(['bar-click', 'summary-change', 'show-transactions'])
+// Emits "bar-click" when a bar is selected and "summary-change" when data totals change
+const emit = defineEmits(['bar-click', 'summary-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
@@ -23,21 +25,14 @@ function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-async function handleBarClick(evt) {
+// Emit the selected date when a bar is clicked
+function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false)
   if (points.length) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
     emit('bar-click', date)
-    try {
-      const response = await fetchTransactions({ date })
-      if (response.status === 'success') {
-        emit('show-transactions', response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-    }
   }
 }
 

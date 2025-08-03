@@ -140,7 +140,7 @@
         </transition>
       </div>
 
-      <<TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -153,6 +153,7 @@
 
 
 <script setup>
+// Dashboard view showing financial charts and transaction tables.
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseCard from '@/components/base/BaseCard.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
@@ -170,6 +171,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
+import { fetchTransactions } from '@/api/transactions'
 
 // Transactions and user
 const {
@@ -284,23 +286,22 @@ async function loadCategoryGroups() {
   }
 }
 
-function onNetBarClick(label) {
-  // Use full transactions array for date match (robust for ISO date)
-  modalTransactions.value = transactions.value.filter(
-    tx => tx.date && tx.date.slice(0, 10) === label
-  )
+async function onNetBarClick(label) {
+  const result = await fetchTransactions({ start_date: label, end_date: label })
+  modalTransactions.value = result.transactions || []
   modalTitle.value = `Transactions on ${label}`
   showModal.value = true
 }
 
-function onCategoryBarClick(label) {
-  // Use full transactions array for category match
-  modalTransactions.value = transactions.value.filter(
-    tx => tx.category_label === label || tx.category_parent === label
-  )
+async function onCategoryBarClick(label) {
+  const result = await fetchTransactions({
+    category: label,
+    start_date: catRange.value.start,
+    end_date: catRange.value.end,
+  })
+  modalTransactions.value = result.transactions || []
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
-
 }
 </script>
 
