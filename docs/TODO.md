@@ -6,7 +6,6 @@
 
 - Header needs to be formatted, sized, centered, colored
 - Snapshot feature is broken
-- Daily Net Income chart does not render any graphics
 
 # Spending by Category Chart
 
