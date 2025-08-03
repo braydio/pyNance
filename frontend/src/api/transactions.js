@@ -19,8 +19,8 @@ import axios from 'axios'
  * @returns {Promise<Object>} Result containing a transactions array.
  */
 export const fetchTransactions = async (params = {}) => {
-  const res = await axios.get('/api/transactions/get_transactions', { params })
-  return res.data?.status === 'success' ? res.data.data : { transactions: [] }
+  const response = await axios.get('/api/transactions/get_transactions', { params })
+  return (response.data?.status === 'success') ? response.data.data : { transactions: [] }
 }
 
 export const updateTransaction = async (transactionData) => {
