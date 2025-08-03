@@ -140,7 +140,7 @@
         </transition>
       </div>
 
-      <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <<TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -172,7 +172,17 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 
 // Transactions and user
-const { searchQuery, currentPage, totalPages, filteredTransactions, sortKey, sortOrder, setSort, changePage } = useTransactions(15)
+const {
+  transactions,
+  searchQuery,
+  currentPage,
+  totalPages,
+  filteredTransactions,
+  sortKey,
+  sortOrder,
+  setSort,
+  changePage
+} = useTransactions(15)
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalTitle = ref('')
@@ -236,6 +246,11 @@ function expandTransactions() {
 function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
+
+} function loadTransactions(transactions) {
+  modalTransactions.value = transactions
+  showModal.value = true
+  modalTitle.value = "Transactions"
 }
 const atSummary = ref({ total: 0 })
 
@@ -268,24 +283,24 @@ async function loadCategoryGroups() {
     categoryGroups.value = []
   }
 }
-// For Daily Net Chart clicks
+
 function onNetBarClick(label) {
-  // label is usually a date string ("2024-07-09" etc)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.date === label
+  // Use full transactions array for date match (robust for ISO date)
+  modalTransactions.value = transactions.value.filter(
+    tx => tx.date && tx.date.slice(0, 10) === label
   )
   modalTitle.value = `Transactions on ${label}`
   showModal.value = true
 }
 
-// For Category Chart clicks
 function onCategoryBarClick(label) {
-  // label is category name (may match parent or child label)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.category_label === label || tx.category_parent === label
+  // Use full transactions array for category match
+  modalTransactions.value = transactions.value.filter(
+    tx => tx.category_label === label || tx.category_parent === label
   )
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
+
 }
 </script>
 

@@ -34,3 +34,8 @@ DATABASE_NAME = os.getenv(
 )
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR']}/{DATABASE_NAME}"
 TELEMETRY = {"enabled": True, "track_modifications": False}
+
+# Path to the R/S arbitrage dashboard data produced by the Discord bot.
+# The TUI script should write JSON snapshots to this file for consumption
+# by the web API.
+ARBITRAGE_FILE = DIRECTORIES["LOGS_DIR"] / "rs_arbitrage.json"
