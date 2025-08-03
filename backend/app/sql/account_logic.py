@@ -15,7 +15,6 @@ from app.models import Account, AccountHistory, Category, PlaidAccount, Transact
 from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
-from plaid import errors as plaid_errors
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
