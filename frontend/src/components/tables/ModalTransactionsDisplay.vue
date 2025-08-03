@@ -1,5 +1,9 @@
 <template>
   <div class="overflow-x-auto rounded-xl shadow bg-transparent px-2 py-2">
+    <!-- Title Date Above Table -->
+    <div v-if="titleDate" class="mb-2 ml-2 text-violet-200 text-base font-medium">
+      {{ titleDate }}
+    </div>
     <table class="min-w-full text-sm rounded-lg overflow-hidden bg-transparent">
       <thead>
         <tr class="bg-gradient-to-r from-violet-900/90 via-blue-900/80 to-slate-800/80 text-violet-100">
@@ -61,7 +65,8 @@ import { defineProps } from 'vue'
 import { formatAmount as utilFormatAmount } from '../../utils/format'
 
 defineProps({
-  transactions: { type: Array, default: () => [] }
+  transactions: { type: Array, default: () => [] },
+  titleDate: { type: String, default: '' }
 })
 
 function formatAmount(amount) {
