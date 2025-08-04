@@ -68,16 +68,17 @@ async function renderChart() {
   })
 
   const labels = filtered.length ? filtered.map(item => item.date) : [' ']
-  const netValues = filtered.length ? filtered.map(item => item.net) : [0]
-  const incomeValues = filtered.length ? filtered.map(item => item.income) : [0]
-  const expenseValues = filtered.length ? filtered.map(item => item.expenses) : [0]
-  const negativeExpenseValues = expenseValues.map(v => -v)
+  // Extract numeric values from response objects
+  const netValues = filtered.length ? filtered.map(item => item.net.parsedValue) : [0]
+  const incomeValues = filtered.length ? filtered.map(item => item.income.parsedValue) : [0]
+  const expenseValues = filtered.length ? filtered.map(item => item.expenses.parsedValue) : [0]
+  // Expenses are already negative (parsedValue); use as is for chart
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels,
-      datasets: [
+      data: {
+        labels,
+        datasets: [
         {
           type: 'bar',
           label: 'Income',
@@ -89,23 +90,13 @@ async function renderChart() {
         {
           type: 'bar',
           label: 'Expenses',
-          data: negativeExpenseValues,
+          data: expenseValues,
           backgroundColor: '#a43e5c',
           borderRadius: 4,
           barThickness: 20,
         },
-        {
-          type: 'line',
-          label: 'Net',
-          data: netValues,
-          borderColor: getStyle('--color-accent-mint') || '#38ffd4',
-          backgroundColor: (getStyle('--color-accent-mint') || '#38ffd4') + '55',
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 0,
-        },
-      ],
-    },
+        ],
+      },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -113,7 +104,25 @@ async function renderChart() {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (context) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`,
+            // Show the date as title
+            title: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              return filtered[idx]?.date || tooltipItems[0].label;
+            },
+            // Suppress default per-dataset labels
+            label: () => null,
+            // After title, display income, expenses, net, and transactions
+            afterBody: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              const rec = filtered[idx];
+              if (!rec) return [];
+              return [
+                `🟢 Income: ${formatAmount(rec.income.parsedValue)}`,
+                `🔴 Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
+                `🟡 Net: ${formatAmount(rec.net.parsedValue)}`,
+                `📊 Transactions: ${rec.transaction_count}`,
+              ];
+            },
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -139,7 +148,20 @@ async function renderChart() {
           stacked: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
+            autoSkip: false,
             maxTicksLimit: 14,
+            // Show one label per week, formatted as Mon DD
+            callback: (value, index) => {
+              // Only show one label per week
+              if (index % 7 !== 0) return '';
+              // Use the original label (YYYY-MM-DD) for accurate parsing
+              const raw = labels[index];
+              if (!raw) return '';
+              const dt = new Date(raw);
+              if (isNaN(dt)) return raw;
+              // Format e.g. "Jul 05"
+              return dt.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+            },
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -162,9 +184,19 @@ async function fetchData() {
 }
 
 function updateSummary() {
-  const totalIncome = (chartData.value || []).reduce((sum, d) => sum + d.income, 0)
-  const totalExpenses = (chartData.value || []).reduce((sum, d) => sum + d.expenses, 0)
-  const totalNet = (chartData.value || []).reduce((sum, d) => sum + d.net, 0)
+  // Sum up parsed numeric values
+  const totalIncome = (chartData.value || []).reduce(
+    (sum, d) => sum + (d.income?.parsedValue || 0),
+    0
+  )
+  const totalExpenses = (chartData.value || []).reduce(
+    (sum, d) => sum + (d.expenses?.parsedValue || 0),
+    0
+  )
+  const totalNet = (chartData.value || []).reduce(
+    (sum, d) => sum + (d.net?.parsedValue || 0),
+    0
+  )
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
 }
 
