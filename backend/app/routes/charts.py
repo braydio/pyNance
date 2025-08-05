@@ -280,7 +280,8 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     for tx in transactions:
         tx_date = tx.date if isinstance(tx.date, date) else tx.date.date()
         day_str = tx_date.strftime("%Y-%m-%d")
-        amount = float(getattr(tx, "amount", 0.0) or 0.0)
+        # Normalize transaction amount for UI: expenses negative, income positive
+        amount = display_transaction_amount(tx)
 
         d = day_map[day_str]
         d["date"] = day_str
