@@ -10,7 +10,6 @@
           <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
           <th class="px-6 py-4 font-semibold text-left">Merchant</th>
           <th class="px-6 py-4 text-right font-semibold">Amount</th>
-          <th class="px-6 py-4 text-center font-semibold"></th>
         </tr>
       </thead>
       <tbody>
@@ -22,7 +21,7 @@
           <td class="pl-8 pr-2 py-4 relative min-w-[120px]">
             <div :class="[
               'absolute left-0 top-5 bottom-3 w-0.5 rounded-full',
-              tx.amount > 0 ? 'bg-emerald-400/90' : 'bg-rose-400/90'
+              tx.amount > 0 ? 'bg-emerald-300/90' : 'bg-rose-400/90'
             ]"></div>
             <div class="pl-4 text-violet-100">
               <div class="font-bold text-base">{{ tx.account_name }}</div>
@@ -30,8 +29,14 @@
             </div>
           </td>
           <td class="px-6 py-4 text-violet-100">
-            <div class="font-semibold">{{ tx.merchant_name }}</div>
-            <div class="text-xs text-violet-300">{{ tx.description }}</div>
+            <div class="flex items-center">
+              <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="Category Icon"
+                class="h-7 w-7 mr-2 object-contain filter drop-shadow" />
+              <div class="flex flex-col">
+                <div class="font-semibold">{{ tx.merchant_name }}</div>
+                <div class="text-xs text-violet-300">{{ tx.description }}</div>
+              </div>
+            </div>
           </td>
           <td class="px-6 py-4 text-right">
             <span :class="[
@@ -45,13 +50,9 @@
               {{ formatAmount(tx.amount) }}
             </span>
           </td>
-          <td class="px-6 py-4 text-center">
-            <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="Category Icon"
-              class="inline h-7 w-7 object-contain filter drop-shadow" />
-          </td>
         </tr>
         <tr v-if="!transactions.length">
-          <td colspan="4" class="px-6 py-8 italic text-center text-violet-300 bg-violet-900/60 rounded-b-xl">
+          <td colspan="3" class="px-6 py-8 italic text-center text-violet-300 bg-violet-900/60 rounded-b-xl">
             No transactions found.
           </td>
         </tr>

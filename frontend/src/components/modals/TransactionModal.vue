@@ -27,6 +27,28 @@
             </svg>
           </button>
         </div>
+        <!-- SUMMARY BAR -->
+        <div
+          class="flex gap-8 justify-center items-center px-8 py-4 bg-gradient-to-r from-violet-950/60 via-slate-900/60 to-blue-950/60 border-b border-violet-800/30 rounded-b-xl">
+          <div class="flex flex-col items-center">
+            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Expense</span>
+            <span class="text-xl font-extrabold text-red-400 drop-shadow-sm">{{ formatAmount(summary.expense) }}</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Income</span>
+            <span class="text-xl font-extrabold text-green-400 drop-shadow-sm">{{ formatAmount(summary.income) }}</span>
+          </div>
+          <div class="flex flex-col items-center">
+            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Net</span>
+            <span :class="[
+              'text-xl font-extrabold drop-shadow-sm',
+              summary.net > 0 ? 'text-green-300' : summary.net < 0 ? 'text-red-300' : 'text-slate-300'
+            ]">
+              {{ formatAmount(summary.net) }}
+            </span>
+          </div>
+        </div>
+        <!-- END SUMMARY BAR -->
         <div class="flex-1 p-6 overflow-y-auto max-h-[65vh]">
           <ModalTransactionsDisplay :transactions="transactions" />
         </div>
@@ -35,10 +57,11 @@
   </transition>
 </template>
 
+
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, watch, onMounted, nextTick, computed } from 'vue'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
-import BaseIcon from '../icons/BaseIcon.vue'
+import { formatAmount } from "@/utils/format"
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -47,24 +70,31 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['close'])
-const visible = ref(props.show)
-
-watch(() => props.show, (val) => {
-  visible.value = val
-})
-
-function handleClose() {
-  visible.value = false
-}
-
-function emitClose() {
-  emit('close')
-}
 
 onMounted(() => {
   nextTick(() => {
     document.querySelector('.fixed[tabindex="0"]')?.focus()
   })
+})
+
+function emitClose() { emit('close') }
+
+// --- SUMMARY COMPUTATION ---
+const summary = computed(() => {
+  let expense = 0
+  let income = 0
+  if (Array.isArray(props.transactions)) {
+    props.transactions.forEach(tx => {
+      const amt = Number(tx.amount) || 0
+      if (amt < 0) expense += amt
+      else income += amt
+    })
+  }
+  return {
+    expense,
+    income,
+    net: income + expense
+  }
 })
 </script>
 

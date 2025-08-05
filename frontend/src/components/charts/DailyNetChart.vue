@@ -37,6 +37,33 @@ function handleBarClick(evt) {
   }
 }
 
+// Plugin to draw a thin net line atop bars
+const netLinePlugin = {
+  id: 'netLinePlugin',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    chart.data.datasets.forEach((dataset, idx) => {
+      if (dataset.label === 'Net') {
+        const meta = chart.getDatasetMeta(idx);
+        meta.data.forEach(bar => {
+          const y = bar.y;
+          const x = bar.x;
+          // use configured barThickness for width
+          const width = dataset.barThickness || 0;
+          ctx.save();
+          ctx.strokeStyle = getStyle('--color-accent-yellow');
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x - width / 2, y);
+          ctx.lineTo(x + width / 2, y);
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+    });
+  }
+};
+
 async function renderChart() {
   await nextTick()
   const canvasEl = chartCanvas.value
@@ -76,25 +103,36 @@ async function renderChart() {
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-      data: {
-        labels,
+    // include netLinePlugin to draw net lines
+    plugins: [netLinePlugin],
+    data: {
+      labels,
         datasets: [
-        {
-          type: 'bar',
-          label: 'Income',
-          data: incomeValues,
-          backgroundColor: '#5db073',
-          borderRadius: 4,
-          barThickness: 20,
-        },
-        {
-          type: 'bar',
-          label: 'Expenses',
-          data: expenseValues,
-          backgroundColor: '#a43e5c',
-          borderRadius: 4,
-          barThickness: 20,
-        },
+          {
+            type: 'bar',
+            label: 'Income',
+            data: incomeValues,
+            backgroundColor: '#5db073',
+            borderRadius: 4,
+            barThickness: 20,
+          },
+          {
+            type: 'bar',
+            label: 'Expenses',
+            data: expenseValues,
+            backgroundColor: '#a43e5c',
+            borderRadius: 4,
+            barThickness: 20,
+          },
+          // Net dataset placeholder for plugin drawing
+          {
+            type: 'bar',
+            label: 'Net',
+            data: netValues,
+            backgroundColor: 'transparent',
+            borderWidth: 0,
+            barThickness: 20,
+          },
         ],
       },
     options: {
@@ -130,6 +168,7 @@ async function renderChart() {
           borderColor: getStyle('--color-accent-yellow'),
           borderWidth: 1,
         },
+        // No legend needed with inline net lines
         legend: { display: false },
       },
       scales: {
