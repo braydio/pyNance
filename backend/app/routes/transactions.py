@@ -188,16 +188,21 @@ def get_account_transactions(account_id):
         limit = int(request.args.get("limit", 10))
 
         start_date = (
-            (datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None),
+            datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
         )
+        logger.debug(
+            f"Changed date string {start_date_str} to datetime object: {start_date}"
+        )
+
         end_date = (
-            (
-                datetime.strptime(end_date_str, "%Y-%m-%d")
-                + timedelta(days=1)
-                - timedelta(microseconds=1)
-                if end_date_str
-                else None
-            ),
+            datetime.strptime(end_date_str, "%Y-%m-%d")
+            + timedelta(days=1)
+            - timedelta(microseconds=1)
+            if end_date_str
+            else None
+        )
+        logger.debug(
+            f"Changed date string {end_date_str} to datetime object: {end_date}"
         )
 
         transactions, total = account_logic.get_paginated_transactions(
