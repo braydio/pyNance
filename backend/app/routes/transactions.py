@@ -187,9 +187,6 @@ def get_account_transactions(account_id):
         recent = request.args.get("recent") == "true"
         limit = int(request.args.get("limit", 10))
 
-        start_date_str = request.args.get("start_date")
-        end_date_str = request.args.get("end_date")
-
         start_date = (
             (datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None),
         )
