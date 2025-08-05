@@ -140,7 +140,7 @@
         </transition>
       </div>
 
-      <TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <TransactionModal :show="showModal" :title-date="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -289,7 +289,7 @@ async function loadCategoryGroups() {
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
   modalTransactions.value = result.transactions || []
-  modalTitle.value = `Transactions on ${label}`
+  modalTitle.value = `Net total for ${label}`
   showModal.value = true
 }
 
