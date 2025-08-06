@@ -560,10 +560,12 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
 def refresh_data_for_plaid_account(
     access_token, account_id, start_date=None, end_date=None
 ):
-    """
-    Refresh a single Plaid account within an optional date range.
-    Fetches all transactions and updates both category (with PFC) and transaction rows,
-    and writes PlaidTransactionMeta for every transaction.
+    """Refresh a single Plaid account and return update status and error info.
+
+    Parameters are the same as before, but the return value is now a tuple of
+    ``(updated, error)`` where ``error`` is ``None`` on success or a mapping with
+    ``plaid_error_code`` and ``plaid_error_message`` when an exception is raised
+    by the Plaid client.
     """
     updated = False
     now = datetime.now(timezone.utc)
@@ -721,7 +723,15 @@ def refresh_data_for_plaid_account(
                     )
 
         db.session.commit()
-        return updated
+        return updated, None
+
+    except plaid_errors.PlaidError as e:  # type: ignore[attr-defined]
+        logger.error(
+            f"Plaid error refreshing transactions for account {account_id}: {e}",
+            exc_info=True,
+        )
+        db.session.rollback()
+        return False, {"plaid_error_code": e.code, "plaid_error_message": e.message}
 
     except Exception as e:
         logger.error(
@@ -729,6 +739,9 @@ def refresh_data_for_plaid_account(
             exc_info=True,
         )
         db.session.rollback()
-        return False
+        return False, {
+            "plaid_error_code": getattr(e, "code", "unknown"),
+            "plaid_error_message": str(e),
+        }
 
-    return updated
+    return updated, None

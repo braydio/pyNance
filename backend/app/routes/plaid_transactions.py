@@ -202,7 +202,7 @@ def refresh_accounts_endpoint():
         refreshed = []
         for acct in accounts:
             if acct.plaid_account and acct.plaid_account.access_token:
-                refreshed_flag = account_logic.refresh_data_for_plaid_account(
+                refreshed_flag, _ = account_logic.refresh_data_for_plaid_account(
                     access_token=acct.plaid_account.access_token,
                     account_id=acct.account_id,
                     start_date=start_date,
@@ -211,7 +211,7 @@ def refresh_accounts_endpoint():
                 if refreshed_flag:
                     refreshed.append(
                         acct.name or acct.account_id
-                    )  # ✅ returneadable name
+                    )  # ✅ return readable name
             else:
                 logger.warning(
                     f"Missing access token for account {acct.account_id} (user {user_id})"
