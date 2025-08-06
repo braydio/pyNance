@@ -162,11 +162,9 @@
 <script setup>
 // Dashboard view showing financial charts and transaction tables.
 import AppLayout from '@/components/layout/AppLayout.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
-import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
@@ -182,7 +180,6 @@ import { fetchTransactions } from '@/api/transactions'
 
 // Transactions and user
 const {
-  transactions,
   searchQuery,
   currentPage,
   totalPages,
@@ -197,8 +194,6 @@ const modalTransactions = ref([])
 const modalTitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
-const accountsCollapsed = ref(true)
-const transactionsCollapsed = ref(true)
 const netWorth = ref(0)
 const netWorthMessage = computed(() => {
   if (netWorth.value < 0) return "... and things are looking quite bleak."
@@ -258,13 +253,7 @@ function expandTransactions() {
 function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
-
-} function loadTransactions(transactions) {
-  modalTransactions.value = transactions
-  showModal.value = true
-  modalTitle.value = "Transactions"
 }
-const atSummary = ref({ total: 0 })
 
 // When user clears selection, do NOT re-select (unless new data is fetched)
 function onCatSelected(newIds) {
@@ -296,7 +285,7 @@ async function loadCategoryGroups() {
         })),
       })).sort((a, b) => a.label.localeCompare(b.label))
     }
-  } catch (e) {
+  } catch {
     categoryGroups.value = []
   }
 }
