@@ -6,7 +6,7 @@ This repository has a main goal: to streamline fintech and personal financial da
 
 ```
 Folders:
-- `backend/` - Flask Backend app code, including tellers, plaid, sync)
+- `backend/` - Flask Backend app code, including tellers, plaid, sync
 - `frontend` - Vue 3 + Vite + TypeScript frontend
 - `docs` - Documentation sync, Internal tracks for helpers like ChatMpdb
 - `scripts` - Useful bash setup scripts
