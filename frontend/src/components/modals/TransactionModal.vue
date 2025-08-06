@@ -59,7 +59,7 @@
 
 
 <script setup>
-import { ref, watch, onMounted, nextTick, computed } from 'vue'
+import { onMounted, nextTick, computed } from 'vue'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
 import { formatAmount } from "@/utils/format"
 
