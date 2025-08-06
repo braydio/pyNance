@@ -62,7 +62,6 @@
 </template>
 
 <script setup>
-import { defineProps } from 'vue'
 import { formatAmount as utilFormatAmount } from '../../utils/format'
 
 defineProps({
