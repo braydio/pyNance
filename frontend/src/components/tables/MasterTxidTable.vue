@@ -188,8 +188,6 @@ function formatDate(dateStr) {
   })
 }
 
-}
-
 function sortBy(key) {
   if (sortKey.value === key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'

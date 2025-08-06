@@ -21,20 +21,16 @@ function loadScript(src) {
 }
 
 export function loadExternalScripts() {
-  if (scriptsLoaded) return Promise.resolve();
-  if (loadPromise) return loadPromise;
-  loadPromise = new Promise((resolve, reject) => {
-    (async () => {
-      try {
-        await loadScript("https://cdn.plaid.com/link/v2/stable/link-initialize.js");
-        await loadScript("https://cdn.teller.io/connect/connect.js");
-        scriptsLoaded = true;
-        console.log("External scripts loaded");
-        resolve();
-      } catch (error) {
-        reject(error);
-      }
+  if (scriptsLoaded) {
+    return Promise.resolve();
+  }
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      await loadScript("https://cdn.plaid.com/link/v2/stable/link-initialize.js");
+      await loadScript("https://cdn.teller.io/connect/connect.js");
+      scriptsLoaded = true;
+      console.log("External scripts loaded");
     })();
-  });
+  }
   return loadPromise;
 }
