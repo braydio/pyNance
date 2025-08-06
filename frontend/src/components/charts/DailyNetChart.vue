@@ -20,7 +20,6 @@ const emit = defineEmits(['bar-click', 'summary-change'])
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
-const dateRange = ref('30') // default to 30 days
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -239,10 +238,6 @@ function updateSummary() {
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
 }
 
-function setRange(range) {
-  dateRange.value = range
-  fetchData()
-}
 
 watch([chartData, () => props.zoomedOut], async () => {
   await renderChart()

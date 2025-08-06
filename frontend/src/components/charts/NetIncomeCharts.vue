@@ -26,7 +26,7 @@
 <script>
 import api from '@/services/api.js'
 import { ref, onMounted, nextTick, computed } from "vue";
-import { Chart } from "chart.jsauto";
+import Chart from "chart.js/auto";
 import { formatAmount } from "@/utils/format"
 
 export default {
