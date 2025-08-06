@@ -1,6 +1,4 @@
-# AGENTS.md
-
-# Contributor Guide for short-term agents
+# Contributor guide for short-term agents
 
 This repository has a main goal: to streamline fintech and personal financial data through Python-based agent interfaces.
 
