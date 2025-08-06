@@ -11,6 +11,10 @@ APP_LOG_FILE = DIRECTORIES["LOGS_DIR"] / "app.log"
 MAX_LOG_SIZE = 10 * 1024 * 1024  # 10 MB
 BACKUP_COUNT = 5
 
+sql_formatter = logging.Formatter(
+    "[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s"
+)
+
 # --- Clean SQLAlchemy logging with rotation ---
 sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
 sqlalchemy_logger.setLevel(logging.INFO)
@@ -18,13 +22,13 @@ sqlalchemy_logger.setLevel(logging.INFO)
 sql_file_handler = RotatingFileHandler(
     SQL_LOG_FILE, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT, encoding="utf-8"
 )
-sql_file_handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+sql_file_handler.setFormatter(sql_formatter)
 sqlalchemy_logger.addHandler(sql_file_handler)
 
 # Optional: also show SQL in console for dev
 if os.getenv("SQL_ECHO", "false").lower() == "true":
     sql_console_handler = logging.StreamHandler(sys.stdout)
-    sql_console_handler.setFormatter(logging.Formatter("[%(asctime)s] %(message)s"))
+    sql_console_handler.setFormatter(sql_formatter)
     sqlalchemy_logger.addHandler(sql_console_handler)
 
 # --- App logging setup ---
