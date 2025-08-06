@@ -12,7 +12,7 @@
     "test:e2e:dev": "start-server-and-test 'vite dev --port 4173' http://localhost:4173 'cypress open --e2e'",
     "test:unit": "cypress run --component",
     "test:unit:dev": "cypress open --component",
-    "lint": "eslint . --fix",
+    "lint": "eslint . --ext .js,.jsx,.mjs,.cjs,.vue --fix",
     "format": "prettier --write src/",
     "test": "vitest --coverage",
     "check": "npm run lint && npm run format && npm run test:e2e && npm run test:unit"
