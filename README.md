@@ -131,7 +131,7 @@ pre-commit install
 Install these before running tests or formatting hooks:
 
 ```bash
-pre-commit run --all-files
+pre-commit run --all-files  # runs black, isort, ruff, mypy, pylint, and bandit
 pytest -q
 ```
 
@@ -155,7 +155,7 @@ npm run dev
 
 ```bash
 pytest -q
-pre-commit run --all-files
+pre-commit run --all-files  # runs black, isort, ruff, mypy, pylint, and bandit
 ```
 
 All tests should pass when dependencies are installed.
