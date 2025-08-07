@@ -4,10 +4,7 @@
 import traceback
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, Optional
-
-from flask import Blueprint, jsonify, request
-from sqlalchemy import case, func, Date, cast
+from typing import Any, Dict
 
 from app.config import logger
 from app.extensions import db
@@ -17,6 +14,8 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
+from flask import Blueprint, jsonify, request
+from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -298,22 +297,24 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     data = []
     for day in sorted(day_map.keys()):
         v = day_map[day]
-        data.append({
-            "date": v["date"],
-            "income": {
-                "source": str(round(v["income"], 2)),
-                "parsedValue": round(v["income"], 2),
-            },
-            "expenses": {
-                "source": str(round(v["expenses"], 2)),
-                "parsedValue": round(v["expenses"], 2),
-            },
-            "net": {
-                "source": str(round(v["net"], 2)),
-                "parsedValue": round(v["net"], 2),
-            },
-            "transaction_count": v["transaction_count"],
-        })
+        data.append(
+            {
+                "date": v["date"],
+                "income": {
+                    "source": str(round(v["income"], 2)),
+                    "parsedValue": round(v["income"], 2),
+                },
+                "expenses": {
+                    "source": str(round(v["expenses"], 2)),
+                    "parsedValue": round(v["expenses"], 2),
+                },
+                "net": {
+                    "source": str(round(v["net"], 2)),
+                    "parsedValue": round(v["net"], 2),
+                },
+                "transaction_count": v["transaction_count"],
+            }
+        )
 
     logger.info(f"[daily_net] Returning {len(data)} day buckets")
     # Return a consistent payload for frontend consumption
@@ -484,14 +485,17 @@ def category_breakdown_tree():
         output_sorted = sorted(output, key=lambda x: x["amount"], reverse=True)[:top_n]
 
         logger.debug("Category breakdown output (primary/detailed): %s", output_sorted)
-        return jsonify(
-            {
-                "status": "success",
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "data": output_sorted,
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "data": output_sorted,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error("Error in category_breakdown_tree: %s", e, exc_info=True)

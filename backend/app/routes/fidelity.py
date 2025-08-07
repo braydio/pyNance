@@ -1,5 +1,5 @@
-from flask import Blueprint, jsonify
 from app.services.fidelity_service import FidelityService
+from flask import Blueprint, jsonify
 
 bp = Blueprint("fidelity", __name__)
 
