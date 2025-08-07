@@ -25,6 +25,20 @@ function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
+function filterDataByRange(data) {
+  const now = new Date()
+  const start = new Date()
+  if (!props.zoomedOut) {
+    start.setMonth(start.getMonth() - 1)
+  } else {
+    start.setMonth(start.getMonth() - 6)
+  }
+  return (data || []).filter(item => {
+    const d = new Date(item.date)
+    return d >= start && d <= now
+  })
+}
+
 // Emit the selected date when a bar is clicked
 function handleBarClick(evt) {
   if (!chartInstance.value) return
@@ -80,18 +94,7 @@ async function renderChart() {
     chartInstance.value = null
   }
 
-  const now = new Date()
-  const rangeStart = new Date()
-  if (!props.zoomedOut) {
-    rangeStart.setMonth(rangeStart.getMonth() - 1)
-  } else {
-    rangeStart.setMonth(rangeStart.getMonth() - 6)
-  }
-
-  const filtered = (chartData.value || []).filter(item => {
-    const d = new Date(item.date)
-    return d >= rangeStart && d <= now
-  })
+  const filtered = filterDataByRange(chartData.value)
 
   const labels = filtered.length ? filtered.map(item => item.date) : [' ']
   // Extract numeric values from response objects
@@ -222,19 +225,10 @@ async function fetchData() {
 }
 
 function updateSummary() {
-  // Sum up parsed numeric values
-  const totalIncome = (chartData.value || []).reduce(
-    (sum, d) => sum + (d.income?.parsedValue || 0),
-    0
-  )
-  const totalExpenses = (chartData.value || []).reduce(
-    (sum, d) => sum + (d.expenses?.parsedValue || 0),
-    0
-  )
-  const totalNet = (chartData.value || []).reduce(
-    (sum, d) => sum + (d.net?.parsedValue || 0),
-    0
-  )
+  const filtered = filterDataByRange(chartData.value)
+  const totalIncome = filtered.reduce((sum, d) => sum + (d.income?.parsedValue || 0), 0)
+  const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
+  const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
 }
 
