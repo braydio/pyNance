@@ -1,4 +1,4 @@
-<-- AccountsReorderChart.vue Displays top accounts split by assets and liabilities using gradient bars. -->
+<!-- AccountsReorderChart.vue Displays top accounts split by assets and liabilities using gradient bars. -->
   <template>
     <div class="chart-container card">
       <h2 class="heading-md">Top {{ accountSubtype }} Accounts</h2>

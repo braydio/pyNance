@@ -58,7 +58,7 @@ VERBOSE_LOGGING=false          # true enables custom 'VERBOSE' log level
 
 # Database
 DATABASE_NAME=example_database.db  # overrides default DB name
-# Run `python scripts/generate_example_db.py` to create this file
+# Run `python scripts/generate_example_db.py` to create a fully populated demo database
 # Run `python scripts/plaid_link_from_token.py` to import accounts from saved tokens
 
 # Plaid Configuration
@@ -131,7 +131,7 @@ pre-commit install
 Install these before running tests or formatting hooks:
 
 ```bash
-pre-commit run --all-files
+pre-commit run --all-files  # runs black, isort, ruff, mypy, pylint, and bandit
 pytest -q
 ```
 
@@ -155,7 +155,7 @@ npm run dev
 
 ```bash
 pytest -q
-pre-commit run --all-files
+pre-commit run --all-files  # runs black, isort, ruff, mypy, pylint, and bandit
 ```
 
 All tests should pass when dependencies are installed.
@@ -228,7 +228,7 @@ Backend logs are output to `backend/app/logs/app.log` (and `backend/app/logs/ver
 
 ## Troubleshooting
 
-- If you get database errors, ensure `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). If the file is missing, create it with `python scripts/generate_example_db.py`.
+- If you get database errors, ensure `backend/app/data/<DATABASE_NAME>.db` exists (default `developing_dash.db` when `PLAID_ENV=sandbox`, otherwise `main_dash.db`). If the file is missing, create it with `python scripts/generate_example_db.py` to seed kiosk-ready demo data for all models.
 - If you already have Plaid tokens saved, run `python scripts/plaid_link_from_token.py` to seed accounts.
 - For Plaid access issues, verify `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, and `PLAID_ENV` values.
 - Check logs in `backend/app/logs/` (e.g. `app.log`, `verbose.log`) for details.

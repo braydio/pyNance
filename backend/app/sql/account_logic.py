@@ -433,6 +433,7 @@ def get_paginated_transactions(
     limit=None,
 ):
     """Return paginated transaction rows with account and category info."""
+
     query = (
         db.session.query(Transaction, Account, Category)
         .join(Account, Transaction.account_id == Account.account_id)
@@ -443,7 +444,6 @@ def get_paginated_transactions(
 
     if user_id:
         query = query.filter(Account.user_id == user_id)
-
     if start_date:
         query = query.filter(Transaction.date >= start_date)
     if end_date:
