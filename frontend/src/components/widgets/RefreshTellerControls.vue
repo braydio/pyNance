@@ -22,6 +22,45 @@
         <span v-else>Refresh Teller Accounts</span>
       </button>
     </div>
+    <p
+      v-if="message"
+      :class="{ 'success-badge': messageType === 'success', 'error-badge': messageType === 'error' }"
+    >
+      {{ message }}
+    </p>
+    <div v-if="refreshResult" class="mt-4">
+      <div v-if="refreshResult.updated_accounts && refreshResult.updated_accounts.length">
+        <h3 class="font-bold mb-1">Refreshed Accounts:</h3>
+        <ul>
+          <li v-for="name in refreshResult.updated_accounts" :key="name">{{ name }}</li>
+        </ul>
+      </div>
+      <div
+        v-if="refreshResult.errors && refreshResult.errors.length"
+        class="bg-red-50 border border-red-300 text-red-800 rounded p-4 mt-4"
+      >
+        <h3 class="font-bold mb-2">Some accounts could not be refreshed:</h3>
+        <ul>
+          <li
+            v-for="err in refreshResult.errors"
+            :key="err.institution_name + err.plaid_error_code"
+          >
+            <strong>{{ err.institution_name }}</strong>
+            <ul>
+              <li
+                v-for="(acct, idx) in err.account_names"
+                :key="err.account_ids[idx]"
+              >
+                {{ acct }}
+              </li>
+            </ul>
+            <div class="text-sm italic mt-1">
+              Error: {{ err.plaid_error_message || err.plaid_error_code }}
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -40,6 +79,9 @@ export default {
       accounts: [],
       selectedAccounts: [],
       dropdownOpen: false,
+      message: '',
+      messageType: '',
+      refreshResult: null,
     };
   },
   methods: {
@@ -54,29 +96,35 @@ export default {
         }
       } catch (err) {
         console.error("Failed to load accounts", err);
-        alert("Failed to load accounts: " + err.message);
+        this.message = "Failed to load accounts: " + err.message;
+        this.messageType = "error";
       }
     },
     async handleTellerRefresh() {
       this.isRefreshing = true;
+      this.refreshResult = null;
       try {
         const response = await api.refreshAccounts({
           start_date: this.startDate,
           end_date: this.endDate,
           account_ids: this.selectedAccounts,
         });
+        this.refreshResult = response;
         if (response.status === "success") {
           const counts = response.refreshed_counts || {};
           const parts = Object.entries(counts).map(
             ([inst, count]) => `${count} account${count > 1 ? "s" : ""} at ${inst}`
           );
-          alert("Refreshed " + parts.join(", "));
+          this.message = `Refreshed ${parts.join(", ")}`;
+          this.messageType = "success";
         } else {
-          alert("Error refreshing Teller accounts: " + response.message);
+          this.message = "Error refreshing Teller accounts: " + response.message;
+          this.messageType = "error";
         }
       } catch (err) {
         console.error("Error refreshing Teller accounts:", err);
-        alert("Error refreshing Teller accounts: " + err.message);
+        this.message = "Error refreshing Teller accounts: " + err.message;
+        this.messageType = "error";
       } finally {
         this.isRefreshing = false;
       }

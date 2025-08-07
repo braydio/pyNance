@@ -35,7 +35,7 @@ sys.modules["app.config.environment"] = env_stub
 # SQL stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
-account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: True
+account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: (True, None)
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
@@ -146,7 +146,7 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
 
     def fake_refresh(access_token, account_id, start_date=None, end_date=None):
         captured.append((account_id, start_date, end_date))
-        return True
+        return True, None
 
     monkeypatch.setattr(
         plaid_module.account_logic, "refresh_data_for_plaid_account", fake_refresh

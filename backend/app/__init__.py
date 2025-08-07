@@ -69,6 +69,6 @@ def create_app():
     # Optional: always log routes
     with app.app_context():
         routes = " \n ".join(str(rule) for rule in app.url_map.iter_rules())
-        logger.verbose("🔍 Registered Routes:\n%s", routes)
+        logger.info("🔍 Registered Routes:\n%s", routes)
 
     return app

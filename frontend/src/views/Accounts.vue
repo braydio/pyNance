@@ -47,9 +47,9 @@
       <div v-else-if="summaryError" class="text-error">Failed to load summary</div>
       <div v-else class="flex justify-around">
         <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">{{ formatAmount(netSummary.income)
-        }}</span></div>
+            }}</span></div>
         <div>Expense: <span class="font-bold text-[var(--color-accent-red)]">{{ formatAmount(netSummary.expense)
-        }}</span></div>
+            }}</span></div>
         <div>Net: <span class="font-bold text-[var(--color-accent-yellow)]">{{ formatAmount(netSummary.net) }}</span>
         </div>
       </div>

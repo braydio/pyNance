@@ -5,12 +5,11 @@
 </template>
 
 <script setup>
-/**
- * Renders a stacked bar chart of spending by category. Totals emitted via
- * `summary-change` reflect only the currently selected categories and date
- * range.
- */
-import { ref, watch, nextTick, onUnmounted } from 'vue'
+// CategoryBreakdownChart.vue
+// Displays a stacked bar chart of spending. By default, only the top four
+// parent categories are shown individually with the rest grouped into an
+// "Other" bar. Set `groupOthers` to `false` to show all categories.
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -19,7 +18,8 @@ import { formatAmount } from "@/utils/format"
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
-  selectedCategoryIds: { type: Array, default: () => [] }
+  selectedCategoryIds: { type: Array, default: () => [] },
+  groupOthers: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
@@ -165,7 +165,23 @@ async function fetchData() {
       top_n: 50,
     })
     if (response.status === 'success') {
-      categoryTree.value = response.data || []
+      const raw = response.data || []
+      let processed = raw
+      if (props.groupOthers && raw.length > 4) {
+        const topFour = raw.slice(0, 4)
+        const others = raw.slice(4)
+        const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
+        const otherBar = {
+          id: 'other',
+          label: 'Other',
+          amount: parseFloat(otherTotal.toFixed(2)),
+          children: [
+            { id: 'other', label: 'Other', amount: parseFloat(otherTotal.toFixed(2)) }
+          ]
+        }
+        processed = [...topFour, otherBar]
+      }
+      categoryTree.value = processed
       emit('categories-change', categoryTree.value.map(cat => cat.id))
       updateSummary()
       await renderChart()
@@ -195,22 +211,24 @@ function updateSummary() {
   })
 }
 
-// Watch for prop changes (including selectedCategoryIds!)
+// --- Reactivity ---
+onMounted(fetchData)
 
+// Refetch data when range or grouping changes
 watch(
-  () => [props.startDate, props.endDate, ...props.selectedCategoryIds],
-  debounce(async () => {
-    if (!categoryTree.value.length) {
-      await fetchData()
-    } else {
-      updateSummary()
-      await renderChart()
-    }
-  }, 200),
-  { immediate: true }
+  () => [props.startDate, props.endDate, props.groupOthers],
+  debounce(fetchData, 200)
 )
 
-
+// When selectedCategoryIds changes, update summary and re-render
+watch(
+  () => props.selectedCategoryIds,
+  debounce(async () => {
+    updateSummary()
+    await renderChart()
+  }, 200),
+  { deep: true }
+)
 
 onUnmounted(() => {
   if (chartInstance.value) {
@@ -224,3 +242,4 @@ onUnmounted(() => {
   }
 })
 </script>
+

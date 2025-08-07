@@ -1,14 +1,10 @@
-(THIS IS AN INITIAL DRAFT - AGENTS_V1.md TO BE UPDATED PER CODEX)
-
-# AGENTS.md
-
-# Contributor Guide for short-term agents
+# Contributor guide for short-term agents
 
 This repository has a main goal: to streamline fintech and personal financial data through Python-based agent interfaces.
 
 ```
 Folders:
-- `backend/` - Flask Backend app code, including tellers, plaid, sync)
+- `backend/` - Flask Backend app code, including tellers, plaid, sync
 - `frontend` - Vue 3 + Vite + TypeScript frontend
 - `docs` - Documentation sync, Internal tracks for helpers like ChatMpdb
 - `scripts` - Useful bash setup scripts
@@ -17,7 +13,7 @@ Folders:
 
 ## Style Guidelines
 
-- Use PEP 8.1 and beyond, TypeAnnotations
+- Use PEP 8 with type annotations
 - Docs should match existing deployment types
 - Use `lint`, `black`, `ruff` for style
 - Run `bash scripts/setup.sh` to prepare the environment (creates `.venv`, installs deps, links hooks)
@@ -29,7 +25,7 @@ Folders:
 - Node 20 required for the frontend
 - Run `pytest` from root to validate
 - `pre-commit` is configured
-- Run `pre-commit run --all-files` before pushing
+- Run `pre-commit run --all-files` before pushing (runs black, isort, ruff, mypy, pylint, and bandit)
 
 ## Git Hooks
 
@@ -67,7 +63,7 @@ git config core.hooksPath .githooks
 ## Testing Checklist
 
 - ✅ `pytest`
-- ✅ `pre-commit run --all-files`
+- ✅ `pre-commit run --all-files` (black, isort, ruff, mypy, pylint, bandit)
 - ✅ Add tests for API or dispatcher behavior
 - ✅ Validate test_model_fields_are_valid does not fail
 

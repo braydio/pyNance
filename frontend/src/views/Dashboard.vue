@@ -70,12 +70,19 @@
                   class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
+                <button
+                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105 ml-2"
+                  @click="groupOthers = !groupOthers"
+                >
+                  {{ groupOthers ? 'Show All' : 'Group Others' }}
+                </button>
               </template>
             </ChartWidgetTopBar>
           </div>
           <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
-            :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-            @categories-change="allCategoryIds = $event" @bar-click="onCategoryBarClick" />
+            :selected-category-ids="catSelected" :group-others="groupOthers"
+            @summary-change="catSummary = $event" @categories-change="allCategoryIds = $event"
+            @bar-click="onCategoryBarClick" />
           <div class="mt-1">
             <span class="font-bold">Total:</span>
             <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{ formatAmount(catSummary.total) }}</span>
@@ -140,7 +147,7 @@
         </transition>
       </div>
 
-      <<TransactionModal :show="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <TransactionModal :show="showModal" :title-date="modalTitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -153,12 +160,11 @@
 
 
 <script setup>
+// Dashboard view showing financial charts and transaction tables.
 import AppLayout from '@/components/layout/AppLayout.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
-import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
@@ -170,10 +176,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
+import { fetchTransactions } from '@/api/transactions'
 
 // Transactions and user
 const {
-  transactions,
   searchQuery,
   currentPage,
   totalPages,
@@ -188,8 +194,6 @@ const modalTransactions = ref([])
 const modalTitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
-const accountsCollapsed = ref(true)
-const transactionsCollapsed = ref(true)
 const netWorth = ref(0)
 const netWorthMessage = computed(() => {
   if (netWorth.value < 0) return "... and things are looking quite bleak."
@@ -224,8 +228,11 @@ const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([])           // user selected
 const allCategoryIds = ref([])        // from chart data
 const defaultSet = ref(false)         // only auto-select ONCE per data load
+const groupOthers = ref(true)         // aggregate small categories
 
-// When CategoryBreakdownChart fetches, auto-select top 5 ONCE per fetch. (No repopulate on clear)
+// When CategoryBreakdownChart fetches, auto-select the first 5 categories once
+// per fetch. Includes "Other" when grouping is enabled and does not repopulate
+// on clear.
 watch(allCategoryIds, (ids) => {
   if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
     catSelected.value = ids.slice(0, 5)
@@ -246,13 +253,7 @@ function expandTransactions() {
 function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
-
-} function loadTransactions(transactions) {
-  modalTransactions.value = transactions
-  showModal.value = true
-  modalTitle.value = "Transactions"
 }
-const atSummary = ref({ total: 0 })
 
 // When user clears selection, do NOT re-select (unless new data is fetched)
 function onCatSelected(newIds) {
@@ -261,6 +262,11 @@ function onCatSelected(newIds) {
 
 // When user changes date range, let next data load re-apply auto-select
 watch(() => [catRange.value.start, catRange.value.end], () => {
+  defaultSet.value = false
+})
+
+// When grouping mode changes, allow auto-select on next fetch
+watch(groupOthers, () => {
   defaultSet.value = false
 })
 
@@ -279,28 +285,27 @@ async function loadCategoryGroups() {
         })),
       })).sort((a, b) => a.label.localeCompare(b.label))
     }
-  } catch (e) {
+  } catch {
     categoryGroups.value = []
   }
 }
 
-function onNetBarClick(label) {
-  // Use full transactions array for date match (robust for ISO date)
-  modalTransactions.value = transactions.value.filter(
-    tx => tx.date && tx.date.slice(0, 10) === label
-  )
-  modalTitle.value = `Transactions on ${label}`
+async function onNetBarClick(label) {
+  const result = await fetchTransactions({ start_date: label, end_date: label })
+  modalTransactions.value = result.transactions || []
+  modalTitle.value = `Net total for ${label}`
   showModal.value = true
 }
 
-function onCategoryBarClick(label) {
-  // Use full transactions array for category match
-  modalTransactions.value = transactions.value.filter(
-    tx => tx.category_label === label || tx.category_parent === label
-  )
+async function onCategoryBarClick(label) {
+  const result = await fetchTransactions({
+    category: label,
+    start_date: catRange.value.start,
+    end_date: catRange.value.end,
+  })
+  modalTransactions.value = result.transactions || []
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
-
 }
 </script>
 

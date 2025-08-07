@@ -5,24 +5,21 @@
 </template>
 
 <script setup>
-/**
- * Display a stacked bar/line chart for daily income, expenses and net totals.
- * Emits `bar-click` for date selections and `summary-change` whenever the
- * visible totals change.
- */
+// Displays income, expenses, and net totals for recent days. Expenses
+// are rendered as negative values so that red bars extend below the
+// X-axis while green income bars remain above it.
 import { fetchDailyNet } from '@/api/charts'
-import { fetchTransactions } from '@/api/transactions'
 import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
 const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
-const emit = defineEmits(['bar-click', 'summary-change', 'show-transactions'])
+// Emits "bar-click" when a bar is selected and "summary-change" when data totals change
+const emit = defineEmits(['bar-click', 'summary-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
-const dateRange = ref('30') // default to 30 days
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -42,23 +39,43 @@ function filterDataByRange(data) {
   })
 }
 
-async function handleBarClick(evt) {
+// Emit the selected date when a bar is clicked
+function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false)
   if (points.length) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
     emit('bar-click', date)
-    try {
-      const response = await fetchTransactions({ date })
-      if (response.status === 'success') {
-        emit('show-transactions', response.data)
-      }
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
-    }
   }
 }
+
+// Plugin to draw a thin net line atop bars
+const netLinePlugin = {
+  id: 'netLinePlugin',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart;
+    chart.data.datasets.forEach((dataset, idx) => {
+      if (dataset.label === 'Net') {
+        const meta = chart.getDatasetMeta(idx);
+        meta.data.forEach(bar => {
+          const y = bar.y;
+          const x = bar.x;
+          // use configured barThickness for width
+          const width = dataset.barThickness || 0;
+          ctx.save();
+          ctx.strokeStyle = getStyle('--color-accent-yellow');
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(x - width / 2, y);
+          ctx.lineTo(x + width / 2, y);
+          ctx.stroke();
+          ctx.restore();
+        });
+      }
+    });
+  }
+};
 
 async function renderChart() {
   await nextTick()
@@ -80,43 +97,46 @@ async function renderChart() {
   const filtered = filterDataByRange(chartData.value)
 
   const labels = filtered.length ? filtered.map(item => item.date) : [' ']
-  const netValues = filtered.length ? filtered.map(item => item.net) : [0]
-  const incomeValues = filtered.length ? filtered.map(item => item.income) : [0]
-  const expenseValues = filtered.length ? filtered.map(item => -item.expenses) : [0]
+  // Extract numeric values from response objects
+  const netValues = filtered.length ? filtered.map(item => item.net.parsedValue) : [0]
+  const incomeValues = filtered.length ? filtered.map(item => item.income.parsedValue) : [0]
+  const expenseValues = filtered.length ? filtered.map(item => item.expenses.parsedValue) : [0]
+  // Expenses are already negative (parsedValue); use as is for chart
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
+    // include netLinePlugin to draw net lines
+    plugins: [netLinePlugin],
     data: {
       labels,
-      datasets: [
-        {
-          type: 'bar',
-          label: 'Income',
-          data: incomeValues,
-          backgroundColor: '#5db073',
-          borderRadius: 4,
-          barThickness: 20,
-        },
-        {
-          type: 'bar',
-          label: 'Expenses',
-          data: expenseValues,
-          backgroundColor: '#a43e5c',
-          borderRadius: 4,
-          barThickness: 20,
-        },
-        {
-          type: 'line',
-          label: 'Net',
-          data: netValues,
-          borderColor: getStyle('--color-accent-mint') || '#38ffd4',
-          backgroundColor: (getStyle('--color-accent-mint') || '#38ffd4') + '55',
-          tension: 0.3,
-          borderWidth: 2,
-          pointRadius: 0,
-        },
-      ],
-    },
+        datasets: [
+          {
+            type: 'bar',
+            label: 'Income',
+            data: incomeValues,
+            backgroundColor: '#5db073',
+            borderRadius: 4,
+            barThickness: 20,
+          },
+          {
+            type: 'bar',
+            label: 'Expenses',
+            data: expenseValues,
+            backgroundColor: '#a43e5c',
+            borderRadius: 4,
+            barThickness: 20,
+          },
+          // Net dataset placeholder for plugin drawing
+          {
+            type: 'bar',
+            label: 'Net',
+            data: netValues,
+            backgroundColor: 'transparent',
+            borderWidth: 0,
+            barThickness: 20,
+          },
+        ],
+      },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -124,7 +144,25 @@ async function renderChart() {
       plugins: {
         tooltip: {
           callbacks: {
-            label: (context) => `${context.dataset.label}: ${formatAmount(context.parsed.y)}`,
+            // Show the date as title
+            title: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              return filtered[idx]?.date || tooltipItems[0].label;
+            },
+            // Suppress default per-dataset labels
+            label: () => null,
+            // After title, display income, expenses, net, and transactions
+            afterBody: (tooltipItems) => {
+              const idx = tooltipItems[0].dataIndex;
+              const rec = filtered[idx];
+              if (!rec) return [];
+              return [
+                `🟢 Income: ${formatAmount(rec.income.parsedValue)}`,
+                `🔴 Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
+                `🟡 Net: ${formatAmount(rec.net.parsedValue)}`,
+                `📊 Transactions: ${rec.transaction_count}`,
+              ];
+            },
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -132,6 +170,7 @@ async function renderChart() {
           borderColor: getStyle('--color-accent-yellow'),
           borderWidth: 1,
         },
+        // No legend needed with inline net lines
         legend: { display: false },
       },
       scales: {
@@ -150,7 +189,20 @@ async function renderChart() {
           stacked: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
+            autoSkip: false,
             maxTicksLimit: 14,
+            // Show one label per week, formatted as Mon DD
+            callback: (value, index) => {
+              // Only show one label per week
+              if (index % 7 !== 0) return '';
+              // Use the original label (YYYY-MM-DD) for accurate parsing
+              const raw = labels[index];
+              if (!raw) return '';
+              const dt = new Date(raw);
+              if (isNaN(dt)) return raw;
+              // Format e.g. "Jul 05"
+              return dt.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+            },
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -174,16 +226,12 @@ async function fetchData() {
 
 function updateSummary() {
   const filtered = filterDataByRange(chartData.value)
-  const totalIncome = filtered.reduce((sum, d) => sum + d.income, 0)
-  const totalExpenses = filtered.reduce((sum, d) => sum + d.expenses, 0)
-  const totalNet = filtered.reduce((sum, d) => sum + d.net, 0)
+  const totalIncome = filtered.reduce((sum, d) => sum + (d.income?.parsedValue || 0), 0)
+  const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
+  const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
 }
 
-function setRange(range) {
-  dateRange.value = range
-  fetchData()
-}
 
 watch([chartData, () => props.zoomedOut], async () => {
   await renderChart()
