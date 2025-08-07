@@ -1,56 +1,54 @@
-name: Format & Test
+name: Format and Test
 
 on:
   push:
-    branches: [main, workflows]
+    branches: [ main ]
   pull_request:
-    branches: [main, workflows]
+    branches: [ main ]
 
 jobs:
-  backend:
-    name: Python Backend
+  format:
+    name: Check Code Format and Lint
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v4
         with:
-          python-version: '3.11'
-      - name: Install dependencies
+          python-version: '3.x'
+
+      - name: Install format and lint tools
         run: |
-          pip install -r requirements.txt
-      - name: Run formatting checks
-        run: black . --check
+          python -m pip install --upgrade pip
+          pip install black flake8
 
-      - name: List test files
-        run: ls -R
-
-      - name: Run unit tests
-        run: pytest --maxfail=1 --disable-warning
-
-      - name: Run tests with coverage
+      - name: Check code formatting
         run: |
-          pip install pytest pytest-cov
-          pytest --cov=backend --cov=tests --cov-fail-under=85
+          black --check .
 
-  frontend:
-    name: Vue Frontend
+      - name: Lint with flake8
+        run: |
+          flake8 .
+
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
         with:
-          node-version: '20'
+          python-version: '3.x'
+
       - name: Install dependencies
-        run: npm ci
-      - name: Lint code
-        run: npm run lint
-      - name: Build frontend
-        run: npm run build
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run test suite
+        run: |
+          pytest

@@ -1,8 +1,6 @@
-from datetime import timedelta
 
 
 def collapse_internal_transfers(transactions, date_epsilon=1, amount_epsilon=0.01):
-    transfers = []
     seen = set()
     collapsed = []
 
