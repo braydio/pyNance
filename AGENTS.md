@@ -40,7 +40,7 @@ git config core.hooksPath .githooks
 - Title format: `[component] Fix or Add <title>`
 - Description must include affected modules (backend/frontend/test)
 - If adding API, reflect in docs and add test coverage
-- Use `scripts/entr_docsync.sh` if syncing doc updates automatically
+- After editing documentation, run `python scripts/doc_cleaner.py` to regenerate the docs index and verify metadata
 - Commit messages: `<type>(<scope>): <description>` (e.g. `feat(auth): add token helper`)
 
 ## Agents Should
@@ -72,5 +72,5 @@ git config core.hooksPath .githooks
 This guide exists to help agents operate predictably and reduce context churn.
 
 If a test fails, check test structure before code.
-If docs are out of sync, run `entr_docsync.sh` or `auto_docsync.sh`.
+If docs are out of sync, regenerate the index with `python scripts/doc_cleaner.py` and review `docs/index/INDEX.md` before committing.
 If you update sync behavior, please update CLI and add to coverage.
