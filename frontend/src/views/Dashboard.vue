@@ -71,7 +71,7 @@
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
                 <button
-                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105 ml-2"
+                  class="ml-2 px-3 py-1 rounded-lg border-2 border-[var(--color-accent-yellow)] text-[var(--color-accent-yellow)] font-semibold transition-colors hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)]"
                   @click="groupOthers = !groupOthers"
                 >
                   {{ groupOthers ? 'Show All' : 'Group Others' }}
@@ -177,6 +177,7 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
+import { fetchCategoryTransactions } from '@/api/charts'
 
 // Transactions and user
 const {
@@ -297,13 +298,14 @@ async function onNetBarClick(label) {
   showModal.value = true
 }
 
-async function onCategoryBarClick(label) {
-  const result = await fetchTransactions({
-    category: label,
+async function onCategoryBarClick(payload) {
+  const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
+  const result = await fetchCategoryTransactions({
+    category_ids: ids.join(','),
     start_date: catRange.value.start,
     end_date: catRange.value.end,
   })
-  modalTransactions.value = result.transactions || []
+  modalTransactions.value = result.data?.transactions || []
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
 }
