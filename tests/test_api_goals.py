@@ -4,7 +4,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime, date
+from datetime import date
 
 import pytest
 from flask import Flask
@@ -28,16 +28,20 @@ env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
 
 extensions_stub = types.ModuleType("app.extensions")
-extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace(add=lambda x: None, commit=lambda: None))
+extensions_stub.db = types.SimpleNamespace(
+    session=types.SimpleNamespace(add=lambda x: None, commit=lambda: None)
+)
 sys.modules["app.extensions"] = extensions_stub
 
 models_stub = types.ModuleType("app.models")
+
 
 class DummyGoal:
     def __init__(self, **kwargs):
         self.id = 1
         for k, v in kwargs.items():
             setattr(self, k, v)
+
 
 models_stub.FinancialGoal = DummyGoal
 sys.modules["app.models"] = models_stub
