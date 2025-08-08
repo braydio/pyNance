@@ -4,6 +4,7 @@ import logging
 import os
 import sys
 from logging.handlers import RotatingFileHandler
+
 from .paths import DIRECTORIES
 
 SQL_LOG_FILE = DIRECTORIES["LOGS_DIR"] / "sqlalchemy.log"

@@ -4,7 +4,7 @@ This repository has a main goal: to streamline fintech and personal financial da
 
 ```
 Folders:
-- `backend/` - Flask Backend app code, including tellers, plaid, sync)
+- `backend/` - Flask Backend app code, including tellers, plaid, sync
 - `frontend` - Vue 3 + Vite + TypeScript frontend
 - `docs` - Documentation sync, Internal tracks for helpers like ChatMpdb
 - `scripts` - Useful bash setup scripts
@@ -13,7 +13,7 @@ Folders:
 
 ## Style Guidelines
 
-- Use PEP 8.1 and beyond, TypeAnnotations
+- Use PEP 8 with type annotations
 - Docs should match existing deployment types
 - Use `lint`, `black`, `ruff` for style
 - Run `bash scripts/setup.sh` to prepare the environment (creates `.venv`, installs deps, links hooks)
@@ -25,7 +25,7 @@ Folders:
 - Node 20 required for the frontend
 - Run `pytest` from root to validate
 - `pre-commit` is configured
-- Run `pre-commit run --all-files` before pushing
+- Run `pre-commit run --all-files` before pushing (runs black, isort, ruff, mypy, pylint, and bandit)
 
 ## Git Hooks
 
@@ -40,7 +40,7 @@ git config core.hooksPath .githooks
 - Title format: `[component] Fix or Add <title>`
 - Description must include affected modules (backend/frontend/test)
 - If adding API, reflect in docs and add test coverage
-- Use `scripts/entr_docsync.sh` if syncing doc updates automatically
+- After editing documentation, run `python scripts/doc_cleaner.py` to regenerate the docs index and verify metadata
 - Commit messages: `<type>(<scope>): <description>` (e.g. `feat(auth): add token helper`)
 
 ## Agents Should
@@ -63,7 +63,7 @@ git config core.hooksPath .githooks
 ## Testing Checklist
 
 - ✅ `pytest`
-- ✅ `pre-commit run --all-files`
+- ✅ `pre-commit run --all-files` (black, isort, ruff, mypy, pylint, bandit)
 - ✅ Add tests for API or dispatcher behavior
 - ✅ Validate test_model_fields_are_valid does not fail
 
@@ -72,5 +72,5 @@ git config core.hooksPath .githooks
 This guide exists to help agents operate predictably and reduce context churn.
 
 If a test fails, check test structure before code.
-If docs are out of sync, run `entr_docsync.sh` or `auto_docsync.sh`.
+If docs are out of sync, regenerate the index with `python scripts/doc_cleaner.py` and review `docs/index/INDEX.md` before committing.
 If you update sync behavior, please update CLI and add to coverage.

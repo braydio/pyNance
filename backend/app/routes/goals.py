@@ -6,7 +6,6 @@ from app.extensions import db
 from app.models import FinancialGoal
 from flask import Blueprint, jsonify, request
 
-
 goals = Blueprint("goals", __name__)
 
 
