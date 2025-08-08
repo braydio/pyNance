@@ -98,6 +98,71 @@ def category_breakdown():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@charts.route("/category_transactions", methods=["GET"])
+def category_transactions() -> Dict[str, Any]:
+    """Return transactions for the given category IDs within a date range."""
+    ids_str = request.args.get("category_ids", "")
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    if not ids_str:
+        return (
+            jsonify({"status": "error", "message": "category_ids required"}),
+            400,
+        )
+
+    try:
+        cat_ids = [int(x) for x in ids_str.split(",") if x]
+    except ValueError:
+        return (
+            jsonify({"status": "error", "message": "invalid category_ids"}),
+            400,
+        )
+
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    else:
+        start_date = datetime.now().date() - timedelta(days=30)
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    else:
+        end_date = datetime.now().date()
+
+    transactions = (
+        db.session.query(Transaction, Account, Category)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .outerjoin(Category, Transaction.category_id == Category.id)
+        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(Transaction.category_id.in_(cat_ids))
+        .filter(Transaction.date >= start_date)
+        .filter(Transaction.date <= end_date)
+        .order_by(Transaction.date.desc())
+        .all()
+    )
+
+    serialized = []
+    for txn, acc, cat in transactions:
+        serialized.append(
+            {
+                "transaction_id": txn.transaction_id,
+                "date": txn.date.isoformat() if txn.date else None,
+                "amount": display_transaction_amount(txn),
+                "description": txn.description or txn.merchant_name or "N/A",
+                "category": txn.category or "Uncategorized",
+                "category_icon_url": getattr(cat, "pfc_icon_url", None),
+                "merchant_name": txn.merchant_name or "Unknown",
+                "account_name": acc.name or "Unnamed Account",
+                "institution_name": acc.institution_name or "Unknown",
+                "subtype": acc.subtype or "Unknown",
+                "account_id": acc.account_id or "Unknown",
+                "pending": getattr(txn, "pending", False),
+                "isEditing": False,
+            }
+        )
+
+    return jsonify({"status": "success", "data": {"transactions": serialized}}), 200
+
+
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
     try:

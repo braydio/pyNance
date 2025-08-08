@@ -21,3 +21,8 @@ export async function fetchDailyNet(params = {}) {
 
 // ..reviewing for additional
 
+export async function fetchCategoryTransactions(params = {}) {
+  const response = await axios.get('/api/charts/category_transactions', { params })
+  return response.data
+}
+
