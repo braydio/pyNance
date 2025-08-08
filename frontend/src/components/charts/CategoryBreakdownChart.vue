@@ -183,11 +183,7 @@ async function fetchData() {
       }
       categoryTree.value = processed
       emit('categories-change', categoryTree.value.map(cat => cat.id))
-      emit('summary-change', {
-        total: sumAmounts(categoryTree.value),
-        startDate: props.startDate,
-        endDate: props.endDate,
-      })
+      updateSummary()
       await renderChart()
     }
   } catch (err) {
@@ -195,11 +191,24 @@ async function fetchData() {
   }
 }
 
-function sumAmounts(nodes) {
+function sumSelectedAmounts(nodes, selectedIds) {
   return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
+    let subtotal = 0
+    if (selectedIds.includes(n.id)) {
+      subtotal += n.amount
+    }
+    subtotal += sumSelectedAmounts(n.children || [], selectedIds)
     return sum + subtotal
   }, 0)
+}
+
+function updateSummary() {
+  const total = sumSelectedAmounts(categoryTree.value, props.selectedCategoryIds)
+  emit('summary-change', {
+    total,
+    startDate: props.startDate,
+    endDate: props.endDate,
+  })
 }
 
 // --- Reactivity ---
@@ -211,14 +220,15 @@ watch(
   debounce(fetchData, 200)
 )
 
-// Re-render when selected categories change
+// When selectedCategoryIds changes, update summary and re-render
 watch(
   () => props.selectedCategoryIds,
-  debounce(renderChart, 200),
+  debounce(async () => {
+    updateSummary()
+    await renderChart()
+  }, 200),
   { deep: true }
 )
-
-
 
 onUnmounted(() => {
   if (chartInstance.value) {
@@ -232,3 +242,4 @@ onUnmounted(() => {
   }
 })
 </script>
+
