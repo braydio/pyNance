@@ -71,7 +71,7 @@
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
                 <button
-                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105 ml-2"
+                  class="ml-2 px-3 py-1 rounded-lg border-2 border-[var(--color-accent-yellow)] text-[var(--color-accent-yellow)] font-semibold transition-colors hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)]"
                   @click="groupOthers = !groupOthers"
                 >
                   {{ groupOthers ? 'Show All' : 'Group Others' }}
@@ -297,7 +297,8 @@ async function onNetBarClick(label) {
   showModal.value = true
 }
 
-async function onCategoryBarClick(label) {
+async function onCategoryBarClick(payload) {
+  const { label } = typeof payload === 'object' ? payload : { label: payload }
   const result = await fetchTransactions({
     category: label,
     start_date: catRange.value.start,

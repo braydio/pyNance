@@ -128,7 +128,8 @@ async function renderChart() {
         if (points.length) {
           const index = points[0].index
           const label = chartInstance.value.data.labels[index]
-          emit('bar-click', label)
+          const node = categoryTree.value.find(cat => cat.label === label)
+          emit('bar-click', { id: node?.id ?? label, label })
         }
       },
       scales: {
@@ -182,7 +183,10 @@ async function fetchData() {
         processed = [...topFour, otherBar]
       }
       categoryTree.value = processed
-      emit('categories-change', categoryTree.value.map(cat => cat.id))
+      emit(
+        'categories-change',
+        categoryTree.value.flatMap(cat => (cat.children || []).map(child => child.id))
+      )
       updateSummary()
       await renderChart()
     }
