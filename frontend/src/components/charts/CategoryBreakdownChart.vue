@@ -129,7 +129,8 @@ async function renderChart() {
           const index = points[0].index
           const label = chartInstance.value.data.labels[index]
           const node = categoryTree.value.find(cat => cat.label === label)
-          emit('bar-click', { id: node?.id ?? label, label })
+          const ids = (node?.children || []).map(c => c.id)
+          emit('bar-click', { label, ids })
         }
       },
       scales: {

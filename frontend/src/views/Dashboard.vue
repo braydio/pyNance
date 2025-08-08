@@ -177,6 +177,7 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
+import { fetchCategoryTransactions } from '@/api/charts'
 
 // Transactions and user
 const {
@@ -298,13 +299,13 @@ async function onNetBarClick(label) {
 }
 
 async function onCategoryBarClick(payload) {
-  const { label } = typeof payload === 'object' ? payload : { label: payload }
-  const result = await fetchTransactions({
-    category: label,
+  const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
+  const result = await fetchCategoryTransactions({
+    category_ids: ids.join(','),
     start_date: catRange.value.start,
     end_date: catRange.value.end,
   })
-  modalTransactions.value = result.transactions || []
+  modalTransactions.value = result.data?.transactions || []
   modalTitle.value = `Transactions: ${label}`
   showModal.value = true
 }

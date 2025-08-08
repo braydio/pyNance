@@ -28,9 +28,13 @@ async function openModalByDate(date: string) {
   showModal.value = true
 }
 
-async function openModalByCategory(label: string) {
-  modalTitle.value = `Transactions in ${label}`
-  const res = await fetchTransactions({ category: label })
+async function openModalByCategory(payload: { label: string; ids: number[] }) {
+  modalTitle.value = `Transactions in ${payload.label}`
+  const res = await fetchCategoryTransactions({
+    category_ids: payload.ids.join(','),
+    start_date: catRange.value.start,
+    end_date: catRange.value.end,
+  })
   modalTransactions.value = res.data.transactions || []
   showModal.value = true
 }
