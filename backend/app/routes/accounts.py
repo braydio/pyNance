@@ -447,3 +447,34 @@ def account_net_changes(account_id):
     except Exception as e:
         logger.error(f"Error in account_net_changes: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+# Endpoint to fetch account balance history
+@accounts.route("/<account_id>/history", methods=["GET"])
+def get_account_history(account_id):
+    """Return daily balance history for a given account."""
+    from app.models import AccountHistory
+    try:
+        # Optional date filters (ISO format)
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+        query = AccountHistory.query.filter_by(account_id=account_id)
+        if start_date_str:
+            start_dt = datetime.fromisoformat(start_date_str)
+            query = query.filter(AccountHistory.date >= start_dt)
+        if end_date_str:
+            end_dt = datetime.fromisoformat(end_date_str)
+            query = query.filter(AccountHistory.date <= end_dt)
+        # Retrieve and sort records by date
+        records = query.order_by(AccountHistory.date.asc()).all()
+        history = [
+            {
+                "date": rec.date.isoformat(),
+                "balance": rec.balance,
+                "is_hidden": rec.is_hidden,
+            }
+            for rec in records
+        ]
+        return jsonify({"status": "success", "history": history}), 200
+    except Exception as e:
+        logger.error(f"Error in get_account_history: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
