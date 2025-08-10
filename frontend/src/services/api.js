@@ -111,11 +111,6 @@ export default {
       { hidden }
     );
     return response.data;
-  },
-
-  async fetchAccountHistory(account_id, params = {}) {
-    const response = await apiClient.get(`/accounts/${account_id}/history`, { params });
-    return response.data;
   }
 };
 
