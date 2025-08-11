@@ -30,7 +30,13 @@
           </div>
           <div class="bs-details">
             <div class="bs-name">{{ account.name }}</div>
-            <div class="bs-mask">•••• {{ mask(account.mask) }}</div>
+            <div class="bs-mask">
+              <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+              <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+            </div>
+          </div>
+          <div class="bs-sparkline">
+            <AccountSparkline :account-id="account.id" />
           </div>
           <div class="bs-amount-section">
             <span class="bs-amount bs-amount-green">
@@ -60,7 +66,13 @@
           </div>
           <div class="bs-details">
             <div class="bs-name">{{ account.name }}</div>
-            <div class="bs-mask">•••• {{ mask(account.mask) }}</div>
+            <div class="bs-mask">
+              <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+              <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+            </div>
+          </div>
+          <div class="bs-sparkline">
+            <AccountSparkline :account-id="account.id" />
           </div>
           <div class="bs-amount-section">
             <span class="bs-amount bs-amount-yellow">
@@ -90,6 +102,7 @@
 <script setup>
 import { ref, computed, toRef, onMounted } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
+import AccountSparkline from './AccountSparkline.vue'
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
@@ -136,10 +149,10 @@ const totalLiabilities = computed(() =>
 const format = val =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val)
 
-function mask(maskString) {
-  if (!maskString) return '----'
-  return maskString.toString().slice(-4)
-}
+  function mask(maskString) {
+    if (!maskString) return null
+    return maskString.toString().slice(-4)
+  }
 function initials(name) {
   if (!name) return '??'
   return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
@@ -238,7 +251,7 @@ function initials(name) {
 
 .bs-row {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
@@ -258,6 +271,26 @@ function initials(name) {
 
 .bs-row-liability {
   border-left: 6px solid var(--color-accent-yellow);
+}
+
+.bs-sparkline {
+  width: 60px;
+  height: 20px;
+  align-self: center;
+}
+
+.bs-row-asset .bs-sparkline {
+  color: var(--color-accent-mint);
+}
+
+.bs-row-liability .bs-sparkline {
+  color: var(--color-accent-yellow);
+}
+
+.bs-no-mask-icon {
+  display: inline-block;
+  color: var(--color-accent-ice);
+  font-size: 0.8rem;
 }
 
 .bs-stripe {
