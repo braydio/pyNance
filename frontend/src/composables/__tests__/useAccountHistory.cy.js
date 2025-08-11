@@ -12,7 +12,8 @@ const TestComponent = defineComponent({
 
 describe('useAccountHistory', () => {
   it('loads account history from API', () => {
-    cy.intercept('GET', '/accounts/123/history*', {
+    // Intercept account history API call (prefix includes /api)
+    cy.intercept('GET', '/api/accounts/123/history*', {
       statusCode: 200,
       body: {
         status: 'success',
