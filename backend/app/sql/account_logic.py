@@ -43,6 +43,50 @@ def normalize_balance(amount, account_type):
     )
 
 
+def detect_internal_transfer(
+    txn, date_epsilon: int = 1, amount_epsilon: float = 0.01
+) -> None:
+    """Flag ``txn`` and its counterpart as an internal transfer if matched.
+
+    A counterpart is a transaction for the same user in a different account
+    with an equal and opposite amount occurring within ``date_epsilon`` days.
+    To reduce false positives, the description of either transaction must
+    mention the other account's name.
+    """
+
+    account = Account.query.filter_by(account_id=txn.account_id).first()
+    if not account or txn.is_internal:
+        return
+
+    start = txn.date - timedelta(days=date_epsilon)
+    end = txn.date + timedelta(days=date_epsilon)
+
+    candidates = (
+        db.session.query(Transaction, Account)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Account.user_id == account.user_id)
+        .filter(Transaction.account_id != txn.account_id)
+        .filter(Transaction.date >= start)
+        .filter(Transaction.date <= end)
+        .filter(func.abs(Transaction.amount + txn.amount) <= amount_epsilon)
+        .filter(Transaction.is_internal.is_(False))
+        .all()
+    )
+
+    desc = (txn.description or "").lower()
+    for other, other_acc in candidates:
+        other_desc = (other.description or "").lower()
+        if not other_acc.name:
+            continue
+        name = other_acc.name.lower()
+        if name in desc or (account.name and account.name.lower() in other_desc):
+            txn.is_internal = True
+            txn.internal_match_id = other.transaction_id
+            other.is_internal = True
+            other.internal_match_id = txn.transaction_id
+            break
+
+
 def get_accounts_from_db(include_hidden: bool = False):
     """Return serialized account rows from the database."""
     query = Account.query
@@ -309,7 +353,9 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json if isinstance(txns_json, list) else []
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
         )
 
         for txn in txns_list:
@@ -439,6 +485,9 @@ def get_paginated_transactions(
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
         .order_by(Transaction.date.desc())
     )
 
@@ -697,6 +746,7 @@ def refresh_data_for_plaid_account(
                     refresh_or_insert_plaid_metadata(
                         txn, existing_txn, plaid_account_obj.account_id
                     )
+                detect_internal_transfer(existing_txn)
             else:
                 new_txn = Transaction(
                     transaction_id=txn_id,
@@ -720,6 +770,7 @@ def refresh_data_for_plaid_account(
                     refresh_or_insert_plaid_metadata(
                         txn, new_txn, plaid_account_obj.account_id
                     )
+                detect_internal_transfer(new_txn)
 
         db.session.commit()
         return updated, None
