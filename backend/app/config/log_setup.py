@@ -18,7 +18,7 @@ sql_formatter = logging.Formatter(
 
 # --- Clean SQLAlchemy logging with rotation ---
 sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
-sqlalchemy_logger.setLevel(logging.INFO)
+sqlalchemy_logger.setLevel(logging.WARNING)
 
 sql_file_handler = RotatingFileHandler(
     SQL_LOG_FILE, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT, encoding="utf-8"
@@ -57,14 +57,15 @@ def setup_logger():
     if not root_logger.hasHandlers():
         APP_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-        # File log (all levels) with rotation
+        # File log (INFO+ or as configured) with rotation
         file_handler = RotatingFileHandler(
             APP_LOG_FILE,
             maxBytes=MAX_LOG_SIZE,
             backupCount=BACKUP_COUNT,
             encoding="utf-8",
         )
-        file_handler.setLevel(logging.DEBUG)
+        # Respect configured LOG_LEVEL for file logging (default INFO)
+        file_handler.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
 
         # Console handler with colors
         console_handler = logging.StreamHandler(sys.stdout)
