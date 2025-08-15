@@ -204,6 +204,10 @@ def get_account_transactions(account_id):
         logger.debug(
             f"Changed date string {end_date_str} to datetime object: {end_date}"
         )
+        # Ignore date filters when fetching recent transactions
+        if recent:
+            start_date = None
+            end_date = None
 
         transactions, total = account_logic.get_paginated_transactions(
             page,
