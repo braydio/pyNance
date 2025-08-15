@@ -9,7 +9,7 @@ Add this at the very top of `NewToDo.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Dashboard UX/UI Issues → See [COMPONENT_DASHBOARD] section
@@ -27,7 +27,7 @@ Add this at the very top of `ToDo.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Site-Wide Features, Components, and Tasks → See [COMPONENT_TASKS] section
@@ -44,7 +44,7 @@ Add this at the very top of `docs/TODO.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](../Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Component Tags Legend → See [LEGEND_MAP] section
@@ -62,7 +62,7 @@ Add this at the very top of `Phase_1.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Phase 1 detailed specifications → See [PHASES] Phase 1 section
@@ -78,7 +78,7 @@ Add this at the very top of `ProcessLegend.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - 10-Phase Implementation Plan → See [PHASES] section
@@ -95,7 +95,7 @@ Add this at the very top of `ReviewKey.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Component Legend → See [LEGEND_MAP] section
@@ -112,7 +112,7 @@ Add this at the very top of `FileLegend.md`:
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](./Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - Component Tags → See [LEGEND_MAP] section
@@ -126,8 +126,8 @@ Add this at the very top of `FileLegend.md`:
 
 1. Copy the appropriate template above to the top of each legacy file
 2. Adjust the relative path to TODO.md based on file location:
-   - For root-level files: `./Consolidated_TODO.md` 
-   - For files in docs/: `../Consolidated_TODO.md`
+   - For root-level files: `../frontend/Consolidated_TODO.md` 
+   - For files in docs/: `../frontend/Consolidated_TODO.md`
 3. Ensure all section ID references ([COMPONENT_DASHBOARD], etc.) are accurate
 4. Test that all links work correctly
 5. Commit these changes as part of the deprecation PR

@@ -263,7 +263,7 @@ main() {
     local exit_code=0
     
     # Check if we're in the right directory
-    if [ ! -f "DEV_GUIDE.md" ] || [ ! -d "backend" ]; then
+    if [ ! -f "CONTRIBUTING.md" ] || [ ! -d "backend" ]; then
         echo -e "${RED}❌ Please run this script from the project root directory${NC}"
         exit 1
     fi

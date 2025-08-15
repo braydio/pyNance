@@ -1,10 +1,10 @@
-# API Routing and Service Convention Guide (Master Reference)
+# API Reference - Routing and Service Conventions [API_REFERENCE]
 
-> **Status:** Authoritative. All backend and frontend teams should refer to this for new route definitions, refactors, or frontend integrations.
+This document serves as the authoritative reference for API routing conventions, service organization, and endpoint definitions in the pyNance application. All backend and frontend teams should refer to this for new route definitions, refactors, or frontend integrations.
 
----
+> **Status:** Master Reference - All API changes must align with these conventions
 
-## 🗂️ Route Organization Structure
+## Route Organization Structure [ROUTE_ORGANIZATION]
 
 ### 📁 `routes/` Directory Structure
 

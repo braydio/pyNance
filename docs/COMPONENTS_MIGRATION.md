@@ -1,6 +1,8 @@
-# 🧭 Component Architecture & Migration Guide for `frontend/src/components`
+# Frontend Component Architecture and Migration Guide [COMPONENTS_MIGRATION]
 
-> **Purpose:** Define a scalable, semantically organized, and maintainable folder structure for Vue components within the `pyNance` frontend, aligned with project conventions and actual directory contents.
+This document defines a scalable, semantically organized, and maintainable folder structure for Vue components within the pyNance frontend application, aligned with project conventions and actual directory contents.
+
+**Purpose:** Establish clear component organization patterns and migration pathways for improved maintainability and developer experience.
 
 ---
 
