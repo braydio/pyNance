@@ -62,9 +62,72 @@ app/temp/
 # Miscellaneous
 *.DS_Store
 *.egg-info/
-*.lock
 *.local
 .coverage
 htmlcov/
 .nox/
 .tox/
+
+# Shell profiles and local overrides
+.bashrc
+.zshrc
+
+# Environment files and direnv
+.env
+.env.*
+.envrc
+.envrc.local
+.direnv/
+
+# Keep example templates tracked
+!.env.example
+!*.env.example
+!*/example.env
+!.bashrc.example
+!backend/.env.example
+!frontend/.env.example
+
+# Secrets and credentials
+.pypirc
+.npmrc
+.python-version
+.sentryclirc
+.ssh/
+secrets/
+.secrets/
+
+# Databases and state
+*.db
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Flask instance folder (local config)
+backend/instance/
+
+# Dev tools and local services
+mcp-sqlite-projects-server/
+
+# Python build artifacts
+build/
+.eggs/
+
+# Node and test coverage
+coverage/
+.nyc_output/
+lcov.info
+.pnpm-store/
+.npm/
+
+# OS-specific files
+Thumbs.db
+Desktop.ini
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Certificates and keys
+*.crt
+*.key
+*.p12
+*.p7s
