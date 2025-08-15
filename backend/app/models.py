@@ -250,6 +250,8 @@ class Transaction(db.Model):
     personal_finance_category = db.Column(db.JSON, nullable=True)
     personal_finance_category_icon_url = db.Column(db.String, nullable=True)
     pending = db.Column(db.Boolean, default=False)
+    is_internal = db.Column(db.Boolean, default=False, index=True)
+    internal_match_id = db.Column(db.String(64), nullable=True)
 
     plaid_meta = db.relationship(
         "PlaidTransactionMeta",
