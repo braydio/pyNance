@@ -36,3 +36,18 @@ export const fetchAccountHistory = async (accountId, params = {}) => {
   )
   return response.data
 }
+
+/**
+ * Fetch recent transaction history for an account (for sparklines).
+ * Similar to daily net data but filtered for a specific account.
+ *
+ * @param {string} accountId
+ * @param {object} params
+ */
+export const fetchAccountTransactionHistory = async (accountId, params = {}) => {
+  const response = await axios.get(
+    `/api/accounts/${accountId}/transaction_history`,
+    { params }
+  )
+  return response.data
+}

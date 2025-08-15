@@ -22,30 +22,30 @@
     <Transition name="bs-slide">
       <ul v-if="expanded === 'assets'" class="bs-list">
         <template v-for="account in assetAccounts" :key="account.id">
-          <li class="bs-row bs-row-asset">
-            <div class="bs-stripe bs-stripe-green"></div>
-            <div class="bs-logo-container">
-              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-                loading="lazy" />
-              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-            </div>
-            <div class="bs-details">
-              <div class="bs-name">{{ account.name }}</div>
-              <div class="bs-mask">
-                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+          <li class="bs-account-container">
+            <div class="bs-row bs-row-asset" @click="toggleDetails(account.id)" role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)" @keydown.space="toggleDetails(account.id)">
+              <div class="bs-stripe bs-stripe-green"></div>
+              <div class="bs-logo-container">
+                <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
+                  loading="lazy" />
+                <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
               </div>
-            </div>
-            <div class="bs-sparkline">
-              <AccountSparkline :account-id="account.id" />
-            </div>
-            <div class="bs-amount-section">
-              <span class="bs-amount bs-amount-green">{{ format(account.adjusted_balance) }}</span>
-            </div>
-            <div class="bs-details-btn-section">
-              <button class="bs-details-btn" @click="toggleDetails(account.id)" aria-label="Toggle details">
-                {{ openAccountId === account.id ? 'Hide' : 'Details' }}
-              </button>
+              <div class="bs-details">
+                <div class="bs-name">
+                  <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
+                  {{ account.name }}
+                </div>
+                <div class="bs-mask">
+                  <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                  <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                </div>
+              </div>
+              <div class="bs-sparkline">
+                <AccountSparkline :account-id="account.id" />
+              </div>
+              <div class="bs-amount-section">
+                <span class="bs-amount bs-amount-green">{{ format(account.adjusted_balance) }}</span>
+              </div>
             </div>
           </li>
           <li v-if="openAccountId === account.id" class="bs-details-row">
@@ -75,30 +75,30 @@
     <Transition name="bs-slide">
       <ul v-if="expanded === 'liabilities'" class="bs-list">
         <template v-for="account in liabilityAccounts" :key="account.id">
-          <li class="bs-row bs-row-liability">
-            <div class="bs-stripe bs-stripe-yellow"></div>
-            <div class="bs-logo-container">
-              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-                loading="lazy" />
-              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-            </div>
-            <div class="bs-details">
-              <div class="bs-name">{{ account.name }}</div>
-              <div class="bs-mask">
-                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+          <li class="bs-account-container">
+            <div class="bs-row bs-row-liability" @click="toggleDetails(account.id)" role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)" @keydown.space="toggleDetails(account.id)">
+              <div class="bs-stripe bs-stripe-yellow"></div>
+              <div class="bs-logo-container">
+                <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
+                  loading="lazy" />
+                <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
               </div>
-            </div>
-            <div class="bs-sparkline">
-              <AccountSparkline :account-id="account.id" />
-            </div>
-            <div class="bs-amount-section">
-              <span class="bs-amount bs-amount-yellow">{{ format(account.adjusted_balance) }}</span>
-            </div>
-            <div class="bs-details-btn-section">
-              <button class="bs-details-btn" @click="toggleDetails(account.id)" aria-label="Toggle details">
-                {{ openAccountId === account.id ? 'Hide' : 'Details' }}
-              </button>
+              <div class="bs-details">
+                <div class="bs-name">
+                  <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
+                  {{ account.name }}
+                </div>
+                <div class="bs-mask">
+                  <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                  <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                </div>
+              </div>
+              <div class="bs-sparkline">
+                <AccountSparkline :account-id="account.id" />
+              </div>
+              <div class="bs-amount-section">
+                <span class="bs-amount bs-amount-yellow">{{ format(account.adjusted_balance) }}</span>
+              </div>
             </div>
           </li>
           <li v-if="openAccountId === account.id" class="bs-details-row">
@@ -380,7 +380,7 @@ function initials(name) {
 
 .bs-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto 1fr auto auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
@@ -392,6 +392,23 @@ function initials(name) {
   gap: 0.45rem;
   will-change: transform, box-shadow;
   overflow: hidden;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.bs-row:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--shadow, #1c274077);
+  border-color: var(--color-accent-mint);
+}
+
+.bs-row:focus {
+  outline: 2px solid var(--color-accent-mint);
+  outline-offset: 2px;
+}
+
+.bs-row:active {
+  transform: translateY(0);
 }
 
 .bs-row-asset {
@@ -498,6 +515,28 @@ function initials(name) {
   white-space: nowrap;
   overflow: hidden;
   max-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.bs-toggle-icon {
+  font-size: 0.7rem;
+  color: var(--color-accent-mint);
+  transition: transform 0.3s ease;
+  display: inline-block;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+
+.bs-toggle-icon.bs-expanded {
+  transform: rotate(90deg);
+  opacity: 1;
+}
+
+.bs-row:hover .bs-toggle-icon {
+  opacity: 1;
+  color: var(--color-accent-ice);
 }
 
 .bs-mask {
@@ -569,6 +608,60 @@ function initials(name) {
   font-size: 1.02rem;
   font-weight: 700;
   text-align: right;
+}
+
+/* New account container and themed button styles */
+.bs-account-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.bs-details-btn-row {
+  display: flex;
+  justify-content: center;
+  padding: 0.2rem 0.8rem;
+}
+
+.bs-details-btn-themed {
+  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
+  border: 1px solid var(--color-accent-ice);
+  color: var(--color-accent-ice);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.6rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(4px);
+  letter-spacing: 0.02em;
+}
+
+.bs-details-btn-themed:hover {
+  background: linear-gradient(135deg, var(--color-accent-ice) 0%, #a0c4ff 100%);
+  color: var(--color-bg-dark);
+  border-color: var(--color-accent-mint);
+  box-shadow: 0 4px 16px rgba(47, 255, 167, 0.3);
+  transform: translateY(-1px);
+}
+
+.bs-details-btn-themed:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.bs-btn-icon {
+  font-size: 0.7rem;
+  opacity: 0.8;
+  transition: opacity 0.2s;
+}
+
+.bs-details-btn-themed:hover .bs-btn-icon {
+  opacity: 1;
 }
 
 /* Animations */

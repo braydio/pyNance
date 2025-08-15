@@ -2,7 +2,7 @@
   <div class="p-4">
     <Card>
       <CardContent>
-        <h2 class="text-xl font-bold mb-4">📁 Upload Transactions</h2>
+        <h2 class="text-xl font-bold mb-4">Upload Transactions</h2>
 
         <input type="file" @change="handleFileChange" accept=".csv" class="mb-4" />
 
