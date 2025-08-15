@@ -21,29 +21,46 @@
 
     <Transition name="bs-slide">
       <ul v-if="expanded === 'assets'" class="bs-list">
-        <li v-for="account in assetAccounts" :key="account.id" class="bs-row bs-row-asset">
-          <div class="bs-stripe bs-stripe-green"></div>
-          <div class="bs-logo-container">
-            <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-              loading="lazy" />
-            <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-          </div>
-          <div class="bs-details">
-            <div class="bs-name">{{ account.name }}</div>
-            <div class="bs-mask">
-              <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-              <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+        <template v-for="account in assetAccounts" :key="account.id">
+          <li class="bs-row bs-row-asset">
+            <div class="bs-stripe bs-stripe-green"></div>
+            <div class="bs-logo-container">
+              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
+                loading="lazy" />
+              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
-          </div>
-          <div class="bs-sparkline">
-            <AccountSparkline :account-id="account.id" />
-          </div>
-          <div class="bs-amount-section">
-            <span class="bs-amount bs-amount-green">
-              +{{ format(account.adjusted_balance) }}
-            </span>
-          </div>
-        </li>
+            <div class="bs-details">
+              <div class="bs-name">{{ account.name }}</div>
+              <div class="bs-mask">
+                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+              </div>
+            </div>
+            <div class="bs-sparkline">
+              <AccountSparkline :account-id="account.id" />
+            </div>
+            <div class="bs-amount-section">
+              <span class="bs-amount bs-amount-green">{{ format(account.adjusted_balance) }}</span>
+            </div>
+            <div class="bs-details-btn-section">
+              <button class="bs-details-btn" @click="toggleDetails(account.id)" aria-label="Toggle details">
+                {{ openAccountId === account.id ? 'Hide' : 'Details' }}
+              </button>
+            </div>
+          </li>
+          <li v-if="openAccountId === account.id" class="bs-details-row">
+            <div class="bs-details-content">
+              <ul class="bs-details-list">
+                <li v-for="tx in recentTxs[account.id]" :key="tx.id" class="bs-tx-row">
+                  <span class="bs-tx-date">{{ tx.date }}</span>
+                  <span class="bs-tx-name">{{ tx.name }}</span>
+                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                </li>
+                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">No recent transactions</li>
+              </ul>
+            </div>
+          </li>
+        </template>
         <!-- Assets summary footer -->
         <li v-if="assetAccounts.length" class="bs-summary-row">
           <div></div>
@@ -57,29 +74,46 @@
 
     <Transition name="bs-slide">
       <ul v-if="expanded === 'liabilities'" class="bs-list">
-        <li v-for="account in liabilityAccounts" :key="account.id" class="bs-row bs-row-liability">
-          <div class="bs-stripe bs-stripe-yellow"></div>
-          <div class="bs-logo-container">
-            <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-              loading="lazy" />
-            <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-          </div>
-          <div class="bs-details">
-            <div class="bs-name">{{ account.name }}</div>
-            <div class="bs-mask">
-              <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-              <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+        <template v-for="account in liabilityAccounts" :key="account.id">
+          <li class="bs-row bs-row-liability">
+            <div class="bs-stripe bs-stripe-yellow"></div>
+            <div class="bs-logo-container">
+              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
+                loading="lazy" />
+              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
-          </div>
-          <div class="bs-sparkline">
-            <AccountSparkline :account-id="account.id" />
-          </div>
-          <div class="bs-amount-section">
-            <span class="bs-amount bs-amount-yellow">
-              –{{ format(account.adjusted_balance) }}
-            </span>
-          </div>
-        </li>
+            <div class="bs-details">
+              <div class="bs-name">{{ account.name }}</div>
+              <div class="bs-mask">
+                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">✱</span>
+              </div>
+            </div>
+            <div class="bs-sparkline">
+              <AccountSparkline :account-id="account.id" />
+            </div>
+            <div class="bs-amount-section">
+              <span class="bs-amount bs-amount-yellow">{{ format(account.adjusted_balance) }}</span>
+            </div>
+            <div class="bs-details-btn-section">
+              <button class="bs-details-btn" @click="toggleDetails(account.id)" aria-label="Toggle details">
+                {{ openAccountId === account.id ? 'Hide' : 'Details' }}
+              </button>
+            </div>
+          </li>
+          <li v-if="openAccountId === account.id" class="bs-details-row">
+            <div class="bs-details-content">
+              <ul class="bs-details-list">
+                <li v-for="tx in recentTxs[account.id]" :key="tx.id" class="bs-tx-row">
+                  <span class="bs-tx-date">{{ tx.date }}</span>
+                  <span class="bs-tx-name">{{ tx.name }}</span>
+                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                </li>
+                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">No recent transactions</li>
+              </ul>
+            </div>
+          </li>
+        </template>
         <!-- Liabilities summary footer -->
         <li v-if="liabilityAccounts.length" class="bs-summary-row">
           <div></div>
@@ -100,9 +134,10 @@
 </template>
 
 <script setup>
-import { ref, computed, toRef, onMounted } from 'vue'
+import { ref, reactive, computed, toRef, onMounted } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import AccountSparkline from './AccountSparkline.vue'
+import { fetchRecentTransactions } from '@/api/accounts'
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
@@ -110,6 +145,32 @@ const props = defineProps({
 
 const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
 onMounted(fetchAccounts)
+
+// Details dropdown state
+const openAccountId = ref(null)
+const recentTxs = reactive({})
+
+/** Toggle details dropdown for an account and load recent transactions */
+function toggleDetails(accountId) {
+  openAccountId.value = openAccountId.value === accountId ? null : accountId
+  if (openAccountId.value === accountId && !recentTxs[accountId]) {
+    fetchRecentTransactions(accountId, 3)
+      .then((res) => {
+        let txs = []
+        if (Array.isArray(res?.transactions)) {
+          txs = res.transactions
+        } else if (Array.isArray(res?.data?.transactions)) {
+          txs = res.data.transactions
+        } else if (Array.isArray(res?.data)) {
+          txs = res.data
+        }
+        recentTxs[accountId] = txs
+      })
+      .catch(() => {
+        recentTxs[accountId] = []
+      })
+  }
+}
 
 const expanded = ref('assets')
 const sortAsc = ref(false)
@@ -146,8 +207,19 @@ const totalLiabilities = computed(() =>
   liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0)
 )
 
-const format = val =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val)
+const format = (val) => {
+  const formatter = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+  if (typeof val !== 'number') return ''
+  if (val < 0) {
+    return `(${formatter.format(Math.abs(val))})`
+  }
+  return formatter.format(val)
+}
 
   function mask(maskString) {
     if (!maskString) return null
@@ -160,6 +232,69 @@ function initials(name) {
 </script>
 
 <style scoped>
+/* Account details dropdown styles */
+.bs-details-btn-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.bs-details-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background 0.2s;
+}
+.bs-details-btn:hover {
+  background: var(--color-bg-dark);
+}
+.bs-details-row {
+  grid-column: 1 / -1;
+  background: var(--color-bg-dark);
+  padding: 0.5rem 1rem;
+}
+.bs-details-content {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+}
+.bs-details-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bs-tx-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+.bs-tx-date {
+  flex: 0 0 auto;
+  width: 5ch;
+  color: var(--color-text-muted);
+}
+.bs-tx-name {
+  flex: 1 1 auto;
+  padding: 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-tx-amount {
+  flex: 0 0 auto;
+  width: 7ch;
+  text-align: right;
+}
+.bs-tx-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}
 .bank-statement-list {
   max-width: unset;
   margin: 0;
@@ -183,17 +318,16 @@ function initials(name) {
   border-radius: 1rem 1rem 0 0;
 }
 
-.bs-tab {
-  padding: 0.7rem 1.5rem 0.7rem 1.1rem;
-  background: var(--color-bg-dark);
+ .bs-tab {
+  padding: 0.5rem 1rem;
+  background: var(--color-bg-sec);
   color: var(--color-accent-ice);
-  border: none;
-  border-radius: 0.9rem 0.9rem 0 0;
-  font-size: 1.03rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.8rem 0.8rem 0 0;
+  font-size: 1rem;
   font-weight: 600;
-  transition: background 0.17s, color 0.17s;
+  transition: background 0.2s, color 0.2s;
   cursor: pointer;
-  box-shadow: 0 1px 6px var(--shadow, #2a448a0d);
   position: relative;
 }
 
@@ -209,11 +343,7 @@ function initials(name) {
   z-index: 2;
 }
 
-.bs-tab-assets:hover,
-.bs-tab-assets:focus-visible {
-  background: linear-gradient(90deg, var(--color-bg-dark) 90%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
-}
+/* Hover state retains original gradient styling */
 
 .bs-tab-liabilities:hover,
 .bs-tab-liabilities:focus-visible {
@@ -222,16 +352,15 @@ function initials(name) {
 }
 
 .bs-sort-btn {
-  padding: 0.55rem 0.9rem;
-  background: var(--color-bg-dark);
+  padding: 0.4rem 0.8rem;
+  background: var(--color-bg-sec);
   color: var(--color-accent-ice);
-  border: none;
-  border-radius: 0.9rem;
-  font-size: 0.88rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.17s, color 0.17s;
-  box-shadow: 0 1px 6px var(--shadow, #2a448a0d);
+  transition: background 0.2s, color 0.2s;
 }
 .bs-sort-btn:hover,
 .bs-sort-btn:focus-visible {
@@ -251,7 +380,7 @@ function initials(name) {
 
 .bs-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
@@ -489,3 +618,66 @@ function initials(name) {
   }
 }
 </style>
+/* Account details dropdown styles */
+.bs-details-btn-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+.bs-details-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0.25rem;
+  transition: background 0.2s;
+}
+.bs-details-btn:hover {
+  background: var(--color-bg-dark);
+}
+.bs-details-row {
+  grid-column: 1 / -1;
+  background: var(--color-bg-dark);
+  padding: 0.5rem 1rem;
+}
+.bs-details-content {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+}
+.bs-details-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.bs-tx-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--divider);
+}
+.bs-tx-date {
+  flex: 0 0 auto;
+  width: 5ch;
+  color: var(--color-text-muted);
+}
+.bs-tx-name {
+  flex: 1 1 auto;
+  padding: 0 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.bs-tx-amount {
+  flex: 0 0 auto;
+  width: 7ch;
+  text-align: right;
+}
+.bs-tx-empty {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-style: italic;
+  padding: 0.5rem 0;
+}

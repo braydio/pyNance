@@ -17,8 +17,16 @@ export function useAccountHistory(accountId) {
     if (!accountIdRef.value) return
     loading.value = true
     try {
-      const data = await fetchAccountHistory(accountIdRef.value)
-      history.value = data?.history || []
+      const response = await fetchAccountHistory(accountIdRef.value)
+      let hist = []
+      if (Array.isArray(response?.data?.history)) {
+        hist = response.data.history
+      } else if (Array.isArray(response?.history)) {
+        hist = response.history
+      } else if (Array.isArray(response?.data?.data?.history)) {
+        hist = response.data.data.history
+      }
+      history.value = hist
     } catch (err) {
       console.error('Failed to load account history:', err)
     } finally {
