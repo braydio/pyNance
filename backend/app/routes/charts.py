@@ -47,6 +47,10 @@ def category_breakdown():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .distinct(Transaction.id)
@@ -133,6 +137,9 @@ def category_transactions() -> Dict[str, Any]:
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
         .filter(Transaction.category_id.in_(cat_ids))
         .filter(Transaction.date >= start_date)
         .filter(Transaction.date <= end_date)
@@ -194,6 +201,10 @@ def get_cash_flow():
             db.session.query(date_expr, income_sum, expense_sum, tx_count)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
         )
         if start_date:
             aggregated = aggregated.filter(Transaction.date >= start_date)
@@ -326,6 +337,9 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         db.session.query(Transaction)
         .filter(Transaction.date >= start_date)
         .filter(Transaction.date <= end_date)
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
         .all()
     )
 
@@ -506,6 +520,10 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .all()
         )
 
@@ -514,6 +532,10 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .all()
         )
         for tx, cat in transactions:

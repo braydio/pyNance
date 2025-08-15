@@ -54,6 +54,24 @@ def update_transaction():
         if "merchant_type" in data:
             txn.merchant_type = data["merchant_type"]
             changed_fields["merchant_type"] = True
+        counterpart_id = data.get("counterpart_transaction_id")
+        flag_counterpart = data.get("flag_counterpart", False)
+        if "is_internal" in data:
+            is_internal = bool(data["is_internal"])
+            txn.is_internal = is_internal
+            txn.internal_match_id = (
+                counterpart_id if is_internal and counterpart_id else None
+            )
+            changed_fields["is_internal"] = True
+            if counterpart_id:
+                other = Transaction.query.filter_by(
+                    transaction_id=counterpart_id
+                ).first()
+                if other and flag_counterpart:
+                    other.is_internal = is_internal
+                    other.internal_match_id = (
+                        txn.transaction_id if is_internal else None
+                    )
 
         txn.user_modified = True
         existing_fields = {}
