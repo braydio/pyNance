@@ -25,6 +25,7 @@ declare module 'vue' {
     Chart: typeof import('./components/unused/Chart.vue')['default']
     ChartWidgetTopBar: typeof import('./components/ui/ChartWidgetTopBar.vue')['default']
     DailyNetChart: typeof import('./components/charts/DailyNetChart.vue')['default']
+    DailyNetStatistics: typeof import('./components/statistics/DailyNetStatistics.vue')['default']
     DownloadCSV: typeof import('./components/unused/DownloadCSV.vue')['default']
     ForecastAdjustmentsForm: typeof import('./components/forecast/ForecastAdjustmentsForm.vue')['default']
     ForecastBreakdown: typeof import('./components/forecast/ForecastBreakdown.vue')['default']

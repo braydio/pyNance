@@ -157,10 +157,10 @@ async function renderChart() {
               const rec = filtered[idx];
               if (!rec) return [];
               return [
-                `🟢 Income: ${formatAmount(rec.income.parsedValue)}`,
-                `🔴 Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
-                `🟡 Net: ${formatAmount(rec.net.parsedValue)}`,
-                `📊 Transactions: ${rec.transaction_count}`,
+                `Income: ${formatAmount(rec.income.parsedValue)}`,
+                `Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
+                `Net: ${formatAmount(rec.net.parsedValue)}`,
+                `Transactions: ${rec.transaction_count}`,
               ];
             },
           },

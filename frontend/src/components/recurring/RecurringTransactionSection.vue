@@ -44,8 +44,8 @@
             <td>{{ formatAmount(rule.amount) }}</td>
             <td>{{ rule.notes }}</td>
             <td>
-              <button class="btn-sm" @click="editRule(rule)">✏️</button>
-              <button class="btn-sm" @click="deleteRule(rule)">🗑</button>
+              <button class="btn-sm" @click="editRule(rule)">Edit</button>
+              <button class="btn-sm" @click="deleteRule(rule)">Delete</button>
             </td>
           </tr>
         </tbody>
