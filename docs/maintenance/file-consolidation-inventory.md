@@ -12,7 +12,7 @@
   - Short SHA: `3f36b48`
   - Last Modified: 2025-07-26
 
-- [ ] **ORGANIZE.md**
+- [ ] **docs/process/repo_organization.md**
   - Full SHA: `96fc1aa659581614a02fc68e39edc4513be76bc5`
   - Short SHA: `96fc1aa`
   - Last Modified: 2025-08-02

@@ -1,7 +1,7 @@
-codex
-Below is a high-level tour of the pyNance codebase, followed by a feature-by-feature
-breakdown of areas that are partially built out or in need of completion, and—under each
-feature—a modular, logically ordered checklist with pointers to the existing docs and code.
+# pyNance Codebase Report and Feature Analysis [CODEX_REPORT]
+
+This document provides a comprehensive tour of the pyNance codebase, followed by a feature-by-feature breakdown of areas that are partially built out or in need of completion. Each feature includes a modular, logically ordered checklist with pointers to existing documentation and code.
+
 You can pick and choose subsections as needed; each section stands on its own.
 
 ---

@@ -1,4 +1,16 @@
-# pyNance Frontend
+> **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
+> 
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
+> 
+> **Specific mapping**:
+> - Site Map & Issue Tracker → See [COMPONENT_TASKS] section
+> - High-Level Issues & UX/UI Pain Points → See [COMPONENT_DASHBOARD] High-Level UX/UI Issues
+> - All view components → See corresponding [COMPONENT_*] sections
+> - Global Dashboard TODOs → See [GLOBAL_DASHBOARD] section
+
+---
+
+# pyNance Frontend - Legacy Content
 
 - Site Map & Issue Tracker (`frontend/src/views/`)
 

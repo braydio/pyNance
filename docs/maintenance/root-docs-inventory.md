@@ -12,15 +12,15 @@
 4. `CODEX.md` - Project developer guide (duplicate of CLAUDE.md)
 5. `COMPONENT_ACCOUNTS.md` - Unified accounts component specification
 6. `CONSOLIDATED_DASHBOARD.md` - Consolidated dashboard component tasks
-7. `Consolidated_TODO.md` - Master consolidated TODO file
+7. `docs/frontend/Consolidated_TODO.md` - Master consolidated TODO file
 8. `CONSOLIDATION_INVENTORY.md` - Source files inventory for consolidation
-9. `DEV_GUIDE.md` - Comprehensive development standards guide
+9. `CONTRIBUTING.md` - Comprehensive development standards guide
 10. `GITHUB_ISSUE_TEMPLATE.md` - Template for GitHub issues
 11. `LEGACY_DEPRECATION_TEMPLATE.md` - Template for deprecating legacy files
 12. `NewToDo.md` - Frontend site map and issue tracker
-13. `ORGANIZE.md` - Full repository organization plan
+13. `docs/process/repo_organization.md` - Full repository organization plan
 14. `Phase_1.md` - Detailed Phase 1 audit specifications
-15. `PHASES.md` - Complete 10-phase implementation plan
+15. `docs/frontend/PHASES.md` - Complete 10-phase implementation plan
 16. `PR_DESCRIPTION_TEMPLATE.md` - Pull request description template
 17. `ProcessLegend.md` - Step-by-step execution plan for dashboard improvements
 18. `README.md` - Main project documentation (setup and overview)
@@ -47,11 +47,11 @@
    - **Purpose:** Main project documentation, setup guide, architecture overview
    - **Justification:** Primary entry point for developers, contains essential setup information
 
-2. **`DEV_GUIDE.md`** - ✅ **KEEP AT ROOT** 
+2. **`CONTRIBUTING.md`** - ✅ **KEEP AT ROOT** 
    - **Purpose:** Comprehensive development standards, tooling, validation
    - **Justification:** Critical reference for all contributors, frequently accessed
 
-3. **`ORGANIZE.md`** - ✅ **KEEP AT ROOT**
+3. **`docs/process/repo_organization.md`** - ✅ **KEEP AT ROOT**
    - **Purpose:** High-level repository organization plan
    - **Justification:** Strategic document for repository structure
 
@@ -63,7 +63,7 @@
 ### **MOVE TO docs/process/**
 **Process and workflow documentation:**
 
-5. **`PHASES.md`** → **`docs/process/implementation-phases.md`**
+5. **`docs/frontend/PHASES.md`** → **`docs/process/implementation-phases.md`**
    - **Purpose:** 10-phase implementation plan for dashboard improvements
    - **Justification:** Process documentation for development workflow
 
@@ -113,7 +113,7 @@
 ### **MOVE TO docs/maintenance/**
 **Maintenance and organization documentation:**
 
-16. **`Consolidated_TODO.md`** → **`docs/maintenance/master-todo.md`**
+16. **`docs/frontend/Consolidated_TODO.md`** → **`docs/maintenance/master-todo.md`**
     - **Purpose:** Master consolidated TODO file
     - **Justification:** Maintenance tracking documentation
 
@@ -131,13 +131,13 @@
 19. **`CLAUDE.md`** - 🗑️ **REMOVE** (duplicate of CODEX.md)
     - **Justification:** Identical content to CODEX.md, causes confusion
 
-20. **`CODEX.md`** - 🗑️ **MERGE INTO DEV_GUIDE.md** or **REMOVE**
+20. **`CODEX.md`** - 🗑️ **MERGE INTO CONTRIBUTING.md** or **REMOVE**
     - **Purpose:** Project developer guide (basic setup commands)
-    - **Justification:** Content overlaps with README.md and DEV_GUIDE.md
+    - **Justification:** Content overlaps with README.md and CONTRIBUTING.md
 
 21. **`NewToDo.md`** - 🗑️ **MERGE INTO docs/maintenance/master-todo.md**
     - **Purpose:** Frontend site map and issue tracker
-    - **Justification:** Superseded by Consolidated_TODO.md
+    - **Justification:** Superseded by docs/frontend/Consolidated_TODO.md
 
 22. **`ToDo.md`** - 🗑️ **MERGE INTO docs/maintenance/master-todo.md**
     - **Purpose:** Older version of frontend issue tracker
@@ -153,8 +153,8 @@
 
 ### **Files Staying at Root (4 files):**
 - `README.md` - Main project entry point
-- `DEV_GUIDE.md` - Developer standards guide  
-- `ORGANIZE.md` - Repository organization plan
+- `CONTRIBUTING.md` - Developer standards guide  
+- `docs/process/repo_organization.md` - Repository organization plan
 - Configuration files (`requirements*.txt`)
 
 ### **Files Moving to docs/ (14 files):**

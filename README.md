@@ -1,12 +1,10 @@
-# pyNance Dashboard Setup (2025)
+# pyNance Dashboard Setup [PYNANCE_SETUP]
 
-**pyNance** is a personal finance dashboard integrating **Plaid** and **Teller** APIs to visualize and manage your financial data. It uses **Flask** for the backend and **Vue&nbsp;3** with **Vite** and **TypeScript** for the frontend.
+**pyNance** is a personal finance dashboard integrating **Plaid** and **Teller** APIs to visualize and manage your financial data. It uses **Flask** for the backend and **Vue 3** with **Vite** and **TypeScript** for the frontend.
 
-This project targets **Python&nbsp;3.11** and **Node&nbsp;20**.
+This project targets **Python 3.11** and **Node 20**.
 
----
-
-## Project Structure
+## Project Structure [PROJECT_STRUCTURE]
 
 ```
 /backend/app/
@@ -176,6 +174,23 @@ All tests should pass when dependencies are installed.
 | `/frontend/.env`                      | Frontend environment variables                                                 |
 
 Refer to [`docs/index/INDEX.md`](docs/index/INDEX.md) for a full documentation map.
+
+---
+
+## Documentation
+
+This project maintains comprehensive documentation to help with development, maintenance, and contribution:
+
+- **[Documentation Index](docs/index/INDEX.md)** - Complete map of all available documentation
+- **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for contributing to the project
+- **[Maintenance Checklist](docs/maintenance/cleanup_checklist.md)** - Regular maintenance tasks and procedures
+
+### Frontend Planning Documents
+
+Frontend development plans and task tracking are organized in:
+
+- **[Consolidated TODO](docs/frontend/Consolidated_TODO.md)** - All frontend tasks and development items
+- **[Development Phases](docs/frontend/PHASES.md)** - Frontend development roadmap and phases
 
 ---
 

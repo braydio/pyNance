@@ -10,7 +10,7 @@ This PR consolidates scattered TODO documentation files into a unified system fo
 
 ### Core TODO Files
 - **NewToDo.md** - `3f36b48` (2025-07-26) - 231 lines
-- **ORGANIZE.md** - `96fc1aa` (2025-08-02) - 27 lines  
+- **docs/process/repo_organization.md** - `96fc1aa` (2025-08-02) - 27 lines  
 - **Phase_1.md** - `a1317b0` (2025-07-29) - 117 lines
 - **ReviewKey.md** - `0fc2186` (2025-07-28) - 184 lines
 - **ToDo.md** - `3f36b48` (2025-07-26) - 201 lines
@@ -32,7 +32,7 @@ This consolidation addresses:
 All source file SHAs have been locked for full traceability:
 ```
 NewToDo.md: 3f36b482d86ee570d6cc883b25329f21e1b40060
-ORGANIZE.md: 96fc1aa659581614a02fc68e39edc4513be76bc5
+docs/process/repo_organization.md: 96fc1aa659581614a02fc68e39edc4513be76bc5
 Phase_1.md: a1317b0058618af850acd0b5cf25d739bf50b816  
 ReviewKey.md: 0fc2186b3c9219984c7610e351682af5beb12b13
 ToDo.md: 3f36b482d86ee570d6cc883b25329f21e1b40060

@@ -1,4 +1,16 @@
-# pyNance Frontend - Site Map & Issue Tracker (`frontend/src/views/`)
+> **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
+> 
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
+> 
+> **Specific mapping**:
+> - Site-Wide Features, Components, and Tasks → See [COMPONENT_TASKS] section
+> - Dashboard.vue content → See [COMPONENT_DASHBOARD] section
+> - All view components → See corresponding [COMPONENT_*] sections
+> - Global Dashboard TODOs → See [GLOBAL_DASHBOARD] section
+
+---
+
+# pyNance Frontend - Site Map & Issue Tracker (`frontend/src/views/`) - Legacy Content
 
 ---
 

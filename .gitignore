@@ -1,66 +1,101 @@
-# Legacy directory
+# Secrets and certificates
 *.pem
+*.key
+*.crt
+*.p12
+*.pfx
+backend/app/certs/*
+!backend/app/certs/README.md
 
-# Migrations
-backend/migrations/
-!backend/migrations/versions
-backend/dev/*
-# Byte-compiled / compiled Python files
+# Environment files
+.env
+.env.*
+*.env
+!**/example.env
+
+# Python
 *.py[cod]
 __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
-
-# Virtual environment
-env/
-venv/
+.nox/
+.tox/
 .venv/
-*.env
-!*/example.env
+venv/
+env/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node and frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+*.map
+frontend/.vite/
+frontend/.eslintcache
+frontend/coverage/
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+frontend/cypress/downloads/
+npm-debug.log*
+yarn-error.log*
+
+# Databases and data
+*.db
+*.sqlite3
+chroma/
+chroma.sqlite3/
+backend/chroma/
+data/
+app/data/
+app/temp/
+
+# Imports and generated files
+imports/*
+!imports/README.md
 
 # Logs
 *.log
 logs/
 
-# Database files
-*.db
-*.sqlite3
-chroma/*
-chroma.sqlite3/
-backend/chroma/
-# Manual transaction / account uploads
-imports/*
-!imports/README.md
-
-# Temporary files
-*.bak
-*.swp
+# Temporary and archives
 temp/
+tmp/
 *.tmp
+*.bak
 *.backup
-
-# Archive files
 archive/
 app/archive/
+*.swp
 
-# Compiled front-end assets
-dist/
-node_modules/
-*.map
-
-# Data files
-data/
-app/data/
-app/temp/
-
-# IDE and editor specific files
+# IDE and OS files
 .idea/
 .vscode/
 *.iml
+.DS_Store
+
+# Package manager lockfile at repo root only (frontend lockfile stays tracked)
+# Remove this ignore if you intentionally add a root-level package.json
+/package-lock.json
+
+# Docs scratch and generated
+docs/tmp/
+docs/drafts/
+docs/generated/
+notes/
+scratch/
+research/
+design/
+
+# Backend dev utilities
+backend/dev/*
+backend/migrations/
+!backend/migrations/versions
 
 # Miscellaneous
-*.DS_Store
 *.egg-info/
 *.local
 .coverage

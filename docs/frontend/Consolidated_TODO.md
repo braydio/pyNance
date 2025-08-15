@@ -213,7 +213,7 @@ pyNance/
 
 ## Development Guidelines and Validation [DEV_GUIDE]
 
-✅ **COMPLETED**: Comprehensive development guide created as `DEV_GUIDE.md` with:
+✅ **COMPLETED**: Comprehensive development guide created as `CONTRIBUTING.md` with:
 - Tooling and version requirements (Python 3.11, Node 20)
 - Code style standards (PEP 8, type annotations, black, ruff, TailwindCSS only)
 - Environment setup with `scripts/setup.sh` and example.env files
@@ -745,6 +745,29 @@ pytest tests/test_model_field_validation.py
 - [ ] Add account status indicators
 - [ ] Implement account reconnection flows
 
+### Legacy TODO Items Integration [LEGACY_TODO_ITEMS]
+- [ ] Add tests / checks / hooks to ensure the only CSS styling syntax is in-line with TailwindCSS
+- [ ] Header needs to be formatted, sized, centered, colored
+- [ ] Snapshot feature is broken
+- [ ] Transactions Table does not currently render any transactions
+- [ ] Review Visual Styling once Rendering for Transactions Table
+- [ ] Implement Accounts Reorder Chart functionality
+- [ ] Replace the placeholder panel with meaningful insights or charts (Spending Insights Panel)
+- [ ] Tie data into existing analytics helpers
+- [ ] Keep the chart wide enough and visually balanced at all breakpoints
+- [ ] Review date pickers and dropdown menus for mobile and desktop usability
+- [ ] Ensure all inputs have accessible labels
+- [ ] Expand/collapse works, but micro‑interactions could be smoother
+- [ ] Consider sticky headers or pagination for users with many records
+- [ ] Provide test or fake data for empty states
+- [ ] Perform a final responsive audit across devices
+- [ ] Restyle the Navbar color scheme to fit the dashboard layout
+- [ ] Validate tab order, aria labels, and color contrast
+- [ ] Confirm keyboard navigation works in tables and filters
+- [ ] Double-check spacing, shadows, icon sizes, and text wrapping
+- [ ] Optional: add unit or Cypress tests for expand/collapse and snapshot accuracy
+- [ ] Optional: add animations for table transitions or modal dialogs
+
 ## Testing and QA [TEST_QA]
 
 ### Unit Testing
@@ -839,19 +862,19 @@ pytest tests/test_model_field_validation.py
 ### Deprecation Instructions for Original Files
 
 #### Files to Deprecate with Pointers
-- [ ] Add deprecation notice to `NewToDo.md` with link to root Consolidated_TODO.md
-- [ ] Add deprecation notice to `ToDo.md` with link to root Consolidated_TODO.md
-- [ ] Add deprecation notice to `docs/TODO.md` with link to root Consolidated_TODO.md
-- [ ] Add deprecation notice to `Phase_1.md` with link to root Consolidated_TODO.md [PHASES] section
-- [ ] Add deprecation notice to `ProcessLegend.md` with link to root Consolidated_TODO.md [PHASES] section
-- [ ] Add deprecation notice to `ReviewKey.md` with link to root Consolidated_TODO.md [STEPS_TO_FILES] section
-- [ ] Add deprecation notice to `FileLegend.md` with link to root Consolidated_TODO.md [LEGEND_MAP] section
+- [ ] Add deprecation notice to `NewToDo.md` with link to root docs/frontend/Consolidated_TODO.md
+- [ ] Add deprecation notice to `ToDo.md` with link to root docs/frontend/Consolidated_TODO.md
+- [ ] Add deprecation notice to `docs/TODO.md` with link to root docs/frontend/Consolidated_TODO.md
+- [ ] Add deprecation notice to `Phase_1.md` with link to root docs/frontend/Consolidated_TODO.md [PHASES] section
+- [ ] Add deprecation notice to `ProcessLegend.md` with link to root docs/frontend/Consolidated_TODO.md [PHASES] section
+- [ ] Add deprecation notice to `ReviewKey.md` with link to root docs/frontend/Consolidated_TODO.md [STEPS_TO_FILES] section
+- [ ] Add deprecation notice to `FileLegend.md` with link to root docs/frontend/Consolidated_TODO.md [LEGEND_MAP] section
 
 #### Pointer Template for Legacy Files
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
 > 
-> Please refer to the [main TODO.md](../Consolidated_TODO.md) for current tasks and documentation.
+> Please refer to the [main TODO.md](.../frontend/Consolidated_TODO.md) for current tasks and documentation.
 > 
 > **Specific mapping**:
 > - [NewToDo.md content] → See [COMPONENT_DASHBOARD] and [GLOBAL_DASHBOARD] sections
@@ -894,5 +917,5 @@ pytest tests/test_model_field_validation.py
 
 #### Phase 3: Legacy File Removal (Future)
 - [ ] Remove deprecated files after 2-3 development cycles
-- [ ] Update any remaining references to point to consolidated Consolidated_TODO.md
+- [ ] Update any remaining references to point to consolidated docs/frontend/Consolidated_TODO.md
 - [ ] Archive legacy files in documentation history if needed
