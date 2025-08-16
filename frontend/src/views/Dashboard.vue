@@ -298,15 +298,35 @@ async function onNetBarClick(label) {
   showModal.value = true
 }
 
+/**
+ * Handle clicks on the category breakdown chart.
+ *
+ * Fetches transactions for the clicked category within the active
+ * date range and displays them in a modal dialog.
+ *
+ * @param {object|string} payload - Click payload from the chart containing
+ *   the bar label and an array of category IDs.
+ */
 async function onCategoryBarClick(payload) {
-  const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
+  const { label, ids = [] } =
+    typeof payload === 'object' ? payload : { label: payload, ids: [] }
+
+  // Determine the date range in effect for the category chart. The chart emits
+  // `summary-change` events that populate `catSummary` with the actual start
+  // and end dates used in its query. This ensures the modal reflects the same
+  // range, even if it differs from the user-selected inputs.
+  const start = catSummary.value.startDate || catRange.value.start
+  const end = catSummary.value.endDate || catRange.value.end
+
   const result = await fetchCategoryTransactions({
     category_ids: ids.join(','),
-    start_date: catRange.value.start,
-    end_date: catRange.value.end,
+    start_date: start,
+    end_date: end,
   })
   modalTransactions.value = result.data?.transactions || []
-  modalTitle.value = `Transactions: ${label}`
+
+  // Display the category label and date span in the modal header
+  modalTitle.value = `${label}: ${start} – ${end}`
   showModal.value = true
 }
 </script>
