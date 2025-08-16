@@ -145,7 +145,7 @@
         </transition>
       </div>
 
-      <TransactionModal :show="showModal" :title-date="modalTitle" :transactions="modalTransactions"
+      <TransactionModal :show="showModal" :subtitle="modalSubtitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -191,7 +191,7 @@ const {
 } = useTransactions(15)
 const showModal = ref(false)
 const modalTransactions = ref([])
-const modalTitle = ref('')
+const modalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
 const netWorth = ref(0)
@@ -294,7 +294,7 @@ async function loadCategoryGroups() {
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
   modalTransactions.value = result.transactions || []
-  modalTitle.value = `Net total for ${label}`
+  modalSubtitle.value = `Net total for ${label}`
   showModal.value = true
 }
 
@@ -326,7 +326,7 @@ async function onCategoryBarClick(payload) {
   modalTransactions.value = result.data?.transactions || []
 
   // Display the category label and date span in the modal header
-  modalTitle.value = `${label}: ${start} – ${end}`
+  modalSubtitle.value = `${label}: ${start} – ${end}`
   showModal.value = true
 }
 </script>
