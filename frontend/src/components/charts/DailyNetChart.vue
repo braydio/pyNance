@@ -14,8 +14,8 @@ import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
 const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
-// Emits "bar-click" when a bar is selected and "summary-change" when data totals change
-const emit = defineEmits(['bar-click', 'summary-change'])
+// Emits "bar-click" when a bar is selected, "summary-change" when data totals change, and "data-change" when chart data updates
+const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
@@ -230,6 +230,9 @@ function updateSummary() {
   const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
   const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
   emit('summary-change', { totalIncome, totalExpenses, totalNet })
+  
+  // Also emit the filtered chart data for the statistics component
+  emit('data-change', filtered)
 }
 
 
