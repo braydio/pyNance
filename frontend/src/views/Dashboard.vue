@@ -176,7 +176,6 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
-import { fetchCategoryTransactions } from '@/api/charts'
 
 // Transactions and user
 const {
@@ -318,12 +317,12 @@ async function onCategoryBarClick(payload) {
   const start = catSummary.value.startDate || catRange.value.start
   const end = catSummary.value.endDate || catRange.value.end
 
-  const result = await fetchCategoryTransactions({
-    category_ids: ids.join(','),
+  const result = await fetchTransactions({
+    category_ids: ids,
     start_date: start,
     end_date: end,
   })
-  modalTransactions.value = result.data?.transactions || []
+  modalTransactions.value = result.transactions || []
 
   // Display the category label and date span in the modal header
   modalTitle.value = `${label}: ${start} – ${end}`
