@@ -1,4 +1,10 @@
 
+/**
+ * Chart API helpers.
+ *
+ * Provides endpoints for retrieving data used by dashboard charts.
+ * Includes category breakdowns and daily net values.
+ */
 import axios from 'axios'
 
 // Tree (hierarchical) breakdown for the new chart
@@ -16,13 +22,6 @@ export async function fetchCategoryBreakdown(params = {}) {
 // For daily net chart
 export async function fetchDailyNet(params = {}) {
   const response = await axios.get('/api/charts/daily_net', { params })
-  return response.data
-}
-
-// ..reviewing for additional
-
-export async function fetchCategoryTransactions(params = {}) {
-  const response = await axios.get('/api/charts/category_transactions', { params })
   return response.data
 }
 
