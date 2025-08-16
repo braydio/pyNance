@@ -14,8 +14,8 @@
               <path d="M7 12h10M12 7v10" stroke-linecap="round" />
             </svg>
             Transactions
-            <span v-if="titleDate" class="ml-2 text-violet-200 text-base font-medium normal-case drop-shadow-none">
-              ({{ titleDate }})
+            <span v-if="subtitle" class="ml-2 text-violet-200 text-base font-medium normal-case drop-shadow-none">
+              ({{ subtitle }})
             </span>
           </h2>
           <button
@@ -63,10 +63,12 @@ import { onMounted, nextTick, computed } from 'vue'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
 import { formatAmount } from "@/utils/format"
 
+// Modal dialog displaying a list of transactions with a summary bar and optional subtitle.
+
 const props = defineProps({
   show: { type: Boolean, default: false },
   transactions: { type: Array, default: () => [] },
-  titleDate: { type: String, default: '' }
+  subtitle: { type: String, default: '' }
 })
 
 const emit = defineEmits(['close'])
