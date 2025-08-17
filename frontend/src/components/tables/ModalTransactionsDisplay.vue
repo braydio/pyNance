@@ -1,5 +1,5 @@
 <template>
-  <div class="overflow-x-auto rounded-xl shadow bg-transparent px-2 py-2">
+  <div class="overflow-x-auto rounded-xl shadow bg-transparent px-4 py-4">
     <!-- Title Date Above Table -->
     <div v-if="titleDate" class="mb-2 ml-2 text-violet-200 text-base font-medium">
       {{ titleDate }}
@@ -17,24 +17,34 @@
           'group transition-all border-b border-violet-800/30',
           'hover:scale-[1.015] hover:shadow-lg hover:z-10'
         ]" style="background: linear-gradient(90deg, rgba(58,0,120,0.09) 0%, rgba(40,30,80,0.12) 100%);">
-          <!-- Account column with accent bar -->
-          <td class="pl-8 pr-2 py-4 relative min-w-[120px]">
+          <!-- Account column with accent bar and institution badge -->
+          <td class="pl-8 pr-2 py-4 relative min-w-[140px]">
             <div :class="[
               'absolute left-0 top-5 bottom-3 w-0.5 rounded-full',
               tx.amount > 0 ? 'bg-emerald-300/90' : 'bg-rose-400/90'
             ]"></div>
-            <div class="pl-4 text-violet-100">
-              <div class="font-bold text-base">{{ tx.account_name }}</div>
-              <div class="text-xs text-violet-300">{{ tx.institution_name }}</div>
+            <div class="pl-4 flex items-center gap-2 text-violet-100">
+              <img v-if="tx.institution_icon_url" :src="tx.institution_icon_url" alt="Institution logo"
+                class="h-6 w-6 rounded-full object-contain" />
+              <span v-else class="h-6 w-6 rounded-full bg-violet-700 flex items-center justify-center text-xs font-semibold text-white">
+                {{ initials(tx.institution_name) }}
+              </span>
+              <div class="flex flex-col">
+                <div class="font-bold text-base">{{ tx.account_name }}</div>
+                <div class="text-xs text-violet-300">{{ tx.institution_name }}</div>
+              </div>
             </div>
           </td>
           <td class="px-6 py-4 text-violet-100">
-            <div class="flex items-center">
-              <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="Category Icon"
-                class="h-7 w-7 mr-2 object-contain filter drop-shadow" />
-              <div class="flex flex-col">
-                <div class="font-semibold">{{ tx.merchant_name }}</div>
-                <div class="text-xs text-violet-300">{{ tx.description }}</div>
+            <div class="flex items-start gap-2">
+              <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="Category icon"
+                class="h-6 w-6 object-contain filter drop-shadow-sm flex-shrink-0" />
+              <div class="flex flex-col flex-1">
+                <div class="font-semibold truncate">{{ tx.merchant_name }}</div>
+                <div class="text-xs text-violet-300 truncate">{{ tx.description }}</div>
+                <div v-if="tx.category && tx.category.length" class="text-xs text-violet-400 italic mt-1">
+                  {{ tx.category[0] }}<span v-if="tx.category.length > 1">: {{ tx.category[1] }}</span>
+                </div>
               </div>
             </div>
           </td>
@@ -72,5 +82,12 @@ defineProps({
 function formatAmount(amount) {
   if (amount == null) return '-'
   return utilFormatAmount(amount)
+}
+/**
+ * Generate initials from a name string (up to 2 chars).
+ */
+function initials(name) {
+  if (!name) return '??'
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 }
 </script>
