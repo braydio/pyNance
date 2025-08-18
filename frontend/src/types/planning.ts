@@ -1,3 +1,4 @@
+// frontend/src/types/planning.ts
 
 export type BillOrigin = "manual" | "predicted";
 export type AllocationType = "fixed" | "percent";
@@ -15,7 +16,7 @@ export interface Allocation {
   id: string;
   target: string; // "bill:<billId>" | "savings:<name>" | "goal:<name>"
   kind: AllocationType;
-  value: number; // cents if fixed, 0–100 if percent
+  value: number;  // cents if fixed; 0–100 if percent
 }
 
 export interface Scenario {
@@ -31,5 +32,6 @@ export interface PlanningState {
   bills: Bill[];
   scenarios: Scenario[];
   activeScenarioId: string;
-  lastSavedAt: string;
+  lastSavedAt: string; // ISO
 }
+
