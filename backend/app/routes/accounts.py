@@ -20,7 +20,9 @@ accounts = Blueprint("accounts", __name__)
 
 error_logger = logging.getLogger("pyNanceError")
 if not error_logger.handlers:
-    handler = logging.FileHandler(Path(__file__).resolve().parents[3] / "error_log.log")
+    handler = logging.FileHandler(
+        Path(__file__).resolve().parents[1] / "logs/account_sync_error.log"
+    )
     error_logger.addHandler(handler)
 error_logger.setLevel(logging.ERROR)
 
@@ -448,11 +450,13 @@ def account_net_changes(account_id):
         logger.error(f"Error in account_net_changes: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
+
 # Endpoint to fetch account balance history
 @accounts.route("/<account_id>/history", methods=["GET"])
 def get_account_history(account_id):
     """Return daily balance history for a given account."""
     from app.models import AccountHistory
+
     try:
         # Optional date filters (ISO format)
         start_date_str = request.args.get("start_date")

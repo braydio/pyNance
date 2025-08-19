@@ -1,8 +1,10 @@
-"""Core SQLAlchemy ORM models for the pyNance backend."""
-# backend/app/models/core.py
+"""Core SQLAlchemy models for the pyNance backend."""
 
+import uuid  # may be used by some IDs
 from datetime import datetime, timezone
 
+from sqlalchemy import CheckConstraint, Index, UniqueConstraint
+from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from app.extensions import db
@@ -351,3 +353,4 @@ class FinancialGoal(db.Model, TimestampMixin):
     notes = db.Column(db.String(256), nullable=True)
 
     account = db.relationship("Account", backref="goals")
+
