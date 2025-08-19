@@ -3,10 +3,11 @@
 import uuid
 from datetime import datetime, timezone
 
-from app.extensions import db
 from sqlalchemy import CheckConstraint, Index, UniqueConstraint
-from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.ext.hybrid import hybrid_property
+
+from app.extensions import db
 
 
 class TimestampMixin:
@@ -364,14 +365,16 @@ class PlanningScenario(db.Model):
     __tablename__ = "planning_scenarios"
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    user_id = db.Column(
-        UUID(as_uuid=True), db.ForeignKey("users.id"), nullable=False, index=True
-    )
     name = db.Column(db.String(120), nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=datetime.now(tz=timezone.utc), nullable=False
+    )
     updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        db.DateTime,
+        default=datetime.now(tz=timezone.utc),
+        onupdate=datetime.now(tz=timezone.utc),
+        nullable=False,
     )
 
     bills = db.relationship(
@@ -389,10 +392,6 @@ class PlanningScenario(db.Model):
         lazy="selectin",
     )
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "name", name="uq_planning_scenarios_user_name"),
-    )
-
 
 class PlannedBill(db.Model):
     __tablename__ = "planned_bills"
@@ -406,14 +405,19 @@ class PlannedBill(db.Model):
     )
 
     name = db.Column(db.String(120), nullable=False)
-    amount_cents = db.Column(db.Integer, nullable=False)  # integer cents
+    amount_cents = db.Column(db.Integer, nullable=False)
     due_date = db.Column(db.Date, nullable=True)
     category = db.Column(db.String(80), nullable=True)
     predicted = db.Column(db.Boolean, default=False, nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=datetime.now(tz=timezone.utc), nullable=False
+    )
     updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        db.DateTime,
+        default=datetime.now(tz=timezone.utc),
+        onupdate=datetime.now(tz=timezone.utc),
+        nullable=False,
     )
 
     __table_args__ = (
@@ -433,14 +437,18 @@ class ScenarioAllocation(db.Model):
         index=True,
     )
 
-    # "bill:<uuid>" | "savings:<name>" | "goal:<name>"
     target = db.Column(db.String(160), nullable=False)
     kind = db.Column(AllocationType, nullable=False)
-    value = db.Column(db.Integer, nullable=False)  # cents if fixed, percent if percent
+    value = db.Column(db.Integer, nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    created_at = db.Column(
+        db.DateTime, default=datetime.now(tz=timezone.utc), nullable=False
+    )
     updated_at = db.Column(
-        db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        db.DateTime,
+        default=datetime.now(tz=timezone.utc),
+        onupdate=datetime.now(tz=timezone.utc),
+        nullable=False,
     )
 
     __table_args__ = (
