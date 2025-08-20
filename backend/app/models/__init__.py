@@ -1,26 +1,33 @@
 """app.models package exports.
 
 This package exposes all SQLAlchemy models grouped into modules.
-Imports from `app.models` continue to work via these re-exports.
 """
 
-from .core_models import (
-    TimestampMixin,
+# Mixins
+from .mixins import TimestampMixin
+
+# Institutions & linked accounts
+from .institution_models import (
     Institution,
-    Account,
     PlaidAccount,
     PlaidItem,
     PlaidWebhookLog,
     TellerAccount,
-    AccountHistory,
-    RecurringTransaction,
-    Category,
-    Transaction,
-    TransactionRule,
-    PlaidTransactionMeta,
-    FinancialGoal,
 )
 
+# Accounts
+from .account_models import Account, AccountHistory, FinancialGoal
+
+# Transactions
+from .transaction_models import (
+    Category,
+    Transaction,
+    RecurringTransaction,
+    TransactionRule,
+    PlaidTransactionMeta,
+)
+
+# Planning
 from .planning_models import (
     AllocationType,
     PlanningScenario,
@@ -28,21 +35,27 @@ from .planning_models import (
     ScenarioAllocation,
 )
 
+
 __all__ = [
+    # Mixins
     "TimestampMixin",
+    # Institutions
     "Institution",
-    "Account",
     "PlaidAccount",
     "PlaidItem",
     "PlaidWebhookLog",
     "TellerAccount",
+    # Accounts
+    "Account",
     "AccountHistory",
-    "RecurringTransaction",
+    "FinancialGoal",
+    # Transactions
     "Category",
     "Transaction",
+    "RecurringTransaction",
     "TransactionRule",
     "PlaidTransactionMeta",
-    "FinancialGoal",
+    # Planning
     "AllocationType",
     "PlanningScenario",
     "PlannedBill",
