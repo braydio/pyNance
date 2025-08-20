@@ -174,15 +174,17 @@ async function fetchData() {
         const others = raw.slice(4)
         const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
         const otherBar = {
-          id: 'other',
-          label: 'Other',
+          id: 'others',
+          label: 'Others',
           amount: parseFloat(otherTotal.toFixed(2)),
-          children: [
-            { id: 'other', label: 'Other', amount: parseFloat(otherTotal.toFixed(2)) }
-          ]
+          children: others.length
+            ? others
+            : [{ id: 'others', label: 'Others', amount: 0 }]
         }
+
         processed = [...topFour, otherBar]
       }
+
       categoryTree.value = processed
       emit(
         'categories-change',
@@ -247,4 +249,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
