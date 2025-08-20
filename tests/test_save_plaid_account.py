@@ -1,3 +1,5 @@
+"""Tests for saving Plaid accounts using the modularized models package."""
+
 import importlib.util
 import os
 import sys
@@ -9,11 +11,21 @@ from flask import Flask
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 
-def load_module(name, path):
-    spec = importlib.util.spec_from_file_location(name, path)
+def load_module(name, path, package=False):
+    """Dynamically load a module or package from ``path``.
+
+    When ``package`` is True, the loader treats the target as a package so
+    relative imports within it resolve correctly.
+    """
+
+    spec = importlib.util.spec_from_file_location(
+        name,
+        path,
+        submodule_search_locations=[os.path.dirname(path)] if package else None,
+    )
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     sys.modules[name] = module
+    spec.loader.exec_module(module)
     return module
 
 
@@ -21,6 +33,8 @@ def setup_app(tmp_path):
     app = Flask(__name__)
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path}/test.db"
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    sys.modules.setdefault("app", types.ModuleType("app"))
 
     config_stub = types.ModuleType("app.config")
     config_stub.logger = types.SimpleNamespace(
@@ -74,8 +88,25 @@ def db_ctx(tmp_path):
     app, extensions = setup_app(tmp_path)
     with app.app_context():
         models = load_module(
-            "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
+            "app.models",
+            os.path.join(BASE_BACKEND, "app", "models", "__init__.py"),
+            package=True,
         )
+        sql_pkg = types.ModuleType("app.sql")
+        trl = types.ModuleType("app.sql.transaction_rules_logic")
+        trl.apply_rules = lambda user_id, tx: tx
+        refresh_meta = types.ModuleType("app.sql.refresh_metadata")
+        refresh_meta.refresh_or_insert_plaid_metadata = lambda *a, **k: None
+        sys.modules["app.sql"] = sql_pkg
+        sys.modules["app.sql.transaction_rules_logic"] = trl
+        sys.modules["app.sql.refresh_metadata"] = refresh_meta
+        sql_pkg.transaction_rules_logic = trl
+        sql_pkg.refresh_metadata = refresh_meta
+        plaid_stub = types.ModuleType("plaid")
+        class ApiException(Exception):
+            pass
+        plaid_stub.ApiException = ApiException
+        sys.modules["plaid"] = plaid_stub
         logic = load_module(
             "app.sql.account_logic",
             os.path.join(BASE_BACKEND, "app", "sql", "account_logic.py"),

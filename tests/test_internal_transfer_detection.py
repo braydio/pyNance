@@ -1,3 +1,5 @@
+"""Tests for detecting internal transfers with the modularized models."""
+
 import importlib.util
 import os
 import sys
@@ -76,12 +78,15 @@ sys.modules["app.extensions"] = extensions
 app_pkg.extensions = extensions
 
 # Load models and account_logic modules
+models_path = os.path.join(BASE_BACKEND, "app", "models", "__init__.py")
 spec_models = importlib.util.spec_from_file_location(
-    "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
+    "app.models",
+    models_path,
+    submodule_search_locations=[os.path.dirname(models_path)],
 )
 models = importlib.util.module_from_spec(spec_models)
-spec_models.loader.exec_module(models)
 sys.modules["app.models"] = models
+spec_models.loader.exec_module(models)
 app_pkg.models = models
 
 spec_logic = importlib.util.spec_from_file_location(
