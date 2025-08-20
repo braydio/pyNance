@@ -1,4 +1,5 @@
-# tests/test_recurring_bridge.py
+"""Tests for the recurring bridge logic with modularized models."""
+
 import importlib.util
 import logging
 import os
@@ -16,10 +17,17 @@ BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 
 
-def load_module(name, path):
+def load_module(name, path, package=False):
+    """Load a module or package and register it in ``sys.modules``."""
+
     try:
-        spec = importlib.util.spec_from_file_location(name, path)
+        spec = importlib.util.spec_from_file_location(
+            name,
+            path,
+            submodule_search_locations=[os.path.dirname(path)] if package else None,
+        )
         module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
         spec.loader.exec_module(module)
         logger.debug(f"Loaded module: {name} from {path}")
         return module
@@ -49,13 +57,18 @@ def db_ctx(tmp_path):
     app, extensions = setup_sqlite_app(tmp_path)
     with app.app_context():
         try:
+            for mod in list(sys.modules):
+                if mod == "app" or mod.startswith("app."):
+                    sys.modules.pop(mod, None)
+
             sys.modules["app"] = types.ModuleType("app")
             sys.modules["app.extensions"] = extensions
 
             models = load_module(
-                "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
+                "app.models",
+                os.path.join(BASE_BACKEND, "app", "models", "__init__.py"),
+                package=True,
             )
-            sys.modules["app.models"] = models
 
             sys.modules["app.sql"] = types.ModuleType("app.sql")
             logic = load_module(
@@ -73,6 +86,9 @@ def db_ctx(tmp_path):
         finally:
             extensions.db.drop_all()
             for mod in [
+                "app.services.recurring_bridge",
+                "app.services.recurring_detection",
+                "app.services",
                 "app.sql.recurring_logic",
                 "app.sql",
                 "app.models",

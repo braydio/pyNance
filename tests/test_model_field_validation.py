@@ -15,7 +15,8 @@ BASE_DIR = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 
 def _load_models():
-    """Load backend models with minimal Flask-SQLAlchemy context."""
+    """Load backend models package with minimal Flask-SQLAlchemy context."""
+
     sys.modules.pop("app", None)
     app_pkg = types.ModuleType("app")
     extensions_stub = types.ModuleType("app.extensions")
@@ -24,9 +25,14 @@ def _load_models():
     sys.modules["app"] = app_pkg
     sys.modules["app.extensions"] = extensions_stub
 
-    module_path = os.path.join(BASE_DIR, "app", "models.py")
-    spec = importlib.util.spec_from_file_location("app.models", module_path)
+    module_path = os.path.join(BASE_DIR, "app", "models", "__init__.py")
+    spec = importlib.util.spec_from_file_location(
+        "app.models",
+        module_path,
+        submodule_search_locations=[os.path.dirname(module_path)],
+    )
     models = importlib.util.module_from_spec(spec)
+    sys.modules["app.models"] = models
     spec.loader.exec_module(models)
     return models
 
