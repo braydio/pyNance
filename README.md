@@ -246,6 +246,16 @@ pip install -r requirements-slim.txt
 pytest -q
 ```
 
+## UI/UX Audit
+
+Capture dashboard screenshots at common breakpoints using:
+
+```bash
+python scripts/uiux_audit.py --url http://localhost:5173
+```
+
+Screenshots are saved to `./uiux_audit` by default.
+
 ---
 
 ## Logs
