@@ -1,19 +1,19 @@
 # backend/app/routes/planning.py
 from flask import Blueprint, request, jsonify
-from werkzeug.exceptions import NotFound, BadRequest
-from app.models import db, PlanningScenario, PlannedBill, ScenarioAllocation
-from app.services import planning_service
+from werkzeug.exceptions import BadRequest, NotFound
+
+from app.sql import planning_logic as logic
 
 bp = Blueprint("planning", __name__, url_prefix="/api/planning")
 
 
 @bp.get("/")
 def list_scenarios():
-    items = PlanningScenario.query.order_by(PlanningScenario.created_at.desc()).all()
+    scenarios = logic.list_scenarios()
     return jsonify(
         [
             {"id": str(s.id), "name": s.name, "created_at": s.created_at.isoformat()}
-            for s in items
+            for s in scenarios
         ]
     )
 
@@ -24,15 +24,13 @@ def create_scenario():
     name = (body.get("name") or "").strip()
     if not name:
         raise BadRequest("name required")
-    s = PlanningScenario(name=name)
-    db.session.add(s)
-    db.session.commit()
-    return jsonify({"id": str(s.id), "name": s.name}), 201
+    scenario = logic.create_scenario(name)
+    return jsonify({"id": str(scenario.id), "name": scenario.name}), 201
 
 
 @bp.get("/<uuid:scenario_id>")
 def get_scenario(scenario_id):
-    s = planning_service.get_scenario(scenario_id)
+    s = logic.get_scenario(scenario_id)
     if not s:
         raise NotFound()
     return jsonify(
@@ -65,43 +63,12 @@ def get_scenario(scenario_id):
 
 @bp.put("/<uuid:scenario_id>")
 def update_scenario(scenario_id):
-    s = planning_service.get_scenario(scenario_id)
-    if not s:
-        raise NotFound()
-
     body = request.get_json() or {}
-    s.bills.clear()
-    for b in body.get("bills") or []:
-        s.bills.append(
-            PlannedBill(
-                name=b["name"].strip(),
-                amount_cents=int(b["amount_cents"]),
-                due_date=b.get("due_date"),
-                category=b.get("category"),
-                predicted=bool(b.get("predicted", False)),
-            )
-        )
-
-    s.allocations.clear()
-    for a in body.get("allocations") or []:
-        s.allocations.append(
-            ScenarioAllocation(
-                target=a["target"],
-                kind=a["kind"],
-                value=int(a["value"]),
-            )
-        )
-
-    planning_service.validate_percent_cap(s)
-    db.session.commit()
-    return jsonify({"ok": True})
+    updated = logic.update_scenario(scenario_id, body)
+    return jsonify({"id": str(updated.id), "ok": True})
 
 
 @bp.delete("/<uuid:scenario_id>")
 def delete_scenario(scenario_id):
-    s = planning_service.get_scenario(scenario_id)
-    if not s:
-        raise NotFound()
-    db.session.delete(s)
-    db.session.commit()
+    logic.delete_scenario(scenario_id)
     return jsonify({"ok": True})
