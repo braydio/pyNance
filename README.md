@@ -4,6 +4,19 @@
 
 This project targets **Python 3.11** and **Node 20**.
 
+## Features
+
+- Aggregates accounts and transactions from Plaid and Teller
+- Interactive dashboards for daily net worth and category breakdowns
+- Modular Flask API with SQLAlchemy models
+- Vue 3 + Vite frontend written in TypeScript
+
+## Requirements
+
+- Python 3.11+
+- Node 20+
+- `pip` and `npm`
+
 ## Project Structure [PROJECT_STRUCTURE]
 
 ```
@@ -232,6 +245,16 @@ For a lightweight install without forecasting or LLM modules, use
 pip install -r requirements-slim.txt
 pytest -q
 ```
+
+## UI/UX Audit
+
+Capture dashboard screenshots at common breakpoints using:
+
+```bash
+python scripts/uiux_audit.py --url http://localhost:5173
+```
+
+Screenshots are saved to `./uiux_audit` by default.
 
 ---
 
