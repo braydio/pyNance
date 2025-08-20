@@ -12,9 +12,26 @@
  */
 import axios from 'axios'
 
+/**
+ * Fetch transactions from the backend.
+ *
+ * @param {Object} params - Query parameters such as `start_date`, `end_date`,
+ *   and an optional `category_ids` array or comma-separated string.
+ * @returns {Promise<Object>} Result containing a transactions array.
+ */
 export const fetchTransactions = async (params = {}) => {
-  const response = await axios.get('/api/transactions/get_transactions', { params })
-  return response.data
+  const { category_ids, ...rest } = params
+  const query = { ...rest }
+
+  // Allow callers to pass an array of IDs or a preformatted string
+  if (Array.isArray(category_ids)) {
+    query.category_ids = category_ids.join(',')
+  } else if (category_ids) {
+    query.category_ids = category_ids
+  }
+
+  const response = await axios.get('/api/transactions/get_transactions', { params: query })
+  return (response.data?.status === 'success') ? response.data.data : { transactions: [] }
 }
 
 export const updateTransaction = async (transactionData) => {

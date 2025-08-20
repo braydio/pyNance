@@ -195,6 +195,7 @@ export default {
     // Helper functions
     const capitalizeFirst = str => !str ? "" : str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
     const literaryFormat = str => !str ? "" : str.replace(/(^\s*\w|[.!?]\s*\w)/g, s => s.toUpperCase())
+    // eslint-disable-next-line no-useless-escape
     const toTitleCase = str => !str ? "" : str.toLowerCase().replace(/([^\s\/-]+)(?=[\s\/-]?)/g, w => w.charAt(0).toUpperCase() + w.slice(1))
     return {
       transactionsChart,

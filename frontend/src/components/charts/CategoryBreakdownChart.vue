@@ -5,7 +5,11 @@
 </template>
 
 <script setup>
-import { ref, watch, nextTick, onUnmounted } from 'vue'
+// CategoryBreakdownChart.vue
+// Displays a stacked bar chart of spending. By default, only the top four
+// parent categories are shown individually with the rest grouped into an
+// "Other" bar. Set `groupOthers` to `false` to show all categories.
+import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -14,7 +18,8 @@ import { formatAmount } from "@/utils/format"
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
-  selectedCategoryIds: { type: Array, default: () => [] }
+  selectedCategoryIds: { type: Array, default: () => [] },
+  groupOthers: { type: Boolean, default: true }
 })
 
 const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
@@ -123,7 +128,9 @@ async function renderChart() {
         if (points.length) {
           const index = points[0].index
           const label = chartInstance.value.data.labels[index]
-          emit('bar-click', label)
+          const node = categoryTree.value.find(cat => cat.label === label)
+          const ids = (node?.children || []).map(c => c.id)
+          emit('bar-click', { label, ids })
         }
       },
       scales: {
@@ -160,13 +167,28 @@ async function fetchData() {
       top_n: 50,
     })
     if (response.status === 'success') {
-      categoryTree.value = response.data || []
-      emit('categories-change', categoryTree.value.map(cat => cat.id))
-      emit('summary-change', {
-        total: sumAmounts(categoryTree.value),
-        startDate: props.startDate,
-        endDate: props.endDate,
-      })
+      const raw = response.data || []
+      let processed = raw
+      if (props.groupOthers && raw.length > 4) {
+        const topFour = raw.slice(0, 4)
+        const others = raw.slice(4)
+        const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
+        const otherBar = {
+          id: 'other',
+          label: 'Other',
+          amount: parseFloat(otherTotal.toFixed(2)),
+          children: [
+            { id: 'other', label: 'Other', amount: parseFloat(otherTotal.toFixed(2)) }
+          ]
+        }
+        processed = [...topFour, otherBar]
+      }
+      categoryTree.value = processed
+      emit(
+        'categories-change',
+        categoryTree.value.flatMap(cat => (cat.children || []).map(child => child.id))
+      )
+      updateSummary()
       await renderChart()
     }
   } catch (err) {
@@ -174,28 +196,44 @@ async function fetchData() {
   }
 }
 
-function sumAmounts(nodes) {
+function sumSelectedAmounts(nodes, selectedIds) {
   return (nodes || []).reduce((sum, n) => {
-    const subtotal = n.amount + sumAmounts(n.children || [])
+    let subtotal = 0
+    if (selectedIds.includes(n.id)) {
+      subtotal += n.amount
+    }
+    subtotal += sumSelectedAmounts(n.children || [], selectedIds)
     return sum + subtotal
   }, 0)
 }
 
-// Watch for prop changes (including selectedCategoryIds!)
+function updateSummary() {
+  const total = sumSelectedAmounts(categoryTree.value, props.selectedCategoryIds)
+  emit('summary-change', {
+    total,
+    startDate: props.startDate,
+    endDate: props.endDate,
+  })
+}
 
+// --- Reactivity ---
+onMounted(fetchData)
+
+// Refetch data when range or grouping changes
 watch(
-  () => [props.startDate, props.endDate, ...props.selectedCategoryIds],
-  debounce(async () => {
-    if (!categoryTree.value.length) {
-      await fetchData()
-    } else {
-      await renderChart()
-    }
-  }, 200),
-  { immediate: true }
+  () => [props.startDate, props.endDate, props.groupOthers],
+  debounce(fetchData, 200)
 )
 
-
+// When selectedCategoryIds changes, update summary and re-render
+watch(
+  () => props.selectedCategoryIds,
+  debounce(async () => {
+    updateSummary()
+    await renderChart()
+  }, 200),
+  { deep: true }
+)
 
 onUnmounted(() => {
   if (chartInstance.value) {
@@ -209,3 +247,4 @@ onUnmounted(() => {
   }
 })
 </script>
+

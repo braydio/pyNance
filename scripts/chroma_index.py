@@ -2,10 +2,11 @@
 
 import argparse
 import os
+
 import chromadb
-from chromadb.errors import ChromaError, IDAlreadyExistsError
-from chromadb.utils import embedding_functions
 from chroma_support import chunk_text, extract_metadata
+from chromadb.errors import ChromaError
+from chromadb.utils import embedding_functions
 
 EXCLUDE_DIRS = {".venv", "__pycache__"}
 

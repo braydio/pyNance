@@ -3,7 +3,8 @@
 # TODO: move business logic to accounts_logic and transactions_logic modules
 import traceback
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import Any, Dict
 
 from app.config import logger
 from app.extensions import db
@@ -46,6 +47,10 @@ def category_breakdown():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .distinct(Transaction.id)
@@ -97,6 +102,74 @@ def category_breakdown():
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
+@charts.route("/category_transactions", methods=["GET"])
+def category_transactions() -> Dict[str, Any]:
+    """Return transactions for the given category IDs within a date range."""
+    ids_str = request.args.get("category_ids", "")
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    if not ids_str:
+        return (
+            jsonify({"status": "error", "message": "category_ids required"}),
+            400,
+        )
+
+    try:
+        cat_ids = [int(x) for x in ids_str.split(",") if x]
+    except ValueError:
+        return (
+            jsonify({"status": "error", "message": "invalid category_ids"}),
+            400,
+        )
+
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    else:
+        start_date = datetime.now().date() - timedelta(days=30)
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    else:
+        end_date = datetime.now().date()
+
+    transactions = (
+        db.session.query(Transaction, Account, Category)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .outerjoin(Category, Transaction.category_id == Category.id)
+        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
+        .filter(Transaction.category_id.in_(cat_ids))
+        .filter(Transaction.date >= start_date)
+        .filter(Transaction.date <= end_date)
+        .order_by(Transaction.date.desc())
+        .all()
+    )
+
+    serialized = []
+    for txn, acc, cat in transactions:
+        serialized.append(
+            {
+                "transaction_id": txn.transaction_id,
+                "date": txn.date.isoformat() if txn.date else None,
+                "amount": display_transaction_amount(txn),
+                "description": txn.description or txn.merchant_name or "N/A",
+                "category": txn.category or "Uncategorized",
+                "category_icon_url": getattr(cat, "pfc_icon_url", None),
+                "merchant_name": txn.merchant_name or "Unknown",
+                "account_name": acc.name or "Unnamed Account",
+                "institution_name": acc.institution_name or "Unknown",
+                "subtype": acc.subtype or "Unknown",
+                "account_id": acc.account_id or "Unknown",
+                "pending": getattr(txn, "pending", False),
+                "isEditing": False,
+            }
+        )
+
+    return jsonify({"status": "success", "data": {"transactions": serialized}}), 200
+
+
 @charts.route("/cash_flow", methods=["GET"])
 def get_cash_flow():
     try:
@@ -128,6 +201,10 @@ def get_cash_flow():
             db.session.query(date_expr, income_sum, expense_sum, tx_count)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
         )
         if start_date:
             aggregated = aggregated.filter(Transaction.date >= start_date)
@@ -229,82 +306,98 @@ def get_net_assets():
 
 
 @charts.route("/daily_net", methods=["GET"])
-def get_daily_net():
-    try:
-        logger.debug("Starting to retrieve daily net transactions.")
-        today = datetime.now().date()
-        logger.debug(f"Current date: {today}")
-        start_date = today - timedelta(days=30)
-        logger.debug(f"Calculating transactions from {start_date} to {today}.")
+def get_daily_net() -> Dict[str, Dict[str, Any]]:
+    """
+    Returns a dict mapping YYYY-MM-DD string to:
+      {
+        "date": str,
+        "income": { "source": str, "parsedValue": float },
+        "expenses": { "source": str, "parsedValue": float },
+        "net": { "source": str, "parsedValue": float },
+        "transaction_count": int
+      }
+    All amounts are floats. Income is always positive. Expenses are always negative.
+    """
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
 
-        transactions = (
-            db.session.query(Transaction)
-            .join(Account, Transaction.account_id == Account.account_id)
-            .filter(Account.is_hidden.is_(False))
-            .filter(Transaction.date >= start_date)
-            .all()
+    # Default to last 30 days if not provided
+    if start_date_str:
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+    else:
+        start_date = (datetime.now() - timedelta(days=30)).date()
+    if end_date_str:
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+    else:
+        end_date = datetime.now().date()
+
+    logger.info(f"[daily_net] start_date={start_date}, end_date={end_date}")
+
+    transactions = (
+        db.session.query(Transaction)
+        .filter(Transaction.date >= start_date)
+        .filter(Transaction.date <= end_date)
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
         )
-        logger.debug(f"Retrieved {len(transactions)} transactions from the database.")
+        .all()
+    )
 
-        day_map = {}
-        for tx in transactions:
-            day_str = tx.date.strftime("%Y-%m-%d")
-            logger.debug(f"Processing transaction {tx.id} on date {day_str}.")
+    logger.info(f"[daily_net] Transaction count in date range: {len(transactions)}")
 
-            # Safe access and fallback
-            account = getattr(tx, "account", None)
-            if not account or getattr(account, "subtype", None) is None:
-                logger.warning(
-                    f"Missing subtype for transaction {tx.id} on {tx.date}; defaulting to raw amount."
-                )
-            amt = display_transaction_amount(tx)
+    day_map: Dict[str, Dict[str, Any]] = defaultdict(
+        lambda: {
+            "date": "",
+            "income": 0.0,
+            "expenses": 0.0,
+            "net": 0.0,
+            "transaction_count": 0,
+        }
+    )
 
-            if day_str not in day_map:
-                day_map[day_str] = {
-                    "net": 0,
-                    "income": 0,
-                    "expenses": 0,
-                    "transaction_count": 0,
-                }
-                logger.debug(f"Initializing entry for {day_str} in day_map.")
+    for tx in transactions:
+        tx_date = tx.date if isinstance(tx.date, date) else tx.date.date()
+        day_str = tx_date.strftime("%Y-%m-%d")
+        # Normalize transaction amount for UI: expenses negative, income positive
+        amount = display_transaction_amount(tx)
 
-            day_map[day_str]["transaction_count"] += 1
-            if amt > 0:
-                day_map[day_str]["income"] += amt
-                logger.debug(f"Adding to income for {day_str}: {amt}")
-            else:
-                day_map[day_str]["expenses"] += abs(amt)
-                logger.debug(f"Adding to expenses for {day_str}: {abs(amt)}")
-            day_map[day_str]["net"] += amt
-            logger.debug(f"Updated net for {day_str}: {day_map[day_str]['net']}")
+        d = day_map[day_str]
+        d["date"] = day_str
+        d["transaction_count"] += 1
 
-        # Fill in missing days
-        logger.debug("Filling in missing days for the last 30 days.")
-        data = []
-        current = start_date
-        while current <= today:
-            key = current.strftime("%Y-%m-%d")
-            entry = day_map.get(
-                key, {"net": 0, "income": 0, "expenses": 0, "transaction_count": 0}
-            )
-            data.append(
-                {
-                    "date": key,
-                    "net": round(entry["net"], 2),
-                    "income": round(entry["income"], 2),
-                    "expenses": round(entry["expenses"], 2),
-                    "transaction_count": entry["transaction_count"],
-                }
-            )
-            logger.debug(f"Added data entry for {key}: {data[-1]}")
-            current += timedelta(days=1)
+        # Positive amounts are income; negative amounts are expenses
+        if amount > 0:
+            d["income"] += amount
+        elif amount < 0:
+            d["expenses"] += amount
+        d["net"] += amount
 
-        logger.debug("Finished constructing response data.")
-        return jsonify({"status": "success", "data": data}), 200
+    # Format results into a list of day buckets
+    data = []
+    for day in sorted(day_map.keys()):
+        v = day_map[day]
+        data.append(
+            {
+                "date": v["date"],
+                "income": {
+                    "source": str(round(v["income"], 2)),
+                    "parsedValue": round(v["income"], 2),
+                },
+                "expenses": {
+                    "source": str(round(v["expenses"], 2)),
+                    "parsedValue": round(v["expenses"], 2),
+                },
+                "net": {
+                    "source": str(round(v["net"], 2)),
+                    "parsedValue": round(v["net"], 2),
+                },
+                "transaction_count": v["transaction_count"],
+            }
+        )
 
-    except Exception as e:
-        logger.error(f"Error in daily net: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    logger.info(f"[daily_net] Returning {len(data)} day buckets")
+    # Return a consistent payload for frontend consumption
+    return jsonify({"status": "success", "data": data}), 200
 
 
 @charts.route("/accounts-snapshot", methods=["GET"])
@@ -427,6 +520,10 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .all()
         )
 
@@ -435,6 +532,10 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
             .all()
         )
         for tx, cat in transactions:
@@ -471,14 +572,17 @@ def category_breakdown_tree():
         output_sorted = sorted(output, key=lambda x: x["amount"], reverse=True)[:top_n]
 
         logger.debug("Category breakdown output (primary/detailed): %s", output_sorted)
-        return jsonify(
-            {
-                "status": "success",
-                "start_date": start_date.isoformat(),
-                "end_date": end_date.isoformat(),
-                "data": output_sorted,
-            }
-        ), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "data": output_sorted,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logger.error("Error in category_breakdown_tree: %s", e, exc_info=True)

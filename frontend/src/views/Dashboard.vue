@@ -19,39 +19,37 @@
         <!-- Top Accounts Snapshot Card -->
         <div
           class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-ice)] p-6 flex flex-col justify-between">
-          <h2 class="text-xl font-bold mb-2 text-[var(--color-accent-ice)]">Top Accounts</h2>
+          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-ice)] text-center">Top Accounts</h2>
           <TopAccountSnapshot />
         </div>
         <!-- Net Income Summary Card -->
         <div
           class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-mint)] p-6 flex flex-col gap-3">
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-xl font-bold text-[var(--color-accent-mint)]">Net Income (Daily)</h2>
-            <ChartWidgetTopBar>
-              <template #controls>
-                <button
-                  class="bg-[var(--color-accent-yellow)] text-[var(--color-text-dark)] px-3 py-1 rounded font-semibold transition hover:brightness-105"
-                  @click="zoomedOut = !zoomedOut">
-                  {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
-                </button>
-              </template>
-            </ChartWidgetTopBar>
-          </div>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @bar-click="onNetBarClick" />
-          <div class="mt-2 flex flex-col gap-1">
-            <div>
-              <span class="font-bold text-[var(--color-accent-mint)]">Income:</span>
-              <span class="ml-1">{{ formatAmount(netSummary.totalIncome) }}</span>
+          <div class="flex items-center justify-center mb-4">
+            <div class="flex-1 flex justify-center">
+              <h2 class="daily-net-chart-title">
+                <span class="title-text">Net Income</span>
+                <span class="title-subtitle">(Daily)</span>
+              </h2>
             </div>
-            <div>
-              <span class="font-bold text-red-400">Expenses:</span>
-              <span class="ml-1">{{ formatAmount(netSummary.totalExpenses) }}</span>
-            </div>
-            <div :class="netSummary.totalNet >= 0 ? 'text-[var(--color-accent-mint)]' : 'text-red-400'"
-              class="font-bold">
-              Net Total: {{ formatAmount(netSummary.totalNet) }}
+            <div class="flex-shrink-0">
+              <ChartWidgetTopBar>
+                <template #controls>
+                  <button
+                    class="dashboard-control-btn dashboard-control-btn-primary"
+                    @click="zoomedOut = !zoomedOut">
+                    {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
+                  </button>
+                </template>
+              </ChartWidgetTopBar>
             </div>
           </div>
+          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @data-change="chartData = $event" @bar-click="onNetBarClick" />
+          <DailyNetStatistics 
+            :summary="netSummary" 
+            :chart-data="chartData" 
+            :zoomed-out="zoomedOut" 
+          />
         </div>
       </div>
 
@@ -70,12 +68,19 @@
                   class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
+                <button
+                  class="dashboard-control-btn dashboard-control-btn-secondary ml-2"
+                  @click="groupOthers = !groupOthers"
+                >
+                  {{ groupOthers ? 'Show All' : 'Group Others' }}
+                </button>
               </template>
             </ChartWidgetTopBar>
           </div>
           <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
-            :selected-category-ids="catSelected" @summary-change="catSummary = $event"
-            @categories-change="allCategoryIds = $event" @bar-click="onCategoryBarClick" />
+            :selected-category-ids="catSelected" :group-others="groupOthers"
+            @summary-change="catSummary = $event" @categories-change="allCategoryIds = $event"
+            @bar-click="onCategoryBarClick" />
           <div class="mt-1">
             <span class="font-bold">Total:</span>
             <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{ formatAmount(catSummary.total) }}</span>
@@ -140,7 +145,7 @@
         </transition>
       </div>
 
-      <TransactionModal v-if="showModal" :title="modalTitle" :transactions="modalTransactions"
+      <TransactionModal :show="showModal" :subtitle="modalSubtitle" :transactions="modalTransactions"
         @close="showModal = false" />
     </div>
 
@@ -153,33 +158,41 @@
 
 
 <script setup>
+// Dashboard view showing financial charts and transaction tables.
 import AppLayout from '@/components/layout/AppLayout.vue'
-import BaseCard from '@/components/base/BaseCard.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
-import AccountSnapshot from '@/components/widgets/AccountSnapshot.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+import DailyNetStatistics from '@/components/statistics/DailyNetStatistics.vue'
 import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
+import { fetchTransactions } from '@/api/transactions'
 
 // Transactions and user
-const { searchQuery, currentPage, totalPages, filteredTransactions, sortKey, sortOrder, setSort, changePage } = useTransactions(15)
+const {
+  searchQuery,
+  currentPage,
+  totalPages,
+  filteredTransactions,
+  sortKey,
+  sortOrder,
+  setSort,
+  changePage
+} = useTransactions(15)
 const showModal = ref(false)
 const modalTransactions = ref([])
-const modalTitle = ref('')
+const modalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
-const accountsCollapsed = ref(true)
-const transactionsCollapsed = ref(true)
 const netWorth = ref(0)
 const netWorthMessage = computed(() => {
   if (netWorth.value < 0) return "... and things are looking quite bleak."
@@ -201,6 +214,7 @@ onMounted(async () => {
 
 /** --- DAILY NET STATE --- */
 const netSummary = ref({ totalIncome: 0, totalExpenses: 0, totalNet: 0 })
+const chartData = ref([])
 const zoomedOut = ref(false)
 
 // --- CATEGORY BREAKDOWN STATE ---
@@ -214,8 +228,11 @@ const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([])           // user selected
 const allCategoryIds = ref([])        // from chart data
 const defaultSet = ref(false)         // only auto-select ONCE per data load
+const groupOthers = ref(true)         // aggregate small categories
 
-// When CategoryBreakdownChart fetches, auto-select top 5 ONCE per fetch. (No repopulate on clear)
+// When CategoryBreakdownChart fetches, auto-select the first 5 categories once
+// per fetch. Includes "Other" when grouping is enabled and does not repopulate
+// on clear.
 watch(allCategoryIds, (ids) => {
   if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
     catSelected.value = ids.slice(0, 5)
@@ -237,7 +254,6 @@ function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
 }
-const atSummary = ref({ total: 0 })
 
 // When user clears selection, do NOT re-select (unless new data is fetched)
 function onCatSelected(newIds) {
@@ -246,6 +262,11 @@ function onCatSelected(newIds) {
 
 // When user changes date range, let next data load re-apply auto-select
 watch(() => [catRange.value.start, catRange.value.end], () => {
+  defaultSet.value = false
+})
+
+// When grouping mode changes, allow auto-select on next fetch
+watch(groupOthers, () => {
   defaultSet.value = false
 })
 
@@ -264,27 +285,47 @@ async function loadCategoryGroups() {
         })),
       })).sort((a, b) => a.label.localeCompare(b.label))
     }
-  } catch (e) {
+  } catch {
     categoryGroups.value = []
   }
 }
-// For Daily Net Chart clicks
-function onNetBarClick(label) {
-  // label is usually a date string ("2024-07-09" etc)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.date === label
-  )
-  modalTitle.value = `Transactions on ${label}`
+
+async function onNetBarClick(label) {
+  const result = await fetchTransactions({ start_date: label, end_date: label })
+  modalTransactions.value = result.transactions || []
+  modalSubtitle.value = `Net total for ${label}`
   showModal.value = true
 }
 
-// For Category Chart clicks
-function onCategoryBarClick(label) {
-  // label is category name (may match parent or child label)
-  modalTransactions.value = filteredTransactions.value.filter(tx =>
-    tx.category_label === label || tx.category_parent === label
-  )
-  modalTitle.value = `Transactions: ${label}`
+/**
+ * Handle clicks on the category breakdown chart.
+ *
+ * Fetches transactions for the clicked category within the active
+ * date range and displays them in a modal dialog.
+ *
+ * @param {object|string} payload - Click payload from the chart containing
+ *   the bar label and an array of category IDs.
+ */
+async function onCategoryBarClick(payload) {
+  const { label, ids = [] } =
+    typeof payload === 'object' ? payload : { label: payload, ids: [] }
+
+  // Determine the date range in effect for the category chart. The chart emits
+  // `summary-change` events that populate `catSummary` with the actual start
+  // and end dates used in its query. This ensures the modal reflects the same
+  // range, even if it differs from the user-selected inputs.
+  const start = catSummary.value.startDate || catRange.value.start
+  const end = catSummary.value.endDate || catRange.value.end
+
+  const result = await fetchTransactions({
+    category_ids: ids,
+    start_date: start,
+    end_date: end,
+  })
+  modalTransactions.value = result.transactions || []
+
+  // Display the category label and date span in the modal header
+  modalSubtitle.value = `${label}: ${start} – ${end}`
   showModal.value = true
 }
 </script>
@@ -358,5 +399,106 @@ dashboard-content {
 .fade-leave-from {
   opacity: 1;
   transform: scaleY(1);
+}
+
+/* Dashboard Control Button Styles */
+.dashboard-control-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border-radius: 0.6rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.025em;
+  text-transform: none;
+}
+
+.dashboard-control-btn-primary {
+  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
+  border: 1.5px solid var(--color-accent-mint);
+  color: var(--color-accent-mint);
+}
+
+.dashboard-control-btn-primary:hover {
+  background: linear-gradient(135deg, var(--color-accent-mint) 0%, #20e6a0 100%);
+  color: var(--color-bg-dark);
+  border-color: var(--color-accent-ice);
+  box-shadow: 0 6px 20px rgba(47, 255, 167, 0.4);
+  transform: translateY(-2px);
+}
+
+.dashboard-control-btn-secondary {
+  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
+  border: 1.5px solid var(--color-accent-yellow);
+  color: var(--color-accent-yellow);
+}
+
+.dashboard-control-btn-secondary:hover {
+  background: linear-gradient(135deg, var(--color-accent-yellow) 0%, #f59e0b 100%);
+  color: var(--color-bg-dark);
+  border-color: var(--color-accent-mint);
+  box-shadow: 0 6px 20px rgba(250, 204, 21, 0.4);
+  transform: translateY(-2px);
+}
+
+.dashboard-control-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-control-btn .btn-icon {
+  font-size: 0.8rem;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.dashboard-control-btn:hover .btn-icon {
+  opacity: 1;
+}
+
+/* Daily Net Chart Title Styles */
+.daily-net-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+.title-icon {
+  font-size: 1.2rem;
+  filter: drop-shadow(0 0 8px rgba(47, 255, 167, 0.6));
+  animation: subtle-glow 3s ease-in-out infinite alternate;
+}
+
+.title-text {
+  background: linear-gradient(135deg, var(--color-accent-mint) 0%, var(--color-accent-ice) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 20px rgba(47, 255, 167, 0.3);
+}
+
+.title-subtitle {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+@keyframes subtle-glow {
+  0% {
+    filter: drop-shadow(0 0 8px rgba(47, 255, 167, 0.6));
+  }
+  100% {
+    filter: drop-shadow(0 0 12px rgba(47, 255, 167, 0.8));
+  }
 }
 </style>

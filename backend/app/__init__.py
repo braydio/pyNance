@@ -17,6 +17,7 @@ def create_app():
     Migrate(app, db)
     # Always register routes (for all environments)
     from app.routes.accounts import accounts
+    from app.routes.arbitrage import arbitrage
     from app.routes.categories import categories
     from app.routes.charts import charts
     from app.routes.export import export
@@ -43,6 +44,7 @@ def create_app():
     app.register_blueprint(rules_bp, url_prefix="/api/rules")
     app.register_blueprint(accounts, url_prefix="/api/accounts")
     app.register_blueprint(manual_up, url_prefix="/api/import")
+    app.register_blueprint(arbitrage, url_prefix="/api/arbitrage")
     app.register_blueprint(charts, url_prefix="/api/charts")
     app.register_blueprint(forecast, url_prefix="/api/forecast")
     app.register_blueprint(recurring, url_prefix="/api/recurring")
@@ -67,6 +69,6 @@ def create_app():
     # Optional: always log routes
     with app.app_context():
         routes = " \n ".join(str(rule) for rule in app.url_map.iter_rules())
-        logger.verbose("🔍 Registered Routes:\n%s", routes)
+        logger.info("🔍 Registered Routes:\n%s", routes)
 
     return app

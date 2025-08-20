@@ -1,70 +1,168 @@
-# Legacy directory
+# Secrets and certificates
 *.pem
+*.key
+*.crt
+*.p12
+*.pfx
+backend/app/certs/*
+!backend/app/certs/README.md
 
-# Migrations
-backend/migrations/
-!backend/migrations/versions
+# Environment files
+.env
+.env.*
+*.env
+!**/example.env
 
-# Byte-compiled / compiled Python files
+# Python
 *.py[cod]
 __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
-
-# Virtual environment
-env/
-venv/
+.nox/
+.tox/
 .venv/
-*.env
-!*/example.env
+venv/
+env/
+.coverage
+coverage.xml
+htmlcov/
+
+# Node and frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+*.map
+frontend/.vite/
+frontend/.eslintcache
+frontend/coverage/
+frontend/cypress/videos/
+frontend/cypress/screenshots/
+frontend/cypress/downloads/
+npm-debug.log*
+yarn-error.log*
+
+# Databases and data
+*.db
+*.sqlite3
+chroma/
+chroma.sqlite3/
+backend/chroma/
+data/
+app/data/
+app/temp/
+
+# Imports and generated files
+imports/*
+!imports/README.md
 
 # Logs
 *.log
 logs/
 
-# Database files
-*.db
-*.sqlite3
-chroma/*
-chroma.sqlite3/
-backend/chroma/
-# Manual transaction / account uploads
-imports/*
-!imports/README.md
-
-# Temporary files
-*.bak
-*.swp
+# Temporary and archives
 temp/
+tmp/
 *.tmp
+*.bak
 *.backup
-
-# Archive files
 archive/
 app/archive/
+*.swp
 
-# Compiled front-end assets
-dist/
-node_modules/
-*.map
-
-# Data files
-data/
-app/data/
-app/temp/
-
-# IDE and editor specific files
+# IDE and OS files
 .idea/
 .vscode/
 *.iml
+.DS_Store
+
+# Package manager lockfile at repo root only (frontend lockfile stays tracked)
+# Remove this ignore if you intentionally add a root-level package.json
+/package-lock.json
+
+# Docs scratch and generated
+docs/tmp/
+docs/drafts/
+docs/generated/
+notes/
+scratch/
+research/
+design/
+
+# Backend dev utilities
+backend/dev/*
+backend/migrations/
+!backend/migrations/versions
 
 # Miscellaneous
-*.DS_Store
 *.egg-info/
-*.lock
 *.local
 .coverage
 htmlcov/
 .nox/
 .tox/
+
+# Shell profiles and local overrides
+.bashrc
+.zshrc
+
+# Environment files and direnv
+.env
+.env.*
+.envrc
+.envrc.local
+.direnv/
+
+# Keep example templates tracked
+!.env.example
+!*.env.example
+!*/example.env
+!.bashrc.example
+!backend/.env.example
+!frontend/.env.example
+
+# Secrets and credentials
+.pypirc
+.npmrc
+.python-version
+.sentryclirc
+.ssh/
+secrets/
+.secrets/
+
+# Databases and state
+*.db
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+
+# Flask instance folder (local config)
+backend/instance/
+
+# Dev tools and local services
+mcp-sqlite-projects-server/
+
+# Python build artifacts
+build/
+.eggs/
+
+# Node and test coverage
+coverage/
+.nyc_output/
+lcov.info
+.pnpm-store/
+.npm/
+
+# OS-specific files
+Thumbs.db
+Desktop.ini
+
+# Docker local overrides
+docker-compose.override.yml
+
+# Certificates and keys
+*.crt
+*.key
+*.p12
+*.p7s

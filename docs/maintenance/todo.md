@@ -1,42 +1,24 @@
-# pyNance Frontend
-
-- Site Map & Issue Tracker (`frontend/src/views/`)
+> **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
+> 
+> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
+> 
+> **Specific mapping**:
+> - Site-Wide Features, Components, and Tasks → See [COMPONENT_TASKS] section
+> - Dashboard.vue content → See [COMPONENT_DASHBOARD] section
+> - All view components → See corresponding [COMPONENT_*] sections
+> - Global Dashboard TODOs → See [GLOBAL_DASHBOARD] section
 
 ---
 
-- Site-Wide Features, Components, and Tasks
+# pyNance Frontend - Site Map & Issue Tracker (`frontend/src/views/`) - Legacy Content
 
 ---
 
-## Dashboard.vue
+# Site-Wide Features, Components, and Tasks
 
-## High-Level Issues & UX/UI Pain Points
+# Dashboard.vue
 
-- Cluttered/Overdense Layout
-  - Cards, widgets, and table sections are packed with minimal spacing.
-  - Card "frames" have insufficient visual separation, making the dashboard feel cramped.
-  - Insufficient whitespace/padding.
-  - Responsiveness / Mobile
-  - No clear grid breakpoints or column stacking (especially for charts + tables).
-  - Some classes (e.g., max-w-5xl) may limit scaling on larger or smaller screens.
-- Navigation & CTA
-  - The only clear CTA is "zoom in/out" on the chart; no "add", "export", or "customize" button.
-  - No prominent call-to-action for "Add Transaction" or quick links to other features.
-- Accessibility
-  - Color-only cues for charts/amounts—may be unreadable for colorblind users.
-  - No ARIA roles, alt text, or tab orders for interactive elements.
-- Search/Filter
-  - Search bar and sort order are visually buried below charts and do not stand out.
-  - Not enough feedback (e.g., "No results found" is not visually highlighted ).
-- Card/Widget Titles
-  - Lacks consistent and prominent section headers.
-  - Some sections use ambiguous labels ("Net Total:") that can be more descriptive.
-- Consistency
-  - Inconsistent button sizing and style between widgets (e.g., the "Zoom In/Out" button).
-  - Text sizing on headers, chart axes, and table columns varies a lot.
-- Visual Hierarchy
-  - Difficult to quickly identify most important data (e.g., "Net Worth", "Today's Spending").
-  - No strong color, size, or contrast hierarchy.
+## --
 
 ### Components & Tasks
 

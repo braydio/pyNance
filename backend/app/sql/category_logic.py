@@ -61,7 +61,7 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
     primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
     detailed = category_path[1] if len(category_path) > 1 else None
 
-    # Prevent duplicate insert before attempting
+    # Check for existing category
     existing = Category.query.filter_by(
         primary_category=primary, detailed_category=detailed
     ).first()
@@ -87,7 +87,7 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
             db.session.add(parent)
             db.session.flush()
 
-    # Safe insert with fallback
+    # Safe insert
     try:
         category = Category(
             plaid_category_id=plaid_category_id,
@@ -103,5 +103,9 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
         category = Category.query.filter_by(
             primary_category=primary, detailed_category=detailed
         ).first()
+
+    # If still None, return a safe fallback instead of crashing
+    if not category:
+        return {"id": None, "primary_category": primary, "detailed_category": detailed}
 
     return category

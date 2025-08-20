@@ -1,7 +1,6 @@
 # backend/app/utils/transaction_filtering.py
 
 
-
 def collapse_internal_transfers(transactions, date_epsilon=1, amount_epsilon=0.01):
     seen = set()
     collapsed = []

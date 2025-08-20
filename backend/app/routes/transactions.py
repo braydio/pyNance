@@ -6,7 +6,7 @@ records across all linked accounts.
 
 import json
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from app.config import logger
 from app.extensions import db
@@ -54,6 +54,24 @@ def update_transaction():
         if "merchant_type" in data:
             txn.merchant_type = data["merchant_type"]
             changed_fields["merchant_type"] = True
+        counterpart_id = data.get("counterpart_transaction_id")
+        flag_counterpart = data.get("flag_counterpart", False)
+        if "is_internal" in data:
+            is_internal = bool(data["is_internal"])
+            txn.is_internal = is_internal
+            txn.internal_match_id = (
+                counterpart_id if is_internal and counterpart_id else None
+            )
+            changed_fields["is_internal"] = True
+            if counterpart_id:
+                other = Transaction.query.filter_by(
+                    transaction_id=counterpart_id
+                ).first()
+                if other and flag_counterpart:
+                    other.is_internal = is_internal
+                    other.internal_match_id = (
+                        txn.transaction_id if is_internal else None
+                    )
 
         txn.user_modified = True
         existing_fields = {}
@@ -141,12 +159,14 @@ def get_transactions_paginated():
         category = request.args.get("category")
 
         start_date = (
-            datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            if start_date_str
-            else None
+            datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
         )
         end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+            datetime.strptime(end_date_str, "%Y-%m-%d")
+            + timedelta(days=1)
+            - timedelta(microseconds=1)
+            if end_date_str
+            else None
         )
 
         transactions, total = account_logic.get_paginated_transactions(
@@ -186,13 +206,26 @@ def get_account_transactions(account_id):
         limit = int(request.args.get("limit", 10))
 
         start_date = (
-            datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            if start_date_str
+            datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
+        )
+        logger.debug(
+            f"Changed date string {start_date_str} to datetime object: {start_date}"
+        )
+
+        end_date = (
+            datetime.strptime(end_date_str, "%Y-%m-%d")
+            + timedelta(days=1)
+            - timedelta(microseconds=1)
+            if end_date_str
             else None
         )
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
+        logger.debug(
+            f"Changed date string {end_date_str} to datetime object: {end_date}"
         )
+        # Ignore date filters when fetching recent transactions
+        if recent:
+            start_date = None
+            end_date = None
 
         transactions, total = account_logic.get_paginated_transactions(
             page,

@@ -15,6 +15,7 @@ from app.models import Account, AccountHistory, Category, PlaidAccount, Transact
 from app.sql import transaction_rules_logic
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
+from plaid import ApiException
 from sqlalchemy import func
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
@@ -40,6 +41,50 @@ def normalize_balance(amount, account_type):
             ),
         }
     )
+
+
+def detect_internal_transfer(
+    txn, date_epsilon: int = 1, amount_epsilon: float = 0.01
+) -> None:
+    """Flag ``txn`` and its counterpart as an internal transfer if matched.
+
+    A counterpart is a transaction for the same user in a different account
+    with an equal and opposite amount occurring within ``date_epsilon`` days.
+    To reduce false positives, the description of either transaction must
+    mention the other account's name.
+    """
+
+    account = Account.query.filter_by(account_id=txn.account_id).first()
+    if not account or txn.is_internal:
+        return
+
+    start = txn.date - timedelta(days=date_epsilon)
+    end = txn.date + timedelta(days=date_epsilon)
+
+    candidates = (
+        db.session.query(Transaction, Account)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter(Account.user_id == account.user_id)
+        .filter(Transaction.account_id != txn.account_id)
+        .filter(Transaction.date >= start)
+        .filter(Transaction.date <= end)
+        .filter(func.abs(Transaction.amount + txn.amount) <= amount_epsilon)
+        .filter(Transaction.is_internal.is_(False))
+        .all()
+    )
+
+    desc = (txn.description or "").lower()
+    for other, other_acc in candidates:
+        other_desc = (other.description or "").lower()
+        if not other_acc.name:
+            continue
+        name = other_acc.name.lower()
+        if name in desc or (account.name and account.name.lower() in other_desc):
+            txn.is_internal = True
+            txn.internal_match_id = other.transaction_id
+            other.is_internal = True
+            other.internal_match_id = txn.transaction_id
+            break
 
 
 def get_accounts_from_db(include_hidden: bool = False):
@@ -434,17 +479,20 @@ def get_paginated_transactions(
     limit=None,
 ):
     """Return paginated transaction rows with account and category info."""
+
     query = (
         db.session.query(Transaction, Account, Category)
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
         .order_by(Transaction.date.desc())
     )
 
     if user_id:
         query = query.filter(Account.user_id == user_id)
-
     if start_date:
         query = query.filter(Transaction.date >= start_date)
     if end_date:
@@ -560,10 +608,12 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
 def refresh_data_for_plaid_account(
     access_token, account_id, start_date=None, end_date=None
 ):
-    """
-    Refresh a single Plaid account within an optional date range.
-    Fetches all transactions and updates both category (with PFC) and transaction rows,
-    and writes PlaidTransactionMeta for every transaction.
+    """Refresh a single Plaid account and return update status and error info.
+
+    Parameters are the same as before, but the return value is now a tuple of
+    ``(updated, error)`` where ``error`` is ``None`` on success or a mapping with
+    ``plaid_error_code`` and ``plaid_error_message`` when an exception is raised
+    by the Plaid client.
     """
     updated = False
     now = datetime.now(timezone.utc)
@@ -696,6 +746,7 @@ def refresh_data_for_plaid_account(
                     refresh_or_insert_plaid_metadata(
                         txn, existing_txn, plaid_account_obj.account_id
                     )
+                detect_internal_transfer(existing_txn)
             else:
                 new_txn = Transaction(
                     transaction_id=txn_id,
@@ -719,9 +770,29 @@ def refresh_data_for_plaid_account(
                     refresh_or_insert_plaid_metadata(
                         txn, new_txn, plaid_account_obj.account_id
                     )
+                detect_internal_transfer(new_txn)
 
         db.session.commit()
-        return updated
+        return updated, None
+
+    except ApiException as e:
+        try:
+            plaid_err = json.loads(e.body or "{}")
+        except json.JSONDecodeError:
+            plaid_err = {}
+        plaid_error_code = plaid_err.get("error_code", "unknown")
+        plaid_error_message = plaid_err.get("error_message", str(e))
+        institution = getattr(account, "institution_name", "Unknown")
+        account_name = getattr(account, "name", account_id)
+        logger.error(
+            f"Plaid error refreshing transactions for {institution} / {account_name}: {plaid_error_code} - {plaid_error_message}",
+            exc_info=True,
+        )
+        db.session.rollback()
+        return False, {
+            "plaid_error_code": plaid_error_code,
+            "plaid_error_message": plaid_error_message,
+        }
 
     except Exception as e:
         logger.error(
@@ -729,6 +800,9 @@ def refresh_data_for_plaid_account(
             exc_info=True,
         )
         db.session.rollback()
-        return False
+        return False, {
+            "plaid_error_code": getattr(e, "code", "unknown"),
+            "plaid_error_message": str(e),
+        }
 
-    return updated
+    return updated, None

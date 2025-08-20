@@ -1,12 +1,10 @@
-# Tailwind Setup Guide for pyNance Frontend (Vite + Tailwind CSS v4)
+# Frontend Tailwind CSS Setup Guide [TAILWIND_SETUP]
 
-> **Last Updated:** 2025-05-25
+This document serves as the canonical reference for integrating and maintaining Tailwind CSS v4 in the pyNance frontend project using Vite build tooling.
 
-This is the canonical reference for integrating and maintaining Tailwind CSS in the pyNance frontend project.
+> **Last Updated:** 2025-05-25 | **Purpose:** Establish consistent Tailwind configuration and troubleshooting patterns
 
----
-
-## ✅ Required File Structure
+## Required File Structure [TAILWIND_FILES]
 
 ### CSS Entry File
 

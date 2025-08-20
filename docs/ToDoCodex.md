@@ -1,4 +1,16 @@
-# Dashboard Development To-Do (Codex)
+> **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
+> 
+> Please refer to the [main TODO.md](docs/frontend/Consolidated_TODO.md) for current tasks and documentation.
+> 
+> **Specific mapping**:
+> - Dashboard Development items → See [COMPONENT_DASHBOARD] section
+> - Spending Insights Panel → See Dashboard.vue Components & Tasks
+> - Category Spending Chart UX → See Dashboard.vue Components & Tasks
+> - Responsiveness/Accessibility Reviews → See [PHASES] sections
+
+---
+
+# Dashboard Development To-Do (Codex) - Legacy Content
 
 This document tracks outstanding items for finalizing `Dashboard.vue` and related layout components. Follow these notes when polishing the dashboard experience.
 

@@ -1,4 +1,6 @@
-# backend/app/routes Documentation
+# Backend Routes - Accounts and Categories [ROUTES_ACCOUNTS_CATEGORIES]
+
+This document provides comprehensive documentation for account management and transaction categorization routes in the pyNance backend application. These routes handle financial institution linking, account lifecycle operations, and transaction categorization logic.
 
 ---
 

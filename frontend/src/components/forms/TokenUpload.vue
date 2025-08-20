@@ -43,7 +43,7 @@ const submit = async () => {
     })
 
     const { provider, account_count, institution_name } = response.data
-    alert(`✔️ Uploaded ${account_count} ${provider} account(s) from ${institution_name}`)
+    alert(`Uploaded ${account_count} ${provider} account(s) from ${institution_name}`)
 
     showForm.value = false
     userId.value = ''

@@ -1,6 +1,8 @@
 """Account management and refresh routes."""
 
+import logging
 from datetime import datetime, timezone
+from pathlib import Path
 
 from app.config import logger
 from app.extensions import db
@@ -16,13 +18,22 @@ from flask import Blueprint, jsonify, request
 accounts = Blueprint("accounts", __name__)
 
 
+error_logger = logging.getLogger("pyNanceError")
+if not error_logger.handlers:
+    handler = logging.FileHandler(Path(__file__).resolve().parents[3] / "error_log.log")
+    error_logger.addHandler(handler)
+error_logger.setLevel(logging.ERROR)
+
+
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """Refresh all linked accounts.
 
     Iterates through every account and refreshes data for the appropriate
     provider. Returns a list of updated account names and a mapping of
-    ``institution_name`` to refresh count under ``refreshed_counts``.
+    ``institution_name`` to refresh count under ``refreshed_counts``. Any
+    failures are aggregated under ``errors`` with institution, account details,
+    and Plaid error information.
     """
     try:
         from app.config import FILES, TELLER_API_BASE_URL
@@ -41,6 +52,7 @@ def refresh_all_accounts():
         accounts = query.all()
         updated_accounts = []
         refreshed_counts: dict[str, int] = {}
+        error_map: dict[tuple[str, str, str], dict] = {}
 
         # Load Teller tokens once
         from app.helpers.teller_helpers import load_tokens
@@ -57,16 +69,37 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
-                updated = account_logic.refresh_data_for_plaid_account(
+                updated, err = account_logic.refresh_data_for_plaid_account(
                     access_token,
                     account.account_id,
                     start_date=start_date,
                     end_date=end_date,
                 )
-                if updated and account.plaid_account:
+                inst = account.institution_name or "Unknown"
+                if err:
+                    key = (
+                        inst,
+                        err.get("plaid_error_code"),
+                        err.get("plaid_error_message"),
+                    )
+                    if key not in error_map:
+                        error_map[key] = {
+                            "institution_name": inst,
+                            "account_ids": [account.account_id],
+                            "account_names": [account.name],
+                            "plaid_error_code": err.get("plaid_error_code"),
+                            "plaid_error_message": err.get("plaid_error_message"),
+                        }
+                    else:
+                        error_map[key]["account_ids"].append(account.account_id)
+                        error_map[key]["account_names"].append(account.name)
+                    error_logger.error(
+                        f"Plaid error on refresh: Institution: {inst}, Accounts: {account.name}, "
+                        f"Error Code: {err.get('plaid_error_code')}, Message: {err.get('plaid_error_message')}"
+                    )
+                elif updated and account.plaid_account:
                     account.plaid_account.last_refreshed = datetime.now(timezone.utc)
                     updated_accounts.append(account.name)
-                    inst = account.institution_name or "Unknown"
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
             elif account.link_type == "Teller":
@@ -110,6 +143,7 @@ def refresh_all_accounts():
                     "message": "All linked accounts refreshed.",
                     "updated_accounts": updated_accounts,
                     "refreshed_counts": refreshed_counts,
+                    "errors": list(error_map.values()),
                 }
             ),
             200,
@@ -143,7 +177,7 @@ def refresh_single_account(account_id):
                 jsonify({"status": "error", "message": "Missing Plaid token"}),
                 400,
             )
-        updated = account_logic.refresh_data_for_plaid_account(
+        updated, err = account_logic.refresh_data_for_plaid_account(
             token,
             account_id,
             start_date=start_date,
@@ -412,4 +446,35 @@ def account_net_changes(account_id):
         return jsonify({"status": "success", "data": data}), 200
     except Exception as e:
         logger.error(f"Error in account_net_changes: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+# Endpoint to fetch account balance history
+@accounts.route("/<account_id>/history", methods=["GET"])
+def get_account_history(account_id):
+    """Return daily balance history for a given account."""
+    from app.models import AccountHistory
+    try:
+        # Optional date filters (ISO format)
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+        query = AccountHistory.query.filter_by(account_id=account_id)
+        if start_date_str:
+            start_dt = datetime.fromisoformat(start_date_str)
+            query = query.filter(AccountHistory.date >= start_dt)
+        if end_date_str:
+            end_dt = datetime.fromisoformat(end_date_str)
+            query = query.filter(AccountHistory.date <= end_dt)
+        # Retrieve and sort records by date
+        records = query.order_by(AccountHistory.date.asc()).all()
+        history = [
+            {
+                "date": rec.date.isoformat(),
+                "balance": rec.balance,
+                "is_hidden": rec.is_hidden,
+            }
+            for rec in records
+        ]
+        return jsonify({"status": "success", "history": history}), 200
+    except Exception as e:
+        logger.error(f"Error in get_account_history: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
