@@ -1,36 +1,35 @@
 // frontend/src/utils/currency.ts
 
-export type BillOrigin = "manual" | "predicted";
-export type AllocationType = "fixed" | "percent";
+/**
+ * Convert a numeric dollar value into integer cents.
+ *
+ * @param n - The dollar amount to convert.
+ * @returns The amount in cents, rounded to the nearest integer.
+ */
+export const toCents = (n: number | string): number =>
+  Math.round(Number(n || 0) * 100);
 
-export interface Bill {
-  id: string;
-  name: string;
-  amountCents: number;
-  dueDate: string; // YYYY-MM-DD
-  category?: string;
-  origin: BillOrigin;
-}
+/**
+ * Convert an integer cent value into dollars.
+ *
+ * @param c - The value in cents.
+ * @returns The value converted to dollars.
+ */
+export const fromCents = (c: number): number => Number(c || 0) / 100;
 
-export interface Allocation {
-  id: string;
-  target: string; // "bill:<billId>" | "savings:<name>" | "goal:<name>"
-  kind: AllocationType;
-  value: number; // cents if fixed, 0–100 if percent
-}
-
-export interface Scenario {
-  id: string;
-  name: string;
-  planningBalanceCents: number;
-  allocations: Allocation[];
-}
-
-export interface PlanningState {
-  version: number;
-  devMode: boolean;
-  bills: Bill[];
-  scenarios: Scenario[];
-  activeScenarioId: string;
-  lastSavedAt: string;
-}
+/**
+ * Format an integer cent value for display using locale currency rules.
+ *
+ * @param cents - The value in cents.
+ * @param locale - BCP 47 language tag, defaults to `en-US`.
+ * @param currency - ISO 4217 currency code, defaults to `USD`.
+ * @returns A localized currency string.
+ */
+export const formatCurrency = (
+  cents: number,
+  locale = "en-US",
+  currency = "USD"
+): string =>
+  new Intl.NumberFormat(locale, { style: "currency", currency }).format(
+    fromCents(cents)
+  );
