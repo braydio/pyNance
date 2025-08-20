@@ -4,6 +4,19 @@
 
 This project targets **Python 3.11** and **Node 20**.
 
+## Features
+
+- Aggregates accounts and transactions from Plaid and Teller
+- Interactive dashboards for daily net worth and category breakdowns
+- Modular Flask API with SQLAlchemy models
+- Vue 3 + Vite frontend written in TypeScript
+
+## Requirements
+
+- Python 3.11+
+- Node 20+
+- `pip` and `npm`
+
 ## Project Structure [PROJECT_STRUCTURE]
 
 ```
