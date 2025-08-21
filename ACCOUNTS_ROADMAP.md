@@ -334,3 +334,179 @@ it("renders balance history chart", () => {
 ---
 
 Would you like me to **map the `frontend/src/components/charts/` directory** so I can see if `AccountsReorderChart` or `AssetsBarTrended` can be reused for this new balance chart, instead of writing a new chart component from scratch?
+
+# V3 -- UPDATED
+
+Great — now that we know the repo **already has `/accounts/:id/history`**, and you want to **switch to reverse-mapping balances into `AccountHistory` as the default method**, here’s the **updated full roadmap** with ✅ checked-off items, 🚧 pending items, and 🆕 new tasks.
+
+---
+
+# 📊 Roadmap: Implement Account Balances Breakdown in `Accounts.vue`
+
+---
+
+## 1. ✅ Current State
+
+- **Backend**
+
+  - ✅ `accounts.py` already has `/accounts/:id/history` endpoint (returns `AccountHistory` records).
+  - ✅ `AccountHistory` table exists (fields: `date`, `balance`, `is_hidden`).
+  - 🚧 Problem: `AccountHistory` depends on refresh jobs → may not always align with transactions.
+
+- **Frontend**
+
+  - 🚧 `Accounts.vue` loads `recentTransactions` and `netChanges` but **does not fetch history**.
+  - 🚧 Chart placeholders exist (`NetYearComparisonChart`, `AssetsBarTrended`) but none render balances.
+  - ✅ Chart infra exists (`DailyNetChart.vue` shows how to build time-series).
+
+- **Tests**
+
+  - ✅ Cypress scaffolding in `AccountsSummary.cy.js`.
+  - 🚧 No test yet for history chart.
+
+---
+
+## 2. 🆕 Backend Changes
+
+### 2.1 Reverse-Mapping Algorithm (Transactions → History)
+
+- Modify `update_account_history` (in `app/sql/forecast_logic.py`) to:
+
+  - Start from today’s balance.
+  - Walk backwards over transactions per day.
+  - Insert/update rows in `AccountHistory`.
+
+- This ensures `AccountHistory` always matches transaction-derived balances.
+
+### 2.2 Keep Endpoint the Same
+
+- `/accounts/:id/history` continues to serve from `AccountHistory`.
+- Benefit: no frontend change, history always consistent.
+
+### 2.3 Backfill
+
+- Run a one-time migration to **rebuild history for all accounts** using reverse mapping.
+
+---
+
+## 3. 🚧 Frontend Changes
+
+### 3.1 API Layer
+
+- Add function in `frontend/src/api/accounts.js`:
+
+  ```js
+  export async function fetchAccountHistory(accountId, startDate, endDate) {
+    let url = `/api/accounts/${accountId}/history`;
+    if (startDate && endDate) {
+      url += `?start_date=${startDate}&end_date=${endDate}`;
+    }
+    const res = await fetch(url);
+    return res.json();
+  }
+  ```
+
+### 3.2 Accounts.vue
+
+- Add:
+
+  ```js
+  import { fetchAccountHistory } from "@/api/accounts";
+  const accountHistory = ref([]);
+  onMounted(async () => {
+    const res = await fetchAccountHistory(accountId);
+    if (res.status === "success") {
+      accountHistory.value = res.history;
+    }
+  });
+  ```
+
+- Replace placeholder chart with:
+
+  ```vue
+  <AccountBalanceHistoryChart :balances="accountHistory" />
+  ```
+
+### 3.3 New Chart Component
+
+- Add `frontend/src/components/charts/AccountBalanceHistoryChart.vue`.
+- ✅ We already drafted it (clone of `DailyNetChart` with one dataset).
+
+### 3.4 Filter Controls
+
+- Add dropdown in Accounts.vue: `7d / 30d / 90d / 365d`.
+- Pass `start_date`, `end_date` to `fetchAccountHistory`.
+
+---
+
+## 4. 🚧 Testing
+
+### 4.1 Backend
+
+- Unit tests:
+
+  - Reverse mapping produces correct balances.
+  - History endpoint returns continuous data with no gaps.
+
+### 4.2 Frontend
+
+- Cypress:
+
+  - Visit `/accounts/:id`.
+  - Ensure **chart renders**.
+  - Validate tooltip shows “Balance: \$X”.
+  - Test filter dropdown (7/30/90/365).
+
+---
+
+## 5. ✅ Docs & Guides
+
+- Update developer docs:
+
+  - `update_account_history` now uses reverse mapping.
+  - Endpoint `/accounts/:id/history` always reflects transactions.
+
+- Update frontend guide: how to use `AccountBalanceHistoryChart`.
+
+---
+
+## 6. Deliverables
+
+- ✅ Backend endpoint exists.
+- 🆕 Backend reverse-mapping fills `AccountHistory`.
+- 🚧 Frontend API function added.
+- 🚧 `Accounts.vue` integrates new chart.
+- 🚧 Chart component created.
+- 🚧 Tests for backend + frontend.
+- ✅ Docs updated.
+
+---
+
+## 7. Next Steps
+
+1. **Backend**
+
+   - [ ] Open `app/sql/forecast_logic.py`.
+   - [ ] Refactor `update_account_history` to use reverse mapping.
+   - [ ] Add migration script to backfill history.
+
+2. **Frontend**
+
+   - [ ] Create `fetchAccountHistory`.
+   - [ ] Add `AccountBalanceHistoryChart.vue` file.
+   - [ ] Integrate into `Accounts.vue`.
+   - [ ] Add dropdown for 7/30/90/365 filters.
+
+3. **Testing**
+
+   - [ ] Add backend unit tests for reverse mapping.
+   - [ ] Extend Cypress test to validate chart + filters.
+
+---
+
+✅ So the **only big backend change** is to retrofit `update_account_history`.
+✅ The frontend must consume `/accounts/:id/history` and render the chart.
+
+---
+
+Would you like me to **open `app/sql/forecast_logic.py`** and sketch the exact reverse-mapping update to `update_account_history` so we can lock down Step 7.1 of this roadmap?
