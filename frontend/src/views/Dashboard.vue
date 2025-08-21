@@ -272,18 +272,26 @@ watch(groupOthers, () => {
 
 // For dropdown: fetch full tree for grouped dropdown (not just breakdown result)
 const categoryGroups = ref([])
+
+/**
+ * Fetch the full category tree and transform it into groups for the
+ * dropdown component.
+ */
 async function loadCategoryGroups() {
   try {
     const res = await fetchCategoryTree()
     if (res.status === 'success' && Array.isArray(res.data)) {
-      categoryGroups.value = (res.data || []).map(root => ({
-        id: root.id,
-        label: root.label,
-        children: (root.children || []).map(c => ({
-          id: c.id,
-          label: c.label ?? c.name,
-        })),
-      })).sort((a, b) => a.label.localeCompare(b.label))
+      // res.data is confirmed to be an array, so no fallback is required
+      categoryGroups.value = res.data
+        .map(root => ({
+          id: root.id,
+          label: root.label,
+          children: (root.children || []).map(c => ({
+            id: c.id,
+            label: c.label ?? c.name,
+          })),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label))
     }
   } catch {
     categoryGroups.value = []
