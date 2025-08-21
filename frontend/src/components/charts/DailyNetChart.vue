@@ -1,6 +1,14 @@
 <template>
-  <div class="daily-net-chart" style="height: 400px;">
-    <canvas ref="chartCanvas" style="width: 100%; height: 100%;"></canvas>
+  <div class="daily-net-chart">
+    <div class="chart-controls">
+      <label><input type="checkbox" v-model="show7Day" /> 7d trend</label>
+      <label><input type="checkbox" v-model="show30Day" /> 30d trend</label>
+      <label><input type="checkbox" v-model="showAvgIncome" /> avg income</label>
+      <label><input type="checkbox" v-model="showAvgExpenses" /> avg expenses</label>
+    </div>
+    <div style="height: 400px;">
+      <canvas ref="chartCanvas" style="width: 100%; height: 100%;"></canvas>
+    </div>
   </div>
 </template>
 
@@ -20,6 +28,10 @@ const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
+const show7Day = ref(false)
+const show30Day = ref(false)
+const showAvgIncome = ref(false)
+const showAvgExpenses = ref(false)
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -77,6 +89,20 @@ const netLinePlugin = {
   }
 };
 
+function movingAverage(values, window) {
+  const result = []
+  for (let i = 0; i < values.length; i++) {
+    if (i < window - 1) {
+      result.push(null)
+    } else {
+      const slice = values.slice(i - window + 1, i + 1)
+      const sum = slice.reduce((a, b) => a + b, 0)
+      result.push(sum / window)
+    }
+  }
+  return result
+}
+
 async function renderChart() {
   await nextTick()
   const canvasEl = chartCanvas.value
@@ -103,40 +129,91 @@ async function renderChart() {
   const expenseValues = filtered.length ? filtered.map(item => item.expenses.parsedValue) : [0]
   // Expenses are already negative (parsedValue); use as is for chart
 
+  const avgIncome = incomeValues.length ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length : 0
+  const avgExpenses = expenseValues.length ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length : 0
+
+  const datasets = [
+    {
+      type: 'bar',
+      label: 'Income',
+      data: incomeValues,
+      backgroundColor: '#5db073',
+      borderRadius: 4,
+      barThickness: 20,
+    },
+    {
+      type: 'bar',
+      label: 'Expenses',
+      data: expenseValues,
+      backgroundColor: '#a43e5c',
+      borderRadius: 4,
+      barThickness: 20,
+    },
+    // Net dataset placeholder for plugin drawing
+    {
+      type: 'bar',
+      label: 'Net',
+      data: netValues,
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      barThickness: 20,
+    },
+  ]
+
+  if (showAvgIncome.value) {
+    datasets.push({
+      type: 'line',
+      label: 'Avg Income',
+      data: labels.map(() => avgIncome),
+      borderColor: '#5db073',
+      borderDash: [4, 4],
+      borderWidth: 1,
+      pointRadius: 0,
+    })
+  }
+
+  if (showAvgExpenses.value) {
+    datasets.push({
+      type: 'line',
+      label: 'Avg Expenses',
+      data: labels.map(() => avgExpenses),
+      borderColor: '#a43e5c',
+      borderDash: [4, 4],
+      borderWidth: 1,
+      pointRadius: 0,
+    })
+  }
+
+  if (show7Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '7-Day Avg',
+      data: movingAverage(netValues, 7),
+      borderColor: '#f59e0b',
+      borderWidth: 2,
+      pointRadius: 0,
+    })
+  }
+
+  if (show30Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '30-Day Avg',
+      data: movingAverage(netValues, 30),
+      borderColor: '#3b82f6',
+      borderWidth: 2,
+      pointRadius: 0,
+    })
+  }
+
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     // include netLinePlugin to draw net lines
     plugins: [netLinePlugin],
     data: {
       labels,
-        datasets: [
-          {
-            type: 'bar',
-            label: 'Income',
-            data: incomeValues,
-            backgroundColor: '#5db073',
-            borderRadius: 4,
-            barThickness: 20,
-          },
-          {
-            type: 'bar',
-            label: 'Expenses',
-            data: expenseValues,
-            backgroundColor: '#a43e5c',
-            borderRadius: 4,
-            barThickness: 20,
-          },
-          // Net dataset placeholder for plugin drawing
-          {
-            type: 'bar',
-            label: 'Net',
-            data: netValues,
-            backgroundColor: 'transparent',
-            borderWidth: 0,
-            barThickness: 20,
-          },
-        ],
-      },
+      datasets,
+    },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -236,7 +313,7 @@ function updateSummary() {
 }
 
 
-watch([chartData, () => props.zoomedOut], async () => {
+watch([chartData, () => props.zoomedOut, show7Day, show30Day, showAvgIncome, showAvgExpenses], async () => {
   await renderChart()
   updateSummary()
 })
@@ -252,3 +329,20 @@ onUnmounted(() => {
   }
 })
 </script>
+
+<style scoped>
+.chart-controls {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.chart-controls label {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+</style>
