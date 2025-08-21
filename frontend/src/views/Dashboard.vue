@@ -2,29 +2,33 @@
   <AppLayout>
     <!-- WELCOME HEADER CARD -->
     <div class="w-20 h-3 rounded bg-[var(--color-accent-ice)] mb-6"></div>
-    <div class="flex justify-center mb-8">
+    <section class="section flex justify-center">
       <div
-        class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-mint)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
-        <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-accent-ice mb-2 drop-shadow">Welcome, <span
-            class="username">{{ userName }}</span>!</h1>
+        class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-mint)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2"
+      >
+        <h1 class="h1 tracking-wide text-[var(--color-accent-ice)] drop-shadow">
+          Welcome, <span class="username">{{ userName }}</span
+          >!
+        </h1>
         <p class="text-lg text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
-
-    </div>
+    </section>
     <div class="w-20 h-3 rounded bg-[var(--color-accent-ice)] mb-6"></div>
-    <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
+    <div class="dashboard-content flex flex-col w-full max-w-7xl mx-auto px-2">
       <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
-      <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
+      <section class="section flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-ice)] p-6 flex flex-col justify-between">
-          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-ice)] text-center">Top Accounts</h2>
+          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-ice)] p-6 flex flex-col justify-between"
+        >
+          <h2 class="h2 text-[var(--color-accent-ice)] text-center">Top Accounts</h2>
           <TopAccountSnapshot />
         </div>
         <!-- Net Income Summary Card -->
         <div
-          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-mint)] p-6 flex flex-col gap-3">
+          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-mint)] p-6 flex flex-col gap-3"
+        >
           <div class="flex items-center justify-center mb-4">
             <div class="flex-1 flex justify-center">
               <h2 class="daily-net-chart-title">
@@ -37,37 +41,54 @@
                 <template #controls>
                   <button
                     class="dashboard-control-btn dashboard-control-btn-primary"
-                    @click="zoomedOut = !zoomedOut">
+                    @click="zoomedOut = !zoomedOut"
+                  >
                     {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
                   </button>
                 </template>
               </ChartWidgetTopBar>
             </div>
           </div>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @data-change="chartData = $event" @bar-click="onNetBarClick" />
-          <DailyNetStatistics 
-            :summary="netSummary" 
-            :chart-data="chartData" 
-            :zoomed-out="zoomedOut" 
+          <DailyNetChart
+            :zoomed-out="zoomedOut"
+            @summary-change="netSummary = $event"
+            @data-change="chartData = $event"
+            @bar-click="onNetBarClick"
+          />
+          <DailyNetStatistics
+            :summary="netSummary"
+            :chart-data="chartData"
+            :zoomed-out="zoomedOut"
           />
         </div>
-      </div>
+      </section>
 
       <!-- SPENDING ROW: Category Chart & Insights -->
-      <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
+      <section class="section flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Category Spending -->
         <div
-          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3">
+          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3"
+        >
           <div class="flex items-center justify-between mb-2">
-            <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">Spending by Category</h2>
+            <h2 class="h2 text-[var(--color-accent-yellow)]">Spending by Category</h2>
             <ChartWidgetTopBar>
               <template #controls>
-                <input type="date" v-model="catRange.start"
-                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-                <input type="date" v-model="catRange.end"
-                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
-                <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
-                  @update:modelValue="onCatSelected" class="w-64 ml-2" />
+                <input
+                  type="date"
+                  v-model="catRange.start"
+                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]"
+                />
+                <input
+                  type="date"
+                  v-model="catRange.end"
+                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2"
+                />
+                <GroupedCategoryDropdown
+                  :groups="categoryGroups"
+                  :modelValue="catSelected"
+                  @update:modelValue="onCatSelected"
+                  class="w-64 ml-2"
+                />
                 <button
                   class="dashboard-control-btn dashboard-control-btn-secondary ml-2"
                   @click="groupOthers = !groupOthers"
@@ -77,46 +98,66 @@
               </template>
             </ChartWidgetTopBar>
           </div>
-          <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
-            :selected-category-ids="catSelected" :group-others="groupOthers"
-            @summary-change="catSummary = $event" @categories-change="allCategoryIds = $event"
-            @bar-click="onCategoryBarClick" />
+          <CategoryBreakdownChart
+            :start-date="catRange.start"
+            :end-date="catRange.end"
+            :selected-category-ids="catSelected"
+            :group-others="groupOthers"
+            @summary-change="catSummary = $event"
+            @categories-change="allCategoryIds = $event"
+            @bar-click="onCategoryBarClick"
+          />
           <div class="mt-1">
             <span class="font-bold">Total:</span>
-            <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{ formatAmount(catSummary.total) }}</span>
+            <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{
+              formatAmount(catSummary.total)
+            }}</span>
           </div>
         </div>
         <!-- Spending Insights Placeholder -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-blue)] p-6 flex flex-col items-center justify-center">
-          <h2 class="text-xl font-bold text-[var(--color-accent-blue)] mb-4">Spending Insights</h2>
+          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-blue)] p-6 flex flex-col items-center justify-center"
+        >
+          <h2 class="h2 text-[var(--color-accent-blue)]">Spending Insights</h2>
           <p class="italic text-muted text-center">More detailed insights coming soon...</p>
         </div>
-      </div>
+      </section>
 
       <!-- RESERVED TABLES PANEL -->
-      <div
-        class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-ice)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden">
+      <section
+        class="section relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-ice)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+      >
         <!-- Button row: Show only if neither table is expanded -->
-        <div v-if="!accountsExpanded && !transactionsExpanded"
-          class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
-          <button @click="expandAccounts"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-ice)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-ice)] hover:text-[var(--color-bg-sec)] transition">
+        <div
+          v-if="!accountsExpanded && !transactionsExpanded"
+          class="flex flex-row justify-between items-center gap-8 w-full h-full p-12"
+        >
+          <button
+            @click="expandAccounts"
+            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-ice)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-ice)] hover:text-[var(--color-bg-sec)] transition"
+          >
             Expand Accounts Table
           </button>
           <div class="mx-8 text-lg font-light text-muted select-none">or</div>
-          <button @click="expandTransactions"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-yellow)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)] transition">
+          <button
+            @click="expandTransactions"
+            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-yellow)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)] transition"
+          >
             Expand Transactions Table
           </button>
         </div>
         <!-- Expanded Accounts Table -->
         <transition name="fade">
-          <div v-if="accountsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
+          <div
+            v-if="accountsExpanded"
+            class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]"
+          >
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-2xl font-bold text-[var(--color-accent-ice)]">Accounts Table</h2>
-              <button @click="collapseTables"
-                class="px-4 py-2 rounded bg-[var(--color-accent-ice)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
+              <h2 class="h2 text-[var(--color-accent-ice)]">Accounts Table</h2>
+              <button
+                @click="collapseTables"
+                class="px-4 py-2 rounded bg-[var(--color-accent-ice)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105"
+              >
                 Close
               </button>
             </div>
@@ -127,35 +168,51 @@
         </transition>
         <!-- Expanded Transactions Table -->
         <transition name="fade">
-          <div v-if="transactionsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
+          <div
+            v-if="transactionsExpanded"
+            class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]"
+          >
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-2xl font-bold text-[var(--color-accent-yellow)]">Transactions Table</h2>
-              <button @click="collapseTables"
-                class="px-4 py-2 rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
+              <h2 class="h2 text-[var(--color-accent-yellow)]">Transactions Table</h2>
+              <button
+                @click="collapseTables"
+                class="px-4 py-2 rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105"
+              >
                 Close
               </button>
             </div>
             <div class="flex-1 min-h-[300px]">
-              <TransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-                :search="searchQuery" @sort="setSort" :current-page="currentPage" :total-pages="totalPages"
-                @change-page="changePage" />
-              <PaginationControls :current-page="currentPage" :total-pages="totalPages" @change-page="changePage" />
+              <TransactionsTable
+                :transactions="filteredTransactions"
+                :sort-key="sortKey"
+                :sort-order="sortOrder"
+                :search="searchQuery"
+                @sort="setSort"
+                :current-page="currentPage"
+                :total-pages="totalPages"
+                @change-page="changePage"
+              />
+              <PaginationControls
+                :current-page="currentPage"
+                :total-pages="totalPages"
+                @change-page="changePage"
+              />
             </div>
           </div>
         </transition>
-      </div>
+      </section>
 
-      <TransactionModal :show="showModal" :subtitle="modalSubtitle" :transactions="modalTransactions"
-        @close="showModal = false" />
+      <TransactionModal
+        :show="showModal"
+        :subtitle="modalSubtitle"
+        :transactions="modalTransactions"
+        @close="showModal = false"
+      />
     </div>
 
-    <template #footer>
-      &copy; {{ new Date().getFullYear() }} braydio • pyNance.
-    </template>
+    <template #footer> &copy; {{ new Date().getFullYear() }} braydio • pyNance. </template>
   </AppLayout>
 </template>
-
-
 
 <script setup>
 // Dashboard view showing financial charts and transaction tables.
@@ -177,6 +234,8 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
 
+defineOptions({ name: 'DashboardView' })
+
 // Transactions and user
 const {
   searchQuery,
@@ -186,18 +245,22 @@ const {
   sortKey,
   sortOrder,
   setSort,
-  changePage
+  changePage,
 } = useTransactions(15)
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
-const currentDate = new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })
+const currentDate = new Date().toLocaleDateString(undefined, {
+  month: 'long',
+  day: 'numeric',
+  year: 'numeric',
+})
 const netWorth = ref(0)
 const netWorthMessage = computed(() => {
-  if (netWorth.value < 0) return "... and things are looking quite bleak."
-  if (netWorth.value > 1000) return "Ahh... well in the black."
-  return "Uhh... keep up the... whatever this is."
+  if (netWorth.value < 0) return '... and things are looking quite bleak.'
+  if (netWorth.value > 1000) return 'Ahh... well in the black.'
+  return 'Uhh... keep up the... whatever this is.'
 })
 
 onMounted(async () => {
@@ -220,15 +283,17 @@ const zoomedOut = ref(false)
 // --- CATEGORY BREAKDOWN STATE ---
 const today = new Date()
 const catRange = ref({
-  start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30).toISOString().slice(0, 10),
-  end: new Date().toISOString().slice(0, 10)
+  start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30)
+    .toISOString()
+    .slice(0, 10),
+  end: new Date().toISOString().slice(0, 10),
 })
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
-const catSelected = ref([])           // user selected
-const allCategoryIds = ref([])        // from chart data
-const defaultSet = ref(false)         // only auto-select ONCE per data load
-const groupOthers = ref(true)         // aggregate small categories
+const catSelected = ref([]) // user selected
+const allCategoryIds = ref([]) // from chart data
+const defaultSet = ref(false) // only auto-select ONCE per data load
+const groupOthers = ref(true) // aggregate small categories
 
 // When CategoryBreakdownChart fetches, auto-select the first 5 categories once
 // per fetch. Includes "Other" when grouping is enabled and does not repopulate
@@ -261,9 +326,12 @@ function onCatSelected(newIds) {
 }
 
 // When user changes date range, let next data load re-apply auto-select
-watch(() => [catRange.value.start, catRange.value.end], () => {
-  defaultSet.value = false
-})
+watch(
+  () => [catRange.value.start, catRange.value.end],
+  () => {
+    defaultSet.value = false
+  },
+)
 
 // When grouping mode changes, allow auto-select on next fetch
 watch(groupOthers, () => {
@@ -276,14 +344,16 @@ async function loadCategoryGroups() {
   try {
     const res = await fetchCategoryTree()
     if (res.status === 'success' && Array.isArray(res.data)) {
-      categoryGroups.value = (res.data || []).map(root => ({
-        id: root.id,
-        label: root.label,
-        children: (root.children || []).map(c => ({
-          id: c.id,
-          label: c.label ?? c.name,
-        })),
-      })).sort((a, b) => a.label.localeCompare(b.label))
+      categoryGroups.value = (res.data || [])
+        .map((root) => ({
+          id: root.id,
+          label: root.label,
+          children: (root.children || []).map((c) => ({
+            id: c.id,
+            label: c.label ?? c.name,
+          })),
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label))
     }
   } catch {
     categoryGroups.value = []
@@ -307,8 +377,7 @@ async function onNetBarClick(label) {
  *   the bar label and an array of category IDs.
  */
 async function onCategoryBarClick(payload) {
-  const { label, ids = [] } =
-    typeof payload === 'object' ? payload : { label: payload, ids: [] }
+  const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
 
   // Determine the date range in effect for the category chart. The chart emits
   // `summary-change` events that populate `catSummary` with the actual start
@@ -331,7 +400,8 @@ async function onCategoryBarClick(payload) {
 </script>
 
 <style scoped>
-@import "../assets/css/main.css";
+@import '../assets/css/main.css';
+@import '../styles/typography.css';
 
 .dashboard-outer {
   /* Vertically and horizontally center, with a max width for the dashboard content */
