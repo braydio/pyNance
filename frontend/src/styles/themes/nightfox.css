@@ -1,0 +1,46 @@
+:root {
+  --page-bg: #192330;
+  --background: var(--page-bg);
+  --color-bg: #212e3f;
+  --color-bg-dark: #131a24;
+  --color-bg-secondary: #29394f;
+  --themed-bg: rgba(41, 57, 79, 0.65);
+  --theme-bg: var(--themed-bg);
+  --frosted-bg: var(--themed-bg);
+  --themed-border: rgba(57, 80, 109, 0.4);
+  --surface: #212e3f;
+  --input-bg: #2b3b51;
+  --divider: #39506d;
+  --color-border-secondary: #39506d;
+
+  --theme-fg: #cdcecf;
+  --text-primary: #cdcecf;
+  --color-text-dark: #000000;
+  --color-text-light: var(--text-primary);
+  --color-text-muted: #71839b;
+
+  --primary: #719cd6;
+  --primary-dark: #39506d;
+
+  --neon-mint: #63cdcf;
+  --neon-purple: #9d79d6;
+  --color-accent-mint: var(--neon-mint);
+  --color-accent-yellow: #dbc074;
+  --color-accent-magenta: #d67ad2;
+  --color-accent-ice: #63cdcf;
+  --color-accent-purple-hover: #b093e6;
+  --color-accent: var(--neon-mint);
+
+  --hover-bg: rgba(255, 255, 255, 0.05);
+  --color-hover-light: rgba(255, 255, 255, 0.08);
+  --hover-glow: 0 0 8px rgba(113, 156, 214, 0.6);
+
+  --button-bg: #2b3b51;
+  --link-hover-color: var(--neon-mint);
+  --asset-gradient-start: #719cd6;
+  --asset-gradient-end: #63cdcf;
+  --liability-gradient-start: #c94f6d;
+  --liability-gradient-end: #d67ad2;
+  --bar-gradient-end: #d67ad2;
+  --accent-yellow-soft: rgba(219, 192, 116, 0.5);
+}

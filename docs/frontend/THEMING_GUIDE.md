@@ -1,6 +1,7 @@
-# Neon Dark Theming Guide
+# Nightfox Dark Theming Guide
 
 This document describes how to configure and extend the frontend theme for *pyNance*.
+The project now uses the [Nightfox](https://github.com/EdenEast/nightfox.nvim) dark palette as the default theme.
 It introduces a modular approach built around CSS custom properties.
 
 ## Directory Layout
@@ -14,22 +15,21 @@ frontend/
    └─ styles/
       ├─ global-colors.css   # imports the active theme
       └─ themes/
-         ├─ neon-dark.css    # default neon dark palette
-         └─ dark-frost.css   # dark frost with neon accents
+         ├─ nightfox.css     # default Nightfox palette
+         ├─ dark-frost.css   # legacy dark frost theme
+         └─ neon-dark.css    # legacy neon dark theme
 ```
 
 * `global-colors.css` defines the variables that components rely on. It imports
   a theme file so new themes can be swapped without editing components.
-* `themes/neon-dark.css` is the initial theme with neon accents and frosted
-  surfaces.
-* `themes/dark-frost.css` extends the palette with slightly darker backgrounds
-  but keeps the neon accent variables intact. It powers the "Dark Frost" look
-  used across components.
+* `themes/nightfox.css` is the official theme based on the Nightfox palette.
+* `themes/dark-frost.css` and `themes/neon-dark.css` are legacy themes retained
+  for reference.
 
 ## Adding a New Theme
 
 1. Create a file in `frontend/src/styles/themes/` with the same variable names
-   as `neon-dark.css`.
+   as `nightfox.css`.
 2. Replace the `@import` line at the top of `global-colors.css` to point to the
    new theme file or dynamically inject the file at runtime.
 3. Keep variable names consistent so existing components continue to work.
@@ -91,7 +91,7 @@ existing link.
 
 ## Frosted Glass Effect
 
-The neon dark theme uses semi-transparent backgrounds (`--themed-bg`) and subtle
+The Nightfox theme uses semi-transparent backgrounds (`--themed-bg`) and subtle
 borders (`--themed-border`) to create a frosted glass look. Components can apply
 these styles using `backdrop-filter: blur(6px)` or by setting the background and
 border variables directly.
