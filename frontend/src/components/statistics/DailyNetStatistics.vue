@@ -84,6 +84,19 @@
               <span class="stat-value">{{ volatilityLabel }}</span>
             </div>
           </div>
+
+          <!-- Above Average Days -->
+          <div class="stat-group">
+            <h4 class="group-title">Above Avg Days</h4>
+            <div class="stat-item">
+              <span class="stat-label">Income:</span>
+              <span class="stat-value">{{ summary.aboveAvgIncomeDays }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Expenses:</span>
+              <span class="stat-value">{{ summary.aboveAvgExpenseDays }}</span>
+            </div>
+          </div>
         </div>
       </div>
     </Transition>
@@ -97,7 +110,13 @@ import { formatAmount } from '@/utils/format'
 const props = defineProps({
   summary: {
     type: Object,
-    default: () => ({ totalIncome: 0, totalExpenses: 0, totalNet: 0 }),
+    default: () => ({
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalNet: 0,
+      aboveAvgIncomeDays: 0,
+      aboveAvgExpenseDays: 0,
+    }),
   },
   chartData: {
     type: Array,

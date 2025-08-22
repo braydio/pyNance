@@ -32,6 +32,9 @@ const show7Day = ref(false)
 const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
+// Counts of days exceeding their respective averages; used for summary and chart annotations
+const aboveAvgIncomeDays = ref(0)
+const aboveAvgExpenseDays = ref(0)
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -88,6 +91,28 @@ const netLinePlugin = {
     });
   }
 };
+
+// Plugin to annotate above-average day counts when avg lines are shown
+const avgInfoPlugin = {
+  id: 'avgInfoPlugin',
+  afterDraw(chart) {
+    const { ctx, chartArea } = chart
+    ctx.save()
+    ctx.font = "12px 'Fira Code', monospace"
+    ctx.textBaseline = 'top'
+    let y = chartArea.top + 4
+    if (showAvgIncome.value) {
+      ctx.fillStyle = getStyle('--color-accent-green')
+      ctx.fillText(`Income>avg: ${aboveAvgIncomeDays.value}`, chartArea.left + 4, y)
+      y += 14
+    }
+    if (showAvgExpenses.value) {
+      ctx.fillStyle = getStyle('--color-accent-red')
+      ctx.fillText(`Expenses>avg: ${aboveAvgExpenseDays.value}`, chartArea.left + 4, y)
+    }
+    ctx.restore()
+  }
+}
 
 function movingAverage(values, window) {
   const result = []
@@ -208,8 +233,8 @@ async function renderChart() {
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    // include netLinePlugin to draw net lines
-    plugins: [netLinePlugin],
+    // include netLinePlugin to draw net lines and avgInfoPlugin for annotations
+    plugins: [netLinePlugin, avgInfoPlugin],
     data: {
       labels,
       datasets,
@@ -306,16 +331,29 @@ function updateSummary() {
   const totalIncome = filtered.reduce((sum, d) => sum + (d.income?.parsedValue || 0), 0)
   const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
   const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
-  emit('summary-change', { totalIncome, totalExpenses, totalNet })
-  
+
+  const days = filtered.length || 1
+  const avgIncome = totalIncome / days
+  const avgExpenses = totalExpenses / days
+  aboveAvgIncomeDays.value = filtered.filter(d => (d.income?.parsedValue || 0) > avgIncome).length
+  aboveAvgExpenseDays.value = filtered.filter(d => Math.abs(d.expenses?.parsedValue || 0) > Math.abs(avgExpenses)).length
+
+  emit('summary-change', {
+    totalIncome,
+    totalExpenses,
+    totalNet,
+    aboveAvgIncomeDays: aboveAvgIncomeDays.value,
+    aboveAvgExpenseDays: aboveAvgExpenseDays.value,
+  })
+
   // Also emit the filtered chart data for the statistics component
   emit('data-change', filtered)
 }
 
 
 watch([chartData, () => props.zoomedOut, show7Day, show30Day, showAvgIncome, showAvgExpenses], async () => {
-  await renderChart()
   updateSummary()
+  await renderChart()
 })
 
 onMounted(() => {

@@ -213,7 +213,13 @@ onMounted(async () => {
 })
 
 /** --- DAILY NET STATE --- */
-const netSummary = ref({ totalIncome: 0, totalExpenses: 0, totalNet: 0 })
+const netSummary = ref({
+  totalIncome: 0,
+  totalExpenses: 0,
+  totalNet: 0,
+  aboveAvgIncomeDays: 0,
+  aboveAvgExpenseDays: 0,
+})
 const chartData = ref([])
 const zoomedOut = ref(false)
 
