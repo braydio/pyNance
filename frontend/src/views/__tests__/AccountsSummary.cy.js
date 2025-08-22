@@ -6,6 +6,19 @@ function mountPage() {
     body: { status: 'success', data: { income: 1000, expense: -400, net: 600 } },
   }).as('net')
 
+  cy.intercept('GET', '/api/accounts/acc1/history?range=30d', {
+    statusCode: 200,
+    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [
+      { date: '2025-08-01', balance: 50 },
+      { date: '2025-08-02', balance: 75 }
+    ] }
+  }).as('hist30')
+
+  cy.intercept('GET', '/api/accounts/acc1/history?range=90d', {
+    statusCode: 200,
+    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] }
+  }).as('hist90')
+
   cy.intercept('GET', '/api/transactions/acc1/transactions*', {
     statusCode: 200,
     body: { status: 'success', data: { transactions: [
@@ -28,7 +41,7 @@ function mountPage() {
     },
   })
 
-  return cy.wait('@net').wait('@tx')
+  return cy.wait('@net').wait('@tx').wait('@hist30')
 }
 
 describe('Accounts summary', () => {
@@ -39,5 +52,8 @@ describe('Accounts summary', () => {
     cy.contains('Net').should('contain', '$600.00')
     cy.get('table').should('exist')
     cy.contains('Coffee')
+    cy.get('[data-testid="history-chart"]').should('exist')
+    cy.get('[data-testid="filter-dropdown"]').select('90d')
+    cy.wait('@hist90')
   })
 })
