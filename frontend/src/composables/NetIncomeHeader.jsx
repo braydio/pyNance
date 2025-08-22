@@ -1,5 +1,6 @@
-import React from 'react';
-
+/**
+ * Displays column headers for income, expenses, and net total amounts.
+ */
 const NetIncomeHeader = () => {
   const headerStyle = {
     display: 'flex',
@@ -11,11 +12,6 @@ const NetIncomeHeader = () => {
     fontSize: '1.25em',
     fontWeight: 'bold',
     color: '#333',
-  };
-
-  const titleStyle = {
-    fontSize: '1.5em',
-    marginRight: '20px',
   };
 
   const itemStyle = {
