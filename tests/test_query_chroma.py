@@ -8,9 +8,15 @@ import runpy
 import sys
 from pathlib import Path
 
-import chromadb
 import pytest
-from chromadb.utils import embedding_functions
+
+try:  # pragma: no cover - dependency may not be installed
+    import chromadb
+    from chromadb.utils import embedding_functions
+except ModuleNotFoundError:  # pragma: no cover
+    chromadb = None
+    embedding_functions = None
+    pytest.skip("chromadb not installed", allow_module_level=True)
 
 
 class DummyEmbeddingFunction:
