@@ -459,7 +459,8 @@ def get_account_history(account_id):
     The calculation starts from the account's current balance and walks
     backwards through transaction deltas to derive prior day balances.
     A ``range`` query parameter like ``7d`` or ``30d`` limits how many
-    days are returned.
+    days are returned. Both the external ``account_id`` and internal numeric
+    ``id`` are accepted in the path segment.
     """
     from datetime import timedelta
     from app.models import Account, Transaction
@@ -470,7 +471,10 @@ def get_account_history(account_id):
         range_param = request.args.get("range", "30d")
         days = int(range_param.rstrip("d")) if range_param.endswith("d") else 30
 
+        # Allow lookups by either ``account_id`` (string) or numeric primary ``id``.
         account = Account.query.filter_by(account_id=account_id).first()
+        if not account and account_id.isdigit():
+            account = Account.query.filter_by(id=int(account_id)).first()
         if not account:
             return jsonify({"error": "Account not found"}), 404
 
@@ -495,7 +499,7 @@ def get_account_history(account_id):
         return (
             jsonify(
                 {
-                    "accountId": account_id,
+                    "accountId": account.account_id,
                     "asOfDate": end_date.isoformat(),
                     "balances": balances,
                 }
