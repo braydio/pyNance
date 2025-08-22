@@ -20,7 +20,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
   - Enhance username display with text shadows and accent colors
 
 ### Current Implementation
-- Header uses CSS custom properties (`var(--accent-yellow-soft)`, `var(--neon-mint)`)
+- Header uses CSS custom properties (`var(--accent-yellow-soft)`, `var(--color-accent-cyan)`)
 - Username styling includes text shadow effect
 - Multi-line layout with welcome message
 

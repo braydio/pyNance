@@ -223,9 +223,9 @@ onMounted(async () => {
 }
 
 .btn:hover {
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
   color: var(--button-bg);
-  border: solid 2px var(--neon-purple);
+  border: solid 2px var(--color-accent-purple);
 }
 
 .recurring-form button {
@@ -240,9 +240,9 @@ onMounted(async () => {
 }
 
 .recurring-form button:hover {
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
   color: var(--button-bg);
-  border: solid 2px var(--neon-purple);
+  border: solid 2px var(--color-accent-purple);
 }
 
 .table-section table {

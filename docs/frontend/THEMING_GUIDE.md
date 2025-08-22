@@ -1,7 +1,7 @@
 # Nightfox Dark Theming Guide
 
 This document describes how to configure and extend the frontend theme for *pyNance*.
-The project now uses the [Nightfox](https://github.com/EdenEast/nightfox.nvim) dark palette as the default theme.
+The project now uses the [Nightfox](https://github.com/EdenEast/nightfox.nvim) dark palette as the sole theme.
 It introduces a modular approach built around CSS custom properties.
 
 ## Directory Layout
@@ -15,16 +15,12 @@ frontend/
    └─ styles/
       ├─ global-colors.css   # imports the active theme
       └─ themes/
-         ├─ nightfox.css     # default Nightfox palette
-         ├─ dark-frost.css   # legacy dark frost theme
-         └─ neon-dark.css    # legacy neon dark theme
+         └─ nightfox.css     # Nightfox palette
 ```
 
 * `global-colors.css` defines the variables that components rely on. It imports
   a theme file so new themes can be swapped without editing components.
 * `themes/nightfox.css` is the official theme based on the Nightfox palette.
-* `themes/dark-frost.css` and `themes/neon-dark.css` are legacy themes retained
-  for reference.
 
 ## Adding a New Theme
 
@@ -63,7 +59,7 @@ all of them:
 | `--input-bg` | form inputs |
 | `--theme-fg` | default foreground text |
 | `--color-text-muted` | subdued text |
-| `--neon-mint` / `--neon-purple` | accent colors |
+| `--color-accent-cyan` / `--color-accent-purple` | accent colors |
 | `--color-accent-yellow` | secondary accent |
 | `--color-accent-blue` | informational accent |
 | `--color-accent-red` | danger or expense accent |
@@ -71,7 +67,7 @@ all of them:
 | `--hover-bg` | hover background for buttons |
 | `--hover-glow` | drop shadow for hover effects |
 
-Additional variables such as `--color-accent-magenta`, `--color-accent-ice`,
+Additional variables such as `--color-accent-magenta`, `--color-accent-cyan`,
 `--bar-gradient-end`, `--asset-gradient-start`/`--asset-gradient-end`, and
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.

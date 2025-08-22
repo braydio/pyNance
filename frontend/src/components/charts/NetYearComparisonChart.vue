@@ -159,9 +159,9 @@ onMounted(fetchData)
 }
 
 .toggle-group .btn.active {
-  background: var(--color-accent-mint);
+  background: var(--color-accent-cyan);
   color: var(--color-bg-dark);
-  box-shadow: 0 0 6px var(--neon-mint);
+  box-shadow: 0 0 6px var(--color-accent-cyan);
 }
 
 .chart-wrapper {

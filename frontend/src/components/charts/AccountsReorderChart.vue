@@ -123,7 +123,7 @@ function initials(name) {
   border-radius: 1.3rem;
   background: var(--color-bg-sec);
   box-shadow: 0 4px 32px var(--shadow, rgba(25, 62, 133, 0.18));
-  border: 2px solid var(--color-accent-ice);
+  border: 2px solid var(--color-accent-cyan);
   user-select: none;
 }
 
@@ -140,7 +140,7 @@ function initials(name) {
 .bs-tab {
   padding: 1.05rem 2.2rem 1.05rem 1.5rem;
   background: var(--color-bg-dark);
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   border: none;
   border-radius: 0.9rem 0.9rem 0 0;
   font-size: 1.11rem;
@@ -152,8 +152,8 @@ function initials(name) {
 }
 
 .bs-tab-active.bs-tab-assets {
-  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
+  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-cyan) 100%);
+  color: var(--color-accent-cyan);
   z-index: 2;
 }
 
@@ -165,8 +165,8 @@ function initials(name) {
 
 .bs-tab-assets:hover,
 .bs-tab-assets:focus-visible {
-  background: linear-gradient(90deg, var(--color-bg-dark) 90%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
+  background: linear-gradient(90deg, var(--color-bg-dark) 90%, var(--color-accent-cyan) 100%);
+  color: var(--color-accent-cyan);
 }
 
 .bs-tab-liabilities:hover,
@@ -182,13 +182,13 @@ function initials(name) {
   font-weight: 700;
   border-radius: 0.7rem;
   background: var(--color-bg-dark);
-  color: var(--color-accent-mint);
-  border: 1.5px solid var(--color-accent-ice);
+  color: var(--color-accent-cyan);
+  border: 1.5px solid var(--color-accent-cyan);
   letter-spacing: 0.01em;
 }
 
 .bs-net-green {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
   background: rgba(40, 255, 200, 0.07);
 }
 
@@ -214,7 +214,7 @@ function initials(name) {
   padding: 0.89rem 1.1rem 0.89rem 0.1rem;
   box-shadow: 0 2px 14px var(--shadow, #1c274055);
   position: relative;
-  border: 2px solid var(--color-accent-ice);
+  border: 2px solid var(--color-accent-cyan);
   min-height: 54px;
   gap: 1.08rem;
   will-change: transform, box-shadow;
@@ -222,7 +222,7 @@ function initials(name) {
 }
 
 .bs-row-asset {
-  border-left: 6px solid var(--color-accent-mint);
+  border-left: 6px solid var(--color-accent-cyan);
 }
 
 .bs-row-liability {
@@ -242,7 +242,7 @@ function initials(name) {
 }
 
 .bs-stripe-green {
-  background: linear-gradient(180deg, var(--color-accent-mint) 20%, var(--color-accent-ice) 100%);
+  background: linear-gradient(180deg, var(--color-accent-cyan) 20%, var(--color-accent-blue) 100%);
 }
 
 .bs-stripe-yellow {
@@ -260,7 +260,7 @@ function initials(name) {
   justify-content: center;
   margin-right: 0.59rem;
   z-index: 2;
-  border: 1.7px solid var(--color-accent-ice);
+  border: 1.7px solid var(--color-accent-cyan);
   overflow: hidden;
 }
 
@@ -276,7 +276,7 @@ function initials(name) {
 .bs-logo-fallback {
   font-size: 1.08rem;
   font-weight: 700;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   text-align: center;
   width: 32px;
   height: 32px;
@@ -298,7 +298,7 @@ function initials(name) {
 .bs-name {
   font-size: 1.10rem;
   font-weight: 600;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -307,7 +307,7 @@ function initials(name) {
 
 .bs-mask {
   font-size: 0.98rem;
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
   opacity: 0.87;
   margin-top: 2.5px;
   letter-spacing: 0.03em;
@@ -333,7 +333,7 @@ function initials(name) {
 }
 
 .bs-amount-green {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .bs-amount-yellow {

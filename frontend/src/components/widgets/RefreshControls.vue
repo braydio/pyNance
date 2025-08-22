@@ -26,8 +26,8 @@ export default {
 
 .btn-accent {
   background-color: transparent;
-  color: var(--neon-purple);
-  border: 1px solid var(--neon-purple);
+  color: var(--color-accent-purple);
+  border: 1px solid var(--color-accent-purple);
   border-radius: 2rem;
   padding: 0.4rem 1rem;
   font-size: 0.85rem;
@@ -37,7 +37,7 @@ export default {
 }
 
 .btn-accent:hover {
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
   color: var(--color-bg-dark);
 }
 </style>

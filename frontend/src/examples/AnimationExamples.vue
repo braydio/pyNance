@@ -4,7 +4,7 @@
     
     <!-- Button Animations -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Button Animations</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Button Animations</h2>
       <div class="flex flex-wrap gap-4">
         <button class="btn hover-lift">Standard Button</button>
         <button class="btn-outline hover-glow">Outlined Button</button>
@@ -16,7 +16,7 @@
 
     <!-- Card Animations -->
     <section>
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Card Animations</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Card Animations</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="card hover-scale-sm">
           <h3 class="font-semibold mb-2">Hover Scale Card</h3>
@@ -31,7 +31,7 @@
 
     <!-- Input Animations -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Input Animations</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Input Animations</h2>
       <div class="space-y-4">
         <input class="input" placeholder="Standard input with transitions" />
         <input class="input-lg" placeholder="Large input with enhanced focus ring" />
@@ -40,7 +40,7 @@
 
     <!-- Link Animations -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Link Animations</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Link Animations</h2>
       <div class="space-y-2">
         <div><a href="#" class="link">Simple Link</a></div>
         <div><a href="#" class="link-underline">Link with Animated Underline</a></div>
@@ -50,7 +50,7 @@
 
     <!-- Loading States -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Loading States</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Loading States</h2>
       <div class="space-y-4">
         <div class="pulse-subtle">
           <p>Content with subtle pulse animation</p>
@@ -66,7 +66,7 @@
 
     <!-- Collapsible Section -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Collapsible Content</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Collapsible Content</h2>
       <button @click="toggleAccordion" class="btn mb-4">
         Toggle Accordion
       </button>
@@ -80,7 +80,7 @@
 
     <!-- List Animations -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Staggered List Animation</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Staggered List Animation</h2>
       <button @click="toggleList" class="btn mb-4">
         {{ showList ? 'Hide List' : 'Show List' }}
       </button>
@@ -95,7 +95,7 @@
 
     <!-- Modal Example -->
     <section class="card">
-      <h2 class="text-xl font-bold mb-4 text-neon-mint">Modal Animation</h2>
+      <h2 class="text-xl font-bold mb-4 text-[var(--color-accent-cyan)]">Modal Animation</h2>
       <button @click="showModal = true" class="btn hover-lift">
         Show Modal
       </button>

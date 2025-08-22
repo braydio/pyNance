@@ -46,7 +46,7 @@ function capitalize(word) {
 <style scoped>
 @reference "../../assets/css/main.css";
 .bg-primary {
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
 }
 .text-muted {
   color: var(--color-text-muted);
