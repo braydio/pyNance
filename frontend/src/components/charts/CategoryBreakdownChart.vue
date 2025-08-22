@@ -1,5 +1,7 @@
 <template>
-  <div class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]">
+  <div
+    class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
+  >
     <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
   </div>
 </template>
@@ -13,13 +15,14 @@ import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
-import { formatAmount } from "@/utils/format"
+import { formatAmount } from '@/utils/format'
+import { getAccentColor } from '@/utils/colors'
 
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
   selectedCategoryIds: { type: Array, default: () => [] },
-  groupOthers: { type: Boolean, default: true }
+  groupOthers: { type: Boolean, default: true },
 })
 
 const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
@@ -28,19 +31,9 @@ const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
 
-const groupColorVars = [
-  '--color-accent-purple',
-  '--color-accent-green',
-  '--color-accent-yellow',
-  '--color-accent-red',
-  '--color-accent-blue',
-  '--color-accent-orange',
-  '--color-accent-magenta',
-  '--color-accent-cyan'
-]
+// Cycle through theme accent colors for each dataset segment
 function getGroupColor(idx) {
-  const name = groupColorVars[idx % groupColorVars.length]
-  return getStyle(name)
+  return getAccentColor(idx)
 }
 
 function destroyPreviousChart(canvasEl) {
@@ -51,32 +44,29 @@ function destroyPreviousChart(canvasEl) {
 }
 
 function getStyle(name) {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(name)
-    .trim()
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
 function extractStackedBarData(tree, selectedIds = []) {
   // Show parent only if any of its children is selected
   const parents = tree.filter(
-    node =>
-      node.children && node.children.some(child => selectedIds.includes(child.id))
+    (node) => node.children && node.children.some((child) => selectedIds.includes(child.id)),
   )
-  const labels = parents.map(p => p.label)
+  const labels = parents.map((p) => p.label)
   // All visible children (segments)
   const allChildLabels = [
     ...new Set(
-      parents.flatMap(p =>
-        (p.children || []).filter(c => selectedIds.includes(c.id)).map(c => c.label)
-      )
-    )
+      parents.flatMap((p) =>
+        (p.children || []).filter((c) => selectedIds.includes(c.id)).map((c) => c.label),
+      ),
+    ),
   ]
   // Datasets: Only selected children
   const datasets = allChildLabels.map((childLabel, colorIdx) => ({
     label: childLabel,
-    data: parents.map(p => {
-      const child = (p.children || []).find(c => c.label === childLabel)
-      return (child && selectedIds.includes(child.id)) ? child.amount : 0
+    data: parents.map((p) => {
+      const child = (p.children || []).find((c) => c.label === childLabel)
+      return child && selectedIds.includes(child.id) ? child.amount : 0
     }),
     backgroundColor: getGroupColor(colorIdx),
     borderWidth: 2,
@@ -101,11 +91,15 @@ async function renderChart() {
     type: 'bar',
     data: {
       labels: labels.length ? labels : [' '],
-      datasets: datasets.length ? datasets : [{
-        label: 'Spending',
-        data: [0],
-        backgroundColor: getGroupColor(0),
-      }],
+      datasets: datasets.length
+        ? datasets
+        : [
+            {
+              label: 'Spending',
+              data: [0],
+              backgroundColor: getGroupColor(0),
+            },
+          ],
     },
     options: {
       responsive: true,
@@ -115,10 +109,10 @@ async function renderChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: context => {
+            label: (context) => {
               const val = context.raw ?? 0
               return `${context.dataset.label}: ${formatAmount(val)}`
-            }
+            },
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -130,13 +124,16 @@ async function renderChart() {
       onClick(evt) {
         if (!chartInstance.value) return
         const points = chartInstance.value.getElementsAtEventForMode(
-          evt, 'nearest', { intersect: true }, false
+          evt,
+          'nearest',
+          { intersect: true },
+          false,
         )
         if (points.length) {
           const index = points[0].index
           const label = chartInstance.value.data.labels[index]
-          const node = categoryTree.value.find(cat => cat.label === label)
-          const ids = (node?.children || []).map(c => c.id)
+          const node = categoryTree.value.find((cat) => cat.label === label)
+          const ids = (node?.children || []).map((c) => c.id)
           emit('bar-click', { label, ids })
         }
       },
@@ -156,7 +153,7 @@ async function renderChart() {
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => formatAmount(value),
+            callback: (value) => formatAmount(value),
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -184,9 +181,7 @@ async function fetchData() {
           id: 'others',
           label: 'Others',
           amount: parseFloat(otherTotal.toFixed(2)),
-          children: others.length
-            ? others
-            : [{ id: 'others', label: 'Others', amount: 0 }]
+          children: others.length ? others : [{ id: 'others', label: 'Others', amount: 0 }],
         }
 
         processed = [...topFour, otherBar]
@@ -195,7 +190,7 @@ async function fetchData() {
       categoryTree.value = processed
       emit(
         'categories-change',
-        categoryTree.value.flatMap(cat => (cat.children || []).map(child => child.id))
+        categoryTree.value.flatMap((cat) => (cat.children || []).map((child) => child.id)),
       )
       updateSummary()
       await renderChart()
@@ -229,10 +224,7 @@ function updateSummary() {
 onMounted(fetchData)
 
 // Refetch data when range or grouping changes
-watch(
-  () => [props.startDate, props.endDate, props.groupOthers],
-  debounce(fetchData, 200)
-)
+watch(() => [props.startDate, props.endDate, props.groupOthers], debounce(fetchData, 200))
 
 // When selectedCategoryIds changes, update summary and re-render
 watch(
@@ -241,7 +233,7 @@ watch(
     updateSummary()
     await renderChart()
   }, 200),
-  { deep: true }
+  { deep: true },
 )
 
 onUnmounted(() => {
