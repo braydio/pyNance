@@ -9,9 +9,9 @@
     <div class="stats-header">
       <h3 class="stats-title">Financial Summary</h3>
       <div class="stats-controls">
-        <button 
-          class="stats-toggle-btn" 
-          :class="{ 'extended': isExtended }"
+        <button
+          class="stats-toggle-btn"
+          :class="{ extended: isExtended }"
           @click="toggleView"
           :title="isExtended ? 'Switch to Basic View' : 'Switch to Extended View'"
         >
@@ -97,16 +97,16 @@ import { formatAmount } from '@/utils/format'
 const props = defineProps({
   summary: {
     type: Object,
-    default: () => ({ totalIncome: 0, totalExpenses: 0, totalNet: 0 })
+    default: () => ({ totalIncome: 0, totalExpenses: 0, totalNet: 0 }),
   },
   chartData: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   zoomedOut: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 // Toggle state for basic/extended view
@@ -118,8 +118,8 @@ function toggleView() {
 
 // Basic computed properties
 const netClass = computed(() => ({
-  'positive': props.summary.totalNet >= 0,
-  'negative': props.summary.totalNet < 0
+  positive: props.summary.totalNet >= 0,
+  negative: props.summary.totalNet < 0,
 }))
 
 // Extended statistics calculations
@@ -133,19 +133,19 @@ const extendedStats = computed(() => {
       movingAverage7: 0,
       movingAverage30: 0,
       trend: 0,
-      volatility: 0
+      volatility: 0,
     }
   }
 
   const days = data.length
-  
+
   // Daily averages
   const avgDailyIncome = props.summary.totalIncome / days
   const avgDailyExpenses = props.summary.totalExpenses / days
   const avgDailyNet = props.summary.totalNet / days
 
   // Moving averages
-  const netValues = data.map(d => d.net?.parsedValue || 0)
+  const netValues = data.map((d) => d.net?.parsedValue || 0)
   const movingAverage7 = calculateMovingAverage(netValues, 7)
   const movingAverage30 = calculateMovingAverage(netValues, 30)
 
@@ -162,7 +162,7 @@ const extendedStats = computed(() => {
     movingAverage7,
     movingAverage30,
     trend,
-    volatility
+    volatility,
   }
 })
 
@@ -170,7 +170,7 @@ const extendedStats = computed(() => {
 const trendClass = computed(() => ({
   'trend-up': extendedStats.value.trend > 0,
   'trend-down': extendedStats.value.trend < 0,
-  'trend-flat': extendedStats.value.trend === 0
+  'trend-flat': extendedStats.value.trend === 0,
 }))
 
 const trendLabel = computed(() => {
@@ -190,7 +190,7 @@ const volatilityLabel = computed(() => {
 // Statistical calculation functions
 function calculateMovingAverage(values, period) {
   if (values.length < period) return values.reduce((a, b) => a + b, 0) / values.length
-  
+
   const recent = values.slice(-period)
   return recent.reduce((a, b) => a + b, 0) / period
 }
@@ -198,30 +198,34 @@ function calculateMovingAverage(values, period) {
 function calculateTrend(values) {
   const n = values.length
   if (n < 2) return 0
-  
+
   const x = Array.from({ length: n }, (_, i) => i)
   const sumX = x.reduce((a, b) => a + b, 0)
   const sumY = values.reduce((a, b) => a + b, 0)
   const sumXY = x.reduce((sum, xi, i) => sum + xi * values[i], 0)
   const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0)
-  
+
   return (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX)
 }
 
 function calculateVolatility(values) {
   const n = values.length
   if (n < 2) return 0
-  
+
   const mean = values.reduce((a, b) => a + b, 0) / n
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n
   return Math.sqrt(variance)
 }
 
 // Watch for chart data changes to recalculate
-watch(() => [props.chartData, props.zoomedOut], () => {
-  // Trigger reactivity by accessing computed
-  extendedStats.value
-}, { deep: true })
+watch(
+  () => [props.chartData, props.zoomedOut],
+  () => {
+    // Trigger reactivity by accessing computed
+    extendedStats.value
+  },
+  { deep: true },
+)
 </script>
 
 <style scoped>
@@ -301,7 +305,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 }
 
 .stat-expenses .stat-label {
-  color: #ef4444;
+  color: var(--color-accent-red);
 }
 
 .stat-net.positive .stat-label,
@@ -311,7 +315,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 
 .stat-net.negative .stat-label,
 .stat-net.negative .stat-value {
-  color: #ef4444;
+  color: var(--color-accent-red);
 }
 
 .extended-stats {
@@ -365,7 +369,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 }
 
 .trend-down {
-  color: #ef4444;
+  color: var(--color-accent-red);
 }
 
 .trend-flat {
@@ -399,11 +403,11 @@ watch(() => [props.chartData, props.zoomedOut], () => {
     flex-direction: column;
     gap: 0.75rem;
   }
-  
+
   .stats-grid {
     grid-template-columns: 1fr;
   }
-  
+
   .stats-header {
     flex-direction: column;
     gap: 0.5rem;

@@ -6,12 +6,18 @@
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
-      <button :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']" @click="toggle('assets')"
-        aria-label="Show Assets">
+      <button
+        :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']"
+        @click="toggle('assets')"
+        aria-label="Show Assets"
+      >
         Assets
       </button>
-      <button :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
-        @click="toggle('liabilities')" aria-label="Show Liabilities">
+      <button
+        :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
+        @click="toggle('liabilities')"
+        aria-label="Show Liabilities"
+      >
         Liabilities
       </button>
       <button class="bs-sort-btn" @click="toggleSort" aria-label="Toggle sort order">
@@ -23,28 +29,52 @@
       <ul v-if="expanded === 'assets'" class="bs-list">
         <template v-for="account in assetAccounts" :key="account.id">
           <li class="bs-account-container">
-            <div class="bs-row bs-row-asset" @click="toggleDetails(account.id)" role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)" @keydown.space="toggleDetails(account.id)">
+            <div
+              class="bs-row bs-row-asset"
+              @click="toggleDetails(account.id)"
+              role="button"
+              tabindex="0"
+              @keydown.enter="toggleDetails(account.id)"
+              @keydown.space="toggleDetails(account.id)"
+            >
               <div class="bs-stripe bs-stripe-green"></div>
               <div class="bs-logo-container">
-                <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-                  loading="lazy" />
+                <img
+                  v-if="account.institution_icon_url"
+                  :src="account.institution_icon_url"
+                  alt="Bank logo"
+                  class="bs-logo"
+                  loading="lazy"
+                />
                 <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
               </div>
               <div class="bs-details">
                 <div class="bs-name">
-                  <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
+                  <span
+                    class="bs-toggle-icon"
+                    :class="{ 'bs-expanded': openAccountId === account.id }"
+                    >▶</span
+                  >
                   {{ account.name }}
                 </div>
                 <div class="bs-mask">
                   <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                  <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                  <span
+                    v-else
+                    class="bs-no-mask-icon"
+                    role="img"
+                    aria-label="Account number unavailable"
+                    >∗</span
+                  >
                 </div>
               </div>
               <div class="bs-sparkline">
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount bs-amount-green">{{ format(account.adjusted_balance) }}</span>
+                <span class="bs-amount bs-amount-green">{{
+                  format(account.adjusted_balance)
+                }}</span>
               </div>
             </div>
           </li>
@@ -56,7 +86,9 @@
                   <span class="bs-tx-name">{{ tx.name }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
-                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">No recent transactions</li>
+                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                  No recent transactions
+                </li>
               </ul>
             </div>
           </li>
@@ -76,28 +108,52 @@
       <ul v-if="expanded === 'liabilities'" class="bs-list">
         <template v-for="account in liabilityAccounts" :key="account.id">
           <li class="bs-account-container">
-            <div class="bs-row bs-row-liability" @click="toggleDetails(account.id)" role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)" @keydown.space="toggleDetails(account.id)">
+            <div
+              class="bs-row bs-row-liability"
+              @click="toggleDetails(account.id)"
+              role="button"
+              tabindex="0"
+              @keydown.enter="toggleDetails(account.id)"
+              @keydown.space="toggleDetails(account.id)"
+            >
               <div class="bs-stripe bs-stripe-yellow"></div>
               <div class="bs-logo-container">
-                <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-                  loading="lazy" />
+                <img
+                  v-if="account.institution_icon_url"
+                  :src="account.institution_icon_url"
+                  alt="Bank logo"
+                  class="bs-logo"
+                  loading="lazy"
+                />
                 <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
               </div>
               <div class="bs-details">
                 <div class="bs-name">
-                  <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
+                  <span
+                    class="bs-toggle-icon"
+                    :class="{ 'bs-expanded': openAccountId === account.id }"
+                    >▶</span
+                  >
                   {{ account.name }}
                 </div>
                 <div class="bs-mask">
                   <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                  <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                  <span
+                    v-else
+                    class="bs-no-mask-icon"
+                    role="img"
+                    aria-label="Account number unavailable"
+                    >∗</span
+                  >
                 </div>
               </div>
               <div class="bs-sparkline">
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount bs-amount-yellow">{{ format(account.adjusted_balance) }}</span>
+                <span class="bs-amount bs-amount-yellow">{{
+                  format(account.adjusted_balance)
+                }}</span>
               </div>
             </div>
           </li>
@@ -109,7 +165,9 @@
                   <span class="bs-tx-name">{{ tx.name }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
-                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">No recent transactions</li>
+                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                  No recent transactions
+                </li>
               </ul>
             </div>
           </li>
@@ -126,8 +184,12 @@
     </Transition>
 
     <div
-      v-if="((expanded === 'assets' && !assetAccounts.length) || (expanded === 'liabilities' && !liabilityAccounts.length))"
-      class="bs-empty">
+      v-if="
+        (expanded === 'assets' && !assetAccounts.length) ||
+        (expanded === 'liabilities' && !liabilityAccounts.length)
+      "
+      class="bs-empty"
+    >
       No accounts available for this category.
     </div>
   </div>
@@ -186,25 +248,33 @@ function toggleSort() {
 const assetAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
-      .filter(a => a.adjusted_balance >= 0)
-      .sort((a, b) => (sortAsc.value ? 1 : -1) * (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)))
-      .slice(0, 7)
-    : []
+        .filter((a) => a.adjusted_balance >= 0)
+        .sort(
+          (a, b) =>
+            (sortAsc.value ? 1 : -1) *
+            (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)),
+        )
+        .slice(0, 7)
+    : [],
 )
 const liabilityAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
-      .filter(a => a.adjusted_balance < 0)
-      .sort((a, b) => (sortAsc.value ? 1 : -1) * (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)))
-      .slice(0, 7)
-    : []
+        .filter((a) => a.adjusted_balance < 0)
+        .sort(
+          (a, b) =>
+            (sortAsc.value ? 1 : -1) *
+            (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)),
+        )
+        .slice(0, 7)
+    : [],
 )
 
 const totalAssets = computed(() =>
-  assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0)
+  assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
 const totalLiabilities = computed(() =>
-  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0)
+  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
 
 const format = (val) => {
@@ -221,13 +291,18 @@ const format = (val) => {
   return formatter.format(val)
 }
 
-  function mask(maskString) {
-    if (!maskString) return null
-    return maskString.toString().slice(-4)
-  }
+function mask(maskString) {
+  if (!maskString) return null
+  return maskString.toString().slice(-4)
+}
 function initials(name) {
   if (!name) return '??'
-  return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 }
 </script>
 
@@ -318,7 +393,7 @@ function initials(name) {
   border-radius: 1rem 1rem 0 0;
 }
 
- .bs-tab {
+.bs-tab {
   padding: 0.5rem 1rem;
   background: var(--color-bg-sec);
   color: var(--color-accent-cyan);
@@ -326,7 +401,9 @@ function initials(name) {
   border-radius: 0.8rem 0.8rem 0 0;
   font-size: 1rem;
   font-weight: 600;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
   cursor: pointer;
   position: relative;
 }
@@ -360,7 +437,9 @@ function initials(name) {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition:
+    background 0.2s,
+    color 0.2s;
 }
 .bs-sort-btn:hover,
 .bs-sort-btn:focus-visible {
@@ -456,7 +535,11 @@ function initials(name) {
 }
 
 .bs-stripe-yellow {
-  background: linear-gradient(180deg, var(--color-accent-yellow) 20%, #ffe89b 100%);
+  background: linear-gradient(
+    180deg,
+    var(--color-accent-yellow) 20%,
+    var(--accent-yellow-soft) 100%
+  );
 }
 
 .bs-logo-container {
@@ -667,7 +750,7 @@ function initials(name) {
 /* Animations */
 .bs-slide-enter-active,
 .bs-slide-leave-active {
-  transition: all 0.45s cubic-bezier(.44, .11, .42, 1.07);
+  transition: all 0.45s cubic-bezier(0.44, 0.11, 0.42, 1.07);
 }
 
 .bs-slide-enter-from {
@@ -711,66 +794,15 @@ function initials(name) {
   }
 }
 </style>
-/* Account details dropdown styles */
-.bs-details-btn-section {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2;
-}
-.bs-details-btn {
-  background: none;
-  border: none;
-  color: var(--color-text-muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-  padding: 0.2rem 0.5rem;
-  border-radius: 0.25rem;
-  transition: background 0.2s;
-}
-.bs-details-btn:hover {
-  background: var(--color-bg-dark);
-}
-.bs-details-row {
-  grid-column: 1 / -1;
-  background: var(--color-bg-dark);
-  padding: 0.5rem 1rem;
-}
-.bs-details-content {
-  font-size: 0.85rem;
-  color: var(--color-text-light);
-}
-.bs-details-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-.bs-tx-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.25rem 0;
-  border-bottom: 1px solid var(--divider);
-}
-.bs-tx-date {
-  flex: 0 0 auto;
-  width: 5ch;
-  color: var(--color-text-muted);
-}
-.bs-tx-name {
-  flex: 1 1 auto;
-  padding: 0 0.5rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.bs-tx-amount {
-  flex: 0 0 auto;
-  width: 7ch;
-  text-align: right;
-}
-.bs-tx-empty {
-  text-align: center;
-  color: var(--color-text-muted);
-  font-style: italic;
-  padding: 0.5rem 0;
-}
+/* Account details dropdown styles */ .bs-details-btn-section { display: flex; align-items: center;
+justify-content: center; z-index: 2; } .bs-details-btn { background: none; border: none; color:
+var(--color-text-muted); font-size: 0.85rem; cursor: pointer; padding: 0.2rem 0.5rem; border-radius:
+0.25rem; transition: background 0.2s; } .bs-details-btn:hover { background: var(--color-bg-dark); }
+.bs-details-row { grid-column: 1 / -1; background: var(--color-bg-dark); padding: 0.5rem 1rem; }
+.bs-details-content { font-size: 0.85rem; color: var(--color-text-light); } .bs-details-list {
+list-style: none; margin: 0; padding: 0; } .bs-tx-row { display: flex; justify-content:
+space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--divider); } .bs-tx-date { flex: 0
+0 auto; width: 5ch; color: var(--color-text-muted); } .bs-tx-name { flex: 1 1 auto; padding: 0
+0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .bs-tx-amount { flex: 0 0
+auto; width: 7ch; text-align: right; } .bs-tx-empty { text-align: center; color:
+var(--color-text-muted); font-style: italic; padding: 0.5rem 0; }
