@@ -33,6 +33,15 @@
   --color-accent-purple-hover: #b093e6;
   --color-accent: var(--color-accent-cyan);
 
+  --color-success: var(--color-accent-green);
+  --color-bg-success: var(--color-accent-green);
+  --color-error: var(--color-accent-red);
+  --color-bg-error: var(--color-accent-red);
+  --color-warning: var(--color-accent-orange);
+  --color-bg-warning: var(--color-accent-orange);
+  --color-info: var(--color-accent-blue);
+  --color-bg-info: var(--color-accent-blue);
+
   --hover-bg: rgba(255, 255, 255, 0.05);
   --color-hover-light: rgba(255, 255, 255, 0.08);
   --hover-glow: 0 0 8px rgba(113, 156, 214, 0.6);

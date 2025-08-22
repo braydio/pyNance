@@ -60,6 +60,7 @@ either the external `account_id` or the numeric primary key. An optional `range`
 query parameter such as `7d`, `30d`, `90d`, or `365d` limits how many days are
 returned.
 
+
 **Query Parameters**
 
 - `range` – number of days of history to return (default: `30d`)

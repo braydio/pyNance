@@ -10,7 +10,7 @@ import { computed } from 'vue';
 const props = defineProps({
   variant: {
     type: String,
-    default: '', // 'outline', 'success', 'alert'
+    default: '', // 'outline', 'primary', 'success', 'alert'
   },
   pill: {
     type: Boolean,

@@ -1,5 +1,5 @@
 <template>
-  <div class="transactions-page container space-y-8">
+  <div class="transactions-page container py-8 space-y-8">
     <!-- Header -->
     <Card class="p-6 flex items-center gap-3">
       <CreditCard class="w-6 h-6" />
