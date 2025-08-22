@@ -1,9 +1,9 @@
-// scripts/classify_components.js
+/**
+ * Suggest component groupings by scanning filenames and matching keywords.
+ */
 
-import fs from 'fs';
 import path from 'path';
-import { glob } from 'glob'
-  ;
+import { glob } from 'glob';
 
 const COMPONENTS_DIR = path.resolve('frontend/src/components');
 
