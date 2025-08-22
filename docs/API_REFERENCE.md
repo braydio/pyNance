@@ -55,9 +55,11 @@ Response body on success:
 
 **GET /api/accounts/<id>/history**
 
-Returns daily balances for the specified account. Accepts an optional `range`
-query parameter such as `7d`, `30d`, `90d`, or `365d` to limit how many days
-are returned.
+Returns daily balances for the specified account. The `<id>` segment accepts
+either the external `account_id` or the numeric primary key. An optional `range`
+query parameter such as `7d`, `30d`, `90d`, or `365d` limits how many days are
+returned.
+
 
 **Query Parameters**
 
