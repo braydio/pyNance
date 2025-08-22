@@ -38,6 +38,7 @@ frontend/src/components/
 │   └── NetYearComparisonChart.vue
 │   └── AccountsReorderChart.vue
 │   └── AssetsBarTrended.vue
+│   └── AccountBalanceHistoryChart.vue
 │
 ├── tables/              # Structured row/column UI
 │   └── AccountsTable.vue

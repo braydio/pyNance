@@ -24,6 +24,7 @@ This document serves as the authoritative reference for API routing conventions,
 GET    /api/transactions/get_transactions
 GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
+GET    /api/accounts/<id>/history
 GET    /api/institutions
 POST   /api/institutions/<id>/refresh
 GET    /api/goals
@@ -50,6 +51,29 @@ Response body on success:
 
 ```json
 { "status": "success", "updated_accounts": ["name"], "refreshed_counts": { "Bank A": 2 } }
+```
+
+**GET /api/accounts/<id>/history**
+
+Returns daily balances for the specified account. The `<id>` segment accepts
+either the external `account_id` or the numeric primary key. An optional `range`
+query parameter such as `7d`, `30d`, `90d`, or `365d` limits how many days are
+returned.
+
+**Query Parameters**
+
+- `range` – number of days of history to return (default: `30d`)
+
+**Response Body**
+
+```json
+{
+  "accountId": "uuid",
+  "asOfDate": "YYYY-MM-DD",
+  "balances": [
+    {"date": "YYYY-MM-DD", "balance": 1523.21}
+  ]
+}
 ```
 
 ### 🔹 Provider-Specific Resources

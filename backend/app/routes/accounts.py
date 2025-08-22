@@ -454,31 +454,58 @@ def account_net_changes(account_id):
 # Endpoint to fetch account balance history
 @accounts.route("/<account_id>/history", methods=["GET"])
 def get_account_history(account_id):
-    """Return daily balance history for a given account."""
-    from app.models import AccountHistory
+    """Return reverse-mapped daily balance history for an account.
+
+    The calculation starts from the account's current balance and walks
+    backwards through transaction deltas to derive prior day balances.
+    A ``range`` query parameter like ``7d`` or ``30d`` limits how many
+    days are returned. Both the external ``account_id`` and internal numeric
+    ``id`` are accepted in the path segment.
+    """
+    from datetime import timedelta
+    from app.models import Account, Transaction
+    from app.services.account_history import compute_balance_history
+    from sqlalchemy import func
 
     try:
-        # Optional date filters (ISO format)
-        start_date_str = request.args.get("start_date")
-        end_date_str = request.args.get("end_date")
-        query = AccountHistory.query.filter_by(account_id=account_id)
-        if start_date_str:
-            start_dt = datetime.fromisoformat(start_date_str)
-            query = query.filter(AccountHistory.date >= start_dt)
-        if end_date_str:
-            end_dt = datetime.fromisoformat(end_date_str)
-            query = query.filter(AccountHistory.date <= end_dt)
-        # Retrieve and sort records by date
-        records = query.order_by(AccountHistory.date.asc()).all()
-        history = [
-            {
-                "date": rec.date.isoformat(),
-                "balance": rec.balance,
-                "is_hidden": rec.is_hidden,
-            }
-            for rec in records
-        ]
-        return jsonify({"status": "success", "history": history}), 200
+        range_param = request.args.get("range", "30d")
+        days = int(range_param.rstrip("d")) if range_param.endswith("d") else 30
+
+        # Allow lookups by either ``account_id`` (string) or numeric primary ``id``.
+        account = Account.query.filter_by(account_id=account_id).first()
+        if not account and account_id.isdigit():
+            account = Account.query.filter_by(id=int(account_id)).first()
+        if not account:
+            return jsonify({"error": "Account not found"}), 404
+
+        end_date = datetime.now(timezone.utc).date()
+        start_date = end_date - timedelta(days=days - 1)
+
+        tx_rows = (
+            db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
+            .filter(Transaction.account_id == account_id)
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+            .group_by(func.date(Transaction.date))
+            .all()
+        )
+
+        txs = [{"date": row[0], "amount": float(row[1])} for row in tx_rows]
+
+        balances = compute_balance_history(
+            account.balance, txs, start_date, end_date
+        )
+
+        return (
+            jsonify(
+                {
+                    "accountId": account.account_id,
+                    "asOfDate": end_date.isoformat(),
+                    "balances": balances,
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Error in get_account_history: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
