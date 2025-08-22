@@ -97,8 +97,10 @@ Replace placeholder chart with:
 
 ### 3.5 Cypress Tests
 - Visit `/accounts/:id`.
-- Assert chart renders and tooltip shows "Balance: $X".
-- Verify filter dropdown switches ranges.
+- Assert `[data-testid="history-chart"]` exists and tooltip shows
+  "Balance: $X".
+- Change `[data-testid="filter-dropdown"]` to a new range and verify
+  new data loads.
 
 ## 4. Documentation
 - Describe reverse-mapping algorithm and `/accounts/:id/history` endpoint.

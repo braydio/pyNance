@@ -47,6 +47,21 @@
       </div>
     </Card>
 
+    <!-- Balance History -->
+    <section class="card p-4 bg-[var(--color-bg-secondary)] rounded-lg shadow-md space-y-4">
+      <div class="flex justify-end">
+        <select v-model="selectedRange" data-testid="filter-dropdown" class="border rounded p-1">
+          <option value="7d">7d</option>
+          <option value="30d">30d</option>
+          <option value="90d">90d</option>
+          <option value="365d">365d</option>
+        </select>
+      </div>
+      <div v-if="loadingHistory">Loading...</div>
+      <div v-else-if="historyError" class="text-error">Failed to load history</div>
+      <AccountBalanceHistoryChart v-else :balances="accountHistory" data-testid="history-chart" />
+    </section>
+
     <!-- Recent Transactions -->
     <Card class="p-6 space-y-2">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
@@ -81,9 +96,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchNetChanges, fetchRecentTransactions } from '@/api/accounts'
+import { fetchNetChanges, fetchRecentTransactions, fetchAccountHistory } from '@/api/accounts'
 import { formatAmount } from "@/utils/format"
 
 // State
@@ -102,6 +117,10 @@ const loadingSummary = ref(false)
 const loadingTransactions = ref(false)
 const summaryError = ref(null)
 const transactionsError = ref(null)
+const accountHistory = ref([])
+const selectedRange = ref('30d')
+const loadingHistory = ref(false)
+const historyError = ref(null)
 
 // Methods
 function toggleManualTokenMode() {
@@ -118,6 +137,18 @@ function toggleTellerRefresh() {
 
 function refreshCharts() {
   reorderChart.value?.refresh?.()
+}
+
+async function loadHistory() {
+  loadingHistory.value = true
+  try {
+    const res = await fetchAccountHistory(accountId, selectedRange.value)
+    accountHistory.value = res.balances || []
+  } catch (e) {
+    historyError.value = e
+  } finally {
+    loadingHistory.value = false
+  }
 }
 
 onMounted(async () => {
@@ -143,7 +174,11 @@ onMounted(async () => {
   } finally {
     loadingTransactions.value = false
   }
+
+  await loadHistory()
 })
+
+watch(selectedRange, loadHistory)
 
 // Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
@@ -155,6 +190,7 @@ import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vu
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
+import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import { Wallet } from 'lucide-vue-next'
