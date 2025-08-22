@@ -20,24 +20,30 @@
       >
         Liabilities
       </button>
-      <button class="bs-sort-btn" @click="toggleSort" aria-label="Toggle sort order">
+      <button
+        class="bs-sort-btn"
+        :style="{ '--accent': expandedAccent }"
+        @click="toggleSort"
+        aria-label="Toggle sort order"
+      >
         {{ sortAsc ? 'Sort: ▲' : 'Sort ▼' }}
       </button>
     </div>
 
     <Transition name="bs-slide">
       <ul v-if="expanded === 'assets'" class="bs-list">
-        <template v-for="account in assetAccounts" :key="account.id">
+        <template v-for="(account, idx) in assetAccounts" :key="account.id">
           <li class="bs-account-container">
             <div
-              class="bs-row bs-row-asset"
+              class="bs-row"
+              :style="{ '--accent': accentColor(account, idx) }"
               @click="toggleDetails(account.id)"
               role="button"
               tabindex="0"
               @keydown.enter="toggleDetails(account.id)"
               @keydown.space="toggleDetails(account.id)"
             >
-              <div class="bs-stripe bs-stripe-green"></div>
+              <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
                   v-if="account.institution_icon_url"
@@ -72,7 +78,7 @@
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount bs-amount-green">{{
+                <span class="bs-amount">{{
                   format(account.adjusted_balance)
                 }}</span>
               </div>
@@ -94,10 +100,10 @@
           </li>
         </template>
         <!-- Assets summary footer -->
-        <li v-if="assetAccounts.length" class="bs-summary-row">
+        <li v-if="assetAccounts.length" class="bs-summary-row" style="--accent: var(--color-accent-cyan)">
           <div></div>
           <div class="bs-summary-label">Total Assets</div>
-          <div class="bs-summary-amount bs-amount-green">
+          <div class="bs-summary-amount">
             {{ format(totalAssets) }}
           </div>
         </li>
@@ -106,17 +112,18 @@
 
     <Transition name="bs-slide">
       <ul v-if="expanded === 'liabilities'" class="bs-list">
-        <template v-for="account in liabilityAccounts" :key="account.id">
+        <template v-for="(account, idx) in liabilityAccounts" :key="account.id">
           <li class="bs-account-container">
             <div
-              class="bs-row bs-row-liability"
+              class="bs-row"
+              :style="{ '--accent': accentColor(account, idx) }"
               @click="toggleDetails(account.id)"
               role="button"
               tabindex="0"
               @keydown.enter="toggleDetails(account.id)"
               @keydown.space="toggleDetails(account.id)"
             >
-              <div class="bs-stripe bs-stripe-yellow"></div>
+              <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
                   v-if="account.institution_icon_url"
@@ -151,7 +158,7 @@
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount bs-amount-yellow">{{
+                <span class="bs-amount">{{
                   format(account.adjusted_balance)
                 }}</span>
               </div>
@@ -173,10 +180,10 @@
           </li>
         </template>
         <!-- Liabilities summary footer -->
-        <li v-if="liabilityAccounts.length" class="bs-summary-row">
+        <li v-if="liabilityAccounts.length" class="bs-summary-row" style="--accent: var(--color-accent-yellow)">
           <div></div>
           <div class="bs-summary-label">Total Liabilities</div>
-          <div class="bs-summary-amount bs-amount-yellow">
+          <div class="bs-summary-amount">
             {{ format(totalLiabilities) }}
           </div>
         </li>
@@ -203,6 +210,7 @@ import { fetchRecentTransactions } from '@/api/accounts'
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
+  useSpectrum: { type: Boolean, default: false },
 })
 
 const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
@@ -236,6 +244,37 @@ function toggleDetails(accountId) {
 
 const expanded = ref('assets')
 const sortAsc = ref(false)
+
+const spectrum = [
+  'var(--color-accent-cyan)',
+  'var(--color-accent-yellow)',
+  'var(--color-accent-red)',
+  'var(--color-accent-blue)',
+]
+
+const expandedAccent = computed(() =>
+  expanded.value === 'liabilities'
+    ? 'var(--color-accent-yellow)'
+    : 'var(--color-accent-cyan)'
+)
+
+/** Return accent color for an account */
+function accentColor(account, index) {
+  if (props.useSpectrum) {
+    const subtype = (account.subtype || '').toLowerCase()
+    const map = {
+      checking: 'var(--color-accent-cyan)',
+      savings: 'var(--color-accent-blue)',
+      credit: 'var(--color-accent-red)',
+      'credit card': 'var(--color-accent-red)',
+      loan: 'var(--color-accent-yellow)',
+    }
+    return map[subtype] || spectrum[index % spectrum.length]
+  }
+  return account.adjusted_balance >= 0
+    ? 'var(--color-accent-cyan)'
+    : 'var(--color-accent-yellow)'
+}
 
 function toggle(type) {
   expanded.value = expanded.value === type ? null : type
@@ -431,8 +470,8 @@ function initials(name) {
 .bs-sort-btn {
   padding: 0.4rem 0.8rem;
   background: var(--color-bg-sec);
-  color: var(--color-accent-cyan);
-  border: 1px solid var(--divider);
+  color: var(--accent);
+  border: 1px solid var(--accent);
   border-radius: 0.8rem;
   font-size: 0.85rem;
   font-weight: 600;
@@ -443,7 +482,7 @@ function initials(name) {
 }
 .bs-sort-btn:hover,
 .bs-sort-btn:focus-visible {
-  background: var(--color-accent-cyan);
+  background: var(--accent);
   color: var(--color-bg-dark);
 }
 
@@ -466,7 +505,8 @@ function initials(name) {
   padding: 0.39rem 0.45rem 0.39rem 0.1rem;
   box-shadow: 0 2px 14px var(--shadow, #1c274055);
   position: relative;
-  border: 2px solid var(--color-accent-cyan);
+  border: 2px solid var(--accent, var(--color-accent-cyan));
+  border-left: 6px solid var(--accent, var(--color-accent-cyan));
   min-height: 36px;
   gap: 0.45rem;
   will-change: transform, box-shadow;
@@ -478,11 +518,11 @@ function initials(name) {
 .bs-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 20px var(--shadow, #1c274077);
-  border-color: var(--color-accent-cyan);
+  border-color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-row:focus {
-  outline: 2px solid var(--color-accent-cyan);
+  outline: 2px solid var(--accent, var(--color-accent-cyan));
   outline-offset: 2px;
 }
 
@@ -490,31 +530,16 @@ function initials(name) {
   transform: translateY(0);
 }
 
-.bs-row-asset {
-  border-left: 6px solid var(--color-accent-cyan);
-}
-
-.bs-row-liability {
-  border-left: 6px solid var(--color-accent-yellow);
-}
-
 .bs-sparkline {
   width: 60px;
   height: 20px;
   align-self: center;
-}
-
-.bs-row-asset .bs-sparkline {
-  color: var(--color-accent-cyan);
-}
-
-.bs-row-liability .bs-sparkline {
-  color: var(--color-accent-yellow);
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-no-mask-icon {
   display: inline-block;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
   font-size: 0.8rem;
 }
 
@@ -528,18 +553,7 @@ function initials(name) {
   z-index: 1;
   opacity: 0.75;
   pointer-events: none;
-}
-
-.bs-stripe-green {
-  background: linear-gradient(180deg, var(--color-accent-cyan) 20%, var(--color-accent-blue) 100%);
-}
-
-.bs-stripe-yellow {
-  background: linear-gradient(
-    180deg,
-    var(--color-accent-yellow) 20%,
-    var(--accent-yellow-soft) 100%
-  );
+  background: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-logo-container {
@@ -552,7 +566,7 @@ function initials(name) {
   align-items: center;
   justify-content: center;
   z-index: 2;
-  border: 1.7px solid var(--color-accent-cyan);
+  border: 1.7px solid var(--accent, var(--color-accent-cyan));
   overflow: hidden;
 }
 
@@ -568,7 +582,7 @@ function initials(name) {
 .bs-logo-fallback {
   font-size: 0.89rem;
   font-weight: 700;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
   text-align: center;
   width: 18px;
   height: 18px;
@@ -592,7 +606,7 @@ function initials(name) {
 .bs-name {
   font-size: 0.97rem;
   font-weight: 600;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -605,7 +619,7 @@ function initials(name) {
 
 .bs-toggle-icon {
   font-size: 0.7rem;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
   transition: transform 0.3s ease;
   display: inline-block;
   opacity: 0.8;
@@ -619,12 +633,12 @@ function initials(name) {
 
 .bs-row:hover .bs-toggle-icon {
   opacity: 1;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-mask {
   font-size: 0.81rem;
-  color: var(--color-accent-cyan);
+  color: var(--accent, var(--color-accent-cyan));
   opacity: 0.87;
   margin-top: 1px;
   letter-spacing: 0.03em;
@@ -651,14 +665,7 @@ function initials(name) {
   padding-right: 0.13em;
   margin-left: 0.2em;
   word-break: keep-all;
-}
-
-.bs-amount-green {
-  color: var(--color-accent-cyan);
-}
-
-.bs-amount-yellow {
-  color: var(--color-accent-yellow);
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-empty {
@@ -673,7 +680,7 @@ function initials(name) {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  border-top: 1.5px solid var(--color-accent-cyan);
+  border-top: 1.5px solid var(--accent, var(--color-accent-cyan));
   margin-top: 0.12rem;
   padding: 0.18rem 0.12rem 0.12rem 0.06rem;
   background: transparent;
@@ -691,6 +698,7 @@ function initials(name) {
   font-size: 1.02rem;
   font-weight: 700;
   text-align: right;
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 /* New account container and themed button styles */
@@ -794,15 +802,3 @@ function initials(name) {
   }
 }
 </style>
-/* Account details dropdown styles */ .bs-details-btn-section { display: flex; align-items: center;
-justify-content: center; z-index: 2; } .bs-details-btn { background: none; border: none; color:
-var(--color-text-muted); font-size: 0.85rem; cursor: pointer; padding: 0.2rem 0.5rem; border-radius:
-0.25rem; transition: background 0.2s; } .bs-details-btn:hover { background: var(--color-bg-dark); }
-.bs-details-row { grid-column: 1 / -1; background: var(--color-bg-dark); padding: 0.5rem 1rem; }
-.bs-details-content { font-size: 0.85rem; color: var(--color-text-light); } .bs-details-list {
-list-style: none; margin: 0; padding: 0; } .bs-tx-row { display: flex; justify-content:
-space-between; padding: 0.25rem 0; border-bottom: 1px solid var(--divider); } .bs-tx-date { flex: 0
-0 auto; width: 5ch; color: var(--color-text-muted); } .bs-tx-name { flex: 1 1 auto; padding: 0
-0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .bs-tx-amount { flex: 0 0
-auto; width: 7ch; text-align: right; } .bs-tx-empty { text-align: center; color:
-var(--color-text-muted); font-style: italic; padding: 0.5rem 0; }
