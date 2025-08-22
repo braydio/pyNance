@@ -1,17 +1,21 @@
+// frontend/src/router/index.js
+// Centralized application route definitions.
+
 import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Accounts from '../views/Accounts.vue'
 import Transactions from '../views/Transactions.vue'
 import RecurringTX from '../views/RecurringTX.vue'
-import Forecast from '@/views/Forecast.vue';
-import Investments from '../views/Investments.vue';
-import Institutions from '../views/Institutions.vue';
-import DailyNetChart from '@/components/charts/DailyNetChart.vue';
-import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue';
-import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue';
-import AccountsTable from '@/components/tables/AccountsTable.vue';
-import ForecastMock from '@/views/ForecastMock.vue';
-import RecurringScanDemo from '@/views/RecurringScanDemo.vue';
+import Forecast from '@/views/Forecast.vue'
+import Planning from '@/views/Planning.vue'
+import Investments from '../views/Investments.vue'
+import Institutions from '../views/Institutions.vue'
+import DailyNetChart from '@/components/charts/DailyNetChart.vue'
+import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
+import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
+import AccountsTable from '@/components/tables/AccountsTable.vue'
+import ForecastMock from '@/views/ForecastMock.vue'
+import RecurringScanDemo from '@/views/RecurringScanDemo.vue'
 
 
 const routes = [
@@ -19,6 +23,7 @@ const routes = [
   { path: '/accounts', name: 'Accounts', component: Accounts },
   { path: '/transactions', name: 'Transactions', component: Transactions },
   { path: '/forecast', name: 'Forecast', component: Forecast },
+  { path: '/planning', name: 'Planning', component: Planning },
   { path: '/charts/cashflow', name: 'DailyNetChart', component: DailyNetChart },
   { path: '/charts/category', name: 'CategoryChart', component: CategoryBreakdownChart },
   {
