@@ -3,25 +3,25 @@
     <div v-if="show" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur px-4 py-6"
       @click.self="emitClose" @keyup.esc="emitClose" tabindex="0">
       <div
-        class="relative w-full max-w-3xl mx-auto rounded-2xl shadow-2xl bg-gradient-to-br from-violet-950/70 via-slate-900/90 to-blue-950/90 border-2 border-violet-400/40 animate-fadeInUp flex flex-col"
+        class="relative w-full max-w-3xl mx-auto rounded-2xl shadow-2xl bg-gradient-to-br from-[var(--color-accent-purple)]/70 via-[var(--color-bg-dark)]/90 to-[var(--color-accent-blue)]/90 border-2 border-[var(--color-accent-purple)]/40 animate-fadeInUp flex flex-col"
         role="dialog" aria-modal="true" aria-label="Transactions Modal" style="min-height: 220px">
         <!-- Header -->
         <div
-          class="flex items-center justify-between px-2 py-8 bg-gradient-to-r from-violet-700/70 via-slate-900/70 to-blue-800/70 border-b-2 border-violet-500/40 shadow-lg backdrop-blur-xl">
-          <h2 class="flex items-center gap-2 text-xl font-black text-white uppercase tracking-wider drop-shadow-sm">
-            <svg class="w-7 h-7 text-violet-300" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          class="flex items-center justify-between px-2 py-8 bg-gradient-to-r from-[var(--color-accent-purple)]/70 via-[var(--color-bg-dark)]/70 to-[var(--color-accent-blue)]/70 border-b-2 border-[var(--color-accent-purple)]/40 shadow-lg backdrop-blur-xl">
+          <h2 class="flex items-center gap-2 text-xl font-black text-[var(--color-text-light)] uppercase tracking-wider drop-shadow-sm">
+            <svg class="w-7 h-7 text-[var(--color-accent-purple)]" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <circle cx="12" cy="12" r="10" stroke-opacity="0.7" />
               <path d="M7 12h10M12 7v10" stroke-linecap="round" />
             </svg>
             Transactions
-            <span v-if="subtitle" class="ml-2 text-violet-200 text-base font-medium normal-case drop-shadow-none">
+            <span v-if="subtitle" class="ml-2 text-[var(--color-accent-purple)] text-base font-medium normal-case drop-shadow-none">
               ({{ subtitle }})
             </span>
           </h2>
           <button
-            class="absolute top-4 right-4 rounded-full hover:bg-violet-600/80 active:bg-violet-700/80 focus:outline-none focus:ring-2 focus:ring-violet-400 transition group"
+            class="absolute top-4 right-4 rounded-full hover:bg-[var(--color-accent-purple)]/80 active:bg-[var(--color-accent-purple)]/90 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-purple)] transition group"
             @click="emitClose" aria-label="Close Transactions Modal">
-            <svg class="w-6 h-6 text-violet-200 group-hover:text-white transition" fill="none" viewBox="0 0 24 24"
+            <svg class="w-6 h-6 text-[var(--color-accent-purple)] group-hover:text-[var(--color-text-light)] transition" fill="none" viewBox="0 0 24 24"
               stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M6 6l12 12M6 18L18 6" />
             </svg>
@@ -29,20 +29,24 @@
         </div>
         <!-- SUMMARY BAR -->
         <div
-          class="flex gap-8 justify-center items-center px-8 py-4 bg-gradient-to-r from-violet-950/60 via-slate-900/60 to-blue-950/60 border-b border-violet-800/30 rounded-b-xl">
+          class="flex gap-8 justify-center items-center px-8 py-4 bg-gradient-to-r from-[var(--color-bg-dark)]/60 via-[var(--color-bg-secondary)]/60 to-[var(--color-bg-dark)]/60 border-b border-[var(--color-accent-purple)]/30 rounded-b-xl">
           <div class="flex flex-col items-center">
-            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Expense</span>
-            <span class="text-xl font-extrabold text-red-400 drop-shadow-sm">{{ formatAmount(summary.expense) }}</span>
+            <span class="text-[10px] tracking-widest text-[var(--color-text-muted)] uppercase mb-1">Expense</span>
+            <span class="text-xl font-extrabold text-[var(--color-accent-red)] drop-shadow-sm">{{ formatAmount(summary.expense) }}</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Income</span>
-            <span class="text-xl font-extrabold text-green-400 drop-shadow-sm">{{ formatAmount(summary.income) }}</span>
+            <span class="text-[10px] tracking-widest text-[var(--color-text-muted)] uppercase mb-1">Income</span>
+            <span class="text-xl font-extrabold text-[var(--color-accent-green)] drop-shadow-sm">{{ formatAmount(summary.income) }}</span>
           </div>
           <div class="flex flex-col items-center">
-            <span class="text-[10px] tracking-widest text-slate-400 uppercase mb-1">Net</span>
+            <span class="text-[10px] tracking-widest text-[var(--color-text-muted)] uppercase mb-1">Net</span>
             <span :class="[
               'text-xl font-extrabold drop-shadow-sm',
-              summary.net > 0 ? 'text-green-300' : summary.net < 0 ? 'text-red-300' : 'text-slate-300'
+              summary.net > 0
+                ? 'text-[var(--color-accent-green)]'
+                : summary.net < 0
+                  ? 'text-[var(--color-accent-red)]'
+                  : 'text-[var(--color-text-light)]'
             ]">
               {{ formatAmount(summary.net) }}
             </span>

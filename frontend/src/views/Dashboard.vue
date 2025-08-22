@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <!-- WELCOME HEADER CARD -->
-      <div class="w-20 h-3 rounded bg-[var(--color-accent-cyan)] mb-6"></div>
+      <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
     <div class="flex justify-center mb-8">
         <div
           class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
@@ -12,14 +12,14 @@
       </div>
 
     </div>
-      <div class="w-20 h-3 rounded bg-[var(--color-accent-cyan)] mb-6"></div>
+      <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
     <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
       <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col justify-between">
-          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-cyan)] text-center">Top Accounts</h2>
+          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between">
+          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-green)] text-center">Top Accounts</h2>
           <TopAccountSnapshot use-spectrum />
         </div>
         <!-- Net Income Summary Card -->
@@ -88,8 +88,8 @@
         </div>
         <!-- Spending Insights Placeholder -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-blue)] p-6 flex flex-col items-center justify-center">
-          <h2 class="text-xl font-bold text-[var(--color-accent-blue)] mb-4">Spending Insights</h2>
+          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-magenta)] p-6 flex flex-col items-center justify-center">
+          <h2 class="text-xl font-bold text-[var(--color-accent-magenta)] mb-4">Spending Insights</h2>
           <p class="italic text-muted text-center">More detailed insights coming soon...</p>
         </div>
       </div>
