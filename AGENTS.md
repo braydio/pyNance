@@ -8,8 +8,8 @@ This document consolidates previous agent instructions into the authoritative ro
 - [x] `frontend/src/types/planning.ts`
 - [x] `frontend/src/services/planningService.ts` (local persistence)
 - [x] `frontend/src/composables/usePlanning.ts`
-- [ ] `frontend/src/views/Planning.vue` with `/planning` route and sidebar link
-- [ ] `frontend/src/components/planning/` (`BillForm.vue`, `BillList.vue`, `Allocator.vue`, `PlanningSummary.vue`)
+ - [x] `frontend/src/views/Planning.vue` with `/planning` route and sidebar link
+ - [ ] `frontend/src/components/planning/` (`BillForm.vue`, `BillList.vue`, `Allocator.vue`, `PlanningSummary.vue`)
 - [ ] Replace `frontend/src/utils/currency.ts` with conversion helpers
 - [ ] Extend `frontend/src/services/planningService.ts` with list/get/put helpers for future API mode
 - [ ] Cypress component tests at `frontend/src/views/__tests__/Planning.cy.js`
