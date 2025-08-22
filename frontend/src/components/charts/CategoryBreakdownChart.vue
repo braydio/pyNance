@@ -133,7 +133,10 @@ async function renderChart() {
           const index = points[0].index
           const label = chartInstance.value.data.labels[index]
           const node = categoryTree.value.find((cat) => cat.label === label)
-          const ids = (node?.children || []).map((c) => c.id)
+          // Only emit IDs for categories currently selected by the user
+          const ids = (node?.children || [])
+            .filter((c) => props.selectedCategoryIds.includes(c.id))
+            .map((c) => c.id)
           emit('bar-click', { label, ids })
         }
       },
