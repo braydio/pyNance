@@ -127,7 +127,7 @@ const points = computed(() => {
 }
 
 .sparkline-balance {
-  stroke: var(--color-accent-mint);
+  stroke: var(--color-accent-cyan);
 }
 
 .sparkline-transactions {
@@ -159,7 +159,7 @@ const points = computed(() => {
 }
 
 .indicator-balance {
-  background: var(--color-accent-mint);
+  background: var(--color-accent-cyan);
 }
 
 .indicator-transactions {

@@ -4,7 +4,7 @@
     <header class="text-center bg-[var(--color-bg)] p-4 rounded-lg shadow-md space-y-1">
       <h1 class="text-[var(--accent-yellow-soft)] text-2xl font-bold">Accounts Management</h1>
       <h2 class="text-[var(--color-accent-yellow)] italic text-xl"></h2>
-      <h3 class="text-[var(--neon-mint)] font-bold">
+      <h3 class="text-[var(--color-accent-cyan)] font-bold">
         Hello again
         <span class="username">{{ userName }}</span>,
         welcome back.
@@ -28,7 +28,7 @@
         </Transition>
 
         <button @click="toggleTellerRefresh"
-          class="px-4 py-2 rounded bg-[var(--color-accent-mint)] text-black font-semibold shadow hover:bg-opacity-80 transition">
+          class="px-4 py-2 rounded bg-[var(--color-accent-cyan)] text-black font-semibold shadow hover:bg-opacity-80 transition">
           {{ showTellerRefresh ? 'Hide' : 'Refresh' }} Teller Accounts
         </button>
         <Transition name="fade-slide" mode="out-in">
@@ -46,7 +46,7 @@
       <div v-if="loadingSummary">Loading summary...</div>
       <div v-else-if="summaryError" class="text-error">Failed to load summary</div>
       <div v-else class="flex justify-around">
-        <div>Income: <span class="font-bold text-[var(--color-accent-mint)]">{{ formatAmount(netSummary.income)
+        <div>Income: <span class="font-bold text-[var(--color-accent-cyan)]">{{ formatAmount(netSummary.income)
             }}</span></div>
         <div>Expense: <span class="font-bold text-[var(--color-accent-red)]">{{ formatAmount(netSummary.expense)
             }}</span></div>
@@ -177,7 +177,7 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 @reference "../assets/css/main.css";
 
 .username {
-  @apply text-[var(--color-accent-ice)] text-lg;
+  @apply text-[var(--color-accent-cyan)] text-lg;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);
 }
 

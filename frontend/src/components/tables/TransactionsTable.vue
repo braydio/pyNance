@@ -210,8 +210,4 @@ export default {
 }
 </script>
 
-<style scoped>
-.shadow-neon {
-  box-shadow: 0 0 8px #39ff14, 0 0 12px #08ffb066;
-}
-</style>
+
