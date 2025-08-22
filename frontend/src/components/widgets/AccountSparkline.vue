@@ -34,7 +34,7 @@ let transactionHistory
 try {
   const { history } = useAccountTransactionHistory(toRef(props, 'accountId'))
   transactionHistory = history
-} catch (err) {
+} catch {
   // Fallback to balance history if transaction history composable fails
   console.warn('Transaction history not available, using balance history as fallback')
   transactionHistory = balanceHistory
