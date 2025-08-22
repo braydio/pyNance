@@ -1,8 +1,8 @@
 <template>
-  <div class="transactions-page container space-y-8">
+  <div class="transactions-page container py-8 space-y-8">
     <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <CreditCard class="w-6 h-6" />
+    <Card class="p-6 flex items-center gap-4">
+      <CreditCard class="w-6 h-6 text-[var(--color-accent-cyan)]" />
       <div>
         <h1 class="text-2xl font-bold">Transactions</h1>
         <p class="text-muted">View and manage your transactions</p>
@@ -11,7 +11,7 @@
 
     <!-- Top Controls -->
     <Card class="p-6">
-      <div class="grid gap-4 md:grid-cols-2">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <ImportFileSelector />
         <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
       </div>
