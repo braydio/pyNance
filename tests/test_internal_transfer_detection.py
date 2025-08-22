@@ -77,11 +77,13 @@ app_pkg.extensions = extensions
 
 # Load models and account_logic modules
 spec_models = importlib.util.spec_from_file_location(
-    "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
+    "app.models",
+    os.path.join(BASE_BACKEND, "app", "models", "__init__.py"),
+    submodule_search_locations=[os.path.join(BASE_BACKEND, "app", "models")],
 )
 models = importlib.util.module_from_spec(spec_models)
-spec_models.loader.exec_module(models)
 sys.modules["app.models"] = models
+spec_models.loader.exec_module(models)
 app_pkg.models = models
 
 spec_logic = importlib.util.spec_from_file_location(

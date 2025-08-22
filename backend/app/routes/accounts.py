@@ -20,9 +20,9 @@ accounts = Blueprint("accounts", __name__)
 
 error_logger = logging.getLogger("pyNanceError")
 if not error_logger.handlers:
-    handler = logging.FileHandler(
-        Path(__file__).resolve().parents[1] / "logs/account_sync_error.log"
-    )
+    log_file = Path(__file__).resolve().parents[1] / "logs" / "account_sync_error.log"
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    handler = logging.FileHandler(log_file)
     error_logger.addHandler(handler)
 error_logger.setLevel(logging.ERROR)
 
