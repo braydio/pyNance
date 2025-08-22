@@ -321,7 +321,7 @@ function initials(name) {
  .bs-tab {
   padding: 0.5rem 1rem;
   background: var(--color-bg-sec);
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   border: 1px solid var(--divider);
   border-radius: 0.8rem 0.8rem 0 0;
   font-size: 1rem;
@@ -332,8 +332,8 @@ function initials(name) {
 }
 
 .bs-tab-active.bs-tab-assets {
-  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-mint) 100%);
-  color: var(--color-accent-mint);
+  background: linear-gradient(90deg, var(--color-bg-dark) 70%, var(--color-accent-cyan) 100%);
+  color: var(--color-accent-cyan);
   z-index: 2;
 }
 
@@ -354,7 +354,7 @@ function initials(name) {
 .bs-sort-btn {
   padding: 0.4rem 0.8rem;
   background: var(--color-bg-sec);
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   border: 1px solid var(--divider);
   border-radius: 0.8rem;
   font-size: 0.85rem;
@@ -364,7 +364,7 @@ function initials(name) {
 }
 .bs-sort-btn:hover,
 .bs-sort-btn:focus-visible {
-  background: var(--color-accent-ice);
+  background: var(--color-accent-cyan);
   color: var(--color-bg-dark);
 }
 
@@ -387,7 +387,7 @@ function initials(name) {
   padding: 0.39rem 0.45rem 0.39rem 0.1rem;
   box-shadow: 0 2px 14px var(--shadow, #1c274055);
   position: relative;
-  border: 2px solid var(--color-accent-ice);
+  border: 2px solid var(--color-accent-cyan);
   min-height: 36px;
   gap: 0.45rem;
   will-change: transform, box-shadow;
@@ -399,11 +399,11 @@ function initials(name) {
 .bs-row:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 20px var(--shadow, #1c274077);
-  border-color: var(--color-accent-mint);
+  border-color: var(--color-accent-cyan);
 }
 
 .bs-row:focus {
-  outline: 2px solid var(--color-accent-mint);
+  outline: 2px solid var(--color-accent-cyan);
   outline-offset: 2px;
 }
 
@@ -412,7 +412,7 @@ function initials(name) {
 }
 
 .bs-row-asset {
-  border-left: 6px solid var(--color-accent-mint);
+  border-left: 6px solid var(--color-accent-cyan);
 }
 
 .bs-row-liability {
@@ -426,7 +426,7 @@ function initials(name) {
 }
 
 .bs-row-asset .bs-sparkline {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .bs-row-liability .bs-sparkline {
@@ -435,7 +435,7 @@ function initials(name) {
 
 .bs-no-mask-icon {
   display: inline-block;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   font-size: 0.8rem;
 }
 
@@ -452,7 +452,7 @@ function initials(name) {
 }
 
 .bs-stripe-green {
-  background: linear-gradient(180deg, var(--color-accent-mint) 20%, var(--color-accent-ice) 100%);
+  background: linear-gradient(180deg, var(--color-accent-cyan) 20%, var(--color-accent-blue) 100%);
 }
 
 .bs-stripe-yellow {
@@ -469,7 +469,7 @@ function initials(name) {
   align-items: center;
   justify-content: center;
   z-index: 2;
-  border: 1.7px solid var(--color-accent-ice);
+  border: 1.7px solid var(--color-accent-cyan);
   overflow: hidden;
 }
 
@@ -485,7 +485,7 @@ function initials(name) {
 .bs-logo-fallback {
   font-size: 0.89rem;
   font-weight: 700;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   text-align: center;
   width: 18px;
   height: 18px;
@@ -509,7 +509,7 @@ function initials(name) {
 .bs-name {
   font-size: 0.97rem;
   font-weight: 600;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
   letter-spacing: 0.01em;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -522,7 +522,7 @@ function initials(name) {
 
 .bs-toggle-icon {
   font-size: 0.7rem;
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
   transition: transform 0.3s ease;
   display: inline-block;
   opacity: 0.8;
@@ -536,12 +536,12 @@ function initials(name) {
 
 .bs-row:hover .bs-toggle-icon {
   opacity: 1;
-  color: var(--color-accent-ice);
+  color: var(--color-accent-cyan);
 }
 
 .bs-mask {
   font-size: 0.81rem;
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
   opacity: 0.87;
   margin-top: 1px;
   letter-spacing: 0.03em;
@@ -571,7 +571,7 @@ function initials(name) {
 }
 
 .bs-amount-green {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .bs-amount-yellow {
@@ -590,7 +590,7 @@ function initials(name) {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  border-top: 1.5px solid var(--color-accent-ice);
+  border-top: 1.5px solid var(--color-accent-cyan);
   margin-top: 0.12rem;
   padding: 0.18rem 0.12rem 0.12rem 0.06rem;
   background: transparent;
@@ -625,8 +625,8 @@ function initials(name) {
 
 .bs-details-btn-themed {
   background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-  border: 1px solid var(--color-accent-ice);
-  color: var(--color-accent-ice);
+  border: 1px solid var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
@@ -642,10 +642,10 @@ function initials(name) {
 }
 
 .bs-details-btn-themed:hover {
-  background: linear-gradient(135deg, var(--color-accent-ice) 0%, #a0c4ff 100%);
+  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
   color: var(--color-bg-dark);
-  border-color: var(--color-accent-mint);
-  box-shadow: 0 4px 16px rgba(47, 255, 167, 0.3);
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 4px 16px rgba(99, 205, 207, 0.3);
   transform: translateY(-1px);
 }
 

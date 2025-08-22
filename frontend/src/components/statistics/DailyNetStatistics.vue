@@ -227,7 +227,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 <style scoped>
 .statistics-container {
   background: linear-gradient(135deg, var(--color-bg-dark) 0%, var(--color-bg-sec) 100%);
-  border: 1px solid var(--color-accent-mint);
+  border: 1px solid var(--color-accent-cyan);
   border-radius: 12px;
   padding: 1rem;
   margin-top: 1rem;
@@ -245,14 +245,14 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 .stats-title {
   font-size: 1.1rem;
   font-weight: 600;
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
   margin: 0;
 }
 
 .stats-toggle-btn {
   background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-  border: 1px solid var(--color-accent-ice);
-  color: var(--color-accent-ice);
+  border: 1px solid var(--color-accent-cyan);
+  color: var(--color-accent-cyan);
   padding: 0.25rem 0.75rem;
   border-radius: 0.5rem;
   font-size: 0.8rem;
@@ -262,15 +262,15 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 }
 
 .stats-toggle-btn:hover {
-  background: linear-gradient(135deg, var(--color-accent-ice) 0%, var(--color-accent-mint) 100%);
+  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
   color: var(--color-bg-dark);
-  border-color: var(--color-accent-mint);
+  border-color: var(--color-accent-cyan);
 }
 
 .stats-toggle-btn.extended {
-  background: linear-gradient(135deg, var(--color-accent-mint) 0%, var(--color-accent-ice) 100%);
+  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
   color: var(--color-bg-dark);
-  border-color: var(--color-accent-mint);
+  border-color: var(--color-accent-cyan);
 }
 
 .basic-stats {
@@ -297,7 +297,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 }
 
 .stat-income .stat-label {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .stat-expenses .stat-label {
@@ -306,7 +306,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 
 .stat-net.positive .stat-label,
 .stat-net.positive .stat-value {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .stat-net.negative .stat-label,
@@ -361,7 +361,7 @@ watch(() => [props.chartData, props.zoomedOut], () => {
 }
 
 .trend-up {
-  color: var(--color-accent-mint);
+  color: var(--color-accent-cyan);
 }
 
 .trend-down {

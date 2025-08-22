@@ -161,7 +161,7 @@ export default {
 
 .control-block h2 {
   margin-bottom: 0.5rem;
-  color: var(--neon-purple);
+  color: var(--color-accent-purple);
   text-align: center;
 }
 
@@ -183,7 +183,7 @@ export default {
 }
 
 .button-group button:hover {
-  background-color: var(--neon-mint);
+  background-color: var(--color-accent-cyan);
   color: var(--themed-bg);
 }
 

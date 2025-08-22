@@ -182,8 +182,8 @@ For lists that should animate in sequence:
 ## 🔧 Customization
 
 The animations use CSS custom properties where possible, making them themeable:
-- `--neon-purple` - Primary accent color
-- `--neon-mint` - Secondary accent color
+- `--color-accent-purple` - Primary accent color
+- `--color-accent-cyan` - Secondary accent color
 - `--color-bg-dark` - Dark background
 - `--color-bg-secondary` - Secondary background
 
