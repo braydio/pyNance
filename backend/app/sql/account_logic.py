@@ -353,9 +353,7 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json
-            if isinstance(txns_json, list)
-            else []
+            else txns_json if isinstance(txns_json, list) else []
         )
 
         for txn in txns_list:
