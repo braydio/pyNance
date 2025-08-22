@@ -68,6 +68,10 @@ all of them:
 | `--primary` / `--primary-dark` | generic button colors |
 | `--hover-bg` | hover background for buttons |
 | `--hover-glow` | drop shadow for hover effects |
+| `--color-success` / `--color-bg-success` | success states |
+| `--color-error` / `--color-bg-error` | error states |
+| `--color-warning` / `--color-bg-warning` | warning states |
+| `--color-info` / `--color-bg-info` | informational states |
 
 Additional variables such as `--color-accent-magenta`, `--color-accent-cyan`,
 `--bar-gradient-end`, `--asset-gradient-start`/`--asset-gradient-end`, and
