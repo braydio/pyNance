@@ -20,7 +20,7 @@
         <div
           class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col justify-between">
           <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-cyan)] text-center">Top Accounts</h2>
-          <TopAccountSnapshot />
+          <TopAccountSnapshot use-spectrum />
         </div>
         <!-- Net Income Summary Card -->
         <div
