@@ -21,7 +21,7 @@ export default {
 @reference "../../assets/css/main.css";
 
 .nav-link.router-link-exact-active {
-  background-color: var(--hover);
+  background-color: var(--hover-bg);
   color: var(--color-accent-yellow);
   font-weight: bold;
   box-shadow: 0 0 6px var(--hover-glow);
@@ -60,7 +60,7 @@ export default {
 
 .nav-link:hover {
   color: var(--link-hover-color);
-  background-color: var(--hover);
+  background-color: var(--hover-bg);
   box-shadow: 0 0 6px var(--hover-glow);
 }
 </style>

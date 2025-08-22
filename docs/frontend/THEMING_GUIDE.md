@@ -63,6 +63,8 @@ all of them:
 | `--color-accent-yellow` | secondary accent |
 | `--color-accent-blue` | informational accent |
 | `--color-accent-red` | danger or expense accent |
+| `--color-accent-green` | positive/earning accent |
+| `--color-accent-orange` | warning or trend accent |
 | `--primary` / `--primary-dark` | generic button colors |
 | `--hover-bg` | hover background for buttons |
 | `--hover-glow` | drop shadow for hover effects |
