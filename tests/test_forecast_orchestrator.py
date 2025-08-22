@@ -1,14 +1,16 @@
+"""Tests for the ForecastOrchestrator service."""
+
 import importlib.util
 import os
 import sys
 from datetime import datetime, timedelta
+import types
 
 import pytest
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
-import types
 
 config_stub = types.ModuleType("app.config")
 config_stub.logger = types.SimpleNamespace(info=lambda *a, **k: None)
