@@ -6,6 +6,7 @@ import sys
 import types
 from datetime import datetime, timedelta
 
+from flask import Flask
 import pytest
 
 # ---- Paths and Imports ----
@@ -124,8 +125,6 @@ try:
     spec.loader.exec_module(forecast_module)
 except Exception:
     pytest.skip("forecast module import failed", allow_module_level=True)
-
-from flask import Flask
 
 # ---- Load forecast orchestrator for monkeypatching ----
 SERVICES_PATH = os.path.join(
