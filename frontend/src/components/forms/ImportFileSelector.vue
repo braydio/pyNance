@@ -114,14 +114,14 @@ select {
   background-color: var(--button-bg);
   color: var(--color-text-light);
   padding: 0.5rem 1rem;
-  border: groove 2px var(--neon-purple);
+  border: groove 2px var(--color-accent-purple);
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.2s;
 }
 
 .btn-primary:hover {
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
   color: var(--page-bg);
   border: groove 2px transparent;
 }

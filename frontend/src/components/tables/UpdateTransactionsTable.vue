@@ -245,13 +245,13 @@ onMounted(async () => {
 
 .btn-sm {
   @apply inline-flex items-center px-2 py-1 text-xs rounded;
-  background-color: var(--neon-purple);
+  background-color: var(--color-accent-purple);
   color: var(--color-bg-dark);
-  border: 1px solid var(--neon-purple);
+  border: 1px solid var(--color-accent-purple);
 }
 
 .btn-sm:hover {
-  background-color: var(--neon-mint);
-  border-color: var(--neon-mint);
+  background-color: var(--color-accent-cyan);
+  border-color: var(--color-accent-cyan);
 }
 </style>

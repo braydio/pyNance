@@ -22,21 +22,23 @@
   --primary: #719cd6;
   --primary-dark: #39506d;
 
-  --neon-mint: #63cdcf;
-  --neon-purple: #9d79d6;
-  --color-accent-mint: var(--neon-mint);
+  --color-accent-cyan: #63cdcf;
+  --color-accent-purple: #9d79d6;
   --color-accent-yellow: #dbc074;
+  --color-accent-blue: #719cd6;
+  --color-accent-red: #c94f6d;
+  --color-accent-green: #81b29a;
+  --color-accent-orange: #f4a261;
   --color-accent-magenta: #d67ad2;
-  --color-accent-ice: #63cdcf;
   --color-accent-purple-hover: #b093e6;
-  --color-accent: var(--neon-mint);
+  --color-accent: var(--color-accent-cyan);
 
   --hover-bg: rgba(255, 255, 255, 0.05);
   --color-hover-light: rgba(255, 255, 255, 0.08);
   --hover-glow: 0 0 8px rgba(113, 156, 214, 0.6);
 
   --button-bg: #2b3b51;
-  --link-hover-color: var(--neon-mint);
+  --link-hover-color: var(--color-accent-cyan);
   --asset-gradient-start: #719cd6;
   --asset-gradient-end: #63cdcf;
   --liability-gradient-start: #c94f6d;

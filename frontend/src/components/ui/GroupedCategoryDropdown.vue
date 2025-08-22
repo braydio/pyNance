@@ -2,7 +2,7 @@
   <div class="relative w-full">
     <!-- Trigger -->
     <div
-      class="dropdown-trigger input w-full mb-2 cursor-pointer flex items-center px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--color-bg-secondary)] shadow transition hover:border-[var(--color-accent-mint)] focus:border-[var(--color-accent-mint)]"
+      class="dropdown-trigger input w-full mb-2 cursor-pointer flex items-center px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--color-bg-secondary)] shadow transition hover:border-[var(--color-accent-cyan)] focus:border-[var(--color-accent-cyan)]"
       @click="open = !open" @keydown.esc="open = false" tabindex="0" :aria-expanded="open" :aria-haspopup="true">
       <span class="flex-1 truncate text-left text-[var(--color-text-light)]">
         <span class="text-[var(--color-text-muted)] italic">{{ placeholder }}</span>
@@ -18,20 +18,20 @@
         @mousedown.prevent>
         <div v-for="(group, idx) in groups" :key="group.id" class="mb-2 last:mb-0 group-block">
           <label
-            class="flex items-center gap-2 py-1 font-semibold text-[var(--color-accent-ice)] tracking-tight rounded-lg hover:bg-[var(--color-bg-secondary)] cursor-pointer transition">
+            class="flex items-center gap-2 py-1 font-semibold text-[var(--color-accent-cyan)] tracking-tight rounded-lg hover:bg-[var(--color-bg-secondary)] cursor-pointer transition">
             <!-- Color dot for group -->
             <span class="inline-block w-3 h-3 rounded-full border border-[var(--divider)] shadow-sm"
               :style="`background: ${groupDotColor(idx)}`" aria-hidden="true"></span>
             <input type="checkbox" :checked="isGroupAllSelected(group)"
               :indeterminate.prop="isGroupIndeterminate(group)" @change="toggleGroup(group)"
-              class="accent-[var(--color-accent-mint)] w-4 h-4 rounded border border-[var(--divider)] shadow focus:ring-2 focus:ring-[var(--color-accent-mint)] transition" />
+              class="accent-[var(--color-accent-cyan)] w-4 h-4 rounded border border-[var(--divider)] shadow focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition" />
             <span>{{ group.label }}</span>
             <span
-              class="ml-auto text-xs px-2 py-0.5 rounded bg-[var(--color-accent-mint)] bg-opacity-20 text-[var(--color-accent-mint)]"
+              class="ml-auto text-xs px-2 py-0.5 rounded bg-[var(--color-accent-cyan)] bg-opacity-20 text-[var(--color-accent-cyan)]"
               v-if="group.children.length">
               {{ group.children.length }}
             </span>
-            <span v-if="isGroupExpanded(group)" class="ml-1 text-[var(--color-accent-mint)] text-base">▾</span>
+            <span v-if="isGroupExpanded(group)" class="ml-1 text-[var(--color-accent-cyan)] text-base">▾</span>
             <span v-else class="ml-1 text-[var(--color-text-muted)] text-base">▸</span>
           </label>
           <transition name="slide">

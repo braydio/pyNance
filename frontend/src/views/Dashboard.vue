@@ -1,30 +1,30 @@
 <template>
   <AppLayout>
     <!-- WELCOME HEADER CARD -->
-    <div class="w-20 h-3 rounded bg-[var(--color-accent-ice)] mb-6"></div>
+      <div class="w-20 h-3 rounded bg-[var(--color-accent-cyan)] mb-6"></div>
     <div class="flex justify-center mb-8">
-      <div
-        class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-mint)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
-        <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-accent-ice mb-2 drop-shadow">Welcome, <span
-            class="username">{{ userName }}</span>!</h1>
+        <div
+          class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
+          <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow">Welcome, <span
+              class="username">{{ userName }}</span>!</h1>
         <p class="text-lg text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
 
     </div>
-    <div class="w-20 h-3 rounded bg-[var(--color-accent-ice)] mb-6"></div>
+      <div class="w-20 h-3 rounded bg-[var(--color-accent-cyan)] mb-6"></div>
     <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
       <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-ice)] p-6 flex flex-col justify-between">
-          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-ice)] text-center">Top Accounts</h2>
+          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col justify-between">
+          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-cyan)] text-center">Top Accounts</h2>
           <TopAccountSnapshot />
         </div>
         <!-- Net Income Summary Card -->
         <div
-          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-mint)] p-6 flex flex-col gap-3">
+          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3">
           <div class="flex items-center justify-center mb-4">
             <div class="flex-1 flex justify-center">
               <h2 class="daily-net-chart-title">
@@ -62,10 +62,10 @@
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">Spending by Category</h2>
             <ChartWidgetTopBar>
               <template #controls>
-                <input type="date" v-model="catRange.start"
-                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)]" />
-                <input type="date" v-model="catRange.end"
-                  class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-mint)] ml-2" />
+                  <input type="date" v-model="catRange.start"
+                    class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]" />
+                  <input type="date" v-model="catRange.end"
+                    class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
                 <button
@@ -83,7 +83,7 @@
             @bar-click="onCategoryBarClick" />
           <div class="mt-1">
             <span class="font-bold">Total:</span>
-            <span class="ml-1 text-[var(--color-accent-mint)] font-bold">{{ formatAmount(catSummary.total) }}</span>
+              <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">{{ formatAmount(catSummary.total) }}</span>
           </div>
         </div>
         <!-- Spending Insights Placeholder -->
@@ -95,28 +95,28 @@
       </div>
 
       <!-- RESERVED TABLES PANEL -->
-      <div
-        class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-ice)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden">
+        <div
+          class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden">
         <!-- Button row: Show only if neither table is expanded -->
-        <div v-if="!accountsExpanded && !transactionsExpanded"
-          class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
-          <button @click="expandAccounts"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-ice)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-ice)] hover:text-[var(--color-bg-sec)] transition">
-            Expand Accounts Table
-          </button>
-          <div class="mx-8 text-lg font-light text-muted select-none">or</div>
-          <button @click="expandTransactions"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-yellow)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)] transition">
-            Expand Transactions Table
-          </button>
-        </div>
+          <div v-if="!accountsExpanded && !transactionsExpanded"
+            class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
+            <button @click="expandAccounts"
+              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition">
+              Expand Accounts Table
+            </button>
+            <div class="mx-8 text-lg font-light text-muted select-none">or</div>
+            <button @click="expandTransactions"
+              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition">
+              Expand Transactions Table
+            </button>
+          </div>
         <!-- Expanded Accounts Table -->
         <transition name="fade">
           <div v-if="accountsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-2xl font-bold text-[var(--color-accent-ice)]">Accounts Table</h2>
+                <h2 class="text-2xl font-bold text-[var(--color-accent-cyan)]">Accounts Table</h2>
               <button @click="collapseTables"
-                class="px-4 py-2 rounded bg-[var(--color-accent-ice)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
+                  class="px-4 py-2 rounded bg-[var(--color-accent-cyan)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
                 Close
               </button>
             </div>
@@ -129,9 +129,9 @@
         <transition name="fade">
           <div v-if="transactionsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-2xl font-bold text-[var(--color-accent-yellow)]">Transactions Table</h2>
-              <button @click="collapseTables"
-                class="px-4 py-2 rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
+                <h2 class="text-2xl font-bold text-[var(--color-accent-red)]">Transactions Table</h2>
+                <button @click="collapseTables"
+                  class="px-4 py-2 rounded bg-[var(--color-accent-red)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
                 Close
               </button>
             </div>
@@ -348,14 +348,10 @@ async function onCategoryBarClick(payload) {
   background: var(--theme-bg);
 }
 
-.username {
-  @apply text-[var(--color-accent-ice)] text-lg;
-  text-shadow: 2px 6px 8px var(--bar-gradient-end);
-}
-
-.text-neon-purple {
-  color: var(--color-accent-ice);
-}
+  .username {
+    @apply text-[var(--color-accent-cyan)] text-lg;
+    text-shadow: 2px 6px 8px var(--bar-gradient-end);
+  }
 
 .text-muted {
   color: var(--color-text-muted);
@@ -426,19 +422,19 @@ dashboard-content {
   text-transform: none;
 }
 
-.dashboard-control-btn-primary {
-  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-  border: 1.5px solid var(--color-accent-mint);
-  color: var(--color-accent-mint);
-}
+  .dashboard-control-btn-primary {
+    background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
+    border: 1.5px solid var(--color-accent-cyan);
+    color: var(--color-accent-cyan);
+  }
 
-.dashboard-control-btn-primary:hover {
-  background: linear-gradient(135deg, var(--color-accent-mint) 0%, #20e6a0 100%);
-  color: var(--color-bg-dark);
-  border-color: var(--color-accent-ice);
-  box-shadow: 0 6px 20px rgba(47, 255, 167, 0.4);
-  transform: translateY(-2px);
-}
+  .dashboard-control-btn-primary:hover {
+    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
+    color: var(--color-bg-dark);
+    border-color: var(--color-accent-cyan);
+    box-shadow: 0 6px 20px rgba(113, 156, 214, 0.4);
+    transform: translateY(-2px);
+  }
 
 .dashboard-control-btn-secondary {
   background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
@@ -446,13 +442,13 @@ dashboard-content {
   color: var(--color-accent-yellow);
 }
 
-.dashboard-control-btn-secondary:hover {
-  background: linear-gradient(135deg, var(--color-accent-yellow) 0%, #f59e0b 100%);
-  color: var(--color-bg-dark);
-  border-color: var(--color-accent-mint);
-  box-shadow: 0 6px 20px rgba(250, 204, 21, 0.4);
-  transform: translateY(-2px);
-}
+  .dashboard-control-btn-secondary:hover {
+    background: linear-gradient(135deg, var(--color-accent-yellow) 0%, var(--color-accent-red) 100%);
+    color: var(--color-bg-dark);
+    border-color: var(--color-accent-cyan);
+    box-shadow: 0 6px 20px rgba(219, 192, 116, 0.4);
+    transform: translateY(-2px);
+  }
 
 .dashboard-control-btn:active {
   transform: translateY(0);
@@ -480,19 +476,19 @@ dashboard-content {
   text-align: center;
 }
 
-.title-icon {
-  font-size: 1.2rem;
-  filter: drop-shadow(0 0 8px rgba(47, 255, 167, 0.6));
-  animation: subtle-glow 3s ease-in-out infinite alternate;
-}
+  .title-icon {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 8px rgba(113, 156, 214, 0.6));
+    animation: subtle-glow 3s ease-in-out infinite alternate;
+  }
 
-.title-text {
-  background: linear-gradient(135deg, var(--color-accent-mint) 0%, var(--color-accent-ice) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: 0 0 20px rgba(47, 255, 167, 0.3);
-}
+  .title-text {
+    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 0 20px rgba(113, 156, 214, 0.3);
+  }
 
 .title-subtitle {
   font-size: 0.9rem;
@@ -501,12 +497,12 @@ dashboard-content {
   opacity: 0.8;
 }
 
-@keyframes subtle-glow {
-  0% {
-    filter: drop-shadow(0 0 8px rgba(47, 255, 167, 0.6));
+  @keyframes subtle-glow {
+    0% {
+      filter: drop-shadow(0 0 8px rgba(113, 156, 214, 0.6));
+    }
+    100% {
+      filter: drop-shadow(0 0 12px rgba(113, 156, 214, 0.8));
+    }
   }
-  100% {
-    filter: drop-shadow(0 0 12px rgba(47, 255, 167, 0.8));
-  }
-}
 </style>

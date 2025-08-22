@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="flex-between">
       <div>
-        <h1 class="text-3xl font-bold text-[var(--neon-purple)]">Transactions</h1>
+        <h1 class="text-3xl font-bold text-[var(--color-accent-purple)]">Transactions</h1>
         <h3 class="text-muted mb-2">View and manage your transactions</h3>
       </div>
     </header>

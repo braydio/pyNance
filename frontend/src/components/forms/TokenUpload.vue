@@ -72,7 +72,7 @@ const submit = async () => {
 
 .link-account h2 {
   margin: 5px 1px;
-  color: var(--neon-purple);
+  color: var(--color-accent-purple);
 }
 
 .upload-form-inline {
@@ -119,7 +119,7 @@ const submit = async () => {
 
 .forms-btn:hover {
   color: var(--themed-bg);
-  background-color: var(--neon-mint);
+  background-color: var(--color-accent-cyan);
 }
 
 .success-badge {
@@ -149,7 +149,7 @@ const submit = async () => {
 
 .link-account h2 {
   margin: 5px 1px;
-  color: var(--neon-purple);
+  color: var(--color-accent-purple);
 }
 
 .upload-form-inline {
@@ -196,7 +196,7 @@ const submit = async () => {
 
 .forms-btn:hover {
   color: var(--themed-bg);
-  background-color: var(--neon-mint);
+  background-color: var(--color-accent-cyan);
 }
 
 .success-badge {

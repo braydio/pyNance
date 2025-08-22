@@ -18,14 +18,15 @@ export default {
         'border-secondary': '#3f3f46',
         divider: 'rgba(255, 255, 255, 0.12)',
         shadow: 'rgba(0, 0, 0, 0.6)',
-        neon: {
-          purple: '#c084fc',
-          mint: '#2fffa7',
-        },
         accent: {
-          yellow: '#facc15',
-          purpleHover: '#d9a6fd',
-          mint: '#2fffa7',
+          yellow: '#dbc074',
+          purple: '#9d79d6',
+          cyan: '#63cdcf',
+          blue: '#719cd6',
+          red: '#c94f6d',
+          green: '#81b29a',
+          orange: '#f4a261',
+          magenta: '#d67ad2',
         },
         error: '#f87171',
         hover: {
@@ -50,9 +51,9 @@ export default {
           css: {
             color: theme('colors.text-primary'),
             a: {
-              color: theme('colors.neon.purple'),
+              color: theme('colors.accent.purple'),
               '&:hover': {
-                color: theme('colors.accent.purpleHover'),
+                color: theme('colors.accent.cyan'),
               },
             },
             h1: { color: theme('colors.text-primary') },

@@ -25,9 +25,13 @@
 
 <script>
 import api from '@/services/api.js'
-import { ref, onMounted, nextTick, computed } from "vue";
-import Chart from "chart.js/auto";
+import { ref, onMounted, nextTick, computed } from "vue"
+import Chart from "chart.js/auto"
 import { formatAmount } from "@/utils/format"
+
+function getStyle(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 
 export default {
   name: "NetIncomeChart",
@@ -58,18 +62,18 @@ export default {
         chartInstance.value.destroy();
       }
 
-      const netValues = chartData.value.map(item => item.income - item.expenses);
+      const netValues = chartData.value.map(item => item.income - item.expenses)
       const gradients = netValues.map(value => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, chartCanvas.value.height);
+        const gradient = ctx.createLinearGradient(0, 0, 0, chartCanvas.value.height)
         if (value >= 0) {
-          gradient.addColorStop(0, "#b8bb26");
-          gradient.addColorStop(1, "#98971a");
+          gradient.addColorStop(0, getStyle('--color-accent-green'))
+          gradient.addColorStop(1, getStyle('--color-accent-cyan'))
         } else {
-          gradient.addColorStop(0, "#fb4934");
-          gradient.addColorStop(1, "#cc241d");
+          gradient.addColorStop(0, getStyle('--color-accent-red'))
+          gradient.addColorStop(1, getStyle('--color-accent-magenta'))
         }
-        return gradient;
-      });
+        return gradient
+      })
 
       if (chartInstance.value) chartInstance.value.destroy();
       chartInstance.value = new Chart(ctx, {
@@ -89,32 +93,32 @@ export default {
           maintainAspectRatio: false,
           layout: { padding: { top: 20, bottom: 20 } },
           scales: {
-            x: { ticks: { color: "#ebdbb2" }, grid: { color: "#504945" } },
-            y: { beginAtZero: true, ticks: { callback: (value) => `$${value}`, color: "#ebdbb2" } },
+            x: { ticks: { color: getStyle('--color-text-light') }, grid: { color: getStyle('--divider') } },
+            y: { beginAtZero: true, ticks: { callback: value => `$${value}`, color: getStyle('--color-text-light') } },
           },
           plugins: {
             tooltip: {
               callbacks: {
                 label: context => {
-                  const index = context.dataIndex;
-                  const dataPoint = chartData.value[index];
+                  const index = context.dataIndex
+                  const dataPoint = chartData.value[index]
                   return [
                     `Net: ${formatAmount(dataPoint.income - dataPoint.expenses)}`,
                     `Income: ${formatAmount(dataPoint.income)}`,
                     `Expenses: ${formatAmount(dataPoint.expenses)}`
-                  ];
+                  ]
                 }
               },
-              backgroundColor: "#3c3836",
-              titleColor: "#fabd2f",
-              bodyColor: "#ebdbb2",
-              borderColor: "#fabd2f",
+              backgroundColor: getStyle('--theme-bg'),
+              titleColor: getStyle('--color-accent-yellow'),
+              bodyColor: getStyle('--color-text-light'),
+              borderColor: getStyle('--color-accent-yellow'),
               borderWidth: 1,
             },
             legend: { display: false }
           }
         }
-      });
+      })
     };
 
     const summary = computed(() => {
