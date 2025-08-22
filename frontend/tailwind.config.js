@@ -24,6 +24,9 @@ export default {
           cyan: '#63cdcf',
           blue: '#719cd6',
           red: '#c94f6d',
+          green: '#81b29a',
+          orange: '#f4a261',
+          magenta: '#d67ad2',
         },
         error: '#f87171',
         hover: {

@@ -28,12 +28,19 @@ const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
 
-const groupColors = [
-  '#a78bfa', '#5db073', '#fbbf24', '#a43e5c', '#3b82f6',
-  '#eab308', '#f472b6', '#60a5fa', '#e11d48', '#38ffd4'
+const groupColorVars = [
+  '--color-accent-purple',
+  '--color-accent-green',
+  '--color-accent-yellow',
+  '--color-accent-red',
+  '--color-accent-blue',
+  '--color-accent-orange',
+  '--color-accent-magenta',
+  '--color-accent-cyan'
 ]
 function getGroupColor(idx) {
-  return groupColors[idx % groupColors.length]
+  const name = groupColorVars[idx % groupColorVars.length]
+  return getStyle(name)
 }
 
 function destroyPreviousChart(canvasEl) {
