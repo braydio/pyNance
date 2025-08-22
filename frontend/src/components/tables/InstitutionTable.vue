@@ -55,8 +55,12 @@ export default {
     return { institutions: [], expanded: {}, loading: true };
   },
   methods: {
+    /**
+     * Toggle expansion state for a given institution row.
+     * @param {number|string} id - Institution identifier.
+     */
     toggle(id) {
-      this.$set(this.expanded, id, !this.expanded[id]);
+      this.expanded[id] = !this.expanded[id];
     },
     formatDate(d) {
       if (!d) return 'N/A';
