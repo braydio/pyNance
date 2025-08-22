@@ -1,8 +1,9 @@
 // frontend/src/services/planningService.ts
 
-import { PlanningState, Scenario } from "@/types/planning";
+import { PlanningState, Scenario, Bill, Allocation } from "@/types/planning";
+import { getBillsByAccount, getScenariosByAccount } from '@/composables/usePlanning'
 
-const KEY = "pyNance:planning:v1";
+const KEY = "pyNance:planning:v2";
 
 export function loadPlanning(): PlanningState | null {
   try {
@@ -24,6 +25,8 @@ export function savePlanning(state: PlanningState) {
 
 function migrate(data: any): PlanningState | null {
   if (!data || typeof data !== "object") return null;
+  // This is now handled in usePlanning.ts migrateState function
+  // Keep minimal migration for compatibility
   if (!data.version) data.version = 1;
   return data as PlanningState;
 }
@@ -55,11 +58,12 @@ export async function getScenario(
 export async function putScenario(scenario: Scenario): Promise<void> {
   const state =
     loadPlanning() ?? {
-      version: 1,
+      version: 2,
       devMode: false,
       bills: [],
       scenarios: [],
       activeScenarioId: "",
+      activeScenarioIdByAccount: {},
       lastSavedAt: "",
     };
   const idx = state.scenarios.findIndex((s) => s.id === scenario.id);
@@ -70,4 +74,149 @@ export async function putScenario(scenario: Scenario): Promise<void> {
   }
   state.lastSavedAt = new Date().toISOString();
   savePlanning(state);
+}
+
+// Account-scoped helpers
+
+/**
+ * Get bills for a specific account
+ */
+export function listBills(accountId: string): Bill[] {
+  return getBillsByAccount(accountId)
+}
+
+/**
+ * Upsert a bill and persist state
+ */
+export function upsertBill(bill: Bill): void {
+  const state = loadPlanning() ?? {
+    version: 2,
+    devMode: false,
+    bills: [],
+    scenarios: [],
+    activeScenarioId: "",
+    activeScenarioIdByAccount: {},
+    lastSavedAt: "",
+  };
+  
+  const idx = state.bills.findIndex(b => b.id === bill.id)
+  if (idx >= 0) {
+    state.bills[idx] = bill
+  } else {
+    state.bills.push(bill)
+  }
+  
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
+}
+
+/**
+ * Delete a bill by ID
+ */
+export function deleteBill(id: string): void {
+  const state = loadPlanning()
+  if (!state) return
+  
+  state.bills = state.bills.filter(b => b.id !== id)
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
+}
+
+/**
+ * Get scenarios for a specific account
+ */
+export function listScenariosForAccount(accountId: string): Scenario[] {
+  return getScenariosByAccount(accountId)
+}
+
+/**
+ * Upsert a scenario and persist state
+ */
+export function upsertScenario(scenario: Scenario): void {
+  const state = loadPlanning() ?? {
+    version: 2,
+    devMode: false,
+    bills: [],
+    scenarios: [],
+    activeScenarioId: "",
+    activeScenarioIdByAccount: {},
+    lastSavedAt: "",
+  };
+  
+  const idx = state.scenarios.findIndex(s => s.id === scenario.id)
+  if (idx >= 0) {
+    state.scenarios[idx] = scenario
+  } else {
+    state.scenarios.push(scenario)
+  }
+  
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
+}
+
+/**
+ * Delete a scenario by ID
+ */
+export function deleteScenario(id: string): void {
+  const state = loadPlanning()
+  if (!state) return
+  
+  state.scenarios = state.scenarios.filter(s => s.id !== id)
+  // Clean up associated active scenario references
+  Object.keys(state.activeScenarioIdByAccount).forEach(accountId => {
+    if (state.activeScenarioIdByAccount[accountId] === id) {
+      delete state.activeScenarioIdByAccount[accountId]
+    }
+  })
+  
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
+}
+
+/**
+ * Get allocations for a specific scenario
+ */
+export function listAllocations(scenarioId: string): Allocation[] {
+  const state = loadPlanning()
+  if (!state) return []
+  
+  const scenario = state.scenarios.find(s => s.id === scenarioId)
+  return scenario?.allocations || []
+}
+
+/**
+ * Upsert an allocation within a scenario
+ */
+export function upsertAllocation(scenarioId: string, allocation: Allocation): void {
+  const state = loadPlanning()
+  if (!state) return
+  
+  const scenario = state.scenarios.find(s => s.id === scenarioId)
+  if (!scenario) return
+  
+  const idx = scenario.allocations.findIndex(a => a.id === allocation.id)
+  if (idx >= 0) {
+    scenario.allocations[idx] = allocation
+  } else {
+    scenario.allocations.push(allocation)
+  }
+  
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
+}
+
+/**
+ * Delete an allocation by ID from a scenario
+ */
+export function deleteAllocation(scenarioId: string, allocationId: string): void {
+  const state = loadPlanning()
+  if (!state) return
+  
+  const scenario = state.scenarios.find(s => s.id === scenarioId)
+  if (!scenario) return
+  
+  scenario.allocations = scenario.allocations.filter(a => a.id !== allocationId)
+  
+  state.lastSavedAt = new Date().toISOString()
+  savePlanning(state)
 }

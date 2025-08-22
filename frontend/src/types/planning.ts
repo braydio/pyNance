@@ -10,6 +10,8 @@ export interface Bill {
   dueDate: string; // YYYY-MM-DD
   category?: string;
   origin: BillOrigin;
+  accountId: string;
+  scenarioId?: string;
 }
 
 export interface Allocation {
@@ -24,6 +26,7 @@ export interface Scenario {
   name: string;
   planningBalanceCents: number;
   allocations: Allocation[];
+  accountId: string;
 }
 
 export interface PlanningState {
@@ -32,6 +35,7 @@ export interface PlanningState {
   bills: Bill[];
   scenarios: Scenario[];
   activeScenarioId: string;
+  activeScenarioIdByAccount: Record<string, string>;
   lastSavedAt: string; // ISO
 }
 
