@@ -1,51 +1,76 @@
 <template>
   <div class="transactions-page container space-y-8">
     <!-- Header -->
-    <header class="flex-between">
+    <Card class="p-6 flex items-center gap-3">
+      <CreditCard class="w-6 h-6" />
       <div>
-        <h1 class="text-3xl font-bold text-[var(--color-accent-purple)]">Transactions</h1>
-        <h3 class="text-muted mb-2">View and manage your transactions</h3>
+        <h1 class="text-2xl font-bold">Transactions</h1>
+        <p class="text-muted">View and manage your transactions</p>
       </div>
-    </header>
+    </Card>
 
     <!-- Top Controls -->
-    <div class="flex flex-wrap justify-between items-end gap-4">
-      <ImportFileSelector class="flex-1 min-w-[250px]" />
-      <input v-model="searchQuery" type="text" placeholder="Search transactions..."
-        class="input flex-1 md:flex-none md:w-64" />
-    </div>
+    <Card class="p-6">
+      <div class="grid gap-4 md:grid-cols-2">
+        <ImportFileSelector />
+        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
+      </div>
+    </Card>
 
     <!-- Main Table -->
-    <div class="card overflow-x-auto">
-      <UpdateTransactionsTable :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder"
-        @sort="setSort" @editRecurringFromTransaction="prefillRecurringFromTransaction" />
-    </div>
+    <Card class="p-6 space-y-4">
+      <h2 class="text-2xl font-bold">Recent Transactions</h2>
+      <transition name="fade-in-up" mode="out-in">
+        <UpdateTransactionsTable :key="currentPage" :transactions="filteredTransactions" :sort-key="sortKey"
+          :sort-order="sortOrder" @sort="setSort"
+          @editRecurringFromTransaction="prefillRecurringFromTransaction" />
+      </transition>
+    </Card>
 
     <!-- Pagination -->
     <div id="pagination-controls" class="flex items-center justify-center gap-4">
-      <button class="btn" @click="changePage(-1)" :disabled="currentPage === 1">Prev</button>
+      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
       <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-      <button class="btn" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</button>
+      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
     </div>
 
     <!-- Recurring Transactions -->
-    <RecurringTransactionSection ref="recurringFormRef" provider="plaid" class="card" />
+    <Card class="p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold">Recurring Transactions</h2>
+        <UiButton variant="outline" @click="showRecurring = !showRecurring">
+          {{ showRecurring ? 'Hide' : 'Show' }}
+        </UiButton>
+      </div>
+      <transition name="accordion">
+        <div v-if="showRecurring" class="mt-4">
+          <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
+        </div>
+      </transition>
+    </Card>
   </div>
 </template>
 
 <script>
+// View for listing and managing transactions with themed layout and paging.
 import { ref } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
+import UiButton from '@/components/ui/Button.vue'
+import Card from '@/components/ui/Card.vue'
+import { CreditCard } from 'lucide-vue-next'
 
 export default {
-  name: 'Transactions',
+  name: 'TransactionsView',
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
+    UiButton,
+    Card,
+    CreditCard,
   },
   setup() {
     const {
@@ -59,6 +84,7 @@ export default {
       setSort,
     } = useTransactions(15)
 
+    const showRecurring = ref(false)
     const recurringFormRef = ref(null)
 
     function prefillRecurringFromTransaction(tx) {
@@ -80,6 +106,7 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,
     }
