@@ -60,7 +60,6 @@ either the external `account_id` or the numeric primary key. An optional `range`
 query parameter such as `7d`, `30d`, `90d`, or `365d` limits how many days are
 returned.
 
-
 **Query Parameters**
 
 - `range` – number of days of history to return (default: `30d`)
@@ -77,11 +76,52 @@ returned.
 }
 ```
 
+**GET /api/accounts/<account_id>/transaction_history**
+
+Returns a paginated list of transactions for the specified account. The `<account_id>` segment accepts either the external `account_id` or the numeric primary key. Excludes internal transactions by default.
+
+**Query Parameters**
+
+- `start_date` – optional ISO `YYYY-MM-DD` start date filter
+- `end_date` – optional ISO `YYYY-MM-DD` end date filter  
+- `limit` – maximum number of transactions to return (default: 100, max: 1000)
+- `offset` – number of transactions to skip for pagination (default: 0)
+- `order` – sort order, `desc` (newest first) or `asc` (oldest first) (default: `desc`)
+- `include_internal` – whether to include internal transactions (default: `false`)
+
+**Response Body**
+
+```json
+{
+  "status": "success",
+  "account_id": "uuid",
+  "transactions": [
+    {
+      "id": 123,
+      "account_id": "uuid",
+      "date": "YYYY-MM-DD",
+      "description": "Transaction description",
+      "amount": -45.67,
+      "category": "Food and Drink",
+      "is_internal": false
+    }
+  ],
+  "paging": {
+    "limit": 100,
+    "offset": 0,
+    "total_count": 250,
+    "has_more": true,
+    "next_offset": 100
+  }
+}
+```
+
 ### 🔹 Provider-Specific Resources
 
 ```
 POST   /api/plaid/transactions/exchange_public_token
 POST   /api/plaid/transactions/refresh_accounts
+POST   /api/plaid/transactions/generate_update_link_token
 DELETE /api/plaid/transactions/delete_account
 POST   /api/teller/transactions/sync
 DELETE /api/teller/transactions/delete_account
@@ -95,6 +135,31 @@ Optional JSON body parameters:
 - `start_date` – optional ISO `YYYY-MM-DD` start date
 - `end_date` – optional ISO `YYYY-MM-DD` end date
 - `account_ids` – optional list of account IDs to refresh
+
+**POST /api/plaid/transactions/generate_update_link_token**
+
+Generates a Plaid Link token in "update mode" for re-authenticating an account that requires login credentials to be updated (typically for ITEM_LOGIN_REQUIRED errors).
+
+**Required JSON body parameters:**
+
+- `account_id` – Account identifier (accepts either numeric primary key or external account_id)
+
+**Response body on success:**
+
+```json
+{
+  "status": "success",
+  "link_token": "link-sandbox-abc123...",
+  "expiration": "2025-08-23T21:00:00Z",
+  "account_id": "uuid"
+}
+```
+
+**Error responses:**
+
+- `400` – Missing `account_id` parameter
+- `404` – Account not found
+- `502` – Plaid API error
 
 **Rule:**
 
