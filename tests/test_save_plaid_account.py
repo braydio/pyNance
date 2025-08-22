@@ -10,10 +10,15 @@ BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 
 def load_module(name, path):
-    spec = importlib.util.spec_from_file_location(name, path)
+    if path.endswith("__init__.py"):
+        spec = importlib.util.spec_from_file_location(
+            name, path, submodule_search_locations=[os.path.dirname(path)]
+        )
+    else:
+        spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
     sys.modules[name] = module
+    spec.loader.exec_module(module)
     return module
 
 
@@ -57,8 +62,8 @@ def setup_app(tmp_path):
     sys.modules["app.helpers.normalize"] = normalize_stub
 
     utils_stub = types.ModuleType("app.utils.finance_utils")
-    utils_stub.display_transaction_amount = (
-        lambda txn: txn.amount if hasattr(txn, "amount") else 0
+    utils_stub.display_transaction_amount = lambda txn: (
+        txn.amount if hasattr(txn, "amount") else 0
     )
     sys.modules["app.utils.finance_utils"] = utils_stub
 
@@ -74,7 +79,7 @@ def db_ctx(tmp_path):
     app, extensions = setup_app(tmp_path)
     with app.app_context():
         models = load_module(
-            "app.models", os.path.join(BASE_BACKEND, "app", "models.py")
+            "app.models", os.path.join(BASE_BACKEND, "app", "models", "__init__.py")
         )
         logic = load_module(
             "app.sql.account_logic",
