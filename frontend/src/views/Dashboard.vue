@@ -98,18 +98,18 @@
       <div
         class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-ice)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden">
         <!-- Button row: Show only if neither table is expanded -->
-        <div v-if="!accountsExpanded && !transactionsExpanded"
-          class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
-          <button @click="expandAccounts"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-ice)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-ice)] hover:text-[var(--color-bg-sec)] transition">
-            Expand Accounts Table
-          </button>
-          <div class="mx-8 text-lg font-light text-muted select-none">or</div>
-          <button @click="expandTransactions"
-            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-yellow)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)] transition">
-            Expand Transactions Table
-          </button>
-        </div>
+          <div v-if="!accountsExpanded && !transactionsExpanded"
+            class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
+            <button @click="expandAccounts"
+              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-ice)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-ice)] hover:text-[var(--color-bg-sec)] transition">
+              Expand Accounts Table
+            </button>
+            <div class="mx-8 text-lg font-light text-muted select-none">or</div>
+            <button @click="expandTransactions"
+              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition">
+              Expand Transactions Table
+            </button>
+          </div>
         <!-- Expanded Accounts Table -->
         <transition name="fade">
           <div v-if="accountsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
@@ -129,9 +129,9 @@
         <transition name="fade">
           <div v-if="transactionsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
             <div class="flex items-center justify-between mb-4">
-              <h2 class="text-2xl font-bold text-[var(--color-accent-yellow)]">Transactions Table</h2>
-              <button @click="collapseTables"
-                class="px-4 py-2 rounded bg-[var(--color-accent-yellow)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
+                <h2 class="text-2xl font-bold text-[var(--color-accent-red)]">Transactions Table</h2>
+                <button @click="collapseTables"
+                  class="px-4 py-2 rounded bg-[var(--color-accent-red)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105">
                 Close
               </button>
             </div>
