@@ -1,0 +1,15 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Transactions.vue > matches snapshot 1`] = `
+"<div class="transactions-page container space-y-8">
+  <!-- Header -->
+  <card-stub class="p-6 flex items-center gap-3"></card-stub><!-- Top Controls -->
+  <card-stub class="p-6"></card-stub><!-- Main Table -->
+  <card-stub class="p-6 space-y-4"></card-stub><!-- Pagination -->
+  <div id="pagination-controls" class="flex items-center justify-center gap-4">
+    <button-stub variant="outline" pill="false" disabled="true"></button-stub><span class="text-muted">Page 1 of 1</span>
+    <button-stub variant="primary" pill="false" disabled="true"></button-stub>
+  </div><!-- Recurring Transactions -->
+  <card-stub class="p-6 space-y-4"></card-stub>
+</div>"
+`;
