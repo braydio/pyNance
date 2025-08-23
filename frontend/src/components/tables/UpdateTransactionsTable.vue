@@ -1,3 +1,4 @@
+<!-- Editable transactions table with category filtering and consistent row count -->
 <template>
   <div class="card space-y-4">
     <!-- Category Filters -->
@@ -54,59 +55,75 @@
       </thead>
 
       <tbody>
-        <tr v-for="(tx, index) in filteredTransactions" :key="tx.transaction_id" :class="[
-          'text-sm',
-          editingIndex === index
-            ? 'bg-[var(--color-bg-sec)]'
-            : 'hover:bg-[var(--hover)-light]',
-        ]">
-          <td class="px-3 py-2">
-            <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
-            <span v-else>{{ formatDate(tx.date) }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input v-if="editingIndex === index" v-model.number="editBuffer.amount" type="number" step="0.01"
-              class="input" />
-            <span v-else>{{ formatAmount(tx.amount) }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input v-if="editingIndex === index" v-model="editBuffer.description" type="text" class="input" />
-            <span v-else>{{ tx.description }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
-              <option disabled value="">-- Select Category --</option>
-              <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
-                <option v-for="child in group.children" :key="child.id" :value="child.name">
-                  {{ child.name }}
-                </option>
-              </optgroup>
-            </select>
-            <span v-else>{{ tx.category }}</span>
-          </td>
-          <td class="px-3 py-2">
-            <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text" class="input" />
-            <span v-else>{{ tx.merchant_name }}</span>
-          </td>
-          <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
-          <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
-          <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
-          <td class="px-3 py-2 space-x-1">
-            <template v-if="editingIndex === index">
-              <button class="btn-sm" @click="saveEdit(tx)">Save</button>
-              <button class="btn-sm" @click="cancelEdit">Cancel</button>
-            </template>
-            <template v-else>
-              <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-              <button class="btn-sm" @click="markRecurring(index)">Mark</button>
-            </template>
-          </td>
+        <tr
+          v-for="(tx, index) in displayTransactions"
+          :key="tx.transaction_id"
+          :class="[
+            'text-sm',
+            tx._placeholder
+              ? ''
+              : editingIndex === index
+              ? 'bg-[var(--color-bg-sec)]'
+              : 'hover:bg-[var(--hover)-light]',
+          ]"
+        >
+          <template v-if="tx._placeholder">
+            <td v-for="n in 9" :key="n" class="px-3 py-2">&nbsp;</td>
+          </template>
+          <template v-else>
+            <td class="px-3 py-2">
+              <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
+              <span v-else>{{ formatDate(tx.date) }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <input
+                v-if="editingIndex === index"
+                v-model.number="editBuffer.amount"
+                type="number"
+                step="0.01"
+                class="input"
+              />
+              <span v-else>{{ formatAmount(tx.amount) }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <input v-if="editingIndex === index" v-model="editBuffer.description" type="text" class="input" />
+              <span v-else>{{ tx.description }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
+                <option disabled value="">-- Select Category --</option>
+                <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
+                  <option v-for="child in group.children" :key="child.id" :value="child.name">
+                    {{ child.name }}
+                  </option>
+                </optgroup>
+              </select>
+              <span v-else>{{ tx.category }}</span>
+            </td>
+            <td class="px-3 py-2">
+              <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text" class="input" />
+              <span v-else>{{ tx.merchant_name }}</span>
+            </td>
+            <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
+            <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
+            <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
+            <td class="px-3 py-2 space-x-1">
+              <template v-if="editingIndex === index">
+                <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                <button class="btn-sm" @click="cancelEdit">Cancel</button>
+              </template>
+              <template v-else>
+                <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+                <button class="btn-sm" @click="markRecurring(index)">Mark</button>
+              </template>
+            </td>
+          </template>
         </tr>
       </tbody>
     </table>
 
     <!-- Empty State -->
-    <div v-if="filteredTransactions.length === 0" class="text-center text-gray-500">
+    <div v-if="displayTransactions.every(tx => tx._placeholder)" class="text-center text-gray-500">
       No transactions found.
     </div>
   </div>
@@ -192,7 +209,8 @@ async function saveEdit(tx) {
     }
 
     await updateTransaction(payload)
-    const { transaction_id: _id, ...changes } = payload
+    const changes = { ...payload }
+    delete changes.transaction_id
     Object.assign(tx, changes)
     editingIndex.value = null
     toast.success('Transaction updated')
@@ -235,7 +253,7 @@ function sortBy(key) {
   }
 }
 
-const filteredTransactions = computed(() => {
+const displayTransactions = computed(() => {
   let txs = [...props.transactions]
   if (selectedSubcategory.value) {
     txs = txs.filter((tx) =>
@@ -247,7 +265,12 @@ const filteredTransactions = computed(() => {
     const bVal = b[sortKey.value] || ''
     return (sortOrder.value === 'asc' ? 1 : -1) * (aVal > bVal ? 1 : aVal < bVal ? -1 : 0)
   })
-  return txs
+  // pad to preserve table height
+  const padded = txs.slice(0, props.transactions.length)
+  while (padded.length < props.transactions.length) {
+    padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
+  }
+  return padded
 })
 
 onMounted(async () => {
