@@ -304,10 +304,12 @@ async function loadCategoryGroups() {
   }
 }
 
+// Handle clicks on the DailyNetChart bars and open a modal for that date.
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
   modalTransactions.value = result.transactions || []
-  modalSubtitle.value = `Net total for ${label}`
+  // Show the selected date prominently in the modal header
+  modalSubtitle.value = label
   showModal.value = true
 }
 
@@ -315,7 +317,8 @@ async function onNetBarClick(label) {
  * Handle clicks on the category breakdown chart.
  *
  * Fetches transactions for the clicked category within the active
- * date range and displays them in a modal dialog.
+ * date range and displays them in a modal dialog. If the clicked bar
+ * does not correspond to any user-selected categories, no modal is shown.
  *
  * @param {object|string} payload - Click payload from the chart containing
  *   the bar label and an array of category IDs.
@@ -323,6 +326,9 @@ async function onNetBarClick(label) {
 async function onCategoryBarClick(payload) {
   const { label, ids = [] } =
     typeof payload === 'object' ? payload : { label: payload, ids: [] }
+
+  // Only display the modal when the clicked bar corresponds to selected categories
+  if (!ids.length) return
 
   // Determine the date range in effect for the category chart. The chart emits
   // `summary-change` events that populate `catSummary` with the actual start
