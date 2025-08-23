@@ -5,7 +5,6 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Accounts from '../views/Accounts.vue'
 import Transactions from '../views/Transactions.vue'
-import RecurringTX from '../views/RecurringTX.vue'
 import Forecast from '@/views/Forecast.vue'
 import Planning from '@/views/Planning.vue'
 import Institutions from '../views/Institutions.vue'
@@ -34,7 +33,6 @@ const routes = [
   { path: '/investments', name: 'Investments', component: Investments },
   { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
-  { path: '/recurring-transactions', name: 'RecurringTx', component: RecurringTX },
   {
     path: '/recurring-scan-demo/:accountId?',
     name: 'RecurringScanDemo',
