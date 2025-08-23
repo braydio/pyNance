@@ -5,6 +5,7 @@
  * Handles pagination, search, and sort logic while fetching from the API.
  */
 import { ref, computed, onMounted } from "vue";
+import Fuse from "fuse.js";
 import { fetchTransactions as fetchTransactionsApi } from "@/api/transactions";
 
 export function useTransactions(pageSize = 15) {
@@ -36,7 +37,11 @@ export function useTransactions(pageSize = 15) {
         return;
       }
 
-      transactions.value = res.transactions || [];
+      // normalize category fields for sorting/searching
+      transactions.value = (res.transactions || []).map((tx) => ({
+        ...tx,
+        category: formatCategory(tx),
+      }));
       const total = res.total != null ? res.total : 0;
       totalPages.value = Math.max(1, Math.ceil(total / pageSize));
     } catch (error) {
@@ -59,21 +64,50 @@ export function useTransactions(pageSize = 15) {
     }
   };
 
+  // Fuse instance for fuzzy searching across common transaction fields
+  const fuse = computed(
+    () =>
+      new Fuse(transactions.value, {
+        keys: [
+          "description",
+          "merchant_name",
+          "account_name",
+          "institution_name",
+          "category",
+        ],
+        threshold: 0.4,
+      })
+  );
+
   const filteredTransactions = computed(() => {
-    let filtered = transactions.value.filter((tx) =>
-      Object.values(tx).some((val) =>
-        val && val.toString().toLowerCase().includes(searchQuery.value.toLowerCase())
-      )
-    );
+    let items = transactions.value;
+
+    if (searchQuery.value.trim()) {
+      items = fuse.value.search(searchQuery.value.trim()).map((r) => r.item);
+    }
+
     if (sortKey.value) {
-      filtered.sort((a, b) => {
-        let valA = a[sortKey.value] || "";
-        let valB = b[sortKey.value] || "";
+      items = [...items].sort((a, b) => {
+        const valA = a[sortKey.value] || "";
+        const valB = b[sortKey.value] || "";
         return valA.toString().localeCompare(valB.toString()) * sortOrder.value;
       });
     }
-    return filtered;
+
+    // pad results to maintain a consistent number of rows
+    const padded = items.slice(0, pageSize);
+    while (padded.length < pageSize) {
+      padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` });
+    }
+    return padded;
   });
+
+  function formatCategory(tx) {
+    const p = tx.primary_category || "";
+    const d = tx.detailed_category || "";
+    if (p && d) return `${p}: ${d}`;
+    return p || d || "";
+  }
 
   onMounted(fetchTransactions);
 
