@@ -1,3 +1,5 @@
+// DashboardNetWorth.cy.js
+// Ensures Dashboard displays appropriate net worth message based on balance.
 import Dashboard from '../Dashboard.vue'
 
 const NEGATIVE_MESSAGES = [
@@ -28,6 +30,7 @@ function mountWithWorth(value) {
         TransactionsTable: true,
         TransactionModal: true,
         AccountSnapshot: true,
+        FinancialSummary: true,
       },
     },
   })

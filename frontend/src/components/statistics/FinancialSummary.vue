@@ -1,7 +1,7 @@
 <!--
-  DailyNetStatistics.vue
-  Enhanced statistics display for DailyNetChart with toggle between basic and extended views.
-  Includes moving averages, trends, and other financial metrics.
+  FinancialSummary.vue
+  Displays key income, expense, and net metrics derived from DailyNetChart data.
+  Users can toggle between basic and extended views with moving averages and trends.
 -->
 <template>
   <div class="statistics-container">

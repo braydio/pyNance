@@ -1,10 +1,16 @@
 <!--
   TopAccountSnapshot.vue
-  Displays the top asset and liability accounts with totals.
-  Users can toggle which list is visible and sort amounts ascending or descending.
+  Displays top asset and liability accounts with totals.
+  Users can toggle which list is visible, sort amounts, and view tinted backgrounds by filter.
 -->
 <template>
-  <div class="bank-statement-list bs-collapsible w-full h-full">
+  <div
+    class="bank-statement-list bs-collapsible w-full h-full"
+    :class="{
+      'bs-assets-bg': expanded === 'assets',
+      'bs-liabilities-bg': expanded === 'liabilities',
+    }"
+  >
     <div class="bs-toggle-row">
       <button
         :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']"
@@ -420,6 +426,14 @@ function initials(name) {
   background: transparent;
   box-shadow: none;
   border: none;
+}
+
+.bs-assets-bg {
+  background-color: rgba(129, 178, 154, 0.08);
+}
+
+.bs-liabilities-bg {
+  background-color: rgba(201, 79, 109, 0.08);
 }
 
 .bs-toggle-row {
