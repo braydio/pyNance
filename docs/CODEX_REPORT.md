@@ -60,7 +60,7 @@ forecast_logic,…)
     frontend/src/
     ├── components/      # Vue components (charts, tables, recurring, forecast,…)
     ├── api/             # Thin client wrappers (e.g. recurring.js)
-    ├── views/           # Page‐level Vue views (Transactions.vue, RecurringTX.vue,…)
+    ├── views/           # Page‐level Vue views (Transactions.vue, Forecast.vue,…)
     ├── composables/     # Vue composables (useForecastEngine, useTransactions,…)
     ├── router/          # Vue Router config
     ├── services/        # Frontend services
