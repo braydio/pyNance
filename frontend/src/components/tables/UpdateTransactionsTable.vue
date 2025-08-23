@@ -113,6 +113,11 @@
 </template>
 
 <script setup>
+/**
+ * Editable transactions table used on the accounts page. Users may adjust the
+ * ``date``, ``amount``, ``description``, ``category``, and ``merchant_name``
+ * fields while account identifiers remain locked.
+ */
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
@@ -161,6 +166,10 @@ function cancelEdit() {
 
 async function saveEdit(tx) {
   try {
+    if (editBuffer.value.date && isNaN(Date.parse(editBuffer.value.date))) {
+      toast.error('Invalid date')
+      return
+    }
     await updateTransaction({
       transaction_id: tx.transaction_id,
       ...editBuffer.value,

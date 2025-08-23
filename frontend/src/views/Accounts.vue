@@ -61,12 +61,15 @@
       <AccountBalanceHistoryChart v-else :balances="accountHistory" data-testid="history-chart" />
     </Card>
 
-    <!-- Recent Transactions -->
+    <!-- Recent Transactions with editing capability -->
     <Card class="p-6 space-y-4">
       <h2 class="text-xl font-semibold">Recent Transactions</h2>
       <div v-if="loadingTransactions" class="text-center py-4 text-muted">Loading...</div>
       <div v-else-if="transactionsError" class="text-center py-4 text-error">Failed to load transactions</div>
-      <TransactionsTable v-else :transactions="recentTransactions" />
+      <UpdateTransactionsTable
+        v-else
+        :transactions="recentTransactions"
+      />
     </Card>
 
     <!-- Charts -->
@@ -102,6 +105,13 @@
 </template>
 
 <script setup>
+/*
+ * Accounts dashboard for managing linked or external accounts. This view also
+ * exposes an editable table for recent transactions where date, amount,
+ * description, category, and merchant name can be adjusted. Account and
+ * institution identifiers remain read-only.
+ */
+
 // Dependencies and 3rd party
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -120,7 +130,7 @@ import TogglePanel from '@/components/ui/TogglePanel.vue'
 import LinkAccount from '@/components/forms/LinkAccount.vue'
 import InstitutionTable from '@/components/tables/InstitutionTable.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
-import TransactionsTable from '@/components/tables/TransactionsTable.vue'
+import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 
 // Chart Components
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'

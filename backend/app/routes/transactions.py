@@ -19,8 +19,12 @@ transactions = Blueprint("transactions", __name__)
 
 @transactions.route("/update", methods=["PUT"])
 def update_transaction():
-    """
-    Update a transaction's editable details.
+    """Update mutable fields on a transaction.
+
+    Allowed fields include ``amount``, ``date`` (``YYYY-MM-DD``), ``description``,
+    ``category``, ``merchant_name``, ``merchant_type``, and ``is_internal``.
+    The date value is validated and converted to a :class:`datetime.date` object
+    to ensure proper typing in the database.
     """
     try:
         data = request.json
@@ -40,7 +44,13 @@ def update_transaction():
             txn.amount = float(data["amount"])
             changed_fields["amount"] = True
         if "date" in data:
-            txn.date = data["date"]
+            try:
+                txn.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+            except (TypeError, ValueError):
+                return (
+                    jsonify({"status": "error", "message": "Invalid date format"}),
+                    400,
+                )
             changed_fields["date"] = True
         if "description" in data:
             txn.description = data["description"]
@@ -97,8 +107,11 @@ def update_transaction():
 
 @transactions.route("/user_modify/update")
 def user_modified_update_transaction():
-    """
-    Update a transaction's editable details.
+    """Update mutable fields on a transaction via user modification.
+
+    This endpoint mirrors :func:`update_transaction` but is intended for
+    direct user adjustments. Date strings are validated and parsed to
+    ``datetime.date`` objects before persistence.
     """
     try:
         data = request.json
@@ -118,7 +131,13 @@ def user_modified_update_transaction():
             txn.amount = float(data["amount"])
             changed_fields["amount"] = True
         if "date" in data:
-            txn.date = data["date"]
+            try:
+                txn.date = datetime.strptime(data["date"], "%Y-%m-%d").date()
+            except (TypeError, ValueError):
+                return (
+                    jsonify({"status": "error", "message": "Invalid date format"}),
+                    400,
+                )
             changed_fields["date"] = True
         if "description" in data:
             txn.description = data["description"]
