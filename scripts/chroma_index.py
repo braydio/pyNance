@@ -8,7 +8,14 @@ from chroma_support import chunk_text, extract_metadata
 from chromadb.errors import ChromaError
 from chromadb.utils import embedding_functions
 
-EXCLUDE_DIRS = {".venv", "__pycache__"}
+EXCLUDE_DIRS = {
+    ".venv",
+    "__pycache__",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".husky",
+}
 
 
 def parse_args():
