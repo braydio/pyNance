@@ -77,6 +77,5 @@ Directory Tree Mapping
     ├── Forecast.vue
     ├── Gallery.vue
     ├── Investments.vue
-    ├── RecurringTX.vue
     ├── Settings.vue
     └── Transactions.vue

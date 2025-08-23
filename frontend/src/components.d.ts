@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     AccountBalanceHistoryChart: typeof import('./components/charts/AccountBalanceHistoryChart.vue')['default']
+    AccountSelector: typeof import('./components/ui/AccountSelector.vue')['default']
     AccountSnapshot: typeof import('./components/widgets/AccountSnapshot.vue')['default']
     AccountSparkline: typeof import('./components/widgets/AccountSparkline.vue')['default']
     AccountsReorderChart: typeof import('./components/charts/AccountsReorderChart.vue')['default']

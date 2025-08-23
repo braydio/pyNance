@@ -98,13 +98,3 @@ This file outlines rendering requirements for each view in the `frontend/src/vie
 
 ---
 
-## RecurringTX.vue
-
-``json
-{
-  recurring: [
-    { name: "Rent", amount: 1200, frequency: "Monthly", nextDue: "2025-06-05" },
-    { name: "Spotify", amount: 9.99, frequency: "Monthly", nextDue: "2025-06-15" }
-  ]
-}
-```
