@@ -19,8 +19,11 @@ transactions = Blueprint("transactions", __name__)
 
 @transactions.route("/update", methods=["PUT"])
 def update_transaction():
-    """
-    Update a transaction's editable details.
+    """Update a transaction's editable details.
+
+    Allowed fields: ``amount``, ``date``, ``description``, ``category``,
+    ``merchant_name``, ``merchant_type`` and ``is_internal``. Account and
+    provider identifiers remain immutable.
     """
     try:
         data = request.json
@@ -37,10 +40,19 @@ def update_transaction():
 
         changed_fields = {}
         if "amount" in data:
-            txn.amount = float(data["amount"])
+            try:
+                txn.amount = float(data["amount"])
+            except (TypeError, ValueError):
+                return jsonify({"status": "error", "message": "Invalid amount"}), 400
             changed_fields["amount"] = True
         if "date" in data:
-            txn.date = data["date"]
+            try:
+                txn.date = datetime.fromisoformat(data["date"])
+            except (TypeError, ValueError):
+                return (
+                    jsonify({"status": "error", "message": "Invalid date format"}),
+                    400,
+                )
             changed_fields["date"] = True
         if "description" in data:
             txn.description = data["description"]
@@ -115,10 +127,19 @@ def user_modified_update_transaction():
 
         changed_fields = {}
         if "amount" in data:
-            txn.amount = float(data["amount"])
+            try:
+                txn.amount = float(data["amount"])
+            except (TypeError, ValueError):
+                return jsonify({"status": "error", "message": "Invalid amount"}), 400
             changed_fields["amount"] = True
         if "date" in data:
-            txn.date = data["date"]
+            try:
+                txn.date = datetime.fromisoformat(data["date"])
+            except (TypeError, ValueError):
+                return (
+                    jsonify({"status": "error", "message": "Invalid date format"}),
+                    400,
+                )
             changed_fields["date"] = True
         if "description" in data:
             txn.description = data["description"]
