@@ -1,3 +1,5 @@
+"""Tests for internal transfer detection logic."""
+
 import importlib.util
 import os
 import sys
@@ -129,3 +131,40 @@ def test_detect_internal_transfer_marks_both_transactions():
         assert t2.is_internal is True
         assert t1.internal_match_id == "T2"
         assert t2.internal_match_id == "T1"
+
+
+def test_detect_internal_transfer_without_description_match():
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+        acc1 = models.Account(account_id="B1", user_id="u1", name="Checking")
+        acc2 = models.Account(account_id="B2", user_id="u1", name="Savings")
+        db.session.add_all([acc1, acc2])
+        t1 = models.Transaction(
+            transaction_id="X1",
+            account_id="B1",
+            user_id="u1",
+            amount=-50.0,
+            date=datetime(2024, 2, 1).date(),
+            description="Zelle transfer",
+        )
+        t2 = models.Transaction(
+            transaction_id="X2",
+            account_id="B2",
+            user_id="u1",
+            amount=50.0,
+            date=datetime(2024, 2, 1).date(),
+            description="Incoming",
+        )
+        db.session.add_all([t1, t2])
+        db.session.commit()
+
+        account_logic.detect_internal_transfer(t1)
+        db.session.commit()
+
+        assert t1.is_internal is True
+        assert t2.is_internal is True
+        assert t1.internal_match_id == "X2"
+        assert t2.internal_match_id == "X1"
