@@ -123,6 +123,9 @@ const toast = useToast()
 const emit = defineEmits(['editRecurringFromTransaction'])
 const props = defineProps({ transactions: Array })
 
+// Fields that may be edited by the user. All other transaction properties are locked.
+const EDITABLE_FIELDS = ['date', 'amount', 'description', 'category', 'merchant_name']
+
 const selectedPrimaryCategory = ref('')
 const selectedSubcategory = ref('')
 const editingIndex = ref(null)
@@ -159,21 +162,48 @@ function cancelEdit() {
   }
 }
 
+function isValidDate(value) {
+  const d = new Date(value)
+  return !isNaN(d.getTime())
+}
+
 async function saveEdit(tx) {
   try {
-    await updateTransaction({
-      transaction_id: tx.transaction_id,
-      ...editBuffer.value,
+    const payload = { transaction_id: tx.transaction_id }
+    EDITABLE_FIELDS.forEach((field) => {
+      if (editBuffer.value[field] !== tx[field]) {
+        payload[field] = editBuffer.value[field]
+      }
     })
-    Object.assign(tx, editBuffer.value)
+
+    if (Object.keys(payload).length === 1) {
+      toast.info('No changes to save')
+      return
+    }
+
+    if (payload.date && !isValidDate(payload.date)) {
+      toast.error('Invalid date format')
+      return
+    }
+
+    if (payload.amount != null && isNaN(Number(payload.amount))) {
+      toast.error('Invalid amount')
+      return
+    }
+
+    await updateTransaction(payload)
+    const { transaction_id: _id, ...changes } = payload
+    Object.assign(tx, changes)
     editingIndex.value = null
     toast.success('Transaction updated')
 
-    const confirmed = confirm(
-      `Always use description "${editBuffer.value.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`,
-    )
-    if (confirmed) {
-      console.log('[RuleEngine] Create rule: if merchant is', tx.merchant_name)
+    if (payload.description) {
+      const confirmed = confirm(
+        `Always use description "${payload.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`,
+      )
+      if (confirmed) {
+        console.log('[RuleEngine] Create rule: if merchant is', tx.merchant_name)
+      }
     }
   } catch (e) {
     console.error('Failed to save edit:', e)

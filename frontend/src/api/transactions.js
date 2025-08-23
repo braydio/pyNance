@@ -34,6 +34,15 @@ export const fetchTransactions = async (params = {}) => {
   return (response.data?.status === 'success') ? response.data.data : { transactions: [] }
 }
 
+/**
+ * Update mutable transaction fields.
+ *
+ * Only ``date`` (YYYY-MM-DD), ``amount``, ``description``, ``category`` and
+ * ``merchant_name`` may be supplied along with ``transaction_id``.
+ *
+ * @param {Object} transactionData - Transaction attributes to persist.
+ * @returns {Promise<Object>} API response
+ */
 export const updateTransaction = async (transactionData) => {
   const response = await axios.put('/api/transactions/update', transactionData)
   return response.data
