@@ -1,3 +1,7 @@
+<!--
+  Dashboard.vue
+  Main application dashboard showing snapshots, charts, and financial summaries.
+-->
 <template>
   <AppLayout>
     <!-- WELCOME HEADER CARD -->
@@ -45,12 +49,16 @@
             </div>
           </div>
           <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @data-change="chartData = $event" @bar-click="onNetBarClick" />
-          <DailyNetStatistics 
-            :summary="netSummary" 
-            :chart-data="chartData" 
-            :zoomed-out="zoomedOut" 
-          />
         </div>
+      </div>
+
+      <!-- FINANCIAL SUMMARY ROW -->
+      <div class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6">
+        <FinancialSummary
+          :summary="netSummary"
+          :chart-data="chartData"
+          :zoomed-out="zoomedOut"
+        />
       </div>
 
       <!-- SPENDING ROW: Category Chart & Insights -->
@@ -169,7 +177,7 @@ import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
-import DailyNetStatistics from '@/components/statistics/DailyNetStatistics.vue'
+import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
