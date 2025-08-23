@@ -197,15 +197,6 @@
 
 - ***
 
-## RecurringTX.vue
-
-### Components
-
--
-
-#### Issues / TODOs
-
-- ***
 
 ## RecurringScanDemo.vue
 
