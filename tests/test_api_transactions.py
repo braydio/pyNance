@@ -115,3 +115,44 @@ def test_account_transactions_recent_limited_and_sorted(client, monkeypatch):
     assert len(ids) == 2
     assert captured["recent"] is True
     assert captured["limit"] == 2
+
+
+def test_update_transaction_validates_date(client, monkeypatch):
+    txn_stub = types.SimpleNamespace(
+        amount=0.0,
+        date=None,
+        description="",
+        category="",
+        merchant_name="",
+        merchant_type="",
+        is_internal=False,
+        user_modified=False,
+        user_modified_fields=None,
+    )
+    query_result = types.SimpleNamespace(first=lambda: txn_stub)
+    monkeypatch.setattr(
+        transactions_module.Transaction,
+        "query",
+        types.SimpleNamespace(filter_by=lambda **kwargs: query_result),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(session=types.SimpleNamespace(commit=lambda: None)),
+        raising=False,
+    )
+
+    resp = client.put(
+        "/api/transactions/update",
+        json={"transaction_id": "tx1", "date": "bad-date"},
+    )
+    assert resp.status_code == 400
+    assert resp.get_json()["status"] == "error"
+
+    resp = client.put(
+        "/api/transactions/update",
+        json={"transaction_id": "tx1", "date": "2024-01-02"},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "success"

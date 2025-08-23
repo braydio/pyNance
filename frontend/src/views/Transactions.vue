@@ -53,6 +53,8 @@
 
 <script>
 // View for listing and managing transactions with themed layout and paging.
+// Editing is restricted to date, amount, description, category and merchant name;
+// account identifiers and provider metadata remain read-only.
 import { ref } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
