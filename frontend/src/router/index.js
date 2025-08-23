@@ -8,7 +8,6 @@ import Transactions from '../views/Transactions.vue'
 import RecurringTX from '../views/RecurringTX.vue'
 import Forecast from '@/views/Forecast.vue'
 import Planning from '@/views/Planning.vue'
-import Investments from '../views/Investments.vue'
 import Institutions from '../views/Institutions.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
@@ -18,6 +17,7 @@ import ForecastMock from '@/views/ForecastMock.vue'
 import RecurringScanDemo from '@/views/RecurringScanDemo.vue'
 
 
+const Investments = () => import('../views/Investments.vue')
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
