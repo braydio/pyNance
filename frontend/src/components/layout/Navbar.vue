@@ -7,7 +7,6 @@
       <router-link to="/transactions" class="nav-link">Transactions</router-link>
       <router-link to="/forecast" class="nav-link">Forecasting</router-link>
       <router-link to="/planning" class="nav-link">Planning</router-link>
-      <router-link to="/recurring-transactions" class="nav-link">Recurring Tx</router-link>
     </div>
   </nav>
 </template>

@@ -47,7 +47,6 @@ This consolidated TODO serves as the single source of truth for pyNance frontend
 - **[FORECAST]** = `frontend/src/views/Forecast.vue`
 - **[FORECAST_MOCK]** = `frontend/src/views/ForecastMock.vue`
 - **[DASHBOARD_MOCK]** = `frontend/src/views/DashboardMock.vue`
-- **[RECURRING_TX]** = `frontend/src/views/RecurringTX.vue`
 - **[RECURRING_SCAN]** = `frontend/src/views/RecurringScanDemo.vue`
 - **[SETTINGS]** = `frontend/src/views/Settings.vue`
 
@@ -609,30 +608,6 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement account toggle controls
 - [ ] Apply consistent Tailwind CSS styling throughout
 
-### RecurringTX.vue [COMPONENT_RECURRING_TX]
-
-#### Current Implementation Analysis
-- [ ] Replace generic dashboard content with recurring transaction functionality
-- [ ] Remove hardcoded summary cards (Net Worth, YTD Spending, etc.)
-- [ ] Replace remote webhook command trigger with recurring transaction controls
-- [ ] Implement proper recurring transaction data fetching and display
-- [ ] Add proper error handling for recurring transaction operations
-
-#### Links to Recurring Detection
-- [ ] Integrate with backend recurring detection service at `/api/recurring`
-- [ ] Connect to recurring transaction scan functionality
-- [ ] Implement pattern detection algorithm results display
-- [ ] Add manual recurring transaction creation forms
-- [ ] Create recurring transaction editing and deletion controls
-- [ ] Link to RecurringScanDemo.vue for educational content
-
-#### Placeholders for Development
-- [ ] Create mock recurring transaction data for development
-- [ ] Implement recurring transaction list view with filtering
-- [ ] Add recurring transaction frequency selection (daily, weekly, monthly, yearly)
-- [ ] Create recurring transaction amount and category editing
-- [ ] Implement recurring transaction scheduling and next occurrence display
-- [ ] Add recurring transaction performance analytics and insights
 
 ### RecurringScanDemo.vue [COMPONENT_RECURRING_SCAN]
 
@@ -650,7 +625,6 @@ pytest tests/test_model_field_validation.py
 - [ ] Display scan results with confidence scores and pattern analysis
 - [ ] Implement demo data scenarios showing different recurring patterns
 - [ ] Add educational content explaining how recurring detection works
-- [ ] Link back to RecurringTX.vue for actual recurring transaction management
 
 #### Placeholders and Links to Recurring Detection
 - [ ] Create comprehensive demo scenarios (weekly groceries, monthly rent, etc.)
