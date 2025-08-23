@@ -46,12 +46,11 @@ def normalize_balance(amount, account_type):
 def detect_internal_transfer(
     txn, date_epsilon: int = 1, amount_epsilon: float = 0.01
 ) -> None:
-    """Flag ``txn`` and its counterpart as an internal transfer if matched.
+    """Flag ``txn`` and a matching counterpart as an internal transfer.
 
-    A counterpart is a transaction for the same user in a different account
-    with an equal and opposite amount occurring within ``date_epsilon`` days.
-    To reduce false positives, the description of either transaction must
-    mention the other account's name.
+    A counterpart is any transaction for the same user in a different account
+    with an equal and opposite amount within ``date_epsilon`` days. The
+    closest date match is selected when multiple candidates exist.
     """
 
     account = Account.query.filter_by(account_id=txn.account_id).first()
@@ -62,7 +61,7 @@ def detect_internal_transfer(
     end = txn.date + timedelta(days=date_epsilon)
 
     candidates = (
-        db.session.query(Transaction, Account)
+        db.session.query(Transaction)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter(Account.user_id == account.user_id)
         .filter(Transaction.account_id != txn.account_id)
@@ -73,18 +72,19 @@ def detect_internal_transfer(
         .all()
     )
 
-    desc = (txn.description or "").lower()
-    for other, other_acc in candidates:
-        other_desc = (other.description or "").lower()
-        if not other_acc.name:
-            continue
-        name = other_acc.name.lower()
-        if name in desc or (account.name and account.name.lower() in other_desc):
-            txn.is_internal = True
-            txn.internal_match_id = other.transaction_id
-            other.is_internal = True
-            other.internal_match_id = txn.transaction_id
-            break
+    best = None
+    best_diff = None
+    for other in candidates:
+        diff = abs((txn.date - other.date).days)
+        if best is None or diff < best_diff:
+            best = other
+            best_diff = diff
+
+    if best:
+        txn.is_internal = True
+        txn.internal_match_id = best.transaction_id
+        best.is_internal = True
+        best.internal_match_id = txn.transaction_id
 
 
 def get_accounts_from_db(include_hidden: bool = False):
