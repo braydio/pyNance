@@ -6,30 +6,30 @@
   <AppLayout>
     <BasePageLayout gap="gap-8">
       <!-- WELCOME HEADER CARD -->
-      <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-      <div class="flex justify-center mb-8">
-        <div
-          class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
-          <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow">Welcome, <span
-              class="username">{{ userName }}</span>!</h1>
+      <div class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
+      <div
+        class="w-full mb-8 bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
+        <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow">Welcome, <span
+            class="username">{{ userName }}</span>!</h1>
         <p class="text-lg text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
-      </div>
-      <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
+      <div class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
       <!-- TOP ROW: Top Accounts Snapshot, Recent Transactions & Net Income -->
-      <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-4 items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between">
+          class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between">
           <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-green)] text-center">Top Accounts</h2>
           <TopAccountSnapshot use-spectrum />
         </div>
         <!-- Recent Transactions Card -->
-        <RecentTransactions />
+        <div class="col-span-1">
+          <RecentTransactions />
+        </div>
         <!-- Net Income Summary Card -->
         <div
-          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3">
+          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3">
           <div class="flex items-center justify-center mb-4">
             <div class="flex-1 flex justify-center">
               <h2 class="daily-net-chart-title">
@@ -78,10 +78,10 @@
       </div>
 
       <!-- SPENDING ROW: Category Chart & Insights -->
-      <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Category Spending -->
         <div
-          class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3">
+          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">Spending by Category</h2>
             <ChartWidgetTopBar>
@@ -91,7 +91,7 @@
                   <input type="date" v-model="catRange.end"
                     class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
-                  @update:modelValue="onCatSelected" class="w-64 ml-2" />
+                  @update:modelValue="onCatSelected" class="ml-2 w-full md:w-64" />
                 <button
                   class="btn btn-outline hover-lift ml-2"
                   @click="groupOthers = !groupOthers"
@@ -112,7 +112,7 @@
         </div>
         <!-- Spending Insights Placeholder -->
         <div
-          class="flex-1 min-w-[340px] max-w-[400px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-magenta)] p-6 flex flex-col items-center justify-center">
+          class="md:col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-magenta)] p-6 flex flex-col items-center justify-center">
           <h2 class="text-xl font-bold text-[var(--color-accent-magenta)] mb-4">Spending Insights</h2>
           <p class="italic text-muted text-center">More detailed insights coming soon...</p>
         </div>
