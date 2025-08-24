@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PageHeader > renders actions slot 1`] = `
+"<div class="card glass p-6 flex items-center">
+  <div class="flex items-center gap-3 flex-1">
+    <div>
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <p class="text-muted"></p>
+    </div>
+  </div>
+  <div class="flex items-center gap-2 ml-auto"><button>Action</button></div>
+</div>"
+`;
+
+exports[`PageHeader > renders optional subtitle and icon 1`] = `
+"<div class="card glass p-6 flex items-center">
+  <div class="flex items-center gap-3 flex-1"><span class="icon"></span>
+    <div>
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <p class="text-muted">Overview</p>
+    </div>
+  </div>
+  <!--v-if-->
+</div>"
+`;
+
+exports[`PageHeader > renders title 1`] = `
+"<div class="card glass p-6 flex items-center">
+  <div class="flex items-center gap-3 flex-1">
+    <div>
+      <h1 class="text-2xl font-bold">Dashboard</h1>
+      <p class="text-muted"></p>
+    </div>
+  </div>
+  <!--v-if-->
+</div>"
+`;

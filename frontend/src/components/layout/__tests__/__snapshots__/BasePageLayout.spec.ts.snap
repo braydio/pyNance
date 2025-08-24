@@ -1,0 +1,20 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BasePageLayout > accepts custom padding 1`] = `
+"<div class="flex flex-col p-4">
+  <div>Content</div>
+</div>"
+`;
+
+exports[`BasePageLayout > applies gap class when provided 1`] = `
+"<div class="flex flex-col p-6 gap-4">
+  <div>A</div>
+  <div>B</div>
+</div>"
+`;
+
+exports[`BasePageLayout > uses default padding 1`] = `
+"<div class="flex flex-col p-6">
+  <div>Content</div>
+</div>"
+`;
