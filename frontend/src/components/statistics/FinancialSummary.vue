@@ -1,7 +1,8 @@
 <!--
   FinancialSummary.vue
   Displays key income, expense, and net metrics derived from DailyNetChart data.
-  Users can toggle between basic and extended views with moving averages and trends.
+  Users can toggle between basic and extended views with moving averages, trends,
+  volatility, outlier detection, and highest income/expense days.
 -->
 <template>
   <div class="statistics-container">
@@ -85,6 +86,28 @@
             </div>
           </div>
 
+          <!-- Extremes -->
+          <div class="stat-group">
+            <h4 class="group-title">Extremes</h4>
+            <div class="stat-item">
+              <span class="stat-label">Highest Income:</span>
+              <span class="stat-value">{{ highestIncomeLabel }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Highest Expense:</span>
+              <span class="stat-value">{{ highestExpenseLabel }}</span>
+            </div>
+          </div>
+
+          <!-- Outliers -->
+          <div class="stat-group">
+            <h4 class="group-title">Outliers</h4>
+            <div class="stat-item">
+              <span class="stat-label">Days:</span>
+              <span class="stat-value">{{ outlierLabel }}</span>
+            </div>
+          </div>
+
           <!-- Above Average Days -->
           <div class="stat-group">
             <h4 class="group-title">Above Avg Days</h4>
@@ -126,10 +149,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  defaultExtended: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 // Toggle state for basic/extended view
-const isExtended = ref(false)
+const isExtended = ref(props.defaultExtended)
 
 function toggleView() {
   isExtended.value = !isExtended.value
@@ -153,6 +180,9 @@ const extendedStats = computed(() => {
       movingAverage30: 0,
       trend: 0,
       volatility: 0,
+      highestIncomeDay: null,
+      highestExpenseDay: null,
+      outliers: [],
     }
   }
 
@@ -174,6 +204,32 @@ const extendedStats = computed(() => {
   // Volatility (standard deviation)
   const volatility = calculateVolatility(netValues)
 
+  // Highest income and expense days
+  const highestIncomeDay = data.reduce(
+    (max, d) =>
+      d.income?.parsedValue > (max?.amount || 0)
+        ? { date: d.date, amount: d.income.parsedValue }
+        : max,
+    null,
+  )
+  const highestExpenseDay = data.reduce(
+    (min, d) =>
+      d.expenses?.parsedValue < (min?.amount || 0)
+        ? { date: d.date, amount: d.expenses.parsedValue }
+        : min,
+    null,
+  )
+
+  // Outlier detection based on net values
+  const mean = netValues.reduce((a, b) => a + b, 0) / netValues.length
+  const outliers = data
+    .filter(
+      (d) =>
+        Math.abs((d.net?.parsedValue || 0) - mean) > 2 * volatility &&
+        volatility > 0,
+    )
+    .map((d) => d.date)
+
   return {
     avgDailyIncome,
     avgDailyExpenses,
@@ -182,6 +238,9 @@ const extendedStats = computed(() => {
     movingAverage30,
     trend,
     volatility,
+    highestIncomeDay,
+    highestExpenseDay,
+    outliers,
   }
 })
 
@@ -204,6 +263,21 @@ const volatilityLabel = computed(() => {
   if (vol < 50) return 'Low'
   if (vol < 200) return 'Medium'
   return 'High'
+})
+
+const highestIncomeLabel = computed(() => {
+  const hi = extendedStats.value.highestIncomeDay
+  return hi ? `${hi.date} (${formatAmount(hi.amount)})` : '—'
+})
+
+const highestExpenseLabel = computed(() => {
+  const he = extendedStats.value.highestExpenseDay
+  return he ? `${he.date} (${formatAmount(he.amount)})` : '—'
+})
+
+const outlierLabel = computed(() => {
+  const outs = extendedStats.value.outliers
+  return outs.length ? outs.join(', ') : 'None'
 })
 
 // Statistical calculation functions
