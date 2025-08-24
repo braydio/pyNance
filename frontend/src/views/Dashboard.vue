@@ -15,6 +15,13 @@
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
       <div class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
+      <div class="flex justify-end mb-4">
+        <DateRangeSelector
+          v-model:start-date="dateRange.start"
+          v-model:end-date="dateRange.end"
+          v-model:zoomed-out="zoomedOut"
+        />
+      </div>
       <!-- TOP ROW: Top Accounts Snapshot, Recent Transactions & Net Income -->
       <div class="grid grid-cols-1 gap-6 md:grid-cols-4 items-stretch">
         <!-- Top Accounts Snapshot Card -->
@@ -31,23 +38,10 @@
         <div
           class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3">
           <div class="flex items-center justify-center mb-4">
-            <div class="flex-1 flex justify-center">
-              <h2 class="daily-net-chart-title">
-                <span class="title-text">Net Income</span>
-                <span class="title-subtitle">(Daily)</span>
-              </h2>
-            </div>
-            <div class="flex-shrink-0">
-              <ChartWidgetTopBar>
-                <template #controls>
-                  <button
-                    class="btn btn-outline hover-lift"
-                    @click="zoomedOut = !zoomedOut">
-                    {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
-                  </button>
-                </template>
-              </ChartWidgetTopBar>
-            </div>
+            <h2 class="daily-net-chart-title">
+              <span class="title-text">Net Income</span>
+              <span class="title-subtitle">(Daily)</span>
+            </h2>
           </div>
           <ChartControls
             v-model:show7-day="show7Day"
@@ -56,6 +50,8 @@
             v-model:show-avg-expenses="showAvgExpenses"
           />
           <DailyNetChart
+            :start-date="dateRange.start"
+            :end-date="dateRange.end"
             :zoomed-out="zoomedOut"
             :show7-day="show7Day"
             :show30-day="show30Day"
@@ -86,10 +82,6 @@
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">Spending by Category</h2>
             <ChartWidgetTopBar>
               <template #controls>
-                  <input type="date" v-model="catRange.start"
-                    class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]" />
-                  <input type="date" v-model="catRange.end"
-                    class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)] ml-2" />
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="ml-2 w-full md:w-64" />
                 <button
@@ -101,7 +93,7 @@
               </template>
             </ChartWidgetTopBar>
           </div>
-          <CategoryBreakdownChart :start-date="catRange.start" :end-date="catRange.end"
+          <CategoryBreakdownChart :start-date="dateRange.start" :end-date="dateRange.end"
             :selected-category-ids="catSelected" :group-others="groupOthers"
             @summary-change="catSummary = $event" @categories-change="allCategoryIds = $event"
             @bar-click="onCategoryBarClick" />
@@ -195,6 +187,7 @@ import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
 import ChartControls from '@/components/ChartControls.vue'
+import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
@@ -260,11 +253,11 @@ const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 
-// --- CATEGORY BREAKDOWN STATE ---
+// --- SHARED DATE RANGE STATE ---
 const today = new Date()
-const catRange = ref({
+const dateRange = ref({
   start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30).toISOString().slice(0, 10),
-  end: new Date().toISOString().slice(0, 10)
+  end: today.toISOString().slice(0, 10)
 })
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
@@ -304,7 +297,7 @@ function onCatSelected(newIds) {
 }
 
 // When user changes date range, let next data load re-apply auto-select
-watch(() => [catRange.value.start, catRange.value.end], () => {
+watch(() => [dateRange.value.start, dateRange.value.end], () => {
   defaultSet.value = false
 })
 
@@ -371,8 +364,8 @@ async function onCategoryBarClick(payload) {
   // `summary-change` events that populate `catSummary` with the actual start
   // and end dates used in its query. This ensures the modal reflects the same
   // range, even if it differs from the user-selected inputs.
-  const start = catSummary.value.startDate || catRange.value.start
-  const end = catSummary.value.endDate || catRange.value.end
+  const start = catSummary.value.startDate || dateRange.value.start
+  const end = catSummary.value.endDate || dateRange.value.end
 
   const result = await fetchTransactions({
     category_ids: ids,
