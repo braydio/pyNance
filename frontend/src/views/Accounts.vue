@@ -1,14 +1,10 @@
 <!-- Accounts.vue - Manage linked accounts and related actions. -->
 <template>
   <BasePageLayout class="accounts-page" gap="gap-8">
-    <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <Wallet class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Accounts</h1>
-        <p class="text-muted">Link and refresh your accounts</p>
-      </div>
-    </Card>
+    <PageHeader :icon="Wallet">
+      <template #title>Accounts</template>
+      <template #subtitle>Link and refresh your accounts</template>
+    </PageHeader>
 
     <!-- Account Actions -->
     <Card class="p-6">
@@ -116,6 +112,7 @@ import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 

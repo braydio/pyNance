@@ -1,9 +1,6 @@
 <template>
   <BasePageLayout>
-    <PageHeader>
-      <template #icon>
-        <SettingsIcon class="w-6 h-6" />
-      </template>
+    <PageHeader :icon="SettingsIcon">
       <template #title>Settings</template>
       <template #subtitle>Manage application preferences</template>
     </PageHeader>
@@ -28,12 +25,12 @@ export default {
   components: {
     BasePageLayout,
     PageHeader,
-    SettingsIcon,
   },
   data() {
     return {
       themes: [],
       selectedTheme: '',
+      SettingsIcon,
     }
   },
   async created() {
