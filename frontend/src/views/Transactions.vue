@@ -1,13 +1,8 @@
 <template>
-  <div class="transactions-page container py-8 space-y-8">
-    <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <CreditCard class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Transactions</h1>
-        <p class="text-muted">View and manage your transactions</p>
-      </div>
-    </Card>
+  <BasePageLayout :spacing="8">
+    <template #header>
+      <PageHeader title="Transactions" subtitle="View and manage your transactions" :icon="CreditCard" />
+    </template>
 
     <!-- Top Controls -->
     <Card class="p-6">
@@ -48,7 +43,7 @@
         </div>
       </transition>
     </Card>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script>
@@ -62,6 +57,8 @@ import RecurringTransactionSection from '@/components/recurring/RecurringTransac
 import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 import { CreditCard } from 'lucide-vue-next'
 
 export default {
@@ -72,7 +69,8 @@ export default {
     ImportFileSelector,
     UiButton,
     Card,
-    CreditCard,
+    BasePageLayout,
+    PageHeader,
   },
   setup() {
     const {
@@ -111,6 +109,7 @@ export default {
       showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,
+      CreditCard,
     }
   },
 }

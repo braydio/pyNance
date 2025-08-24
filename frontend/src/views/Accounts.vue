@@ -1,32 +1,27 @@
 <template>
-  <div class="accounts-page container space-y-8">
-    <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <Wallet class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Accounts</h1>
-        <p class="text-muted">Link and refresh your accounts</p>
-      </div>
-    </Card>
+  <BasePageLayout :spacing="8">
+    <template #header>
+      <PageHeader title="Accounts" subtitle="Link and refresh your accounts" :icon="Wallet" />
+    </template>
 
     <!-- Account Actions -->
     <Card class="p-6">
       <h2 class="text-xl font-semibold mb-4">Account Actions</h2>
       <div class="flex flex-wrap gap-4 justify-start">
         <LinkAccount :selected-products="selectedProducts" @manual-token-click="toggleManualTokenMode" />
-        
+
         <UiButton variant="primary" @click="navigateToPlanning">
           Plan Account
         </UiButton>
-        
+
         <TokenUpload v-if="showTokenForm" @cancel="toggleManualTokenMode" class="w-full mt-4" />
       </div>
-      
+
       <div class="mt-6 space-y-4">
         <TogglePanel v-model="showPlaidRefresh" title="Refresh Plaid Accounts">
           <RefreshPlaidControls />
         </TogglePanel>
-        
+
         <TogglePanel v-model="showTellerRefresh" title="Refresh Teller Accounts">
           <RefreshTellerControls />
         </TogglePanel>
@@ -98,7 +93,7 @@
     <footer class="mt-12 text-center text-sm text-muted border-t pt-4">
       &copy; good dashroad.
     </footer>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
@@ -115,6 +110,8 @@ import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 
 // Business Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
@@ -189,7 +186,7 @@ async function loadData() {
   loadingSummary.value = true
   loadingTransactions.value = true
   loadingHistory.value = true
-  
+
   try {
     const res = await fetchNetChanges(accountId)
     if (res?.status === 'success') {
@@ -227,4 +224,3 @@ watch(() => route.params.accountId, (newAccountId) => {
   }
 })
 </script>
-

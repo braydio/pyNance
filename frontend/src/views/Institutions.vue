@@ -1,21 +1,18 @@
 <template>
-  <AppLayout>
-    <div class="space-y-6">
-      <header class="text-center p-4 rounded-lg shadow-md bg-[var(--color-bg)]">
-        <h1 class="text-3xl font-bold text-[var(--color-accent-cyan)]">Institutions</h1>
-        <p class="text-sm text-muted">Overview of all linked providers and accounts</p>
-      </header>
-      <section>
-        <InstitutionTable />
-      </section>
-    </div>
-  </AppLayout>
+  <BasePageLayout>
+    <template #header>
+      <PageHeader title="Institutions" subtitle="Overview of all linked providers and accounts" />
+    </template>
+    <InstitutionTable />
+  </BasePageLayout>
 </template>
 
 <script setup>
 // Basic institutions page showing existing InstitutionTable
 // Advanced analytics and management features will be added incrementally.
 import InstitutionTable from '@/components/tables/InstitutionTable.vue'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 </script>
 
 <style scoped>
