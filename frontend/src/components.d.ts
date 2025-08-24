@@ -19,6 +19,7 @@ declare module 'vue' {
     BaseCard: typeof import('./components/base/BaseCard.vue')['default']
     BaseChart: typeof import('./components/unused/BaseChart.vue')['default']
     BaseIcon: typeof import('./components/icons/BaseIcon.vue')['default']
+    BasePageLayout: typeof import('./components/layout/BasePageLayout.vue')['default']
     BaseTable: typeof import('./components/base/BaseTable.vue')['default']
     Button: typeof import('./components/ui/Button.vue')['default']
     Card: typeof import('./components/ui/Card.vue')['default']
