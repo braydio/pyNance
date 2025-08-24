@@ -1,22 +1,20 @@
+<!--
+  Forecast.vue
+  Page displaying forecast charts and summaries.
+-->
 <template>
-  <div class="forecast-view">
+  <BasePageLayout>
+    <template #header>
+      <PageHeader title="Forecasting" :icon="TrendingUp" />
+    </template>
     <ForecastLayout />
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
 import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { TrendingUp } from 'lucide-vue-next'
 </script>
 
-<style scoped>
-@reference "../assets/css/main.css";
-.forecast-view {
-  background-color: var(--page-bg);
-  color: var(--theme-fg);
-  min-height: 100vh;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-</style>
