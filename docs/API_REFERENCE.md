@@ -22,6 +22,7 @@ This document serves as the authoritative reference for API routing conventions,
 
 ```
 GET    /api/transactions/get_transactions
+POST   /api/transactions/scan-internal
 GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
 GET    /api/accounts/<id>/history
@@ -113,6 +114,34 @@ Returns a paginated list of transactions for the specified account. The `<accoun
     "has_more": true,
     "next_offset": 100
   }
+}
+```
+
+**POST /api/transactions/scan-internal**
+
+Detects potential internal transfer pairs across a user's transactions. The
+endpoint returns candidate matches but does not modify any transaction flags.
+
+**Response Body**
+
+```json
+{
+  "status": "success",
+  "pairs": [
+    {
+      "transaction_id": "T1",
+      "counterpart_id": "T2",
+      "amount": -100.0,
+      "date": "2024-01-01",
+      "description": "Transfer to savings",
+      "counterpart": {
+        "transaction_id": "T2",
+        "amount": 100.0,
+        "date": "2024-01-01",
+        "description": "Transfer from checking"
+      }
+    }
+  ]
 }
 ```
 

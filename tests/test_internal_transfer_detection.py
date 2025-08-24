@@ -94,6 +94,14 @@ spec_logic = importlib.util.spec_from_file_location(
 )
 account_logic = importlib.util.module_from_spec(spec_logic)
 spec_logic.loader.exec_module(account_logic)
+sql_pkg.account_logic = account_logic
+
+spec_routes = importlib.util.spec_from_file_location(
+    "app.routes.transactions",
+    os.path.join(BASE_BACKEND, "app", "routes", "transactions.py"),
+)
+transactions_routes = importlib.util.module_from_spec(spec_routes)
+spec_routes.loader.exec_module(transactions_routes)
 
 
 def test_detect_internal_transfer_marks_both_transactions():
@@ -168,3 +176,41 @@ def test_detect_internal_transfer_without_description_match():
         assert t2.is_internal is True
         assert t1.internal_match_id == "X2"
         assert t2.internal_match_id == "X1"
+
+
+def test_scan_internal_transfers_endpoint():
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    db.init_app(app)
+    app.register_blueprint(transactions_routes.transactions, url_prefix="/transactions")
+    with app.app_context():
+        db.create_all()
+        acc1 = models.Account(account_id="C1", user_id="u1", name="Checking")
+        acc2 = models.Account(account_id="C2", user_id="u1", name="Savings")
+        db.session.add_all([acc1, acc2])
+        t1 = models.Transaction(
+            transaction_id="Y1",
+            account_id="C1",
+            user_id="u1",
+            amount=-25.0,
+            date=datetime(2024, 3, 1).date(),
+            description="Transfer out",
+        )
+        t2 = models.Transaction(
+            transaction_id="Y2",
+            account_id="C2",
+            user_id="u1",
+            amount=25.0,
+            date=datetime(2024, 3, 1).date(),
+            description="Transfer in",
+        )
+        db.session.add_all([t1, t2])
+        db.session.commit()
+
+        client = app.test_client()
+        res = client.post("/transactions/scan-internal")
+        assert res.status_code == 200
+        data = res.get_json()
+        assert len(data["pairs"]) == 1
+        assert data["pairs"][0]["transaction_id"] == "Y1"
+        assert models.Transaction.query.filter_by(is_internal=True).count() == 0
