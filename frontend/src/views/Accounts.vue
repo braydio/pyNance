@@ -1,14 +1,10 @@
 <template>
-  <div class="accounts-page container space-y-8">
-    <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <Wallet class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Accounts</h1>
-        <p class="text-muted">Link and refresh your accounts</p>
-      </div>
-    </Card>
+  <AppLayout>
+    <template #header>
+      <PageHeader title="Accounts" subtitle="Link and refresh your accounts" :icon="Wallet" />
+    </template>
 
+    <div class="space-y-8">
     <!-- Account Actions -->
     <Card class="p-6">
       <h2 class="text-xl font-semibold mb-4">Account Actions</h2>
@@ -94,11 +90,12 @@
       <InstitutionTable @refresh="refreshCharts" />
     </Card>
 
-    <!-- Footer -->
-    <footer class="mt-12 text-center text-sm text-muted border-t pt-4">
+    </div>
+
+    <template #footer>
       &copy; good dashroad.
-    </footer>
-  </div>
+    </template>
+  </AppLayout>
 </template>
 
 <script setup>
@@ -115,6 +112,8 @@ import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 
 // Business Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'

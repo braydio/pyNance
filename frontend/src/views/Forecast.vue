@@ -1,22 +1,15 @@
 <template>
-  <div class="forecast-view">
+  <AppLayout>
+    <template #header>
+      <PageHeader title="Forecasting" subtitle="Project your balances" :icon="LineChart" />
+    </template>
     <ForecastLayout />
-  </div>
+  </AppLayout>
 </template>
 
 <script setup>
+import AppLayout from '@/components/layout/AppLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
+import { LineChart } from 'lucide-vue-next'
 </script>
-
-<style scoped>
-@reference "../assets/css/main.css";
-.forecast-view {
-  background-color: var(--page-bg);
-  color: var(--theme-fg);
-  min-height: 100vh;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-}
-</style>

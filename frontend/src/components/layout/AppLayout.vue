@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col">
+  <div class="min-h-screen flex flex-col" style="background-color: var(--page-bg); color: var(--theme-fg);">
     <header class="glass border-b" style="border-color: var(--divider); box-shadow: 0 2px 4px var(--shadow);">
       <div class="container py-6">
         <slot name="header" />

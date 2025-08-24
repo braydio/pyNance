@@ -1,54 +1,49 @@
 <template>
-  <div class="transactions-page container py-8 space-y-8">
-    <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <CreditCard class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Transactions</h1>
-        <p class="text-muted">View and manage your transactions</p>
-      </div>
-    </Card>
+  <AppLayout>
+    <template #header>
+      <PageHeader title="Transactions" subtitle="View and manage your transactions" :icon="CreditCard" />
+    </template>
 
-    <!-- Top Controls -->
-    <Card class="p-6">
-      <div class="grid gap-4 md:grid-cols-2">
-        <ImportFileSelector />
-        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
-      </div>
-    </Card>
-
-    <!-- Main Table -->
-    <Card class="p-6 space-y-4">
-      <h2 class="text-2xl font-bold">Recent Transactions</h2>
-      <transition name="fade-in-up" mode="out-in">
-        <UpdateTransactionsTable :key="currentPage" :transactions="filteredTransactions" :sort-key="sortKey"
-          :sort-order="sortOrder" @sort="setSort"
-          @editRecurringFromTransaction="prefillRecurringFromTransaction" />
-      </transition>
-    </Card>
-
-    <!-- Pagination -->
-    <div id="pagination-controls" class="flex items-center justify-center gap-4">
-      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
-      <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
-    </div>
-
-    <!-- Recurring Transactions -->
-    <Card class="p-6 space-y-4">
-      <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold">Recurring Transactions</h2>
-        <UiButton variant="outline" @click="showRecurring = !showRecurring">
-          {{ showRecurring ? 'Hide' : 'Show' }}
-        </UiButton>
-      </div>
-      <transition name="accordion">
-        <div v-if="showRecurring" class="mt-4">
-          <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
+    <div class="space-y-8">
+      <!-- Top Controls -->
+      <Card class="p-6">
+        <div class="grid gap-4 md:grid-cols-2">
+          <ImportFileSelector />
+          <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
         </div>
-      </transition>
-    </Card>
-  </div>
+      </Card>
+
+      <!-- Main Table -->
+      <Card class="p-6 space-y-4">
+        <h2 class="text-2xl font-bold">Recent Transactions</h2>
+        <transition name="fade-in-up" mode="out-in">
+          <UpdateTransactionsTable :key="currentPage" :transactions="filteredTransactions" :sort-key="sortKey" :sort-order="sortOrder" @sort="setSort" @editRecurringFromTransaction="prefillRecurringFromTransaction" />
+        </transition>
+      </Card>
+
+      <!-- Pagination -->
+      <div id="pagination-controls" class="flex items-center justify-center gap-4">
+        <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
+        <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
+        <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
+      </div>
+
+      <!-- Recurring Transactions -->
+      <Card class="p-6 space-y-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-2xl font-bold">Recurring Transactions</h2>
+          <UiButton variant="outline" @click="showRecurring = !showRecurring">
+            {{ showRecurring ? 'Hide' : 'Show' }}
+          </UiButton>
+        </div>
+        <transition name="accordion">
+          <div v-if="showRecurring" class="mt-4">
+            <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
+          </div>
+        </transition>
+      </Card>
+    </div>
+  </AppLayout>
 </template>
 
 <script>
@@ -62,17 +57,20 @@ import RecurringTransactionSection from '@/components/recurring/RecurringTransac
 import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import PageHeader from '@/components/layout/PageHeader.vue'
 import { CreditCard } from 'lucide-vue-next'
 
 export default {
   name: 'TransactionsView',
   components: {
+    AppLayout,
+    PageHeader,
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
     UiButton,
     Card,
-    CreditCard,
   },
   setup() {
     const {
@@ -111,6 +109,7 @@ export default {
       showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,
+      CreditCard,
     }
   },
 }
