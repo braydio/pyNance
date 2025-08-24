@@ -4,7 +4,7 @@
 -->
 <template>
   <AppLayout>
-    <div class="container">
+    <BasePageLayout gap="gap-8">
       <!-- WELCOME HEADER CARD -->
       <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
       <div class="flex justify-center mb-8">
@@ -17,7 +17,6 @@
       </div>
       </div>
       <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-      <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
       <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
@@ -152,7 +151,6 @@
           </div>
         </transition>
       </div>
-    </div>
 
     <TransactionModal
       :show="showModal"
@@ -160,7 +158,7 @@
       :transactions="modalTransactions"
       @close="showModal = false"
     />
-  </div>
+    </BasePageLayout>
 
     <template #footer>
       &copy; {{ new Date().getFullYear() }} braydio • pyNance.
@@ -173,6 +171,7 @@
 <script setup>
 // Dashboard view showing financial charts and transaction tables.
 import AppLayout from '@/components/layout/AppLayout.vue'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
@@ -382,17 +381,6 @@ async function onCategoryBarClick(payload) {
   color: var(--color-text-muted);
 }
 
-dashboard-content {
-  max-width: 90vw;
-}
-
-@media (max-width: 768px) {
-  .dashboard-content {
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
-    gap: 1.5rem;
-  }
-}
 
 .fade-enter-active,
 .fade-leave-active {

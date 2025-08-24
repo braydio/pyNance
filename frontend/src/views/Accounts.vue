@@ -1,5 +1,6 @@
+<!-- Accounts.vue - Manage linked accounts and related actions. -->
 <template>
-  <div class="accounts-page container space-y-8">
+  <BasePageLayout class="accounts-page" gap="gap-8">
     <!-- Header -->
     <Card class="p-6 flex items-center gap-3">
       <Wallet class="w-6 h-6" />
@@ -98,7 +99,7 @@
     <footer class="mt-12 text-center text-sm text-muted border-t pt-4">
       &copy; good dashroad.
     </footer>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
@@ -115,6 +116,8 @@ import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
+
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 
 // Business Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
