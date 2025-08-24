@@ -26,6 +26,7 @@ declare module 'vue' {
     CardContent: typeof import('./components/ui/CardContent.vue')['default']
     CategoryBreakdownChart: typeof import('./components/charts/CategoryBreakdownChart.vue')['default']
     Chart: typeof import('./components/unused/Chart.vue')['default']
+    ChartControls: typeof import('./components/ChartControls.vue')['default']
     ChartWidgetTopBar: typeof import('./components/ui/ChartWidgetTopBar.vue')['default']
     DailyNetChart: typeof import('./components/charts/DailyNetChart.vue')['default']
     DownloadCSV: typeof import('./components/unused/DownloadCSV.vue')['default']
