@@ -61,6 +61,11 @@ export default {
     return response.data;
   },
 
+  async scanInternalTransfers() {
+    const response = await apiClient.post('/transactions/scan-internal');
+    return response.data;
+  },
+
   async generateLinkToken(provider, payload = {}) {
     let url = "";
     if (provider === "plaid") {

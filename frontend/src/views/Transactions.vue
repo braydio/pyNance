@@ -35,6 +35,9 @@
       <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
     </div>
 
+    <!-- Internal Transfer Detection -->
+    <InternalTransferScanner />
+
     <!-- Recurring Transactions -->
     <Card class="p-6 space-y-4">
       <div class="flex items-center justify-between">
@@ -66,6 +69,7 @@ import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import { CreditCard } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
 
 export default {
   name: 'TransactionsView',
@@ -77,6 +81,7 @@ export default {
     UiButton,
     Card,
     BasePageLayout,
+    InternalTransferScanner,
   },
   setup() {
     const {

@@ -13,6 +13,7 @@ from app.extensions import db
 from app.models import Account, Transaction
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
+from sqlalchemy import func
 
 transactions = Blueprint("transactions", __name__)
 
@@ -104,6 +105,61 @@ def update_transaction():
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logger.error(f"Error updating transaction: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/scan-internal", methods=["POST"])
+def scan_internal_transfers():
+    """Detect potential internal transfer pairs without mutating records."""
+    try:
+        txns = (
+            Transaction.query.filter(
+                (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+            ).all()
+        )
+        pairs = []
+        seen = set()
+        for txn in txns:
+            if txn.transaction_id in seen:
+                continue
+            account = Account.query.filter_by(account_id=txn.account_id).first()
+            if not account:
+                continue
+            start = txn.date - timedelta(days=1)
+            end = txn.date + timedelta(days=1)
+            counterpart = (
+                db.session.query(Transaction)
+                .join(Account, Transaction.account_id == Account.account_id)
+                .filter(Account.user_id == account.user_id)
+                .filter(Transaction.account_id != txn.account_id)
+                .filter(Transaction.date >= start)
+                .filter(Transaction.date <= end)
+                .filter(func.abs(Transaction.amount + txn.amount) <= 0.01)
+                .filter(Transaction.is_internal.is_(False))
+                .first()
+            )
+            if counterpart and counterpart.transaction_id not in seen:
+                pairs.append(
+                    {
+                        "transaction_id": txn.transaction_id,
+                        "counterpart_id": counterpart.transaction_id,
+                        "amount": txn.amount,
+                        "date": txn.date.isoformat(),
+                        "description": txn.description,
+                        "counterpart": {
+                            "transaction_id": counterpart.transaction_id,
+                            "amount": counterpart.amount,
+                            "date": counterpart.date.isoformat(),
+                            "description": counterpart.description,
+                        },
+                    }
+                )
+                seen.add(txn.transaction_id)
+                seen.add(counterpart.transaction_id)
+
+        return jsonify({"status": "success", "pairs": pairs}), 200
+    except Exception as e:
+        logger.error(f"Error scanning internal transfers: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
