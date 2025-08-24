@@ -12,11 +12,7 @@
       @input="onEnd($event.target.value)"
       class="date-picker px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)] focus:ring-2 focus:ring-[var(--color-accent-cyan)]"
     />
-    <button
-      v-if="!disableZoom"
-      class="btn btn-outline hover-lift ml-2"
-      @click="toggleZoom"
-    >
+    <button v-if="!disableZoom" class="btn btn-outline hover-lift ml-2" @click="toggleZoom">
       {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
     </button>
   </div>
