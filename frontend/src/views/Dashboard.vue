@@ -15,17 +15,13 @@
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
       <div class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-      <!-- TOP ROW: Top Accounts Snapshot, Recent Transactions & Net Income -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-4 items-stretch">
+      <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
           class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between">
           <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-green)] text-center">Top Accounts</h2>
           <TopAccountSnapshot use-spectrum />
-        </div>
-        <!-- Recent Transactions Card -->
-        <div class="col-span-1">
-          <RecentTransactions />
         </div>
         <!-- Net Income Summary Card -->
         <div
@@ -200,7 +196,6 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
-import RecentTransactions from '@/components/widgets/RecentTransactions.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
