@@ -1,19 +1,26 @@
 <template>
-  <div class="p-6 space-y-4">
-    <h1 class="text-2xl font-bold text-[var(--color-accent-yellow)]">
-      R/S Arbitrage Monitor
-    </h1>
+  <BasePageLayout>
+    <PageHeader>
+      <template #icon>
+        <Activity class="w-6 h-6" />
+      </template>
+      <template #title>R/S Arbitrage Monitor</template>
+      <template #subtitle>Live R/S arbitrage feed</template>
+    </PageHeader>
     <pre
       v-if="content"
       class="bg-gray-800 text-white p-4 rounded whitespace-pre-wrap"
     >{{ content }}</pre>
     <div v-else>Loading...</div>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { fetchArbitrageData } from '@/api/arbitrage'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { Activity } from 'lucide-vue-next'
 
 const content = ref('')
 

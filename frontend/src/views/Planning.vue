@@ -1,12 +1,21 @@
 <template>
-  <div class="planning-view">
-    <h1 class="text-2xl font-bold mb-4">Planning</h1>
+  <BasePageLayout>
+    <PageHeader>
+      <template #icon>
+        <Calendar class="w-6 h-6" />
+      </template>
+      <template #title>Planning</template>
+      <template #subtitle>Manage your budgeting and allocations</template>
+    </PageHeader>
     <pre>{{ JSON.stringify(state, null, 2) }}</pre>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
 import { usePlanning } from '@/composables/usePlanning'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { Calendar } from 'lucide-vue-next'
 
 /**
  * Top-level view for budgeting and allocation planning.
@@ -14,13 +23,3 @@ import { usePlanning } from '@/composables/usePlanning'
  */
 const { state } = usePlanning()
 </script>
-
-<style scoped>
-@reference "../assets/css/main.css";
-.planning-view {
-  background-color: var(--page-bg);
-  color: var(--theme-fg);
-  min-height: 100vh;
-  padding: 1.5rem;
-}
-</style>
