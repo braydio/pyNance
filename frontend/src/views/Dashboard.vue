@@ -4,9 +4,10 @@
 -->
 <template>
   <AppLayout>
-    <!-- WELCOME HEADER CARD -->
+    <div class="container">
+      <!-- WELCOME HEADER CARD -->
       <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-    <div class="flex justify-center mb-8">
+      <div class="flex justify-center mb-8">
         <div
           class="w-full max-w-3xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
           <h1 class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow">Welcome, <span
@@ -14,10 +15,9 @@
         <p class="text-lg text-muted">Today is {{ currentDate }}</p>
         <p class="italic text-muted">{{ netWorthMessage }}</p>
       </div>
-
-    </div>
+      </div>
       <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-    <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
+      <div class="dashboard-content flex flex-col gap-8 w-full max-w-7xl mx-auto px-2">
       <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
