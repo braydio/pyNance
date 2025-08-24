@@ -17,7 +17,7 @@
       </div>
       </div>
       <div class="w-20 h-3 rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
-      <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
+      <!-- TOP ROW: Top Accounts Snapshot, Recent Transactions & Net Income -->
       <div class="flex flex-col md:flex-row gap-6 justify-center items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
@@ -25,6 +25,8 @@
           <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-green)] text-center">Top Accounts</h2>
           <TopAccountSnapshot use-spectrum />
         </div>
+        <!-- Recent Transactions Card -->
+        <RecentTransactions />
         <!-- Net Income Summary Card -->
         <div
           class="flex-[2_2_0%] min-w-[360px] max-w-[750px] bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3">
@@ -39,7 +41,7 @@
               <ChartWidgetTopBar>
                 <template #controls>
                   <button
-                    class="dashboard-control-btn dashboard-control-btn-primary"
+                    class="btn btn-outline hover-lift"
                     @click="zoomedOut = !zoomedOut">
                     {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}
                   </button>
@@ -76,7 +78,7 @@
                 <GroupedCategoryDropdown :groups="categoryGroups" :modelValue="catSelected"
                   @update:modelValue="onCatSelected" class="w-64 ml-2" />
                 <button
-                  class="dashboard-control-btn dashboard-control-btn-secondary ml-2"
+                  class="btn btn-outline hover-lift ml-2"
                   @click="groupOthers = !groupOthers"
                 >
                   {{ groupOthers ? 'Show All' : 'Group Others' }}
@@ -105,6 +107,7 @@
         <div
           class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden">
         <!-- Button row: Show only if neither table is expanded -->
+        <transition name="accordion">
           <div v-if="!accountsExpanded && !transactionsExpanded"
             class="flex flex-row justify-between items-center gap-8 w-full h-full p-12">
             <button @click="expandAccounts"
@@ -117,8 +120,9 @@
               Expand Transactions Table
             </button>
           </div>
+        </transition>
         <!-- Expanded Accounts Table -->
-        <transition name="fade">
+        <transition name="modal-fade-slide">
           <div v-if="accountsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-2xl font-bold text-[var(--color-accent-cyan)]">Accounts Table</h2>
@@ -133,7 +137,7 @@
           </div>
         </transition>
         <!-- Expanded Transactions Table -->
-        <transition name="fade">
+        <transition name="modal-fade-slide">
           <div v-if="transactionsExpanded" class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-2xl font-bold text-[var(--color-accent-red)]">Transactions Table</h2>
@@ -180,6 +184,7 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
+import RecentTransactions from '@/components/widgets/RecentTransactions.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
@@ -419,64 +424,6 @@ async function onCategoryBarClick(payload) {
 }
 
 /* Dashboard Control Button Styles */
-.dashboard-control-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.85rem;
-  font-weight: 600;
-  border-radius: 0.6rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  cursor: pointer;
-  backdrop-filter: blur(8px);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  letter-spacing: 0.025em;
-  text-transform: none;
-}
-
-  .dashboard-control-btn-primary {
-    background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-    border: 1.5px solid var(--color-accent-cyan);
-    color: var(--color-accent-cyan);
-  }
-
-  .dashboard-control-btn-primary:hover {
-    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
-    color: var(--color-bg-dark);
-    border-color: var(--color-accent-cyan);
-    box-shadow: 0 6px 20px rgba(113, 156, 214, 0.4);
-    transform: translateY(-2px);
-  }
-
-.dashboard-control-btn-secondary {
-  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-  border: 1.5px solid var(--color-accent-yellow);
-  color: var(--color-accent-yellow);
-}
-
-  .dashboard-control-btn-secondary:hover {
-    background: linear-gradient(135deg, var(--color-accent-yellow) 0%, var(--color-accent-red) 100%);
-    color: var(--color-bg-dark);
-    border-color: var(--color-accent-cyan);
-    box-shadow: 0 6px 20px rgba(219, 192, 116, 0.4);
-    transform: translateY(-2px);
-  }
-
-.dashboard-control-btn:active {
-  transform: translateY(0);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-}
-
-.dashboard-control-btn .btn-icon {
-  font-size: 0.8rem;
-  opacity: 0.9;
-  transition: opacity 0.2s;
-}
-
-.dashboard-control-btn:hover .btn-icon {
-  opacity: 1;
-}
 
 /* Daily Net Chart Title Styles */
 .daily-net-chart-title {

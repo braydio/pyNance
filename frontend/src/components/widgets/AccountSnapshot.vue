@@ -1,7 +1,7 @@
 <!--
   AccountSnapshot.vue
   Displays selected accounts with balances and upcoming transactions.
-  Clicking an account reveals the last three transactions.
+  Clicking an account reveals the last three transactions via the transactions API.
 -->
 <template>
   <div class="bg-bg-secondary rounded-2xl p-4 shadow-card min-w-[320px] max-w-[480px]">
@@ -95,7 +95,7 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
-import { fetchRecentTransactions } from '@/api/accounts'
+import { fetchRecentTransactions } from '@/api/transactions'
 
 const hovered = ref(null)
 const { selectedAccounts, reminders } = useSnapshotAccounts()
