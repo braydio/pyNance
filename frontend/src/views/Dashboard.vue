@@ -152,10 +152,15 @@
           </div>
         </transition>
       </div>
-
-      <TransactionModal :show="showModal" :subtitle="modalSubtitle" :transactions="modalTransactions"
-        @close="showModal = false" />
     </div>
+
+    <TransactionModal
+      :show="showModal"
+      :subtitle="modalSubtitle"
+      :transactions="modalTransactions"
+      @close="showModal = false"
+    />
+  </div>
 
     <template #footer>
       &copy; {{ new Date().getFullYear() }} braydio • pyNance.

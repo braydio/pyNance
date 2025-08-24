@@ -1,7 +1,7 @@
 <template>
   <AppLayout>
     <template #header>
-      <div class="text-center p-4 rounded-lg shadow-md bg-[var(--color-bg)]">
+      <div class="container text-center p-4 rounded-lg shadow-md bg-[var(--color-bg)]">
         <h1 class="text-3xl font-bold text-[var(--color-accent-cyan)]">Institutions</h1>
         <p class="text-sm text-muted">Overview of all linked providers and accounts</p>
       </div>

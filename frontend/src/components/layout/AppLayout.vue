@@ -2,12 +2,10 @@
   <div class="min-h-screen flex flex-col">
     <header
       v-if="hasHeader"
-      class="glass border-b"
+      class="glass border-b py-6"
       style="border-color: var(--divider); box-shadow: 0 2px 4px var(--shadow);"
     >
-      <div class="container py-6">
-        <slot name="header" />
-      </div>
+      <slot name="header" />
     </header>
     <main class="flex-1 py-6">
       <slot />
@@ -21,6 +19,9 @@
 </template>
 
 <script setup>
+import { useSlots } from 'vue'
+
 const slots = useSlots()
 const hasHeader = !!slots.header
 </script>
+
