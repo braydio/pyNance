@@ -1,11 +1,5 @@
 <template>
   <div class="daily-net-chart">
-    <div class="chart-controls">
-      <label><input type="checkbox" v-model="show7Day" /> 7d trend</label>
-      <label><input type="checkbox" v-model="show30Day" /> 30d trend</label>
-      <label><input type="checkbox" v-model="showAvgIncome" /> avg income</label>
-      <label><input type="checkbox" v-model="showAvgExpenses" /> avg expenses</label>
-    </div>
     <div style="height: 400px;">
       <canvas ref="chartCanvas" style="width: 100%; height: 100%;"></canvas>
     </div>
@@ -13,25 +7,27 @@
 </template>
 
 <script setup>
-// Displays income, expenses, and net totals for recent days. Expenses
-// are rendered as negative values so that red bars extend below the
-// X-axis while green income bars remain above it.
+// Displays income, expenses, and net totals for recent days. Trend and
+// average lines are controlled via props passed from the parent.
 import { fetchDailyNet } from '@/api/charts'
-import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
-const props = defineProps({ zoomedOut: { type: Boolean, default: false } })
+const props = defineProps({
+  zoomedOut: { type: Boolean, default: false },
+  show7Day: { type: Boolean, default: false },
+  show30Day: { type: Boolean, default: false },
+  showAvgIncome: { type: Boolean, default: false },
+  showAvgExpenses: { type: Boolean, default: false }
+})
+const { show7Day, show30Day, showAvgIncome, showAvgExpenses } = toRefs(props)
 // Emits "bar-click" when a bar is selected, "summary-change" when data totals change, and "data-change" when chart data updates
 const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
-const show7Day = ref(false)
-const show30Day = ref(false)
-const showAvgIncome = ref(false)
-const showAvgExpenses = ref(false)
 // Counts of days exceeding their respective averages; used for summary and chart annotations
 const aboveAvgIncomeDays = ref(0)
 const aboveAvgExpenseDays = ref(0)
@@ -242,7 +238,7 @@ async function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 20, bottom: 20 } },
+      layout: { padding: { top: 20, bottom: 8 } },
       plugins: {
         tooltip: {
           callbacks: {
@@ -368,19 +364,3 @@ onUnmounted(() => {
 })
 </script>
 
-<style scoped>
-.chart-controls {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
-  flex-wrap: wrap;
-}
-
-.chart-controls label {
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-</style>

@@ -49,7 +49,22 @@
               </ChartWidgetTopBar>
             </div>
           </div>
-          <DailyNetChart :zoomed-out="zoomedOut" @summary-change="netSummary = $event" @data-change="chartData = $event" @bar-click="onNetBarClick" />
+          <ChartControls
+            v-model:show7-day="show7Day"
+            v-model:show30-day="show30Day"
+            v-model:show-avg-income="showAvgIncome"
+            v-model:show-avg-expenses="showAvgExpenses"
+          />
+          <DailyNetChart
+            :zoomed-out="zoomedOut"
+            :show7-day="show7Day"
+            :show30-day="show30Day"
+            :show-avg-income="showAvgIncome"
+            :show-avg-expenses="showAvgExpenses"
+            @summary-change="netSummary = $event"
+            @data-change="chartData = $event"
+            @bar-click="onNetBarClick"
+          />
         </div>
       </div>
 
@@ -179,6 +194,7 @@ import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
+import ChartControls from '@/components/ChartControls.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
@@ -239,6 +255,10 @@ const netSummary = ref({
 })
 const chartData = ref([])
 const zoomedOut = ref(false)
+const show7Day = ref(false)
+const show30Day = ref(false)
+const showAvgIncome = ref(false)
+const showAvgExpenses = ref(false)
 
 // --- CATEGORY BREAKDOWN STATE ---
 const today = new Date()
