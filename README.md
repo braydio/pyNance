@@ -195,6 +195,7 @@ Refer to [`docs/index/INDEX.md`](docs/index/INDEX.md) for a full documentation m
 This project maintains comprehensive documentation to help with development, maintenance, and contribution:
 
 - **[Documentation Index](docs/index/INDEX.md)** - Complete map of all available documentation
+- **[Page layout components](docs/frontend/PageLayout.md)** - When and how to use `BasePageLayout` and `PageHeader`
 - **[Contributing Guide](CONTRIBUTING.md)** - Guidelines for contributing to the project
 - **[Maintenance Checklist](docs/maintenance/cleanup_checklist.md)** - Regular maintenance tasks and procedures
 
