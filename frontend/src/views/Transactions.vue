@@ -1,13 +1,16 @@
 <template>
   <div class="transactions-page container py-8 space-y-8">
     <!-- Header -->
-    <Card class="p-6 flex items-center gap-3">
-      <CreditCard class="w-6 h-6" />
-      <div>
-        <h1 class="text-2xl font-bold">Transactions</h1>
-        <p class="text-muted">View and manage your transactions</p>
-      </div>
-    </Card>
+    <PageHeader>
+      <template #icon>
+        <CreditCard class="w-6 h-6" />
+      </template>
+      <template #title>Transactions</template>
+      <template #subtitle>View and manage your transactions</template>
+      <template #actions>
+        <UiButton variant="outline">Import</UiButton>
+      </template>
+    </PageHeader>
 
     <!-- Top Controls -->
     <Card class="p-6">
@@ -60,6 +63,7 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import { CreditCard } from 'lucide-vue-next'
@@ -70,6 +74,7 @@ export default {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     ImportFileSelector,
+    PageHeader,
     UiButton,
     Card,
     CreditCard,

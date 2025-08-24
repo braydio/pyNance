@@ -50,6 +50,7 @@ declare module 'vue' {
     NetIncomeCharts: typeof import('./components/charts/NetIncomeCharts.vue')['default']
     NetYearComparisonChart: typeof import('./components/charts/NetYearComparisonChart.vue')['default']
     NotificationsBar: typeof import('./components/recurring/NotificationsBar.vue')['default']
+    PageHeader: typeof import('./components/ui/PageHeader.vue')['default']
     PaginationControls: typeof import('./components/tables/PaginationControls.vue')['default']
     PlaidProductScopeSelector: typeof import('./components/forms/PlaidProductScopeSelector.vue')['default']
     RecurringCalendar: typeof import('./components/recurring/RecurringCalendar.vue')['default']
