@@ -1,9 +1,8 @@
 <!-- InternalTransferScanner.vue - Detect and confirm internal transfer pairs -->
 <template>
-  <Card class="p-6 space-y-4">
-    <div class="flex items-center justify-between">
-      <h2 class="text-2xl font-bold">Internal Transfers</h2>
-      <UiButton @click="scan" :disabled="loading">
+  <div class="space-y-4">
+    <div class="flex justify-end">
+      <UiButton size="sm" @click="scan" :disabled="loading">
         {{ loading ? 'Scanning...' : 'Scan' }}
       </UiButton>
     </div>
@@ -11,13 +10,13 @@
       <div
         v-for="pair in pairs"
         :key="pair.transaction_id"
-        class="flex items-start justify-between border p-4 rounded"
+        class="flex items-start justify-between border p-4 rounded-md"
       >
         <div class="text-sm">
           <p class="font-medium">
             {{ pair.description }} ({{ formatAmount(pair.amount) }})
           </p>
-          <p class="text-muted">
+          <p class="text-gray-500">
             ↔
             {{ pair.counterpart.description }}
             ({{ formatAmount(pair.counterpart.amount) }})
@@ -26,15 +25,16 @@
         <UiButton variant="primary" @click="confirm(pair)">Mark Internal</UiButton>
       </div>
     </div>
-    <p v-else-if="scanned" class="text-muted">No internal transfers found.</p>
-  </Card>
+    <p v-else-if="scanned" class="text-sm text-gray-500">
+      No internal transfers found.
+    </p>
+  </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
 import api from '@/services/api.js'
 import UiButton from '@/components/ui/Button.vue'
-import Card from '@/components/ui/Card.vue'
 import { formatAmount } from '@/utils/format'
 
 const pairs = ref([])
@@ -70,10 +70,4 @@ async function confirm(pair) {
   }
 }
 </script>
-
-<style scoped>
-.text-muted {
-  color: var(--color-text-muted);
-}
-</style>
 

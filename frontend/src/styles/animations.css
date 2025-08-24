@@ -1,0 +1,13 @@
+/* animations.css - shared animation utilities */
+
+.accordion-enter-active,
+.accordion-leave-active {
+  transition: all 250ms ease-in-out;
+}
+
+.accordion-enter-from,
+.accordion-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+

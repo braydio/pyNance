@@ -36,7 +36,25 @@
     </div>
 
     <!-- Internal Transfer Detection -->
-    <InternalTransferScanner />
+    <Card class="p-6 rounded-2xl shadow-sm bg-white dark:bg-gray-800">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          Internal Transfer Scanner
+        </h2>
+        <UiButton
+          variant="outline"
+          size="sm"
+          @click="showScanner = !showScanner"
+        >
+          {{ showScanner ? 'Hide' : 'Show' }}
+        </UiButton>
+      </div>
+      <transition name="accordion">
+        <div v-if="showScanner" class="mt-4">
+          <InternalTransferScanner />
+        </div>
+      </transition>
+    </Card>
 
     <!-- Recurring Transactions -->
     <Card class="p-6 space-y-4">
@@ -95,6 +113,7 @@ export default {
       setSort,
     } = useTransactions(15)
 
+    const showScanner = ref(false)
     const showRecurring = ref(false)
     const recurringFormRef = ref(null)
 
@@ -117,6 +136,7 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      showScanner,
       showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,
