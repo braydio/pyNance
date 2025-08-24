@@ -1,9 +1,6 @@
 <template>
   <BasePageLayout>
-    <PageHeader>
-      <template #icon>
-        <Repeat class="w-6 h-6" />
-      </template>
+    <PageHeader :icon="Repeat">
       <template #title>Recurring Scan Demo</template>
       <template #subtitle>Demo results for recurring transaction scan</template>
     </PageHeader>

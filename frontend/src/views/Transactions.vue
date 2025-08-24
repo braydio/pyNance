@@ -2,10 +2,7 @@
 <template>
   <BasePageLayout class="transactions-page" gap="gap-8" padding="px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
-    <PageHeader>
-      <template #icon>
-        <CreditCard class="w-6 h-6" />
-      </template>
+    <PageHeader :icon="CreditCard">
       <template #title>Transactions</template>
       <template #subtitle>View and manage your transactions</template>
       <template #actions>
@@ -83,7 +80,6 @@ export default {
     PageHeader,
     UiButton,
     Card,
-    CreditCard,
     BasePageLayout,
     InternalTransferScanner,
   },
@@ -124,6 +120,7 @@ export default {
       showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,
+      CreditCard,
     }
   },
 }

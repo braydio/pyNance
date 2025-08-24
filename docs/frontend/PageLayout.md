@@ -19,15 +19,12 @@ Wrap each top-level view with `BasePageLayout` to apply flex column layout and s
 
 ## PageHeader
 
-Standard header used within `BasePageLayout`. Provides slots for an optional icon, title, subtitle, and right-aligned actions.
+Standard header used within `BasePageLayout`. Centers the title/subtitle stack and supports an optional icon prop with right-aligned `actions` slot.
 
 ### Example: icon and subtitle
 ```vue
 <BasePageLayout>
-  <PageHeader>
-    <template #icon>
-      <SettingsIcon class="w-6 h-6" />
-    </template>
+  <PageHeader :icon="SettingsIcon">
     <template #title>Settings</template>
     <template #subtitle>Update your preferences</template>
     <template #actions>
@@ -39,7 +36,7 @@ Standard header used within `BasePageLayout`. Provides slots for an optional ico
 </BasePageLayout>
 ```
 
-Refer to [PageHeader docs](PageHeader.md) for additional slot details.
+Refer to [PageHeader docs](PageHeader.md) for prop and slot details.
 
 ## Contributor guidance
 

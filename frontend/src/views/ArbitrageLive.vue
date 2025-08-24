@@ -1,9 +1,6 @@
 <template>
   <BasePageLayout>
-    <PageHeader>
-      <template #icon>
-        <Activity class="w-6 h-6" />
-      </template>
+    <PageHeader :icon="Activity">
       <template #title>R/S Arbitrage Monitor</template>
       <template #subtitle>Live R/S arbitrage feed</template>
     </PageHeader>
