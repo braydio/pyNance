@@ -6,7 +6,7 @@ import { vi } from 'vitest'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {} }),
-  useRouter: () => ({ push: vi.fn() })
+  useRouter: () => ({})
 }))
 
 vi.mock('@/api/accounts', () => ({
