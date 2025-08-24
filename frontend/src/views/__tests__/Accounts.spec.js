@@ -5,7 +5,8 @@ import Accounts from '../Accounts.vue'
 import { vi } from 'vitest'
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: {} })
+  useRoute: () => ({ params: {} }),
+  useRouter: () => ({ push: vi.fn() })
 }))
 
 vi.mock('@/api/accounts', () => ({
@@ -29,7 +30,9 @@ describe('Accounts.vue', () => {
           'AccountsReorderChart',
           'Button',
           'Card',
-          'Wallet'
+          'Wallet',
+          'BasePageLayout',
+          'PageHeader'
         ]
       }
     })
