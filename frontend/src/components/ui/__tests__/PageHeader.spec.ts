@@ -2,6 +2,7 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PageHeader from '../PageHeader.vue'
+import { defineComponent } from 'vue'
 
 describe('PageHeader', () => {
   it('renders title slot', () => {
@@ -13,11 +14,12 @@ describe('PageHeader', () => {
   })
 
   it('renders optional subtitle and icon', () => {
+    const Icon = defineComponent({ template: '<span class="icon" />' })
     const wrapper = mount(PageHeader, {
+      props: { icon: Icon },
       slots: {
         title: 'Accounts',
-        subtitle: 'Overview',
-        icon: '<span class="icon" />'
+        subtitle: 'Overview'
       }
     })
     expect(wrapper.find('p').text()).toBe('Overview')

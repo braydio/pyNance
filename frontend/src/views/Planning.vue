@@ -1,9 +1,6 @@
 <template>
   <BasePageLayout>
-    <PageHeader>
-      <template #icon>
-        <Calendar class="w-6 h-6" />
-      </template>
+    <PageHeader :icon="Calendar">
       <template #title>Planning</template>
       <template #subtitle>Manage your budgeting and allocations</template>
     </PageHeader>
