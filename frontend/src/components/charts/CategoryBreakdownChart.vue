@@ -48,25 +48,35 @@ function getStyle(name) {
 }
 
 function extractStackedBarData(tree, selectedIds = []) {
-  // Show parent only if any of its children is selected
+  // Only include parents that have at least one selected child
   const parents = tree.filter(
     (node) => node.children && node.children.some((child) => selectedIds.includes(child.id)),
   )
   const labels = parents.map((p) => p.label)
-  // All visible children (segments)
-  const allChildLabels = [
-    ...new Set(
-      parents.flatMap((p) =>
-        (p.children || []).filter((c) => selectedIds.includes(c.id)).map((c) => c.label),
-      ),
-    ),
-  ]
-  // Datasets: Only selected children
-  const datasets = allChildLabels.map((childLabel, colorIdx) => ({
-    label: childLabel,
+
+  // Collect unique child IDs for selected categories across all parents
+  const childIdSet = new Set()
+  parents.forEach((p) =>
+    (p.children || []).forEach((c) => {
+      if (selectedIds.includes(c.id)) childIdSet.add(c.id)
+    }),
+  )
+  const allChildIds = Array.from(childIdSet)
+
+  // Map each child ID to its label for display
+  function labelForId(id) {
+    for (const p of parents) {
+      const match = (p.children || []).find((c) => c.id === id)
+      if (match) return match.label
+    }
+    return ''
+  }
+
+  const datasets = allChildIds.map((childId, colorIdx) => ({
+    label: labelForId(childId),
     data: parents.map((p) => {
-      const child = (p.children || []).find((c) => c.label === childLabel)
-      return child && selectedIds.includes(child.id) ? child.amount : 0
+      const child = (p.children || []).find((c) => c.id === childId)
+      return child ? child.amount : 0
     }),
     backgroundColor: getGroupColor(colorIdx),
     borderWidth: 2,
@@ -74,6 +84,7 @@ function extractStackedBarData(tree, selectedIds = []) {
     barPercentage: 0.9,
     categoryPercentage: 0.8,
   }))
+
   return { labels, datasets }
 }
 

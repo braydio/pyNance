@@ -77,7 +77,7 @@
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Category Spending -->
         <div
-          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3">
+          class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3 overflow-hidden">
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">Spending by Category</h2>
             <ChartWidgetTopBar>
@@ -88,7 +88,7 @@
                   class="btn btn-outline hover-lift ml-2"
                   @click="groupOthers = !groupOthers"
                 >
-                  {{ groupOthers ? 'Show All' : 'Group Others' }}
+                  {{ groupOthers ? 'Expand All' : 'Consolidate Minor Categories' }}
                 </button>
               </template>
             </ChartWidgetTopBar>
