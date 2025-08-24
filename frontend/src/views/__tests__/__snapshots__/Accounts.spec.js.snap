@@ -5,13 +5,17 @@ exports[`Accounts.vue > matches snapshot 1`] = `
   <!-- Header -->
   <card-stub class="p-6 flex items-center gap-3"></card-stub><!-- Account Actions -->
   <card-stub class="p-6"></card-stub><!-- Net Change Summary -->
-  <card-stub class="p-6"></card-stub><!-- Recent Transactions -->
-  <card-stub class="p-6 space-y-2"></card-stub><!-- Charts -->
-  <div class="flex flex-col gap-6">
-    <card-stub class="p-6"></card-stub>
-    <card-stub class="p-6"></card-stub>
-    <card-stub class="p-6"></card-stub>
-  </div><!-- Accounts Table -->
+  <card-stub class="p-6"></card-stub><!-- Balance History -->
+  <card-stub class="p-6 space-y-4"></card-stub><!-- Recent Transactions -->
+  <card-stub class="p-6 space-y-4"></card-stub><!-- Charts -->
+  <section class="space-y-4">
+    <h2 class="text-xl font-semibold">Account Analysis</h2>
+    <div class="flex flex-col gap-6">
+      <card-stub class="p-6"></card-stub>
+      <card-stub class="p-6"></card-stub>
+      <card-stub class="p-6"></card-stub>
+    </div>
+  </section><!-- Accounts Table -->
   <card-stub class="p-6"></card-stub><!-- Footer -->
   <footer class="mt-12 text-center text-sm text-muted border-t pt-4"> © good dashroad. </footer>
 </div>"

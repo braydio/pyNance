@@ -1,9 +1,9 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`Transactions.vue > matches snapshot 1`] = `
-"<div class="transactions-page container space-y-8">
+"<div class="transactions-page container py-8 space-y-8">
   <!-- Header -->
-  <card-stub class="p-6 flex items-center gap-3"></card-stub><!-- Top Controls -->
+  <page-header-stub></page-header-stub><!-- Top Controls -->
   <card-stub class="p-6"></card-stub><!-- Main Table -->
   <card-stub class="p-6 space-y-4"></card-stub><!-- Pagination -->
   <div id="pagination-controls" class="flex items-center justify-center gap-4">
