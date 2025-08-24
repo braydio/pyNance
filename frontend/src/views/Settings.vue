@@ -1,48 +1,63 @@
 <template>
-    <div>
-      <h1>Settings</h1>
-      <label for="themes">Select Theme:</label>
-      <select v-model="selectedTheme" @change="setTheme">
-        <option v-for="theme in themes" :key="theme" :value="theme">
-          {{ theme }}
-        </option>
-      </select>
-    </div>
-  </template>
-  
-  <script>
-  import axios from "axios";
-  
-  export default {
-    name: "Settings",
-    data() {
-      return {
-        themes: [],
-        selectedTheme: "",
-      };
+  <BasePageLayout>
+    <PageHeader>
+      <template #icon>
+        <SettingsIcon class="w-6 h-6" />
+      </template>
+      <template #title>Settings</template>
+      <template #subtitle>Manage application preferences</template>
+    </PageHeader>
+
+    <label for="themes">Select Theme:</label>
+    <select v-model="selectedTheme" @change="setTheme">
+      <option v-for="theme in themes" :key="theme" :value="theme">
+        {{ theme }}
+      </option>
+    </select>
+  </BasePageLayout>
+</template>
+
+<script>
+import axios from 'axios'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { Settings as SettingsIcon } from 'lucide-vue-next'
+
+export default {
+  name: 'Settings',
+  components: {
+    BasePageLayout,
+    PageHeader,
+    SettingsIcon,
+  },
+  data() {
+    return {
+      themes: [],
+      selectedTheme: '',
+    }
+  },
+  async created() {
+    await this.fetchThemes()
+  },
+  methods: {
+    async fetchThemes() {
+      try {
+        const response = await axios.get('/themes')
+        this.themes = response.data.themes
+        this.selectedTheme = response.data.current_theme
+      } catch (error) {
+        console.error('Failed to fetch themes:', error)
+      }
     },
-    async created() {
-      await this.fetchThemes();
+    async setTheme() {
+      try {
+        await axios.post('/set_theme', { theme: this.selectedTheme })
+        alert(`Theme set to ${this.selectedTheme}`)
+      } catch (error) {
+        console.error('Failed to set theme:', error)
+      }
     },
-    methods: {
-      async fetchThemes() {
-        try {
-          const response = await axios.get("/themes");
-          this.themes = response.data.themes;
-          this.selectedTheme = response.data.current_theme;
-        } catch (error) {
-          console.error("Failed to fetch themes:", error);
-        }
-      },
-      async setTheme() {
-        try {
-          await axios.post("/set_theme", { theme: this.selectedTheme });
-          alert(`Theme set to ${this.selectedTheme}`);
-        } catch (error) {
-          console.error("Failed to set theme:", error);
-        }
-      },
-    },
-  };
-  </script>
-  
+  },
+}
+</script>
+
