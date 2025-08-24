@@ -1,10 +1,12 @@
+<!-- Forecast.vue - Entry point for forecasting dashboard. -->
 <template>
-  <div class="forecast-view">
+  <BasePageLayout class="forecast-view">
     <ForecastLayout />
-  </div>
+  </BasePageLayout>
 </template>
 
 <script setup>
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
 </script>
 
@@ -14,9 +16,5 @@ import ForecastLayout from '@/components/forecast/ForecastLayout.vue'
   background-color: var(--page-bg);
   color: var(--theme-fg);
   min-height: 100vh;
-  padding: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
 }
 </style>

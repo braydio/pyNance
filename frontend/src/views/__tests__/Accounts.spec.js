@@ -30,7 +30,8 @@ describe('Accounts.vue', () => {
           'AccountsReorderChart',
           'Button',
           'Card',
-          'Wallet'
+          'Wallet',
+          'BasePageLayout'
         ]
       }
     })

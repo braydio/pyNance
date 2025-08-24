@@ -1,22 +1,3 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Accounts.vue > matches snapshot 1`] = `
-"<div class="accounts-page container space-y-8">
-  <!-- Header -->
-  <card-stub class="p-6 flex items-center gap-3"></card-stub><!-- Account Actions -->
-  <card-stub class="p-6"></card-stub><!-- Net Change Summary -->
-  <card-stub class="p-6"></card-stub><!-- Balance History -->
-  <card-stub class="p-6 space-y-4"></card-stub><!-- Recent Transactions -->
-  <card-stub class="p-6 space-y-4"></card-stub><!-- Charts -->
-  <section class="space-y-4">
-    <h2 class="text-xl font-semibold">Account Analysis</h2>
-    <div class="flex flex-col gap-6">
-      <card-stub class="p-6"></card-stub>
-      <card-stub class="p-6"></card-stub>
-      <card-stub class="p-6"></card-stub>
-    </div>
-  </section><!-- Accounts Table -->
-  <card-stub class="p-6"></card-stub><!-- Footer -->
-  <footer class="mt-12 text-center text-sm text-muted border-t pt-4"> © good dashroad. </footer>
-</div>"
-`;
+exports[`Accounts.vue > matches snapshot 1`] = `"<base-page-layout-stub padding="true" gap="gap-8" class="accounts-page"></base-page-layout-stub>"`;
