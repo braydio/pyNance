@@ -1,15 +1,18 @@
 ## 📘 `summary.py`
 
-```markdown
+````markdown
 # Summary Route
 
 ## Purpose
+
 Aggregates income and expense transactions over a date range and derives higher level metrics for dashboard display.
 
 ## Key Endpoints
+
 - `GET /summary/financial` – totals and statistical metrics for the requested date window.
 
 ## Inputs & Outputs
+
 - **GET /summary/financial**
   - **Params:** optional `start_date`, `end_date` (YYYY-MM-DD)
   - **Output:**
@@ -30,15 +33,18 @@ Aggregates income and expense transactions over a date range and derives higher 
     ```
 
 ## Internal Dependencies
+
 - `models.Transaction`
 - `utils.finance_utils.display_transaction_amount`
 - SQLAlchemy via `extensions.db`
 
 ## Known Behaviors
+
 - Ignores internal transfers.
 - Defaults to the previous 30 days when no range is supplied.
 - Outliers flagged when net values deviate by more than two standard deviations.
 
 ## Related Docs
+
 - [`docs/frontend/FINANCIAL_SUMMARY.md`](../../frontend/FINANCIAL_SUMMARY.md)
-```
+````

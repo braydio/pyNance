@@ -223,11 +223,7 @@ const extendedStats = computed(() => {
   // Outlier detection based on net values
   const mean = netValues.reduce((a, b) => a + b, 0) / netValues.length
   const outliers = data
-    .filter(
-      (d) =>
-        Math.abs((d.net?.parsedValue || 0) - mean) > 2 * volatility &&
-        volatility > 0,
-    )
+    .filter((d) => Math.abs((d.net?.parsedValue || 0) - mean) > 2 * volatility && volatility > 0)
     .map((d) => d.date)
 
   return {

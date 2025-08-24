@@ -49,7 +49,9 @@ function computeSummary() {
     totalExpenses,
     totalNet,
     aboveAvgIncomeDays: data.filter((d) => (d.income?.parsedValue || 0) > avgIncome).length,
-    aboveAvgExpenseDays: data.filter((d) => Math.abs(d.expenses?.parsedValue || 0) > Math.abs(avgExpenses)).length,
+    aboveAvgExpenseDays: data.filter(
+      (d) => Math.abs(d.expenses?.parsedValue || 0) > Math.abs(avgExpenses),
+    ).length,
   }
 }
 </script>
