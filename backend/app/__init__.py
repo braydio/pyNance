@@ -32,6 +32,7 @@ def create_app():
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.recurring import recurring
     from app.routes.rules import rules as rules_bp
+    from app.routes.summary import summary
     from app.routes.teller import link_teller
     from app.routes.teller_transactions import teller_transactions
     from app.routes.teller_webhook import disabled_webhooks, webhooks
@@ -56,6 +57,7 @@ def create_app():
     app.register_blueprint(link_teller, url_prefix="/api/teller")
     app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
     app.register_blueprint(institutions, url_prefix="/api/institutions")
+    app.register_blueprint(summary, url_prefix="/api/summary")
 
     if TELLER_WEBHOOK_SECRET:
         app.register_blueprint(webhooks, url_prefix="/api/webhooks")
