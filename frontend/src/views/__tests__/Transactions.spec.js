@@ -7,7 +7,16 @@ describe('Transactions.vue', () => {
   it('matches snapshot', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
-        stubs: ['ImportFileSelector', 'UpdateTransactionsTable', 'RecurringTransactionSection', 'Button', 'Card', 'CreditCard']
+        stubs: [
+          'ImportFileSelector',
+          'UpdateTransactionsTable',
+          'RecurringTransactionSection',
+          'Button',
+          'Card',
+          'CreditCard',
+          'BasePageLayout',
+          'PageHeader'
+        ]
       }
     })
     expect(wrapper.html()).toMatchSnapshot()
