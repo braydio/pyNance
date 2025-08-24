@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta, timezone
+"""Utilities for refreshing external accounts on a schedule."""
+
+from datetime import date, datetime, timedelta, timezone
 
 from app.config import logger  # uses app logger
 from app.models import Account, db
@@ -11,10 +13,21 @@ SYNC_INTERVALS = {
 
 
 def is_due(last_synced, provider):
-    """Returns True if the account should be refreshed."""
+    """Return ``True`` if the account should be refreshed.
+
+    Args:
+        last_synced: The last refresh timestamp as ``datetime`` or ``date``.
+        provider: Provider name to determine refresh interval.
+    """
     if not last_synced:
         return True
+
     now = datetime.now(timezone.utc)
+    if isinstance(last_synced, date) and not isinstance(last_synced, datetime):
+        last_synced = datetime.combine(last_synced, datetime.min.time(), timezone.utc)
+    elif isinstance(last_synced, datetime) and last_synced.tzinfo is None:
+        last_synced = last_synced.replace(tzinfo=timezone.utc)
+
     return now - last_synced >= SYNC_INTERVALS.get(provider, timedelta(days=1))
 
 
