@@ -4,37 +4,41 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 /**
  * BasePageLayout
- * Simple flex column wrapper that provides configurable padding and gap
- * utilities for page sections.
+ * Responsive container that clamps width and applies consistent horizontal
+ * gutters for page sections.
  *
  * Props:
- * - padding: tailwind padding utility class or `false` to disable (default `p-6`)
- * - gap: tailwind gap utility class (default `gap-6`)
+ * - padding: Tailwind padding utilities or `false` to disable (default
+ *   `px-4 sm:px-6 lg:px-8 py-6`)
+ * - gap: Tailwind gap utility class applied to container (default `gap-6`)
  */
 import { computed } from 'vue'
 
-interface Props {
+const props = defineProps({
   /** Tailwind padding utility or `false` to remove padding */
-  padding?: string | boolean
+  padding: { type: [String, Boolean], default: true },
   /** Tailwind gap utility class applied to container */
-  gap?: string
-}
-
-const props = withDefaults(defineProps<Props>(), {
-  padding: true,
-  gap: 'gap-6'
+  gap: { type: String, default: 'gap-6' },
 })
 
 const paddingClass = computed(() => {
   if (props.padding === false) return ''
   if (typeof props.padding === 'string') return props.padding
-  return 'p-6'
+  return 'px-4 sm:px-6 lg:px-8 py-6'
 })
 
 const classes = computed(() => {
-  return ['flex', 'flex-col', paddingClass.value, props.gap].filter(Boolean)
+  return [
+    'w-full',
+    'max-w-7xl',
+    'mx-auto',
+    'flex',
+    'flex-col',
+    paddingClass.value,
+    props.gap,
+  ].filter(Boolean)
 })
 </script>

@@ -6,7 +6,10 @@ import BasePageLayout from '../BasePageLayout.vue'
 describe('BasePageLayout', () => {
   it('renders with default padding and gap', () => {
     const wrapper = mount(BasePageLayout)
-    expect(wrapper.classes()).toContain('p-6')
+    expect(wrapper.classes()).toContain('px-4')
+    expect(wrapper.classes()).toContain('sm:px-6')
+    expect(wrapper.classes()).toContain('lg:px-8')
+    expect(wrapper.classes()).toContain('py-6')
     expect(wrapper.classes()).toContain('gap-6')
     expect(wrapper.html()).toMatchSnapshot()
   })
@@ -14,12 +17,12 @@ describe('BasePageLayout', () => {
   it('applies custom padding', () => {
     const wrapper = mount(BasePageLayout, { props: { padding: 'p-2' } })
     expect(wrapper.classes()).toContain('p-2')
-    expect(wrapper.classes()).not.toContain('p-6')
+    expect(wrapper.classes()).not.toContain('px-4')
   })
 
   it('can disable padding', () => {
     const wrapper = mount(BasePageLayout, { props: { padding: false } })
-    expect(wrapper.classes()).not.toContain('p-6')
+    expect(wrapper.classes()).not.toContain('px-4')
   })
 
   it('applies gap prop', () => {

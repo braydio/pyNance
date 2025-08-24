@@ -1,5 +1,6 @@
+<!-- Transactions.vue - View and manage transactions. -->
 <template>
-  <div class="transactions-page container py-8 space-y-8">
+  <BasePageLayout class="transactions-page" gap="gap-8" padding="px-4 sm:px-6 lg:px-8 py-8">
     <!-- Header -->
     <PageHeader>
       <template #icon>
@@ -51,7 +52,7 @@
         </div>
       </transition>
     </Card>
-  </div>
+  </BasePageLayout>
 </template>
 
 <script>
@@ -67,6 +68,7 @@ import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import { CreditCard } from 'lucide-vue-next'
+import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 
 export default {
   name: 'TransactionsView',
@@ -78,6 +80,7 @@ export default {
     UiButton,
     Card,
     CreditCard,
+    BasePageLayout,
   },
   setup() {
     const {
