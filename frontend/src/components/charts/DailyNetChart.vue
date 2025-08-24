@@ -7,14 +7,16 @@
 </template>
 
 <script setup>
-// Displays income, expenses, and net totals for recent days. Trend and
-// average lines are controlled via props passed from the parent.
+// Displays income, expenses, and net totals for the selected date range.
+// Accepts start and end dates along with a zoom toggle for aggregated view.
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from "@/utils/format"
 
 const props = defineProps({
+  startDate: { type: String, required: true },
+  endDate: { type: String, required: true },
   zoomedOut: { type: Boolean, default: false },
   show7Day: { type: Boolean, default: false },
   show30Day: { type: Boolean, default: false },
@@ -38,11 +40,17 @@ function getStyle(name) {
 
 function filterDataByRange(data) {
   const now = new Date()
-  const start = new Date()
-  if (!props.zoomedOut) {
-    start.setMonth(start.getMonth() - 1)
-  } else {
+  let start
+  if (props.zoomedOut) {
+    start = new Date()
     start.setMonth(start.getMonth() - 6)
+  } else {
+    start = props.startDate ? new Date(props.startDate) : null
+    const end = props.endDate ? new Date(props.endDate) : now
+    return (data || []).filter(item => {
+      const d = new Date(item.date)
+      return (!start || d >= start) && d <= end
+    })
   }
   return (data || []).filter(item => {
     const d = new Date(item.date)
@@ -313,7 +321,18 @@ async function renderChart() {
 
 async function fetchData() {
   try {
-    const response = await fetchDailyNet()
+    const params = {}
+    if (props.zoomedOut) {
+      const end = new Date()
+      const start = new Date()
+      start.setMonth(start.getMonth() - 6)
+      params.start_date = start.toISOString().slice(0, 10)
+      params.end_date = end.toISOString().slice(0, 10)
+    } else {
+      params.start_date = props.startDate
+      params.end_date = props.endDate
+    }
+    const response = await fetchDailyNet(params)
     if (response.status === 'success') {
       chartData.value = response.data
     }
@@ -347,10 +366,12 @@ function updateSummary() {
 }
 
 
-watch([chartData, () => props.zoomedOut, show7Day, show30Day, showAvgIncome, showAvgExpenses], async () => {
+watch([chartData, () => props.zoomedOut, () => props.startDate, () => props.endDate, show7Day, show30Day, showAvgIncome, showAvgExpenses], async () => {
   updateSummary()
   await renderChart()
 })
+
+watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
 
 onMounted(() => {
   fetchData()
