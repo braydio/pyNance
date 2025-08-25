@@ -60,10 +60,7 @@
             v-for="range in ranges"
             :key="range"
             @click="selectedRange = range"
-            :class="[
-              'btn btn-sm',
-              selectedRange === range ? '' : 'btn-outline',
-            ]"
+            :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
           >
             {{ range }}
           </button>

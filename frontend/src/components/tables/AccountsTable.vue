@@ -6,10 +6,7 @@
       Accounts
     </h2>
     <!-- Controls/Filters -->
-    <div
-      class="mb-4 flex flex-wrap items-center gap-2"
-      data-testid="accounts-control-bar"
-    >
+    <div class="mb-4 flex flex-wrap items-center gap-2" data-testid="accounts-control-bar">
       <div class="flex items-center gap-2 flex-wrap flex-1">
         <input
           v-model="searchQuery"
