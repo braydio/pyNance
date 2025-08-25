@@ -1,7 +1,7 @@
 <template>
   <div class="daily-net-chart">
-    <div style="height: 400px;">
-      <canvas ref="chartCanvas" style="width: 100%; height: 100%;"></canvas>
+    <div style="height: 400px">
+      <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
     </div>
   </div>
 </template>
@@ -13,7 +13,7 @@
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
-import { formatAmount } from "@/utils/format"
+import { formatAmount } from '@/utils/format'
 
 const props = defineProps({
   startDate: { type: String, required: true },
@@ -22,7 +22,7 @@ const props = defineProps({
   show7Day: { type: Boolean, default: false },
   show30Day: { type: Boolean, default: false },
   showAvgIncome: { type: Boolean, default: false },
-  showAvgExpenses: { type: Boolean, default: false }
+  showAvgExpenses: { type: Boolean, default: false },
 })
 const { show7Day, show30Day, showAvgIncome, showAvgExpenses } = toRefs(props)
 // Emits "bar-click" when a bar is selected, "summary-change" when data totals change, and "data-change" when chart data updates
@@ -45,12 +45,12 @@ function filterDataByRange(data) {
   } else {
     start = props.startDate ? new Date(props.startDate) : null
     const end = props.endDate ? new Date(props.endDate) : now
-    return (data || []).filter(item => {
+    return (data || []).filter((item) => {
       const d = new Date(item.date)
       return (!start || d >= start) && d <= end
     })
   }
-  return (data || []).filter(item => {
+  return (data || []).filter((item) => {
     const d = new Date(item.date)
     return d >= start && d <= now
   })
@@ -59,7 +59,12 @@ function filterDataByRange(data) {
 // Emit the selected date when a bar is clicked
 function handleBarClick(evt) {
   if (!chartInstance.value) return
-  const points = chartInstance.value.getElementsAtEventForMode(evt, 'nearest', { intersect: true }, false)
+  const points = chartInstance.value.getElementsAtEventForMode(
+    evt,
+    'nearest',
+    { intersect: true },
+    false,
+  )
   if (points.length) {
     const index = points[0].index
     const date = chartInstance.value.data.labels[index]
@@ -71,29 +76,28 @@ function handleBarClick(evt) {
 const netLinePlugin = {
   id: 'netLinePlugin',
   afterDatasetsDraw(chart) {
-    const { ctx } = chart;
+    const { ctx } = chart
     chart.data.datasets.forEach((dataset, idx) => {
       if (dataset.label === 'Net') {
-        const meta = chart.getDatasetMeta(idx);
-        meta.data.forEach(bar => {
-          const y = bar.y;
-          const x = bar.x;
+        const meta = chart.getDatasetMeta(idx)
+        meta.data.forEach((bar) => {
+          const y = bar.y
+          const x = bar.x
           // use configured barThickness for width
-          const width = dataset.barThickness || 0;
-          ctx.save();
-          ctx.strokeStyle = getStyle('--color-accent-yellow');
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(x - width / 2, y);
-          ctx.lineTo(x + width / 2, y);
-          ctx.stroke();
-          ctx.restore();
-        });
+          const width = dataset.barThickness || 0
+          ctx.save()
+          ctx.strokeStyle = getStyle('--color-accent-yellow')
+          ctx.lineWidth = 2
+          ctx.beginPath()
+          ctx.moveTo(x - width / 2, y)
+          ctx.lineTo(x + width / 2, y)
+          ctx.stroke()
+          ctx.restore()
+        })
       }
-    });
-  }
-};
-
+    })
+  },
+}
 
 /**
  * Slightly intensify the specified color channel of a hex color.
@@ -105,7 +109,10 @@ const netLinePlugin = {
 function emphasizeColor(hex, channel) {
   let normalizedHex = hex.replace('#', '')
   if (normalizedHex.length === 3)
-    normalizedHex = normalizedHex.split('').map(ch => ch + ch).join('')
+    normalizedHex = normalizedHex
+      .split('')
+      .map((ch) => ch + ch)
+      .join('')
   const colorNumber = parseInt(normalizedHex, 16)
   let redChannel = (colorNumber >> 16) & 0xff
   let greenChannel = (colorNumber >> 8) & 0xff
@@ -158,20 +165,28 @@ async function renderChart() {
 
   const filtered = filterDataByRange(chartData.value)
 
-  const labels = filtered.length ? filtered.map(item => item.date) : [' ']
+  const labels = filtered.length ? filtered.map((item) => item.date) : [' ']
   // Extract numeric values from response objects
-  const netValues = filtered.length ? filtered.map(item => item.net.parsedValue) : [0]
-  const incomeValues = filtered.length ? filtered.map(item => item.income.parsedValue) : [0]
-  const expenseValues = filtered.length ? filtered.map(item => item.expenses.parsedValue) : [0]
+  const netValues = filtered.length ? filtered.map((item) => item.net.parsedValue) : [0]
+  const incomeValues = filtered.length ? filtered.map((item) => item.income.parsedValue) : [0]
+  const expenseValues = filtered.length ? filtered.map((item) => item.expenses.parsedValue) : [0]
   // Expenses are already negative (parsedValue); use as is for chart
 
-  const avgIncome = incomeValues.length ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length : 0
-  const avgExpenses = expenseValues.length ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length : 0
+  const avgIncome = incomeValues.length
+    ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length
+    : 0
+  const avgExpenses = expenseValues.length
+    ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length
+    : 0
 
   const incomeBase = getStyle('--color-accent-green')
   const expenseBase = getStyle('--color-accent-red')
-  const incomeColors = incomeValues.map(v => (v > avgIncome ? emphasizeColor(incomeBase, 'g') : incomeBase))
-  const expenseColors = expenseValues.map(v => (Math.abs(v) > Math.abs(avgExpenses) ? emphasizeColor(expenseBase, 'r') : expenseBase))
+  const incomeColors = incomeValues.map((v) =>
+    v > avgIncome ? emphasizeColor(incomeBase, 'g') : incomeBase,
+  )
+  const expenseColors = expenseValues.map((v) =>
+    Math.abs(v) > Math.abs(avgExpenses) ? emphasizeColor(expenseBase, 'r') : expenseBase,
+  )
 
   const datasets = [
     {
@@ -264,22 +279,22 @@ async function renderChart() {
           callbacks: {
             // Show the date as title
             title: (tooltipItems) => {
-              const idx = tooltipItems[0].dataIndex;
-              return filtered[idx]?.date || tooltipItems[0].label;
+              const idx = tooltipItems[0].dataIndex
+              return filtered[idx]?.date || tooltipItems[0].label
             },
             // Suppress default per-dataset labels
             label: () => null,
             // After title, display income, expenses, net, and transactions
             afterBody: (tooltipItems) => {
-              const idx = tooltipItems[0].dataIndex;
-              const rec = filtered[idx];
-              if (!rec) return [];
+              const idx = tooltipItems[0].dataIndex
+              const rec = filtered[idx]
+              if (!rec) return []
               return [
                 `Income: ${formatAmount(rec.income.parsedValue)}`,
                 `Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
                 `Net: ${formatAmount(rec.net.parsedValue)}`,
                 `Transactions: ${rec.transaction_count}`,
-              ];
+              ]
             },
           },
           backgroundColor: getStyle('--theme-bg'),
@@ -297,7 +312,7 @@ async function renderChart() {
           max: Math.max(...incomeValues, 0),
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            callback: value => formatAmount(value),
+            callback: (value) => formatAmount(value),
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
           },
@@ -312,14 +327,14 @@ async function renderChart() {
             // Show one label per week, formatted as Mon DD
             callback: (value, index) => {
               // Only show one label per week
-              if (index % 7 !== 0) return '';
+              if (index % 7 !== 0) return ''
               // Use the original label (YYYY-MM-DD) for accurate parsing
-              const raw = labels[index];
-              if (!raw) return '';
-              const dt = new Date(raw);
-              if (isNaN(dt)) return raw;
+              const raw = labels[index]
+              if (!raw) return ''
+              const dt = new Date(raw)
+              if (isNaN(dt)) return raw
               // Format e.g. "Jul 05"
-              return dt.toLocaleDateString(undefined, { month: 'short', day: '2-digit' });
+              return dt.toLocaleDateString(undefined, { month: 'short', day: '2-digit' })
             },
             color: getStyle('--color-text-muted'),
             font: { family: "'Fira Code', monospace", size: 14 },
@@ -369,11 +384,22 @@ function updateSummary() {
   emit('data-change', filtered)
 }
 
-
-watch([chartData, () => props.zoomedOut, () => props.startDate, () => props.endDate, show7Day, show30Day, showAvgIncome, showAvgExpenses], async () => {
-  updateSummary()
-  await renderChart()
-})
+watch(
+  [
+    chartData,
+    () => props.zoomedOut,
+    () => props.startDate,
+    () => props.endDate,
+    show7Day,
+    show30Day,
+    showAvgIncome,
+    showAvgExpenses,
+  ],
+  async () => {
+    updateSummary()
+    await renderChart()
+  },
+)
 
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
 
@@ -388,4 +414,3 @@ onUnmounted(() => {
   }
 })
 </script>
-
