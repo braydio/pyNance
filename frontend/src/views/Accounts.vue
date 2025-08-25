@@ -87,8 +87,8 @@
 
     <!-- Accounts Table -->
     <Card class="p-6">
-      <h2 class="text-xl font-semibold mb-4">Institutions</h2>
-      <InstitutionTable @refresh="refreshCharts" />
+      <h2 class="text-xl font-semibold mb-4">Accounts</h2>
+      <AccountsTable @refresh="refreshCharts" />
     </Card>
 
     <!-- Footer -->
@@ -118,7 +118,7 @@ import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 
 // Business Components
 import LinkAccount from '@/components/forms/LinkAccount.vue'
-import InstitutionTable from '@/components/tables/InstitutionTable.vue'
+import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 

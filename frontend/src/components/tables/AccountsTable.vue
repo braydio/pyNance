@@ -5,23 +5,49 @@
       Accounts
     </h2>
     <!-- Controls/Filters -->
-    <div class="mb-4 flex gap-2 flex-wrap items-center">
-      <input v-model="searchQuery" class="filter-input" type="text" placeholder="Filter accounts..." />
-      <button class="export-btn" @click="controlsVisible = !controlsVisible">
-        {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
-      </button>
-      <template v-if="controlsVisible">
-        <button class="export-btn" @click="toggleDeleteButtons">
-          {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
+    <div
+      class="mb-4 flex items-center justify-between flex-wrap gap-2"
+      data-testid="accounts-control-bar"
+    >
+      <div class="flex items-center gap-2 flex-wrap">
+        <input
+          v-model="searchQuery"
+          class="filter-input"
+          type="text"
+          placeholder="Filter accounts..."
+        />
+        <button
+          class="btn btn-outline btn-sm"
+          @click="controlsVisible = !controlsVisible"
+        >
+          {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
         </button>
-        <button class="export-btn" @click="exportCSV">Export CSV</button>
-        <button class="export-btn" @click="showTypeFilter = !showTypeFilter">
-          Filter by Type
-        </button>
-        <button class="export-btn" @click="showHidden = !showHidden">
-          {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
-        </button>
-      </template>
+        <template v-if="controlsVisible">
+          <button
+            class="btn btn-outline btn-sm"
+            @click="toggleDeleteButtons"
+          >
+            {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
+          </button>
+          <button class="btn btn-outline btn-sm" @click="exportCSV">
+            Export CSV
+          </button>
+          <button
+            class="btn btn-outline btn-sm"
+            @click="showTypeFilter = !showTypeFilter"
+          >
+            Filter by Type
+          </button>
+          <button
+            class="btn btn-outline btn-sm"
+            @click="showHidden = !showHidden"
+          >
+            {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
+          </button>
+        </template>
+      </div>
+      <!-- Maintain width alignment with sparkline column -->
+      <div class="w-[60px]"></div>
     </div>
     <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
       <select multiple v-model="typeFilters" class="filter-input">
@@ -53,6 +79,8 @@
             <th
               class="py-2 px-4 text-right font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
               Balance</th>
+            <th class="py-2 px-4 text-center font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800 w-[60px]">
+              Trend</th>
             <th v-if="controlsVisible" class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200">
               Actions
             </th>
@@ -83,7 +111,12 @@
             <!-- Link Type -->
             <td class="px-4 py-2 text-blue-200">{{ account.link_type || 'N/A' }}</td>
             <!-- Balance -->
-            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-300">{{ formatBalance(account.balance) }}
+            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-300">
+              {{ formatBalance(account.balance) }}
+            </td>
+            <!-- Sparkline -->
+            <td class="px-4 py-2 flex justify-center">
+              <AccountSparkline :account-id="account.account_id" />
             </td>
             <!-- Actions -->
             <td v-if="controlsVisible" class="px-4 py-2">
@@ -108,9 +141,11 @@
 <script>
 import api from "@/services/api";
 import accountLinkApi from "@/api/accounts_link";
+import AccountSparkline from "@/components/widgets/AccountSparkline.vue";
 
 export default {
   name: "AccountsTable",
+  components: { AccountSparkline },
   emits: ["refresh"],
   props: {
     provider: { type: String, default: "teller" },
