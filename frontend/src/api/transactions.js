@@ -9,6 +9,8 @@
  * - `updateTransaction(transactionData)` - modify a transaction
  * - `fetchRecentTransactions(accountId, limit?)` - newest transactions for an account
  * - `fetchNetChanges(accountId, params?)` - income/expense totals for an account
+ * - `fetchTopMerchants(params?)` - highest spending merchants
+ * - `fetchTopCategories(params?)` - highest spending categories
  */
 import axios from 'axios'
 
@@ -31,7 +33,7 @@ export const fetchTransactions = async (params = {}) => {
   }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })
-  return (response.data?.status === 'success') ? response.data.data : { transactions: [] }
+  return response.data?.status === 'success' ? response.data.data : { transactions: [] }
 }
 
 /**
@@ -50,17 +52,33 @@ export const updateTransaction = async (transactionData) => {
 
 export const fetchRecentTransactions = async (accountId, limit = 10) => {
   const params = { recent: true, limit }
-  const response = await axios.get(
-    `/api/transactions/${accountId}/transactions`,
-    { params }
-  )
+  const response = await axios.get(`/api/transactions/${accountId}/transactions`, { params })
   return response.data
 }
 
 export const fetchNetChanges = async (accountId, params = {}) => {
-  const response = await axios.get(
-    `/api/accounts/${accountId}/net_changes`,
-    { params }
-  )
+  const response = await axios.get(`/api/accounts/${accountId}/net_changes`, { params })
   return response.data
+}
+
+/**
+ * Fetch top merchants by spending.
+ *
+ * @param {Object} params - Optional query params like `start_date` and `end_date`.
+ * @returns {Promise<Array>} Array of merchant summaries.
+ */
+export const fetchTopMerchants = async (params = {}) => {
+  const response = await axios.get('/api/transactions/top_merchants', { params })
+  return response.data?.data || []
+}
+
+/**
+ * Fetch top categories by spending.
+ *
+ * @param {Object} params - Optional query params like `start_date` and `end_date`.
+ * @returns {Promise<Array>} Array of category summaries.
+ */
+export const fetchTopCategories = async (params = {}) => {
+  const response = await axios.get('/api/transactions/top_categories', { params })
+  return response.data?.data || []
 }

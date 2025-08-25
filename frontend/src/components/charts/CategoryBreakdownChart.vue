@@ -1,6 +1,6 @@
 <template>
   <div
-    class="relative w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
+    class="relative w-full max-w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
   >
     <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
   </div>
@@ -11,7 +11,7 @@
 // Displays a stacked bar chart of spending. By default, only the top four
 // parent categories are shown individually with the rest grouped into an
 // "Other" bar. Set `groupOthers` to `false` to show all categories.
-import { ref, watch, nextTick, onMounted, onUnmounted } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, toRefs } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -24,6 +24,8 @@ const props = defineProps({
   selectedCategoryIds: { type: Array, default: () => [] },
   groupOthers: { type: Boolean, default: true },
 })
+
+const { startDate, endDate, selectedCategoryIds, groupOthers } = toRefs(props)
 
 const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
 
@@ -96,7 +98,7 @@ async function renderChart() {
   const ctx = canvasEl.getContext('2d')
   if (!ctx) return
 
-  const { labels, datasets } = extractStackedBarData(categoryTree.value, props.selectedCategoryIds)
+  const { labels, datasets } = extractStackedBarData(categoryTree.value, selectedCategoryIds.value)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -146,7 +148,7 @@ async function renderChart() {
           const node = categoryTree.value.find((cat) => cat.label === label)
           // Only emit IDs for categories currently selected by the user
           const ids = (node?.children || [])
-            .filter((c) => props.selectedCategoryIds.includes(c.id))
+            .filter((c) => selectedCategoryIds.value.includes(c.id))
             .map((c) => c.id)
           emit('bar-click', { label, ids })
         }
@@ -180,14 +182,14 @@ async function renderChart() {
 async function fetchData() {
   try {
     const response = await fetchCategoryBreakdownTree({
-      start_date: props.startDate,
-      end_date: props.endDate,
+      start_date: startDate.value,
+      end_date: endDate.value,
       top_n: 50,
     })
     if (response.status === 'success') {
       const raw = response.data || []
       let processed = raw
-      if (props.groupOthers && raw.length > 4) {
+    if (groupOthers.value && raw.length > 4) {
         const topFour = raw.slice(0, 4)
         const others = raw.slice(4)
         const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
@@ -226,11 +228,11 @@ function sumSelectedAmounts(nodes, selectedIds) {
 }
 
 function updateSummary() {
-  const total = sumSelectedAmounts(categoryTree.value, props.selectedCategoryIds)
+  const total = sumSelectedAmounts(categoryTree.value, selectedCategoryIds.value)
   emit('summary-change', {
     total,
-    startDate: props.startDate,
-    endDate: props.endDate,
+    startDate: startDate.value,
+    endDate: endDate.value,
   })
 }
 
@@ -238,11 +240,11 @@ function updateSummary() {
 onMounted(fetchData)
 
 // Refetch data when range or grouping changes
-watch(() => [props.startDate, props.endDate, props.groupOthers], debounce(fetchData, 200))
+watch([startDate, endDate, groupOthers], debounce(fetchData, 200))
 
 // When selectedCategoryIds changes, update summary and re-render
 watch(
-  () => props.selectedCategoryIds,
+  selectedCategoryIds,
   debounce(async () => {
     updateSummary()
     await renderChart()
