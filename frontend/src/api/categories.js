@@ -12,13 +12,15 @@ export async function fetchCategoryTree(params = {}) {
 }
 
 /**
- * Fetch a flat list of categories with optional date and filter
- * parameters.
+ * Retrieve a flat list of categories.
  *
- * @param {Object} params - Query parameters such as `start_date`,
- *   `end_date`, or search filters.
+ * @param {Object} options - Query options.
+ * @param {string} [options.start_date] - ISO start date filter.
+ * @param {string} [options.end_date] - ISO end date filter.
+ * @param {Object} [options.filters] - Additional search filters.
  */
-export async function fetchCategories(params = {}) {
+export async function fetchCategories({ start_date, end_date, ...filters } = {}) {
+  const params = { start_date, end_date, ...filters }
   const response = await axios.get('/api/categories', { params })
   return response.data
 }
