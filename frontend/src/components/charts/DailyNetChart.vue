@@ -9,6 +9,7 @@
 <script setup>
 // Displays income, expenses, and net totals for the selected date range.
 // Accepts start and end dates along with a zoom toggle for aggregated view.
+// Days exceeding their average are highlighted with a slightly intensified hue.
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
@@ -30,9 +31,6 @@ const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
-// Counts of days exceeding their respective averages; used for summary and chart annotations
-const aboveAvgIncomeDays = ref(0)
-const aboveAvgExpenseDays = ref(0)
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -96,26 +94,35 @@ const netLinePlugin = {
   }
 };
 
-// Plugin to annotate above-average day counts when avg lines are shown
-const avgInfoPlugin = {
-  id: 'avgInfoPlugin',
-  afterDraw(chart) {
-    const { ctx, chartArea } = chart
-    ctx.save()
-    ctx.font = "12px 'Fira Code', monospace"
-    ctx.textBaseline = 'top'
-    let y = chartArea.top + 4
-    if (showAvgIncome.value) {
-      ctx.fillStyle = getStyle('--color-accent-green')
-      ctx.fillText(`Income>avg: ${aboveAvgIncomeDays.value}`, chartArea.left + 4, y)
-      y += 14
-    }
-    if (showAvgExpenses.value) {
-      ctx.fillStyle = getStyle('--color-accent-red')
-      ctx.fillText(`Expenses>avg: ${aboveAvgExpenseDays.value}`, chartArea.left + 4, y)
-    }
-    ctx.restore()
+
+/**
+ * Slightly intensify the specified color channel of a hex color.
+ *
+ * @param {string} hex - Base color as a hexadecimal string.
+ * @param {'r' | 'g'} channel - Color channel to emphasize.
+ * @returns {string} Hex color string with adjusted channel.
+ */
+function emphasizeColor(hex, channel) {
+  let normalizedHex = hex.replace('#', '')
+  if (normalizedHex.length === 3)
+    normalizedHex = normalizedHex.split('').map(ch => ch + ch).join('')
+  const colorNumber = parseInt(normalizedHex, 16)
+  let redChannel = (colorNumber >> 16) & 0xff
+  let greenChannel = (colorNumber >> 8) & 0xff
+  let blueChannel = colorNumber & 0xff
+  const adjustment = 20
+  if (channel === 'r') {
+    redChannel = Math.min(255, redChannel + adjustment)
+    greenChannel = Math.max(0, greenChannel - adjustment)
+    blueChannel = Math.max(0, blueChannel - adjustment)
+  } else if (channel === 'g') {
+    greenChannel = Math.min(255, greenChannel + adjustment)
+    redChannel = Math.max(0, redChannel - adjustment)
+    blueChannel = Math.max(0, blueChannel - adjustment)
   }
+  return `#${((redChannel << 16) | (greenChannel << 8) | blueChannel)
+    .toString(16)
+    .padStart(6, '0')}`
 }
 
 function movingAverage(values, window) {
@@ -161,12 +168,17 @@ async function renderChart() {
   const avgIncome = incomeValues.length ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length : 0
   const avgExpenses = expenseValues.length ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length : 0
 
+  const incomeBase = getStyle('--color-accent-green')
+  const expenseBase = getStyle('--color-accent-red')
+  const incomeColors = incomeValues.map(v => (v > avgIncome ? emphasizeColor(incomeBase, 'g') : incomeBase))
+  const expenseColors = expenseValues.map(v => (Math.abs(v) > Math.abs(avgExpenses) ? emphasizeColor(expenseBase, 'r') : expenseBase))
+
   const datasets = [
     {
       type: 'bar',
       label: 'Income',
       data: incomeValues,
-      backgroundColor: getStyle('--color-accent-green'),
+      backgroundColor: incomeColors,
       borderRadius: 4,
       barThickness: 20,
     },
@@ -174,7 +186,7 @@ async function renderChart() {
       type: 'bar',
       label: 'Expenses',
       data: expenseValues,
-      backgroundColor: getStyle('--color-accent-red'),
+      backgroundColor: expenseColors,
       borderRadius: 4,
       barThickness: 20,
     },
@@ -237,8 +249,8 @@ async function renderChart() {
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    // include netLinePlugin to draw net lines and avgInfoPlugin for annotations
-    plugins: [netLinePlugin, avgInfoPlugin],
+    // include netLinePlugin to draw net lines
+    plugins: [netLinePlugin],
     data: {
       labels,
       datasets,
@@ -347,18 +359,10 @@ function updateSummary() {
   const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
   const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
 
-  const days = filtered.length || 1
-  const avgIncome = totalIncome / days
-  const avgExpenses = totalExpenses / days
-  aboveAvgIncomeDays.value = filtered.filter(d => (d.income?.parsedValue || 0) > avgIncome).length
-  aboveAvgExpenseDays.value = filtered.filter(d => Math.abs(d.expenses?.parsedValue || 0) > Math.abs(avgExpenses)).length
-
   emit('summary-change', {
     totalIncome,
     totalExpenses,
     totalNet,
-    aboveAvgIncomeDays: aboveAvgIncomeDays.value,
-    aboveAvgExpenseDays: aboveAvgExpenseDays.value,
   })
 
   // Also emit the filtered chart data for the statistics component
