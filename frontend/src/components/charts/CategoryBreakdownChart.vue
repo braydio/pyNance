@@ -189,7 +189,7 @@ async function fetchData() {
     if (response.status === 'success') {
       const raw = response.data || []
       let processed = raw
-    if (groupOthers.value && raw.length > 4) {
+      if (groupOthers.value && raw.length > 4) {
         const topFour = raw.slice(0, 4)
         const others = raw.slice(4)
         const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
