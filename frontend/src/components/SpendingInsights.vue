@@ -11,11 +11,7 @@
       <section>
         <h3 class="font-semibold mb-2">Top Merchants</h3>
         <div class="flex flex-col gap-2 overflow-x-scroll">
-          <div
-            v-for="m in topMerchants"
-            :key="m.name"
-            class="flex items-center gap-2"
-          >
+          <div v-for="m in topMerchants" :key="m.name" class="flex items-center gap-2">
             <span class="flex-1 truncate whitespace-nowrap">{{ m.name }}</span>
             <span class="text-sm text-muted whitespace-nowrap">{{ formatCurrency(m.total) }}</span>
             <Line
@@ -30,11 +26,7 @@
       <section>
         <h3 class="font-semibold mb-2">Top Categories</h3>
         <div class="flex flex-col gap-2 overflow-x-scroll">
-          <div
-            v-for="c in topCategories"
-            :key="c.name"
-            class="flex items-center gap-2"
-          >
+          <div v-for="c in topCategories" :key="c.name" class="flex items-center gap-2">
             <span class="flex-1 truncate whitespace-nowrap">{{ c.name }}</span>
             <span class="text-sm text-muted whitespace-nowrap">{{ formatCurrency(c.total) }}</span>
             <Line
@@ -53,13 +45,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { Line } from 'vue-chartjs'
-import {
-  Chart,
-  LineElement,
-  PointElement,
-  LinearScale,
-  CategoryScale
-} from 'chart.js'
+import { Chart, LineElement, PointElement, LinearScale, CategoryScale } from 'chart.js'
 import { fetchTopMerchants, fetchTopCategories } from '@/api/transactions'
 import { formatCurrency } from '@/utils/currency'
 
@@ -73,16 +59,16 @@ const chartOptions = {
   maintainAspectRatio: false,
   scales: {
     x: { display: false },
-    y: { display: false }
+    y: { display: false },
   },
   elements: {
     line: { borderWidth: 1, tension: 0.3 },
-    point: { radius: 0 }
+    point: { radius: 0 },
   },
   plugins: {
     legend: { display: false },
-    tooltip: { enabled: false }
-  }
+    tooltip: { enabled: false },
+  },
 }
 
 function sparklineData(trend = []) {
@@ -92,9 +78,9 @@ function sparklineData(trend = []) {
       {
         data: trend,
         borderColor: 'var(--color-accent-magenta)',
-        fill: false
-      }
-    ]
+        fill: false,
+      },
+    ],
   }
 }
 

@@ -33,7 +33,7 @@ export const fetchTransactions = async (params = {}) => {
   }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })
-  return (response.data?.status === 'success') ? response.data.data : { transactions: [] }
+  return response.data?.status === 'success' ? response.data.data : { transactions: [] }
 }
 
 /**
@@ -52,18 +52,12 @@ export const updateTransaction = async (transactionData) => {
 
 export const fetchRecentTransactions = async (accountId, limit = 10) => {
   const params = { recent: true, limit }
-  const response = await axios.get(
-    `/api/transactions/${accountId}/transactions`,
-    { params }
-  )
+  const response = await axios.get(`/api/transactions/${accountId}/transactions`, { params })
   return response.data
 }
 
 export const fetchNetChanges = async (accountId, params = {}) => {
-  const response = await axios.get(
-    `/api/accounts/${accountId}/net_changes`,
-    { params }
-  )
+  const response = await axios.get(`/api/accounts/${accountId}/net_changes`, { params })
   return response.data
 }
 
