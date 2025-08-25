@@ -1,3 +1,4 @@
+<!-- AccountsTable.vue - Table of linked accounts with filter controls. -->
 <template>
   <div class="card bg-neutral-950 border border-neutral-800 shadow-xl rounded-2xl p-4 md:p-6">
     <h2 class="font-bold text-xl mb-6 text-left tracking-wide text-blue-300 flex items-center">
@@ -5,11 +6,8 @@
       Accounts
     </h2>
     <!-- Controls/Filters -->
-    <div
-      class="mb-4 flex items-center justify-between flex-wrap gap-2"
-      data-testid="accounts-control-bar"
-    >
-      <div class="flex items-center gap-2 flex-wrap">
+    <div class="mb-4 flex flex-wrap items-center gap-2" data-testid="accounts-control-bar">
+      <div class="flex items-center gap-2 flex-wrap flex-1">
         <input
           v-model="searchQuery"
           class="filter-input"
@@ -33,7 +31,7 @@
         </template>
       </div>
       <!-- Maintain width alignment with sparkline column -->
-      <div class="w-[60px]"></div>
+      <div class="flex-none w-[60px]"></div>
     </div>
     <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
       <select multiple v-model="typeFilters" class="filter-input">

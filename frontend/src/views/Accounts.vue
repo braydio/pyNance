@@ -55,12 +55,16 @@
     <Card class="p-6 space-y-4">
       <div class="flex justify-between items-center">
         <h2 class="text-xl font-semibold">Balance History</h2>
-        <select v-model="selectedRange" data-testid="filter-dropdown" class="border rounded p-1">
-          <option value="7d">7d</option>
-          <option value="30d">30d</option>
-          <option value="90d">90d</option>
-          <option value="365d">365d</option>
-        </select>
+        <div class="flex gap-2" data-testid="history-range-controls">
+          <button
+            v-for="range in ranges"
+            :key="range"
+            @click="selectedRange = range"
+            :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
+          >
+            {{ range }}
+          </button>
+        </div>
       </div>
       <div v-if="loadingHistory" class="text-center py-4 text-muted">Loading...</div>
       <div v-else-if="historyError" class="text-center py-4 text-error">Failed to load history</div>
@@ -162,6 +166,7 @@ const netSummary = ref({ income: 0, expense: 0, net: 0 })
 const recentTransactions = ref([])
 const accountHistory = ref([])
 const selectedRange = ref('30d')
+const ranges = ['7d', '30d', '90d', '365d']
 
 // Loading/Error States
 const loadingSummary = ref(false)
