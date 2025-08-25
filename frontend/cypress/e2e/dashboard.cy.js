@@ -39,9 +39,7 @@ describe('Dashboard view', () => {
       statusCode: 200,
       body: {
         status: 'success',
-        data: [
-          { id: 1, label: 'Food', children: [{ id: 10, label: 'Groceries' }] },
-        ],
+        data: [{ id: 1, label: 'Food', children: [{ id: 10, label: 'Groceries' }] }],
       },
     }).as('categoriesTree')
 
@@ -72,8 +70,14 @@ describe('Dashboard view', () => {
     cy.wait('@dailyNet')
     cy.get('input[type="date"]').eq(1).clear()
     cy.get('input[type="date"]').eq(1).type('2024-01-31')
-    cy.wait('@dailyNet').its('request.url').should('include', 'start_date=2024-01-01').and('include', 'end_date=2024-01-31')
-    cy.wait('@catBreakdown').its('request.url').should('include', 'start_date=2024-01-01').and('include', 'end_date=2024-01-31')
+    cy.wait('@dailyNet')
+      .its('request.url')
+      .should('include', 'start_date=2024-01-01')
+      .and('include', 'end_date=2024-01-31')
+    cy.wait('@catBreakdown')
+      .its('request.url')
+      .should('include', 'start_date=2024-01-01')
+      .and('include', 'end_date=2024-01-31')
   })
 
   it('displays financial summary metrics', () => {
