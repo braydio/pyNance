@@ -99,28 +99,37 @@ const netLinePlugin = {
   },
 }
 
+/**
+ * Slightly intensify the specified color channel of a hex color.
+ *
+ * @param {string} hex - Base color as a hexadecimal string.
+ * @param {'r' | 'g'} channel - Color channel to emphasize.
+ * @returns {string} Hex color string with adjusted channel.
+ */
 function emphasizeColor(hex, channel) {
-  let c = hex.replace('#', '')
-  if (c.length === 3)
-    c = c
+  let normalizedHex = hex.replace('#', '')
+  if (normalizedHex.length === 3)
+    normalizedHex = normalizedHex
       .split('')
       .map((ch) => ch + ch)
       .join('')
-  const num = parseInt(c, 16)
-  let r = (num >> 16) & 0xff
-  let g = (num >> 8) & 0xff
-  let b = num & 0xff
-  const delta = 20
+  const colorNumber = parseInt(normalizedHex, 16)
+  let redChannel = (colorNumber >> 16) & 0xff
+  let greenChannel = (colorNumber >> 8) & 0xff
+  let blueChannel = colorNumber & 0xff
+  const adjustment = 20
   if (channel === 'r') {
-    r = Math.min(255, r + delta)
-    g = Math.max(0, g - delta)
-    b = Math.max(0, b - delta)
+    redChannel = Math.min(255, redChannel + adjustment)
+    greenChannel = Math.max(0, greenChannel - adjustment)
+    blueChannel = Math.max(0, blueChannel - adjustment)
   } else if (channel === 'g') {
-    g = Math.min(255, g + delta)
-    r = Math.max(0, r - delta)
-    b = Math.max(0, b - delta)
+    greenChannel = Math.min(255, greenChannel + adjustment)
+    redChannel = Math.max(0, redChannel - adjustment)
+    blueChannel = Math.max(0, blueChannel - adjustment)
   }
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
+  return `#${((redChannel << 16) | (greenChannel << 8) | blueChannel)
+    .toString(16)
+    .padStart(6, '0')}`
 }
 
 function movingAverage(values, window) {
