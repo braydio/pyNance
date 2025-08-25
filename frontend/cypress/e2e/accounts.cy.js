@@ -3,7 +3,9 @@
 
 describe('Accounts control bar', () => {
   it('aligns with the table header', () => {
-    cy.intercept('GET', '/api/accounts/get_accounts*', { status: 'success', accounts: [] }).as('getAccounts')
+    cy.intercept('GET', '/api/accounts/get_accounts*', { status: 'success', accounts: [] }).as(
+      'getAccounts',
+    )
     cy.visit('/accounts/table')
     cy.wait('@getAccounts')
     cy.get('[data-testid="accounts-control-bar"]').then(($bar) => {

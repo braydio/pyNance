@@ -19,18 +19,25 @@ describe('Dashboard widgets', () => {
     cy.visit('/')
     cy.wait('@recentTx')
 
-    cy.contains('Recent Transactions').parent().within(() => {
-      cy.contains('Coffee')
-      cy.contains('Salary')
-    })
+    cy.contains('Recent Transactions')
+      .parent()
+      .within(() => {
+        cy.contains('Coffee')
+        cy.contains('Salary')
+      })
   })
 
   it('propagates date range to charts', () => {
-    cy.intercept('GET', '/api/transactions/get_transactions*', { status: 'success', data: { transactions: [] } })
+    cy.intercept('GET', '/api/transactions/get_transactions*', {
+      status: 'success',
+      data: { transactions: [] },
+    })
     cy.intercept('GET', '/api/transactions/top_merchants*', { data: [] })
     cy.intercept('GET', '/api/transactions/top_categories*', { data: [] })
     cy.intercept('GET', '/api/charts/daily_net*', { status: 'success', data: [] }).as('dailyNet')
-    cy.intercept('GET', '/api/charts/category_breakdown_tree*', { status: 'success', data: [] }).as('catTree')
+    cy.intercept('GET', '/api/charts/category_breakdown_tree*', { status: 'success', data: [] }).as(
+      'catTree',
+    )
 
     cy.visit('/')
     cy.wait('@dailyNet')
@@ -52,7 +59,10 @@ describe('Dashboard widgets', () => {
   })
 
   it('shows financial summary metrics', () => {
-    cy.intercept('GET', '/api/transactions/get_transactions*', { status: 'success', data: { transactions: [] } })
+    cy.intercept('GET', '/api/transactions/get_transactions*', {
+      status: 'success',
+      data: { transactions: [] },
+    })
     cy.intercept('GET', '/api/transactions/top_merchants*', { data: [] })
     cy.intercept('GET', '/api/transactions/top_categories*', { data: [] })
     cy.intercept('GET', '/api/charts/category_breakdown_tree*', { status: 'success', data: [] })
@@ -83,7 +93,10 @@ describe('Dashboard widgets', () => {
   })
 
   it('filters categories via dropdown', () => {
-    cy.intercept('GET', '/api/transactions/get_transactions*', { status: 'success', data: { transactions: [] } })
+    cy.intercept('GET', '/api/transactions/get_transactions*', {
+      status: 'success',
+      data: { transactions: [] },
+    })
     cy.intercept('GET', '/api/transactions/top_merchants*', { data: [] })
     cy.intercept('GET', '/api/transactions/top_categories*', { data: [] })
     cy.intercept('GET', '/api/charts/daily_net*', { status: 'success', data: [] })
@@ -111,20 +124,29 @@ describe('Dashboard widgets', () => {
     cy.visit('/')
     cy.wait('@catTree')
 
-    cy.contains('Spending by Category').parent().parent().within(() => {
-      cy.contains('Total:').next().should('contain', '$100.00')
-    })
+    cy.contains('Spending by Category')
+      .parent()
+      .parent()
+      .within(() => {
+        cy.contains('Total:').next().should('contain', '$100.00')
+      })
 
     cy.get('.dropdown-trigger').click()
     cy.get('.dropdown-menu').contains('Dining').click()
 
-    cy.contains('Spending by Category').parent().parent().within(() => {
-      cy.contains('Total:').next().should('contain', '$70.00')
-    })
+    cy.contains('Spending by Category')
+      .parent()
+      .parent()
+      .within(() => {
+        cy.contains('Total:').next().should('contain', '$70.00')
+      })
   })
 
   it('displays spending insights data', () => {
-    cy.intercept('GET', '/api/transactions/get_transactions*', { status: 'success', data: { transactions: [] } })
+    cy.intercept('GET', '/api/transactions/get_transactions*', {
+      status: 'success',
+      data: { transactions: [] },
+    })
     cy.intercept('GET', '/api/charts/daily_net*', { status: 'success', data: [] })
     cy.intercept('GET', '/api/charts/category_breakdown_tree*', { status: 'success', data: [] })
     cy.intercept('GET', '/api/transactions/top_merchants*', {
