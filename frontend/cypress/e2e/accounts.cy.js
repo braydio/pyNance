@@ -3,7 +3,7 @@
 
 describe('Accounts control bar', () => {
   it('aligns with the table header', () => {
-    cy.visit('/accounts/table')
+    cy.visit('/accounts')
     cy.get('[data-testid="accounts-control-bar"]').then(($bar) => {
       const barRight = $bar[0].getBoundingClientRect().right
       cy.get('table thead').then(($head) => {
