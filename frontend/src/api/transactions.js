@@ -9,6 +9,8 @@
  * - `updateTransaction(transactionData)` - modify a transaction
  * - `fetchRecentTransactions(accountId, limit?)` - newest transactions for an account
  * - `fetchNetChanges(accountId, params?)` - income/expense totals for an account
+ * - `fetchTopMerchants(params?)` - highest spending merchants
+ * - `fetchTopCategories(params?)` - highest spending categories
  */
 import axios from 'axios'
 
@@ -63,4 +65,26 @@ export const fetchNetChanges = async (accountId, params = {}) => {
     { params }
   )
   return response.data
+}
+
+/**
+ * Fetch top merchants by spending.
+ *
+ * @param {Object} params - Optional query params like `start_date` and `end_date`.
+ * @returns {Promise<Array>} Array of merchant summaries.
+ */
+export const fetchTopMerchants = async (params = {}) => {
+  const response = await axios.get('/api/transactions/top_merchants', { params })
+  return response.data?.data || []
+}
+
+/**
+ * Fetch top categories by spending.
+ *
+ * @param {Object} params - Optional query params like `start_date` and `end_date`.
+ * @returns {Promise<Array>} Array of category summaries.
+ */
+export const fetchTopCategories = async (params = {}) => {
+  const response = await axios.get('/api/transactions/top_categories', { params })
+  return response.data?.data || []
 }

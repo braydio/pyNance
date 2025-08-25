@@ -124,15 +124,7 @@
             }}</span>
           </div>
         </div>
-        <!-- Spending Insights Placeholder -->
-        <div
-          class="md:col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-magenta)] p-6 flex flex-col items-center justify-center"
-        >
-          <h2 class="text-xl font-bold text-[var(--color-accent-magenta)] mb-4">
-            Spending Insights
-          </h2>
-          <p class="italic text-muted text-center">More detailed insights coming soon...</p>
-        </div>
+        <SpendingInsights />
       </div>
 
       <!-- RESERVED TABLES PANEL -->
@@ -245,6 +237,7 @@ import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import RecentTransactions from '@/components/widgets/RecentTransactions.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
+import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
