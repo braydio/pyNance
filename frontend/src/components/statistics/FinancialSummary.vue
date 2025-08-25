@@ -102,19 +102,6 @@
               <span class="stat-value">{{ extendedStats.outlierDates.length }}</span>
             </div>
           </div>
-
-          <!-- Above Average Days -->
-          <div class="stat-group">
-            <h4 class="group-title">Above Avg Days</h4>
-            <div class="stat-item">
-              <span class="stat-label">Income:</span>
-              <span class="stat-value">{{ summary.aboveAvgIncomeDays }}</span>
-            </div>
-            <div class="stat-item">
-              <span class="stat-label">Expenses:</span>
-              <span class="stat-value">{{ summary.aboveAvgExpenseDays }}</span>
-            </div>
-          </div>
         </div>
       </div>
     </Transition>
@@ -132,8 +119,6 @@ const props = defineProps({
       totalIncome: 0,
       totalExpenses: 0,
       totalNet: 0,
-      aboveAvgIncomeDays: 0,
-      aboveAvgExpenseDays: 0,
       highestIncomeDay: null,
       highestExpenseDay: null,
       trend: 0,
@@ -165,70 +150,70 @@ const netClass = computed(() => ({
 }))
 
 // Extended statistics calculations
-  const extendedStats = computed(() => {
-    const data = props.chartData
-    if (!data.length) {
-      return {
-        avgDailyIncome: 0,
-        avgDailyExpenses: 0,
-        avgDailyNet: 0,
-        movingAverage7: 0,
-        movingAverage30: 0,
-        trend: 0,
-        volatility: 0,
-        highestIncomeDay: null,
-        highestExpenseDay: null,
-        outlierDates: [],
-      }
-    }
-
-    const days = data.length
-
-    // Daily aggregates
-    const incomeValues = data.map((d) => d.income?.parsedValue || 0)
-    const expenseValues = data.map((d) => Math.abs(d.expenses?.parsedValue || 0))
-    const netValues = data.map((d) => d.net?.parsedValue || 0)
-
-    const avgDailyIncome = props.summary.totalIncome / days
-    const avgDailyExpenses = props.summary.totalExpenses / days
-    const avgDailyNet = props.summary.totalNet / days
-
-    const movingAverage7 = calculateMovingAverage(netValues, 7)
-    const movingAverage30 = calculateMovingAverage(netValues, 30)
-
-    const trend = calculateTrend(netValues)
-    const volatility = calculateVolatility(netValues)
-
-    // Highest income/expense days
-    const maxIncomeIdx = incomeValues.indexOf(Math.max(...incomeValues))
-    const maxExpenseIdx = expenseValues.indexOf(Math.max(...expenseValues))
-    const highestIncomeDay = data[maxIncomeIdx]
-      ? { date: data[maxIncomeIdx].date, amount: incomeValues[maxIncomeIdx] }
-      : null
-    const highestExpenseDay = data[maxExpenseIdx]
-      ? { date: data[maxExpenseIdx].date, amount: expenseValues[maxExpenseIdx] }
-      : null
-
-    // Basic outlier detection using 2 standard deviations
-    const mean = netValues.reduce((a, b) => a + b, 0) / days
-    const threshold = 2 * volatility
-    const outlierDates = data
-      .filter((d, i) => Math.abs(netValues[i] - mean) > threshold)
-      .map((d) => d.date)
-
+const extendedStats = computed(() => {
+  const data = props.chartData
+  if (!data.length) {
     return {
-      avgDailyIncome,
-      avgDailyExpenses,
-      avgDailyNet,
-      movingAverage7,
-      movingAverage30,
-      trend,
-      volatility,
-      highestIncomeDay,
-      highestExpenseDay,
-      outlierDates,
+      avgDailyIncome: 0,
+      avgDailyExpenses: 0,
+      avgDailyNet: 0,
+      movingAverage7: 0,
+      movingAverage30: 0,
+      trend: 0,
+      volatility: 0,
+      highestIncomeDay: null,
+      highestExpenseDay: null,
+      outlierDates: [],
     }
-  })
+  }
+
+  const days = data.length
+
+  // Daily aggregates
+  const incomeValues = data.map((d) => d.income?.parsedValue || 0)
+  const expenseValues = data.map((d) => Math.abs(d.expenses?.parsedValue || 0))
+  const netValues = data.map((d) => d.net?.parsedValue || 0)
+
+  const avgDailyIncome = props.summary.totalIncome / days
+  const avgDailyExpenses = props.summary.totalExpenses / days
+  const avgDailyNet = props.summary.totalNet / days
+
+  const movingAverage7 = calculateMovingAverage(netValues, 7)
+  const movingAverage30 = calculateMovingAverage(netValues, 30)
+
+  const trend = calculateTrend(netValues)
+  const volatility = calculateVolatility(netValues)
+
+  // Highest income/expense days
+  const maxIncomeIdx = incomeValues.indexOf(Math.max(...incomeValues))
+  const maxExpenseIdx = expenseValues.indexOf(Math.max(...expenseValues))
+  const highestIncomeDay = data[maxIncomeIdx]
+    ? { date: data[maxIncomeIdx].date, amount: incomeValues[maxIncomeIdx] }
+    : null
+  const highestExpenseDay = data[maxExpenseIdx]
+    ? { date: data[maxExpenseIdx].date, amount: expenseValues[maxExpenseIdx] }
+    : null
+
+  // Basic outlier detection using 2 standard deviations
+  const mean = netValues.reduce((a, b) => a + b, 0) / days
+  const threshold = 2 * volatility
+  const outlierDates = data
+    .filter((d, i) => Math.abs(netValues[i] - mean) > threshold)
+    .map((d) => d.date)
+
+  return {
+    avgDailyIncome,
+    avgDailyExpenses,
+    avgDailyNet,
+    movingAverage7,
+    movingAverage30,
+    trend,
+    volatility,
+    highestIncomeDay,
+    highestExpenseDay,
+    outlierDates,
+  }
+})
 
 // Trend display
 const trendClass = computed(() => ({
@@ -244,22 +229,22 @@ const trendLabel = computed(() => {
   return '→ Stable'
 })
 
-  const volatilityLabel = computed(() => {
-    const vol = extendedStats.value.volatility
-    if (vol < 50) return 'Low'
-    if (vol < 200) return 'Medium'
-    return 'High'
-  })
+const volatilityLabel = computed(() => {
+  const vol = extendedStats.value.volatility
+  if (vol < 50) return 'Low'
+  if (vol < 200) return 'Medium'
+  return 'High'
+})
 
-  const highestIncomeLabel = computed(() => {
-    const hi = extendedStats.value.highestIncomeDay
-    return hi ? `${hi.date} (${formatAmount(hi.amount)})` : 'N/A'
-  })
+const highestIncomeLabel = computed(() => {
+  const hi = extendedStats.value.highestIncomeDay
+  return hi ? `${hi.date} (${formatAmount(hi.amount)})` : 'N/A'
+})
 
-  const highestExpenseLabel = computed(() => {
-    const he = extendedStats.value.highestExpenseDay
-    return he ? `${he.date} (${formatAmount(he.amount)})` : 'N/A'
-  })
+const highestExpenseLabel = computed(() => {
+  const he = extendedStats.value.highestExpenseDay
+  return he ? `${he.date} (${formatAmount(he.amount)})` : 'N/A'
+})
 
 // Statistical calculation functions
 function calculateMovingAverage(values, period) {
