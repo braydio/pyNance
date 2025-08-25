@@ -35,6 +35,10 @@ jobs:
 
       # Report coverage to DeepSource
       - name: Report coverage
+        env:
+          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
         run: |
           deepsource report --analyzer test-coverage --key python --value-file backend/coverage.xml
           deepsource report --analyzer test-coverage --key javascript --value-file frontend/coverage/lcov.info
+          deepsource report --finalize
+
