@@ -11,7 +11,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="${REPO_DIR}/frontend"
 BRANCH="${1:-$(git -C "${REPO_DIR}" rev-parse --abbrev-ref HEAD)}"
-INTERVAL="${INTERVAL:-60}"
+INTERVAL="${INTERVAL:-360}"
 
 declare DEV_PID=0
 
