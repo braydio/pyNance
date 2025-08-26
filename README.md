@@ -3,6 +3,7 @@
 pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a PostgreSQL database. It connects to financial institutions through Plaid and Teller to aggregate accounts and transactions.
 
 ## Features
+
 - **Account aggregation and transactions** via Plaid and Teller integrations.
 - **Rule-based categorization** to organize spending.
 - **Balance forecasting** to project future account balances.
@@ -11,12 +12,15 @@ pyNance is a full-stack personal finance dashboard that combines a Flask API, a 
 - **Scenario planning** with planned bills and allocations (experimental).
 
 ## Installation
+
 ```bash
 ./scripts/setup.sh
 ```
+
 This script creates a virtual environment, installs backend and frontend dependencies, and copies `backend/example.env` to `backend/.env`.
 
 ## Running locally
+
 1. Start the backend:
    ```bash
    cd backend
@@ -29,6 +33,7 @@ This script creates a virtual environment, installs backend and frontend depende
    ```
 
 ## Testing
+
 - Backend tests:
   ```bash
   pytest
@@ -40,4 +45,5 @@ This script creates a virtual environment, installs backend and frontend depende
   ```
 
 ## Contributing
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards and contribution guidelines.
