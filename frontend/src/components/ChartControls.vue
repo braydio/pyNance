@@ -6,7 +6,7 @@
         :checked="show7Day"
         @change="emit('update:show7Day', $event.target.checked)"
       />
-      7d trend</label
+      7 Day Trended</label
     >
     <label
       ><input
@@ -14,7 +14,7 @@
         :checked="show30Day"
         @change="emit('update:show30Day', $event.target.checked)"
       />
-      30d trend</label
+      30 Day Trended</label
     >
     <label
       ><input
@@ -22,7 +22,7 @@
         :checked="showAvgIncome"
         @change="emit('update:showAvgIncome', $event.target.checked)"
       />
-      AVERAGE SHIT-NCOME</label
+      Avg Income</label
     >
     <label
       ><input
@@ -30,7 +30,8 @@
         :checked="showAvgExpenses"
         @change="emit('update:showAvgExpenses', $event.target.checked)"
       />
-      avg expenses</label
+
+      Avg Expenses</label
     >
   </div>
 </template>
