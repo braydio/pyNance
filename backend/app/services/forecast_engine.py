@@ -1,6 +1,7 @@
 # forecast_engine.py
 
 """Rule-based forecast engine for projecting account balances."""
+
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List

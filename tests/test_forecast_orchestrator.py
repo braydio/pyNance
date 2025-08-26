@@ -3,8 +3,8 @@
 import importlib.util
 import os
 import sys
-from datetime import datetime, timedelta
 import types
+from datetime import datetime, timedelta
 
 import pytest
 

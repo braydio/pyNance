@@ -6,8 +6,8 @@ import sys
 import types
 from datetime import datetime, timedelta
 
-from flask import Flask
 import pytest
+from flask import Flask
 
 # ---- Paths and Imports ----
 BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
