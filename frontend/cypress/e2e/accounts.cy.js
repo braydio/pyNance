@@ -3,12 +3,17 @@
 
 describe('Accounts control bar', () => {
   it('aligns with the table header', () => {
-    cy.visit('/accounts')
+    cy.intercept('GET', '/api/accounts/get_accounts*', { status: 'success', accounts: [] }).as(
+      'getAccounts',
+    )
+    cy.visit('/accounts/table')
+    cy.wait('@getAccounts')
     cy.get('[data-testid="accounts-control-bar"]').then(($bar) => {
-      const barRight = $bar[0].getBoundingClientRect().right
+      const rectBar = $bar[0].getBoundingClientRect()
       cy.get('table thead').then(($head) => {
-        const headRight = $head[0].getBoundingClientRect().right
-        expect(Math.abs(barRight - headRight)).to.be.lessThan(2)
+        const rectHead = $head[0].getBoundingClientRect()
+        expect(Math.abs(rectBar.right - rectHead.right)).to.be.lessThan(2)
+        expect(Math.abs(rectBar.left - rectHead.left)).to.be.lessThan(2)
       })
     })
   })
