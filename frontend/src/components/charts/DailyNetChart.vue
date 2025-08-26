@@ -164,13 +164,26 @@ async function renderChart() {
   }
 
   const filtered = filterDataByRange(chartData.value)
+  // Calculate moving averages from the complete dataset so trend lines aren't
+  // truncated by the date filter.
+  const allNetValues = chartData.value.map((item) => item.net.parsedValue)
+  const ma7Full = movingAverage(allNetValues, 7)
+  const ma30Full = movingAverage(allNetValues, 30)
 
   const labels = filtered.length ? filtered.map((item) => item.date) : [' ']
-  // Extract numeric values from response objects
+  // Extract numeric values from response objects for the filtered range
   const netValues = filtered.length ? filtered.map((item) => item.net.parsedValue) : [0]
   const incomeValues = filtered.length ? filtered.map((item) => item.income.parsedValue) : [0]
   const expenseValues = filtered.length ? filtered.map((item) => item.expenses.parsedValue) : [0]
   // Expenses are already negative (parsedValue); use as is for chart
+
+  // Lookup table to align moving averages with filtered labels
+  const indexByDate = chartData.value.reduce((acc, item, idx) => {
+    acc[item.date] = idx
+    return acc
+  }, {})
+  const ma7 = filtered.map((item) => ma7Full[indexByDate[item.date]])
+  const ma30 = filtered.map((item) => ma30Full[indexByDate[item.date]])
 
   const avgIncome = incomeValues.length
     ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length
@@ -244,7 +257,7 @@ async function renderChart() {
     datasets.push({
       type: 'line',
       label: '7-Day Avg',
-      data: movingAverage(netValues, 7),
+      data: ma7,
       borderColor: getStyle('--color-accent-orange'),
       borderWidth: 2,
       pointRadius: 0,
@@ -255,7 +268,7 @@ async function renderChart() {
     datasets.push({
       type: 'line',
       label: '30-Day Avg',
-      data: movingAverage(netValues, 30),
+      data: ma30,
       borderColor: getStyle('--color-accent-blue'),
       borderWidth: 2,
       pointRadius: 0,
@@ -353,10 +366,15 @@ async function fetchData() {
       const end = new Date()
       const start = new Date()
       start.setMonth(start.getMonth() - 6)
+      // fetch an extra month of data for trendline calculations
+      start.setDate(start.getDate() - 30)
       params.start_date = start.toISOString().slice(0, 10)
       params.end_date = end.toISOString().slice(0, 10)
     } else {
-      params.start_date = props.startDate
+      const start = new Date(props.startDate)
+      // include prior days so moving averages use the full expected range
+      start.setDate(start.getDate() - 30)
+      params.start_date = start.toISOString().slice(0, 10)
       params.end_date = props.endDate
     }
     const response = await fetchDailyNet(params)
