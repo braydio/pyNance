@@ -2,7 +2,7 @@
   <div class="chart-controls">
     <label><input type="checkbox" :checked="show7Day" @change="emit('update:show7Day', $event.target.checked)" /> 7d trend</label>
     <label><input type="checkbox" :checked="show30Day" @change="emit('update:show30Day', $event.target.checked)" /> 30d trend</label>
-    <label><input type="checkbox" :checked="showAvgIncome" @change="emit('update:showAvgIncome', $event.target.checked)" /> avg income</label>
+    <label><input type="checkbox" :checked="showAvgIncome" @change="emit('update:showAvgIncome', $event.target.checked)" /> AVERAGE SHIT-NCOME</label>
     <label><input type="checkbox" :checked="showAvgExpenses" @change="emit('update:showAvgExpenses', $event.target.checked)" /> avg expenses</label>
   </div>
 </template>
