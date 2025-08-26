@@ -1,9 +1,9 @@
 <template>
   <div class="chart-controls">
-    <label><input type="checkbox" :checked="show7Day" @change="emit('update:show7Day', $event.target.checked)" /> 7d trend</label>
-    <label><input type="checkbox" :checked="show30Day" @change="emit('update:show30Day', $event.target.checked)" /> 30d trend</label>
-    <label><input type="checkbox" :checked="showAvgIncome" @change="emit('update:showAvgIncome', $event.target.checked)" /> avg income</label>
-    <label><input type="checkbox" :checked="showAvgExpenses" @change="emit('update:showAvgExpenses', $event.target.checked)" /> avg expenses</label>
+    <label><input type="checkbox" :checked="show7Day" @change="emit('update:show7Day', $event.target.checked)" /> 7 Day Trended</label>
+    <label><input type="checkbox" :checked="show30Day" @change="emit('update:show30Day', $event.target.checked)" /> 30 Day Trended</label>
+    <label><input type="checkbox" :checked="showAvgIncome" @change="emit('update:showAvgIncome', $event.target.checked)" /> Avg Income</label>
+    <label><input type="checkbox" :checked="showAvgExpenses" @change="emit('update:showAvgExpenses', $event.target.checked)" /> Avg Expenses</label>
   </div>
 </template>
 
