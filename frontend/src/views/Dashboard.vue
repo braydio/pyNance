@@ -31,8 +31,8 @@
           v-model:zoomed-out="zoomedOut"
         />
       </div>
-      <!-- TOP ROW: Top Accounts Snapshot, Recent Transactions & Net Income -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-4 items-stretch">
+      <!-- TOP ROW: Top Accounts Snapshot & Net Income -->
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
           class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between"
@@ -41,10 +41,6 @@
             Top Accounts
           </h2>
           <TopAccountSnapshot use-spectrum />
-        </div>
-        <!-- Recent Transactions Card -->
-        <div class="col-span-1">
-          <RecentTransactions />
         </div>
         <!-- Net Income Summary Card -->
         <div
@@ -234,7 +230,6 @@ import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
-import RecentTransactions from '@/components/widgets/RecentTransactions.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
