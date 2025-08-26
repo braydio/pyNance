@@ -1,3 +1,5 @@
+"""Test the Plaid transactions route with a stubbed configuration."""
+
 import importlib.util
 import os
 import sys
@@ -23,6 +25,7 @@ config_stub.PLAID_CLIENT_ID = "pid"
 config_stub.PLAID_CLIENT_NAME = "pname"
 config_stub.CLIENT_NAME = "client"
 config_stub.FLASK_ENV = "test"
+config_stub.plaid_client = None
 sys.modules["app.config"] = config_stub
 
 extensions_stub = types.ModuleType("app.extensions")
