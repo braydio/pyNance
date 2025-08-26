@@ -35,7 +35,7 @@ import Card from '@/components/ui/Card.vue'
 defineProps({
   icon: {
     type: [String, Object],
-    default: null
-  }
+    default: null,
+  },
 })
 </script>
