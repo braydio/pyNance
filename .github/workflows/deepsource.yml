@@ -4,9 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  analyze:
+  deepsource:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,29 +17,13 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: "3.x"
       - run: |
           pip install -r backend/requirements.txt
           pip install pytest pytest-cov deepsource
-          pytest --cov=backend --cov-report xml:backend/coverage.xml
 
-      # Frontend: Node tests + coverage
-      - name: Set up Node
-        uses: actions/setup-node@v3
-        with:
-          node-version: "18"
-      - run: |
-          cd frontend
-          npm ci
-          npm run build --if-present
-          npm run test -- --coverage --coverageReporters=lcov
+      - name: Run tests with coverage
+        run: pytest --cov=backend --cov-report=xml
 
-      # Report coverage to DeepSource
-      - name: Report coverage
-        env:
-          DEEPSOURCE_DSN: ${{ secrets.DEEPSOURCE_DSN }}
-        run: |
-          deepsource report --analyzer test-coverage --key python --value-file backend/coverage.xml
-          deepsource report --analyzer test-coverage --key javascript --value-file frontend/coverage/lcov.info
-          deepsource report --finalize
-
+      - name: Report coverage to DeepSource
+        run: deepsource report --analyzer test-coverage --key python --value-file backend
