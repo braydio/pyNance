@@ -1,20 +1,21 @@
 version = 1
 
 [[analyzers]]
+name = "test-coverage"
+enabled = true
+
+[[analyzers]]
 name = "python"
 
-  [analyzers.meta]
-  runtime_version = "3.x.x"
+[analyzers.meta]
+runtime_version = "3.x.x"
 
 [[analyzers]]
 name = "javascript"
 
-  [analyzers.meta]
-  plugins = ["vue"]
-  environment = [
-    "cypress",
-    "nodejs"
-  ]
+[analyzers.meta]
+plugins = ["vue"]
+environment = ["cypress", "nodejs"]
 
 [[transformers]]
 name = "prettier"
@@ -27,3 +28,4 @@ name = "ruff"
 
 [[transformers]]
 name = "black"
+

@@ -27,7 +27,8 @@ class DummyEmbeddingFunction:
             input = [input]
         return [[float(len(s)), 0.0, 0.0] for s in input]
 
-    def name(self):
+    @staticmethod
+    def name():
         return "dummy"
 
     def embed_documents(self, documents):
@@ -36,7 +37,8 @@ class DummyEmbeddingFunction:
     def embed_query(self, text):
         return self([text])[0]
 
-    def is_legacy(self):
+    @staticmethod
+    def is_legacy():
         """Indicate legacy embedding function to suppress deprecation warnings."""
         return True
 

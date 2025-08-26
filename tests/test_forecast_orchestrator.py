@@ -3,8 +3,8 @@
 import importlib.util
 import os
 import sys
-from datetime import datetime, timedelta
 import types
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -33,7 +33,8 @@ class DummyRuleEngine:
     def __init__(self, db=None):
         self.db = db
 
-    def forecast_balances(self, horizon_days=60):
+    @staticmethod
+    def forecast_balances(horizon_days=60):
         # Use non-deprecated current date
         today = datetime.now().date()
         return [

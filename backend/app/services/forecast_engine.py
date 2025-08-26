@@ -1,6 +1,7 @@
 # forecast_engine.py
 
 """Rule-based forecast engine for projecting account balances."""
+
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List
@@ -15,8 +16,9 @@ class ForecastEngine:
     def __init__(self, db: Session):
         self.db = db
 
+    @staticmethod
     def _generate_projection_dates(
-        self, start: datetime, freq: str, horizon: int
+        start: datetime, freq: str, horizon: int
     ) -> List[datetime]:
         """Build a list of projection dates using a frequency string."""
         delta_map = {

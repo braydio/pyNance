@@ -37,7 +37,8 @@ class QueryStub:
 
 # Stub current_app
 class DummyApp:
-    def app_context(self):
+    @staticmethod
+    def app_context():
         return contextlib.nullcontext()
 
 
