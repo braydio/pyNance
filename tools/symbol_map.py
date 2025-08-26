@@ -7,6 +7,7 @@ functions, classes and methods found in each file. The symbol map helps
 agents maintain context about the codebase for refactoring and
 navigation tasks.
 """
+
 from __future__ import annotations
 
 import json
