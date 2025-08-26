@@ -32,6 +32,17 @@ This script creates a virtual environment, installs backend and frontend depende
    npm run dev
    ```
 
+For automatic updates when new commits are pushed to the repository, use the
+watcher script from the project root:
+
+```bash
+./scripts/dev-watcher.sh
+```
+
+It starts the frontend development server and periodically performs a
+`git pull --rebase` when the tracked branch receives new commits, ensuring Git
+hooks run and the server restarts with the latest changes.
+
 ## Testing
 
 - Backend tests:
