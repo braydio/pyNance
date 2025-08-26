@@ -6,8 +6,8 @@ import sys
 import types
 from datetime import datetime, timedelta
 
-from flask import Flask
 import pytest
+from flask import Flask
 
 # ---- Paths and Imports ----
 BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
@@ -35,7 +35,8 @@ class QueryStub:
     def filter(self, *a, **k):
         return self
 
-    def all(self):
+    @staticmethod
+    def all():
         return []
 
 
@@ -64,7 +65,8 @@ class DummyRuleEngine:
     def __init__(self, db=None):
         self.db = db
 
-    def forecast_balances(self, horizon_days=60):
+    @staticmethod
+    def forecast_balances(horizon_days=60):
         # Use non-deprecated current date
         today = datetime.now().date()
         return [
