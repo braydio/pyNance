@@ -10,6 +10,9 @@ from flask import Flask
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
+app_pkg = types.ModuleType("app")
+app_pkg.__path__ = []
+sys.modules["app"] = app_pkg
 sys.modules["flask_cors"] = types.SimpleNamespace(CORS=lambda app: app)
 sys.modules["flask_migrate"] = types.SimpleNamespace(Migrate=lambda *a, **k: None)
 
@@ -31,6 +34,15 @@ sys.modules["app.config.environment"] = env_stub
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace()
 sys.modules["app.extensions"] = extensions_stub
+
+utils_pkg = types.ModuleType("app.utils")
+finance_stub = types.ModuleType("app.utils.finance_utils")
+finance_stub.display_transaction_amount = lambda txn: (
+    -txn.amount if getattr(txn, "transaction_type", "") == "expense" else txn.amount
+)
+finance_stub.normalize_account_balance = lambda b: b
+sys.modules["app.utils"] = utils_pkg
+sys.modules["app.utils.finance_utils"] = finance_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})

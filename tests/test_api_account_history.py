@@ -1,3 +1,8 @@
+"""Tests for account history routes using stubbed dependencies."""
+
+# pylint: skip-file
+# mypy: ignore-errors
+
 import importlib.util
 import os
 import sys
@@ -10,6 +15,9 @@ from flask import Flask
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
+app_pkg = types.ModuleType("app")
+app_pkg.__path__ = []
+sys.modules["app"] = app_pkg
 sys.modules["flask_cors"] = types.SimpleNamespace(CORS=lambda app: app)
 sys.modules["flask_migrate"] = types.SimpleNamespace(Migrate=lambda *a, **k: None)
 
@@ -31,6 +39,13 @@ sys.modules["app.config.environment"] = env_stub
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace(session=None)
 sys.modules["app.extensions"] = extensions_stub
+
+utils_pkg = types.ModuleType("app.utils")
+finance_stub = types.ModuleType("app.utils.finance_utils")
+finance_stub.display_transaction_amount = lambda txn: 0.0
+finance_stub.normalize_account_balance = lambda b: b
+sys.modules["app.utils"] = utils_pkg
+sys.modules["app.utils.finance_utils"] = finance_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
@@ -67,9 +82,9 @@ sys.modules["app.sql.forecast_logic"] = forecast_stub
 
 services_pkg = types.ModuleType("app.services")
 history_stub = types.ModuleType("app.services.account_history")
-history_stub.compute_balance_history = (
-    lambda *a, **k: [{"date": "2024-01-01", "balance": 100.0}]
-)
+history_stub.compute_balance_history = lambda *a, **k: [
+    {"date": "2024-01-01", "balance": 100.0}
+]
 sys.modules["app.services"] = services_pkg
 sys.modules["app.services.account_history"] = history_stub
 
@@ -91,12 +106,17 @@ def client(monkeypatch):
             return types.SimpleNamespace(first=lambda: mock_account)
         return types.SimpleNamespace(first=lambda: None)
 
+    query_obj = types.SimpleNamespace(
+        filter_by=filter_by,
+        get=lambda pk: mock_account if pk == 1 else None,
+    )
     monkeypatch.setattr(
         accounts_module.Account,
         "query",
-        types.SimpleNamespace(filter_by=filter_by),
+        query_obj,
         raising=False,
     )
+    monkeypatch.setitem(sys.modules, "app.models", models_stub)
 
     # Stub db.session.query chain
     class TxQuery:
@@ -116,7 +136,9 @@ def client(monkeypatch):
     )
 
     # Stub sqlalchemy func
-    sqlalchemy_stub = types.SimpleNamespace(func=types.SimpleNamespace(date=lambda x: x, sum=lambda x: x))
+    sqlalchemy_stub = types.SimpleNamespace(
+        func=types.SimpleNamespace(date=lambda x: x, sum=lambda x: x)
+    )
     monkeypatch.setitem(sys.modules, "sqlalchemy", sqlalchemy_stub)
 
     app = Flask(__name__)
