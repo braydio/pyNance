@@ -51,3 +51,30 @@ dependencies:
   - sentence-transformers
   - Python 3.8+
   - (optional) OS environment variables: CHROMA_COLLECTION, CHROMA_RESULT_COUNT, CHROMA_HOST, CHROMA_PORT, CHROMA_MODEL
+
+---
+name: symbol_map
+description: |
+  Generate a JSON map of functions, classes and methods for Python and TypeScript
+  sources using Tree-sitter. Useful for maintaining an up-to-date view of the
+  codebase for agentic workflows.
+entrypoint: python tools/symbol_map.py
+arguments:
+  - name: repo
+    type: string
+    default: "."
+    description: "Repository root to scan."
+usage_examples:
+  - command: |
+      python tools/symbol_map.py . > symbols.json
+    description: |
+      Create a symbol map for the current repository and save it to a file.
+outputs:
+  - name: symbols
+    description: "JSON mapping of file paths to discovered symbols."
+agent_guidance: |
+  Run this after significant code changes to refresh context used by
+  maintenance agents.
+dependencies:
+  - tree-sitter
+  - tree-sitter-languages

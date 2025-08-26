@@ -91,7 +91,8 @@ class DummyBridge:
     def __init__(self, txs):
         self.txs = txs
 
-    def sync_to_db(self):
+    @staticmethod
+    def sync_to_db():
         return [{"mock": "action"}]
 
 
