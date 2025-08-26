@@ -73,7 +73,8 @@ class DummyColumn:
     def __set__(self, instance, value):
         setattr(instance, self.attr, value)
 
-    def in_(self, vals):
+    @staticmethod
+    def in_(vals):
         return ("account_id_in", vals)
 
 
