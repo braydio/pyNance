@@ -1,4 +1,8 @@
 <script setup>
+/**
+ * Root application shell.
+ * Renders the navigation bar and centers all routed views.
+ */
 import Navbar from "@/components/layout/Navbar.vue"
 import { RouterView } from "vue-router"
 
@@ -16,6 +20,8 @@ const isDev = import.meta.env.VITE_SESSION_MODE === "development"
   </header>
 
   <main>
-    <RouterView />
+    <div class="container">
+      <RouterView />
+    </div>
   </main>
 </template>
