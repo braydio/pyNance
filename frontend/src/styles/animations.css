@@ -1,7 +1,9 @@
 /* animations.css - shared animation utilities */
 
+/* Accordion transition for collapsible sections */
 .accordion-enter-active,
 .accordion-leave-active {
+  overflow: hidden;
   transition: all 250ms ease-in-out;
 }
 
@@ -9,5 +11,11 @@
 .accordion-leave-to {
   opacity: 0;
   max-height: 0;
+}
+
+.accordion-enter-to,
+.accordion-leave-from {
+  opacity: 1;
+  max-height: 1000px;
 }
 

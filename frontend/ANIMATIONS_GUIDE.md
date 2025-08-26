@@ -36,6 +36,8 @@ This guide covers all the smooth animations and transitions implemented througho
 
 ### Collapsible Sections
 - `.accordion-enter-active` / `.accordion-leave-active` - Smooth accordion animations
+- `.accordion-enter-from` / `.accordion-leave-to` - Hidden state (`opacity: 0`, `max-height: 0`)
+- `.accordion-enter-to` / `.accordion-leave-from` - Expanded state (`max-height: 1000px`)
 - `.slide-down-enter-active` - Content slides down when appearing
 - `.slide-up-leave-active` - Content slides up when hiding
 
