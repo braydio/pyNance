@@ -1,6 +1,8 @@
 # tests/test_recurring_bridge.py
 import importlib.util
 import logging
+"""Tests for recurring bridge database sync."""
+
 import os
 import sys
 import types
@@ -52,6 +54,10 @@ def setup_sqlite_app(tmp_path):
 
 @pytest.fixture
 def db_ctx(tmp_path):
+    # Clear potentially stubbed modules
+    sys.modules.pop("app.extensions", None)
+    sys.modules.pop("app.models", None)
+    sys.modules.pop("app.sql", None)
     app, extensions = setup_sqlite_app(tmp_path)
     with app.app_context():
         try:

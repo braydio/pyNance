@@ -1,3 +1,5 @@
+"""Unit tests for account history routes."""
+
 import importlib.util
 import os
 import sys
@@ -30,10 +32,12 @@ sys.modules["app.config.environment"] = env_stub
 
 extensions_stub = types.ModuleType("app.extensions")
 extensions_stub.db = types.SimpleNamespace(session=None)
+original_extensions = sys.modules.get("app.extensions")
 sys.modules["app.extensions"] = extensions_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
+original_models = sys.modules.get("app.models")
 
 
 class _Col:
@@ -67,9 +71,9 @@ sys.modules["app.sql.forecast_logic"] = forecast_stub
 
 services_pkg = types.ModuleType("app.services")
 history_stub = types.ModuleType("app.services.account_history")
-history_stub.compute_balance_history = (
-    lambda *a, **k: [{"date": "2024-01-01", "balance": 100.0}]
-)
+history_stub.compute_balance_history = lambda *a, **k: [
+    {"date": "2024-01-01", "balance": 100.0}
+]
 sys.modules["app.services"] = services_pkg
 sys.modules["app.services.account_history"] = history_stub
 
@@ -77,6 +81,17 @@ ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "accounts.py")
 spec = importlib.util.spec_from_file_location("app.routes.accounts", ROUTE_PATH)
 accounts_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(accounts_module)
+
+# Restore real modules to avoid side effects in other tests
+if original_extensions is not None:
+    sys.modules["app.extensions"] = original_extensions
+else:
+    sys.modules.pop("app.extensions", None)
+
+if original_models is not None:
+    sys.modules["app.models"] = original_models
+else:
+    sys.modules.pop("app.models", None)
 
 
 @pytest.fixture
@@ -91,10 +106,14 @@ def client(monkeypatch):
             return types.SimpleNamespace(first=lambda: mock_account)
         return types.SimpleNamespace(first=lambda: None)
 
+    query_stub = types.SimpleNamespace(
+        filter_by=filter_by,
+        get=lambda id: mock_account if int(id) == 1 else None,
+    )
     monkeypatch.setattr(
         accounts_module.Account,
         "query",
-        types.SimpleNamespace(filter_by=filter_by),
+        query_stub,
         raising=False,
     )
 
@@ -116,8 +135,10 @@ def client(monkeypatch):
     )
 
     # Stub sqlalchemy func
-    sqlalchemy_stub = types.SimpleNamespace(func=types.SimpleNamespace(date=lambda x: x, sum=lambda x: x))
-    monkeypatch.setitem(sys.modules, "sqlalchemy", sqlalchemy_stub)
+    sqlalchemy_stub = types.SimpleNamespace(
+        func=types.SimpleNamespace(date=lambda x: x, sum=lambda x: x)
+    )
+    monkeypatch.setattr(accounts_module, "sqlalchemy", sqlalchemy_stub, raising=False)
 
     app = Flask(__name__)
     app.register_blueprint(accounts_module.accounts, url_prefix="/api/accounts")

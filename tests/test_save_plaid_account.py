@@ -1,6 +1,8 @@
 import importlib.util
 import os
 import sys
+"""Tests for saving Plaid account records."""
+
 import types
 
 import pytest
@@ -76,6 +78,9 @@ def setup_app(tmp_path):
 
 @pytest.fixture()
 def db_ctx(tmp_path):
+    sys.modules.pop("app.extensions", None)
+    sys.modules.pop("app.models", None)
+    sys.modules.pop("app.sql", None)
     app, extensions = setup_app(tmp_path)
     with app.app_context():
         models = load_module(

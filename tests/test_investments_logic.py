@@ -1,3 +1,5 @@
+"""Unit tests for investment account logic."""
+
 import importlib.util
 import os
 import sys
@@ -47,6 +49,10 @@ def setup_app(tmp_path):
 
 @pytest.fixture()
 def db_ctx(tmp_path):
+    # Ensure no stubbed modules leak from other tests
+    sys.modules.pop("app.extensions", None)
+    sys.modules.pop("app.models", None)
+    sys.modules.pop("app.sql", None)
     app, extensions = setup_app(tmp_path)
     with app.app_context():
         models = load_module(
