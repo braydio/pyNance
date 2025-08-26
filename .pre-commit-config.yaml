@@ -37,6 +37,9 @@ repos:
     rev: v3.1.0
     hooks:
       - id: pylint
+        additional_dependencies:
+          - tree-sitter==0.20.2
+          - tree-sitter-languages==1.10.2
 
   # Enforce bandit
   - repo: https://github.com/PyCQA/bandit
@@ -44,6 +47,7 @@ repos:
     hooks:
       - id: bandit
         args: ["-r", "backend/app/routes"]
+        additional_dependencies: ["pbr"]
 
   - repo: local
     hooks:
@@ -51,3 +55,4 @@ repos:
         name: Validate model fields
         entry: pytest tests/test_model_field_validation.py
         language: system
+        pass_filenames: false
