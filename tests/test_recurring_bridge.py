@@ -1,6 +1,7 @@
 # tests/test_recurring_bridge.py
 import importlib.util
 import logging
+
 """Tests for recurring bridge database sync."""
 
 import os
