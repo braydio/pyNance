@@ -238,6 +238,7 @@ async function renderChart() {
       borderDash: [4, 4],
       borderWidth: 1,
       pointRadius: 0,
+      order: 1, // ensure line renders above bars
     })
   }
 
@@ -250,6 +251,7 @@ async function renderChart() {
       borderDash: [4, 4],
       borderWidth: 1,
       pointRadius: 0,
+      order: 1, // ensure line renders above bars
     })
   }
 
@@ -261,6 +263,7 @@ async function renderChart() {
       borderColor: getStyle('--color-accent-orange'),
       borderWidth: 2,
       pointRadius: 0,
+      order: 1, // ensure line renders above bars
     })
   }
 
@@ -272,6 +275,7 @@ async function renderChart() {
       borderColor: getStyle('--color-accent-blue'),
       borderWidth: 2,
       pointRadius: 0,
+      order: 1, // ensure line renders above bars
     })
   }
 
