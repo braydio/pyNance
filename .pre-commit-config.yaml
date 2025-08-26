@@ -1,29 +1,29 @@
 repos:
   # Black: A Python code formatter
   - repo: https://github.com/psf/black
-    rev: 23.1.0  # Specify the version of Black to use
+    rev: 23.1.0 # Specify the version of Black to use
     hooks:
       - id: black
-        language_version: python3  # Ensure the Python version matches your project requirements
+        language_version: python3 # Ensure the Python version matches your project requirements
 
   # isort: A Python import sorter
   - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.10.1  # Use the latest version of isort
+    rev: v5.10.1 # Use the latest version of isort
     hooks:
       - id: isort
         args:
           - "--profile"
-          - "black"  # Align isort with Black's formatting rules
+          - "black" # Align isort with Black's formatting rules
 
   # Ruff: An extremely fast Python linter and code formatter
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: v0.0.287  # Specify the version of Ruff to use
+    rev: v0.0.287 # Specify the version of Ruff to use
     hooks:
       - id: ruff
         args:
-          - "--fix"  # Automatically fix issues found by Ruff
-          - "--line-length=120"  # Set the maximum line length
-          - "--ignore=E501,E203,E402"  # Ignore specific error codes (adjust as needed)
+          - "--fix" # Automatically fix issues found by Ruff
+          - "--line-length=120" # Set the maximum line length
+          - "--ignore=E501,E203,E402" # Ignore specific error codes (adjust as needed)
 
   # Static type checking with mypy
   - repo: https://github.com/pre-commit/mirrors-mypy
@@ -37,6 +37,9 @@ repos:
     rev: v3.1.0
     hooks:
       - id: pylint
+        additional_dependencies:
+          - tree-sitter==0.20.2
+          - tree-sitter-languages==1.10.2
 
   # Enforce bandit
   - repo: https://github.com/PyCQA/bandit
@@ -44,6 +47,7 @@ repos:
     hooks:
       - id: bandit
         args: ["-r", "backend/app/routes"]
+        additional_dependencies: ["pbr"]
 
   - repo: local
     hooks:
@@ -51,3 +55,4 @@ repos:
         name: Validate model fields
         entry: pytest tests/test_model_field_validation.py
         language: system
+        pass_filenames: false
