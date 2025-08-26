@@ -1,0 +1,29 @@
+name: scip-index
+on: [push, workflow_dispatch]
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # TypeScript/JS
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm i -g @sourcegraph/scip-typescript
+      - run: npm ci || true
+      - run: scip-typescript index
+      - run: tar -czf scip-ts.tar.gz index.scip || true
+
+      # Python
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install scip-python
+      - run: scip-python index .
+      - run: tar -czf scip-py.tar.gz index.scip || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: scip-indexes
+          path: |
+            scip-ts.tar.gz
+            scip-py.tar.gz
