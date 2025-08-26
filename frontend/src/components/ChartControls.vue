@@ -30,6 +30,7 @@
         :checked="showAvgExpenses"
         @change="emit('update:showAvgExpenses', $event.target.checked)"
       />
+
       Avg Expenses</label
     >
   </div>
