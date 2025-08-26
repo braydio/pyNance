@@ -1,9 +1,13 @@
 <script setup>
-import Navbar from "@/components/layout/Navbar.vue"
-import { RouterView } from "vue-router"
+/**
+ * Root application shell.
+ * Renders the navigation bar and centers all routed views.
+ */
+import Navbar from '@/components/layout/Navbar.vue'
+import { RouterView } from 'vue-router'
 
 // use Vite’s built-in env variable:
-const isDev = import.meta.env.VITE_SESSION_MODE === "development"
+const isDev = import.meta.env.VITE_SESSION_MODE === 'development'
 </script>
 
 <template>
@@ -16,6 +20,8 @@ const isDev = import.meta.env.VITE_SESSION_MODE === "development"
   </header>
 
   <main>
-    <RouterView />
+    <div class="container">
+      <RouterView />
+    </div>
   </main>
 </template>
