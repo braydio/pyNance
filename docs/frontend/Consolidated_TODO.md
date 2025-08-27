@@ -47,7 +47,6 @@ This consolidated TODO serves as the single source of truth for pyNance frontend
 - **[FORECAST]** = `frontend/src/views/Forecast.vue`
 - **[FORECAST_MOCK]** = `frontend/src/views/ForecastMock.vue`
 - **[DASHBOARD_MOCK]** = `frontend/src/views/DashboardMock.vue`
-- **[RECURRING_SCAN]** = `frontend/src/views/RecurringScanDemo.vue`
 - **[SETTINGS]** = `frontend/src/views/Settings.vue`
 
 ## Repository Organization Guidelines [REPO_ORG]
@@ -608,31 +607,6 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement account toggle controls
 - [ ] Apply consistent Tailwind CSS styling throughout
 
-
-### RecurringScanDemo.vue [COMPONENT_RECURRING_SCAN]
-
-#### Current Implementation Analysis
-- [ ] Verify ScanResultsModal component integration and functionality
-- [ ] Test ScanResultsTable component rendering with demo data
-- [ ] Ensure ScanResultsList component displays properly
-- [ ] Fix route parameter handling for accountId (currently defaults to '1')
-- [ ] Improve error handling for scanRecurringTransactions API calls
-- [ ] Add loading states while scan results are being fetched
-
-#### Links to Recurring Detection
-- [ ] Integrate with scanRecurringTransactions API from `/api/recurring`
-- [ ] Connect to recurring transaction detection algorithms
-- [ ] Display scan results with confidence scores and pattern analysis
-- [ ] Implement demo data scenarios showing different recurring patterns
-- [ ] Add educational content explaining how recurring detection works
-
-#### Placeholders and Links to Recurring Detection
-- [ ] Create comprehensive demo scenarios (weekly groceries, monthly rent, etc.)
-- [ ] Implement interactive tutorial showing pattern recognition process
-- [ ] Add step-by-step guided tour of recurring detection features
-- [ ] Create educational overlays explaining confidence scores and algorithms
-- [ ] Implement demo feedback collection for user experience improvement
-- [ ] Add comparison tools showing manual vs automatic recurring detection
 
 ### Settings.vue [COMPONENT_SETTINGS]
 

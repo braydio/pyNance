@@ -168,16 +168,6 @@
 - ***
 
 
-## RecurringScanDemo.vue
-
-### Components
-
--
-
-#### Issues / TODOs
-
-- ***
-
 ## Settings.vue
 
 ### Components
