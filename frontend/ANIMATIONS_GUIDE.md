@@ -5,15 +5,18 @@ This guide covers all the smooth animations and transitions implemented througho
 ## 🎨 Global Animation Classes
 
 ### Base Transitions
+
 - `.smooth-transition` - Standard 0.3s transition with easing
 - `.smooth-transition-fast` - Quick 0.2s transition
 - `.smooth-transition-slow` - Slow 0.5s transition
 
 ### Entry/Exit Animations
+
 - `.fade-in-up` - Fade in with upward movement (matches TransactionModal)
 - `.fade-out-down` - Fade out with downward movement
 
 ### Loading States
+
 - `.pulse-subtle` - Gentle opacity pulse for loading
 - `.pulse-glow` - Glowing pulse effect with box-shadow
 - `.skeleton-dark` - Shimmer loading skeleton for dark themes
@@ -23,18 +26,22 @@ This guide covers all the smooth animations and transitions implemented througho
 ### Hover Effects
 
 #### Scale Effects
+
 - `.hover-scale-sm` - Small scale on hover (1.02x)
 - `.hover-scale-md` - Medium scale on hover (1.05x)
 
 #### Lift Effects
+
 - `.hover-lift` - Subtle lift with shadow (2px up)
 - `.hover-lift-lg` - Large lift with shadow (4px up)
 
 #### Glow Effects
+
 - `.hover-glow` - Purple glow on hover
 - `.hover-glow-mint` - Mint glow on hover
 
 ### Collapsible Sections
+
 - `.accordion-enter-active` / `.accordion-leave-active` - Smooth accordion animations
 - `.accordion-enter-from` / `.accordion-leave-to` - Hidden state (`opacity: 0`, `max-height: 0`)
 - `.accordion-enter-to` / `.accordion-leave-from` - Expanded state (`max-height: 1000px`)
@@ -42,6 +49,7 @@ This guide covers all the smooth animations and transitions implemented througho
 - `.slide-up-leave-active` - Content slides up when hiding
 
 ### List Animations
+
 - `.stagger-item` - Staggered fadeInUp for list items (auto-delays)
 
 ## 🔘 Button Enhancements
@@ -49,6 +57,7 @@ This guide covers all the smooth animations and transitions implemented througho
 All button classes now include smooth transitions and hover effects:
 
 ### Enhanced Button Variants
+
 - `.btn` - Standard button with lift and glow on hover
 - `.btn-outline` - Outlined button with smooth fill transition
 - `.btn-ghost` - Transparent button with subtle hover effects
@@ -56,6 +65,7 @@ All button classes now include smooth transitions and hover effects:
 - `.btn-lg` - Large button with enhanced hover effects
 
 ### Usage Examples
+
 ```html
 <!-- Standard button with animations -->
 <button class="btn hover-lift">Click me</button>
@@ -70,11 +80,13 @@ All button classes now include smooth transitions and hover effects:
 ## 📝 Input Field Enhancements
 
 ### Input Classes
+
 - `.input` - Standard input with smooth focus transitions
 - `.input-lg` - Large input with enhanced focus ring
 - All inputs now have hover states that preview focus colors
 
 ### Usage Examples
+
 ```html
 <!-- Standard input with transitions -->
 <input class="input" placeholder="Enter text..." />
@@ -86,11 +98,13 @@ All button classes now include smooth transitions and hover effects:
 ## 🔗 Link Styles
 
 ### Link Variants
+
 - `.link` - Simple color transition on hover
 - `.link-underline` - Animated underline effect
 - `.link-glow` - Text glow effect on hover
 
 ### Usage Examples
+
 ```html
 <!-- Simple link with color transition -->
 <a href="#" class="link">Simple Link</a>
@@ -105,10 +119,12 @@ All button classes now include smooth transitions and hover effects:
 ## 🃏 Card Enhancements
 
 ### Card Classes
+
 - `.card` - Standard card with hover lift
 - `.card-interactive` - Enhanced interactive card with larger hover effects
 
 ### Usage Examples
+
 ```html
 <!-- Standard card with hover effects -->
 <div class="card">
@@ -124,6 +140,7 @@ All button classes now include smooth transitions and hover effects:
 ## 📊 Table Row Animations
 
 Tables now include smooth hover transitions:
+
 - Row hover with slide and shadow effects
 - Column header hover states
 - Smooth color transitions throughout
@@ -135,26 +152,24 @@ Modal components automatically use the enhanced fadeInUp/fadeOutDown animations 
 ## 🔄 Vue Transition Names
 
 ### Available Transition Names
+
 - `modal-fade-slide` - For modal components
 - `accordion` - For collapsible content
 - `slide-down` - For dropdown content
 - `slide-up` - For popup content
 
 ### Usage in Vue Components
+
 ```vue
 <template>
   <!-- Modal with animations -->
   <transition name="modal-fade-slide">
-    <div v-if="showModal" class="modal">
-      Modal content
-    </div>
+    <div v-if="showModal" class="modal">Modal content</div>
   </transition>
 
   <!-- Collapsible section -->
   <transition name="accordion">
-    <div v-if="isExpanded" class="content">
-      Collapsible content
-    </div>
+    <div v-if="isExpanded" class="content">Collapsible content</div>
   </transition>
 </template>
 ```
@@ -184,6 +199,7 @@ For lists that should animate in sequence:
 ## 🔧 Customization
 
 The animations use CSS custom properties where possible, making them themeable:
+
 - `--color-accent-purple` - Primary accent color
 - `--color-accent-cyan` - Secondary accent color
 - `--color-bg-dark` - Dark background
