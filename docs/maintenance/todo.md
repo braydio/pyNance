@@ -1,8 +1,9 @@
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
-> 
+>
 > Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
-> 
+>
 > **Specific mapping**:
+>
 > - Site-Wide Features, Components, and Tasks → See [COMPONENT_TASKS] section
 > - Dashboard.vue content → See [COMPONENT_DASHBOARD] section
 > - All view components → See corresponding [COMPONENT_*] sections
@@ -97,7 +98,6 @@
 - Improve section layout and aesthetic.
 - Implement Teller-specific product selection.
 - Add 'Link Account' button:
-
   - Place near Product selection.
   - Only enabled when a product is selected.
 
@@ -162,17 +162,6 @@
 - `DashboardMockLayout.md`
 - `DashboardMockTransactions.vue`
 - `TopBar.vue`
-
-#### Issues / TODOs
-
-- ***
-
-
-## RecurringScanDemo.vue
-
-### Components
-
--
 
 #### Issues / TODOs
 
