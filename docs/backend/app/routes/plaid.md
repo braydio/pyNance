@@ -22,17 +22,14 @@ Handles authentication and data integration with the Plaid API. Supports institu
 ## Inputs & Outputs
 
 - **POST /plaid/link-token**
-
-  - **Input:** `{ user_id: str }`
+  - **Input:** `{}`
   - **Output:** `{ link_token: str }`
 
 - **POST /plaid/exchange**
-
   - **Input:** `{ public_token: str }`
   - **Output:** `{ access_token: str, item_id: str }`
 
 - **GET /plaid/accounts**
-
   - **Output:**
     ```json
     [{ "id": "plaid_001", "name": "Checking", "balance": 820.34 }]

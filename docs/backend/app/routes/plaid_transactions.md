@@ -9,19 +9,18 @@
 
 ## Purpose
 
-Synchronizes and exposes transaction data retrieved via the Plaid API. Allows users to fetch, review, and interact with their financial transactions pulled from linked institutions.
+Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fetching, reviewing, and interacting with financial transactions pulled from linked institutions.
 
 ## Key Endpoints
 
 - `GET /plaid/transactions`: Retrieve all synced transactions.
 - `GET /plaid/transactions/<id>`: Fetch a specific transaction by its ID.
-- `POST /plaid/transactions/sync`: Force-refresh Plaid transactions for the user.
+- `POST /plaid/transactions/sync`: Force-refresh Plaid transactions.
 - `POST /plaid/transactions/refresh_accounts`: Refresh Plaid accounts and transactions.
 
 ## Inputs & Outputs
 
 - **GET /plaid/transactions**
-
   - **Params (optional):**
     - `start_date`, `end_date`
     - `account_ids[]`
@@ -39,21 +38,20 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows us
     ```
 
 - **GET /plaid/transactions/<id>**
-
   - **Output:** Transaction object with full metadata
 
 - **POST /plaid/transactions/sync**
   - **Output:** `{ success: true, new_records: int }`
 
 - **POST /plaid/transactions/refresh_accounts**
-  - **Body:** `{ "user_id": "abc", "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`
+  - **Body:** `{ "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`
   - **Output:** `{ "status": "success", "updated_accounts": ["name"] }`
 
 ## Internal Dependencies
 
 - `services.plaid_transaction_service`
 - `models.Transaction`
-- `utils.date_filtering`, `auth.user_context`
+- `utils.date_filtering`
 
 ## Known Behaviors
 

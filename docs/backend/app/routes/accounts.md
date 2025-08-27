@@ -11,11 +11,11 @@ This document provides comprehensive documentation for account management and tr
 
 ## Purpose
 
-Handles user account lifecycle operations, primarily focused on financial institution linking, management, and metadata sync. Integrates with external APIs (Plaid, Teller) and internal services for authentication and data ingestion.
+Handles account lifecycle operations, primarily focused on financial institution linking, management, and metadata sync. Integrates with external APIs (Plaid, Teller) and internal services for data ingestion.
 
 ## Key Endpoints
 
-- `GET /accounts`: Retrieve all user-linked accounts.
+- `GET /accounts`: Retrieve all linked accounts.
 - `POST /accounts/link`: Initiates link flow (typically with an external aggregator like Plaid).
 - `DELETE /accounts/<account_id>`: Removes a linked account.
 - `PATCH /accounts/<account_id>`: Updates account metadata (e.g., custom labels).
@@ -23,7 +23,6 @@ Handles user account lifecycle operations, primarily focused on financial instit
 ## Inputs & Outputs
 
 - **POST /accounts/link**
-
   - **Input:** `{ public_token: str, provider: 'plaid' | 'teller' }`
   - **Output:** `{ account_id: str, status: str }`
 
@@ -34,13 +33,11 @@ Handles user account lifecycle operations, primarily focused on financial instit
 
 - `services.account_link_service`
 - `models.Account`
-- Auth middleware for user scoping
 
 ## Known Behaviors
 
 - Supports multi-provider account linkage
 - Triggers metadata sync jobs on link success
-- Enforces ownership validation on all mutations
 
 ## Related Docs
 
@@ -68,11 +65,9 @@ Manages transaction categorization logic and user-defined category updates. Supp
 ## Inputs & Outputs
 
 - **GET /categories**
-
   - **Output:** List of all categories, including system and custom types.
 
 - **POST /categories/update**
-
   - **Input:** `{ category_id: str, label: str, emoji?: str }`
   - **Output:** Updated category object.
 

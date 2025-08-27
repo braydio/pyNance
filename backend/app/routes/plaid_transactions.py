@@ -2,8 +2,9 @@
 """Endpoints for Plaid account linking and transaction sync."""
 
 from datetime import datetime, timezone
+from typing import Optional
 
-from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger
+from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger, plaid_client
 from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
@@ -16,13 +17,11 @@ from app.helpers.plaid_helpers import (
 from app.models import Account, PlaidAccount
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
-from sqlalchemy.orm import joinedload
-from app.config import plaid_client
+from plaid.model.country_code import CountryCode
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.country_code import CountryCode
 from plaid.model.products import Products
-from typing import Optional
+from sqlalchemy.orm import joinedload
 
 plaid_transactions = Blueprint("plaid_transactions", __name__)
 
@@ -30,22 +29,24 @@ plaid_transactions = Blueprint("plaid_transactions", __name__)
 def resolve_account_by_any_id(identifier) -> Optional[Account]:
     """
     Resolve account by either numeric primary key or external account_id.
-    
+
     Args:
         identifier: Either integer ID, string numeric ID, or external account_id
-        
+
     Returns:
         Account object if found, None otherwise
     """
     # If identifier is numeric-like, try primary key first
     try:
-        if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
+        if isinstance(identifier, int) or (
+            isinstance(identifier, str) and identifier.isdigit()
+        ):
             acct = Account.query.get(int(identifier))
             if acct:
                 return acct
     except Exception:
         pass
-    
+
     # Fallback to external string account_id
     try:
         return Account.query.filter_by(account_id=str(identifier)).first()
@@ -259,78 +260,101 @@ def refresh_accounts_endpoint():
 @plaid_transactions.route("/generate_update_link_token", methods=["POST"])
 def generate_update_link_token():
     """Generate a Plaid Link token in update mode to resolve ITEM_LOGIN_REQUIRED.
-    
+
     This endpoint generates a Link token that can be used to re-authenticate
-    a Plaid item when the user's login credentials have changed.
+    a Plaid item when the user's credentials have changed.
     """
     try:
         data = request.get_json() or {}
         account_id = data.get("account_id")
-        
+
         if not account_id:
             logger.warning("Missing account_id in update link token request")
-            return jsonify({
-                "status": "error",
-                "message": "Missing account_id parameter"
-            }), 400
-        
+            return (
+                jsonify({"status": "error", "message": "Missing account_id parameter"}),
+                400,
+            )
+
         # Resolve account robustly (handles both numeric IDs and external account_ids)
         account = resolve_account_by_any_id(account_id)
         if not account:
             logger.warning(f"Account {account_id} not found for update link token")
-            return jsonify({
-                "status": "error", 
-                "message": "Account not found"
-            }), 404
-        
+            return jsonify({"status": "error", "message": "Account not found"}), 404
+
         # Check if account has Plaid integration
         if not account.plaid_account or not account.plaid_account.access_token:
             logger.warning(f"Account {account.account_id} missing Plaid access token")
-            return jsonify({
-                "status": "error",
-                "message": "Account is not linked to Plaid or missing access token"
-            }), 400
-        
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Account is not linked to Plaid or missing access token",
+                    }
+                ),
+                400,
+            )
+
         access_token = account.plaid_account.access_token
-        logger.info(f"Generating update link token for account {account.account_id} (user {account.user_id})")
-        
+        logger.info(
+            f"Generating update link token for account {account.account_id} (user {account.user_id})"
+        )
+
         # Create Link token in update mode
         req = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=str(account.user_id)),
             client_name="pyNance",
             language="en",
-            country_codes=[CountryCode('US')],
-            products=[Products('transactions')],
-            access_token=access_token  # This puts Link in update mode
+            country_codes=[CountryCode("US")],
+            products=[Products("transactions")],
+            access_token=access_token,  # This puts Link in update mode
         )
-        
+
         response = plaid_client.link_token_create(req)
-        
-        logger.info(f"Successfully generated update link token for account {account.account_id}")
-        return jsonify({
-            "status": "success",
-            "link_token": response.link_token,
-            "expiration": response.expiration.isoformat() if response.expiration else None,
-            "account_id": account.account_id
-        }), 200
-        
+
+        logger.info(
+            f"Successfully generated update link token for account {account.account_id}"
+        )
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "link_token": response.link_token,
+                    "expiration": (
+                        response.expiration.isoformat() if response.expiration else None
+                    ),
+                    "account_id": account.account_id,
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
         logger.error(f"Error generating update link token: {e}", exc_info=True)
-        
+
         # Check if it's a Plaid API error
-        if hasattr(e, 'body'):
+        if hasattr(e, "body"):
             try:
                 error_body = e.body
                 logger.error(f"Plaid API error details: {error_body}")
-                return jsonify({
-                    "status": "error",
-                    "message": "Plaid API error",
-                    "plaid_error": error_body
-                }), 502
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Plaid API error",
+                            "plaid_error": error_body,
+                        }
+                    ),
+                    502,
+                )
             except Exception:
                 pass
-        
-        return jsonify({
-            "status": "error",
-            "message": f"Failed to generate update link token: {str(e)}"
-        }), 500
+
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": f"Failed to generate update link token: {str(e)}",
+                }
+            ),
+            500,
+        )

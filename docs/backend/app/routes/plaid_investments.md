@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Facilitates access to investment data via Plaid. Enables users to view holdings, securities, and current portfolio performance synced from their financial institutions.
+Facilitates access to investment data via Plaid. Enables viewing of holdings, securities, and current portfolio performance synced from financial institutions.
 
 ## Key Endpoints
 
@@ -19,7 +19,6 @@ Facilitates access to investment data via Plaid. Enables users to view holdings,
 ## Inputs & Outputs
 
 - **GET /plaid/investments/holdings**
-
   - **Output:**
     ```json
     [
@@ -50,11 +49,10 @@ Facilitates access to investment data via Plaid. Enables users to view holdings,
 
 - `services.plaid_client`
 - `models.InvestmentHolding`, `models.Security`
-- `auth.user_context`
 
 ## Known Behaviors
 
-- Returns only securities relevant to user-linked accounts
+- Returns only securities relevant to linked accounts
 - Prices and valuations are real-time where available
 - Holdings are updated via scheduled sync jobs or manual sync
 

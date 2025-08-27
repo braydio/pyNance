@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Exposes transaction data retrieved from the Teller API. Supports user access to synced financial activity including filtering, syncing, and transaction lookup.
+Exposes transaction data retrieved from the Teller API. Supports access to synced financial activity including filtering, syncing, and transaction lookup.
 
 ## Key Endpoints
 
@@ -20,7 +20,6 @@ Exposes transaction data retrieved from the Teller API. Supports user access to 
 ## Inputs & Outputs
 
 - **GET /teller/transactions**
-
   - **Params:** `start_date`, `end_date`, `account_ids[]` (optional)
   - **Output:**
     ```json
@@ -36,7 +35,6 @@ Exposes transaction data retrieved from the Teller API. Supports user access to 
     ```
 
 - **GET /teller/transactions/<id>`**
-
   - **Output:** Full transaction metadata (institution ID, type, raw payload)
 
 - **POST /teller/transactions/sync**
@@ -69,7 +67,7 @@ Exposes transaction data retrieved from the Teller API. Supports user access to 
 
 ## Purpose
 
-Processes webhook events sent by Teller, such as transaction updates, balance changes, or account status changes. Responsible for triggering backend sync jobs and refreshing relevant user data.
+Processes webhook events sent by Teller, such as transaction updates, balance changes, or account status changes. Responsible for triggering backend sync jobs and refreshing relevant data.
 
 ## Key Endpoints
 

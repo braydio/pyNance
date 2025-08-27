@@ -16,11 +16,9 @@ response on demand.
 ## Inputs & Outputs
 
 - **Query Params**
-
   - `view_type` – `'Month'` (30 days) or `'Year'` (365 days)
   - `manual_income` – optional float adjustment
   - `liability_rate` – optional float deduction
-  - `user_id` – passed from the frontend or session
 
 - **Output Example**
 
@@ -46,7 +44,7 @@ response on demand.
 ## Known Behaviors
 
 - Uses historical transaction patterns as basis
-- Allows override via user-specific parameters
+- Supports override parameters
 - Supports merging recurring + nonrecurring projections
 
 ## Related Docs

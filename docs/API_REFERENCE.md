@@ -12,8 +12,8 @@ This document serves as the authoritative reference for API routing conventions,
 | ------------------------ | ------------------------------------------------------- |
 | `transactions.py`        | Shared transaction operations (paginated views, search) |
 | `plaid_transactions.py`  | Plaid-specific account + transaction routes             |
-| `teller_transactions.py` | Teller-specific account + transaction routes |
-| `goals.py`               | Manage user-defined financial goals    |
+| `teller_transactions.py` | Teller-specific account + transaction routes            |
+| `goals.py`               | Manage user-defined financial goals                     |
 | `accounts.py` (future)   | Shared account listings & deletion                      |
 
 ## 🌐 API Endpoint Convention
@@ -51,7 +51,11 @@ Optional JSON body parameters:
 Response body on success:
 
 ```json
-{ "status": "success", "updated_accounts": ["name"], "refreshed_counts": { "Bank A": 2 } }
+{
+  "status": "success",
+  "updated_accounts": ["name"],
+  "refreshed_counts": { "Bank A": 2 }
+}
 ```
 
 **GET /api/accounts/<id>/history**
@@ -71,9 +75,7 @@ returned.
 {
   "accountId": "uuid",
   "asOfDate": "YYYY-MM-DD",
-  "balances": [
-    {"date": "YYYY-MM-DD", "balance": 1523.21}
-  ]
+  "balances": [{ "date": "YYYY-MM-DD", "balance": 1523.21 }]
 }
 ```
 
@@ -84,7 +86,7 @@ Returns a paginated list of transactions for the specified account. The `<accoun
 **Query Parameters**
 
 - `start_date` – optional ISO `YYYY-MM-DD` start date filter
-- `end_date` – optional ISO `YYYY-MM-DD` end date filter  
+- `end_date` – optional ISO `YYYY-MM-DD` end date filter
 - `limit` – maximum number of transactions to return (default: 100, max: 1000)
 - `offset` – number of transactions to skip for pagination (default: 0)
 - `order` – sort order, `desc` (newest first) or `asc` (oldest first) (default: `desc`)
@@ -119,7 +121,7 @@ Returns a paginated list of transactions for the specified account. The `<accoun
 
 **POST /api/transactions/scan-internal**
 
-Detects potential internal transfer pairs across a user's transactions. The
+Detects potential internal transfer pairs across transactions. The
 endpoint returns candidate matches but does not modify any transaction flags.
 
 **Response Body**
@@ -160,14 +162,13 @@ DELETE /api/teller/transactions/delete_account
 
 Optional JSON body parameters:
 
-- `user_id` – ID of the user whose accounts should refresh
 - `start_date` – optional ISO `YYYY-MM-DD` start date
 - `end_date` – optional ISO `YYYY-MM-DD` end date
 - `account_ids` – optional list of account IDs to refresh
 
 **POST /api/plaid/transactions/generate_update_link_token**
 
-Generates a Plaid Link token in "update mode" for re-authenticating an account that requires login credentials to be updated (typically for ITEM_LOGIN_REQUIRED errors).
+Generates a Plaid Link token in "update mode" for re-authenticating an account when credentials must be updated (typically for ITEM_LOGIN_REQUIRED errors).
 
 **Required JSON body parameters:**
 
@@ -246,8 +247,8 @@ GET /api/transactions/get_transactions
 
 **Query Parameters**
 
-- `start_date` – optional ISO ``YYYY-MM-DD`` start date
-- `end_date` – optional ISO ``YYYY-MM-DD`` end date
+- `start_date` – optional ISO `YYYY-MM-DD` start date
+- `end_date` – optional ISO `YYYY-MM-DD` end date
 - `category` – optional transaction category filter
 
 This endpoint:
