@@ -1,7 +1,8 @@
 <script setup>
 /**
  * Root application shell.
- * Renders the navigation bar and centers all routed views.
+ * Renders the navigation bar and centers all routed views with
+ * consistent horizontal margins and vertical padding.
  */
 import Navbar from '@/components/layout/Navbar.vue'
 import { RouterView } from 'vue-router'
@@ -19,9 +20,7 @@ const isDev = import.meta.env.VITE_SESSION_MODE === 'development'
     <Navbar />
   </header>
 
-  <main>
-    <div class="container">
-      <RouterView />
-    </div>
+  <main class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
+    <RouterView />
   </main>
 </template>
