@@ -9,7 +9,7 @@ backend/app/routes Documentation
 
 ## Purpose
 
-Exposes transaction data retrieved from the Teller API. Supports user access to synced financial activity including filtering, syncing, and transaction lookup.
+Exposes transaction data retrieved from the Teller API. Supports access to synced financial activity including filtering, syncing, and transaction lookup.
 
 ## Key Endpoints
 

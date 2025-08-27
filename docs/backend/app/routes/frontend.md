@@ -9,13 +9,13 @@
 
 ## Purpose
 
-Serves metadata and configuration necessary for frontend rendering and bootstrapping. This includes layout descriptors, onboarding flags, and user settings that influence the UI state.
+Serves metadata and configuration necessary for frontend rendering and bootstrapping. This includes layout descriptors, onboarding flags, and settings that influence the UI state.
 
 ## Key Endpoints
 
 - `GET /frontend/layout`: Returns UI layout schema.
-- `GET /frontend/settings`: Retrieves user UI preferences and flags.
-- `POST /frontend/settings`: Updates user-facing flags and UI state.
+- `GET /frontend/settings`: Retrieves UI preferences and flags.
+- `POST /frontend/settings`: Updates UI flags and state.
 
 ## Inputs & Outputs
 
@@ -48,12 +48,11 @@ Serves metadata and configuration necessary for frontend rendering and bootstrap
 
 - `models.UserPreferences`
 - `services.settings_store`
-- `auth.user_context`
 
 ## Known Behaviors
 
-- Settings scoped per user and device.
-- Defaults inferred from browser environment on first login.
+- Settings persisted per device.
+- Defaults inferred from browser environment on first use.
 - Overrides persisted for returning sessions.
 
 ## Related Docs

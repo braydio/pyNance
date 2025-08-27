@@ -28,7 +28,7 @@ When `ITEM_LOGIN_REQUIRED` occurs during account refresh:
 
 **Example log output:**
 ```
-[WARNING] PNC: ITEM_LOGIN_REQUIRED - the login details of this item have changed | 
+[WARNING] PNC: ITEM_LOGIN_REQUIRED - the credentials for this item have changed |
 Affected accounts: 1 (Spend) | Remediation: User must re-auth via Link update mode. 
 Call POST /api/plaid/transactions/generate_update_link_token with account_id.
 ```
@@ -48,7 +48,7 @@ Refresh endpoints return enhanced error information when `ITEM_LOGIN_REQUIRED` o
   "account_id": "uuid",
   "error": {
     "code": "ITEM_LOGIN_REQUIRED",
-    "message": "the login details of this item have changed..."
+    "message": "the credentials for this item have changed..."
   }
 }
 ```
@@ -64,7 +64,7 @@ Refresh endpoints return enhanced error information when `ITEM_LOGIN_REQUIRED` o
     {
       "institution_name": "PNC",
       "plaid_error_code": "ITEM_LOGIN_REQUIRED",
-      "plaid_error_message": "the login details of this item have changed...",
+      "plaid_error_message": "the credentials for this item have changed...",
       "requires_reauth": true,
       "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
       "affected_account_ids": ["uuid"]

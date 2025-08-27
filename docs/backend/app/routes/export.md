@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Provides functionality for users to export financial data for offline use or import into third-party tools. Formats include CSV and JSON. This route supports exporting transactions, accounts, and budget summaries.
+Provides functionality to export financial data for offline use or import into third-party tools. Formats include CSV and JSON. This route supports exporting transactions, accounts, and budget summaries.
 
 ## Key Endpoints
 
@@ -47,7 +47,6 @@ Provides functionality for users to export financial data for offline use or imp
 
 ## Known Behaviors
 
-- Automatically filters by authenticated user
 - Uses streaming for large CSV files
 - Proper MIME headers set for downloads
 - Rate-limiting and pagination supported in backend

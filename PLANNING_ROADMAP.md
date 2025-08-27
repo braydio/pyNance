@@ -12,11 +12,9 @@
 - Cypress component tests at `frontend/src/views/__tests__/Planning.cy.js`
 
 ## 3. Backend
-- Require login and scope data to `current_user`
-- `tests/test_api_planning.py` for scenario CRUD, percent-cap enforcement, and user isolation
+- `tests/test_api_planning.py` for scenario CRUD and percent-cap enforcement
 
 ## 4. Next Steps
 1. Implement bill management components and integrate into Planning view.
 2. Add currency conversion utilities and API-ready service helpers.
-3. Enforce authentication in planning routes and add backend tests.
-4. Create Cypress component tests for the Planning view.
+3. Create Cypress component tests for the Planning view.

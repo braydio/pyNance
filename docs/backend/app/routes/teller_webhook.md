@@ -9,7 +9,7 @@
 
 ## Purpose
 
-Exposes transaction data retrieved from the Teller API. Supports user access to synced financial activity including filtering, syncing, and transaction lookup.
+Exposes transaction data retrieved from the Teller API. Supports access to synced financial activity including filtering, syncing, and transaction lookup.
 
 ## Key Endpoints
 
@@ -69,7 +69,7 @@ Exposes transaction data retrieved from the Teller API. Supports user access to 
 
 ## Purpose
 
-Processes webhook events sent by Teller, such as transaction updates, balance changes, or account status changes. Responsible for triggering backend sync jobs and refreshing relevant user data.
+Processes webhook events sent by Teller, such as transaction updates, balance changes, or account status changes. Responsible for triggering backend sync jobs and refreshing relevant data.
 
 ## Key Endpoints
 

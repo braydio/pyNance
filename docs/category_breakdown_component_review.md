@@ -8,7 +8,7 @@ context: Validation and review of category-based breakdown chart logic, includin
 ## 😴 Component: `frontend/src/components/charts/CategoryChart.tsx`
 
 ### 🐦 Purpose
-This chart visualizes grouped transaction data (by category) for a user over a selected time range. Typically rendered as a pie or bar chart to support insight into spending or budgeting behavior.
+This chart visualizes grouped transaction data (by category) over a selected time range. Typically rendered as a pie or bar chart to support insight into spending or budgeting behavior.
 
 ### © Current Issues
 
@@ -53,12 +53,12 @@ if (!data || data.length == 0) return <p>No data available.</p>
 ### 📀 Backend
 
 ### Category Aggregation Logic
-ensure the SQL 'group-by' respects user filters and date ranges.
+ensure the SQL 'group-by' respects date range filters.
 
 ```python
 db.session.query(
   Transaction.category, func.sum(Transaction.amount)
-).filter(Transaction.user_id == current_user)
+)
 .group_by(Transaction.category)
 ```
 
@@ -66,7 +66,6 @@ Emphasize test cases:
 
 - No transactions.
 - Missing categories.
-- Mismatched user_id.
 
 ### 🙐 Review Summary
 
@@ -75,7 +74,7 @@ Layer            Status                  Notes
 Frontend (render)   🌩 Needs better state handling    Add loading/error/empty cases
 
 Frontend (logic)    🐠 Signature + chart hook usage valid
-Backend route       🐠 user_id fallback validated
+Backend route       🐠 data scope validated
 Backend query      🌩 Needs stronger null/empty safety
 
 ### 😩 Next Steps

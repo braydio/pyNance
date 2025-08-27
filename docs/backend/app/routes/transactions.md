@@ -5,11 +5,11 @@
 
 ## Purpose
 
-Provides a unified API surface for managing all user transactions, including manually added, imported, and third-party (Plaid/Teller) data. Supports filtering, annotation, tagging, and CRUD operations.
+Provides a unified API surface for managing all transactions, including manually added, imported, and third-party (Plaid/Teller) data. Supports filtering, annotation, tagging, and CRUD operations.
 
 ## Key Endpoints
 
-- `GET /transactions`: Retrieve list of all user transactions.
+- `GET /transactions`: Retrieve list of all transactions.
 - `GET /transactions/<id>`: Fetch metadata for a specific transaction.
 - `POST /transactions`: Manually create a new transaction.
 - `PATCH /transactions/<id>`: Update transaction fields.
@@ -55,12 +55,11 @@ Provides a unified API surface for managing all user transactions, including man
 
 - `models.Transaction`
 - `services.transaction_service`
-- `utils.transaction_filters`, `auth.user_context`
+- `utils.transaction_filters`
 
 ## Known Behaviors
 
 - Read endpoints return normalized unified schema across data sources
-- Write/update access limited to user-created or editable records
 - Edits may trigger re-evaluation of budgets and summaries
 
 ## Related Docs

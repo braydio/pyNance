@@ -23,7 +23,7 @@ Handles authentication and data integration with the Plaid API. Supports institu
 
 - **POST /plaid/link-token**
 
-  - **Input:** `{ user_id: str }`
+  - **Input:** `{}`
   - **Output:** `{ link_token: str }`
 
 - **POST /plaid/exchange**

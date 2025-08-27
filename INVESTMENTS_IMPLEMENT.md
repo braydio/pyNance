@@ -136,7 +136,7 @@ from datetime import date
 
 from ..services.investments_service import InvestmentsService
 from ..schemas.investments_schemas import HoldingSchema, InvestmentTransactionSchema
-from ..dependencies import get_plaid_client, get_db, get_current_user
+from ..dependencies import get_plaid_client, get_db
 
 router = APIRouter(prefix="/investments", tags=["Investments"])
 
@@ -152,12 +152,12 @@ def sync_investments(
     return {"status": "ok"}
 
 @router.get("/holdings", response_model=List[HoldingSchema])
-def list_holdings(db=Depends(get_db), user=Depends(get_current_user)):
-    return db.query(Holding).filter(Holding.user_id == user.id).all()
+def list_holdings(db=Depends(get_db)):
+    return db.query(Holding).all()
 
 @router.get("/transactions", response_model=List[InvestmentTransactionSchema])
-def list_transactions(db=Depends(get_db), user=Depends(get_current_user)):
-    return db.query(InvestmentTransaction).filter(InvestmentTransaction.user_id == user.id).all()
+def list_transactions(db=Depends(get_db)):
+    return db.query(InvestmentTransaction).all()
 
 This matches your existing transactions routing structure but uses UBS-specific models.
 

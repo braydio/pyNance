@@ -9,13 +9,13 @@
 
 ## Purpose
 
-Synchronizes and exposes transaction data retrieved via the Plaid API. Allows users to fetch, review, and interact with their financial transactions pulled from linked institutions.
+Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fetching, reviewing, and interacting with financial transactions pulled from linked institutions.
 
 ## Key Endpoints
 
 - `GET /plaid/transactions`: Retrieve all synced transactions.
 - `GET /plaid/transactions/<id>`: Fetch a specific transaction by its ID.
-- `POST /plaid/transactions/sync`: Force-refresh Plaid transactions for the user.
+- `POST /plaid/transactions/sync`: Force-refresh Plaid transactions.
 
 ## Inputs & Outputs
 
@@ -48,7 +48,7 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows us
 
 - `services.plaid_transaction_service`
 - `models.Transaction`
-- `utils.date_filtering`, `auth.user_context`
+- `utils.date_filtering`
 
 ## Known Behaviors
 
@@ -116,7 +116,7 @@ Enables money movement through linked Plaid-enabled bank accounts. Supports init
 
 - Follows Plaid’s sandbox/live transfer APIs
 - Handles idempotent submission to prevent duplicates
-- Alerts user if account not eligible for transfers
+- Alerts if account not eligible for transfers
 
 ## Related Docs
 

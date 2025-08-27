@@ -18,8 +18,7 @@ This document consolidates previous agent instructions into the authoritative ro
 - [x] Models (`backend/app/models/planning_models.py`)
 - [x] Service (`backend/app/services/planning_service.py`)
 - [x] Routes (`backend/app/routes/planning.py`)
-- [ ] Require login and scope data to `current_user`
-- [ ] `tests/test_api_planning.py` for scenario CRUD, percent-cap enforcement, and user isolation
+- [ ] `tests/test_api_planning.py` for scenario CRUD and percent-cap enforcement
 
 ## Superseded or Incorrect Directions
 - **Typing**: prior spec forbade `src/types`; the project uses dedicated TypeScript definitions.

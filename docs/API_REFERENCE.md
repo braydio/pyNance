@@ -119,7 +119,7 @@ Returns a paginated list of transactions for the specified account. The `<accoun
 
 **POST /api/transactions/scan-internal**
 
-Detects potential internal transfer pairs across a user's transactions. The
+Detects potential internal transfer pairs across transactions. The
 endpoint returns candidate matches but does not modify any transaction flags.
 
 **Response Body**
@@ -160,14 +160,13 @@ DELETE /api/teller/transactions/delete_account
 
 Optional JSON body parameters:
 
-- `user_id` – ID of the user whose accounts should refresh
 - `start_date` – optional ISO `YYYY-MM-DD` start date
 - `end_date` – optional ISO `YYYY-MM-DD` end date
 - `account_ids` – optional list of account IDs to refresh
 
 **POST /api/plaid/transactions/generate_update_link_token**
 
-Generates a Plaid Link token in "update mode" for re-authenticating an account that requires login credentials to be updated (typically for ITEM_LOGIN_REQUIRED errors).
+Generates a Plaid Link token in "update mode" for re-authenticating an account when credentials must be updated (typically for ITEM_LOGIN_REQUIRED errors).
 
 **Required JSON body parameters:**
 

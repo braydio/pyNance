@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Provides data for visualizing user financial trends over time, including category breakdowns and historical expense tracking. Routes feed frontend dashboard components.
+Provides data for visualizing financial trends over time, including category breakdowns and historical expense tracking. Routes feed frontend dashboard components.
 
 ## Key Endpoints
 
@@ -38,7 +38,6 @@ Provides data for visualizing user financial trends over time, including categor
 
 - **GET /charts/accounts-snapshot**
 
-  - **Params:** `user_id`
   - **Output:** `[ { account_id: str, name: str, institution_name: str, balance: float, type: str, subtype: str } ]`
 
 - **GET|POST /charts/forecast**
@@ -54,7 +53,6 @@ Provides data for visualizing user financial trends over time, including categor
 
 ## Known Behaviors
 
-- All endpoints support user-based scoping.
 - Optimized for minimal data transfer (cached/summarized payloads).
 - Handles null data gracefully.
 
