@@ -10,10 +10,7 @@ export const getRecurringTransactions = async (accountId) => {
  * Create or update a user-defined recurring transaction.
  */
 export const saveRecurringTransaction = async (accountId, payload) => {
-  const response = await axios.put(
-    `/api/recurring/accounts/${accountId}/recurringTx`,
-    payload,
-  )
+  const response = await axios.put(`/api/recurring/accounts/${accountId}/recurringTx`, payload)
   return response.data
 }
 

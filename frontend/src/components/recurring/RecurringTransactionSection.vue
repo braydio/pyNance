@@ -77,7 +77,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { scanRecurringTransactions } from '@/api/recurring'
 import axios from 'axios'
-import { formatAmount } from "@/utils/format"
+import { formatAmount } from '@/utils/format'
 
 const route = useRoute()
 const accountId = route.params.accountId || '1'
