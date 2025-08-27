@@ -11,7 +11,9 @@ def normalize_account_balance(balance, account_type):
     if account_type.lower() in ["credit card", "credit", "loan", "liability"]:
         norm_balance = -1 * (balance)
         logger.info(
-            f"Account type {account_type} - balance normalized to {norm_balance}"
+            "Account type %s - balance normalized to %s",
+            account_type,
+            norm_balance,
         )
         return norm_balance
     return abs(balance)
@@ -27,11 +29,18 @@ def normalize_transaction_amount(amount, account_type):
     # charges appear negative and payments appear positive.
     if account_type in ["credit card", "credit", "loan", "liability"]:
         adjusted = -amt
-        logger.info(f"Normalized transaction amount for credit account to {adjusted}")
+        logger.info(
+            "Normalized transaction amount for credit account to %s",
+            adjusted,
+        )
         return adjusted
 
     # For asset/depository accounts we keep the provider's sign intact.
-    logger.info(f"Preserving transaction amount {amt} for account type {account_type}")
+    logger.info(
+        "Preserving transaction amount %s for account type %s",
+        amt,
+        account_type,
+    )
     return amt
 
 
@@ -61,7 +70,7 @@ def transform_transaction(txn: Transaction):
     """Transform raw transaction amount for display based on account type."""
     txn_type = txn.transaction_type or "expense"
     if txn.transaction_type:
-        logger.debug(f"Transaction type as {txn_type}")
+        logger.debug("Transaction type as %s", txn_type)
 
     return normalize_transaction_amount(
         amount=txn.amount,

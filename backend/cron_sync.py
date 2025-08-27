@@ -1,4 +1,4 @@
-# backend/scripts/cron_sync.py
+"""CLI entrypoint for running the scheduled account sync."""
 
 import logging
 
@@ -18,12 +18,13 @@ logging.basicConfig(
 
 
 def main():
+    """Trigger a refresh of all accounts for scheduled runs."""
     logging.info("🔄 Starting scheduled account sync...")
     try:
         refresh_all_accounts()
         logging.info("✅ Account sync completed successfully.")
-    except Exception as e:
-        logging.error(f"❌ Sync failed: {e}", exc_info=True)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logging.error("❌ Sync failed: %s", e, exc_info=True)
 
 
 if __name__ == "__main__":
