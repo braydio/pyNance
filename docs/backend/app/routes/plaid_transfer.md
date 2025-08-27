@@ -20,7 +20,6 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fe
 ## Inputs & Outputs
 
 - **GET /plaid/transactions**
-
   - **Params (optional):**
     - `start_date`, `end_date`
     - `account_ids[]`
@@ -38,7 +37,6 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fe
     ```
 
 - **GET /plaid/transactions/<id>**
-
   - **Output:** Transaction object with full metadata
 
 - **POST /plaid/transactions/sync**
@@ -82,7 +80,6 @@ Enables money movement through linked Plaid-enabled bank accounts. Supports init
 ## Inputs & Outputs
 
 - **POST /plaid/transfer/initiate**
-
   - **Input:**
     ```json
     {
@@ -94,7 +91,6 @@ Enables money movement through linked Plaid-enabled bank accounts. Supports init
   - **Output:** `{ transfer_id: "trf_123", status: "pending" }`
 
 - **GET /plaid/transfer/status/<transfer_id>`**
-
   - **Output:**
     ```json
     {

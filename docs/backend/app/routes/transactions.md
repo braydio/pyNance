@@ -18,7 +18,6 @@ Provides a unified API surface for managing all transactions, including manually
 ## Inputs & Outputs
 
 - **GET /transactions**
-
   - **Params:** Filters include `date_range`, `account_id`, `category`, `source`
   - **Output:** Array of transactions:
     ```json
@@ -35,7 +34,6 @@ Provides a unified API surface for managing all transactions, including manually
     ```
 
 - **POST /transactions**
-
   - **Input:**
     ```json
     {

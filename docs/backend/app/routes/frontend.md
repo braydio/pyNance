@@ -20,7 +20,6 @@ Serves metadata and configuration necessary for frontend rendering and bootstrap
 ## Inputs & Outputs
 
 - **GET /frontend/layout**
-
   - **Output:**
     ```json
     {
@@ -30,7 +29,6 @@ Serves metadata and configuration necessary for frontend rendering and bootstrap
     ```
 
 - **GET /frontend/settings**
-
   - **Output:**
     ```json
     {

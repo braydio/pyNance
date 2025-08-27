@@ -16,7 +16,6 @@ response on demand.
 ## Inputs & Outputs
 
 - **Query Params**
-
   - `view_type` – `'Month'` (30 days) or `'Year'` (365 days)
   - `manual_income` – optional float adjustment
   - `liability_rate` – optional float deduction

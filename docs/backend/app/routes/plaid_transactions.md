@@ -21,7 +21,6 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fe
 ## Inputs & Outputs
 
 - **GET /plaid/transactions**
-
   - **Params (optional):**
     - `start_date`, `end_date`
     - `account_ids[]`
@@ -39,7 +38,6 @@ Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fe
     ```
 
 - **GET /plaid/transactions/<id>**
-
   - **Output:** Transaction object with full metadata
 
 - **POST /plaid/transactions/sync**

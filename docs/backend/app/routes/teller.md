@@ -21,12 +21,10 @@ Manages authentication and data ingestion from the Teller API. Facilitates linki
 ## Inputs & Outputs
 
 - **POST /teller/link-token**
-
   - **Input:** `{}`
   - **Output:** `{ link_token: str }`
 
 - **POST /teller/link**
-
   - **Input:**
     ```json
     {
@@ -36,7 +34,6 @@ Manages authentication and data ingestion from the Teller API. Facilitates linki
   - **Output:** `{ success: true, accounts_linked: int }`
 
 - **GET /teller/accounts**
-
   - **Output:**
     ```json
     [

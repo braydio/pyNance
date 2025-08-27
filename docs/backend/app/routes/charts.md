@@ -19,29 +19,23 @@ Provides data for visualizing financial trends over time, including category bre
 ## Inputs & Outputs
 
 - **GET /charts/category_breakdown**
-
   - **Params:** `start_date`, `end_date`
   - **Output:** `{ status: 'success', data: [{ category: str, amount: float, date: str }] }`
 
 - **GET /charts/daily_net**
-
   - **Output:** `{ status: 'success', data: [{ date: str, net: float, income: float, expenses: float, transaction_count: int }] }`
 
 - **GET /charts/cash_flow**
-
   - **Params:** `granularity` (`daily` or `monthly`), optional `start_date`, `end_date`
   - **Output:** `{ status: 'success', data: [{ date: str, income: float, expenses: float }], metadata: { total_income: float, total_expenses: float, total_transactions: int } }`
 
 - **GET /charts/net_assets**
-
   - **Output:** `{ status: 'success', data: [{ date: str, net_assets: float, assets: float, liabilities: float }] }`
 
 - **GET /charts/accounts-snapshot**
-
   - **Output:** `[ { account_id: str, name: str, institution_name: str, balance: float, type: str, subtype: str } ]`
 
 - **GET|POST /charts/forecast**
-
   - **Params:** `view_type` (`Month` or `Year`), optional `manual_income`, `liability_rate`
   - **Output:** `{ labels: [str], forecast: [float], actuals: [float], metadata: { ... } }`
 

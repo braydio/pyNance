@@ -19,7 +19,6 @@ Facilitates access to investment data via Plaid. Enables viewing of holdings, se
 ## Inputs & Outputs
 
 - **GET /plaid/investments/holdings**
-
   - **Output:**
     ```json
     [

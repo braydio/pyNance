@@ -319,9 +319,9 @@ def generate_update_link_token():
                 {
                     "status": "success",
                     "link_token": response.link_token,
-                    "expiration": response.expiration.isoformat()
-                    if response.expiration
-                    else None,
+                    "expiration": (
+                        response.expiration.isoformat() if response.expiration else None
+                    ),
                     "account_id": account.account_id,
                 }
             ),

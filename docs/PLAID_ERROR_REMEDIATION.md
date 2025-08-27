@@ -9,6 +9,7 @@ Plaid API errors occur when account connections become stale due to changed cred
 ## ITEM_LOGIN_REQUIRED Error
 
 ### What it means
+
 The `ITEM_LOGIN_REQUIRED` error indicates that the user needs to re-authenticate with their financial institution. This happens when:
 
 - User changed their online banking password
@@ -23,13 +24,14 @@ The `ITEM_LOGIN_REQUIRED` error indicates that the user needs to re-authenticate
 When `ITEM_LOGIN_REQUIRED` occurs during account refresh:
 
 - **Warning-level logging** (not error-level) since this is user-actionable
-- **Aggregated error summaries** to reduce log noise for operators  
+- **Aggregated error summaries** to reduce log noise for operators
 - **Remediation instructions** included in log messages
 
 **Example log output:**
+
 ```
 [WARNING] PNC: ITEM_LOGIN_REQUIRED - the credentials for this item have changed |
-Affected accounts: 1 (Spend) | Remediation: User must re-auth via Link update mode. 
+Affected accounts: 1 (Spend) | Remediation: User must re-auth via Link update mode.
 Call POST /api/plaid/transactions/generate_update_link_token with account_id.
 ```
 
@@ -78,6 +80,7 @@ Refresh endpoints return enhanced error information when `ITEM_LOGIN_REQUIRED` o
 The new endpoint `POST /api/plaid/transactions/generate_update_link_token` creates a Plaid Link token in "update mode":
 
 **Request:**
+
 ```json
 {
   "account_id": "uuid_or_numeric_id"
@@ -85,6 +88,7 @@ The new endpoint `POST /api/plaid/transactions/generate_update_link_token` creat
 ```
 
 **Response:**
+
 ```json
 {
   "status": "success",
@@ -117,14 +121,17 @@ if (reauthErrors.length > 0) {
 
 ```javascript
 async function generateUpdateToken(accountId) {
-  const response = await fetch('/api/plaid/transactions/generate_update_link_token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ account_id: accountId })
-  });
-  
+  const response = await fetch(
+    "/api/plaid/transactions/generate_update_link_token",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ account_id: accountId }),
+    },
+  );
+
   const data = await response.json();
-  if (data.status === 'success') {
+  if (data.status === "success") {
     return data.link_token;
   }
   throw new Error(data.message);
@@ -134,29 +141,29 @@ async function generateUpdateToken(accountId) {
 ### Plaid Link Update Mode Integration
 
 ```javascript
-import { usePlaidLink } from 'react-plaid-link';
+import { usePlaidLink } from "react-plaid-link";
 
 function ReauthModal({ accountId }) {
   const [linkToken, setLinkToken] = useState(null);
-  
+
   useEffect(() => {
     generateUpdateToken(accountId).then(setLinkToken);
   }, [accountId]);
-  
+
   const { open } = usePlaidLink({
     token: linkToken,
     onSuccess: (publicToken, metadata) => {
       // Handle successful re-authentication
-      console.log('Re-auth successful:', metadata);
+      console.log("Re-auth successful:", metadata);
       // Optionally refresh the account again
       refreshAccount(accountId);
     },
     onExit: (error, metadata) => {
       // Handle re-auth cancellation or failure
-      console.log('Re-auth cancelled:', error, metadata);
-    }
+      console.log("Re-auth cancelled:", error, metadata);
+    },
   });
-  
+
   return (
     <div>
       <p>Account needs re-authentication</p>
@@ -187,6 +194,7 @@ The balance history service has been updated to:
 - **Handle datetime/date mismatches** properly when updating existing records
 
 **Example log output:**
+
 ```
 INFO - Updating balance history for Spend (17/Ej3ppQLVn0S6mL4wVwj5tADnxmDYeqSJK8b5m) from 2025-08-16 to 2025-08-22
 INFO - Processed 7 balance history records (0 new, 7 updated)
@@ -211,11 +219,13 @@ INFO - Processed 7 balance history records (0 new, 7 updated)
 ### Log Patterns to Monitor
 
 **Normal re-auth requirement** (WARNING level):
+
 ```
 [WARNING] Institution: ITEM_LOGIN_REQUIRED - ... | Remediation: User must re-auth via Link update mode.
 ```
 
 **Actual system errors** (ERROR level):
+
 ```
 [ERROR] Institution: INTERNAL_SERVER_ERROR - ... | No user remediation available.
 ```

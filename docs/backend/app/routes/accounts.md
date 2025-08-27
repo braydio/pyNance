@@ -23,7 +23,6 @@ Handles account lifecycle operations, primarily focused on financial institution
 ## Inputs & Outputs
 
 - **POST /accounts/link**
-
   - **Input:** `{ public_token: str, provider: 'plaid' | 'teller' }`
   - **Output:** `{ account_id: str, status: str }`
 
@@ -66,11 +65,9 @@ Manages transaction categorization logic and user-defined category updates. Supp
 ## Inputs & Outputs
 
 - **GET /categories**
-
   - **Output:** List of all categories, including system and custom types.
 
 - **POST /categories/update**
-
   - **Input:** `{ category_id: str, label: str, emoji?: str }`
   - **Output:** Updated category object.
 

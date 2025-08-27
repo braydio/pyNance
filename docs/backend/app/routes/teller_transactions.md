@@ -20,7 +20,6 @@ Exposes transaction data retrieved from the Teller API. Supports access to synce
 ## Inputs & Outputs
 
 - **GET /teller/transactions**
-
   - **Params:** `start_date`, `end_date`, `category`, `account_ids[]` (optional)
   - **Output:**
     ```json
@@ -36,7 +35,6 @@ Exposes transaction data retrieved from the Teller API. Supports access to synce
     ```
 
 - **GET /teller/transactions/<id>`**
-
   - **Output:** Full transaction metadata (institution ID, type, raw payload)
 
 - **POST /teller/transactions/sync**

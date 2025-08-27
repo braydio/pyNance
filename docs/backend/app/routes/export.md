@@ -19,7 +19,6 @@ Provides functionality to export financial data for offline use or import into t
 ## Inputs & Outputs
 
 - **GET /export/transactions**
-
   - **Params (optional):**
     - `start_date`, `end_date` — to filter transactions
     - `format` (default: `csv`) — options: `csv`, `json`
