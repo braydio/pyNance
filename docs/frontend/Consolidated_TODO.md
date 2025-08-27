@@ -108,6 +108,7 @@ pyNance/
 ### High-Level Code and Documentation Conventions
 
 #### Backend Organization (`backend/`)
+
 - **Routes** (`app/routes/`): API endpoints grouped by feature (accounts, transactions, forecast)
 - **Services** (`app/services/`): Business logic, external API integrations, data processing
 - **SQL Logic** (`app/sql/`): Database models, query builders, and data access patterns
@@ -115,6 +116,7 @@ pyNance/
 - **Config** (`app/config/`): Environment settings, constants, and application setup
 
 #### Frontend Organization (`frontend/src/`)
+
 - **Views** (`views/`): Page-level components representing routes (Dashboard, Accounts, Transactions)
 - **Components** (`components/`): Organized by type and functionality
   - Layout components for page structure
@@ -126,6 +128,7 @@ pyNance/
 - **Services** (`services/`): API communication layer and data fetching
 
 #### Documentation Organization (`docs/`)
+
 - **Backend docs**: API references, service documentation, database schemas
 - **Frontend docs**: Component guides, styling references, UI/UX specifications
 - **Architecture docs**: System design, data flow, integration patterns
@@ -134,24 +137,28 @@ pyNance/
 ### Configuration and Infrastructure Files
 
 #### CHANGELOG.md
+
 - [ ] Maintain version history with semantic versioning
 - [ ] Document breaking changes and migration paths
 - [ ] Include feature additions, bug fixes, and performance improvements
 - [ ] Follow conventional changelog format
 
 #### docker-compose.yml (Backend Services)
+
 - [ ] Located in `backend/` and `scripts/` directories
 - [ ] Containerize backend services, databases, and development tools
 - [ ] Include environment variable configurations
 - [ ] Support development and production deployment scenarios
 
 #### .gitignore Files
+
 - [ ] Root `.gitignore`: Global exclusions (logs, temp files, IDE configs)
 - [ ] Frontend `.gitignore`: Node modules, build artifacts, env files
 - [ ] Backend-specific ignores: Python cache, virtual environments, secrets
 - [ ] Maintain separate ignores for different technology stacks
 
 #### Config Files (Root Level)
+
 - [ ] Environment files (`.env.example`, `.env.local`)
 - [ ] Tool configurations (ESLint, Prettier, pytest, mypy)
 - [ ] Package managers (`package.json`, `requirements.txt`, `pyproject.toml`)
@@ -160,12 +167,14 @@ pyNance/
 ### Path Conventions for New Development
 
 #### New Composables
+
 - **Location**: `frontend/src/composables/`
 - **Naming**: `use[FeatureName].js` (e.g., `useTransactions.js`, `useForecast.js`)
 - **Purpose**: Reactive data management, API integration, shared business logic
 - **Documentation**: JSDoc comments, usage examples in README.md
 
 #### New Components
+
 - **Views**: `frontend/src/views/[ViewName].vue` (PascalCase)
 - **Widgets**: `frontend/src/components/widgets/[WidgetName].vue`
 - **Charts**: `frontend/src/components/charts/[ChartName].vue`
@@ -175,6 +184,7 @@ pyNance/
 - **UI Elements**: `frontend/src/components/ui/[ElementName].vue`
 
 #### New Tests
+
 - **Unit Tests**: `[component-directory]/__tests__/[ComponentName].test.js`
 - **Integration Tests**: `tests/integration/[feature-name].test.js`
 - **Fixtures**: `tests/fixtures/[data-type]/[fixture-name].json`
@@ -212,6 +222,7 @@ pyNance/
 ## Development Guidelines and Validation [DEV_GUIDE]
 
 ✅ **COMPLETED**: Comprehensive development guide created as `CONTRIBUTING.md` with:
+
 - Tooling and version requirements (Python 3.11, Node 20)
 - Code style standards (PEP 8, type annotations, black, ruff, TailwindCSS only)
 - Environment setup with `scripts/setup.sh` and example.env files
@@ -364,37 +375,47 @@ pytest tests/test_model_field_validation.py
 ## Steps-to-Files Mapping [STEPS_TO_FILES]
 
 ### Phase 1 File Mapping
+
 - **1.1-1.2:** [D], [AL], [TAS], [DNC], [CBC], [CWTB], [AS], [AT], [TT], [PC], [TM], [GCD], [UTIL]
 - **1.3:** All above + [README]
 
 ### Phase 2 File Mapping
+
 - **2.1:** [D], [AL], [TAS], [DNC], [CBC], [AS]
 - **2.2-2.3:** All UI components
 
 ### Phase 3 File Mapping
+
 - **3.1:** All components with props
 - **3.2:** [D], [CWTB], potential new [CardHeader]
 - **3.3:** [D], [UTIL], [AT], [TT], [TM]
 
 ### Phase 4 File Mapping
+
 - **4.x:** All UI components, focus on [D], [AL], [TT], [AT], [TM]
 
 ### Phase 5 File Mapping
+
 - **5.x:** [D], [TT], [AT], [TM], [CWTB], [UTIL]
 
 ### Phase 6 File Mapping
+
 - **6.x:** [D], [UTIL], all API/data handling components
 
 ### Phase 7 File Mapping
+
 - **7.x:** All UI components, theme/CSS files
 
 ### Phase 8 File Mapping
+
 - **8.x:** [D], [TM], [PC]
 
 ### Phase 9 File Mapping
+
 - **9.x:** All components + test file creation in `/frontend/tests/`
 
 ### Phase 10 File Mapping
+
 - **10.x:** [D], [README], all documentation files
 
 ## Component and View Tasks [COMPONENT_TASKS]
@@ -402,6 +423,7 @@ pytest tests/test_model_field_validation.py
 ### Dashboard.vue [COMPONENT_DASHBOARD]
 
 #### High-Level UX/UI Issues
+
 - [ ] Fix cluttered/overdense layout with insufficient spacing
 - [ ] Implement clear grid breakpoints for responsive behavior
 - [ ] Add prominent call-to-action buttons
@@ -410,11 +432,13 @@ pytest tests/test_model_field_validation.py
 - [ ] Establish consistent visual hierarchy
 
 #### Title & Greeting Section
+
 - [ ] Update styling to match design standards
 - [ ] Implement varying font sizes for multi-line layout
 - [ ] Apply consistent typography scale
 
 #### Account Snapshot Widget
+
 - [ ] Style section title to emphasize module distinction
 - [ ] Match 'Configure' button with UI theme
 - [ ] Convert submenu to styled dropdown with fuzzy search
@@ -422,12 +446,14 @@ pytest tests/test_model_field_validation.py
 - [ ] Display comprehensive account info (name, type, balance)
 
 #### Daily Net Income Chart
+
 - [ ] Increase axis label font size for readability
 - [ ] Remove redundant legend (green/red self-explanatory)
 - [ ] Implement responsive chart scaling
 - [ ] Add data loading and error states
 
 #### Spending by Category Chart
+
 - [ ] Implement category-tree style filtering
 - [ ] Add 'Select All' option for categories
 - [ ] Load with top 5 categories by transaction value
@@ -437,6 +463,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Style chart title appropriately
 
 #### Transactions Table
+
 - [ ] Align styling with accounts table design
 - [ ] Style expense amounts: red font with parentheses
 - [ ] Style income amounts: green font
@@ -444,6 +471,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement proper error handling
 
 #### Accounts Table
+
 - [ ] Apply accounting format to balances (dollar sign, 2 decimals, parentheses for negatives)
 - [ ] Use red color for negative or liability values
 - [ ] Normalize capitalization for Account Type and Name
@@ -456,10 +484,12 @@ pytest tests/test_model_field_validation.py
 ### Accounts.vue [COMPONENT_ACCOUNTS]
 
 #### Header Greeting
+
 - [ ] Adjust font sizing for proper visual hierarchy
 - [ ] Apply themed colors to font
 
 #### Link Account Section
+
 - [ ] Convert menu to expandable/collapsible dropdown
 - [ ] Style "Refresh Plaid/Teller" subtitles
 - [ ] Theme date pickers, account selectors, and refresh buttons
@@ -470,6 +500,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Make entire section expandable/collapsible
 
 #### Chart Components
+
 - [ ] Fix non-functional Assets Year Comparison Chart
 - [ ] Fix non-functional Net Assets Trend Chart
 - [ ] Add proper loading and error states
@@ -478,6 +509,7 @@ pytest tests/test_model_field_validation.py
 ### Transactions.vue [COMPONENT_TRANSACTIONS]
 
 #### Current Open Tasks
+
 - [ ] Fix search functionality integration with useTransactions composable
 - [ ] Implement proper pagination with backend data fetching
 - [ ] Add loading states for transaction table and search
@@ -486,6 +518,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Optimize transaction filtering performance for large datasets
 
 #### Rendering Checks
+
 - [ ] Verify UpdateTransactionsTable component renders correctly with filtered data
 - [ ] Ensure RecurringTransactionSection integration works properly
 - [ ] Test responsive layout on mobile devices
@@ -494,6 +527,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Test prefillRecurringFromTransaction method integration
 
 #### Styling Parity with Accounts Table
+
 - [ ] Apply consistent card styling: `bg-neutral-950 border border-neutral-800 shadow-xl rounded-2xl`
 - [ ] Use matching header styling with icon: `text-blue-300` with `i-ph:` icon
 - [ ] Implement consistent table structure: `divide-y divide-neutral-800`
@@ -508,6 +542,7 @@ pytest tests/test_model_field_validation.py
 ### Investments.vue [COMPONENT_INVESTMENTS]
 
 #### Current Implementation Analysis
+
 - [ ] Fix Chart.js integration - chart not rendering properly
 - [ ] Improve error handling for failed API calls to `/api/plaid/investments`
 - [ ] Add proper loading states for account loading and chart rendering
@@ -516,6 +551,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Fix performance chart data fetching from `/api/investments/performance`
 
 #### Portfolio Management Placeholders
+
 - [ ] Enhance account display with more detailed investment information
 - [ ] Add individual holding breakdown (currently shows basic symbol/shares/value)
 - [ ] Create investment allocation pie charts
@@ -524,6 +560,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement investment category filtering (stocks, bonds, ETFs, etc.)
 
 #### Data Integration Improvements
+
 - [ ] Standardize investment data API endpoints
 - [ ] Add real-time price updates via WebSocket or polling
 - [ ] Implement historical performance data visualization
@@ -534,6 +571,7 @@ pytest tests/test_model_field_validation.py
 ### Forecast.vue [COMPONENT_FORECAST]
 
 #### Current Implementation Analysis
+
 - [ ] Verify ForecastLayout component integration and functionality
 - [ ] Test responsive design behavior of forecast view container
 - [ ] Ensure CSS variables (`--page-bg`, `--theme-fg`) are properly defined
@@ -541,6 +579,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement proper loading states while forecast data loads
 
 #### Integration Points into Dashboard
+
 - [ ] Create forecast widget for Dashboard.vue integration
 - [ ] Implement forecast summary cards for dashboard overview
 - [ ] Add forecast chart components compatible with dashboard layout
@@ -549,6 +588,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement forecast alerts/notifications for dashboard display
 
 #### Forecast Component Architecture
+
 - [ ] Document ForecastLayout component structure and props
 - [ ] Create forecast data management composable
 - [ ] Implement forecast calculation engine integration
@@ -559,6 +599,7 @@ pytest tests/test_model_field_validation.py
 ### ForecastMock.vue [COMPONENT_FORECAST_MOCK]
 
 #### Current Artistic Implementation Analysis
+
 - [ ] Replace artistic content with financial forecast mock data
 - [ ] Remove TSUEHARA STUDIO branding and art-focused messaging
 - [ ] Convert artistic buttons to financial forecast action items
@@ -566,6 +607,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Replace art-themed styling with pyNance design system
 
 #### Integration Points into Dashboard
+
 - [ ] Create forecast mock widget that integrates with Dashboard.vue
 - [ ] Implement mock forecast data that mirrors real forecast structure
 - [ ] Add forecast chart mocks compatible with dashboard layout
@@ -574,6 +616,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Add navigation links to connect with main forecast functionality
 
 #### Mock Financial Data Implementation
+
 - [ ] Create comprehensive financial forecast mock datasets
 - [ ] Implement income/expense projection mock data
 - [ ] Add budget vs actual comparison mock scenarios
@@ -584,6 +627,7 @@ pytest tests/test_model_field_validation.py
 ### DashboardMock.vue [COMPONENT_DASHBOARD_MOCK]
 
 #### References to DashboardMockLayout.md
+
 - [ ] Implement TopBar Header with date range picker and user section
 - [ ] Create Net Worth Overview Widget with gain/loss indicators
 - [ ] Build Daily Net Income Chart with modal click functionality
@@ -592,6 +636,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Organize file and component structure per specifications
 
 #### References to DashboardMockTransactions.vue
+
 - [ ] Fix chart integration - replace recharts with vue-chartjs Bar component
 - [ ] Implement proper chart click handling for modal display
 - [ ] Fix modal integration with transaction data display
@@ -600,6 +645,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Fix table styling and border formatting
 
 #### References to TopBar.vue
+
 - [ ] Fix template syntax errors (remove ``` markdown formatting)
 - [ ] Implement proper Vue 3 Composition API structure
 - [ ] Fix date range selector functionality
@@ -607,10 +653,10 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement account toggle controls
 - [ ] Apply consistent Tailwind CSS styling throughout
 
-
 ### Settings.vue [COMPONENT_SETTINGS]
 
 #### Current Implementation Analysis
+
 - [ ] Improve basic theme selection implementation (currently uses Options API)
 - [ ] Add error handling for theme API calls (`/themes`, `/set_theme`)
 - [ ] Replace basic `alert()` with proper user feedback components
@@ -619,6 +665,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement proper responsive design and styling
 
 #### Placeholders for Settings Tasks
+
 - [ ] Expand theme selection with preview and advanced theming options
 - [ ] Add notification preferences (email, push, in-app notifications)
 - [ ] Create privacy settings (data sharing, analytics opt-out)
@@ -627,6 +674,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Create user profile management section
 
 #### System Configuration Placeholders
+
 - [ ] Add API integration settings (connection timeouts, retry policies)
 - [ ] Implement backup and restore functionality for user data
 - [ ] Create system diagnostics and health check dashboard
@@ -637,6 +685,7 @@ pytest tests/test_model_field_validation.py
 ### Mock Components Directory [COMPONENT_MOCK_DIR]
 
 #### List Components and Note Outstanding Tasks
+
 - **`AccountToggle.vue`**: Fix template syntax errors (remove ``` markdown blocks), implement proper toggle functionality
 - **`TopBar.vue`**: Convert to proper Vue 3 Composition API, fix template syntax, implement date range picker
 - **`DashboardMockTransactions.vue`**: Replace recharts with vue-chartjs, fix modal integration, implement proper click handling
@@ -645,6 +694,7 @@ pytest tests/test_model_field_validation.py
 - **`MockDataCanvas.md`**: Complete mock data specifications for all views, standardize data format
 
 #### Outstanding Tasks Summary
+
 - [ ] Fix template syntax errors across all mock components (remove ``` formatting)
 - [ ] Implement proper Vue 3 Composition API structure in TopBar.vue and AccountToggle.vue
 - [ ] Complete chart integration in DashboardMockTransactions.vue (vue-chartjs)
@@ -659,6 +709,7 @@ pytest tests/test_model_field_validation.py
 ## Global Dashboard TODOs [GLOBAL_DASHBOARD]
 
 ### Critical Functionality Fixes
+
 - [ ] Repair all non-functional dashboard components
 - [ ] Implement consistent error handling across all widgets
 - [ ] Fix data loading race conditions
@@ -666,6 +717,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement proper component lifecycle management
 
 ### UI/UX Consistency
+
 - [ ] Establish and enforce design system consistency
 - [ ] Implement unified spacing and typography scale
 - [ ] Standardize color usage and theming
@@ -673,6 +725,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement unified loading and error states
 
 ### Performance Optimization
+
 - [ ] Implement lazy loading for heavy components
 - [ ] Optimize data fetching with proper caching
 - [ ] Reduce bundle size through code splitting
@@ -680,6 +733,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Optimize chart rendering performance
 
 ### Data Integration
+
 - [ ] Audit and fix all data display logic
 - [ ] Implement proper data validation
 - [ ] Add real-time data synchronization
@@ -687,6 +741,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement offline data handling
 
 ### Account Management
+
 - [ ] Handle account deactivation gracefully
 - [ ] Implement proper account deletion flow
 - [ ] Integrate Plaid removal endpoint
@@ -694,6 +749,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Implement account reconnection flows
 
 ### Legacy TODO Items Integration [LEGACY_TODO_ITEMS]
+
 - [ ] Add tests / checks / hooks to ensure the only CSS styling syntax is in-line with TailwindCSS
 - [ ] Header needs to be formatted, sized, centered, colored
 - [ ] Snapshot feature is broken
@@ -719,6 +775,7 @@ pytest tests/test_model_field_validation.py
 ## Testing and QA [TEST_QA]
 
 ### Unit Testing
+
 - [ ] Create comprehensive unit tests for all components
 - [ ] Test component props and emit functionality
 - [ ] Implement composable function testing
@@ -726,6 +783,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Create mock data testing utilities
 
 ### Integration Testing
+
 - [ ] Test component integration workflows
 - [ ] Validate API integration functionality
 - [ ] Test cross-component data flow
@@ -733,6 +791,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Add end-to-end critical path testing
 
 ### Accessibility Testing
+
 - [ ] Implement automated accessibility testing
 - [ ] Manual accessibility testing with screen readers
 - [ ] Keyboard navigation testing
@@ -740,6 +799,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Focus management testing
 
 ### Performance Testing
+
 - [ ] Load testing for data-heavy components
 - [ ] Memory leak testing for SPA navigation
 - [ ] Bundle size analysis and optimization
@@ -747,6 +807,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Mobile performance optimization
 
 ### Cross-Platform Testing
+
 - [ ] Cross-browser compatibility testing
 - [ ] Mobile device testing (iOS/Android)
 - [ ] Tablet responsiveness validation
@@ -754,6 +815,7 @@ pytest tests/test_model_field_validation.py
 - [ ] Operating system compatibility
 
 ### Quality Assurance Workflow
+
 - [ ] Establish QA review process
 - [ ] Create testing checklist template
 - [ ] Implement automated testing pipeline
@@ -765,6 +827,7 @@ pytest tests/test_model_field_validation.py
 ### Legacy-to-Consolidated Mapping
 
 #### NewToDo.md → Consolidated Integration
+
 - **Main Dashboard Content** → Folded into [COMPONENT_DASHBOARD] sections:
   - High-Level UX/UI Pain Points → Dashboard.vue High-Level UX/UI Issues
   - Component Tasks → Dashboard.vue Components & Tasks sections
@@ -774,18 +837,21 @@ pytest tests/test_model_field_validation.py
   - Mock Components Directory → [COMPONENT_MOCK_DIR] section
 
 #### ToDo.md → Consolidated Integration
+
 - **Site-Wide Features, Components, and Tasks** → Preserved as heading in [COMPONENT_TASKS]
 - **Dashboard Components** → Folded into [COMPONENT_DASHBOARD]
 - **View Components** → Distributed across [COMPONENT_TASKS] sections
 - **Task Structure** → Converted to checkbox format with consistent component tags
 
 #### docs/TODO.md → Specific Mapping
+
 - **Component Tags Legend** → Integrated into [LEGEND_MAP]
 - **Formatting Rules** → Preserved in [META_HOW_TO_USE] section
 - **Dashboard Tasks** → Mapped to [COMPONENT_DASHBOARD]
 - **General Utilities** → Incorporated into [DEV_GUIDE] validation requirements
 
 #### Phase_1.md, ProcessLegend.md, ReviewKey.md, FileLegend.md → Consolidated Integration
+
 - **Phase_1.md detailed specifications** → Merged into [PHASES] Phase 1 section
 - **ProcessLegend.md 10-phase plan** → Fully integrated into [PHASES] structure
 - **ReviewKey.md mapping** → Incorporated into [STEPS_TO_FILES] section
@@ -794,22 +860,26 @@ pytest tests/test_model_field_validation.py
 ### Recognizable Headings Preserved
 
 #### From NewToDo.md:
+
 - "Site-Wide Features, Components, and Tasks" → Maintained in [COMPONENT_TASKS]
 - "High-Level Issues & UX/UI Pain Points" → Preserved structure in Dashboard sections
 - "Global Dashboard TODOs" → Maintained as dedicated section
 
 #### From ProcessLegend.md:
+
 - "Phase 1: Audit & Documentation" → Preserved in [PHASES]
 - "Phase 2: Layout, Spacing & Responsiveness" → Maintained structure
 - All 10 phases → Consistent numbering and naming preserved
 
 #### From FileLegend.md:
+
 - Component tag format → Maintained ([D], [AL], [TAS], etc.)
 - "Steps-to-Files Mapping" → Preserved concept in [STEPS_TO_FILES]
 
 ### Deprecation Instructions for Original Files
 
 #### Files to Deprecate with Pointers
+
 - [ ] Add deprecation notice to `NewToDo.md` with link to root docs/frontend/Consolidated_TODO.md
 - [ ] Add deprecation notice to `ToDo.md` with link to root docs/frontend/Consolidated_TODO.md
 - [ ] Add deprecation notice to `docs/TODO.md` with link to root docs/frontend/Consolidated_TODO.md
@@ -819,12 +889,14 @@ pytest tests/test_model_field_validation.py
 - [ ] Add deprecation notice to `FileLegend.md` with link to root docs/frontend/Consolidated_TODO.md [LEGEND_MAP] section
 
 #### Pointer Template for Legacy Files
+
 ```markdown
 > **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
-> 
+>
 > Please refer to the [main TODO.md](.../frontend/Consolidated_TODO.md) for current tasks and documentation.
-> 
+>
 > **Specific mapping**:
+>
 > - [NewToDo.md content] → See [COMPONENT_DASHBOARD] and [GLOBAL_DASHBOARD] sections
 > - [ToDo.md content] → See [COMPONENT_TASKS] section
 > - [docs/TODO.md content] → See [COMPONENT_DASHBOARD] and [DEV_GUIDE] sections
@@ -837,16 +909,19 @@ pytest tests/test_model_field_validation.py
 ### Backward Compatibility Features
 
 #### Component Tag Compatibility
+
 - All original component tags ([D], [AL], [TAS], etc.) preserved exactly
 - Tag meanings and file paths maintained consistently
 - Legacy references continue to work without modification
 
 #### Heading Structure Compatibility
+
 - Key organizational headings preserved from original files
 - "Site-Wide Features, Components, and Tasks" maintained prominently
 - Phase numbering and naming kept consistent with ProcessLegend.md
 
 #### Task Format Migration
+
 - Original bullet points converted to checkbox format
 - Task content preserved verbatim where possible
 - Priority and grouping maintained from original structure
@@ -854,16 +929,19 @@ pytest tests/test_model_field_validation.py
 ### Migration Timeline
 
 #### Phase 1: Content Consolidation (Completed)
+
 - [x] Migrate all tasks from legacy files to consolidated structure
 - [x] Preserve all component tags and mappings
 - [x] Maintain recognizable headings and organization
 
 #### Phase 2: Deprecation Notices (Next PR)
+
 - [ ] Add deprecation headers to all legacy files
 - [ ] Include direct links to relevant consolidated sections
 - [ ] Test all cross-references and links
 
 #### Phase 3: Legacy File Removal (Future)
+
 - [ ] Remove deprecated files after 2-3 development cycles
 - [ ] Update any remaining references to point to consolidated docs/frontend/Consolidated_TODO.md
 - [ ] Archive legacy files in documentation history if needed

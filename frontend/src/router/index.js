@@ -15,7 +15,6 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import ForecastMock from '@/views/ForecastMock.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
 
-
 const Investments = () => import('../views/Investments.vue')
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
@@ -35,7 +34,6 @@ const routes = [
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/summary', name: 'FinancialSummaryDetailed', component: FinancialSummaryDetailed },
   { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
-
 ]
 
 const router = createRouter({
