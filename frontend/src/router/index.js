@@ -13,9 +13,7 @@ import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.v
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import ForecastMock from '@/views/ForecastMock.vue'
-import RecurringScanDemo from '@/views/RecurringScanDemo.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
-
 
 const Investments = () => import('../views/Investments.vue')
 const routes = [
@@ -34,14 +32,8 @@ const routes = [
   { path: '/investments', name: 'Investments', component: Investments },
   { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
-  {
-    path: '/recurring-scan-demo/:accountId?',
-    name: 'RecurringScanDemo',
-    component: RecurringScanDemo,
-  },
   { path: '/summary', name: 'FinancialSummaryDetailed', component: FinancialSummaryDetailed },
   { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
-
 ]
 
 const router = createRouter({
