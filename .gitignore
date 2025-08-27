@@ -153,6 +153,7 @@ coverage/
 lcov.info
 .pnpm-store/
 .npm/
+bin/
 
 # OS-specific files
 Thumbs.db
