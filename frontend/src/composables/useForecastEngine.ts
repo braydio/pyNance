@@ -30,8 +30,8 @@ export function useForecastEngine(
   viewType: Ref<'Month' | 'Year'>,
   recurringTxs: RecurringTransaction[],
   accountHistory: AccountHistoryPoint[],
-  manualIncome: number = 0,
-  liabilityRate: number = 0
+  manualIncome = 0,
+  liabilityRate = 0
 ) {
   const today = new Date();
   const startDate = computed(() => startOfMonth(today));
