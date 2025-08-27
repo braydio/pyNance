@@ -1,3 +1,10 @@
+<!--
+  RecurringTransactionSection.vue
+  -------------------------------
+  Manage user-defined recurring transaction rules and trigger scans for
+  auto-detected reminders.
+-->
+
 <template>
   <section id="recurring" class="recurring-manager">
     <h2 class="heading-md mb-4">Recurring Transactions</h2>
@@ -70,7 +77,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { scanRecurringTransactions } from '@/api/recurring'
 import axios from 'axios'
-import { formatAmount } from "@/utils/format"
+import { formatAmount } from '@/utils/format'
 
 const route = useRoute()
 const accountId = route.params.accountId || '1'
@@ -109,9 +116,12 @@ function editRule(rule) {
   showForm.value = true
 }
 
+/**
+ * Remove a recurring rule from the backend and update local state.
+ */
 async function deleteRule(rule) {
   try {
-    await axios.delete(`/api/accounts/${accountId}/recurringTx`, { data: rule })
+    await axios.delete(`/api/recurring/accounts/${accountId}/recurringTx`, { data: rule })
     userRules.value = userRules.value.filter(
       (r) => r.description !== rule.description || r.amount !== rule.amount,
     )
@@ -120,6 +130,9 @@ async function deleteRule(rule) {
   }
 }
 
+/**
+ * Trigger backend scan for recurring transactions and refresh reminders.
+ */
 async function scanForRecurring() {
   try {
     const res = await scanRecurringTransactions(accountId)
@@ -132,6 +145,9 @@ async function scanForRecurring() {
   }
 }
 
+/**
+ * Persist a recurring rule and update the list on success.
+ */
 async function saveRecurring() {
   if (!transactionId.value) return
   loading.value = true
@@ -143,7 +159,7 @@ async function saveRecurring() {
       next_due_date: nextDueDate.value,
       notes: notes.value || description.value || 'Untitled Recurring',
     }
-    await axios.put(`/api/accounts/${accountId}/recurringTx`, payload)
+    await axios.put(`/api/recurring/accounts/${accountId}/recurringTx`, payload)
     userRules.value = userRules.value.filter(
       (r) => r.description !== payload.description || r.amount !== payload.amount,
     )
@@ -156,9 +172,10 @@ async function saveRecurring() {
   }
 }
 
+// Load existing reminders when the component mounts.
 onMounted(async () => {
   try {
-    const res = await axios.get(`/api/accounts/${accountId}/recurring`)
+    const res = await axios.get(`/api/recurring/${accountId}/recurring`)
     if (Array.isArray(res.data?.reminders)) {
       userRules.value = res.data.reminders.filter((r) => r.source === 'user')
       autoReminders.value = res.data.reminders.filter((r) => r.source === 'auto')

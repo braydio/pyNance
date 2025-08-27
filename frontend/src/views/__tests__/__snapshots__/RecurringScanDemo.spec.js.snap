@@ -1,3 +1,0 @@
-// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
-
-exports[`RecurringScanDemo.vue > matches snapshot 1`] = `"<base-page-layout-stub padding="true" gap="gap-6"></base-page-layout-stub>"`;
