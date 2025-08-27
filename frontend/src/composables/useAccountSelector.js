@@ -1,4 +1,8 @@
+/**
+ * Composable for selecting accounts with sanitized logging.
+ */
 import { ref, computed, onMounted } from 'vue'
+import { sanitizeForLog } from '../utils/sanitize.js'
 
 export function useAccountSelector() {
   const allAccounts = ref([])
@@ -27,6 +31,10 @@ export function useAccountSelector() {
   const hasSelection = computed(() => selectedAccountIds.value.length > 0)
 
   // Methods
+  /**
+   * Retrieve accounts from API and update state.
+   * Logs sanitized account count on success.
+   */
   async function fetchAccounts() {
     loading.value = true
     error.value = null
@@ -37,12 +45,12 @@ export function useAccountSelector() {
       
       if (data.status === 'success' && data.accounts) {
         allAccounts.value = data.accounts
-        console.log(`Loaded ${data.accounts.length} accounts for selector`)
+        console.log(`Loaded ${sanitizeForLog(data.accounts.length)} accounts for selector`)
       } else {
         throw new Error(data.message || 'Failed to fetch accounts')
       }
     } catch (e) {
-      console.error('Error fetching accounts:', e)
+      console.error('Error fetching accounts:', sanitizeForLog(e.message || e))
       error.value = e.message || 'Failed to fetch accounts'
     } finally {
       loading.value = false

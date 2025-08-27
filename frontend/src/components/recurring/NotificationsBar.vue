@@ -20,7 +20,9 @@
 
 <script>
 import axios from "axios";
+import { sanitizeForLog } from "../../utils/sanitize.js";
 
+// Component to display account notifications and manage recurring transactions.
 export default {
   props: ["accountId", "currentApr"],
   data() {
@@ -30,27 +32,39 @@ export default {
     };
   },
   methods: {
+    /**
+     * Save the recurring transaction amount and refresh the reminder list.
+     */
     async saveRecurring() {
       try {
         const resp = await axios.put(`/api/accounts/${this.accountId}/recurringTx`, {
           amount: this.txRecur
         });
-        console.log("Recurring transaction updated:", resp.data);
+        console.log("Recurring transaction updated:", sanitizeForLog(resp.data));
         await this.fetchRecurringTransactions();
       } catch (err) {
-        console.error("Error updating recurring transaction:", err);
+        console.error(
+          "Error updating recurring transaction:",
+          sanitizeForLog(err.message || err)
+        );
       }
     },
+    /**
+     * Load existing recurring transaction reminders for the account.
+     */
     async fetchRecurringTransactions() {
-  try {
-    const resp = await axios.get(`/api/accounts/${this.accountId}/recurring`);
-    if (resp.data.status === "success") {
-      this.notifications = resp.data.reminders;
+      try {
+        const resp = await axios.get(`/api/accounts/${this.accountId}/recurring`);
+        if (resp.data.status === "success") {
+          this.notifications = resp.data.reminders;
+        }
+      } catch (err) {
+        console.error(
+          "Error fetching recurring transactions:",
+          sanitizeForLog(err.message || err)
+        );
+      }
     }
-  } catch (err) {
-    console.error("Error fetching recurring transactions:", err);
-  }
-}
   },
   created() {
     this.fetchRecurringTransactions();
