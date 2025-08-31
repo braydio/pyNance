@@ -1,15 +1,19 @@
 # 🚀 Roadmap: Plaid Transactions Sync Migration
 
 ## 1. Overview
+
 Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `transactions/sync` API. The new model persists a per-item cursor and applies added/modified/removed transactions, eliminating redundant fetches and webhook complexity.
 
 ## 2. Current State
+
 ### Implemented
+
 - **Data model** – `PlaidAccount` already has a `sync_cursor` column for storing per-item cursors.
 - **Routing stub** – `POST /transactions/sync` endpoint exists and delegates to a service layer.
 - **Legacy fetch** – Transaction ingestion uses Plaid's `transactions/get` with manual pagination.
 
 ### Missing
+
 - **Provider sync logic** – `plaid.sync_transactions` and `teller.sync_transactions` implementations.
 - **Cursor persistence** – logic to update `PlaidAccount.sync_cursor` after successful sync.
 - **Webhook handler** – no listener for Plaid `SYNC_UPDATES_AVAILABLE` webhooks.
@@ -17,6 +21,7 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
 - **Tests & monitoring** – no automated coverage for sync paths or webhook events.
 
 ## 3. Migration Plan
+
 1. **Prerequisites**
    - Ensure Plaid SDK ≥9.4.0 is installed.
 
@@ -45,10 +50,12 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
    - Retain `/transactions/refresh` only for on-demand refresh UI.
 
 ## 4. Completion Metrics
+
 - ✅ `plaid.sync_transactions` handles paging, mutations, and stores `next_cursor`.
 - ✅ Webhook endpoint processes `SYNC_UPDATES_AVAILABLE` and triggers sync.
 - ✅ Tests cover sync flow, webhook handler, and cursor persistence.
 - ✅ Legacy `transactions/get` paths removed and all items have recorded cursors.
 
 ---
-*Last updated: $(date -u +"%Y-%m-%d")*
+
+_Last updated: $(date -u +"%Y-%m-%d")_
