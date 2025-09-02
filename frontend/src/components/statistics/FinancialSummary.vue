@@ -1,8 +1,9 @@
 <!--
   FinancialSummary.vue
   Displays key income, expense, and net metrics derived from DailyNetChart data.
-  Users can toggle between basic and extended views with moving averages, trends,
-  highest earning/spending days, volatility, and basic outlier detection.
+  Users can toggle between basic and extended views with moving averages,
+  per-category trends with signed deltas, highest earning/spending days,
+  volatility, and basic outlier detection.
 -->
 <template>
   <div class="statistics-container">
@@ -75,9 +76,21 @@
           <div class="stat-group">
             <h4 class="group-title">Trends</h4>
             <div class="stat-item">
-              <span class="stat-label">Trend:</span>
-              <span class="stat-value trend-indicator" :class="trendClass">
-                {{ trendLabel }}
+              <span class="stat-label">Net Trend:</span>
+              <span class="stat-value trend-indicator" :class="netTrendClass">
+                {{ netTrendLabel }} {{ formatDelta(extendedStats.netDelta) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Income Trend:</span>
+              <span class="stat-value trend-indicator" :class="incomeTrendClass">
+                {{ incomeTrendLabel }} {{ formatDelta(extendedStats.incomeDelta) }}
+              </span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Expense Trend:</span>
+              <span class="stat-value trend-indicator" :class="expenseTrendClass">
+                {{ expenseTrendLabel }} {{ formatDelta(extendedStats.expenseDelta) }}
               </span>
             </div>
             <div class="stat-item">
@@ -111,6 +124,18 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { formatAmount } from '@/utils/format'
+
+/**
+ * Format a numeric delta with an explicit sign.
+ *
+ * @param {number} value - The value to format.
+ * @returns {string} Signed currency string.
+ */
+function formatDelta(value) {
+  const abs = Math.abs(value)
+  const formatted = formatAmount(abs)
+  return value >= 0 ? `+${formatted}` : `-${formatted}`
+}
 
 const props = defineProps({
   summary: {
@@ -159,7 +184,12 @@ const extendedStats = computed(() => {
       avgDailyNet: 0,
       movingAverage7: 0,
       movingAverage30: 0,
-      trend: 0,
+      netTrend: 0,
+      incomeTrend: 0,
+      expenseTrend: 0,
+      netDelta: 0,
+      incomeDelta: 0,
+      expenseDelta: 0,
       volatility: 0,
       highestIncomeDay: null,
       highestExpenseDay: null,
@@ -181,7 +211,12 @@ const extendedStats = computed(() => {
   const movingAverage7 = calculateMovingAverage(netValues, 7)
   const movingAverage30 = calculateMovingAverage(netValues, 30)
 
-  const trend = calculateTrend(netValues)
+  const netTrend = calculateTrend(netValues)
+  const incomeTrend = calculateTrend(incomeValues)
+  const expenseTrend = calculateTrend(expenseValues)
+  const netDelta = netValues[netValues.length - 1] - netValues[0]
+  const incomeDelta = incomeValues[incomeValues.length - 1] - incomeValues[0]
+  const expenseDelta = expenseValues[expenseValues.length - 1] - expenseValues[0]
   const volatility = calculateVolatility(netValues)
 
   // Highest income/expense days
@@ -207,7 +242,12 @@ const extendedStats = computed(() => {
     avgDailyNet,
     movingAverage7,
     movingAverage30,
-    trend,
+    netTrend,
+    incomeTrend,
+    expenseTrend,
+    netDelta,
+    incomeDelta,
+    expenseDelta,
     volatility,
     highestIncomeDay,
     highestExpenseDay,
@@ -215,19 +255,32 @@ const extendedStats = computed(() => {
   }
 })
 
-// Trend display
-const trendClass = computed(() => ({
-  'trend-up': extendedStats.value.trend > 0,
-  'trend-down': extendedStats.value.trend < 0,
-  'trend-flat': extendedStats.value.trend === 0,
+// Trend display helpers
+function labelFromTrend(trend) {
+  if (trend > 0.1) return '↗ Increasing'
+  if (trend < -0.1) return '↘ Decreasing'
+  return '→ Stable'
+}
+
+const netTrendClass = computed(() => ({
+  'trend-up': extendedStats.value.netTrend > 0,
+  'trend-down': extendedStats.value.netTrend < 0,
+  'trend-flat': extendedStats.value.netTrend === 0,
+}))
+const incomeTrendClass = computed(() => ({
+  'trend-up': extendedStats.value.incomeTrend > 0,
+  'trend-down': extendedStats.value.incomeTrend < 0,
+  'trend-flat': extendedStats.value.incomeTrend === 0,
+}))
+const expenseTrendClass = computed(() => ({
+  'trend-up': extendedStats.value.expenseTrend > 0,
+  'trend-down': extendedStats.value.expenseTrend < 0,
+  'trend-flat': extendedStats.value.expenseTrend === 0,
 }))
 
-const trendLabel = computed(() => {
-  const trend = extendedStats.value.trend
-  if (trend > 0.1) return '↗ Improving'
-  if (trend < -0.1) return '↘ Declining'
-  return '→ Stable'
-})
+const netTrendLabel = computed(() => labelFromTrend(extendedStats.value.netTrend))
+const incomeTrendLabel = computed(() => labelFromTrend(extendedStats.value.incomeTrend))
+const expenseTrendLabel = computed(() => labelFromTrend(extendedStats.value.expenseTrend))
 
 const volatilityLabel = computed(() => {
   const vol = extendedStats.value.volatility
