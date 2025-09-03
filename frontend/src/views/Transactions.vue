@@ -14,7 +14,12 @@
     <Card class="p-6">
       <div class="grid gap-4 md:grid-cols-2">
         <ImportFileSelector />
-        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search transactions..."
+          class="input w-full"
+        />
       </div>
     </Card>
 
@@ -22,17 +27,26 @@
     <Card class="p-6 space-y-4">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
       <transition name="fade-in-up" mode="out-in">
-        <UpdateTransactionsTable :key="currentPage" :transactions="filteredTransactions" :sort-key="sortKey"
-          :sort-order="sortOrder" @sort="setSort"
-          @editRecurringFromTransaction="prefillRecurringFromTransaction" />
+        <UpdateTransactionsTable
+          :key="currentPage"
+          :transactions="filteredTransactions"
+          :sort-key="sortKey"
+          :sort-order="sortOrder"
+          @sort="setSort"
+          @editRecurringFromTransaction="prefillRecurringFromTransaction"
+        />
       </transition>
     </Card>
 
     <!-- Pagination -->
     <div id="pagination-controls" class="flex items-center justify-center gap-4">
-      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
+      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1"
+        >Prev</UiButton
+      >
       <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
+      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages"
+        >Next</UiButton
+      >
     </div>
 
     <!-- Internal Transfer Detection -->
@@ -41,11 +55,7 @@
         <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
           Internal Transfer Scanner
         </h2>
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="showScanner = !showScanner"
-        >
+        <UiButton variant="outline" size="sm" @click="showScanner = !showScanner">
           {{ showScanner ? 'Hide' : 'Show' }}
         </UiButton>
       </div>
