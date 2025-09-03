@@ -291,7 +291,10 @@ const volatilityLabel = computed(() => {
 
 const highestIncomeLabel = computed(() => {
   const hi = extendedStats.value.highestIncomeDay
-  return hi ? `${hi.date} (${formatAmount(hi.amount)})` : 'N/A'
+  if (!hi) return 'N/A'
+  const amt = formatAmount(hi.amount)
+  // Show explicit plus sign for highest income
+  return `${hi.date} (+${amt})`
 })
 
 const highestExpenseLabel = computed(() => {

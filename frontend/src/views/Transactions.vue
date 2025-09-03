@@ -77,7 +77,8 @@
 // View for listing and managing transactions with themed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
@@ -102,6 +103,10 @@ export default {
     InternalTransferScanner,
   },
   setup() {
+    const route = useRoute()
+    const txidParam = route.query?.txid
+    // If deep-linking to a transaction, use a larger initial page size to improve hit rate
+    const initialPageSize = txidParam ? 250 : 15
     const {
       searchQuery,
       currentPage,
@@ -111,7 +116,7 @@ export default {
       sortKey,
       sortOrder,
       setSort,
-    } = useTransactions(15)
+    } = useTransactions(initialPageSize)
 
     const showScanner = ref(false)
     const showRecurring = ref(false)
@@ -126,6 +131,13 @@ export default {
         recurringFormRef.value.showForm = true
       }
     }
+
+    // Apply deep-link search if present
+    onMounted(() => {
+      if (txidParam) {
+        searchQuery.value = String(txidParam)
+      }
+    })
 
     return {
       searchQuery,

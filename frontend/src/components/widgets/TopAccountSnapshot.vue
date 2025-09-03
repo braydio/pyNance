@@ -93,9 +93,9 @@
           <li v-if="openAccountId === account.id" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
-                <li v-for="tx in recentTxs[account.id]" :key="tx.id" class="bs-tx-row">
-                  <span class="bs-tx-date">{{ tx.date }}</span>
-                  <span class="bs-tx-name">{{ tx.name }}</span>
+                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
@@ -173,9 +173,9 @@
           <li v-if="openAccountId === account.id" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
-                <li v-for="tx in recentTxs[account.id]" :key="tx.id" class="bs-tx-row">
-                  <span class="bs-tx-date">{{ tx.date }}</span>
-                  <span class="bs-tx-name">{{ tx.name }}</span>
+                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">

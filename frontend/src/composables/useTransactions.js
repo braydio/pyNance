@@ -69,6 +69,8 @@ export function useTransactions(pageSize = 15) {
     () =>
       new Fuse(transactions.value, {
         keys: [
+          "transaction_id",
+          "date",
           "description",
           "merchant_name",
           "account_name",
@@ -124,4 +126,3 @@ export function useTransactions(pageSize = 15) {
     filteredTransactions,
   };
 }
-

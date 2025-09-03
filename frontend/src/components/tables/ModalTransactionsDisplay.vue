@@ -1,6 +1,6 @@
 <template>
   <div
-    class="overflow-x-auto rounded-xl shadow bg-[var(--color-bg-secondary)] text-[var(--color-text-light)] px-4 py-4"
+    class="overflow-x-auto rounded-xl shadow bg-[var(--color-bg-secondary)] text-[var(--color-text-light)] px-4 py-4 border border-[var(--color-accent-cyan)]/30"
   >
     <!-- Title Date Above Table -->
     <div v-if="titleDate" class="mb-2 ml-2 text-base font-medium">
@@ -12,6 +12,7 @@
           <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
           <th class="px-6 py-4 font-semibold text-left">Merchant</th>
           <th class="px-6 py-4 text-right font-semibold">Amount</th>
+          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold">Date</th>
         </tr>
       </thead>
       <tbody>
@@ -19,8 +20,9 @@
           v-for="tx in transactions"
           :key="tx.transaction_id"
           :class="[
-            'group transition-colors border-b border-[var(--divider)] bg-[var(--surface)] hover:bg-[var(--hover-bg)]',
+            'group transition-colors border-b border-[var(--divider)] bg-[var(--surface)] hover:bg-[var(--hover-bg)] cursor-pointer',
           ]"
+          @click="$emit('row-click', tx)"
         >
           <!-- Account column with accent bar and institution badge -->
           <td class="pl-8 pr-2 py-4 relative min-w-[140px]">
@@ -52,7 +54,7 @@
           <td class="px-6 py-4">
             <div class="flex items-start gap-2">
               <img
-                v-if="tx.category_icon_url"
+                v-if="showCategoryVisuals && tx.category_icon_url"
                 :src="tx.category_icon_url"
                 alt="Category icon"
                 class="h-6 w-6 object-contain filter drop-shadow-sm flex-shrink-0"
@@ -63,7 +65,7 @@
                   {{ tx.description }}
                 </div>
                 <div
-                  v-if="tx.category && tx.category.length"
+                  v-if="showCategoryVisuals && tx.category && tx.category.length"
                   class="text-xs text-[var(--color-accent-purple)] italic mt-1"
                 >
                   {{ tx.category[0]
@@ -86,10 +88,13 @@
               {{ formatAmount(tx.amount) }}
             </span>
           </td>
+          <td v-if="showDateColumn" class="px-6 py-4 text-right text-[var(--color-text-muted)]">
+            {{ tx.date || tx.transaction_date || '' }}
+          </td>
         </tr>
         <tr v-if="!transactions.length">
           <td
-            colspan="3"
+            :colspan="showDateColumn ? 4 : 3"
             class="px-6 py-8 italic text-center text-[var(--color-text-muted)] bg-[var(--color-bg-secondary)] rounded-b-xl"
           >
             No transactions found.
@@ -106,6 +111,8 @@ import { formatAmount as utilFormatAmount } from '../../utils/format'
 defineProps({
   transactions: { type: Array, default: () => [] },
   titleDate: { type: String, default: '' },
+  showDateColumn: { type: Boolean, default: false },
+  showCategoryVisuals: { type: Boolean, default: true },
 })
 
 /**

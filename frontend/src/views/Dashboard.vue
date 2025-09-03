@@ -208,6 +208,9 @@
         :show="showModal"
         :subtitle="modalSubtitle"
         :transactions="modalTransactions"
+        :kind="modalKind"
+        :show-date-column="modalShowDate"
+        :hide-category-visuals="modalHideCategoryVisuals"
         @close="showModal = false"
       />
     </BasePageLayout>
@@ -254,6 +257,9 @@ const {
 const showModal = ref(false)
 const modalTransactions = ref([])
 const modalSubtitle = ref('')
+const modalKind = ref('date')
+const modalShowDate = ref(false)
+const modalHideCategoryVisuals = ref(false)
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
@@ -382,7 +388,10 @@ async function loadCategoryGroups() {
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
   modalTransactions.value = result.transactions || []
-  // Show the selected date prominently in the modal header
+  // Configure modal for date mode
+  modalKind.value = 'date'
+  modalShowDate.value = false
+  modalHideCategoryVisuals.value = false
   modalSubtitle.value = label
   showModal.value = true
 }
@@ -417,8 +426,13 @@ async function onCategoryBarClick(payload) {
   })
   modalTransactions.value = result.transactions || []
 
-  // Display the category label and date span in the modal header
-  modalSubtitle.value = `${label}: ${start} – ${end}`
+  // Configure modal for category mode
+  modalKind.value = 'category'
+  modalShowDate.value = true
+  modalHideCategoryVisuals.value = true
+
+  // Focus on category label only in header; dates move to table
+  modalSubtitle.value = label
   showModal.value = true
 }
 </script>
