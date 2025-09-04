@@ -14,7 +14,6 @@ teller_transactions = Blueprint("teller_transactions", __name__)
 # teller_link = Blueprint("teller-link", __name__)
 
 
-
 @teller_transactions.route("/save_access_token", methods=["POST"])
 def save_teller_token():
     try:
