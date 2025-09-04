@@ -29,13 +29,11 @@ function mountPage() {
   cy.mount(Accounts, {
     global: {
       stubs: {
-        LinkAccount: true,
-        RefreshPlaidControls: true,
-        RefreshTellerControls: true,
-        TokenUpload: true,
+        AccountActionsSidebar: true,
         NetYearComparisonChart: true,
         AssetsBarTrended: true,
         AccountsReorderChart: true,
+        AccountsTable: true,
         InstitutionTable: true,
       },
     },
@@ -53,7 +51,13 @@ describe('Accounts summary', () => {
     cy.get('table').should('exist')
     cy.contains('Coffee')
     cy.get('[data-testid="history-chart"]').should('exist')
-    cy.get('[data-testid="filter-dropdown"]').select('90d')
+    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').click()
+    cy.get('transactionstable-stub').should('exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Charts').click()
+    cy.get('netyearcomparisonchart-stub').should('exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Accounts').click()
+    cy.get('accountstable-stub').should('exist')
+    cy.get('[data-testid="history-range-controls"] button').contains('90d').click()
     cy.wait('@hist90')
   })
 })

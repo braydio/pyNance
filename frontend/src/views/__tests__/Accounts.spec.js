@@ -19,19 +19,8 @@ describe('Accounts.vue', () => {
     const wrapper = shallowMount(Accounts, {
       global: {
         stubs: [
-          'LinkAccount',
-          'RefreshPlaidControls',
-          'RefreshTellerControls',
-          'TokenUpload',
-          'TransactionsTable',
-          'InstitutionTable',
-          'NetYearComparisonChart',
-          'AssetsBarTrended',
-          'AccountsReorderChart',
-          'Button',
-          'Card',
-          'Wallet',
-          'BasePageLayout'
+          'TabbedPageLayout',
+          'AccountActionsSidebar'
         ]
       }
     })
