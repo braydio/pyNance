@@ -1,14 +1,18 @@
-# scripts/lint_routes.py
+"""Lint for disallowed top-level SQLAlchemy ``Model.query`` usage."""
+
 import ast
 import os
 import sys
+from pathlib import Path
 
-VIOLATIONS = []
+VIOLATIONS: list[str] = []
 
 
-def scan_file_for_top_level_query(filepath):
-    with open(filepath) as f:
-        tree = ast.parse(f.read(), filename=filepath)
+def scan_file_for_top_level_query(filepath: str | Path) -> None:
+    """Search ``filepath`` for top-level ``Model.query`` invocations."""
+    path = Path(filepath).resolve()
+    with path.open() as f:
+        tree = ast.parse(f.read(), filename=str(path))
 
     for node in tree.body:
         if isinstance(node, (ast.Assign, ast.Expr, ast.If)):
@@ -19,9 +23,9 @@ def scan_file_for_top_level_query(filepath):
 
 def main():
     for root, _, files in os.walk("app"):
-        for f in files:
-            if f.endswith(".py"):
-                scan_file_for_top_level_query(os.path.join(root, f))
+        for file_name in files:
+            if file_name.endswith(".py"):
+                scan_file_for_top_level_query(Path(root) / file_name)
 
     if VIOLATIONS:
         print("[LINTER] ❌ Found top-level 'Model.query' usage in:")
