@@ -27,7 +27,12 @@
     <Card class="p-6">
       <div class="grid gap-4 md:grid-cols-2">
         <ImportFileSelector />
-        <input v-model="searchQuery" type="text" placeholder="Search transactions..." class="input w-full" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search transactions..."
+          class="input w-full"
+        />
       </div>
     </Card>
 
@@ -35,17 +40,30 @@
     <Card class="p-6 space-y-4">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
       <transition name="fade-in-up" mode="out-in">
-        <UpdateTransactionsTable :key="currentPage" :transactions="filteredTransactions" :sort-key="sortKey"
-          :sort-order="sortOrder" @sort="setSort"
-          @editRecurringFromTransaction="prefillRecurringFromTransaction" />
+        <UpdateTransactionsTable
+          :key="currentPage"
+          :transactions="filteredTransactions"
+          :sort-key="sortKey"
+          :sort-order="sortOrder"
+          @sort="setSort"
+          @editRecurringFromTransaction="prefillRecurringFromTransaction"
+        />
       </transition>
     </Card>
 
     <!-- Pagination -->
-    <div v-if="!searchQuery" id="pagination-controls" class="flex items-center justify-center gap-4">
-      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
+    <div
+      v-if="!searchQuery"
+      id="pagination-controls"
+      class="flex items-center justify-center gap-4"
+    >
+      <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1"
+        >Prev</UiButton
+      >
       <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
+      <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages"
+        >Next</UiButton
+      >
     </div>
 
     <!-- Removed: Scanner was moved above -->
@@ -110,7 +128,10 @@ export default {
       sortKey,
       sortOrder,
       setSort,
-    } = useTransactions(initialPageSize, ref(route.query?.promote || route.query?.promote_txid || ''))
+    } = useTransactions(
+      initialPageSize,
+      ref(route.query?.promote || route.query?.promote_txid || ''),
+    )
 
     const showScanner = ref(false)
     const showRecurring = ref(false)

@@ -269,7 +269,9 @@ def get_investment_transactions(access_token: str, start_date: str, end_date: st
         offset = 0
         count = 500
         while True:
-            options = InvestmentsTransactionsGetRequestOptions(count=count, offset=offset)
+            options = InvestmentsTransactionsGetRequestOptions(
+                count=count, offset=offset
+            )
             req = InvestmentsTransactionsGetRequest(
                 access_token=access_token,
                 start_date=start_date,

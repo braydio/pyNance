@@ -78,7 +78,9 @@ def detect_internal_transfer(
     best_diff = None
     for other in candidates:
         # Compute diff in days using normalized dates
-        other_base_date = other.date.date() if hasattr(other.date, "date") else other.date
+        other_base_date = (
+            other.date.date() if hasattr(other.date, "date") else other.date
+        )
         diff = abs((txn_base_date - other_base_date).days)
         if best is None or diff < best_diff:
             best = other
@@ -358,7 +360,9 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json if isinstance(txns_json, list) else []
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
         )
 
         for txn in txns_list:
@@ -384,7 +388,9 @@ def refresh_data_for_teller_account(
             except ValueError:
                 parsed_date = pydate.today()
             # Store as timezone-aware datetime (UTC), but keep date for comparisons
-            parsed_dt = datetime.combine(parsed_date, datetime.min.time(), tzinfo=timezone.utc)
+            parsed_dt = datetime.combine(
+                parsed_date, datetime.min.time(), tzinfo=timezone.utc
+            )
 
             if start_date_obj and parsed_date < start_date_obj:
                 continue
@@ -695,7 +701,9 @@ def refresh_data_for_plaid_account(
                 try:
                     # Parse as date then convert to UTC datetime to match model type
                     parsed_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
-                    txn_date = datetime.combine(parsed_date, datetime.min.time(), tzinfo=timezone.utc)
+                    txn_date = datetime.combine(
+                        parsed_date, datetime.min.time(), tzinfo=timezone.utc
+                    )
                 except ValueError:
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue

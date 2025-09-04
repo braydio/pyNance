@@ -5,7 +5,13 @@ from __future__ import annotations
 from typing import Dict, List, Tuple
 
 from app.extensions import db
-from app.models import Account, PlaidAccount, Security, InvestmentHolding, InvestmentTransaction
+from app.models import (
+    Account,
+    InvestmentHolding,
+    InvestmentTransaction,
+    PlaidAccount,
+    Security,
+)
 
 
 def get_investment_accounts() -> List[Dict[str, object]]:
@@ -85,7 +91,8 @@ def upsert_investment_transactions(items: List[dict]) -> int:
     count = 0
     for t in items or []:
         tx = InvestmentTransaction(
-            investment_transaction_id=t.get("investment_transaction_id") or t.get("investment_transaction_id"),
+            investment_transaction_id=t.get("investment_transaction_id")
+            or t.get("investment_transaction_id"),
             account_id=t.get("account_id"),
             security_id=t.get("security_id"),
             date=t.get("date"),
