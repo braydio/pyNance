@@ -63,8 +63,8 @@
             tx._placeholder
               ? ''
               : editingIndex === index
-              ? 'bg-[var(--color-bg-sec)]'
-              : 'hover:bg-[var(--hover)-light]',
+                ? 'bg-[var(--color-bg-sec)]'
+                : 'hover:bg-[var(--hover)-light]',
           ]"
         >
           <template v-if="tx._placeholder">
@@ -72,7 +72,12 @@
           </template>
           <template v-else>
             <td class="px-3 py-2">
-              <input v-if="editingIndex === index" v-model="editBuffer.date" type="date" class="input" />
+              <input
+                v-if="editingIndex === index"
+                v-model="editBuffer.date"
+                type="date"
+                class="input"
+              />
               <span v-else>{{ formatDate(tx.date) }}</span>
             </td>
             <td class="px-3 py-2">
@@ -86,7 +91,12 @@
               <span v-else>{{ formatAmount(tx.amount) }}</span>
             </td>
             <td class="px-3 py-2">
-              <input v-if="editingIndex === index" v-model="editBuffer.description" type="text" class="input" />
+              <input
+                v-if="editingIndex === index"
+                v-model="editBuffer.description"
+                type="text"
+                class="input"
+              />
               <span v-else>{{ tx.description }}</span>
             </td>
             <td class="px-3 py-2">
@@ -101,7 +111,12 @@
               <span v-else>{{ tx.category }}</span>
             </td>
             <td class="px-3 py-2">
-              <input v-if="editingIndex === index" v-model="editBuffer.merchant_name" type="text" class="input" />
+              <input
+                v-if="editingIndex === index"
+                v-model="editBuffer.merchant_name"
+                type="text"
+                class="input"
+              />
               <span v-else>{{ tx.merchant_name }}</span>
             </td>
             <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
@@ -123,7 +138,10 @@
     </table>
 
     <!-- Empty State -->
-    <div v-if="displayTransactions.every(tx => tx._placeholder)" class="text-center text-gray-500">
+    <div
+      v-if="displayTransactions.every((tx) => tx._placeholder)"
+      class="text-center text-gray-500"
+    >
       No transactions found.
     </div>
   </div>
@@ -261,9 +279,7 @@ const displayTransactions = computed(() => {
     )
   } else if (selectedPrimaryCategory.value) {
     txs = txs.filter(
-      (tx) =>
-        tx.primary_category?.toLowerCase() ===
-        selectedPrimaryCategory.value.toLowerCase(),
+      (tx) => tx.primary_category?.toLowerCase() === selectedPrimaryCategory.value.toLowerCase(),
     )
   }
   txs.sort((a, b) => {
