@@ -4,11 +4,9 @@
 import uuid
 from datetime import datetime, timezone
 
+from app.extensions import db
 from sqlalchemy import CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
-
-from app.extensions import db
-
 
 AllocationType = db.Enum("fixed", "percent", name="allocation_type")
 
