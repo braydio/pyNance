@@ -3,6 +3,7 @@
 This guide provides comprehensive development standards, tooling requirements, and validation steps for contributing to pyNance.
 
 ## Table of Contents
+
 - [Environment Setup](#environment-setup)
 - [Tooling and Versions](#tooling-and-versions)
 - [Code Style and Standards](#code-style-and-standards)
@@ -16,6 +17,7 @@ This guide provides comprehensive development standards, tooling requirements, a
 ## Environment Setup
 
 ### Initial Setup
+
 Run the setup script to prepare your development environment:
 
 ```bash
@@ -27,6 +29,7 @@ bash scripts/setup.sh --slim
 ```
 
 This script will:
+
 - Create Python virtual environment (`.venv`)
 - Install Python dependencies from `requirements.txt` and `requirements-dev.txt`
 - Set up Git hooks via `core.hooksPath`
@@ -34,6 +37,7 @@ This script will:
 - Copy example environment files
 
 ### Environment Files
+
 Copy and configure environment files for both backend and frontend:
 
 ```bash
@@ -45,6 +49,7 @@ cp frontend/example.env frontend/.env
 ```
 
 **Validation Steps:**
+
 ```bash
 # Verify .env files exist
 [ -f backend/.env ] && echo "✅ Backend .env exists" || echo "❌ Backend .env missing"
@@ -57,17 +62,20 @@ cp frontend/example.env frontend/.env
 ## Tooling and Versions
 
 ### Required Versions
+
 - **Python**: 3.11
 - **Node.js**: 20 (specified in `.nvmrc` if available)
 - **npm**: Latest compatible with Node 20
 
 ### Development Tools
+
 - **Python Linting**: `black`, `ruff`, `mypy`, `pylint`, `bandit`
 - **Python Testing**: `pytest`
 - **Git Hooks**: `pre-commit`
 - **Frontend**: Vue 3, Vite, TypeScript, TailwindCSS
 
 **Validation Steps:**
+
 ```bash
 # Check Python version
 python --version | grep "3.11" && echo "✅ Python 3.11" || echo "❌ Wrong Python version"
@@ -85,6 +93,7 @@ command -v pre-commit >/dev/null && echo "✅ pre-commit installed" || echo "❌
 ## Code Style and Standards
 
 ### Python Standards
+
 - **Style**: PEP 8 compliance
 - **Type Annotations**: Required for all functions and methods
 - **Formatters**: `black` (line length: 120), `isort` (black profile)
@@ -92,11 +101,13 @@ command -v pre-commit >/dev/null && echo "✅ pre-commit installed" || echo "❌
 - **Security**: `bandit` for security checks
 
 ### Frontend Standards
+
 - **CSS Framework**: TailwindCSS only (no custom CSS)
 - **JavaScript**: ESLint with Vue 3 rules
 - **Formatting**: Prettier for consistent code style
 
 **Validation Steps:**
+
 ```bash
 # Python style validation
 black --check --line-length=120 backend/
@@ -116,6 +127,7 @@ cd ..
 ## Git Workflow and Hooks
 
 ### Git Hooks Setup
+
 Git hooks are configured automatically via the setup script:
 
 ```bash
@@ -124,9 +136,11 @@ chmod +x .githooks/*
 ```
 
 ### Pre-commit Configuration
+
 Pre-commit runs automatically on commit and includes:
+
 - `black` - Python code formatting
-- `isort` - Python import sorting  
+- `isort` - Python import sorting
 - `ruff` - Python linting with auto-fix
 - `mypy` - Static type checking
 - `pylint` - Python linting
@@ -134,6 +148,7 @@ Pre-commit runs automatically on commit and includes:
 - Model field validation tests
 
 **Validation Steps:**
+
 ```bash
 # Check Git hooks are configured
 git config --get core.hooksPath | grep ".githooks" && echo "✅ Git hooks configured" || echo "❌ Git hooks not configured"
@@ -145,25 +160,32 @@ pre-commit run --all-files
 ## Pull Request Requirements
 
 ### Title Format
+
 Use the following format for PR titles:
+
 ```
 [component] Fix or Add <description>
 ```
 
 Examples:
+
 - `[backend] Fix transaction sync error handling`
 - `[frontend] Add TailwindCSS validation hook`
 - `[tests] Add coverage for forecast engine`
 
 ### Description Requirements
+
 PR descriptions must include:
+
 - **Affected modules**: Specify backend/frontend/tests
 - **API changes**: Document new endpoints or modifications
 - **Test coverage**: Confirm tests are added/updated
 - **Documentation updates**: Run `doc_cleaner.py` if docs are modified
 
 ### Commit Message Format
+
 Follow conventional commit format:
+
 ```
 <type>(<scope>): <description>
 
@@ -173,11 +195,13 @@ Follow conventional commit format:
 ```
 
 Examples:
+
 - `feat(auth): add token helper for API authentication`
 - `fix(sync): resolve transaction duplicate detection`
 - `docs(api): update forecast endpoint documentation`
 
 **Validation Steps:**
+
 ```bash
 # Validate commit messages (run locally before push)
 git log --oneline -5 | grep -E "^[a-f0-9]+ (feat|fix|docs|style|refactor|test|chore)\(.+\): .+" && echo "✅ Commit format valid" || echo "❌ Commit format invalid"
@@ -190,12 +214,14 @@ git status | grep "docs/index/INDEX.md" && echo "❌ Run git add docs/index/INDE
 ## Testing and Validation
 
 ### Testing Requirements
+
 - **Unit Tests**: `pytest` for all new functionality
 - **Coverage**: Minimum coverage expectations for critical paths
 - **Model Validation**: `test_model_fields_are_valid` must pass
 - **Integration Tests**: For API endpoints and data flows
 
 ### Pre-push Checklist
+
 Run these commands before pushing:
 
 ```bash
@@ -213,6 +239,7 @@ pytest --cov=backend/app --cov-report=term-missing
 ```
 
 **Validation Steps:**
+
 ```bash
 # Core validation commands that must pass
 echo "Running core validation..."
@@ -232,12 +259,15 @@ echo "✅ All core validation passed"
 ## CSS/Styling Enforcement
 
 ### TailwindCSS Only Policy
+
 As specified in `docs/frontend/Consolidated_TODO.md`, only TailwindCSS syntax is allowed for styling. No custom CSS should be used.
 
 ### TailwindCSS Validation Hook
+
 A validation system must be implemented to ensure only TailwindCSS syntax is used:
 
 **Implementation Requirements:**
+
 - Pre-commit hook to scan for custom CSS
 - CI/CD integration to prevent non-TailwindCSS styles
 - Automated scanning of Vue components and style blocks
@@ -262,6 +292,7 @@ grep -r "class.*{" frontend/src/ --include="*.vue" --include="*.css" && echo "�
 ```
 
 **Acceptance Criteria for TailwindCSS Validation:**
+
 - All CSS validation passes without errors
 - No custom CSS classes found in components
 - Only TailwindCSS utility classes are used
@@ -270,6 +301,7 @@ grep -r "class.*{" frontend/src/ --include="*.vue" --include="*.css" && echo "�
 ## Local Development Commands
 
 ### Quick Start Commands
+
 ```bash
 # Full development environment setup
 bash scripts/initialize_env_dev.sh
@@ -282,6 +314,7 @@ cd frontend && npm install && npm run dev
 ```
 
 ### Development Validation Commands
+
 ```bash
 # Complete local validation (run before committing)
 ./scripts/validate-dev.sh  # Create this script with all validation steps
@@ -293,6 +326,7 @@ cd frontend && npm run lint && npm run format -- --check
 ```
 
 ### Documentation Maintenance
+
 ```bash
 # Update documentation index after doc changes
 python scripts/doc_cleaner.py
@@ -305,6 +339,7 @@ python scripts/doc_cleaner.py && echo "✅ Docs index updated" || echo "❌ Doc 
 ## CI Validation Steps
 
 ### Required CI Checks
+
 The following validations must pass in CI/CD:
 
 ```yaml
@@ -339,6 +374,7 @@ The following validations must pass in CI/CD:
 ```
 
 ### Environment Validation
+
 ```bash
 # CI should validate environment setup
 [ -f backend/example.env ] && echo "✅ Backend example.env exists" || exit 1
@@ -352,6 +388,7 @@ The following validations must pass in CI/CD:
 ### Common Issues and Solutions
 
 **1. Pre-commit fails on first run**
+
 ```bash
 # Install pre-commit hooks
 pre-commit install
@@ -359,6 +396,7 @@ pre-commit run --all-files
 ```
 
 **2. Python version mismatch**
+
 ```bash
 # Ensure Python 3.11 is active
 python --version
@@ -370,6 +408,7 @@ pip install -r requirements.txt -r requirements-dev.txt
 ```
 
 **3. Node version issues**
+
 ```bash
 # Use nvm if available
 nvm install 20
@@ -378,6 +417,7 @@ nvm use 20
 ```
 
 **4. Git hooks not working**
+
 ```bash
 # Relink Git hooks
 git config core.hooksPath .githooks
