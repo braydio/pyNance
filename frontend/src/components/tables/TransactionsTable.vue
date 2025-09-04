@@ -35,11 +35,7 @@
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
     </div>
-    <div
-      v-if="loading"
-      class="p-6 text-blue-200"
-      data-test="transactions-loading"
-    >
+    <div v-if="loading" class="p-6 text-blue-200" data-test="transactions-loading">
       Loading transactions...
     </div>
     <div v-else class="overflow-x-auto rounded-xl border border-neutral-800">
@@ -137,10 +133,7 @@
         </tbody>
       </table>
     </div>
-    <div
-      class="flex items-center justify-center gap-4 mt-4"
-      v-if="!loading && totalPages > 1"
-    >
+    <div class="flex items-center justify-center gap-4 mt-4" v-if="!loading && totalPages > 1">
       <button
         class="btn btn-outline"
         @click="prevPage"
