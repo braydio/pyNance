@@ -15,6 +15,7 @@ declare module 'vue' {
     AccountSparkline: typeof import('./components/widgets/AccountSparkline.vue')['default']
     AccountsReorderChart: typeof import('./components/charts/AccountsReorderChart.vue')['default']
     AccountsTable: typeof import('./components/tables/AccountsTable.vue')['default']
+    AppFooter: typeof import('./components/layout/AppFooter.vue')['default']
     AppLayout: typeof import('./components/layout/AppLayout.vue')['default']
     AssetsBarTrended: typeof import('./components/charts/AssetsBarTrended.vue')['default']
     BaseCard: typeof import('./components/base/BaseCard.vue')['default']
