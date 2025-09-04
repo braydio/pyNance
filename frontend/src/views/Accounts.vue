@@ -34,8 +34,8 @@
     <!-- Net Change Summary -->
     <Card class="p-6">
       <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
-      <div v-if="loadingSummary" class="text-center py-4 text-muted">Loading summary...</div>
-      <div v-else-if="summaryError" class="text-center py-4 text-error">Failed to load summary</div>
+      <SkeletonCard v-if="loadingSummary" />
+      <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
       <div v-else class="flex justify-around">
         <div>
           Income:
@@ -66,18 +66,20 @@
           </button>
         </div>
       </div>
-      <div v-if="loadingHistory" class="text-center py-4 text-muted">Loading...</div>
-      <div v-else-if="historyError" class="text-center py-4 text-error">Failed to load history</div>
+      <SkeletonCard v-if="loadingHistory" />
+      <RetryError v-else-if="historyError" message="Failed to load history" @retry="loadHistory" />
       <AccountBalanceHistoryChart v-else :balances="accountHistory" data-testid="history-chart" />
     </Card>
 
     <!-- Recent Transactions -->
     <Card class="p-6 space-y-4">
       <h2 class="text-xl font-semibold">Recent Transactions</h2>
-      <div v-if="loadingTransactions" class="text-center py-4 text-muted">Loading...</div>
-      <div v-else-if="transactionsError" class="text-center py-4 text-error">
-        Failed to load transactions
-      </div>
+      <SkeletonCard v-if="loadingTransactions" />
+      <RetryError
+        v-else-if="transactionsError"
+        message="Failed to load transactions"
+        @retry="loadData"
+      />
       <TransactionsTable v-else :transactions="recentTransactions" />
     </Card>
 
@@ -128,6 +130,8 @@ import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
+import SkeletonCard from '@/components/ui/SkeletonCard.vue'
+import RetryError from '@/components/errors/RetryError.vue'
 
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 
