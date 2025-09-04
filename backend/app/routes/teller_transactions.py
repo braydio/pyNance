@@ -1,4 +1,3 @@
-# teller_transactions.py
 import json
 from datetime import datetime, timezone
 
@@ -14,11 +13,6 @@ teller_transactions = Blueprint("teller_transactions", __name__)
 # In case later I want to split out Link Teller Account logic into its own routes
 # teller_link = Blueprint("teller-link", __name__)
 
-# def load_tokens():
-#    if os.path.exists(FILES["TELLER_TOKENS"]):
-#        with open(FILES["TELLER_TOKENS"], "r") as f:
-#            return json.load(f)
-#    return []
 
 
 @teller_transactions.route("/save_access_token", methods=["POST"])
