@@ -35,7 +35,14 @@
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
     </div>
-    <div class="overflow-x-auto rounded-xl border border-neutral-800">
+    <div
+      v-if="loading"
+      class="p-6 text-blue-200"
+      data-test="transactions-loading"
+    >
+      Loading transactions...
+    </div>
+    <div v-else class="overflow-x-auto rounded-xl border border-neutral-800">
       <table class="min-w-full divide-y divide-neutral-800 text-sm">
         <thead class="bg-neutral-900 border-b border-blue-800">
           <tr>
@@ -130,7 +137,10 @@
         </tbody>
       </table>
     </div>
-    <div class="flex items-center justify-center gap-4 mt-4" v-if="totalPages > 1">
+    <div
+      class="flex items-center justify-center gap-4 mt-4"
+      v-if="!loading && totalPages > 1"
+    >
       <button
         class="btn btn-outline"
         @click="prevPage"
@@ -164,7 +174,8 @@ import { formatAmount as formatCurrency } from '@/utils/format'
  *
  * Displays a paginated table of transactions with date range,
  * account and type filters. Data is fetched from the backend
- * `/transactions` endpoint using the provided filters.
+ * `/transactions` endpoint using the provided filters and shows
+ * a loading indicator while fetching data.
  */
 export default {
   name: 'TransactionsTable',
@@ -176,6 +187,7 @@ export default {
     const page = ref(1)
     const pageSize = 15
     const total = ref(0)
+    const loading = ref(false)
     const accountId = ref('')
     const txType = ref('')
     const today = new Date()
@@ -187,6 +199,7 @@ export default {
     const totalPages = computed(() => Math.ceil(total.value / pageSize))
 
     async function load() {
+      loading.value = true
       const params = {
         page: page.value,
         page_size: pageSize,
@@ -195,10 +208,14 @@ export default {
       }
       if (accountId.value) params.account_ids = accountId.value
       if (txType.value) params.tx_type = txType.value
-      const res = await fetchTransactions(params)
-      transactions.value = res.transactions || []
-      total.value = res.total || 0
-      updateChart()
+      try {
+        const res = await fetchTransactions(params)
+        transactions.value = res.transactions || []
+        total.value = res.total || 0
+        updateChart()
+      } finally {
+        loading.value = false
+      }
     }
 
     async function fetchAccounts() {
@@ -273,12 +290,14 @@ export default {
     }
 
     function nextPage() {
+      if (loading.value) return
       if (page.value < totalPages.value) {
         page.value += 1
         load()
       }
     }
     function prevPage() {
+      if (loading.value) return
       if (page.value > 1) {
         page.value -= 1
         load()
@@ -344,6 +363,7 @@ export default {
       endDate,
       page,
       totalPages,
+      loading,
       formatDate,
       formatAmount,
       formatDescription,

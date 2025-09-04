@@ -42,4 +42,19 @@ describe('TransactionsTable', () => {
     cy.get('[data-test="next-page"]').click()
     cy.wait('@fetchTx').its('request.url').should('include', 'page=2')
   })
+
+  it('shows a loading indicator while fetching', () => {
+    cy.intercept('GET', '/api/transactions/get_transactions*', (req) => {
+      req.reply({
+        statusCode: 200,
+        delay: 100,
+        body: { status: 'success', data: { transactions: [], total: 0 } },
+      })
+    }).as('fetchTx')
+
+    mount(TransactionsTable)
+    cy.get('[data-test="transactions-loading"]').should('be.visible')
+    cy.wait('@fetchTx')
+    cy.get('[data-test="transactions-loading"]').should('not.exist')
+  })
 })
