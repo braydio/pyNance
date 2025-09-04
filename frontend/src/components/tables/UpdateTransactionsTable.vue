@@ -130,7 +130,9 @@
               <template v-else>
                 <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
                 <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
-                <button class="btn-sm" @click="toggleInternal(tx)">{{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}</button>
+                <button class="btn-sm" @click="toggleInternal(tx)">
+                  {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
+                </button>
               </template>
             </td>
           </template>
@@ -306,7 +308,10 @@ const displayTransactions = computed(() => {
     const aVal = a[sortKey.value]
     const bVal = b[sortKey.value]
     if (typeof aVal === 'string' || typeof bVal === 'string') {
-      return (sortOrder.value === 'asc' ? 1 : -1) * String(aVal || '').localeCompare(String(bVal || ''), undefined, { sensitivity: 'base' })
+      return (
+        (sortOrder.value === 'asc' ? 1 : -1) *
+        String(aVal || '').localeCompare(String(bVal || ''), undefined, { sensitivity: 'base' })
+      )
     }
     const aNum = aVal ?? 0
     const bNum = bVal ?? 0
