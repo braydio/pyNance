@@ -1,38 +1,41 @@
+"""Helpers for importing transaction data from external files."""
+
 import csv
 import re
 import traceback
 from datetime import datetime
+from pathlib import Path
 
 import pdfplumber
 from app.config import logger
 
 
+def _resolve_import_path(filepath: str | Path) -> Path:
+    """Resolve ``filepath`` to an absolute path."""
+    return Path(filepath).expanduser().resolve()
+
+
 def dispatch_import(filepath: str, filetype: str = "transactions"):
-    """
-    Dispatch an import task based on file type and format.
-    """
-    logger.debug(f"[IMPORT] Dispatching file: {filepath} as type: {filetype}")
+    """Dispatch an import task based on file type and format."""
+    path = _resolve_import_path(filepath)
+    logger.debug(f"[IMPORT] Dispatching file: {path} as type: {filetype}")
 
-    if filepath.endswith(".csv"):
-        return import_transactions_from_csv(filepath)
-    elif filepath.endswith(".pdf"):
-        return import_transactions_from_pdf(filepath)
-    else:
-        logger.error(f"[IMPORT] Unsupported file format: {filepath}")
-        raise ValueError(f"Unsupported file format: {filepath}")
+    if str(path).endswith(".csv"):
+        return import_transactions_from_csv(path)
+    if str(path).endswith(".pdf"):
+        return import_transactions_from_pdf(path)
+    logger.error(f"[IMPORT] Unsupported file format: {path}")
+    raise ValueError(f"Unsupported file format: {path}")
 
 
-def import_transactions_from_csv(filepath: str):
-    """
-    Parse a CSV export from a credit card provider like Synchrony
-    Format:
-    Transaction Date,Posting Date,Reference Number,Amount,Description
-    """
+def import_transactions_from_csv(filepath: str | Path):
+    """Parse a CSV export from a credit card provider like Synchrony."""
     imported = []
-    logger.debug(f"[CSV IMPORT] Starting CSV import from: {filepath}")
+    path = _resolve_import_path(filepath)
+    logger.debug(f"[CSV IMPORT] Starting CSV import from: {path}")
 
     try:
-        with open(filepath, newline="", encoding="utf-8") as f:
+        with path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
                 logger.debug(f"[CSV IMPORT] Row: {row}")
@@ -60,13 +63,14 @@ def import_transactions_from_csv(filepath: str):
         return {"status": "error", "error": str(e), "traceback": tb}
 
 
-def import_transactions_from_pdf(filepath: str):
+def import_transactions_from_pdf(filepath: str | Path):
     """Parse a Synchrony PDF statement into transaction dicts."""
-    logger.debug(f"[PDF IMPORT] Starting PDF import from: {filepath}")
+    path = _resolve_import_path(filepath)
+    logger.debug(f"[PDF IMPORT] Starting PDF import from: {path}")
 
     imported = []
     try:
-        with pdfplumber.open(filepath) as pdf:
+        with pdfplumber.open(path) as pdf:
             lines = []
             for page in pdf.pages:
                 text = page.extract_text() or ""

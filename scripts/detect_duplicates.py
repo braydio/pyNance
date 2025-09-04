@@ -1,25 +1,28 @@
+"""Detect duplicate or near-duplicate Vue components."""
+
 import difflib
 import os
+from pathlib import Path
 
 COMPONENTS_DIR = "frontend/src/components"
 EXTENSIONS = {".vue"}
 SIZE_TOLERANCE = 10  # Bytes
 
 
-def get_vue_files(base):
+def get_vue_files(base: str | Path):
     for root, _, files in os.walk(base):
-        for f in files:
-            if os.path.splitext(f)[1] in EXTENSIONS:
-                path = os.path.join(root, f)
-                yield path
+        for file_name in files:
+            if os.path.splitext(file_name)[1] in EXTENSIONS:
+                yield os.path.join(root, file_name)
 
 
-def is_similar(name1, name2):
+def is_similar(name1: str, name2: str) -> bool:
     return difflib.SequenceMatcher(None, name1, name2).ratio() > 0.75
 
 
-def read_file(path):
-    with open(path, encoding="utf-8") as f:
+def read_file(path: str | Path) -> str:
+    resolved = Path(path).resolve()
+    with resolved.open(encoding="utf-8") as f:
         return f.read()
 
 
