@@ -8,6 +8,7 @@
 <script setup>
 import { Chart } from 'chart.js/auto'
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import { getAccentColor } from '@/utils/colors'
 
 const props = defineProps({
   allocations: { type: Array, required: true }, // [{ label, value }]
@@ -21,28 +22,24 @@ function build() {
   if (chart) chart.destroy()
   const labels = props.allocations.map((a) => a.label)
   const data = props.allocations.map((a) => a.value)
-  const colors = [
-    '#22d3ee',
-    '#fac15f',
-    '#a78bfa',
-    '#34d399',
-    '#fca5a5',
-    '#f59e0b',
-    '#60a5fa',
-    '#4ade80',
-    '#f472b6',
-  ]
+  const colors = labels.map((_, i) => getAccentColor(i))
   chart = new Chart(canvas.value.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels,
-      datasets: [{ data, backgroundColor: labels.map((_, i) => colors[i % colors.length]) }],
+      datasets: [{ data, backgroundColor: colors }],
     },
     options: {
       responsive: true,
       plugins: {
-        legend: { labels: { color: '#ddd' } },
-        tooltip: { callbacks: { label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.parsed)}` } },
+        legend: { display: true, labels: { color: getStyle('--color-text-muted') } },
+        tooltip: {
+          enabled: true,
+          backgroundColor: getStyle('--theme-bg'),
+          borderColor: getStyle('--divider'),
+          borderWidth: 1,
+          callbacks: { label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.parsed)}` },
+        },
       },
     },
   })
@@ -58,6 +55,10 @@ onBeforeUnmount(() => {
   if (chart) chart.destroy()
 })
 watch(() => props.allocations, build, { deep: true })
+
+function getStyle(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 </script>
 
 <style scoped>
