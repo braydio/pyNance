@@ -882,7 +882,7 @@ pytest tests/test_model_field_validation.py
 
 - [ ] Add deprecation notice to `NewToDo.md` with link to root docs/frontend/Consolidated_TODO.md
 - [ ] Add deprecation notice to `ToDo.md` with link to root docs/frontend/Consolidated_TODO.md
-- [ ] Add deprecation notice to `docs/TODO.md` with link to root docs/frontend/Consolidated_TODO.md
+- [x] Add deprecation notice to `docs/TODO.md` with link to root docs/frontend/Consolidated_TODO.md (file removed)
 - [ ] Add deprecation notice to `Phase_1.md` with link to root docs/frontend/Consolidated_TODO.md [PHASES] section
 - [ ] Add deprecation notice to `ProcessLegend.md` with link to root docs/frontend/Consolidated_TODO.md [PHASES] section
 - [ ] Add deprecation notice to `ReviewKey.md` with link to root docs/frontend/Consolidated_TODO.md [STEPS_TO_FILES] section
