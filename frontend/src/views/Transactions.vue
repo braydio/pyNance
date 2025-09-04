@@ -6,7 +6,9 @@
       <template #title>Transactions</template>
       <template #subtitle>View and manage your transactions</template>
       <template #actions>
-        <UiButton variant="outline">Import</UiButton>
+        <UiButton id="toggle-controls" variant="outline" @click="toggleControls">
+          {{ showControls ? 'Hide Controls' : 'Show Controls' }}
+        </UiButton>
       </template>
     </PageHeader>
 
@@ -24,7 +26,7 @@
     </Card>
 
     <!-- Top Controls -->
-    <Card class="p-6">
+    <Card v-if="showControls" id="top-controls" class="p-6">
       <div class="grid gap-4 md:grid-cols-2">
         <ImportFileSelector />
         <input
@@ -133,6 +135,7 @@ export default {
       ref(route.query?.promote || route.query?.promote_txid || ''),
     )
 
+    const showControls = ref(false)
     const showScanner = ref(false)
     const showRecurring = ref(false)
     const recurringFormRef = ref(null)
@@ -151,6 +154,11 @@ export default {
       showScanner.value = !showScanner.value
     }
 
+    /** Toggle visibility of import/search controls. */
+    function toggleControls() {
+      showControls.value = !showControls.value
+    }
+
     // Apply deep-link search if present
     onMounted(() => {
       if (txidParam) {
@@ -167,9 +175,11 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      showControls,
       showScanner,
       toggleScanner,
       showRecurring,
+      toggleControls,
       recurringFormRef,
       prefillRecurringFromTransaction,
       CreditCard,

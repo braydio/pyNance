@@ -16,15 +16,17 @@ from app.config import (
 from app.extensions import Session
 from app.models import Category
 
+from .path_utils import resolve_path
+
 
 def ensure_directory_exists(path: str | Path) -> None:
     """Create directories recursively if they do not exist."""
-    Path(path).mkdir(parents=True, exist_ok=True)
+    resolve_path(path).mkdir(parents=True, exist_ok=True)
 
 
 def ensure_file_exists(path: str | Path, default_content: Any | None = None) -> None:
     """Ensure that a file exists, optionally writing default JSON content."""
-    file_path = Path(path)
+    file_path = resolve_path(path)
     if not file_path.exists():
         ensure_directory_exists(file_path.parent)
         with file_path.open("w", encoding="utf-8") as f:
@@ -34,13 +36,14 @@ def ensure_file_exists(path: str | Path, default_content: Any | None = None) -> 
 
 def load_json(path: str | Path) -> Any:
     """Load JSON from ``path`` and return the parsed object."""
-    with open(path, "r", encoding="utf-8") as f:
+    file_path = resolve_path(path)
+    with file_path.open("r", encoding="utf-8") as f:
         return json.load(f)
 
 
 def save_json_with_backup(path: str | Path, data: Any) -> None:
     """Save JSON to ``path`` and keep a ``.bak`` backup of existing data."""
-    file_path = Path(path)
+    file_path = resolve_path(path)
     ensure_directory_exists(file_path.parent)
 
     if file_path.exists():
@@ -90,15 +93,13 @@ def exchange_public_token(public_token: str):
 
 
 def save_and_parse_response(response: requests.Response, file_path: str):
-    """
-    Save the API response to disk and then load it.
-    """
-    ensure_directory_exists(Path(file_path).parent)
-    with open(file_path, "w") as f:
+    """Save the API response to disk and then load it."""
+    resolved_path = resolve_path(file_path)
+    ensure_directory_exists(resolved_path.parent)
+    with resolved_path.open("w") as f:
         json.dump(response.json(), f, indent=2)
-    resolved_path = Path(file_path).resolve()
     logger.debug(f"Saved response to {resolved_path}")
-    return load_json(file_path)
+    return load_json(resolved_path)
 
 
 def get_item_info(access_token: str):
