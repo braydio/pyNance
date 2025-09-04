@@ -51,8 +51,8 @@ function getStyle(name) {
 
 function extractStackedBarData(tree, selectedIds = []) {
   // Only include parents that have at least one selected child
-  const parents = tree.filter(
-    (node) => node.children?.some((child) => selectedIds.includes(child.id)),
+  const parents = tree.filter((node) =>
+    node.children?.some((child) => selectedIds.includes(child.id)),
   )
   const labels = parents.map((p) => p.label)
 
