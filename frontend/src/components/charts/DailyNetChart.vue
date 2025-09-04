@@ -320,8 +320,10 @@ async function renderChart() {
           borderColor: getStyle('--color-accent-yellow'),
           borderWidth: 1,
         },
-        // No legend needed with inline net lines
-        legend: { display: false },
+        legend: {
+          display: true,
+          labels: { color: getStyle('--color-text-muted') }
+        },
       },
       scales: {
         y: {

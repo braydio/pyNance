@@ -16,6 +16,10 @@ const canvasRef = ref()
 const chartInstance = ref(null)
 const chartData = ref([])
 
+function getStyle(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
 const format = val => {
   const n = Number(val || 0)
   return n < 0
@@ -54,16 +58,16 @@ function render() {
         {
           label: 'Assets',
           data: chartData.value.map(d => d.assets),
-          borderColor: '#00ffa5',
-          backgroundColor: '#98e8ff',
+          borderColor: getStyle('--asset-gradient-start'),
+          backgroundColor: getStyle('--asset-gradient-end'),
           tension: 0.2,
           fill: true
         },
         {
           label: 'Liabilities',
           data: chartData.value.map(d => d.liabilities),
-          borderColor: '#ff6a6a',
-          backgroundColor: '#ffc0cb',
+          borderColor: getStyle('--liability-gradient-start'),
+          backgroundColor: getStyle('--liability-gradient-end'),
           tension: 0.2,
           fill: true
         }
@@ -75,16 +79,18 @@ function render() {
       maintainAspectRatio: false,
       plugins: {
         tooltip: {
-          backgroundColor: '#1f1f1f',
-          borderColor: '#444',
+          enabled: true,
+          backgroundColor: getStyle('--theme-bg'),
+          borderColor: getStyle('--divider'),
           borderWidth: 1,
           callbacks: {
             label: ctx => `${ctx.dataset.label}: ${format(ctx.raw)}`
           }
         },
         legend: {
+          display: true,
           labels: {
-            color: '#ccc',
+            color: getStyle('--color-text-muted'),
             boxWidth: 16,
             usePointStyle: true
           }
@@ -92,15 +98,15 @@ function render() {
       },
       scales: {
         x: {
-          ticks: { color: '#aaa' },
-          grid: { color: '#333' }
+          ticks: { color: getStyle('--color-text-muted') },
+          grid: { color: getStyle('--divider') }
         },
         y: {
           ticks: {
-            color: '#aaa',
+            color: getStyle('--color-text-muted'),
             callback: format
           },
-          grid: { color: '#333' }
+          grid: { color: getStyle('--divider') }
         }
       }
     }

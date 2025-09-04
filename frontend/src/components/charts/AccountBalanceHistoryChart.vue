@@ -40,7 +40,7 @@ function renderChart() {
         {
           label: 'Balance',
           data: values,
-          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--color-accent-green'),
+          borderColor: getStyle('--color-accent-green'),
           backgroundColor: 'transparent',
           fill: false,
           tension: 0.3,
@@ -54,22 +54,33 @@ function renderChart() {
       maintainAspectRatio: false,
       plugins: {
         tooltip: {
+          enabled: true,
+          backgroundColor: getStyle('--theme-bg'),
+          borderColor: getStyle('--divider'),
+          borderWidth: 1,
           callbacks: {
             label: (ctx) => `Balance: ${formatAmount(ctx.raw)}`
           }
         },
-        legend: { display: false }
+        legend: {
+          display: true,
+          labels: { color: getStyle('--color-text-muted') }
+        }
       },
       scales: {
         y: {
+          grid: { color: getStyle('--divider') },
           ticks: {
-            callback: (value) => formatAmount(value)
+            callback: (value) => formatAmount(value),
+            color: getStyle('--color-text-muted')
           }
         },
         x: {
+          grid: { color: getStyle('--divider') },
           ticks: {
             maxRotation: 45,
-            minRotation: 0
+            minRotation: 0,
+            color: getStyle('--color-text-muted')
           }
         }
       }
@@ -82,4 +93,8 @@ onUnmounted(() => {
   if (chartInstance.value) chartInstance.value.destroy()
 })
 watch(() => props.balances, renderChart, { deep: true })
+
+function getStyle(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
 </script>

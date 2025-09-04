@@ -13,34 +13,18 @@ frontend/
    │  └─ css/
    │     └─ main.css          # global Tailwind + base styles
    └─ styles/
-      ├─ global-colors.css   # imports the active theme
-      └─ themes/
-         └─ nightfox.css     # Nightfox palette
+      ├─ theme.css           # Nightfox palette
+      └─ global-colors.css   # project-wide aliases
 ```
 
-* `global-colors.css` defines the variables that components rely on. It imports
-  a theme file so new themes can be swapped without editing components.
-* `themes/nightfox.css` is the official theme based on the Nightfox palette.
+* `theme.css` defines the canonical Nightfox color palette.
+* `global-colors.css` re-exports the palette variables and adds a few aliases
+  used throughout components.
 
-## Adding a New Theme
+## Updating the Theme
 
-1. Create a file in `frontend/src/styles/themes/` with the same variable names
-   as `nightfox.css`.
-2. Replace the `@import` line at the top of `global-colors.css` to point to the
-   new theme file or dynamically inject the file at runtime.
-3. Keep variable names consistent so existing components continue to work.
-
-A minimal theme file looks like this:
-
-```css
-/* example: themes/solarized-light.css */
-:root {
-  --page-bg: #fdf6e3;
-  --surface: #ffffff;
-  --theme-fg: #073642;
-  /* ...other variables... */
-}
-```
+Customize colors directly in `theme.css`. Keep variable names consistent so
+components continue to work.
 
 ## Variable Reference
 

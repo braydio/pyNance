@@ -115,7 +115,10 @@ export default {
               borderColor: getStyle('--color-accent-yellow'),
               borderWidth: 1,
             },
-            legend: { display: false }
+            legend: {
+              display: true,
+              labels: { color: getStyle('--color-text-muted') }
+            }
           }
         }
       })
