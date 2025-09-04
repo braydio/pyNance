@@ -559,7 +559,6 @@ def get_account_history(account_id):
     ``id`` are accepted in the path segment.
     """
     from datetime import timedelta
-    from app.models import Account, Transaction
     from app.services.account_history import compute_balance_history
     from sqlalchemy import func
 
