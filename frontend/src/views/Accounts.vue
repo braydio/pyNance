@@ -35,11 +35,7 @@
     <Card class="p-6">
       <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
       <SkeletonCard v-if="loadingSummary" />
-      <RetryError
-        v-else-if="summaryError"
-        message="Failed to load summary"
-        @retry="loadData"
-      />
+      <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
       <div v-else class="flex justify-around">
         <div>
           Income:
@@ -71,11 +67,7 @@
         </div>
       </div>
       <SkeletonCard v-if="loadingHistory" />
-      <RetryError
-        v-else-if="historyError"
-        message="Failed to load history"
-        @retry="loadHistory"
-      />
+      <RetryError v-else-if="historyError" message="Failed to load history" @retry="loadHistory" />
       <AccountBalanceHistoryChart v-else :balances="accountHistory" data-testid="history-chart" />
     </Card>
 

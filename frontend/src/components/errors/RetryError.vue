@@ -11,7 +11,7 @@ import UiButton from '@/components/ui/Button.vue'
 // RetryError.vue - Shows an error message with a retry option.
 
 defineProps({
-  message: { type: String, default: 'Something went wrong' }
+  message: { type: String, default: 'Something went wrong' },
 })
 
 defineEmits(['retry'])
