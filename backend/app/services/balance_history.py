@@ -155,11 +155,12 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
                 existing.is_hidden = account.is_hidden or False
                 updated_count += 1
             else:
-                # Create new record
+                # Create new record with normalized DateTime (UTC midnight)
+                from datetime import datetime, timezone
                 new_record = AccountHistory(
                     account_id=lookup_key,
                     user_id=account.user_id,
-                    date=record_date,
+                    date=datetime.combine(record_date, datetime.min.time(), tzinfo=timezone.utc),
                     balance=record['balance'],
                     is_hidden=account.is_hidden or False
                 )
@@ -282,13 +283,18 @@ def get_balance_history_from_db(
     end_date = datetime.now().date()
     start_date = end_date - timedelta(days=days - 1)
     
+    # Normalize to DateTime boundaries (UTC)
+    from datetime import timezone as _tz
+    start_dt = datetime.combine(start_date, datetime.min.time(), tzinfo=_tz.utc)
+    end_dt = datetime.combine(end_date, datetime.max.time(), tzinfo=_tz.utc)
+    
     records = (
         AccountHistory.query
         .filter(
             and_(
                 AccountHistory.account_id == lookup_key,
-                AccountHistory.date >= start_date,
-                AccountHistory.date <= end_date
+                AccountHistory.date >= start_dt,
+                AccountHistory.date <= end_dt
             )
         )
         .order_by(AccountHistory.date)
@@ -297,7 +303,7 @@ def get_balance_history_from_db(
     
     return [
         {
-            'date': record.date.isoformat(),
+            'date': (record.date.date().isoformat() if hasattr(record.date, 'date') else record.date),
             'balance': record.balance
         }
         for record in records

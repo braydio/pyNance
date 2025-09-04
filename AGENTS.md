@@ -1,44 +1,37 @@
-# Planning Module Implementation Guide
+# Repository Guidelines
 
-This document consolidates previous agent instructions into the authoritative roadmap for the budgeting and allocation feature.
+## Project Structure & Module Organization
+- `backend/`: Flask application (app factory in `backend/app/__init__.py`), blueprints under `backend/app/routes/`, business logic in `backend/app/services/`, DB setup via `backend/app/extensions.py` and migrations.
+- `frontend/`: Vue 3 + Vite app for the UI.
+- `tests/`: Pytest suite for API, models, and helpers.
+- `scripts/`: Dev utilities (e.g., `scripts/setup.sh`, `scripts/dev-helper.sh`).
+- `docs/`: Developer and architecture notes.
 
-## Status Checklist
+## Build, Test, and Development Commands
+- Setup (Python venv, tools, hooks): `bash scripts/setup.sh`
+- Run backend locally: `python backend/run.py` or `flask --app backend.run run`
+- Run frontend locally: `cd frontend && npm run dev`
+- Test backend: `pytest -q` (from repo root)
+- Lint/format pre-commit suite: `pre-commit run --all-files`
 
-### Frontend
+## Coding Style & Naming Conventions
+- Python: PEP 8 with type hints. Format with Black (120 cols) and import-order via Isort (black profile).
+- Linting: Ruff for fast checks; MyPy for types; Pylint for additional rules; Bandit for security.
+- Naming: modules/packages `snake_case`; classes `PascalCase`; functions/vars `snake_case`; constants `UPPER_SNAKE_CASE`.
 
-- [x] `frontend/src/types/planning.ts`
-- [x] `frontend/src/services/planningService.ts` (local persistence)
-- [x] `frontend/src/composables/usePlanning.ts`
-- [x] `frontend/src/views/Planning.vue` with `/planning` route and sidebar link
-- [ ] `frontend/src/components/planning/` (`BillForm.vue`, `BillList.vue`, `Allocator.vue`, `PlanningSummary.vue`)
-- [ ] Replace `frontend/src/utils/currency.ts` with conversion helpers
-- [ ] Extend `frontend/src/services/planningService.ts` with list/get/put helpers for future API mode
-- [ ] Cypress component tests at `frontend/src/views/__tests__/Planning.cy.js`
+## Testing Guidelines
+- Framework: Pytest; tests live in `tests/` and follow `test_*.py` naming.
+- Run focused tests (example): `pytest tests/test_model_field_validation.py -q`.
+- Markers: use `@pytest.mark.integration` for tests requiring external services (see `pytest.ini`).
+- Aim for coverage on routes, services, and model validation paths.
 
-### Backend
+## Commit & Pull Request Guidelines
+- Commits: conventional commits, e.g., `feat(sync): add teller webhook handler`.
+- PRs: include description, affected areas (backend/frontend/tests), linked issues, and screenshots for UI changes.
+- Before opening a PR: run `pytest`, then `pre-commit run --all-files`. Update docs when API/behavior changes.
 
-- [x] Models (`backend/app/models/planning_models.py`)
-- [x] Service (`backend/app/services/planning_service.py`)
-- [x] Routes (`backend/app/routes/planning.py`)
-- [ ] `tests/test_api_planning.py` for scenario CRUD and percent-cap enforcement
+## Security & Configuration Tips
+- Environment: copy `backend/example.env` to `backend/.env` (never commit secrets). Frontend uses `frontend/.env` similarly.
+- Security checks: `bandit -r backend/app/routes` (also enforced via pre-commit).
+- Git hooks: repository uses `.githooks` via the setup script; ensure hooks are active for consistent validation.
 
-## Superseded or Incorrect Directions
-
-- **Typing**: prior spec forbade `src/types`; the project uses dedicated TypeScript definitions.
-- **File Names**: `.js` targets should be `.ts` (`planningService.ts`, `utils/currency.ts`).
-- **Testing**: Jest/Vue Test Utils instructions are replaced by Cypress component tests.
-- **Currency Utility**: existing `utils/currency.ts` contains only types and must be replaced with conversion helpers.
-
-## Allocation Rules
-
-- Apply fixed allocations first; percent allocations operate on remaining balance with a total cap of 100%.
-- Remaining balance cannot drop below zero.
-- Predicted bills are regenerated in dev mode and tagged visually.
-
-## Milestones
-
-- **M1 – Scaffolding**: route, view, composable, and persistence wired.
-- **M2 – Bills**: add/edit/delete bills; predicted flags shown.
-- **M3 – Allocator**: manage fixed and percent allocations with clamped remaining balance.
-- **M4 – Dev Mode**: toggle persists and replaces predicted bills.
-- **M5 – Tests**: backend API and frontend component tests pass.
