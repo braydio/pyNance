@@ -28,6 +28,7 @@ declare module 'vue' {
     CategoryBreakdownChart: typeof import('./components/charts/CategoryBreakdownChart.vue')['default']
     Chart: typeof import('./components/unused/Chart.vue')['default']
     ChartControls: typeof import('./components/ChartControls.vue')['default']
+    ChartDateSlider: typeof import('./components/ChartDateSlider.vue')['default']
     ChartWidgetTopBar: typeof import('./components/ui/ChartWidgetTopBar.vue')['default']
     DailyNetChart: typeof import('./components/charts/DailyNetChart.vue')['default']
     DateRangeSelector: typeof import('./components/DateRangeSelector.vue')['default']
