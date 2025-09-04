@@ -157,7 +157,6 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
                 existing.is_hidden = account.is_hidden or False
                 updated_count += 1
             else:
-
                 new_record = AccountHistory(
                     account_id=lookup_key,
                     user_id=account.user_id,
