@@ -20,14 +20,14 @@ let chart
 function build() {
   if (!canvas.value) return
   if (chart) chart.destroy()
-  const labels = props.allocations.map(a => a.label)
-  const data = props.allocations.map(a => a.value)
+  const labels = props.allocations.map((a) => a.label)
+  const data = props.allocations.map((a) => a.value)
   const colors = labels.map((_, i) => getAccentColor(i))
   chart = new Chart(canvas.value.getContext('2d'), {
     type: 'doughnut',
     data: {
       labels,
-      datasets: [{ data, backgroundColor: colors }]
+      datasets: [{ data, backgroundColor: colors }],
     },
     options: {
       responsive: true,
@@ -38,20 +38,23 @@ function build() {
           backgroundColor: getStyle('--theme-bg'),
           borderColor: getStyle('--divider'),
           borderWidth: 1,
-          callbacks: { label: ctx => `${ctx.label}: ${formatCurrency(ctx.parsed)}` }
-        }
-      }
-    }
+          callbacks: { label: (ctx) => `${ctx.label}: ${formatCurrency(ctx.parsed)}` },
+        },
+      },
+    },
   })
 }
 
-function formatCurrency(n){
-  const x = Number(n||0); return x.toLocaleString(undefined,{style:'currency',currency:'USD'})
+function formatCurrency(n) {
+  const x = Number(n || 0)
+  return x.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
 }
 
 onMounted(build)
-onBeforeUnmount(()=>{ if (chart) chart.destroy() })
-watch(()=>props.allocations, build, { deep: true })
+onBeforeUnmount(() => {
+  if (chart) chart.destroy()
+})
+watch(() => props.allocations, build, { deep: true })
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -59,7 +62,13 @@ function getStyle(name) {
 </script>
 
 <style scoped>
-.chart-container { border: 1px solid var(--divider); border-radius: 8px; padding: .5rem .75rem; }
-.chart-wrap { position: relative; height: 280px; }
+.chart-container {
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+.chart-wrap {
+  position: relative;
+  height: 280px;
+}
 </style>
-

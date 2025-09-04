@@ -1,4 +1,3 @@
-
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">{{ chartTypeLabel }} Year Comparison</h2>
@@ -46,19 +45,32 @@ const chartData = ref([])
 const activeChart = ref('assets')
 const chartTypeLabel = ref('Assets')
 
-const MONTH_LABELS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const MONTH_LABELS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+]
 const currentYear = new Date().getFullYear()
 const previousYear = currentYear - 1
 
 const chartTypes = [
   { label: 'Assets', value: 'assets' },
   { label: 'Liabilities', value: 'liabilities' },
-  { label: 'Net Worth', value: 'netWorth' }
+  { label: 'Net Worth', value: 'netWorth' },
 ]
 
 function parseByType(year, key) {
   const result = new Array(12).fill(null)
-  chartData.value.forEach(d => {
+  chartData.value.forEach((d) => {
     const [y, m] = d.date.split('-').map(Number)
     if (y === year) result[m - 1] = d[key]
   })
@@ -67,9 +79,7 @@ function parseByType(year, key) {
 
 function formatCurrency(val) {
   const num = Number(val || 0)
-  return num < 0
-    ? `($${Math.abs(num).toLocaleString()})`
-    : `$${num.toLocaleString()}`
+  return num < 0 ? `($${Math.abs(num).toLocaleString()})` : `$${num.toLocaleString()}`
 }
 
 async function fetchData() {
@@ -100,7 +110,7 @@ function buildChart() {
           borderColor: getStyle('--color-accent-cyan'),
           backgroundColor: withAlpha(getStyle('--color-accent-cyan'), 0.3),
           fill: true,
-          tension: 0.25
+          tension: 0.25,
         },
         {
           label: `${chartTypeLabel.value} (${currentYear})`,
@@ -108,9 +118,9 @@ function buildChart() {
           borderColor: getStyle('--color-accent-yellow'),
           backgroundColor: withAlpha(getStyle('--color-accent-yellow'), 0.3),
           fill: true,
-          tension: 0.25
-        }
-      ]
+          tension: 0.25,
+        },
+      ],
     },
     options: {
       responsive: true,
@@ -121,8 +131,8 @@ function buildChart() {
           labels: {
             color: getStyle('--color-text-muted'),
             boxWidth: 14,
-            usePointStyle: true
-          }
+            usePointStyle: true,
+          },
         },
         tooltip: {
           enabled: true,
@@ -130,30 +140,30 @@ function buildChart() {
           borderColor: getStyle('--divider'),
           borderWidth: 1,
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`
-          }
-        }
+            label: (ctx) => `${ctx.dataset.label}: ${formatCurrency(ctx.raw)}`,
+          },
+        },
       },
       scales: {
         x: {
           ticks: { color: getStyle('--color-text-muted') },
-          grid: { color: getStyle('--divider') }
+          grid: { color: getStyle('--divider') },
         },
         y: {
           ticks: {
             color: getStyle('--color-text-muted'),
-            callback: formatCurrency
+            callback: formatCurrency,
           },
-          grid: { color: getStyle('--divider') }
-        }
-      }
-    }
+          grid: { color: getStyle('--divider') },
+        },
+      },
+    },
   })
 }
 
 function setChartType(type) {
   activeChart.value = type
-  chartTypeLabel.value = chartTypes.find(t => t.value === type).label
+  chartTypeLabel.value = chartTypes.find((t) => t.value === type).label
   buildChart()
 }
 
@@ -192,7 +202,4 @@ canvas {
   width: 100% !important;
   height: 100% !important;
 }
-
-
 </style>
-

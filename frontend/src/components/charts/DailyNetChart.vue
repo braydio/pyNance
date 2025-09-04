@@ -322,7 +322,7 @@ async function renderChart() {
         },
         legend: {
           display: true,
-          labels: { color: getStyle('--color-text-muted') }
+          labels: { color: getStyle('--color-text-muted') },
         },
       },
       scales: {

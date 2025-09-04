@@ -20,17 +20,15 @@ function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
-const format = val => {
+const format = (val) => {
   const n = Number(val || 0)
-  return n < 0
-    ? `($${Math.abs(n).toLocaleString()})`
-    : `$${n.toLocaleString()}`
+  return n < 0 ? `($${Math.abs(n).toLocaleString()})` : `$${n.toLocaleString()}`
 }
 
-const parseDate = str =>
+const parseDate = (str) =>
   new Date(str).toLocaleDateString('default', {
     month: 'short',
-    day: 'numeric'
+    day: 'numeric',
   })
 
 async function fetchData() {
@@ -53,25 +51,25 @@ function render() {
   chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: chartData.value.map(d => parseDate(d.date)),
+      labels: chartData.value.map((d) => parseDate(d.date)),
       datasets: [
         {
           label: 'Assets',
-          data: chartData.value.map(d => d.assets),
+          data: chartData.value.map((d) => d.assets),
           borderColor: getStyle('--asset-gradient-start'),
           backgroundColor: getStyle('--asset-gradient-end'),
           tension: 0.2,
-          fill: true
+          fill: true,
         },
         {
           label: 'Liabilities',
-          data: chartData.value.map(d => d.liabilities),
+          data: chartData.value.map((d) => d.liabilities),
           borderColor: getStyle('--liability-gradient-start'),
           backgroundColor: getStyle('--liability-gradient-end'),
           tension: 0.2,
-          fill: true
-        }
-      ]
+          fill: true,
+        },
+      ],
     },
     options: {
       animation: { duration: 900, easing: 'easeOutCubic' },
@@ -84,32 +82,32 @@ function render() {
           borderColor: getStyle('--divider'),
           borderWidth: 1,
           callbacks: {
-            label: ctx => `${ctx.dataset.label}: ${format(ctx.raw)}`
-          }
+            label: (ctx) => `${ctx.dataset.label}: ${format(ctx.raw)}`,
+          },
         },
         legend: {
           display: true,
           labels: {
             color: getStyle('--color-text-muted'),
             boxWidth: 16,
-            usePointStyle: true
-          }
-        }
+            usePointStyle: true,
+          },
+        },
       },
       scales: {
         x: {
           ticks: { color: getStyle('--color-text-muted') },
-          grid: { color: getStyle('--divider') }
+          grid: { color: getStyle('--divider') },
         },
         y: {
           ticks: {
             color: getStyle('--color-text-muted'),
-            callback: format
+            callback: format,
           },
-          grid: { color: getStyle('--divider') }
-        }
-      }
-    }
+          grid: { color: getStyle('--divider') },
+        },
+      },
+    },
   })
 }
 
@@ -141,6 +139,4 @@ canvas {
   width: 100% !important;
   height: 100% !important;
 }
-
-
 </style>
