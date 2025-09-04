@@ -64,6 +64,7 @@ Directory Tree Mapping
 │   ├── buttons.css
 │   ├── default.css
 │   ├── global-colors.css
+│   ├── theme.css
 │   ├── layout.css
 │   ├── tailstyles.css
 │   ├── typography.css

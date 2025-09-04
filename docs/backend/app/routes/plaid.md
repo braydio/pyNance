@@ -13,8 +13,10 @@ Handles authentication and data integration with the Plaid API. Supports institu
 
 ## Key Endpoints
 
-- `POST /plaid/link-token`: Initiates a link token generation.
-- `POST /plaid/exchange`: Exchanges public token for access token.
+- `POST /plaid/link-token`: Initiates link token generation. Accepts optional
+  `products` array to enable multiple Plaid products in a single Link flow.
+- `POST /plaid/exchange`: Exchanges public token for access token. Requires a
+  `product` field to tag the resulting credentials.
 - `GET /plaid/accounts`: Retrieves linked account metadata.
 - `GET /plaid/transactions`: Fetches Plaid-synced transactions.
 - `POST /plaid/sync`: Forces a manual sync with Plaid.
@@ -22,12 +24,12 @@ Handles authentication and data integration with the Plaid API. Supports institu
 ## Inputs & Outputs
 
 - **POST /plaid/link-token**
-  - **Input:** `{}`
+  - **Input:** `{ user_id: str, products?: [str, ...] }`
   - **Output:** `{ link_token: str }`
 
 - **POST /plaid/exchange**
-  - **Input:** `{ public_token: str }`
-  - **Output:** `{ access_token: str, item_id: str }`
+  - **Input:** `{ public_token: str, product: str }`
+  - **Output:** `{ access_token: str, item_id: str, product: str }`
 
 - **GET /plaid/accounts**
   - **Output:**
@@ -50,6 +52,10 @@ Handles authentication and data integration with the Plaid API. Supports institu
 - Uses client-side link flow for Plaid integration
 - Triggers webhook registration post-link
 - Syncs occur automatically and can be forced
+- When multiple products are requested, Plaid generates a single link token
+  covering each product. The client must call `/plaid/exchange` separately for
+  every selected product so the backend can persist credentials with a
+  product tag.
 
 ## Related Docs
 
