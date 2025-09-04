@@ -3,9 +3,11 @@ from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
+    get_investment_transactions,
     get_investments,
 )
 from app.models import PlaidAccount
+from app.sql import investments_logic
 from app.sql.account_logic import save_plaid_account, upsert_accounts
 from flask import Blueprint, jsonify, request
 
@@ -81,23 +83,92 @@ def refresh_investments_endpoint():
     if not user_id or not item_id:
         return jsonify({"error": "Missing user_id or item_id"}), 400
     try:
+        start_date = (request.get_json() or {}).get("start_date")
+        end_date = (request.get_json() or {}).get("end_date")
+        # Default to last 30 days if not provided
+        if not start_date or not end_date:
+            from datetime import date, timedelta
+
+            end_date = date.today().isoformat()
+            start_date = (date.today() - timedelta(days=30)).isoformat()
         account = PlaidAccount.query.filter_by(
             item_id=item_id, product="investments"
         ).first()
         if not account:
             return jsonify({"error": "Investments account not found"}), 404
-        investments_data = get_investments(account.access_token)
-        # Process and save investments data as needed.
-        # For example, you might call account_logic.process_investments(user_id, investments_data)
+        # Fetch holdings + securities and upsert
+        summary = investments_logic.upsert_investments_from_plaid(
+            user_id, account.access_token
+        )
+        # Fetch investment transactions and upsert
+        txs = get_investment_transactions(account.access_token, start_date, end_date)
+        tx_count = investments_logic.upsert_investment_transactions(txs)
         return (
             jsonify(
                 {
                     "status": "success",
-                    "holdings_fetched": len(investments_data.get("holdings", [])),
+                    "upserts": {**summary, "investment_transactions": tx_count},
                 }
             ),
             200,
         )
     except Exception as e:
         logger.error(f"Error refreshing investments: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+
+@plaid_investments.route("/refresh_all", methods=["POST"])
+def refresh_all_investments():
+    """Refresh holdings and transactions for all active Plaid investment items.
+
+    Optional JSON body accepts start_date/end_date (YYYY-MM-DD); defaults last 30 days.
+    """
+    try:
+        payload = request.get_json() or {}
+        start_date = payload.get("start_date")
+        end_date = payload.get("end_date")
+        if not start_date or not end_date:
+            from datetime import date, timedelta
+
+            end_date = date.today().isoformat()
+            start_date = (date.today() - timedelta(days=30)).isoformat()
+
+        items = PlaidAccount.query.filter_by(
+            product="investments", is_active=True
+        ).all()
+        total = {
+            "securities": 0,
+            "holdings": 0,
+            "investment_transactions": 0,
+            "items": len(items),
+        }
+        for pa in items:
+            try:
+                sums = investments_logic.upsert_investments_from_plaid(
+                    pa.account.user_id if pa.account else None, pa.access_token
+                )
+                for k in ("securities", "holdings"):
+                    total[k] += int(sums.get(k, 0))
+                txs = get_investment_transactions(pa.access_token, start_date, end_date)
+                total["investment_transactions"] += (
+                    investments_logic.upsert_investment_transactions(txs)
+                )
+            except Exception as inner:
+                logger.error(
+                    f"Failed to refresh investments for item {pa.item_id}: {inner}"
+                )
+                continue
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "summary": total,
+                    "range": {"start_date": start_date, "end_date": end_date},
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error(f"Error in refresh_all_investments: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

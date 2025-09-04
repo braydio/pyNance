@@ -8,34 +8,37 @@ function mountPage() {
 
   cy.intercept('GET', '/api/accounts/acc1/history?range=30d', {
     statusCode: 200,
-    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [
-      { date: '2025-08-01', balance: 50 },
-      { date: '2025-08-02', balance: 75 }
-    ] }
+    body: {
+      accountId: 'acc1',
+      asOfDate: '2025-08-03',
+      balances: [
+        { date: '2025-08-01', balance: 50 },
+        { date: '2025-08-02', balance: 75 },
+      ],
+    },
   }).as('hist30')
 
   cy.intercept('GET', '/api/accounts/acc1/history?range=90d', {
     statusCode: 200,
-    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] }
+    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] },
   }).as('hist90')
 
   cy.intercept('GET', '/api/transactions/acc1/transactions*', {
     statusCode: 200,
-    body: { status: 'success', data: { transactions: [
-      { transaction_id: 't1', amount: -20, description: 'Coffee' }
-    ] } },
+    body: {
+      status: 'success',
+      data: { transactions: [{ transaction_id: 't1', amount: -20, description: 'Coffee' }] },
+    },
   }).as('tx')
 
   cy.mount(Accounts, {
     global: {
       stubs: {
-        LinkAccount: true,
-        RefreshPlaidControls: true,
-        RefreshTellerControls: true,
-        TokenUpload: true,
+        AccountActionsSidebar: true,
         NetYearComparisonChart: true,
         AssetsBarTrended: true,
         AccountsReorderChart: true,
+        AccountsTable: true,
         InstitutionTable: true,
       },
     },
@@ -53,7 +56,13 @@ describe('Accounts summary', () => {
     cy.get('table').should('exist')
     cy.contains('Coffee')
     cy.get('[data-testid="history-chart"]').should('exist')
-    cy.get('[data-testid="filter-dropdown"]').select('90d')
+    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').click()
+    cy.get('transactionstable-stub').should('exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Charts').click()
+    cy.get('netyearcomparisonchart-stub').should('exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Accounts').click()
+    cy.get('accountstable-stub').should('exist')
+    cy.get('[data-testid="history-range-controls"] button').contains('90d').click()
     cy.wait('@hist90')
   })
 })

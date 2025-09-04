@@ -6,34 +6,22 @@ import { vi } from 'vitest'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {} }),
-  useRouter: () => ({})
+  useRouter: () => ({}),
 }))
 
 vi.mock('@/api/accounts', () => ({
-  fetchNetChanges: vi.fn().mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
-  fetchRecentTransactions: vi.fn().mockResolvedValue({ data: { transactions: [] } })
+  fetchNetChanges: vi
+    .fn()
+    .mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
+  fetchRecentTransactions: vi.fn().mockResolvedValue({ data: { transactions: [] } }),
 }))
 
 describe('Accounts.vue', () => {
   it('matches snapshot', () => {
     const wrapper = shallowMount(Accounts, {
       global: {
-        stubs: [
-          'LinkAccount',
-          'RefreshPlaidControls',
-          'RefreshTellerControls',
-          'TokenUpload',
-          'TransactionsTable',
-          'InstitutionTable',
-          'NetYearComparisonChart',
-          'AssetsBarTrended',
-          'AccountsReorderChart',
-          'Button',
-          'Card',
-          'Wallet',
-          'BasePageLayout'
-        ]
-      }
+        stubs: ['TabbedPageLayout', 'AccountActionsSidebar'],
+      },
     })
     expect(wrapper.html()).toMatchSnapshot()
   })

@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountActionsSidebar: typeof import('./components/forms/AccountActionsSidebar.vue')['default']
     AccountBalanceHistoryChart: typeof import('./components/charts/AccountBalanceHistoryChart.vue')['default']
     AccountSelector: typeof import('./components/ui/AccountSelector.vue')['default']
     AccountSnapshot: typeof import('./components/widgets/AccountSnapshot.vue')['default']
@@ -57,15 +58,19 @@ declare module 'vue' {
     PageHeader: typeof import('./components/ui/PageHeader.vue')['default']
     PaginationControls: typeof import('./components/tables/PaginationControls.vue')['default']
     PlaidProductScopeSelector: typeof import('./components/forms/PlaidProductScopeSelector.vue')['default']
+    PortfolioAllocationChart: typeof import('./components/charts/PortfolioAllocationChart.vue')['default']
     RecurringCalendar: typeof import('./components/recurring/RecurringCalendar.vue')['default']
     RecurringTransactionSection: typeof import('./components/recurring/RecurringTransactionSection.vue')['default']
     RefreshControls: typeof import('./components/widgets/RefreshControls.vue')['default']
     RefreshPlaidControls: typeof import('./components/widgets/RefreshPlaidControls.vue')['default']
     RefreshTellerControls: typeof import('./components/widgets/RefreshTellerControls.vue')['default']
+    RetryError: typeof import('./components/errors/RetryError.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
     Settings: typeof import('./components/unused/Settings.vue')['default']
+    SkeletonCard: typeof import('./components/ui/SkeletonCard.vue')['default']
     SpendingInsights: typeof import('./components/SpendingInsights.vue')['default']
+    TabbedPageLayout: typeof import('./components/layout/TabbedPageLayout.vue')['default']
     Toast: typeof import('./components/base/Toast.vue')['default']
     TogglePanel: typeof import('./components/ui/TogglePanel.vue')['default']
     TokenUpload: typeof import('./components/forms/TokenUpload.vue')['default']

@@ -57,8 +57,10 @@ def detect_internal_transfer(
     if not account or txn.is_internal:
         return
 
-    start = txn.date - timedelta(days=date_epsilon)
-    end = txn.date + timedelta(days=date_epsilon)
+    # Normalize to date for robust comparisons (handles datetime/date mix)
+    txn_base_date = txn.date.date() if hasattr(txn.date, "date") else txn.date
+    start = txn_base_date - timedelta(days=date_epsilon)
+    end = txn_base_date + timedelta(days=date_epsilon)
 
     candidates = (
         db.session.query(Transaction)
@@ -75,7 +77,11 @@ def detect_internal_transfer(
     best = None
     best_diff = None
     for other in candidates:
-        diff = abs((txn.date - other.date).days)
+        # Compute diff in days using normalized dates
+        other_base_date = (
+            other.date.date() if hasattr(other.date, "date") else other.date
+        )
+        diff = abs((txn_base_date - other_base_date).days)
         if best is None or diff < best_diff:
             best = other
             best_diff = diff
@@ -218,12 +224,13 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
 
             # Patched: safely upsert AccountHistory with conflict resolution
             today = datetime.now(timezone.utc).date()
+            dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
             stmt = (
                 insert(AccountHistory)
                 .values(
                     account_id=account_id,
                     user_id=user_id,
-                    date=today,
+                    date=dt_today,
                     balance=balance,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc),
@@ -353,7 +360,9 @@ def refresh_data_for_teller_account(
         txns_list = (
             txns_json.get("transactions", [])
             if isinstance(txns_json, dict)
-            else txns_json if isinstance(txns_json, list) else []
+            else txns_json
+            if isinstance(txns_json, list)
+            else []
         )
 
         for txn in txns_list:
@@ -378,6 +387,10 @@ def refresh_data_for_teller_account(
                 parsed_date = datetime.strptime(raw_date_str, "%Y-%m-%d").date()
             except ValueError:
                 parsed_date = pydate.today()
+            # Store as timezone-aware datetime (UTC), but keep date for comparisons
+            parsed_dt = datetime.combine(
+                parsed_date, datetime.min.time(), tzinfo=timezone.utc
+            )
 
             if start_date_obj and parsed_date < start_date_obj:
                 continue
@@ -411,7 +424,7 @@ def refresh_data_for_teller_account(
                 else:
                     logger.debug(f"Updating transaction {txn_id}")
                     existing_txn.amount = new_amount
-                    existing_txn.date = parsed_date
+                    existing_txn.date = parsed_dt
                     existing_txn.description = txn.get("description") or ""
                     existing_txn.category = category
                     existing_txn.merchant_name = merchant_name
@@ -422,7 +435,7 @@ def refresh_data_for_teller_account(
                     transaction_id=txn_id,
                     account_id=account_id,
                     amount=new_amount,
-                    date=parsed_date,
+                    date=parsed_dt,
                     description=txn.get("description") or "",
                     category=category,
                     merchant_name=merchant_name,
@@ -437,8 +450,9 @@ def refresh_data_for_teller_account(
 
     # Finalize AccountHistory
     today = datetime.now(timezone.utc).date()
+    dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
     existing_history = AccountHistory.query.filter_by(
-        account_id=account_id, date=today
+        account_id=account_id, date=dt_today
     ).first()
     if existing_history:
         logger.debug(
@@ -454,7 +468,7 @@ def refresh_data_for_teller_account(
         new_history = AccountHistory(
             account_id=account_id,
             user_id=user_id,
-            date=today,
+            date=dt_today,
             balance=balance,
             is_hidden=account.is_hidden,
             created_at=datetime.now(timezone.utc),
@@ -685,7 +699,11 @@ def refresh_data_for_plaid_account(
             txn_date = txn.get("date")
             if isinstance(txn_date, str):
                 try:
-                    txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
+                    # Parse as date then convert to UTC datetime to match model type
+                    parsed_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
+                    txn_date = datetime.combine(
+                        parsed_date, datetime.min.time(), tzinfo=timezone.utc
+                    )
                 except ValueError:
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue

@@ -1,5 +1,31 @@
 Awesome next-level ask—I’d be glad to draft a complete development roadmap for the Investments feature in your pyNance project, aligned with how your Transactions module is built. Here’s a roadmap outline that includes file structure, backend API, SQL schema, upsert logic, Plaid integration, and visualization—each matched to analogous Transaction components.
 
+—
+
+Progress Update (current state)
+
+- Backend
+  - [x] Models added: `Security`, `InvestmentHolding`, `InvestmentTransaction`.
+  - [x] Migrations applied (tables exist in DB).
+  - [x] Upsert logic implemented: holdings + securities (`upsert_investments_from_plaid`), transactions (`upsert_investment_transactions`).
+  - [x] Plaid helpers: investments holdings + transactions fetch with pagination.
+  - [x] Routes:
+    - `POST /plaid/investments/refresh` (per-item; upserts holdings, securities, investment txs).
+    - `POST /plaid/investments/refresh_all` (all active investment items; date range optional).
+    - `GET /investments/accounts`, `GET /investments/holdings`, `GET /investments/transactions` (supports `account_id` filter).
+
+- Frontend
+  - [x] API layer for investments (holdings, transactions, refresh, refresh-all).
+  - [x] Investments.vue: refresh control with date range; holdings table; account/institution filters; paginated transactions table.
+  - [ ] Charts/analytics: performance, allocation, trends (future work).
+
+- Next up
+  - [ ] Group holdings by institution with subtotals and portfolio totals.
+  - [ ] Security detail drawer (price history, allocation breakdown).
+  - [ ] Transactions filters (by security, type/subtype) and CSV export.
+  - [ ] Error/reauth surfacing for investment items.
+  - [ ] Testing: API contract tests + frontend component tests.
+
 ⸻
 
 1. Overview of Plaid Investments Endpoints
@@ -15,16 +41,19 @@ Plaid provides investment-related endpoints:
 
 Here’s a proposed directory and file structure, matched to existing Transactions files:
 
-backend/app/services/investments_service.py # matches transactions_service.py
-backend/app/api/investments.py # matches transactions routes handler
-backend/app/schemas/investments_schemas.py # matches transactions schemas
-docs/backend/features/investments.md # matches docs/backend/features/transactions.md
-docs/backend/load_investments.md # matches docs/backend/load_transactions.md
-docs/backend/cron_investments_sync.md # matches cron_sync for transactions
+backend/app/models/investment_models.py # DONE: securities, holdings, transactions
+backend/app/routes/investments.py # DONE: list accounts/holdings/transactions
+backend/app/routes/plaid_investments.py # DONE: link tokens, exchange, refresh + refresh_all
+backend/app/sql/investments_logic.py # DONE: upserts for holdings/securities/transactions
+frontend/src/api/investments.js # DONE: API helpers
+frontend/src/views/Investments.vue # DONE: initial UI (refresh, holdings, txs)
+docs/backend/features/investments.md # TODO
+docs/backend/load_investments.md # TODO
+docs/backend/cron_investments_sync.md # TODO
 
 ⸻
 
-3. SQL Schema: New Tables
+3. SQL Schema: New Tables (implemented)
 
 Analogous to transactions, propose:
 
@@ -44,9 +73,9 @@ iso_currency_code TEXT
 );
 
 -- holdings: user-specific positions
-CREATE TABLE holdings (
-holding_id SERIAL PRIMARY KEY,
-account_id TEXT,
+CREATE TABLE investment_holdings (
+id SERIAL PRIMARY KEY,
+account_id TEXT REFERENCES accounts(account_id),
 security_id TEXT REFERENCES securities(security_id),
 quantity NUMERIC,
 cost_basis NUMERIC,
@@ -73,58 +102,13 @@ iso_currency_code TEXT
 
 ⸻
 
-4. Backend Service: investments_service.py
+4. Backend Logic (implemented)
 
-# backend/app/services/investments_service.py
-
-from plaid.api import plaid_api
-from plaid.model import InvestmentsHoldingsGetRequest, InvestmentsTransactionsGetRequest
-
-from .db import db_session
-from .models import Security, Holding, InvestmentTransaction
-
-class InvestmentsService:
-def **init**(self, client: plaid_api.PlaidApi):
-self.client = client
-
-    def fetch_and_upsert_holdings(self, access_token):
-        req = InvestmentsHoldingsGetRequest(access_token=access_token)
-        resp = self.client.investments_holdings_get(req)
-        data = resp.to_dict()
-
-        # Upsert securities
-        for sec in data["securities"]:
-            db_session.merge(Security(**sec))
-        # Upsert holdings
-        for h in data["holdings"]:
-            holding = Holding(
-                account_id=h["account_id"],
-                security_id=h["security_id"],
-                quantity=h["quantity"],
-                cost_basis=h.get("cost_basis"),
-                institution_value=h.get("institution_value"),
-                as_of=h.get("institution_price_as_of")
-            )
-            db_session.merge(holding)
-        db_session.commit()
-
-    def fetch_and_upsert_transactions(self, access_token, start_date, end_date):
-        req = InvestmentsTransactionsGetRequest(
-            access_token=access_token, start_date=start_date, end_date=end_date
-        )
-        resp = self.client.investments_transactions_get(req)
-        data = resp.to_dict()
-
-        for tx in data["investment_transactions"]:
-            inv_tx = InvestmentTransaction(**tx)
-            db_session.merge(inv_tx)
-        db_session.commit()
-
-This parallels your transactions service logic but uses the investments-specific endpoints.
+Upserts live in `backend/app/sql/investments_logic.py` and Plaid fetch calls live in `backend/app/helpers/plaid_helpers.py`. Routes in `backend/app/routes/plaid_investments.py` call these during refresh/refresh_all.
 
 ⸻
 
-5. API Routing: api/investments.py
+5. API Routing: investments endpoints (implemented)
 
 # backend/app/api/investments.py
 
@@ -157,7 +141,7 @@ return db.query(Holding).all()
 def list_transactions(db=Depends(get_db)):
 return db.query(InvestmentTransaction).all()
 
-This matches your existing transactions routing structure but uses UBS-specific models.
+Matches the transactions structure; supports basic filtering for transactions.
 
 ⸻
 

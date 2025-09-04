@@ -51,8 +51,8 @@ function getStyle(name) {
 
 function extractStackedBarData(tree, selectedIds = []) {
   // Only include parents that have at least one selected child
-  const parents = tree.filter(
-    (node) => node.children && node.children.some((child) => selectedIds.includes(child.id)),
+  const parents = tree.filter((node) =>
+    node.children?.some((child) => selectedIds.includes(child.id)),
   )
   const labels = parents.map((p) => p.label)
 
@@ -119,7 +119,10 @@ async function renderChart() {
       maintainAspectRatio: false,
       layout: { padding: { top: 20, bottom: 20 } },
       plugins: {
-        legend: { display: false },
+        legend: {
+          display: true,
+          labels: { color: getStyle('--color-text-muted') },
+        },
         tooltip: {
           callbacks: {
             label: (context) => {

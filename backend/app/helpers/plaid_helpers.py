@@ -11,6 +11,12 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
+from plaid.model.investments_transactions_get_request import (
+    InvestmentsTransactionsGetRequest,
+)
+from plaid.model.investments_transactions_get_request_options import (
+    InvestmentsTransactionsGetRequestOptions,
+)
 from plaid.model.item_get_request import ItemGetRequest
 from plaid.model.item_public_token_exchange_request import (
     ItemPublicTokenExchangeRequest,
@@ -250,4 +256,37 @@ def get_investments(access_token: str):
         return response.to_dict()
     except Exception as e:
         logger.error(f"Error fetching investments: {e}", exc_info=True)
+        raise
+
+
+def get_investment_transactions(access_token: str, start_date: str, end_date: str):
+    """Return investment transactions between start_date and end_date.
+
+    Paginates using options.count/options.offset similar to transactions.
+    """
+    try:
+        all_txs = []
+        offset = 0
+        count = 500
+        while True:
+            options = InvestmentsTransactionsGetRequestOptions(
+                count=count, offset=offset
+            )
+            req = InvestmentsTransactionsGetRequest(
+                access_token=access_token,
+                start_date=start_date,
+                end_date=end_date,
+                options=options,
+            )
+            resp = plaid_client.investments_transactions_get(req)
+            batch = [t.to_dict() for t in resp.investment_transactions]
+            all_txs.extend(batch)
+            # Plaid returns .total_investment_transactions
+            total = getattr(resp, "total_investment_transactions", None)
+            if total is None or len(all_txs) >= total or len(batch) == 0:
+                break
+            offset += len(batch)
+        return all_txs
+    except Exception as e:
+        logger.error(f"Error fetching investment transactions: {e}", exc_info=True)
         raise
