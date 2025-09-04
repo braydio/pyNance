@@ -7,7 +7,11 @@
       <h2 class="text-xl font-semibold mb-2">Portfolio Overview</h2>
       <div class="link-box">
         <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
-        <LinkProviderLauncher :selected-products="['investments']" :user-id="plaidUserId" @refresh="onLinked" />
+        <LinkProviderLauncher
+          :selected-products="['investments']"
+          :user-id="plaidUserId"
+          @refresh="onLinked"
+        />
       </div>
       <div class="controls">
         <label>
