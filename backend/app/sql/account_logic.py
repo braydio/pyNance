@@ -487,10 +487,34 @@ def get_paginated_transactions(
     category=None,
     user_id=None,
     account_id=None,
+    account_ids=None,
+    tx_type=None,
     recent=False,
     limit=None,
 ):
-    """Return paginated transaction rows with account and category info."""
+    """Return paginated transaction rows with optional filtering.
+
+    Parameters
+    ----------
+    page, page_size : int
+        Pagination controls.
+    start_date, end_date : datetime, optional
+        Bound the query to a date range.
+    category : str, optional
+        Filter by transaction category string.
+    user_id : str, optional
+        Scope results to a specific user.
+    account_id : str, optional
+        Legacy single-account filter.
+    account_ids : list[str], optional
+        Filter by one or more account identifiers.
+    tx_type : str, optional
+        ``"credit"`` or ``"debit"`` to filter by amount sign.
+    recent : bool, default False
+        If ``True`` limit results to the newest records ignoring pagination.
+    limit : int, optional
+        Maximum number of rows when ``recent`` is ``True``.
+    """
 
     query = (
         db.session.query(Transaction, Account, Category)
@@ -513,6 +537,12 @@ def get_paginated_transactions(
         query = query.filter(Transaction.category == category)
     if account_id:
         query = query.filter(Transaction.account_id == account_id)
+    if account_ids:
+        query = query.filter(Transaction.account_id.in_(account_ids))
+    if tx_type == "credit":
+        query = query.filter(Transaction.amount > 0)
+    elif tx_type == "debit":
+        query = query.filter(Transaction.amount < 0)
 
     total = query.count()
     if recent:
