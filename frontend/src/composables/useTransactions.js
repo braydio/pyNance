@@ -105,7 +105,7 @@ export function useTransactions(pageSize = 15, promoteIdRef = null) {
     }
 
     // Promote a specific transaction id (e.g., from modal click)
-    const promoteId = promoteIdRef && promoteIdRef.value ? String(promoteIdRef.value) : null;
+    const promoteId = promoteIdRef?.value ? String(promoteIdRef.value) : null;
     if (promoteId) {
       items = [...items].sort((a, b) => {
         const aMatch = String(a.transaction_id || '').includes(promoteId) ? 1 : 0;
