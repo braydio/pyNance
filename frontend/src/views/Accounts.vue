@@ -194,6 +194,7 @@ function navigateToPlanning() {
 }
 
 async function loadHistory() {
+  historyError.value = null
   loadingHistory.value = true
   try {
     const res = await fetchAccountHistory(accountId, selectedRange.value)
@@ -206,6 +207,9 @@ async function loadHistory() {
 }
 
 async function loadData() {
+  summaryError.value = null
+  transactionsError.value = null
+  historyError.value = null
   loadingSummary.value = true
   loadingTransactions.value = true
   loadingHistory.value = true
