@@ -112,11 +112,9 @@ def update_transaction():
 def scan_internal_transfers():
     """Detect potential internal transfer pairs without mutating records."""
     try:
-        txns = (
-            Transaction.query.filter(
-                (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-            ).all()
-        )
+        txns = Transaction.query.filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        ).all()
         pairs = []
         seen = set()
         for txn in txns:
@@ -227,6 +225,7 @@ def user_modified_update_transaction():
 
 @transactions.route("/get_transactions", methods=["GET"])
 def get_transactions_paginated():
+    """Return paginated transactions with optional filters."""
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
@@ -234,6 +233,8 @@ def get_transactions_paginated():
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
+        account_ids_str = request.args.get("account_ids")
+        tx_type = request.args.get("tx_type")
 
         start_date = (
             datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
@@ -252,6 +253,8 @@ def get_transactions_paginated():
             start_date=start_date,
             end_date=end_date,
             category=category,
+            account_ids=account_ids_str.split(",") if account_ids_str else None,
+            tx_type=tx_type,
         )
 
         return (
