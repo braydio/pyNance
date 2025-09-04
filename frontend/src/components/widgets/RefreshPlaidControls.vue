@@ -250,7 +250,6 @@ export default {
       return map
     },
     targetedAccounts() {
-
       const ids =
         this.selectedAccounts && this.selectedAccounts.length
           ? new Set(this.selectedAccounts)
