@@ -232,7 +232,7 @@ echo "✅ All core validation passed"
 ## CSS/Styling Enforcement
 
 ### TailwindCSS Only Policy
-As specified in `docs/TODO.md`, only TailwindCSS syntax is allowed for styling. No custom CSS should be used.
+As specified in `docs/frontend/Consolidated_TODO.md`, only TailwindCSS syntax is allowed for styling. No custom CSS should be used.
 
 ### TailwindCSS Validation Hook
 A validation system must be implemented to ensure only TailwindCSS syntax is used:

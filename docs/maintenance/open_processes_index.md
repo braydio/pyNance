@@ -28,7 +28,7 @@ This document consolidates active development plans across the repository so the
 - Trigger link token generation on demand and improve product selection UX.
 
 ## Frontend UI Tasks
-- **Docs:** `ToDo.md`, `docs/TODO.md`
+- **Docs:** `docs/frontend/Consolidated_TODO.md`
 - Address styling and functionality gaps in Dashboard components and tables.
 
 ## Repository Cleanup

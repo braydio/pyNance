@@ -12,14 +12,13 @@ Consolidate scattered TODO documentation files across the repository into a unif
 ## Scope
 **Branch:** `docs/consolidated-todo`
 
-### Files to Consolidate (9 total)
+### Files to Consolidate (8 total)
 **Core TODO Files:**
 - [x] `NewToDo.md` (231 lines) - SHA: `3f36b48`
 - [x] `docs/process/repo_organization.md` (27 lines) - SHA: `96fc1aa`  
 - [x] `Phase_1.md` (117 lines) - SHA: `a1317b0`
 - [x] `ReviewKey.md` (184 lines) - SHA: `0fc2186`
 - [x] `ToDo.md` (201 lines) - SHA: `3f36b48`
-- [x] `docs/TODO.md` (27 lines) - SHA: `e354c84`
 
 **Supporting Files:**
 - [x] `ProcessLegend.md` (202 lines) - SHA: `122f784`

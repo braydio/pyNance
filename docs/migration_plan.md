@@ -60,7 +60,7 @@ Based on repository scan, the following files mentioned in cleanup_checklist.md 
 - **NewToDo.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
 - **ToDo.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove  
 - **WarpToDo.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
-- **docs/TODO.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
+- ~~docs/TODO.md → Merge unique content into docs/frontend/Consolidated_TODO.md, then remove~~ (completed)
 - **docs/ToDoCodex.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
 
 ### Other Files for Review:
@@ -122,11 +122,10 @@ mv docs/internal/Retrospective_Mapping.md docs/devnotes/Retrospective_Mapping.md
 # - NewToDo.md → docs/frontend/Consolidated_TODO.md
 # - ToDo.md → docs/frontend/Consolidated_TODO.md  
 # - WarpToDo.md → docs/frontend/Consolidated_TODO.md
-# - docs/TODO.md → docs/frontend/Consolidated_TODO.md
 # - docs/ToDoCodex.md → docs/frontend/Consolidated_TODO.md
 
 # After merging unique content:
-# rm NewToDo.md ToDo.md WarpToDo.md docs/TODO.md docs/ToDoCodex.md
+# rm NewToDo.md ToDo.md WarpToDo.md docs/ToDoCodex.md
 ```
 
 ### Phase 5: Create missing files

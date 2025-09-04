@@ -32,10 +32,7 @@
   - Short SHA: `3f36b48`
   - Last Modified: 2025-07-26
 
-- [ ] **docs/TODO.md**
-  - Full SHA: `e354c842bb170dace55402ed6bb68a625229b573`
-  - Short SHA: `e354c84`
-  - Last Modified: 2025-08-03
+- [x] **docs/TODO.md** (removed; content merged into `docs/frontend/Consolidated_TODO.md`)
 
 ### Legend Files
 - [ ] **ProcessLegend.md**

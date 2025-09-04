@@ -37,23 +37,9 @@ Add this at the very top of `ToDo.md`:
 ---
 ```
 
-## Template for docs/TODO.md
+## docs/TODO.md Removal
 
-Add this at the very top of `docs/TODO.md`:
-
-```markdown
-> **⚠️ DEPRECATED**: This file has been superseded by the consolidated TODO.md in the project root.
-> 
-> Please refer to the [main TODO.md](../frontend/Consolidated_TODO.md) for current tasks and documentation.
-> 
-> **Specific mapping**:
-> - Component Tags Legend → See [LEGEND_MAP] section
-> - Formatting Rules → See [META_HOW_TO_USE] section
-> - Dashboard Tasks → See [COMPONENT_DASHBOARD] section
-> - Utility Requirements → See [DEV_GUIDE] section
-
----
-```
+docs/TODO.md has been removed; see `docs/frontend/Consolidated_TODO.md` for the unified task list.
 
 ## Template for Phase_1.md
 
