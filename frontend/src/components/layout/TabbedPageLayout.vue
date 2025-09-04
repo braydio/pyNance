@@ -8,7 +8,11 @@
             <li v-for="tab in tabs" :key="tab">
               <button
                 class="pb-2 border-b-2"
-                :class="activeTab === tab ? 'border-primary text-primary' : 'border-transparent hover:border-muted'"
+                :class="
+                  activeTab === tab
+                    ? 'border-primary text-primary'
+                    : 'border-transparent hover:border-muted'
+                "
                 @click="selectTab(tab)"
               >
                 {{ tab }}
