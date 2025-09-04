@@ -10,8 +10,6 @@ Encapsulates all business logic and DB operations for:
 import uuid
 from datetime import date
 from typing import Optional, Dict, Any
-
-from flask import abort
 from werkzeug.exceptions import BadRequest, NotFound
 
 from app.extensions import db

@@ -4,8 +4,7 @@ from app.helpers.plaid_helpers import (
     generate_link_token,
     get_accounts,
     get_investment_transactions,
-    get_investments,
-)
+    )
 from app.models import PlaidAccount
 from app.sql import investments_logic
 from app.sql.account_logic import save_plaid_account, upsert_accounts

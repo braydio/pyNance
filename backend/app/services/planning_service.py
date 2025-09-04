@@ -1,6 +1,6 @@
 # backend/app/services/planning_service.py
 from sqlalchemy.orm import joinedload
-from app.models import db, PlanningScenario, ScenarioAllocation
+from app.models import db, PlanningScenario
 
 
 def get_scenario(scenario_id):
