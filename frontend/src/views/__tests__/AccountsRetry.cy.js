@@ -28,13 +28,11 @@ function mountWithFailingHistory() {
   cy.mount(Accounts, {
     global: {
       stubs: {
-        LinkAccount: true,
-        RefreshPlaidControls: true,
-        RefreshTellerControls: true,
-        TokenUpload: true,
+        AccountActionsSidebar: true,
         NetYearComparisonChart: true,
         AssetsBarTrended: true,
         AccountsReorderChart: true,
+        AccountsTable: true,
         InstitutionTable: true,
       },
     },

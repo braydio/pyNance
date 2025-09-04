@@ -1,118 +1,111 @@
 <!-- Accounts.vue - Manage linked accounts and related actions. -->
 <template>
-  <BasePageLayout class="accounts-page" gap="gap-8">
-    <PageHeader :icon="Wallet">
-      <template #title>Accounts</template>
-      <template #subtitle>Link and refresh your accounts</template>
-    </PageHeader>
+  <TabbedPageLayout class="accounts-page" :tabs="tabs" v-model="activeTab">
+    <template #header>
+      <PageHeader :icon="Wallet">
+        <template #title>Accounts</template>
+        <template #subtitle>Link and refresh your accounts</template>
+        <template #actions>
+          <UiButton variant="primary" @click="navigateToPlanning">Plan Account</UiButton>
+        </template>
+      </PageHeader>
+    </template>
 
-    <!-- Account Actions -->
-    <Card class="p-6">
-      <h2 class="text-xl font-semibold mb-4">Account Actions</h2>
-      <div class="flex flex-wrap gap-4 justify-start">
-        <LinkAccount
-          :selected-products="selectedProducts"
-          @manual-token-click="toggleManualTokenMode"
+    <template #sidebar>
+      <AccountActionsSidebar />
+    </template>
+
+    <template #Summary>
+      <section class="space-y-6">
+        <Card class="p-6">
+          <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
+          <SkeletonCard v-if="loadingSummary" />
+          <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
+          <div v-else class="flex justify-around">
+            <div>
+              Income:
+              <span class="font-bold text-accent-green">{{ formatAmount(netSummary.income) }}</span>
+            </div>
+            <div>
+              Expense:
+              <span class="font-bold text-accent-red">{{ formatAmount(netSummary.expense) }}</span>
+            </div>
+            <div>
+              Net:
+              <span class="font-bold text-accent-yellow">{{ formatAmount(netSummary.net) }}</span>
+            </div>
+          </div>
+        </Card>
+
+        <Card class="p-6 space-y-4">
+          <div class="flex justify-between items-center">
+            <h2 class="text-xl font-semibold">Balance History</h2>
+            <div class="flex gap-2" data-testid="history-range-controls">
+              <button
+                v-for="range in ranges"
+                :key="range"
+                @click="selectedRange = range"
+                :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
+              >
+                {{ range }}
+              </button>
+            </div>
+          </div>
+          <SkeletonCard v-if="loadingHistory" />
+          <RetryError
+            v-else-if="historyError"
+            message="Failed to load history"
+            @retry="loadHistory"
+          />
+          <AccountBalanceHistoryChart
+            v-else
+            :balances="accountHistory"
+            data-testid="history-chart"
+          />
+        </Card>
+      </section>
+    </template>
+
+    <template #Transactions>
+      <Card class="p-6 space-y-4">
+        <h2 class="text-xl font-semibold">Recent Transactions</h2>
+        <SkeletonCard v-if="loadingTransactions" />
+        <RetryError
+          v-else-if="transactionsError"
+          message="Failed to load transactions"
+          @retry="loadData"
         />
+        <TransactionsTable v-else :transactions="recentTransactions" />
+      </Card>
+    </template>
 
-        <UiButton variant="primary" @click="navigateToPlanning"> Plan Account </UiButton>
-
-        <TokenUpload v-if="showTokenForm" @cancel="toggleManualTokenMode" class="w-full mt-4" />
-      </div>
-
-      <div class="mt-6 space-y-4">
-        <TogglePanel v-model="showPlaidRefresh" title="Refresh Plaid Accounts">
-          <RefreshPlaidControls />
-        </TogglePanel>
-
-        <TogglePanel v-model="showTellerRefresh" title="Refresh Teller Accounts">
-          <RefreshTellerControls />
-        </TogglePanel>
-      </div>
-    </Card>
-
-    <!-- Net Change Summary -->
-    <Card class="p-6">
-      <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
-      <SkeletonCard v-if="loadingSummary" />
-      <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
-      <div v-else class="flex justify-around">
-        <div>
-          Income:
-          <span class="font-bold text-accent-green">{{ formatAmount(netSummary.income) }}</span>
+    <template #Charts>
+      <section class="space-y-4">
+        <h2 class="text-xl font-semibold">Account Analysis</h2>
+        <div class="flex flex-col gap-6">
+          <Card class="p-6">
+            <h3 class="text-lg font-medium mb-4">Year Comparison</h3>
+            <NetYearComparisonChart />
+          </Card>
+          <Card class="p-6">
+            <h3 class="text-lg font-medium mb-4">Assets Trend</h3>
+            <AssetsBarTrended />
+          </Card>
+          <Card class="p-6">
+            <h3 class="text-lg font-medium mb-4">Account Balance Distribution</h3>
+            <AccountsReorderChart ref="reorderChart" />
+          </Card>
         </div>
-        <div>
-          Expense:
-          <span class="font-bold text-accent-red">{{ formatAmount(netSummary.expense) }}</span>
-        </div>
-        <div>
-          Net: <span class="font-bold text-accent-yellow">{{ formatAmount(netSummary.net) }}</span>
-        </div>
-      </div>
-    </Card>
+      </section>
+    </template>
 
-    <!-- Balance History -->
-    <Card class="p-6 space-y-4">
-      <div class="flex justify-between items-center">
-        <h2 class="text-xl font-semibold">Balance History</h2>
-        <div class="flex gap-2" data-testid="history-range-controls">
-          <button
-            v-for="range in ranges"
-            :key="range"
-            @click="selectedRange = range"
-            :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
-          >
-            {{ range }}
-          </button>
-        </div>
-      </div>
-      <SkeletonCard v-if="loadingHistory" />
-      <RetryError v-else-if="historyError" message="Failed to load history" @retry="loadHistory" />
-      <AccountBalanceHistoryChart v-else :balances="accountHistory" data-testid="history-chart" />
-    </Card>
-
-    <!-- Recent Transactions -->
-    <Card class="p-6 space-y-4">
-      <h2 class="text-xl font-semibold">Recent Transactions</h2>
-      <SkeletonCard v-if="loadingTransactions" />
-      <RetryError
-        v-else-if="transactionsError"
-        message="Failed to load transactions"
-        @retry="loadData"
-      />
-      <TransactionsTable v-else :transactions="recentTransactions" />
-    </Card>
-
-    <!-- Charts -->
-    <section class="space-y-4">
-      <h2 class="text-xl font-semibold">Account Analysis</h2>
-      <div class="flex flex-col gap-6">
-        <Card class="p-6">
-          <h3 class="text-lg font-medium mb-4">Year Comparison</h3>
-          <NetYearComparisonChart />
-        </Card>
-        <Card class="p-6">
-          <h3 class="text-lg font-medium mb-4">Assets Trend</h3>
-          <AssetsBarTrended />
-        </Card>
-        <Card class="p-6">
-          <h3 class="text-lg font-medium mb-4">Account Balance Distribution</h3>
-          <AccountsReorderChart ref="reorderChart" />
-        </Card>
-      </div>
-    </section>
-
-    <!-- Accounts Table -->
-    <Card class="p-6">
-      <h2 class="text-xl font-semibold mb-4">Accounts</h2>
-      <AccountsTable @refresh="refreshCharts" />
-    </Card>
-
-    <!-- Footer -->
-    <footer class="mt-12 text-center text-sm text-muted border-t pt-4">
-      &copy; good dashroad.
-    </footer>
-  </BasePageLayout>
+    <template #Accounts>
+      <Card class="p-6">
+        <h2 class="text-xl font-semibold mb-4">Accounts</h2>
+        <AccountsTable @refresh="refreshCharts" />
+      </Card>
+    </template>
+  </TabbedPageLayout>
 </template>
 
 <script setup>
@@ -120,25 +113,22 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
-
-// API and utilities
 import { fetchNetChanges, fetchRecentTransactions, fetchAccountHistory } from '@/api/accounts'
 import { formatAmount } from '@/utils/format'
 
 // UI Components
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
-import TogglePanel from '@/components/ui/TogglePanel.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import RetryError from '@/components/errors/RetryError.vue'
 
-import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+// Layout and sidebar
+import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
+import AccountActionsSidebar from '@/components/forms/AccountActionsSidebar.vue'
 
 // Business Components
-import LinkAccount from '@/components/forms/LinkAccount.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
-import TokenUpload from '@/components/forms/TokenUpload.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 
 // Chart Components
@@ -147,20 +137,14 @@ import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
 
-// Widget Components
-import RefreshTellerControls from '@/components/widgets/RefreshTellerControls.vue'
-import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
-
 // Routing
 const route = useRoute()
 const router = useRouter()
-const accountId = route.params.accountId || 'acc1'
+const accountId = ref(route.params.accountId || 'acc1')
 
-// State
-const selectedProducts = ref([])
-const showTokenForm = ref(false)
-const showPlaidRefresh = ref(false)
-const showTellerRefresh = ref(false)
+// Tabs
+const tabs = ['Summary', 'Transactions', 'Charts', 'Accounts']
+const activeTab = ref('Summary')
 
 // Refs
 const reorderChart = ref(null)
@@ -181,23 +165,19 @@ const transactionsError = ref(null)
 const historyError = ref(null)
 
 // Methods
-function toggleManualTokenMode() {
-  showTokenForm.value = !showTokenForm.value
-}
-
 function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
 
 function navigateToPlanning() {
-  router.push({ name: 'Planning', query: { accountId } })
+  router.push({ name: 'Planning', query: { accountId: accountId.value } })
 }
 
 async function loadHistory() {
   historyError.value = null
   loadingHistory.value = true
   try {
-    const res = await fetchAccountHistory(accountId, selectedRange.value)
+    const res = await fetchAccountHistory(accountId.value, selectedRange.value)
     accountHistory.value = res.balances || []
   } catch (e) {
     historyError.value = e
@@ -215,7 +195,7 @@ async function loadData() {
   loadingHistory.value = true
 
   try {
-    const res = await fetchNetChanges(accountId)
+    const res = await fetchNetChanges(accountId.value)
     if (res?.status === 'success') {
       netSummary.value = res.data
     }
@@ -226,7 +206,7 @@ async function loadData() {
   }
 
   try {
-    const res = await fetchRecentTransactions(accountId, 10)
+    const res = await fetchRecentTransactions(accountId.value, 10)
     const payload = res.data || res
     recentTransactions.value = payload.transactions || []
   } catch (e) {
@@ -243,7 +223,7 @@ onMounted(loadData)
 
 watch(selectedRange, loadHistory)
 
-// Add watcher for account ID changes to reload data
+// Reload when account ID changes
 watch(
   () => route.params.accountId,
   (newAccountId) => {
