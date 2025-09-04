@@ -1,7 +1,7 @@
 """Endpoints for retrieving investment account information and data."""
 
 from app.extensions import db
-from app.models import InvestmentHolding, Security, InvestmentTransaction
+from app.models import InvestmentHolding, InvestmentTransaction, Security
 from app.sql import investments_logic
 from flask import Blueprint, jsonify, request
 
@@ -18,9 +18,8 @@ def list_investment_accounts():
 @investments.route("/holdings", methods=["GET"])
 def list_holdings():
     """List current holdings with basic security info."""
-    q = (
-        db.session.query(InvestmentHolding, Security)
-        .join(Security, InvestmentHolding.security_id == Security.security_id)
+    q = db.session.query(InvestmentHolding, Security).join(
+        Security, InvestmentHolding.security_id == Security.security_id
     )
     results = []
     for holding, sec in q.all():
@@ -38,9 +37,11 @@ def list_holdings():
                     "type": sec.type,
                     "currency": sec.iso_currency_code,
                     "price": sec.institution_price,
-                    "price_as_of": sec.institution_price_as_of.isoformat()
-                    if sec.institution_price_as_of
-                    else None,
+                    "price_as_of": (
+                        sec.institution_price_as_of.isoformat()
+                        if sec.institution_price_as_of
+                        else None
+                    ),
                 },
             }
         )
@@ -85,4 +86,7 @@ def list_investment_transactions():
         }
         for t in items
     ]
-    return jsonify({"status": "success", "data": {"transactions": data, "total": total}}), 200
+    return (
+        jsonify({"status": "success", "data": {"transactions": data, "total": total}}),
+        200,
+    )

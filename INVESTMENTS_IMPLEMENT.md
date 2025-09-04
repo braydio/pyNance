@@ -41,15 +41,15 @@ Plaid provides investment-related endpoints:
 
 Here’s a proposed directory and file structure, matched to existing Transactions files:
 
-backend/app/models/investment_models.py         # DONE: securities, holdings, transactions
-backend/app/routes/investments.py               # DONE: list accounts/holdings/transactions
-backend/app/routes/plaid_investments.py         # DONE: link tokens, exchange, refresh + refresh_all
-backend/app/sql/investments_logic.py            # DONE: upserts for holdings/securities/transactions
-frontend/src/api/investments.js                 # DONE: API helpers
-frontend/src/views/Investments.vue              # DONE: initial UI (refresh, holdings, txs)
-docs/backend/features/investments.md            # TODO
-docs/backend/load_investments.md                # TODO
-docs/backend/cron_investments_sync.md           # TODO
+backend/app/models/investment_models.py # DONE: securities, holdings, transactions
+backend/app/routes/investments.py # DONE: list accounts/holdings/transactions
+backend/app/routes/plaid_investments.py # DONE: link tokens, exchange, refresh + refresh_all
+backend/app/sql/investments_logic.py # DONE: upserts for holdings/securities/transactions
+frontend/src/api/investments.js # DONE: API helpers
+frontend/src/views/Investments.vue # DONE: initial UI (refresh, holdings, txs)
+docs/backend/features/investments.md # TODO
+docs/backend/load_investments.md # TODO
+docs/backend/cron_investments_sync.md # TODO
 
 ⸻
 
@@ -74,14 +74,14 @@ iso_currency_code TEXT
 
 -- holdings: user-specific positions
 CREATE TABLE investment_holdings (
-  id SERIAL PRIMARY KEY,
-  account_id TEXT REFERENCES accounts(account_id),
-  security_id TEXT REFERENCES securities(security_id),
-  quantity NUMERIC,
-  cost_basis NUMERIC,
-  institution_value NUMERIC,
-  as_of DATE,
-  UNIQUE(account_id, security_id)
+id SERIAL PRIMARY KEY,
+account_id TEXT REFERENCES accounts(account_id),
+security_id TEXT REFERENCES securities(security_id),
+quantity NUMERIC,
+cost_basis NUMERIC,
+institution_value NUMERIC,
+as_of DATE,
+UNIQUE(account_id, security_id)
 );
 
 -- investment_transactions: investment-specific transactions

@@ -243,7 +243,10 @@ export default {
       return map
     },
     targetedAccounts() {
-      const ids = this.selectedAccounts?.length ? new Set(this.selectedAccounts) : null
+      const ids =
+        this.selectedAccounts && this.selectedAccounts.length
+          ? new Set(this.selectedAccounts)
+          : null
       return (this.accounts || []).filter((a) => (ids ? ids.has(a.account_id) : true))
     },
     targetedAccountsByInstitution() {

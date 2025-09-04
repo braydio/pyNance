@@ -1,6 +1,7 @@
 """Investment models: Security, InvestmentHolding, InvestmentTransaction."""
 
 from app.extensions import db
+
 from .mixins import TimestampMixin
 
 
@@ -24,15 +25,24 @@ class InvestmentHolding(db.Model, TimestampMixin):
     __tablename__ = "investment_holdings"
 
     id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False)
-    security_id = db.Column(db.String(128), db.ForeignKey("securities.security_id"), index=True, nullable=False)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+    )
+    security_id = db.Column(
+        db.String(128),
+        db.ForeignKey("securities.security_id"),
+        index=True,
+        nullable=False,
+    )
     quantity = db.Column(db.Float, nullable=True)
     cost_basis = db.Column(db.Float, nullable=True)
     institution_value = db.Column(db.Float, nullable=True)
     as_of = db.Column(db.Date, nullable=True)
 
     __table_args__ = (
-        db.UniqueConstraint("account_id", "security_id", name="uq_holding_account_security"),
+        db.UniqueConstraint(
+            "account_id", "security_id", name="uq_holding_account_security"
+        ),
     )
 
 
@@ -40,8 +50,15 @@ class InvestmentTransaction(db.Model, TimestampMixin):
     __tablename__ = "investment_transactions"
 
     investment_transaction_id = db.Column(db.String(128), primary_key=True)
-    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False)
-    security_id = db.Column(db.String(128), db.ForeignKey("securities.security_id"), index=True, nullable=True)
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+    )
+    security_id = db.Column(
+        db.String(128),
+        db.ForeignKey("securities.security_id"),
+        index=True,
+        nullable=True,
+    )
     date = db.Column(db.Date, nullable=True)
     amount = db.Column(db.Float, nullable=True)
     price = db.Column(db.Float, nullable=True)
@@ -51,4 +68,3 @@ class InvestmentTransaction(db.Model, TimestampMixin):
     name = db.Column(db.String(256), nullable=True)
     fees = db.Column(db.Float, nullable=True)
     iso_currency_code = db.Column(db.String(8), nullable=True)
-

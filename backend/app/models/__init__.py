@@ -3,8 +3,8 @@
 This package exposes all SQLAlchemy models grouped into modules.
 """
 
-# Mixins
-from .mixins import TimestampMixin
+# Accounts
+from .account_models import Account, AccountHistory, FinancialGoal
 
 # Institutions & linked accounts
 from .institution_models import (
@@ -14,32 +14,31 @@ from .institution_models import (
     PlaidWebhookLog,
     TellerAccount,
 )
-
-# Accounts
-from .account_models import Account, AccountHistory, FinancialGoal
-
-# Transactions
-from .transaction_models import (
-    Category,
-    Transaction,
-    RecurringTransaction,
-    TransactionRule,
-    PlaidTransactionMeta,
+from .investment_models import (
+    InvestmentHolding,
+    InvestmentTransaction,
+    Security,
 )
+
+# Mixins
+from .mixins import TimestampMixin
 
 # Planning
 from .planning_models import (
     AllocationType,
-    PlanningScenario,
     PlannedBill,
+    PlanningScenario,
     ScenarioAllocation,
 )
-from .investment_models import (
-    Security,
-    InvestmentHolding,
-    InvestmentTransaction,
-)
 
+# Transactions
+from .transaction_models import (
+    Category,
+    PlaidTransactionMeta,
+    RecurringTransaction,
+    Transaction,
+    TransactionRule,
+)
 
 __all__ = [
     # Mixins

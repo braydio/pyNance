@@ -3,12 +3,12 @@ from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
-    get_investments,
     get_investment_transactions,
+    get_investments,
 )
 from app.models import PlaidAccount
-from app.sql.account_logic import save_plaid_account, upsert_accounts
 from app.sql import investments_logic
+from app.sql.account_logic import save_plaid_account, upsert_accounts
 from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
@@ -88,6 +88,7 @@ def refresh_investments_endpoint():
         # Default to last 30 days if not provided
         if not start_date or not end_date:
             from datetime import date, timedelta
+
             end_date = date.today().isoformat()
             start_date = (date.today() - timedelta(days=30)).isoformat()
         account = PlaidAccount.query.filter_by(
@@ -96,7 +97,9 @@ def refresh_investments_endpoint():
         if not account:
             return jsonify({"error": "Investments account not found"}), 404
         # Fetch holdings + securities and upsert
-        summary = investments_logic.upsert_investments_from_plaid(user_id, account.access_token)
+        summary = investments_logic.upsert_investments_from_plaid(
+            user_id, account.access_token
+        )
         # Fetch investment transactions and upsert
         txs = get_investment_transactions(account.access_token, start_date, end_date)
         tx_count = investments_logic.upsert_investment_transactions(txs)
@@ -126,23 +129,46 @@ def refresh_all_investments():
         end_date = payload.get("end_date")
         if not start_date or not end_date:
             from datetime import date, timedelta
+
             end_date = date.today().isoformat()
             start_date = (date.today() - timedelta(days=30)).isoformat()
 
-        items = PlaidAccount.query.filter_by(product="investments", is_active=True).all()
-        total = {"securities": 0, "holdings": 0, "investment_transactions": 0, "items": len(items)}
+        items = PlaidAccount.query.filter_by(
+            product="investments", is_active=True
+        ).all()
+        total = {
+            "securities": 0,
+            "holdings": 0,
+            "investment_transactions": 0,
+            "items": len(items),
+        }
         for pa in items:
             try:
-                sums = investments_logic.upsert_investments_from_plaid(pa.account.user_id if pa.account else None, pa.access_token)
+                sums = investments_logic.upsert_investments_from_plaid(
+                    pa.account.user_id if pa.account else None, pa.access_token
+                )
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += investments_logic.upsert_investment_transactions(txs)
+                total["investment_transactions"] += (
+                    investments_logic.upsert_investment_transactions(txs)
+                )
             except Exception as inner:
-                logger.error(f"Failed to refresh investments for item {pa.item_id}: {inner}")
+                logger.error(
+                    f"Failed to refresh investments for item {pa.item_id}: {inner}"
+                )
                 continue
 
-        return jsonify({"status": "success", "summary": total, "range": {"start_date": start_date, "end_date": end_date}}), 200
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "summary": total,
+                    "range": {"start_date": start_date, "end_date": end_date},
+                }
+            ),
+            200,
+        )
     except Exception as e:
         logger.error(f"Error in refresh_all_investments: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

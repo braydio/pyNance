@@ -21,8 +21,12 @@
       </div>
       <div class="text-muted" v-if="loading">Loading…</div>
       <div v-else class="overview-grid">
-        <div class="metric"><span class="k">Holdings</span><span class="v">{{ holdings.length }}</span></div>
-        <div class="metric"><span class="k">Securities</span><span class="v">{{ uniqueSecurityCount }}</span></div>
+        <div class="metric">
+          <span class="k">Holdings</span><span class="v">{{ holdings.length }}</span>
+        </div>
+        <div class="metric">
+          <span class="k">Securities</span><span class="v">{{ uniqueSecurityCount }}</span>
+        </div>
       </div>
     </section>
 
@@ -40,7 +44,11 @@
           <span>Account</span>
           <select v-model="selectedAccount">
             <option value="">All</option>
-            <option v-for="acc in accountsForInstitution" :key="acc.account_id" :value="acc.account_id">
+            <option
+              v-for="acc in accountsForInstitution"
+              :key="acc.account_id"
+              :value="acc.account_id"
+            >
               {{ accDisplay(acc) }}
             </option>
           </select>
@@ -50,7 +58,9 @@
       <div v-else-if="filteredHoldings.length === 0" class="text-muted">No holdings yet.</div>
       <div v-else class="holdings-table">
         <div class="totals-bar">
-          <div>Total (filtered): <strong>{{ formatCurrency(filteredTotal) }}</strong></div>
+          <div>
+            Total (filtered): <strong>{{ formatCurrency(filteredTotal) }}</strong>
+          </div>
           <div class="muted">Portfolio total: {{ formatCurrency(portfolioTotal) }}</div>
         </div>
         <div class="thead">
@@ -71,7 +81,7 @@
         </div>
       </div>
       <div v-if="Object.keys(totalsByInstitution).length" class="inst-summary">
-        <div class="inst-row" v-for="(val,inst) in totalsByInstitution" :key="inst">
+        <div class="inst-row" v-for="(val, inst) in totalsByInstitution" :key="inst">
           <span class="inst">{{ inst }}</span>
           <span class="val">{{ formatCurrency(val) }}</span>
         </div>
@@ -112,7 +122,7 @@
             <div class="num">Amount</div>
           </div>
           <div v-for="tx in txData" :key="tx.investment_transaction_id" class="trow">
-            <div>{{ (tx.date || '').slice(0,10) }}</div>
+            <div>{{ (tx.date || '').slice(0, 10) }}</div>
             <div>{{ accountLabelById[tx.account_id] || tx.account_id }}</div>
             <div>{{ tx.security_id || '—' }}</div>
             <div class="name-clip">{{ tx.name || tx.subtype || tx.type }}</div>
@@ -121,9 +131,17 @@
             <div class="num">{{ formatCurrency(tx.amount) }}</div>
           </div>
           <div class="pager">
-            <button class="btn" :disabled="txPage===1" @click="loadTransactions(txPage-1)">Prev</button>
+            <button class="btn" :disabled="txPage === 1" @click="loadTransactions(txPage - 1)">
+              Prev
+            </button>
             <span>Page {{ txPage }} of {{ txTotalPages }}</span>
-            <button class="btn" :disabled="txPage===txTotalPages" @click="loadTransactions(txPage+1)">Next</button>
+            <button
+              class="btn"
+              :disabled="txPage === txTotalPages"
+              @click="loadTransactions(txPage + 1)"
+            >
+              Next
+            </button>
           </div>
         </div>
       </div>
@@ -134,7 +152,12 @@
 <script setup>
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import { ref, onMounted, computed } from 'vue'
-import { fetchHoldings, refreshInvestmentsAll, fetchInvestmentAccounts, fetchInvestmentTransactions } from '@/api/investments'
+import {
+  fetchHoldings,
+  refreshInvestmentsAll,
+  fetchInvestmentAccounts,
+  fetchInvestmentTransactions,
+} from '@/api/investments'
 import PortfolioAllocationChart from '@/components/charts/PortfolioAllocationChart.vue'
 
 // Core state
@@ -142,8 +165,8 @@ const holdings = ref([])
 const loading = ref(false)
 const refreshing = ref(false)
 const refreshMsg = ref('')
-const today = new Date().toISOString().slice(0,10)
-const startDefault = new Date(Date.now() - 30*24*3600*1000).toISOString().slice(0,10)
+const today = new Date().toISOString().slice(0, 10)
+const startDefault = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
 const startDate = ref(startDefault)
 const endDate = ref(today)
 
@@ -153,18 +176,33 @@ const selectedInstitution = ref('')
 const selectedAccount = ref('')
 
 // Derived
-const uniqueSecurityCount = computed(() => new Set(holdings.value.map(h => h.security_id)).size)
-const institutions = computed(() => Array.from(new Set(accounts.value.map(a => a.institution_name).filter(Boolean))).sort())
-const accountsForInstitution = computed(() => selectedInstitution.value ? accounts.value.filter(a => a.institution_name === selectedInstitution.value) : accounts.value)
-const accountLabelById = computed(() => accounts.value.reduce((m,a)=>{ m[a.account_id]=accDisplay(a); return m }, {}))
-function accDisplay(a){ return a.institution_name ? `${a.institution_name} • ${a.name}` : a.name }
+const uniqueSecurityCount = computed(() => new Set(holdings.value.map((h) => h.security_id)).size)
+const institutions = computed(() =>
+  Array.from(new Set(accounts.value.map((a) => a.institution_name).filter(Boolean))).sort(),
+)
+const accountsForInstitution = computed(() =>
+  selectedInstitution.value
+    ? accounts.value.filter((a) => a.institution_name === selectedInstitution.value)
+    : accounts.value,
+)
+const accountLabelById = computed(() =>
+  accounts.value.reduce((m, a) => {
+    m[a.account_id] = accDisplay(a)
+    return m
+  }, {}),
+)
+function accDisplay(a) {
+  return a.institution_name ? `${a.institution_name} • ${a.name}` : a.name
+}
 const filteredHoldings = computed(() => {
   const accId = selectedAccount.value
-  if (accId) return holdings.value.filter(h => h.account_id === accId)
+  if (accId) return holdings.value.filter((h) => h.account_id === accId)
   const inst = selectedInstitution.value
   if (inst) {
-    const ids = new Set(accounts.value.filter(a => a.institution_name === inst).map(a => a.account_id))
-    return holdings.value.filter(h => ids.has(h.account_id))
+    const ids = new Set(
+      accounts.value.filter((a) => a.institution_name === inst).map((a) => a.account_id),
+    )
+    return holdings.value.filter((h) => ids.has(h.account_id))
   }
   return holdings.value
 })
@@ -180,29 +218,33 @@ function formatCurrency(n) {
   if (Number.isNaN(num)) return '—'
   return num.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
 }
-function holdingValue(h){
+function holdingValue(h) {
   const v = Number(h.institution_value)
   if (!Number.isNaN(v) && v !== 0) return v
-  const q = Number(h.quantity), p = Number(h?.security?.price)
-  return (Number.isNaN(q)||Number.isNaN(p)) ? 0 : q*p
+  const q = Number(h.quantity),
+    p = Number(h?.security?.price)
+  return Number.isNaN(q) || Number.isNaN(p) ? 0 : q * p
 }
 
 // Portfolio totals and allocation
-const portfolioTotal = computed(()=> holdings.value.reduce((s,h)=> s + holdingValue(h), 0))
-const filteredTotal = computed(()=> filteredHoldings.value.reduce((s,h)=> s + holdingValue(h), 0))
-const allocationByType = computed(()=>{
+const portfolioTotal = computed(() => holdings.value.reduce((s, h) => s + holdingValue(h), 0))
+const filteredTotal = computed(() =>
+  filteredHoldings.value.reduce((s, h) => s + holdingValue(h), 0),
+)
+const allocationByType = computed(() => {
   const map = new Map()
-  for (const h of filteredHoldings.value){
-    const key = (h.security?.type || 'Unknown')
-    map.set(key, (map.get(key)||0) + holdingValue(h))
+  for (const h of filteredHoldings.value) {
+    const key = h.security?.type || 'Unknown'
+    map.set(key, (map.get(key) || 0) + holdingValue(h))
   }
-  return Array.from(map.entries()).map(([label,value])=>({ label, value }))
+  return Array.from(map.entries()).map(([label, value]) => ({ label, value }))
 })
-const totalsByInstitution = computed(()=>{
+const totalsByInstitution = computed(() => {
   const out = {}
-  for (const h of filteredHoldings.value){
-    const inst = (accounts.value.find(a=>a.account_id===h.account_id)?.institution_name) || 'Unknown'
-    out[inst] = (out[inst]||0) + holdingValue(h)
+  for (const h of filteredHoldings.value) {
+    const inst =
+      accounts.value.find((a) => a.account_id === h.account_id)?.institution_name || 'Unknown'
+    out[inst] = (out[inst] || 0) + holdingValue(h)
   }
   return out
 })
@@ -222,7 +264,11 @@ async function loadAccounts() {
   try {
     const res = await fetchInvestmentAccounts()
     const data = res?.data || res?.data?.accounts || res?.accounts || []
-    accounts.value = (Array.isArray(data) ? data : []).map(a => ({ account_id: a.account_id, name: a.name, institution_name: a.institution_name }))
+    accounts.value = (Array.isArray(data) ? data : []).map((a) => ({
+      account_id: a.account_id,
+      name: a.name,
+      institution_name: a.institution_name,
+    }))
   } catch {}
 }
 
@@ -260,7 +306,10 @@ async function refreshAll() {
   refreshing.value = true
   refreshMsg.value = ''
   try {
-    const res = await refreshInvestmentsAll({ start_date: startDate.value, end_date: endDate.value })
+    const res = await refreshInvestmentsAll({
+      start_date: startDate.value,
+      end_date: endDate.value,
+    })
     const s = res?.summary || {}
     refreshMsg.value = `Upserted ${s.holdings || 0} holdings, ${s.securities || 0} securities, ${s.investment_transactions || 0} transactions`
     await load()
@@ -281,30 +330,147 @@ async function refreshAll() {
   color: var(--theme-fg);
   min-height: 100vh;
 }
-.overview-grid { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .75rem; }
-.metric { background: var(--themed-bg); border: 1px solid var(--divider); border-radius: 8px; padding: .75rem; display: flex; justify-content: space-between; }
-.metric .k { color: #6b7280; }
-.metric .v { font-weight: 700; }
-.controls { display: flex; gap: .5rem; align-items: center; margin-bottom: .75rem; flex-wrap: wrap; }
-.controls label { display: inline-flex; gap: .25rem; align-items: center; }
-.controls input[type="date"] { padding: .25rem .4rem; border: 1px solid var(--divider); background: var(--themed-bg); color: inherit; border-radius: 6px; }
-.controls .btn { padding: .4rem .7rem; border: 1px solid var(--divider); border-radius: 6px; background: var(--color-accent-cyan, #06b6d4); color: #fff; cursor: pointer; }
-.controls .msg { color: #6b7280; }
-.totals-bar { display:flex; justify-content: space-between; align-items: baseline; padding: .5rem .75rem; border-bottom: 1px solid var(--divider); }
-.totals-bar .muted { color: #6b7280; }
-.filters { display: flex; gap: .75rem; align-items: center; margin: .5rem 0 .75rem; flex-wrap: wrap; }
-.filters label { display: inline-flex; gap: .25rem; align-items: center; }
-.filters select { padding: .25rem .4rem; border: 1px solid var(--divider); background: var(--themed-bg); color: inherit; border-radius: 6px; }
-.holdings-table { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
-.thead, .trow { display: grid; grid-template-columns: 1.2fr .8fr 2fr .8fr .8fr .9fr; gap: .5rem; padding: .5rem .75rem; }
-.thead { background: var(--themed-bg); font-weight: 600; }
-.trow { border-top: 1px solid var(--divider); }
-.trow .num { text-align: right; font-variant-numeric: tabular-nums; }
-.name-clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.inst-summary { margin-top: .5rem; border: 1px dashed var(--divider); border-radius: 8px; padding: .5rem .75rem; }
-.inst-row { display:flex; justify-content: space-between; padding: .25rem 0; }
-.perf-grid { display: grid; grid-template-columns: 1fr; gap: .75rem; }
-.tx-table { border: 1px solid var(--divider); border-radius: 8px; overflow: hidden; }
-.pager { display: flex; gap: .75rem; justify-content: flex-end; align-items: center; padding: .5rem .75rem; border-top: 1px solid var(--divider); }
-.pager .btn { padding: .25rem .6rem; border: 1px solid var(--divider); border-radius: 6px; background: var(--themed-bg); color: inherit; cursor: pointer; }
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.metric {
+  background: var(--themed-bg);
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  padding: 0.75rem;
+  display: flex;
+  justify-content: space-between;
+}
+.metric .k {
+  color: #6b7280;
+}
+.metric .v {
+  font-weight: 700;
+}
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+.controls label {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.controls input[type='date'] {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--divider);
+  background: var(--themed-bg);
+  color: inherit;
+  border-radius: 6px;
+}
+.controls .btn {
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--color-accent-cyan, #06b6d4);
+  color: #fff;
+  cursor: pointer;
+}
+.controls .msg {
+  color: #6b7280;
+}
+.totals-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--divider);
+}
+.totals-bar .muted {
+  color: #6b7280;
+}
+.filters {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin: 0.5rem 0 0.75rem;
+  flex-wrap: wrap;
+}
+.filters label {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+}
+.filters select {
+  padding: 0.25rem 0.4rem;
+  border: 1px solid var(--divider);
+  background: var(--themed-bg);
+  color: inherit;
+  border-radius: 6px;
+}
+.holdings-table {
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.thead,
+.trow {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 2fr 0.8fr 0.8fr 0.9fr;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+.thead {
+  background: var(--themed-bg);
+  font-weight: 600;
+}
+.trow {
+  border-top: 1px solid var(--divider);
+}
+.trow .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.name-clip {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.inst-summary {
+  margin-top: 0.5rem;
+  border: 1px dashed var(--divider);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+}
+.inst-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+}
+.perf-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+.tx-table {
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.pager {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--divider);
+}
+.pager .btn {
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  background: var(--themed-bg);
+  color: inherit;
+  cursor: pointer;
+}
 </style>
