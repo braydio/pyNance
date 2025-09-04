@@ -61,7 +61,7 @@
         <div class="flex-1 p-6 overflow-y-auto max-h-[65vh]">
           <ModalTransactionsDisplay
             :transactions="transactions"
-            :title-date="kind === 'date' ? subtitle : ''"
+            :title-date="''"
             :show-date-column="kind === 'category' && showDateColumn"
             :show-category-visuals="!(kind === 'category' && hideCategoryVisuals)"
             @row-click="onRowClick"
@@ -124,11 +124,8 @@ const summary = computed(() => {
 
 function onRowClick(tx) {
   const txid = tx?.transaction_id || tx?.id
-  if (txid) {
-    router.push({ name: 'Transactions', query: { txid } })
-  } else {
-    router.push({ name: 'Transactions' })
-  }
+  if (txid) router.push({ name: 'Transactions', query: { promote: txid } })
+  else router.push({ name: 'Transactions' })
   emitClose()
 }
 </script>

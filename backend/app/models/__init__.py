@@ -34,6 +34,11 @@ from .planning_models import (
     PlannedBill,
     ScenarioAllocation,
 )
+from .investment_models import (
+    Security,
+    InvestmentHolding,
+    InvestmentTransaction,
+)
 
 
 __all__ = [
@@ -60,4 +65,8 @@ __all__ = [
     "PlanningScenario",
     "PlannedBill",
     "ScenarioAllocation",
+    # Investments
+    "Security",
+    "InvestmentHolding",
+    "InvestmentTransaction",
 ]
