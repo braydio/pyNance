@@ -40,33 +40,54 @@
         <thead class="bg-neutral-900 border-b border-blue-800">
           <tr>
             <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
-              Date</th>
+              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
+            >
+              Date
+            </th>
             <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
-              Category</th>
+              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
+            >
+              Category
+            </th>
             <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
-              Merchant: Description</th>
+              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
+            >
+              Merchant: Description
+            </th>
             <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800">
-              Institution / Account</th>
-            <th class="py-3 px-4 text-right font-bold uppercase tracking-wider text-blue-200">Amount</th>
+              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
+            >
+              Institution / Account
+            </th>
+            <th class="py-3 px-4 text-right font-bold uppercase tracking-wider text-blue-200">
+              Amount
+            </th>
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(tx, i) in transactions" :key="tx.transaction_id" :class="[
-            i % 2 === 0 ? 'bg-neutral-950' : 'bg-neutral-900',
-            'hover:bg-blue-950/60 transition-colors duration-100 border-b border-neutral-800'
-          ]">
+          <tr
+            v-for="(tx, i) in transactions"
+            :key="tx.transaction_id"
+            :class="[
+              i % 2 === 0 ? 'bg-neutral-950' : 'bg-neutral-900',
+              'hover:bg-blue-950/60 transition-colors duration-100 border-b border-neutral-800',
+            ]"
+          >
             <!-- Date -->
             <td class="px-4 py-2 font-mono text-xs text-neutral-400">{{ formatDate(tx.date) }}</td>
             <!-- Category -->
             <td class="px-4 py-2 text-center">
-              <img v-if="tx.category_icon_url" :src="tx.category_icon_url" alt="category icon"
-                class="h-5 w-5 mx-auto" loading="lazy" />
-              <span v-else
-                class="inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm">
+              <img
+                v-if="tx.category_icon_url"
+                :src="tx.category_icon_url"
+                alt="category icon"
+                class="h-5 w-5 mx-auto"
+                loading="lazy"
+              />
+              <span
+                v-else
+                class="inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm"
+              >
                 {{ formatCategory(tx) }}
               </span>
             </td>
@@ -76,18 +97,28 @@
             </td>
             <!-- Institution: Account with icon -->
             <td class="px-4 py-2 text-xs text-neutral-300 flex items-center gap-2">
-              <img v-if="tx.institution_icon_url" :src="tx.institution_icon_url" alt=""
-                class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain" loading="lazy" />
+              <img
+                v-if="tx.institution_icon_url"
+                :src="tx.institution_icon_url"
+                alt=""
+                class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain"
+                loading="lazy"
+              />
               <span class="font-medium">{{ tx.institution_name }}</span>
-              <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-neutral-500">/</span>
+              <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-neutral-500"
+                >/</span
+              >
               <span>{{ tx.account_name }}</span>
             </td>
             <!-- Amount -->
-            <td class="px-4 py-2 font-mono text-right text-base font-semibold" :class="{
-              'text-blue-300': tx.amount > 0,
-              'text-red-400': tx.amount < 0,
-              'text-neutral-500': tx.amount === 0 || !tx.amount
-            }">
+            <td
+              class="px-4 py-2 font-mono text-right text-base font-semibold"
+              :class="{
+                'text-blue-300': tx.amount > 0,
+                'text-red-400': tx.amount < 0,
+                'text-neutral-500': tx.amount === 0 || !tx.amount,
+              }"
+            >
               {{ formatAmount(tx.amount) }}
             </td>
           </tr>
@@ -105,14 +136,18 @@
         @click="prevPage"
         :disabled="page === 1"
         data-test="prev-page"
-      >Prev</button>
+      >
+        Prev
+      </button>
       <span class="text-neutral-400">Page {{ page }} of {{ totalPages }}</span>
       <button
         class="btn btn-outline"
         @click="nextPage"
         :disabled="page >= totalPages"
         data-test="next-page"
-      >Next</button>
+      >
+        Next
+      </button>
     </div>
   </div>
 </template>
@@ -145,7 +180,9 @@ export default {
     const txType = ref('')
     const today = new Date()
     const endDate = ref(today.toISOString().slice(0, 10))
-    const startDate = ref(new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10))
+    const startDate = ref(
+      new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    )
 
     const totalPages = computed(() => Math.ceil(total.value / pageSize))
 
@@ -275,10 +312,17 @@ export default {
       if (d) return capitalizeFirst(d)
       return 'Unknown'
     }
-    const capitalizeFirst = (str) => (!str ? '' : str.charAt(0).toUpperCase() + str.slice(1).toLowerCase())
-    const literaryFormat = (str) => (!str ? '' : str.replace(/(^\s*\w|[.!?]\s*\w)/g, (s) => s.toUpperCase()))
+    const capitalizeFirst = (str) =>
+      !str ? '' : str.charAt(0).toUpperCase() + str.slice(1).toLowerCase()
+    const literaryFormat = (str) =>
+      !str ? '' : str.replace(/(^\s*\w|[.!?]\s*\w)/g, (s) => s.toUpperCase())
     // eslint-disable-next-line no-useless-escape
-    const toTitleCase = (str) => (!str ? '' : str.toLowerCase().replace(/([^\s\/-]+)(?=[\s\/-]?)/g, (w) => w.charAt(0).toUpperCase() + w.slice(1)))
+    const toTitleCase = (str) =>
+      !str
+        ? ''
+        : str
+            .toLowerCase()
+            .replace(/([^\s\/-]+)(?=[\s\/-]?)/g, (w) => w.charAt(0).toUpperCase() + w.slice(1))
 
     watch([startDate, endDate, accountId, txType], () => {
       page.value = 1
@@ -310,5 +354,3 @@ export default {
   },
 }
 </script>
-
-

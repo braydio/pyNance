@@ -39,9 +39,7 @@ export const fetchTransactions = async (params = {}) => {
   }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })
-  return response.data?.status === 'success'
-    ? response.data.data
-    : { transactions: [], total: 0 }
+  return response.data?.status === 'success' ? response.data.data : { transactions: [], total: 0 }
 }
 
 /**

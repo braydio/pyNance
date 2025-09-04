@@ -16,7 +16,10 @@ describe('TransactionsTable', () => {
         expect(req.query.account_ids).to.eq('a1')
         expect(req.query.tx_type).to.eq('debit')
       }
-      req.reply({ statusCode: 200, body: { status: 'success', data: { transactions: [], total: 0 } } })
+      req.reply({
+        statusCode: 200,
+        body: { status: 'success', data: { transactions: [], total: 0 } },
+      })
     }).as('fetchTx')
 
     mount(TransactionsTable)
@@ -28,7 +31,10 @@ describe('TransactionsTable', () => {
 
   it('paginates results', () => {
     cy.intercept('GET', '/api/transactions/get_transactions*', (req) => {
-      req.reply({ statusCode: 200, body: { status: 'success', data: { transactions: [], total: 0 } } })
+      req.reply({
+        statusCode: 200,
+        body: { status: 'success', data: { transactions: [], total: 0 } },
+      })
     }).as('fetchTx')
 
     mount(TransactionsTable)
