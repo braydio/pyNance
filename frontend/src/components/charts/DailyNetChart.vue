@@ -9,6 +9,7 @@
 <script setup>
 // Displays income, expenses, and net totals for the selected date range.
 // Accepts start and end dates along with a zoom toggle for aggregated view.
+// X-axis labels scale automatically so extended ranges remain legible.
 // Days exceeding their average are highlighted with a slightly intensified hue.
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
@@ -171,6 +172,8 @@ async function renderChart() {
   const ma30Full = movingAverage(allNetValues, 30)
 
   const labels = filtered.length ? filtered.map((item) => item.date) : [' ']
+  // Determine how frequently to display x-axis labels so long ranges remain readable
+  const tickInterval = Math.max(1, Math.ceil(labels.length / 14))
   // Extract numeric values from response objects for the filtered range
   const netValues = filtered.length ? filtered.map((item) => item.net.parsedValue) : [0]
   const incomeValues = filtered.length ? filtered.map((item) => item.income.parsedValue) : [0]
@@ -343,11 +346,9 @@ async function renderChart() {
           ticks: {
             autoSkip: false,
             maxTicksLimit: 14,
-            // Show one label per week, formatted as Mon DD
+            // Dynamically space labels to keep the axis legible across large date ranges
             callback: (value, index) => {
-              // Only show one label per week
-              if (index % 7 !== 0) return ''
-              // Use the original label (YYYY-MM-DD) for accurate parsing
+              if (index % tickInterval !== 0) return ''
               const raw = labels[index]
               if (!raw) return ''
               const dt = new Date(raw)
