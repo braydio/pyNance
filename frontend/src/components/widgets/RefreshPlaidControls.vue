@@ -210,10 +210,10 @@ export default {
   },
   computed: {
     hasErrors() {
-      return !!(this.refreshResult && this.refreshResult.errors && this.refreshResult.errors.length)
+      return !!(this.refreshResult?.errors && this.refreshResult.errors.length)
     },
     refreshedCountByInstitution() {
-      return (this.refreshResult && this.refreshResult.refreshed_counts) || {}
+      return this.refreshResult?.refreshed_counts || {}
     },
     totalRefreshedAccounts() {
       const counts = this.refreshedCountByInstitution
@@ -241,7 +241,7 @@ export default {
     },
     errorByAccountId() {
       const map = {}
-      const errs = (this.refreshResult && this.refreshResult.errors) || []
+      const errs = this.refreshResult?.errors || []
       for (const e of errs) {
         ;(e.account_ids || []).forEach((id) => {
           map[id] = e
@@ -250,6 +250,7 @@ export default {
       return map
     },
     targetedAccounts() {
+
       const ids =
         this.selectedAccounts && this.selectedAccounts.length
           ? new Set(this.selectedAccounts)
