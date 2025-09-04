@@ -8,6 +8,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AccountActionsSidebar: typeof import('./components/forms/AccountActionsSidebar.vue')['default']
     AccountBalanceHistoryChart: typeof import('./components/charts/AccountBalanceHistoryChart.vue')['default']
     AccountSelector: typeof import('./components/ui/AccountSelector.vue')['default']
     AccountSnapshot: typeof import('./components/widgets/AccountSnapshot.vue')['default']
@@ -69,6 +70,7 @@ declare module 'vue' {
     Settings: typeof import('./components/unused/Settings.vue')['default']
     SkeletonCard: typeof import('./components/ui/SkeletonCard.vue')['default']
     SpendingInsights: typeof import('./components/SpendingInsights.vue')['default']
+    TabbedPageLayout: typeof import('./components/layout/TabbedPageLayout.vue')['default']
     Toast: typeof import('./components/base/Toast.vue')['default']
     TogglePanel: typeof import('./components/ui/TogglePanel.vue')['default']
     TokenUpload: typeof import('./components/forms/TokenUpload.vue')['default']

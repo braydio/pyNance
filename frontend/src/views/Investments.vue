@@ -5,6 +5,10 @@
 
     <section>
       <h2 class="text-xl font-semibold mb-2">Portfolio Overview</h2>
+      <div class="link-box">
+        <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
+        <LinkProviderLauncher :selected-products="['investments']" :user-id="plaidUserId" @refresh="onLinked" />
+      </div>
       <div class="controls">
         <label>
           <span>Start</span>
@@ -159,6 +163,7 @@ import {
   fetchInvestmentTransactions,
 } from '@/api/investments'
 import PortfolioAllocationChart from '@/components/charts/PortfolioAllocationChart.vue'
+import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
 
 // Core state
 const holdings = ref([])
@@ -169,6 +174,7 @@ const today = new Date().toISOString().slice(0, 10)
 const startDefault = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
 const startDate = ref(startDefault)
 const endDate = ref(today)
+const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
 
 // Accounts and filters
 const accounts = ref([])
@@ -319,6 +325,13 @@ async function refreshAll() {
   } finally {
     refreshing.value = false
   }
+}
+
+function onLinked() {
+  // After successful link, reload data
+  load()
+  loadAccounts()
+  loadTransactions(1)
 }
 </script>
 
