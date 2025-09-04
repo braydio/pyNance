@@ -19,6 +19,11 @@ export default {
     return response.data;
   },
 
+  async fetchAccountTransactions(accountId, params = {}) {
+    const response = await apiClient.get(`/transactions/${accountId}/transactions`, { params });
+    return response.data;
+  },
+
   async getInstitutions() {
     const response = await apiClient.get('/institutions');
     return response.data;
@@ -118,4 +123,3 @@ export default {
     return response.data;
   }
 };
-
