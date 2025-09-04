@@ -130,7 +130,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
 import { useToast } from 'vue-toastification'
@@ -259,6 +259,12 @@ const displayTransactions = computed(() => {
     txs = txs.filter((tx) =>
       tx.category?.toLowerCase().includes(selectedSubcategory.value.toLowerCase()),
     )
+  } else if (selectedPrimaryCategory.value) {
+    txs = txs.filter(
+      (tx) =>
+        tx.primary_category?.toLowerCase() ===
+        selectedPrimaryCategory.value.toLowerCase(),
+    )
   }
   txs.sort((a, b) => {
     const aVal = a[sortKey.value] || ''
@@ -271,6 +277,11 @@ const displayTransactions = computed(() => {
     padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
   }
   return padded
+})
+
+// Reset subcategory when primary category changes to avoid stale filters
+watch(selectedPrimaryCategory, () => {
+  selectedSubcategory.value = ''
 })
 
 onMounted(async () => {
