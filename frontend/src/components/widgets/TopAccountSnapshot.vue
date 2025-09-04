@@ -84,18 +84,22 @@
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount">{{
-                  format(account.adjusted_balance)
-                }}</span>
+                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
               </div>
             </div>
           </li>
           <li v-if="openAccountId === account.id" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
-                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                <li
+                  v-for="tx in recentTxs[account.id]"
+                  :key="tx.transaction_id || tx.id"
+                  class="bs-tx-row"
+                >
                   <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
+                  <span class="bs-tx-name">{{
+                    tx.merchant_name || tx.name || tx.description
+                  }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
@@ -106,7 +110,11 @@
           </li>
         </template>
         <!-- Assets summary footer -->
-        <li v-if="assetAccounts.length" class="bs-summary-row" style="--accent: var(--color-accent-cyan)">
+        <li
+          v-if="assetAccounts.length"
+          class="bs-summary-row"
+          style="--accent: var(--color-accent-cyan)"
+        >
           <div></div>
           <div class="bs-summary-label">Total Assets</div>
           <div class="bs-summary-amount">
@@ -164,18 +172,22 @@
                 <AccountSparkline :account-id="account.id" />
               </div>
               <div class="bs-amount-section">
-                <span class="bs-amount">{{
-                  format(account.adjusted_balance)
-                }}</span>
+                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
               </div>
             </div>
           </li>
           <li v-if="openAccountId === account.id" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
-                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                <li
+                  v-for="tx in recentTxs[account.id]"
+                  :key="tx.transaction_id || tx.id"
+                  class="bs-tx-row"
+                >
                   <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
+                  <span class="bs-tx-name">{{
+                    tx.merchant_name || tx.name || tx.description
+                  }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
@@ -186,7 +198,11 @@
           </li>
         </template>
         <!-- Liabilities summary footer -->
-        <li v-if="liabilityAccounts.length" class="bs-summary-row" style="--accent: var(--color-accent-yellow)">
+        <li
+          v-if="liabilityAccounts.length"
+          class="bs-summary-row"
+          style="--accent: var(--color-accent-yellow)"
+        >
           <div></div>
           <div class="bs-summary-label">Total Liabilities</div>
           <div class="bs-summary-amount">
@@ -259,9 +275,7 @@ const spectrum = [
 ]
 
 const expandedAccent = computed(() =>
-  expanded.value === 'liabilities'
-    ? 'var(--color-accent-yellow)'
-    : 'var(--color-accent-cyan)'
+  expanded.value === 'liabilities' ? 'var(--color-accent-yellow)' : 'var(--color-accent-cyan)',
 )
 
 /** Return accent color for an account */
@@ -277,9 +291,7 @@ function accentColor(account, index) {
     }
     return map[subtype] || spectrum[index % spectrum.length]
   }
-  return account.adjusted_balance >= 0
-    ? 'var(--color-accent-cyan)'
-    : 'var(--color-accent-yellow)'
+  return account.adjusted_balance >= 0 ? 'var(--color-accent-cyan)' : 'var(--color-accent-yellow)'
 }
 
 function toggle(type) {

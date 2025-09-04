@@ -11,17 +11,35 @@
       <section>
         <h3 class="font-semibold mb-2">Quick Signals</h3>
         <div class="grid grid-cols-2 gap-3">
-          <div class="p-3 rounded-lg border border-[var(--color-accent-green)]/40 bg-[var(--color-bg-dark)]">
+          <div
+            class="p-3 rounded-lg border border-[var(--color-accent-green)]/40 bg-[var(--color-bg-dark)]"
+          >
             <div class="text-xs text-[var(--color-text-muted)]">Rising Merchant</div>
             <div class="font-semibold truncate">{{ risingMerchant?.name || '—' }}</div>
-            <div class="text-xs" :class="risingMerchantDelta >= 0 ? 'text-[var(--color-accent-green)]' : 'text-[var(--color-accent-red)]'">
+            <div
+              class="text-xs"
+              :class="
+                risingMerchantDelta >= 0
+                  ? 'text-[var(--color-accent-green)]'
+                  : 'text-[var(--color-accent-red)]'
+              "
+            >
               {{ risingMerchantDelta >= 0 ? '+' : '' }}{{ (risingMerchantDelta * 100).toFixed(0) }}%
             </div>
           </div>
-          <div class="p-3 rounded-lg border border-[var(--color-accent-yellow)]/40 bg-[var(--color-bg-dark)]">
+          <div
+            class="p-3 rounded-lg border border-[var(--color-accent-yellow)]/40 bg-[var(--color-bg-dark)]"
+          >
             <div class="text-xs text-[var(--color-text-muted)]">Rising Category</div>
             <div class="font-semibold truncate">{{ risingCategory?.name || '—' }}</div>
-            <div class="text-xs" :class="risingCategoryDelta >= 0 ? 'text-[var(--color-accent-green)]' : 'text-[var(--color-accent-red)]'">
+            <div
+              class="text-xs"
+              :class="
+                risingCategoryDelta >= 0
+                  ? 'text-[var(--color-accent-green)]'
+                  : 'text-[var(--color-accent-red)]'
+              "
+            >
               {{ risingCategoryDelta >= 0 ? '+' : '' }}{{ (risingCategoryDelta * 100).toFixed(0) }}%
             </div>
           </div>
@@ -110,19 +128,27 @@ onMounted(async () => {
 
 // Simple trend slope-based signals
 const risingMerchant = computed(() => {
-  return [...(topMerchants.value || [])]
-    .filter(m => Array.isArray(m.trend) && m.trend.length > 2)
-    .map(m => ({ m, slope: slope(m.trend) }))
-    .sort((a, b) => b.slope - a.slope)[0]?.m || null
+  return (
+    [...(topMerchants.value || [])]
+      .filter((m) => Array.isArray(m.trend) && m.trend.length > 2)
+      .map((m) => ({ m, slope: slope(m.trend) }))
+      .sort((a, b) => b.slope - a.slope)[0]?.m || null
+  )
 })
 const risingCategory = computed(() => {
-  return [...(topCategories.value || [])]
-    .filter(c => Array.isArray(c.trend) && c.trend.length > 2)
-    .map(c => ({ c, slope: slope(c.trend) }))
-    .sort((a, b) => b.slope - a.slope)[0]?.c || null
+  return (
+    [...(topCategories.value || [])]
+      .filter((c) => Array.isArray(c.trend) && c.trend.length > 2)
+      .map((c) => ({ c, slope: slope(c.trend) }))
+      .sort((a, b) => b.slope - a.slope)[0]?.c || null
+  )
 })
-const risingMerchantDelta = computed(() => (risingMerchant.value ? slopePct(risingMerchant.value.trend) : 0))
-const risingCategoryDelta = computed(() => (risingCategory.value ? slopePct(risingCategory.value.trend) : 0))
+const risingMerchantDelta = computed(() =>
+  risingMerchant.value ? slopePct(risingMerchant.value.trend) : 0,
+)
+const risingCategoryDelta = computed(() =>
+  risingCategory.value ? slopePct(risingCategory.value.trend) : 0,
+)
 
 function slope(arr = []) {
   const n = arr.length
