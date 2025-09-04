@@ -67,7 +67,7 @@ describe('UpdateTransactionsTable.vue', () => {
     const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)
     expect(displayed).toHaveLength(1)
     expect(displayed[0].transaction_id).toBe('t1')
-})
+  })
 
   it('prompts for internal counterpart selection', async () => {
     const transactions = [

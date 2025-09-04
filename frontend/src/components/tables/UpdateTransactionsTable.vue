@@ -307,9 +307,7 @@ async function toggleInternal(tx) {
         flag_counterpart: true,
       })
       tx.is_internal = false
-      const counterpart = props.transactions.find(
-        (t) => t.transaction_id === tx.internal_match_id,
-      )
+      const counterpart = props.transactions.find((t) => t.transaction_id === tx.internal_match_id)
       if (counterpart) counterpart.is_internal = false
       toast.success('Unmarked internal')
     }
@@ -336,9 +334,7 @@ async function confirmInternal() {
     })
     activeInternalTx.value.is_internal = true
     activeInternalTx.value.internal_match_id = counterpartId
-    const counterpart = props.transactions.find(
-      (t) => t.transaction_id === counterpartId,
-    )
+    const counterpart = props.transactions.find((t) => t.transaction_id === counterpartId)
     if (counterpart) {
       counterpart.is_internal = true
       counterpart.internal_match_id = activeInternalTx.value.transaction_id

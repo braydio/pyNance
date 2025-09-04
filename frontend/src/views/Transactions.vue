@@ -6,11 +6,7 @@
       <template #title>Transactions</template>
       <template #subtitle>View and manage your transactions</template>
       <template #actions>
-        <UiButton
-          id="toggle-controls"
-          variant="outline"
-          @click="toggleControls"
-        >
+        <UiButton id="toggle-controls" variant="outline" @click="toggleControls">
           {{ showControls ? 'Hide Controls' : 'Show Controls' }}
         </UiButton>
       </template>
