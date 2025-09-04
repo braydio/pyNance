@@ -28,4 +28,25 @@ describe('Transactions.vue', () => {
     })
     expect(wrapper.html()).toMatchSnapshot()
   })
+
+  it('toggles control visibility', async () => {
+    const wrapper = shallowMount(Transactions, {
+      global: {
+        stubs: [
+          'ImportFileSelector',
+          'UpdateTransactionsTable',
+          'RecurringTransactionSection',
+          'Button',
+          'Card',
+          'CreditCard',
+          'BasePageLayout',
+        ],
+      },
+    })
+
+    expect(wrapper.vm.showControls).toBe(false)
+    wrapper.vm.toggleControls()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.vm.showControls).toBe(true)
+  })
 })

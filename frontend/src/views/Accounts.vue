@@ -1,111 +1,124 @@
 <!-- Accounts.vue - Manage linked accounts and related actions. -->
 <template>
-  <TabbedPageLayout class="accounts-page" :tabs="tabs" v-model="activeTab">
-    <template #header>
-      <PageHeader :icon="Wallet">
-        <template #title>Accounts</template>
-        <template #subtitle>Link and refresh your accounts</template>
-        <template #actions>
-          <UiButton variant="primary" @click="navigateToPlanning">Plan Account</UiButton>
-        </template>
-      </PageHeader>
-    </template>
+  <AppLayout>
+    <TabbedPageLayout class="accounts-page" :tabs="tabs" v-model="activeTab">
+      <template #header>
+        <PageHeader :icon="Wallet">
+          <template #title>Accounts</template>
+          <template #subtitle>Link and refresh your accounts</template>
+          <template #actions>
+            <UiButton variant="primary" @click="navigateToPlanning">Plan Account</UiButton>
+          </template>
+        </PageHeader>
+      </template>
 
-    <template #sidebar>
-      <AccountActionsSidebar />
-    </template>
+      <template #sidebar>
+        <AccountActionsSidebar />
+      </template>
 
-    <template #Summary>
-      <section class="space-y-6">
-        <Card class="p-6">
-          <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
-          <SkeletonCard v-if="loadingSummary" />
-          <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
-          <div v-else class="flex justify-around">
-            <div>
-              Income:
-              <span class="font-bold text-accent-green">{{ formatAmount(netSummary.income) }}</span>
+      <template #Summary>
+        <section class="space-y-6">
+          <Card class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
+            <SkeletonCard v-if="loadingSummary" />
+            <RetryError
+              v-else-if="summaryError"
+              message="Failed to load summary"
+              @retry="loadData"
+            />
+            <div v-else class="flex justify-around">
+              <div>
+                Income:
+                <span class="font-bold text-accent-green">{{
+                  formatAmount(netSummary.income)
+                }}</span>
+              </div>
+              <div>
+                Expense:
+                <span class="font-bold text-accent-red">{{
+                  formatAmount(netSummary.expense)
+                }}</span>
+              </div>
+              <div>
+                Net:
+                <span class="font-bold text-accent-yellow">{{ formatAmount(netSummary.net) }}</span>
+              </div>
             </div>
-            <div>
-              Expense:
-              <span class="font-bold text-accent-red">{{ formatAmount(netSummary.expense) }}</span>
-            </div>
-            <div>
-              Net:
-              <span class="font-bold text-accent-yellow">{{ formatAmount(netSummary.net) }}</span>
-            </div>
-          </div>
-        </Card>
+          </Card>
 
+          <Card class="p-6 space-y-4">
+            <div class="flex justify-between items-center">
+              <h2 class="text-xl font-semibold">Balance History</h2>
+              <div class="flex gap-2" data-testid="history-range-controls">
+                <button
+                  v-for="range in ranges"
+                  :key="range"
+                  @click="selectedRange = range"
+                  :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
+                >
+                  {{ range }}
+                </button>
+              </div>
+            </div>
+            <SkeletonCard v-if="loadingHistory" />
+            <RetryError
+              v-else-if="historyError"
+              message="Failed to load history"
+              @retry="loadHistory"
+            />
+            <AccountBalanceHistoryChart
+              v-else
+              :balances="accountHistory"
+              data-testid="history-chart"
+            />
+          </Card>
+        </section>
+      </template>
+
+      <template #Transactions>
         <Card class="p-6 space-y-4">
-          <div class="flex justify-between items-center">
-            <h2 class="text-xl font-semibold">Balance History</h2>
-            <div class="flex gap-2" data-testid="history-range-controls">
-              <button
-                v-for="range in ranges"
-                :key="range"
-                @click="selectedRange = range"
-                :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
-              >
-                {{ range }}
-              </button>
-            </div>
-          </div>
-          <SkeletonCard v-if="loadingHistory" />
+          <h2 class="text-xl font-semibold">Recent Transactions</h2>
+          <SkeletonCard v-if="loadingTransactions" />
           <RetryError
-            v-else-if="historyError"
-            message="Failed to load history"
-            @retry="loadHistory"
+            v-else-if="transactionsError"
+            message="Failed to load transactions"
+            @retry="loadData"
           />
-          <AccountBalanceHistoryChart
-            v-else
-            :balances="accountHistory"
-            data-testid="history-chart"
-          />
+          <TransactionsTable v-else :transactions="recentTransactions" />
         </Card>
-      </section>
-    </template>
+      </template>
 
-    <template #Transactions>
-      <Card class="p-6 space-y-4">
-        <h2 class="text-xl font-semibold">Recent Transactions</h2>
-        <SkeletonCard v-if="loadingTransactions" />
-        <RetryError
-          v-else-if="transactionsError"
-          message="Failed to load transactions"
-          @retry="loadData"
-        />
-        <TransactionsTable v-else :transactions="recentTransactions" />
-      </Card>
-    </template>
+      <template #Charts>
+        <section class="space-y-4">
+          <h2 class="text-xl font-semibold">Account Analysis</h2>
+          <div class="flex flex-col gap-6">
+            <Card class="p-6">
+              <h3 class="text-lg font-medium mb-4">Year Comparison</h3>
+              <NetYearComparisonChart />
+            </Card>
+            <Card class="p-6">
+              <h3 class="text-lg font-medium mb-4">Assets Trend</h3>
+              <AssetsBarTrended />
+            </Card>
+            <Card class="p-6">
+              <h3 class="text-lg font-medium mb-4">Account Balance Distribution</h3>
+              <AccountsReorderChart ref="reorderChart" />
+            </Card>
+          </div>
+        </section>
+      </template>
 
-    <template #Charts>
-      <section class="space-y-4">
-        <h2 class="text-xl font-semibold">Account Analysis</h2>
-        <div class="flex flex-col gap-6">
-          <Card class="p-6">
-            <h3 class="text-lg font-medium mb-4">Year Comparison</h3>
-            <NetYearComparisonChart />
-          </Card>
-          <Card class="p-6">
-            <h3 class="text-lg font-medium mb-4">Assets Trend</h3>
-            <AssetsBarTrended />
-          </Card>
-          <Card class="p-6">
-            <h3 class="text-lg font-medium mb-4">Account Balance Distribution</h3>
-            <AccountsReorderChart ref="reorderChart" />
-          </Card>
-        </div>
-      </section>
+      <template #Accounts>
+        <Card class="p-6">
+          <h2 class="text-xl font-semibold mb-4">Accounts</h2>
+          <AccountsTable @refresh="refreshCharts" />
+        </Card>
+      </template>
+    </TabbedPageLayout>
+    <template #footer>
+      <AppFooter />
     </template>
-
-    <template #Accounts>
-      <Card class="p-6">
-        <h2 class="text-xl font-semibold mb-4">Accounts</h2>
-        <AccountsTable @refresh="refreshCharts" />
-      </Card>
-    </template>
-  </TabbedPageLayout>
+  </AppLayout>
 </template>
 
 <script setup>
@@ -126,6 +139,8 @@ import RetryError from '@/components/errors/RetryError.vue'
 // Layout and sidebar
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
 import AccountActionsSidebar from '@/components/forms/AccountActionsSidebar.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
+import AppFooter from '@/components/layout/AppFooter.vue'
 
 // Business Components
 import AccountsTable from '@/components/tables/AccountsTable.vue'

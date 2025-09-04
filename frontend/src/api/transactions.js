@@ -15,14 +15,15 @@
 import axios from 'axios'
 
 /**
- * Fetch transactions from the backend.
+ * Fetch transactions from the backend with optional filters.
  *
  * @param {Object} params - Query parameters such as `start_date`, `end_date`,
+ *   `account_ids` (array or comma-separated string), `tx_type` (credit|debit),
  *   and an optional `category_ids` array or comma-separated string.
- * @returns {Promise<Object>} Result containing a transactions array.
+ * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {
-  const { category_ids, ...rest } = params
+  const { category_ids, account_ids, ...rest } = params
   const query = { ...rest }
 
   // Allow callers to pass an array of IDs or a preformatted string
@@ -31,9 +32,14 @@ export const fetchTransactions = async (params = {}) => {
   } else if (category_ids) {
     query.category_ids = category_ids
   }
+  if (Array.isArray(account_ids)) {
+    query.account_ids = account_ids.join(',')
+  } else if (account_ids) {
+    query.account_ids = account_ids
+  }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })
-  return response.data?.status === 'success' ? response.data.data : { transactions: [] }
+  return response.data?.status === 'success' ? response.data.data : { transactions: [], total: 0 }
 }
 
 /**

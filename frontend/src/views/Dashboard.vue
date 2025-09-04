@@ -58,6 +58,7 @@
             v-model:show-avg-income="showAvgIncome"
             v-model:show-avg-expenses="showAvgExpenses"
           />
+          
           <DailyNetChart
             :start-date="dateRange.start"
             :end-date="dateRange.end"
@@ -113,6 +114,7 @@
             @categories-change="allCategoryIds = $event"
             @bar-click="onCategoryBarClick"
           />
+          
           <div class="mt-1">
             <span class="font-bold">Total:</span>
             <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">{{
@@ -306,6 +308,7 @@ const dateRange = ref({
     .slice(0, 10),
   end: today.toISOString().slice(0, 10),
 })
+
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([]) // user selected
