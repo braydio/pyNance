@@ -129,7 +129,8 @@
               </template>
               <template v-else>
                 <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-                <button class="btn-sm" @click="markRecurring(index)">Mark</button>
+                <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
+                <button class="btn-sm" @click="toggleInternal(tx)">{{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}</button>
               </template>
             </td>
           </template>
@@ -253,6 +254,18 @@ function markRecurring(index) {
   emit('editRecurringFromTransaction', tx)
 }
 
+async function toggleInternal(tx) {
+  try {
+    const newVal = !tx.is_internal
+    await updateTransaction({ transaction_id: tx.transaction_id, is_internal: newVal })
+    tx.is_internal = newVal
+    toast.success(newVal ? 'Marked as internal' : 'Unmarked internal')
+  } catch (e) {
+    console.error('Failed to toggle internal flag:', e)
+    toast.error('Failed to update internal flag')
+  }
+}
+
 function formatDate(dateStr) {
   if (!dateStr) return 'N/A'
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -273,6 +286,12 @@ function sortBy(key) {
 
 const displayTransactions = computed(() => {
   let txs = [...props.transactions]
+  // Primary category filter if selected
+  if (selectedPrimaryCategory.value) {
+    const primary = selectedPrimaryCategory.value.toLowerCase()
+    txs = txs.filter((tx) => (tx.category || '').toLowerCase().startsWith(primary))
+  }
+  // Subcategory filter further narrows
   if (selectedSubcategory.value) {
     txs = txs.filter((tx) =>
       tx.category?.toLowerCase().includes(selectedSubcategory.value.toLowerCase()),
@@ -282,10 +301,16 @@ const displayTransactions = computed(() => {
       (tx) => tx.primary_category?.toLowerCase() === selectedPrimaryCategory.value.toLowerCase(),
     )
   }
+  // Sort, with case-insensitive compare for strings
   txs.sort((a, b) => {
-    const aVal = a[sortKey.value] || ''
-    const bVal = b[sortKey.value] || ''
-    return (sortOrder.value === 'asc' ? 1 : -1) * (aVal > bVal ? 1 : aVal < bVal ? -1 : 0)
+    const aVal = a[sortKey.value]
+    const bVal = b[sortKey.value]
+    if (typeof aVal === 'string' || typeof bVal === 'string') {
+      return (sortOrder.value === 'asc' ? 1 : -1) * String(aVal || '').localeCompare(String(bVal || ''), undefined, { sensitivity: 'base' })
+    }
+    const aNum = aVal ?? 0
+    const bNum = bVal ?? 0
+    return (sortOrder.value === 'asc' ? 1 : -1) * (aNum > bNum ? 1 : aNum < bNum ? -1 : 0)
   })
   // pad to preserve table height
   const padded = txs.slice(0, props.transactions.length)

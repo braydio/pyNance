@@ -8,7 +8,7 @@ import { ref, computed, onMounted } from "vue";
 import Fuse from "fuse.js";
 import { fetchTransactions as fetchTransactionsApi } from "@/api/transactions";
 
-export function useTransactions(pageSize = 15) {
+export function useTransactions(pageSize = 15, promoteIdRef = null) {
   const transactions = ref([]);
   const searchQuery = ref("");
   const sortKey = ref(null);
@@ -68,6 +68,8 @@ export function useTransactions(pageSize = 15) {
   const fuse = computed(
     () =>
       new Fuse(transactions.value, {
+        includeScore: true,
+        shouldSort: true,
         keys: [
           "transaction_id",
           "date",
@@ -77,17 +79,23 @@ export function useTransactions(pageSize = 15) {
           "institution_name",
           "category",
         ],
-        threshold: 0.4,
+        threshold: 0.35,
+        ignoreLocation: true,
       })
   );
 
   const filteredTransactions = computed(() => {
     let items = transactions.value;
 
-    if (searchQuery.value.trim()) {
-      items = fuse.value.search(searchQuery.value.trim()).map((r) => r.item);
+    const query = searchQuery.value.trim();
+    if (query) {
+      // fzf-like narrowing; preserve Fuse order by score
+      items = fuse.value.search(query).map((r) => r.item);
+      // When searching, show all matches and skip pagination/padding
+      return items;
     }
 
+    // Optional sort by column
     if (sortKey.value) {
       items = [...items].sort((a, b) => {
         const valA = a[sortKey.value] || "";
@@ -96,12 +104,22 @@ export function useTransactions(pageSize = 15) {
       });
     }
 
-    // pad results to maintain a consistent number of rows
-    const padded = items.slice(0, pageSize);
-    while (padded.length < pageSize) {
-      padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` });
+    // Promote a specific transaction id (e.g., from modal click)
+    const promoteId = promoteIdRef && promoteIdRef.value ? String(promoteIdRef.value) : null;
+    if (promoteId) {
+      items = [...items].sort((a, b) => {
+        const aMatch = String(a.transaction_id || '').includes(promoteId) ? 1 : 0;
+        const bMatch = String(b.transaction_id || '').includes(promoteId) ? 1 : 0;
+        return bMatch - aMatch; // matches first, keep stable otherwise
+      });
     }
-    return padded;
+
+    // Page slice with placeholder padding for consistent row height
+    const pageItems = items.slice(0, pageSize);
+    while (pageItems.length < pageSize) {
+      pageItems.push({ _placeholder: true, transaction_id: `placeholder-${pageItems.length}` });
+    }
+    return pageItems;
   });
 
   function formatCategory(tx) {

@@ -10,6 +10,19 @@
       </template>
     </PageHeader>
 
+    <!-- Internal Transfer Scanner (moved to top) -->
+    <Card class="p-6 rounded-2xl">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Internal Transfer Scanner</h2>
+        <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
+          {{ showScanner ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div class="mt-4" v-if="showScanner">
+        <InternalTransferScanner />
+      </div>
+    </Card>
+
     <!-- Top Controls -->
     <Card class="p-6">
       <div class="grid gap-4 md:grid-cols-2">
@@ -29,32 +42,13 @@
     </Card>
 
     <!-- Pagination -->
-    <div id="pagination-controls" class="flex items-center justify-center gap-4">
+    <div v-if="!searchQuery" id="pagination-controls" class="flex items-center justify-center gap-4">
       <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1">Prev</UiButton>
       <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
       <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages">Next</UiButton>
     </div>
 
-    <!-- Internal Transfer Detection -->
-    <Card class="p-6 rounded-2xl shadow-sm bg-white dark:bg-gray-800">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100">
-          Internal Transfer Scanner
-        </h2>
-        <UiButton
-          variant="outline"
-          size="sm"
-          @click="showScanner = !showScanner"
-        >
-          {{ showScanner ? 'Hide' : 'Show' }}
-        </UiButton>
-      </div>
-      <transition name="accordion">
-        <div v-if="showScanner" class="mt-4">
-          <InternalTransferScanner />
-        </div>
-      </transition>
-    </Card>
+    <!-- Removed: Scanner was moved above -->
 
     <!-- Recurring Transactions -->
     <Card class="p-6 space-y-4">
@@ -106,7 +100,7 @@ export default {
     const route = useRoute()
     const txidParam = route.query?.txid
     // If deep-linking to a transaction, use a larger initial page size to improve hit rate
-    const initialPageSize = txidParam ? 250 : 15
+    const initialPageSize = txidParam ? 250 : 10
     const {
       searchQuery,
       currentPage,
@@ -116,7 +110,7 @@ export default {
       sortKey,
       sortOrder,
       setSort,
-    } = useTransactions(initialPageSize)
+    } = useTransactions(initialPageSize, ref(route.query?.promote || route.query?.promote_txid || ''))
 
     const showScanner = ref(false)
     const showRecurring = ref(false)
@@ -130,6 +124,10 @@ export default {
         recurringFormRef.value.notes = tx.notes || ''
         recurringFormRef.value.showForm = true
       }
+    }
+
+    function toggleScanner() {
+      showScanner.value = !showScanner.value
     }
 
     // Apply deep-link search if present
@@ -149,6 +147,7 @@ export default {
       sortOrder,
       setSort,
       showScanner,
+      toggleScanner,
       showRecurring,
       recurringFormRef,
       prefillRecurringFromTransaction,

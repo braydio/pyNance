@@ -89,7 +89,7 @@
             </span>
           </td>
           <td v-if="showDateColumn" class="px-6 py-4 text-right text-[var(--color-text-muted)]">
-            {{ tx.date || tx.transaction_date || '' }}
+            {{ formatDate(tx.date || tx.transaction_date) }}
           </td>
         </tr>
         <tr v-if="!transactions.length">
@@ -133,5 +133,24 @@ function initials(name) {
     .join('')
     .toUpperCase()
     .slice(0, 2)
+}
+
+/**
+ * Normalize date display to YYYY-MM-DD.
+ */
+function formatDate(value) {
+  if (!value) return ''
+  if (typeof value === 'string') {
+    // If already ISO-like, take first 10 chars
+    if (value.length >= 10 && /\d{4}-\d{2}-\d{2}/.test(value)) return value.slice(0, 10)
+    // Try to parse and reformat
+    const d = new Date(value)
+    if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+    return value
+  }
+  if (value instanceof Date && !isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10)
+  }
+  return String(value)
 }
 </script>
