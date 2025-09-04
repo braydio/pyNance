@@ -3,6 +3,7 @@
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Optional
 
 from app.config import logger
 from app.extensions import db
@@ -13,7 +14,6 @@ from app.utils.finance_utils import (
     normalize_account_balance,
 )
 from flask import Blueprint, jsonify, request
-from typing import Optional
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -31,22 +31,24 @@ error_logger.setLevel(logging.ERROR)
 def resolve_account_by_any_id(identifier) -> Optional[Account]:
     """
     Resolve account by either numeric primary key or external account_id.
-    
+
     Args:
         identifier: Either integer ID, string numeric ID, or external account_id
-        
+
     Returns:
         Account object if found, None otherwise
     """
     # If identifier is numeric-like, try primary key first
     try:
-        if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
+        if isinstance(identifier, int) or (
+            isinstance(identifier, str) and identifier.isdigit()
+        ):
             acct = Account.query.get(int(identifier))
             if acct:
                 return acct
     except Exception:
         pass
-    
+
     # Fallback to external string account_id
     try:
         return Account.query.filter_by(account_id=str(identifier)).first()
@@ -119,22 +121,28 @@ def refresh_all_accounts():
                             "plaid_error_code": err.get("plaid_error_code"),
                             "plaid_error_message": err.get("plaid_error_message"),
                         }
-                        
+
                         # Add remediation info for ITEM_LOGIN_REQUIRED
                         if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                             error_map[key]["requires_reauth"] = True
-                            error_map[key]["update_link_token_endpoint"] = "/api/plaid/transactions/generate_update_link_token"
-                            error_map[key]["affected_account_ids"] = [account.account_id]
+                            error_map[key]["update_link_token_endpoint"] = (
+                                "/api/plaid/transactions/generate_update_link_token"
+                            )
+                            error_map[key]["affected_account_ids"] = [
+                                account.account_id
+                            ]
                     else:
                         error_map[key]["account_ids"].append(account.account_id)
                         error_map[key]["account_names"].append(account.name)
-                        
+
                         # Update affected account IDs for ITEM_LOGIN_REQUIRED
                         if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                            affected_ids = set(error_map[key].get("affected_account_ids", []))
+                            affected_ids = set(
+                                error_map[key].get("affected_account_ids", [])
+                            )
                             affected_ids.add(account.account_id)
                             error_map[key]["affected_account_ids"] = list(affected_ids)
-                    
+
                     # Use warning level for ITEM_LOGIN_REQUIRED, error for others
                     if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                         logger.warning(
@@ -191,15 +199,19 @@ def refresh_all_accounts():
             for key, error_info in error_map.items():
                 institution, error_code, error_message = key
                 affected_count = len(error_info["account_ids"])
-                account_names = ", ".join(error_info["account_names"][:3])  # Show first 3 names
+                account_names = ", ".join(
+                    error_info["account_names"][:3]
+                )  # Show first 3 names
                 if len(error_info["account_names"]) > 3:
                     account_names += f" and {len(error_info['account_names']) - 3} more"
-                    
-                log_level = "WARNING" if error_code == "ITEM_LOGIN_REQUIRED" else "ERROR"
+
+                log_level = (
+                    "WARNING" if error_code == "ITEM_LOGIN_REQUIRED" else "ERROR"
+                )
                 remediation = ""
                 if error_code == "ITEM_LOGIN_REQUIRED":
                     remediation = " | Remediation: User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
-                    
+
                 logger.info(
                     f"[{log_level}] {institution}: {error_code} - {error_message} | "
                     f"Affected accounts: {affected_count} ({account_names}){remediation}"
@@ -254,33 +266,45 @@ def refresh_single_account(account_id):
             start_date=start_date,
             end_date=end_date,
         )
-        
+
         # Handle ITEM_LOGIN_REQUIRED error
         if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
             logger.warning(
                 f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
                 f"User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
             )
-            return jsonify({
-                "status": "success",
-                "updated": False,
-                "requires_reauth": True,
-                "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
-                "account_id": account.account_id,
-                "error": {
-                    "code": err.get("plaid_error_code"),
-                    "message": err.get("plaid_error_message")
-                }
-            }), 200
+            return (
+                jsonify(
+                    {
+                        "status": "success",
+                        "updated": False,
+                        "requires_reauth": True,
+                        "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
+                        "account_id": account.account_id,
+                        "error": {
+                            "code": err.get("plaid_error_code"),
+                            "message": err.get("plaid_error_message"),
+                        },
+                    }
+                ),
+                200,
+            )
         elif err:
             # Other Plaid errors
-            logger.error(f"Plaid error on single account refresh {account.account_id}: {err}")
-            return jsonify({
-                "status": "error", 
-                "updated": False,
-                "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
-                "error": err
-            }), 502
+            logger.error(
+                f"Plaid error on single account refresh {account.account_id}: {err}"
+            )
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "updated": False,
+                        "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
+                        "error": err,
+                    }
+                ),
+                502,
+            )
         elif updated and account.plaid_account:
             account.plaid_account.last_refreshed = datetime.now(timezone.utc)
 
@@ -559,7 +583,7 @@ def get_account_history(account_id):
     ``id`` are accepted in the path segment.
     """
     from datetime import timedelta
-    from app.models import Account, Transaction
+
     from app.services.account_history import compute_balance_history
     from sqlalchemy import func
 
@@ -587,9 +611,7 @@ def get_account_history(account_id):
 
         txs = [{"date": row[0], "amount": float(row[1])} for row in tx_rows]
 
-        balances = compute_balance_history(
-            account.balance, txs, start_date, end_date
-        )
+        balances = compute_balance_history(account.balance, txs, start_date, end_date)
 
         return (
             jsonify(
@@ -609,11 +631,11 @@ def get_account_history(account_id):
 @accounts.route("/<account_id>/transaction_history", methods=["GET"])
 def transaction_history(account_id):
     """Return transaction history for an account.
-    
+
     Provides a paginated list of transactions for the specified account.
     Supports filtering by date range and excludes internal transactions by default.
     Both external account_id and internal numeric ID are accepted.
-    
+
     Query Parameters:
         start_date (str, optional): Filter transactions after this date (YYYY-MM-DD)
         end_date (str, optional): Filter transactions before this date (YYYY-MM-DD)
@@ -626,20 +648,21 @@ def transaction_history(account_id):
         # Resolve account using the robust resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(f"Transaction history request for unknown account: {account_id}")
-            return jsonify({
-                "status": "error",
-                "message": "Account not found"
-            }), 404
-        
+            logger.warning(
+                f"Transaction history request for unknown account: {account_id}"
+            )
+            return jsonify({"status": "error", "message": "Account not found"}), 404
+
         # Parse query parameters
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
         limit = min(int(request.args.get("limit", 100)), 1000)  # Cap at 1000
         offset = int(request.args.get("offset", 0))
         order = request.args.get("order", "desc").lower()
-        include_internal = request.args.get("include_internal", "false").lower() == "true"
-        
+        include_internal = (
+            request.args.get("include_internal", "false").lower() == "true"
+        )
+
         # Parse date filters
         start_date = None
         end_date = None
@@ -647,45 +670,58 @@ def transaction_history(account_id):
             try:
                 start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
             except ValueError:
-                return jsonify({
-                    "status": "error", 
-                    "message": "Invalid start_date format. Use YYYY-MM-DD"
-                }), 400
-        
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Invalid start_date format. Use YYYY-MM-DD",
+                        }
+                    ),
+                    400,
+                )
+
         if end_date_str:
             try:
                 end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
             except ValueError:
-                return jsonify({
-                    "status": "error", 
-                    "message": "Invalid end_date format. Use YYYY-MM-DD"
-                }), 400
-        
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Invalid end_date format. Use YYYY-MM-DD",
+                        }
+                    ),
+                    400,
+                )
+
         # Build query
         query = Transaction.query.filter(Transaction.account_id == account.account_id)
-        
+
         # Apply date filters
         if start_date:
             query = query.filter(Transaction.date >= start_date)
         if end_date:
             query = query.filter(Transaction.date <= end_date)
-        
+
         # Exclude internal transactions unless requested
         if not include_internal:
-            query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
-        
+            query = query.filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
+
         # Apply ordering
         if order == "asc":
             query = query.order_by(Transaction.date.asc(), Transaction.id.asc())
         else:
             query = query.order_by(Transaction.date.desc(), Transaction.id.desc())
-        
+
         # Get total count (before limit/offset)
         total_count = query.count()
-        
+
         # Apply pagination
         transactions = query.offset(offset).limit(limit).all()
-        
+
         # Format transaction data
         transaction_data = []
         for tx in transactions:
@@ -693,44 +729,55 @@ def transaction_history(account_id):
                 "id": tx.id,
                 "account_id": tx.account_id,
                 "date": tx.date.isoformat() if tx.date else None,
-                "description": getattr(tx, 'name', None) or getattr(tx, 'description', None) or getattr(tx, 'merchant_name', None),
+                "description": getattr(tx, "name", None)
+                or getattr(tx, "description", None)
+                or getattr(tx, "merchant_name", None),
                 "amount": float(tx.amount) if tx.amount is not None else 0.0,
-                "category": getattr(tx, 'category', None),
-                "is_internal": getattr(tx, 'is_internal', False),
+                "category": getattr(tx, "category", None),
+                "is_internal": getattr(tx, "is_internal", False),
             }
-            
+
             # Add any additional metadata that's available
-            if hasattr(tx, 'merchant_name') and tx.merchant_name:
+            if hasattr(tx, "merchant_name") and tx.merchant_name:
                 tx_dict["merchant_name"] = tx.merchant_name
-            if hasattr(tx, 'transaction_type') and tx.transaction_type:
+            if hasattr(tx, "transaction_type") and tx.transaction_type:
                 tx_dict["transaction_type"] = tx.transaction_type
-            if hasattr(tx, 'plaid_transaction_id') and tx.plaid_transaction_id:
+            if hasattr(tx, "plaid_transaction_id") and tx.plaid_transaction_id:
                 tx_dict["plaid_transaction_id"] = tx.plaid_transaction_id
-            
+
             transaction_data.append(tx_dict)
-        
+
         # Build pagination info
         has_more = (offset + limit) < total_count
         next_offset = offset + limit if has_more else None
-        
-        logger.info(f"Retrieved {len(transaction_data)} transactions for account {account.account_id} (offset: {offset}, total: {total_count})")
-        
-        return jsonify({
-            "status": "success",
-            "account_id": account.account_id,
-            "transactions": transaction_data,
-            "paging": {
-                "limit": limit,
-                "offset": offset,
-                "total_count": total_count,
-                "has_more": has_more,
-                "next_offset": next_offset
-            }
-        }), 200
-        
+
+        logger.info(
+            f"Retrieved {len(transaction_data)} transactions for account {account.account_id} (offset: {offset}, total: {total_count})"
+        )
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "account_id": account.account_id,
+                    "transactions": transaction_data,
+                    "paging": {
+                        "limit": limit,
+                        "offset": offset,
+                        "total_count": total_count,
+                        "has_more": has_more,
+                        "next_offset": next_offset,
+                    },
+                }
+            ),
+            200,
+        )
+
     except Exception as e:
-        logger.error(f"Error in transaction_history for account {account_id}: {e}", exc_info=True)
-        return jsonify({
-            "status": "error",
-            "message": f"Internal server error: {str(e)}"
-        }), 500
+        logger.error(
+            f"Error in transaction_history for account {account_id}: {e}", exc_info=True
+        )
+        return (
+            jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}),
+            500,
+        )
