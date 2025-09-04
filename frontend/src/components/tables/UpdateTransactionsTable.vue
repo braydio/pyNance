@@ -147,6 +147,23 @@
     >
       No transactions found.
     </div>
+    <Modal v-if="showInternalModal" @close="showInternalModal = false">
+      <template #title>Select Internal Counterpart</template>
+      <template #body>
+        <div class="space-y-4">
+          <FuzzyDropdown
+            v-model="selectedCounterpart"
+            :options="internalCandidates"
+            :max="1"
+            placeholder="Search transactions"
+          />
+          <div class="flex justify-end gap-2">
+            <button class="btn-sm" @click="showInternalModal = false">Cancel</button>
+            <button class="btn-sm" @click="confirmInternal">Confirm</button>
+          </div>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -156,6 +173,8 @@ import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
 import { useToast } from 'vue-toastification'
 
+import Modal from '@/components/ui/Modal.vue'
+import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { formatAmount } from '@/utils/format'
 const toast = useToast()
 const emit = defineEmits(['editRecurringFromTransaction'])
@@ -174,6 +193,12 @@ const editBuffer = ref({
   category: '',
   merchant_name: '',
 })
+
+// State for marking internal transactions
+const showInternalModal = ref(false)
+const internalCandidates = ref([])
+const selectedCounterpart = ref([])
+const activeInternalTx = ref(null)
 
 const categoryTree = ref([])
 const sortKey = ref('date')
@@ -258,13 +283,72 @@ function markRecurring(index) {
 
 async function toggleInternal(tx) {
   try {
-    const newVal = !tx.is_internal
-    await updateTransaction({ transaction_id: tx.transaction_id, is_internal: newVal })
-    tx.is_internal = newVal
-    toast.success(newVal ? 'Marked as internal' : 'Unmarked internal')
+    if (!tx.is_internal) {
+      // Prepare modal with candidate counterpart transactions
+      activeInternalTx.value = tx
+      selectedCounterpart.value = []
+      internalCandidates.value = props.transactions
+        .filter(
+          (t) =>
+            t.transaction_id !== tx.transaction_id &&
+            !t.is_internal &&
+            Math.abs((t.amount || 0) + (tx.amount || 0)) <= 0.01,
+        )
+        .map((t) => ({
+          id: t.transaction_id,
+          name: `${t.date} ${t.description} ${formatAmount(t.amount)}`,
+        }))
+      showInternalModal.value = true
+    } else {
+      await updateTransaction({
+        transaction_id: tx.transaction_id,
+        is_internal: false,
+        counterpart_transaction_id: tx.internal_match_id || null,
+        flag_counterpart: true,
+      })
+      tx.is_internal = false
+      const counterpart = props.transactions.find(
+        (t) => t.transaction_id === tx.internal_match_id,
+      )
+      if (counterpart) counterpart.is_internal = false
+      toast.success('Unmarked internal')
+    }
   } catch (e) {
     console.error('Failed to toggle internal flag:', e)
     toast.error('Failed to update internal flag')
+  }
+}
+
+/** Confirm selection of counterpart transaction and mark both as internal. */
+async function confirmInternal() {
+  try {
+    if (!activeInternalTx.value) return
+    const counterpartId = selectedCounterpart.value[0]
+    if (!counterpartId) {
+      toast.error('Select a counterpart transaction')
+      return
+    }
+    await updateTransaction({
+      transaction_id: activeInternalTx.value.transaction_id,
+      is_internal: true,
+      counterpart_transaction_id: counterpartId,
+      flag_counterpart: true,
+    })
+    activeInternalTx.value.is_internal = true
+    activeInternalTx.value.internal_match_id = counterpartId
+    const counterpart = props.transactions.find(
+      (t) => t.transaction_id === counterpartId,
+    )
+    if (counterpart) {
+      counterpart.is_internal = true
+      counterpart.internal_match_id = activeInternalTx.value.transaction_id
+    }
+    toast.success('Marked as internal')
+  } catch (e) {
+    console.error('Failed to mark internal:', e)
+    toast.error('Failed to mark internal')
+  } finally {
+    showInternalModal.value = false
   }
 }
 
