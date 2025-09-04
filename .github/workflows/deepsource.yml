@@ -33,3 +33,10 @@ jobs:
 
       - name: Report coverage to DeepSource
         run: ./bin/deepsource report --analyzer test-coverage --key python --value-file coverage.xml
+
+      - name: Upload coverage to Deepsource
+        uses: deepsourcelabs/test-coverage-action@master
+        with:
+          key: python
+          coverage-file: coverage.xml
+          token: ${{ secrets.DEEPSOURCE_DSN }}
