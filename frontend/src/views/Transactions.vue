@@ -16,10 +16,7 @@
 
     <!-- Sidebar with import and filters -->
     <template #sidebar>
-      <AccountActionsSidebar
-        v-model="searchQuery"
-        @open-scanner="activeTab = 'Scanner'"
-      />
+      <AccountActionsSidebar v-model="searchQuery" @open-scanner="activeTab = 'Scanner'" />
     </template>
 
     <!-- Activity Tab -->
