@@ -10,6 +10,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AccountActionsSidebar: typeof import('./components/forms/AccountActionsSidebar.vue')['default']
     AccountBalanceHistoryChart: typeof import('./components/charts/AccountBalanceHistoryChart.vue')['default']
+    AccountFilter: typeof import('./components/AccountFilter.vue')['default']
     AccountSelector: typeof import('./components/ui/AccountSelector.vue')['default']
     AccountSnapshot: typeof import('./components/widgets/AccountSnapshot.vue')['default']
     AccountSparkline: typeof import('./components/widgets/AccountSparkline.vue')['default']
@@ -80,6 +81,7 @@ declare module 'vue' {
     TopAccountSnapshot: typeof import('./components/widgets/TopAccountSnapshot.vue')['default']
     TransactionModal: typeof import('./components/modals/TransactionModal.vue')['default']
     TransactionsTable: typeof import('./components/tables/TransactionsTable.vue')['default']
+    TypeSelector: typeof import('./components/TypeSelector.vue')['default']
     UpdateTransactionsTable: typeof import('./components/tables/UpdateTransactionsTable.vue')['default']
     UploadCSV: typeof import('./components/unused/UploadCSV.vue')['default']
     YoutubeEmbed: typeof import('./components/unused/YoutubeEmbed.vue')['default']
