@@ -1,10 +1,12 @@
 """Adapter implementation using the `ccxt` library."""
+
 from __future__ import annotations
 
 from typing import Any
 
 from arbit.config import settings
 from arbit.models import Fill, OrderSpec
+
 from .base import ExchangeAdapter
 
 try:  # pragma: no cover - used only when ``ccxt`` is missing

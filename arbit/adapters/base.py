@@ -1,4 +1,5 @@
 """Base classes and legacy models for exchange adapters."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
