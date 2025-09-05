@@ -12,18 +12,20 @@ vi.mock('vue-router', () => ({
 }))
 
 describe('Transactions.vue', () => {
+  const globalStubs = [
+    'ImportFileSelector',
+    'UpdateTransactionsTable',
+    'RecurringTransactionSection',
+    'Button',
+    'Card',
+    'CreditCard',
+    'BasePageLayout',
+  ]
+
   it('matches snapshot', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
-        stubs: [
-          'ImportFileSelector',
-          'UpdateTransactionsTable',
-          'RecurringTransactionSection',
-          'Button',
-          'Card',
-          'CreditCard',
-          'BasePageLayout',
-        ],
+        stubs: globalStubs,
       },
     })
     expect(wrapper.html()).toMatchSnapshot()
@@ -32,15 +34,7 @@ describe('Transactions.vue', () => {
   it('toggles control visibility', async () => {
     const wrapper = shallowMount(Transactions, {
       global: {
-        stubs: [
-          'ImportFileSelector',
-          'UpdateTransactionsTable',
-          'RecurringTransactionSection',
-          'Button',
-          'Card',
-          'CreditCard',
-          'BasePageLayout',
-        ],
+        stubs: globalStubs,
       },
     })
 
@@ -49,4 +43,6 @@ describe('Transactions.vue', () => {
     await wrapper.vm.$nextTick()
     expect(wrapper.vm.showControls).toBe(true)
   })
+
+  // additional tests can be added here
 })

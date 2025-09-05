@@ -42,7 +42,14 @@
     <Card class="p-6 space-y-4">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
       <transition name="fade-in-up" mode="out-in">
+        <SkeletonCard v-if="isLoading" />
+        <RetryError
+          v-else-if="error"
+          :message="error.message || 'Failed to load transactions'"
+          @retry="fetchTransactions"
+        />
         <UpdateTransactionsTable
+          v-else
           :key="currentPage"
           :transactions="filteredTransactions"
           :sort-key="sortKey"
@@ -100,6 +107,8 @@ import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
+import SkeletonCard from '@/components/ui/SkeletonCard.vue'
+import RetryError from '@/components/errors/RetryError.vue'
 import { CreditCard } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
@@ -113,6 +122,8 @@ export default {
     PageHeader,
     UiButton,
     Card,
+    SkeletonCard,
+    RetryError,
     BasePageLayout,
     InternalTransferScanner,
   },
@@ -130,6 +141,9 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      fetchTransactions,
+      isLoading,
+      error,
     } = useTransactions(
       initialPageSize,
       ref(route.query?.promote || route.query?.promote_txid || ''),
@@ -175,6 +189,9 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      fetchTransactions,
+      isLoading,
+      error,
       showControls,
       showScanner,
       toggleScanner,
