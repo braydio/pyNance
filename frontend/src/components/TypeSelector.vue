@@ -1,7 +1,7 @@
 <template>
   <select
     :value="modelValue"
-    @change="e => emit('update:modelValue', e.target.value)"
+    @change="(e) => emit('update:modelValue', e.target.value)"
     class="input px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]"
     data-testid="type-select"
   >
