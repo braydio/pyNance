@@ -88,7 +88,7 @@ def test_create_goal_returns_id(client, monkeypatch):
     monkeypatch.setattr(
         goals_module.db,
         "session",
-        types.SimpleNamespace(add=lambda obj: added.append(obj), commit=lambda: None),
+        types.SimpleNamespace(add=added.append, commit=lambda: None),
     )
     resp = client.post(
         "/api/goals",
