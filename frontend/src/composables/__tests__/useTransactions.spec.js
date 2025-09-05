@@ -13,7 +13,8 @@ describe('useTransactions', () => {
     ]
     searchQuery.value = 'coffee'
     const result = filteredTransactions.value
-    expect(result).toHaveLength(3)
-    expect(result.filter((t) => t._placeholder).length).toBe(2)
+    // When searching, the composable returns only matches without padding
+    expect(result).toHaveLength(1)
+    expect(result.filter((t) => t._placeholder).length).toBe(0)
   })
 })
