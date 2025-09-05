@@ -9,7 +9,7 @@ vi.mock('@/api/transactions', () => ({
 // Ensure filteredTransactions pads results to the requested page size
 // even when search narrows down matches.
 describe('useTransactions', () => {
-  it('maintains constant page size after filtering', () => {
+  it('filters results without padding when searching', () => {
     const { transactions, searchQuery, filteredTransactions } = useTransactions(3)
     transactions.value = [
       { transaction_id: '1', description: 'Coffee', category: 'Food' },
@@ -19,6 +19,7 @@ describe('useTransactions', () => {
     searchQuery.value = 'coffee'
     const result = filteredTransactions.value
     expect(result).toHaveLength(1)
+
     expect(result.filter((t) => t._placeholder).length).toBe(0)
   })
 
@@ -39,5 +40,6 @@ describe('useTransactions', () => {
     await fetchTransactions()
     expect(error.value).toBeInstanceOf(Error)
     expect(isLoading.value).toBe(false)
+
   })
 })

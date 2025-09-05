@@ -9,7 +9,9 @@
       <input type="range" :min="0" :max="maxIdx" v-model.number="endIdx" @input="onEndIdx" />
     </div>
     <div class="ticks" aria-hidden="true">
-      <span v-for="t in tickMarks" :key="t.index" class="tick" :style="{ left: t.left }">{{ t.label }}</span>
+      <span v-for="t in tickMarks" :key="t.index" class="tick" :style="{ left: t.left }">{{
+        t.label
+      }}</span>
     </div>
   </div>
 </template>
@@ -67,8 +69,15 @@ function syncThumbsToSelection() {
   if (startIdx.value > endIdx.value) startIdx.value = Math.min(endIdx.value, startIdx.value)
 }
 
-watch(() => [props.domainStart, props.domainEnd], () => syncThumbsToSelection(), { immediate: true })
-watch(() => [props.startDate, props.endDate], () => syncThumbsToSelection())
+watch(
+  () => [props.domainStart, props.domainEnd],
+  () => syncThumbsToSelection(),
+  { immediate: true },
+)
+watch(
+  () => [props.startDate, props.endDate],
+  () => syncThumbsToSelection(),
+)
 
 function onStartIdx() {
   if (startIdx.value > endIdx.value) endIdx.value = startIdx.value
@@ -97,13 +106,55 @@ const tickMarks = computed(() => {
 </script>
 
 <style scoped>
-.date-slider { position: relative; padding-top: .25rem; }
-.labels { display: flex; justify-content: space-between; font-size: .85rem; color: var(--color-text-muted); margin-bottom: .25rem; }
-.sliders { position: relative; height: 1.75rem; }
-.sliders input[type="range"] { position: absolute; left: 0; right: 0; width: 100%; -webkit-appearance: none; background: none; }
-.sliders input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--color-accent-cyan); border: 2px solid var(--theme-bg); }
-.sliders input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--color-accent-cyan); border: 2px solid var(--theme-bg); }
-.ticks { position: relative; height: .75rem; }
-.tick { position: absolute; transform: translateX(-50%); font-size: .7rem; color: var(--color-text-muted); }
-.label { font-variant-numeric: tabular-nums; }
+.date-slider {
+  position: relative;
+  padding-top: 0.25rem;
+}
+.labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+.sliders {
+  position: relative;
+  height: 1.75rem;
+}
+.sliders input[type='range'] {
+  position: absolute;
+  left: 0;
+  right: 0;
+  width: 100%;
+  -webkit-appearance: none;
+  background: none;
+}
+.sliders input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent-cyan);
+  border: 2px solid var(--theme-bg);
+}
+.sliders input[type='range']::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-accent-cyan);
+  border: 2px solid var(--theme-bg);
+}
+.ticks {
+  position: relative;
+  height: 0.75rem;
+}
+.tick {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+.label {
+  font-variant-numeric: tabular-nums;
+}
 </style>

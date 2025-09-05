@@ -38,6 +38,21 @@
       </div>
     </Card>
 
+    <!-- Filter Controls -->
+    <Card class="p-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <DateRangeSelector
+          :start-date="startDate"
+          :end-date="endDate"
+          disable-zoom
+          @update:startDate="startDate = $event"
+          @update:endDate="endDate = $event"
+        />
+        <AccountFilter v-model="accountFilter" />
+        <TypeSelector v-model="txType" />
+      </div>
+    </Card>
+
     <!-- Main Table -->
     <Card class="p-6 space-y-4">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
@@ -98,7 +113,7 @@
 // View for listing and managing transactions with themed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
@@ -112,6 +127,9 @@ import RetryError from '@/components/errors/RetryError.vue'
 import { CreditCard } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
+import DateRangeSelector from '@/components/DateRangeSelector.vue'
+import AccountFilter from '@/components/AccountFilter.vue'
+import TypeSelector from '@/components/TypeSelector.vue'
 
 export default {
   name: 'TransactionsView',
@@ -126,12 +144,29 @@ export default {
     RetryError,
     BasePageLayout,
     InternalTransferScanner,
+    DateRangeSelector,
+    AccountFilter,
+    TypeSelector,
   },
   setup() {
     const route = useRoute()
     const txidParam = route.query?.txid
     // If deep-linking to a transaction, use a larger initial page size to improve hit rate
     const initialPageSize = txidParam ? 250 : 10
+    const startDate = ref('')
+    const endDate = ref('')
+    const accountFilter = ref('')
+    const txType = ref('')
+
+    const filters = computed(() => {
+      const f = {}
+      if (startDate.value) f.start_date = startDate.value
+      if (endDate.value) f.end_date = endDate.value
+      if (accountFilter.value) f.account_ids = [accountFilter.value]
+      if (txType.value) f.tx_type = txType.value
+      return f
+    })
+
     const {
       searchQuery,
       currentPage,
@@ -147,6 +182,7 @@ export default {
     } = useTransactions(
       initialPageSize,
       ref(route.query?.promote || route.query?.promote_txid || ''),
+      filters,
     )
 
     const showControls = ref(false)
@@ -200,6 +236,10 @@ export default {
       recurringFormRef,
       prefillRecurringFromTransaction,
       CreditCard,
+      startDate,
+      endDate,
+      accountFilter,
+      txType,
     }
   },
 }
