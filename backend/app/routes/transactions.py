@@ -225,7 +225,13 @@ def user_modified_update_transaction():
 
 @transactions.route("/get_transactions", methods=["GET"])
 def get_transactions_paginated():
-    """Return paginated transactions with optional filters."""
+    """Return paginated transactions with optional filters.
+
+    Accepted query parameters include:
+    ``start_date`` and ``end_date`` (YYYY-MM-DD), ``account_ids`` as a
+    comma-separated string, and ``tx_type`` (``credit`` or ``debit``).
+    Unknown or empty parameters are ignored.
+    """
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
@@ -234,7 +240,7 @@ def get_transactions_paginated():
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
         account_ids_str = request.args.get("account_ids")
-        tx_type = request.args.get("tx_type")
+        tx_type = request.args.get("tx_type") or request.args.get("type")
 
         start_date = (
             datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
