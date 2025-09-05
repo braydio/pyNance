@@ -22,10 +22,7 @@
         </nav>
         <slot :name="activeTab" />
       </div>
-      <aside
-        v-if="$slots.sidebar"
-        class="w-64 flex-shrink-0 relative z-10"
-      >
+      <aside v-if="$slots.sidebar" class="w-64 flex-shrink-0 relative z-10">
         <!-- Ensure sidebar actions stay clickable above main content -->
         <slot name="sidebar" />
       </aside>
