@@ -40,6 +40,5 @@ describe('useTransactions', () => {
     await fetchTransactions()
     expect(error.value).toBeInstanceOf(Error)
     expect(isLoading.value).toBe(false)
-
   })
 })
