@@ -70,7 +70,7 @@
 // View for listing and managing transactions with tabbed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
@@ -117,7 +117,9 @@ export default {
     const tabs = ['Activity', 'Recurring', 'Scanner']
     const activeTab = ref('Activity')
 
-    function prefillRecurringFromTransaction(tx) {
+    const pendingRecurringTx = ref(null)
+
+    function applyRecurringPrefill(tx) {
       if (recurringFormRef.value) {
         recurringFormRef.value.transactionId = tx.transaction_id || ''
         recurringFormRef.value.description = tx.description || ''
@@ -126,6 +128,22 @@ export default {
         recurringFormRef.value.showForm = true
       }
     }
+
+    function prefillRecurringFromTransaction(tx) {
+      pendingRecurringTx.value = tx
+      activeTab.value = 'Recurring'
+      if (recurringFormRef.value) {
+        applyRecurringPrefill(tx)
+        pendingRecurringTx.value = null
+      }
+    }
+
+    watch(recurringFormRef, (newRef) => {
+      if (newRef && pendingRecurringTx.value) {
+        applyRecurringPrefill(pendingRecurringTx.value)
+        pendingRecurringTx.value = null
+      }
+    })
 
     onMounted(() => {
       if (txidParam) {
