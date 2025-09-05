@@ -17,6 +17,8 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
   const sortOrder = ref(1)
   const currentPage = ref(1)
   const totalPages = ref(1)
+  const isLoading = ref(false)
+  const error = ref(null)
 
   /**
    * Fetch a page of transactions from the API.
@@ -26,6 +28,8 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
    * even when the backend does not include a status key.
    */
   const fetchTransactions = async () => {
+    isLoading.value = true
+    error.value = null
     try {
       const res = await fetchTransactionsApi({
         page: currentPage.value,
@@ -36,7 +40,7 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
       // No need to check for 'data' property
       if (!res || typeof res !== 'object' || !('transactions' in res)) {
         console.error('Unexpected response shape:', res)
-        alert('Received an unexpected response from the server.')
+        error.value = new Error('Received an unexpected response from the server.')
         return
       }
 
@@ -47,8 +51,11 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
       }))
       const total = res.total != null ? res.total : 0
       totalPages.value = Math.max(1, Math.ceil(total / pageSize))
-    } catch (error) {
-      console.error('Error fetching transactions:', error)
+    } catch (err) {
+      console.error('Error fetching transactions:', err)
+      error.value = err
+    } finally {
+      isLoading.value = false
     }
   }
 
@@ -151,6 +158,8 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
     currentPage,
     totalPages,
     fetchTransactions,
+    isLoading,
+    error,
     changePage,
     setSort,
     filteredTransactions,
