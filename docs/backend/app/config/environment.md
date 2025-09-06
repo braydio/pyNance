@@ -14,6 +14,7 @@ all environment lookups so the rest of the code can import settings directly.
   in `environment.py` via `os.getenv("PRODUCTS", "transactions").split(",")`.
 - `PLAID_ENV` – target Plaid environment (`sandbox`, `development`, `production`).
 - `CLIENT_NAME` – display name passed to Plaid Link.
+- `ENABLE_ARBIT_DASHBOARD` – set to `true` to expose the experimental arbitrage dashboard.
 
 Specify multiple products (e.g., `transactions,investments`) to generate Link
 tokens that cover more than one product. Each product still needs a separate

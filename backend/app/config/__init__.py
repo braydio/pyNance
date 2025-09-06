@@ -5,6 +5,7 @@
 from .constants import DATABASE_NAME, FILES, SQLALCHEMY_DATABASE_URI
 from .environment import (
     CLIENT_NAME,
+    ENABLE_ARBIT_DASHBOARD,
     FLASK_ENV,
     PLAID_CLIENT_ID,
     PLAID_CLIENT_NAME,
@@ -30,6 +31,7 @@ __all__ = [
     "PLAID_CLIENT_ID",
     "PLAID_SECRET",
     "PLAID_ENV",
+    "ENABLE_ARBIT_DASHBOARD",
     "TELLER_API_BASE_URL",
     "TELLER_APP_ID",
     "TELLER_CERTIFICATE",

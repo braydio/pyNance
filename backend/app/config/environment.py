@@ -37,6 +37,15 @@ TELLER_PRIVATE_KEY = DIRECTORIES["CERTS_DIR"] / "private_key.pem"
 # Webhook for product update notifications
 TELLER_WEBHOOK_SECRET = os.getenv("TELLER_WEBHOOK_SECRET", "No Teller Webhook in .env")
 
+# Feature toggles
+# Enable optional arbitrage dashboard
+ENABLE_ARBIT_DASHBOARD = os.getenv("ENABLE_ARBIT_DASHBOARD", "false").lower() in {
+    "1",
+    "true",
+    "t",
+    "yes",
+}
+
 # Misc. Dev. Variables for testing
 VARIABLE_ENV_TOKEN = os.getenv("VARIABLE_ENV_TOKEN")
 VARIABLE_ENV_ID = os.getenv("VARIABLE_ENV_ID")

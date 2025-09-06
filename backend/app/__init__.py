@@ -1,4 +1,4 @@
-# File: app/__init__.py
+"""Application factory for the Flask backend."""
 
 from app.cli.sync import sync_accounts
 from app.config import logger, plaid_client
@@ -10,9 +10,13 @@ from flask_migrate import Migrate
 
 
 def create_app():
+    """Configure and return the Flask application instance."""
+    from app.config import ENABLE_ARBIT_DASHBOARD
+
     app = Flask(__name__)
     CORS(app)
     app.config.from_object("app.config")
+    app.config["ENABLE_ARBIT_DASHBOARD"] = ENABLE_ARBIT_DASHBOARD
     db.init_app(app)
     Migrate(app, db)
     # Always register routes (for all environments)
