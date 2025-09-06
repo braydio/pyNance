@@ -12,37 +12,42 @@ vi.mock('vue-router', () => ({
 }))
 
 describe('Transactions.vue', () => {
-  const globalStubs = [
-    'ImportFileSelector',
-    'UpdateTransactionsTable',
-    'RecurringTransactionSection',
-    'Button',
-    'Card',
-    'CreditCard',
-    'BasePageLayout',
-  ]
-
   it('matches snapshot', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
-        stubs: globalStubs,
+        stubs: [
+          'AccountActionsSidebar',
+          'UpdateTransactionsTable',
+          'RecurringTransactionSection',
+          'InternalTransferScanner',
+          'UiButton',
+          'Card',
+          'CreditCard',
+          'TabbedPageLayout',
+        ],
       },
     })
     expect(wrapper.html()).toMatchSnapshot()
   })
 
-  it('toggles control visibility', async () => {
+  it('defaults to Activity tab', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
-        stubs: globalStubs,
+        stubs: [
+          'AccountActionsSidebar',
+          'UpdateTransactionsTable',
+          'RecurringTransactionSection',
+          'InternalTransferScanner',
+          'UiButton',
+          'Card',
+          'CreditCard',
+          'TabbedPageLayout',
+        ],
       },
     })
 
-    expect(wrapper.vm.showControls).toBe(false)
-    wrapper.vm.toggleControls()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.vm.showControls).toBe(true)
+    expect(wrapper.vm.activeTab).toBe('Activity')
+    wrapper.vm.activeTab = 'Scanner'
+    expect(wrapper.vm.activeTab).toBe('Scanner')
   })
-
-  // additional tests can be added here
 })
