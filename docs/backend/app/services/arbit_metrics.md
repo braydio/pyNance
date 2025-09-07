@@ -11,7 +11,7 @@ Fetch metrics from the Arbit exporter and parse key values for dashboard use.
 ## Usage
 
 ```python
-from app.services.arbit_metrics import fetch_metrics
+from app.services.arbit_metrics import get_metrics
 
-metrics = fetch_metrics()
+metrics = get_metrics()
 ```
