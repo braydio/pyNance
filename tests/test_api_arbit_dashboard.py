@@ -18,6 +18,7 @@ def make_app(flag: bool) -> Flask:
         "app.routes.arbit_dashboard",
         "app.services",
         "app.services.arbit_metrics",
+        "app.services.arbit_cli",
     ]:
         sys.modules.pop(mod, None)
     from app.routes import arbit_dashboard as arbit_module
@@ -77,3 +78,105 @@ def test_stub_endpoints():
     resp = client.get("/api/arbit/trades")
     assert resp.status_code == 200
     assert resp.get_json() == []
+
+
+def test_start_endpoint(monkeypatch):
+    """`/start` validates input and runs the CLI."""
+    app = make_app(True)
+    called: dict[str, list[str]] = {}
+
+    def fake_run(cmd, capture_output, text, check):
+        called["cmd"] = cmd
+
+        class Res:
+            stdout = "started"
+            stderr = ""
+            returncode = 0
+
+        return Res()
+
+    monkeypatch.setattr("app.services.arbit_cli.subprocess.run", fake_run)
+    client = app.test_client()
+    resp = client.post("/api/arbit/start", json={"threshold": 1, "fee": 0.1})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["stdout"] == "started"
+    assert called["cmd"] == [
+        "python",
+        "arbit/cli.py",
+        "start",
+        "--threshold",
+        "1.0",
+        "--fee",
+        "0.1",
+    ]
+
+
+def test_start_invalid_payload():
+    """Missing or invalid fields return 400."""
+    app = make_app(True)
+    client = app.test_client()
+    resp = client.post("/api/arbit/start", json={"threshold": "x", "fee": 0.1})
+    assert resp.status_code == 400
+
+
+def test_stop_endpoint(monkeypatch):
+    """`/stop` executes the CLI."""
+    app = make_app(True)
+
+    def fake_run(cmd, capture_output, text, check):
+        assert cmd == ["python", "arbit/cli.py", "stop"]
+
+        class Res:
+            stdout = "stopped"
+            stderr = ""
+            returncode = 0
+
+        return Res()
+
+    monkeypatch.setattr("app.services.arbit_cli.subprocess.run", fake_run)
+    client = app.test_client()
+    resp = client.post("/api/arbit/stop")
+    assert resp.status_code == 200
+    assert resp.get_json()["stdout"] == "stopped"
+
+
+def test_config_update_endpoint(monkeypatch):
+    """`/config/update` runs the CLI with validated values."""
+    app = make_app(True)
+    called: dict[str, list[str]] = {}
+
+    def fake_run(cmd, capture_output, text, check):
+        called["cmd"] = cmd
+
+        class Res:
+            stdout = "updated"
+            stderr = ""
+            returncode = 0
+
+        return Res()
+
+    monkeypatch.setattr("app.services.arbit_cli.subprocess.run", fake_run)
+    client = app.test_client()
+    resp = client.post("/api/arbit/config/update", json={"threshold": 2, "fee": 0.2})
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["stdout"] == "updated"
+    assert called["cmd"] == [
+        "python",
+        "arbit/cli.py",
+        "config",
+        "update",
+        "--threshold",
+        "2.0",
+        "--fee",
+        "0.2",
+    ]
+
+
+def test_config_update_invalid():
+    """Invalid numbers yield a 400 response."""
+    app = make_app(True)
+    client = app.test_client()
+    resp = client.post("/api/arbit/config/update", json={"threshold": -1, "fee": 0.2})
+    assert resp.status_code == 400
