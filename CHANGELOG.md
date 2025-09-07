@@ -7,3 +7,4 @@
 - fix: enable primary category filtering on transactions page.
 - feat: add SkeletonCard and RetryError components and integrate into Accounts view.
 - feat: unify theme palette and enable chart legends and tooltips.
+- docs: add Arbit Dashboard guide and frontend route notes.

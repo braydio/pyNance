@@ -93,7 +93,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 const open = ref(false)
 const expanded = ref(new Set())
-const selectedIds = ref(new Set(props.modelValue))
+// Normalize to strings so comparisons with API results are consistent
+const selectedIds = ref(new Set((props.modelValue || []).map((x) => String(x))))
 const updatingFromProps = ref(false)
 
 // Rainbow dot palette for groups
@@ -122,7 +123,7 @@ watch(
   () => props.modelValue,
   (val) => {
     updatingFromProps.value = true
-    selectedIds.value = new Set(val)
+    selectedIds.value = new Set((val || []).map((x) => String(x)))
   },
 )
 watch(
@@ -138,7 +139,7 @@ watch(
 )
 
 function toggleGroup(group) {
-  const allChildIds = group.children.map((c) => c.id)
+  const allChildIds = group.children.map((c) => String(c.id))
   const allSelected = allChildIds.every((id) => selectedIds.value.has(id))
   if (allSelected) {
     // Remove all children (must create new Set)
@@ -151,21 +152,26 @@ function toggleGroup(group) {
   }
 }
 function isGroupExpanded(group) {
-  return expanded.value.has(group.id) || group.children.some((c) => selectedIds.value.has(c.id))
+  return (
+    expanded.value.has(group.id) || group.children.some((c) => selectedIds.value.has(String(c.id)))
+  )
 }
 function toggleChild(group, child) {
-  if (selectedIds.value.has(child.id)) {
-    selectedIds.value = new Set([...selectedIds.value].filter((id) => id !== child.id))
+  const cid = String(child.id)
+  if (selectedIds.value.has(cid)) {
+    selectedIds.value = new Set([...selectedIds.value].filter((id) => id !== cid))
   } else {
-    selectedIds.value = new Set([...selectedIds.value, child.id])
+    selectedIds.value = new Set([...selectedIds.value, cid])
     expanded.value = new Set(expanded.value).add(group.id)
   }
 }
 function isGroupAllSelected(group) {
-  return group.children.length > 0 && group.children.every((c) => selectedIds.value.has(c.id))
+  return (
+    group.children.length > 0 && group.children.every((c) => selectedIds.value.has(String(c.id)))
+  )
 }
 function isGroupIndeterminate(group) {
-  const sel = group.children.filter((c) => selectedIds.value.has(c.id)).length
+  const sel = group.children.filter((c) => selectedIds.value.has(String(c.id))).length
   return sel > 0 && sel < group.children.length
 }
 
