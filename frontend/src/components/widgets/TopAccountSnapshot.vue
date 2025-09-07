@@ -21,14 +21,25 @@
       >
         {{ g.name }}
       </button>
-      <button
-        class="bs-sort-btn"
-        :style="{ '--accent': groupAccent }"
-        @click="toggleSort"
-        aria-label="Toggle sort order"
-      >
-        {{ sortAsc ? 'Sort: ▲' : 'Sort ▼' }}
-      </button>
+      <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
+        <button
+          class="bs-group-btn"
+          @click="toggleGroupMenu"
+          aria-label="Select account group"
+        >
+          {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
+        </button>
+        <ul v-if="showGroupMenu" class="bs-group-menu">
+          <li v-for="g in groups" :key="g.id">
+            <button class="bs-group-item" @click="selectGroup(g.id)">
+              {{ g.name || '(unnamed)' }}
+            </button>
+          </li>
+          <li>
+            <button class="bs-group-item bs-group-add" @click="addGroup">+</button>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <Transition name="bs-slide">
@@ -178,7 +189,7 @@ function toggleDetails(accountId) {
   }
 }
 
-const sortAsc = ref(false)
+const showGroupMenu = ref(false)
 
 const spectrum = [
   'var(--color-accent-cyan)',
@@ -214,22 +225,32 @@ function setActiveGroup(id) {
   activeGroupId.value = id
 }
 
-function toggleSort() {
-  sortAsc.value = !sortAsc.value
+function toggleGroupMenu() {
+  showGroupMenu.value = !showGroupMenu.value
+}
+
+function selectGroup(id) {
+  setActiveGroup(id)
+  showGroupMenu.value = false
+}
+
+function addGroup() {
+  const id = `group-${Date.now()}`
+  groups.value.push({ id, name: '', accounts: [] })
+  selectGroup(id)
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const activeAccounts = computed(() =>
-  activeGroup.value
-    ? [...activeGroup.value.accounts]
-        .sort(
-          (a, b) =>
-            (sortAsc.value ? 1 : -1) *
-            (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)),
-        )
-        .slice(0, 7)
-    : [],
-)
+    activeGroup.value
+      ? [...activeGroup.value.accounts]
+          .sort(
+            (a, b) =>
+              Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance),
+          )
+          .slice(0, 7)
+      : [],
+  )
 const activeTotal = computed(() =>
   activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
@@ -393,7 +414,11 @@ function initials(name) {
   color: var(--color-accent-yellow);
 }
 
-.bs-sort-btn {
+.bs-group-dropdown {
+  position: relative;
+}
+
+.bs-group-btn {
   padding: 0.4rem 0.8rem;
   background: var(--color-bg-sec);
   color: var(--accent);
@@ -402,14 +427,52 @@ function initials(name) {
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   transition:
     background 0.2s,
     color 0.2s;
 }
-.bs-sort-btn:hover,
-.bs-sort-btn:focus-visible {
+
+.bs-group-btn:hover,
+.bs-group-btn:focus-visible {
   background: var(--accent);
   color: var(--color-bg-dark);
+}
+
+.bs-group-menu {
+  position: absolute;
+  right: 0;
+  margin-top: 0.2rem;
+  background: var(--color-bg-sec);
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 8rem;
+  padding: 0.2rem 0;
+}
+
+.bs-group-item {
+  padding: 0.4rem 0.8rem;
+  background: transparent;
+  color: var(--color-text-light);
+  border: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bs-group-item:hover,
+.bs-group-item:focus-visible {
+  background: var(--accent);
+  color: var(--color-bg-dark);
+}
+
+.bs-group-add {
+  font-weight: 700;
+  text-align: center;
 }
 
 .bs-list {
@@ -709,7 +772,7 @@ function initials(name) {
     font-size: 0.89rem;
   }
 
-  .bs-sort-btn {
+  .bs-group-btn {
     padding: 0.45rem 0.75rem;
     font-size: 0.8rem;
   }
