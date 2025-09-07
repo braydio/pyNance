@@ -119,7 +119,9 @@ def get_item(access_token: str):
         raise
 
 
-def generate_link_token(user_id: str, products=["transactions"]):
+def generate_link_token(user_id: str, products=None):
+    if products is None:
+        products = ["transactions"]
     logger.debug(f"Generating link token with user_id={user_id}, products={products}")
 
     try:

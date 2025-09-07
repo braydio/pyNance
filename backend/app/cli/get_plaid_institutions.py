@@ -11,7 +11,9 @@ from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_request import InstitutionsGetRequest
 
 
-def fetch_plaid_institutions(count=500, country_codes=["US"]):
+def fetch_plaid_institutions(count=500, country_codes=None):
+    if country_codes is None:
+        country_codes = ["US"]
     # Convert string codes to CountryCode enums
     country_codes_enum = [CountryCode(code) for code in country_codes]
     institutions = []
