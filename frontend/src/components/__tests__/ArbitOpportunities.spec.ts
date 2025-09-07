@@ -5,8 +5,8 @@ import ArbitOpportunities from '../ArbitOpportunities.vue'
 
 vi.mock('@/services/arbit', () => ({
   fetchArbitOpportunities: vi.fn().mockResolvedValue({
-    opportunities: [{ id: 1, symbol: 'AAA', profit: 5 }]
-  })
+    opportunities: [{ id: 1, symbol: 'AAA', profit: 5 }],
+  }),
 }))
 
 describe('ArbitOpportunities.vue', () => {

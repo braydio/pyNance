@@ -1,7 +1,10 @@
 <template>
   <table data-testid="trades-table">
     <thead>
-      <tr><th>Pair</th><th>Profit</th></tr>
+      <tr>
+        <th>Pair</th>
+        <th>Profit</th>
+      </tr>
     </thead>
     <tbody>
       <tr v-for="t in trades" :key="t.id">

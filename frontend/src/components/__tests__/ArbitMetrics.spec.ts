@@ -6,8 +6,8 @@ import ArbitMetrics from '../ArbitMetrics.vue'
 vi.mock('@/services/arbit', () => ({
   fetchArbitMetrics: vi.fn().mockResolvedValue({
     profit: [{ label: 'p', value: 1 }],
-    latency: [{ label: 'l', value: 2 }]
-  })
+    latency: [{ label: 'l', value: 2 }],
+  }),
 }))
 
 describe('ArbitMetrics.vue', () => {
@@ -17,10 +17,10 @@ describe('ArbitMetrics.vue', () => {
         stubs: {
           PortfolioAllocationChart: {
             props: ['allocations'],
-            template: '<div class="chart">{{ allocations.length }}</div>'
-          }
-        }
-      }
+            template: '<div class="chart">{{ allocations.length }}</div>',
+          },
+        },
+      },
     })
     await flushPromises()
     const charts = wrapper.findAll('.chart')

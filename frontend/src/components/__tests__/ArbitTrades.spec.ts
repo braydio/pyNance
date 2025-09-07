@@ -5,8 +5,8 @@ import ArbitTrades from '../ArbitTrades.vue'
 
 vi.mock('@/services/arbit', () => ({
   fetchArbitTrades: vi.fn().mockResolvedValue({
-    trades: [{ id: 1, pair: 'AAA/BBB', profit: 1 }]
-  })
+    trades: [{ id: 1, pair: 'AAA/BBB', profit: 1 }],
+  }),
 }))
 
 describe('ArbitTrades.vue', () => {

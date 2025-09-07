@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest'
 import ArbitStatus from '../ArbitStatus.vue'
 
 vi.mock('@/services/arbit', () => ({
-  fetchArbitStatus: vi.fn().mockResolvedValue({ running: true })
+  fetchArbitStatus: vi.fn().mockResolvedValue({ running: true }),
 }))
 
 describe('ArbitStatus.vue', () => {
