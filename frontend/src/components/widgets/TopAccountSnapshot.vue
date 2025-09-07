@@ -22,11 +22,7 @@
         {{ g.name }}
       </button>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
-        <button
-          class="bs-group-btn"
-          @click="toggleGroupMenu"
-          aria-label="Select account group"
-        >
+        <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
         </button>
         <ul v-if="showGroupMenu" class="bs-group-menu">
@@ -242,15 +238,12 @@ function addGroup() {
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const activeAccounts = computed(() =>
-    activeGroup.value
-      ? [...activeGroup.value.accounts]
-          .sort(
-            (a, b) =>
-              Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance),
-          )
-          .slice(0, 7)
-      : [],
-  )
+  activeGroup.value
+    ? [...activeGroup.value.accounts]
+        .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
+        .slice(0, 7)
+    : [],
+)
 const activeTotal = computed(() =>
   activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
