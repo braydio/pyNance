@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+
 from flask import Flask
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
@@ -13,7 +14,11 @@ if BASE_BACKEND not in sys.path:
 
 def make_app(flag: bool) -> Flask:
     """Create a Flask app with the arbit dashboard optionally registered."""
-    for mod in ["app.routes.arbit_dashboard", "app.services", "app.services.arbit_metrics"]:
+    for mod in [
+        "app.routes.arbit_dashboard",
+        "app.services",
+        "app.services.arbit_metrics",
+    ]:
         sys.modules.pop(mod, None)
     from app.routes import arbit_dashboard as arbit_module
 

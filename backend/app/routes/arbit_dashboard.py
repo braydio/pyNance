@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, current_app, jsonify
-
 from app.services import arbit_metrics
+from flask import Blueprint, current_app, jsonify
 
 arbit_dashboard = Blueprint("arbit_dashboard", __name__)
 
