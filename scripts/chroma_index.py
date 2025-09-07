@@ -73,9 +73,12 @@ def main():
 
                 for i, chunk in enumerate(chunks):
                     doc_id = f"{metadata_base['relative_path']}-{i}"
-                    if not args.reindex and doc_id in existing_ids:
-                        if args.diff_only:
-                            continue
+                    if (
+                        not args.reindex
+                        and doc_id in existing_ids
+                        and args.diff_only
+                    ):
+                        continue
                     metadata = metadata_base.copy()
                     metadata["chunk_index"] = i
                     metadata["length"] = len(chunk)

@@ -23,12 +23,15 @@ def collapse_internal_transfers(transactions, date_epsilon=1, amount_epsilon=0.0
         for m in matches:
             if m.transaction_id == txn.transaction_id or m.account_id == txn.account_id:
                 continue
-            if abs((txn.date - m.date).days) <= date_epsilon and (
+            if (
+                abs((txn.date - m.date).days) <= date_epsilon
+                and (
                 txn.amount + m.amount
-            ) in [-amount_epsilon, 0, amount_epsilon]:
-                if getattr(m, "category", "").lower() == "transfer":
-                    found = m
-                    break
+            ) in [-amount_epsilon, 0, amount_epsilon]
+                and getattr(m, "category", "").lower() == "transfer"
+            ):
+                found = m
+                break
         if found:
             # Collapse as a pair
             seen.add(found.transaction_id)
