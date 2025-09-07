@@ -22,7 +22,10 @@
         </nav>
         <slot :name="activeTab" />
       </div>
-      <aside v-if="$slots.sidebar" class="w-64 flex-shrink-0 relative z-10">
+      <aside
+        v-if="$slots.sidebar"
+        :class="[sidebarWidthClass, 'flex-shrink-0 relative z-10']"
+      >
         <!-- Ensure sidebar actions stay clickable above main content -->
         <slot name="sidebar" />
       </aside>
@@ -47,6 +50,8 @@ const props = defineProps({
   tabs: { type: Array, default: () => [] },
   /** Currently selected tab */
   modelValue: { type: String, default: '' },
+  /** Optional width utility class for sidebar (e.g. 'w-72 md:w-80') */
+  sidebarWidth: { type: String, default: 'w-64' },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -59,4 +64,6 @@ const activeTab = computed({
 function selectTab(tab) {
   activeTab.value = tab
 }
+
+const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
 </script>

@@ -3,7 +3,7 @@
   Multi-select dropdown with fuzzy search.
 -->
 <template>
-  <div class="relative">
+  <div class="relative" v-click-outside="close">
     <input v-model="query" type="text" :placeholder="placeholder" class="input w-full mb-2" @focus="open = true"
       @keydown.esc="open = false" @blur="onBlur" />
     <div v-show="open" class="dropdown-menu w-full">
@@ -63,6 +63,10 @@ function onBlur() {
   setTimeout(() => {
     open.value = false
   }, 180)
+}
+
+function close() {
+  open.value = false
 }
 </script>
 

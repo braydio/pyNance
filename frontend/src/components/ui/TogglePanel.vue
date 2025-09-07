@@ -61,7 +61,8 @@ function toggle() {
 .toggle-panel {
   border: 1px solid rgb(229, 231, 235);
   border-radius: 0.5rem;
-  overflow: hidden;
+  /* Allow content like dropdowns to escape bounds when needed */
+  overflow: visible;
 }
 
 .dark .toggle-panel {
@@ -76,6 +77,8 @@ function toggle() {
 .panel-content {
   border-color: inherit;
   background-color: var(--color-bg-primary, white);
+  /* Ensure nested controls are not clipped */
+  overflow: visible;
 }
 
 .slide-down-enter-active,

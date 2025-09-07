@@ -1,5 +1,5 @@
 <template>
-  <div class="relative w-full">
+  <div class="relative w-full" v-click-outside="close">
     <!-- Trigger -->
     <div
       class="dropdown-trigger input w-full mb-2 cursor-pointer flex items-center px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--color-bg-secondary)] shadow transition hover:border-[var(--color-accent-cyan)] focus:border-[var(--color-accent-cyan)]"
@@ -123,5 +123,9 @@ function isGroupAllSelected(group) {
 function isGroupIndeterminate(group) {
   const sel = group.children.filter(c => selectedIds.value.has(c.id)).length
   return sel > 0 && sel < group.children.length
+}
+
+function close() {
+  open.value = false
 }
 </script>

@@ -1,7 +1,12 @@
 <!-- Accounts.vue - Manage linked accounts and related actions. -->
 <template>
   <AppLayout>
-    <TabbedPageLayout class="accounts-page" :tabs="tabs" v-model="activeTab">
+    <TabbedPageLayout
+      class="accounts-page"
+      :tabs="tabs"
+      v-model="activeTab"
+      sidebar-width="w-72 md:w-80"
+    >
       <template #header>
         <PageHeader :icon="Wallet">
           <template #title>Accounts</template>

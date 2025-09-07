@@ -4,7 +4,7 @@
     <div class="button-group">
       <input type="date" v-model="startDate" class="date-picker" />
       <input type="date" v-model="endDate" class="date-picker" />
-      <div class="account-select">
+      <div class="account-select" v-click-outside="closeDropdown">
         <button type="button" @click="toggleDropdown">Select Accounts</button>
         <div v-if="dropdownOpen" class="dropdown-menu">
           <label v-for="acct in accounts" :key="acct.account_id">
@@ -125,6 +125,9 @@ export default {
   methods: {
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen
+    },
+    closeDropdown() {
+      this.dropdownOpen = false
     },
     formatAmountDisplay(val) {
       try {
@@ -303,6 +306,8 @@ export default {
   display: flex;
   justify-content: center;
   gap: 0.5rem;
+  /* Allow controls to wrap within narrow sidebars */
+  flex-wrap: wrap;
 }
 
 .button-group button {
