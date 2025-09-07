@@ -1,3 +1,10 @@
+"""Database bridge for recurring transaction detection.
+
+This module links recurring transaction patterns detected in raw
+transactions with database persistence utilities. Imports are deferred
+until synchronization to avoid loading heavy dependencies at import time.
+"""
+
 from datetime import timedelta
 from importlib import import_module
 
@@ -19,8 +26,8 @@ class RecurringBridge:
         # Import DB session and models only when syncing to avoid heavy
         # dependencies during module import. This also ensures models are
         # registered with the SQLAlchemy instance used by tests.
-        import_module("app.extensions").db  # noqa: F401
-        import_module("app.models").RecurringTransaction  # noqa: F401
+        _ = import_module("app.extensions")
+        _ = import_module("app.models")
 
         candidates = self.detector.detect()
         actions = []
