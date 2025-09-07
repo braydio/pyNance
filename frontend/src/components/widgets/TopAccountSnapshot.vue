@@ -1,30 +1,25 @@
 <!--
   TopAccountSnapshot.vue
-  Displays top asset and liability accounts with totals.
-  Users can toggle which list is visible, sort amounts, and view tinted backgrounds by filter.
+  Displays top accounts grouped (e.g., assets or liabilities) with totals.
+  Users can switch between groups, sort amounts, and view tinted backgrounds by filter.
 -->
 <template>
   <div
     class="bank-statement-list bs-collapsible w-full h-full"
     :class="{
-      'bs-assets-bg': expanded === 'assets',
-      'bs-liabilities-bg': expanded === 'liabilities',
+      'bs-assets-bg': activeGroupId === 'assets',
+      'bs-liabilities-bg': activeGroupId === 'liabilities',
     }"
   >
     <div class="bs-toggle-row">
       <button
-        :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']"
-        @click="toggle('assets')"
-        aria-label="Show Assets"
+        v-for="g in groups"
+        :key="g.id"
+        :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+        @click="setActiveGroup(g.id)"
+        :aria-label="`Show ${g.name}`"
       >
-        Assets
-      </button>
-      <button
-        :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
-        @click="toggle('liabilities')"
-        aria-label="Show Liabilities"
-      >
-        Liabilities
+        {{ g.name }}
       </button>
       <button
         class="bs-sort-btn"
@@ -37,8 +32,8 @@
     </div>
 
     <Transition name="bs-slide">
-      <ul v-if="expanded === 'assets'" class="bs-list">
-        <template v-for="(account, idx) in assetAccounts" :key="account.id">
+      <ul v-if="activeGroup" class="bs-list">
+        <template v-for="(account, idx) in activeAccounts" :key="account.id">
           <li class="bs-account-container">
             <div
               class="bs-row"
@@ -109,124 +104,31 @@
             </div>
           </li>
         </template>
-        <!-- Assets summary footer -->
+        <!-- Summary footer -->
         <li
-          v-if="assetAccounts.length"
+          v-if="activeAccounts.length"
           class="bs-summary-row"
-          style="--accent: var(--color-accent-cyan)"
+          :style="{ '--accent': expandedAccent }"
         >
           <div></div>
-          <div class="bs-summary-label">Total Assets</div>
+          <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
           <div class="bs-summary-amount">
-            {{ format(totalAssets) }}
+            {{ format(activeTotal) }}
           </div>
         </li>
       </ul>
     </Transition>
 
-    <Transition name="bs-slide">
-      <ul v-if="expanded === 'liabilities'" class="bs-list">
-        <template v-for="(account, idx) in liabilityAccounts" :key="account.id">
-          <li class="bs-account-container">
-            <div
-              class="bs-row"
-              :style="{ '--accent': accentColor(account, idx) }"
-              @click="toggleDetails(account.id)"
-              role="button"
-              tabindex="0"
-              @keydown.enter="toggleDetails(account.id)"
-              @keydown.space="toggleDetails(account.id)"
-            >
-              <div class="bs-stripe"></div>
-              <div class="bs-logo-container">
-                <img
-                  v-if="account.institution_icon_url"
-                  :src="account.institution_icon_url"
-                  alt="Bank logo"
-                  class="bs-logo"
-                  loading="lazy"
-                />
-                <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-              </div>
-              <div class="bs-details">
-                <div class="bs-name">
-                  <span
-                    class="bs-toggle-icon"
-                    :class="{ 'bs-expanded': openAccountId === account.id }"
-                    >▶</span
-                  >
-                  {{ account.name }}
-                </div>
-                <div class="bs-mask">
-                  <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                  <span
-                    v-else
-                    class="bs-no-mask-icon"
-                    role="img"
-                    aria-label="Account number unavailable"
-                    >∗</span
-                  >
-                </div>
-              </div>
-              <div class="bs-sparkline">
-                <AccountSparkline :account-id="account.id" />
-              </div>
-              <div class="bs-amount-section">
-                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
-              </div>
-            </div>
-          </li>
-          <li v-if="openAccountId === account.id" class="bs-details-row">
-            <div class="bs-details-content">
-              <ul class="bs-details-list">
-                <li
-                  v-for="tx in recentTxs[account.id]"
-                  :key="tx.transaction_id || tx.id"
-                  class="bs-tx-row"
-                >
-                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                  <span class="bs-tx-name">{{
-                    tx.merchant_name || tx.name || tx.description
-                  }}</span>
-                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
-                </li>
-                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
-                  No recent transactions
-                </li>
-              </ul>
-            </div>
-          </li>
-        </template>
-        <!-- Liabilities summary footer -->
-        <li
-          v-if="liabilityAccounts.length"
-          class="bs-summary-row"
-          style="--accent: var(--color-accent-yellow)"
-        >
-          <div></div>
-          <div class="bs-summary-label">Total Liabilities</div>
-          <div class="bs-summary-amount">
-            {{ format(totalLiabilities) }}
-          </div>
-        </li>
-      </ul>
-    </Transition>
+    <div v-if="activeGroup && !activeAccounts.length" class="bs-empty">No accounts to display</div>
 
-    <div
-      v-if="
-        (expanded === 'assets' && !assetAccounts.length) ||
-        (expanded === 'liabilities' && !liabilityAccounts.length)
-      "
-      class="bs-empty"
-    >
-      No accounts available for this category.
-    </div>
+    <!-- liabilities section removed -->
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, toRef, onMounted } from 'vue'
+import { ref, reactive, computed, toRef, onMounted, watch } from 'vue'
 import { useTopAccounts } from '@/composables/useTopAccounts'
+import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
 
@@ -236,7 +138,19 @@ const props = defineProps({
 })
 
 const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
+const { groups, activeGroupId } = useAccountGroups()
 onMounted(fetchAccounts)
+
+watch(allVisibleAccounts, (accounts) => {
+  const assets = accounts ? accounts.filter((a) => a.adjusted_balance >= 0) : []
+  const liabilities = accounts ? accounts.filter((a) => a.adjusted_balance < 0) : []
+  const assetGroup = groups.value.find((g) => g.id === 'assets')
+  if (assetGroup) assetGroup.accounts = assets
+  else groups.value.push({ id: 'assets', name: 'Assets', accounts: assets })
+  const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
+  if (liabilityGroup) liabilityGroup.accounts = liabilities
+  else groups.value.push({ id: 'liabilities', name: 'Liabilities', accounts: liabilities })
+})
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -264,7 +178,6 @@ function toggleDetails(accountId) {
   }
 }
 
-const expanded = ref('assets')
 const sortAsc = ref(false)
 
 const spectrum = [
@@ -275,7 +188,7 @@ const spectrum = [
 ]
 
 const expandedAccent = computed(() =>
-  expanded.value === 'liabilities' ? 'var(--color-accent-yellow)' : 'var(--color-accent-cyan)',
+  activeGroupId.value === 'liabilities' ? 'var(--color-accent-yellow)' : 'var(--color-accent-cyan)',
 )
 
 /** Return accent color for an account */
@@ -294,18 +207,18 @@ function accentColor(account, index) {
   return account.adjusted_balance >= 0 ? 'var(--color-accent-cyan)' : 'var(--color-accent-yellow)'
 }
 
-function toggle(type) {
-  expanded.value = expanded.value === type ? null : type
+function setActiveGroup(id) {
+  activeGroupId.value = id
 }
 
 function toggleSort() {
   sortAsc.value = !sortAsc.value
 }
 
-const assetAccounts = computed(() =>
-  allVisibleAccounts.value
-    ? [...allVisibleAccounts.value]
-        .filter((a) => a.adjusted_balance >= 0)
+const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+const activeAccounts = computed(() =>
+  activeGroup.value
+    ? [...activeGroup.value.accounts]
         .sort(
           (a, b) =>
             (sortAsc.value ? 1 : -1) *
@@ -314,24 +227,8 @@ const assetAccounts = computed(() =>
         .slice(0, 7)
     : [],
 )
-const liabilityAccounts = computed(() =>
-  allVisibleAccounts.value
-    ? [...allVisibleAccounts.value]
-        .filter((a) => a.adjusted_balance < 0)
-        .sort(
-          (a, b) =>
-            (sortAsc.value ? 1 : -1) *
-            (Math.abs(a.adjusted_balance) - Math.abs(b.adjusted_balance)),
-        )
-        .slice(0, 7)
-    : [],
-)
-
-const totalAssets = computed(() =>
-  assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
-)
-const totalLiabilities = computed(() =>
-  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
+const activeTotal = computed(() =>
+  activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
 
 const format = (val) => {
