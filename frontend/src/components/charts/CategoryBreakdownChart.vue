@@ -7,10 +7,10 @@
       v-if="showEmptyState"
       class="absolute inset-0 flex items-center justify-center text-center px-6 text-[var(--color-text-muted)]"
     >
-      Your chart has no items to display. A chart needs items to display for it to feel satisfied and complete.
+      Your chart has no items to display. A chart needs items to display for it to feel satisfied
+      and complete.
     </div>
   </div>
-  
 </template>
 
 <script setup>
@@ -110,10 +110,7 @@ async function renderChart() {
     return
   }
 
-  const { labels, datasets } = extractStackedBarData(
-    categoryTree.value,
-    selectedCategoryIds.value,
-  )
+  const { labels, datasets } = extractStackedBarData(categoryTree.value, selectedCategoryIds.value)
 
   // If there are no datasets to show (e.g., selected IDs do not match current data),
   // avoid rendering an empty chart.
