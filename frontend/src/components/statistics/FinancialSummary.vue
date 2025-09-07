@@ -9,15 +9,11 @@
   <div class="statistics-container">
     <!-- Statistics Header with Toggle -->
     <div class="stats-header">
-      <h3 class="stats-title">Financial Summary</h3>
+      <h3 class="stats-title">Financial Snapshot</h3>
       <div class="stats-controls">
-        <button
-          class="stats-toggle-btn"
-          :class="{ extended: isExtended }"
-          @click="toggleView"
-          :title="isExtended ? 'Switch to Basic View' : 'Switch to Extended View'"
-        >
-          {{ isExtended ? 'Basic' : 'Extended' }}
+        <button class="stats-toggle-btn" :class="{ extended: isExtendedView }" @click="toggleExtendedView"
+          :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'">
+          {{ isExtendedView ? 'Hide Detail View' : 'Show Detail View' }}
         </button>
       </div>
     </div>
@@ -32,7 +28,7 @@
         <span class="stat-label">Expenses:</span>
         <span class="stat-value">{{ formatAmount(summary.totalExpenses) }}</span>
       </div>
-      <div class="stat-item stat-net" :class="netClass">
+      <div class="stat-item stat-net" :class="netPolarityClass">
         <span class="stat-label">Net Total:</span>
         <span class="stat-value">{{ formatAmount(summary.totalNet) }}</span>
       </div>
@@ -40,22 +36,22 @@
 
     <!-- Extended Statistics (Conditional) -->
     <Transition name="expand">
-      <div v-if="isExtended" class="extended-stats">
+      <div v-if="isExtendedView" class="extended-stats">
         <div class="stats-grid">
           <!-- Daily Averages -->
           <div class="stat-group">
             <h4 class="group-title">Daily Averages</h4>
             <div class="stat-item">
               <span class="stat-label">Avg Income:</span>
-              <span class="stat-value">{{ formatAmount(extendedStats.avgDailyIncome) }}</span>
+              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Avg Expenses:</span>
-              <span class="stat-value">{{ formatAmount(extendedStats.avgDailyExpenses) }}</span>
+              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Avg Net:</span>
-              <span class="stat-value">{{ formatAmount(extendedStats.avgDailyNet) }}</span>
+              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyNet) }}</span>
             </div>
           </div>
 
@@ -64,11 +60,11 @@
             <h4 class="group-title">Moving Averages</h4>
             <div class="stat-item">
               <span class="stat-label">7-Day MA:</span>
-              <span class="stat-value">{{ formatAmount(extendedStats.movingAverage7) }}</span>
+              <span class="stat-value">{{ formatAmount(extendedMetrics.netMA7) }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">30-Day MA:</span>
-              <span class="stat-value">{{ formatAmount(extendedStats.movingAverage30) }}</span>
+              <span class="stat-value">{{ formatAmount(extendedMetrics.netMA30) }}</span>
             </div>
           </div>
 
@@ -78,41 +74,41 @@
             <div class="stat-item">
               <span class="stat-label">Net Trend:</span>
               <span class="stat-value trend-indicator" :class="netTrendClass">
-                {{ netTrendLabel }} {{ formatDelta(extendedStats.netDelta) }}
+                {{ netTrendLabel }} {{ formatSignedCurrency(extendedMetrics.netChange) }}
               </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Income Trend:</span>
               <span class="stat-value trend-indicator" :class="incomeTrendClass">
-                {{ incomeTrendLabel }} {{ formatDelta(extendedStats.incomeDelta) }}
+                {{ incomeTrendLabel }} {{ formatSignedCurrency(extendedMetrics.incomeChange) }}
               </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Expense Trend:</span>
               <span class="stat-value trend-indicator" :class="expenseTrendClass">
-                {{ expenseTrendLabel }} {{ formatDelta(extendedStats.expenseDelta) }}
+                {{ expenseTrendLabel }} {{ formatSignedCurrency(extendedMetrics.expenseChange) }}
               </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Volatility:</span>
-              <span class="stat-value">{{ volatilityLabel }}</span>
+              <span class="stat-value">{{ volatilityLevel }}</span>
             </div>
           </div>
 
           <!-- Extremes & Outliers -->
           <div class="stat-group">
-            <h4 class="group-title">Extremes</h4>
+            <h4 class="group-title">Outliers</h4>
             <div class="stat-item">
-              <span class="stat-label">Highest Income:</span>
-              <span class="stat-value">{{ highestIncomeLabel }}</span>
+              <span class="stat-label">Top Earning Day:</span>
+              <span class="stat-value">{{ topEarningLabel }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Highest Expense:</span>
-              <span class="stat-value">{{ highestExpenseLabel }}</span>
+              <span class="stat-label">Top Spending Day:</span>
+              <span class="stat-value">{{ topSpendingLabel }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Outlier Days:</span>
-              <span class="stat-value">{{ extendedStats.outlierDates.length }}</span>
+              <span class="stat-label">Outlier Days (>|2σ|):</span>
+              <span class="stat-value">{{ extendedMetrics.outlierDays.length }}</span>
             </div>
           </div>
         </div>
@@ -131,7 +127,7 @@ import { formatAmount } from '@/utils/format'
  * @param {number} value - The value to format.
  * @returns {string} Signed currency string.
  */
-function formatDelta(value) {
+function formatSignedCurrency(value) {
   const abs = Math.abs(value)
   const formatted = formatAmount(abs)
   return value >= 0 ? `+${formatted}` : `-${formatted}`
@@ -162,38 +158,38 @@ const props = defineProps({
 })
 
 // Toggle state for basic/extended view
-const isExtended = ref(false)
+const isExtendedView = ref(false)
 
-function toggleView() {
-  isExtended.value = !isExtended.value
+function toggleExtendedView() {
+  isExtendedView.value = !isExtendedView.value
 }
 
 // Basic computed properties
-const netClass = computed(() => ({
+const netPolarityClass = computed(() => ({
   positive: props.summary.totalNet >= 0,
   negative: props.summary.totalNet < 0,
 }))
 
 // Extended statistics calculations
-const extendedStats = computed(() => {
+const extendedMetrics = computed(() => {
   const data = props.chartData
   if (!data.length) {
     return {
       avgDailyIncome: 0,
       avgDailyExpenses: 0,
       avgDailyNet: 0,
-      movingAverage7: 0,
-      movingAverage30: 0,
+      netMA7: 0,
+      netMA30: 0,
       netTrend: 0,
       incomeTrend: 0,
       expenseTrend: 0,
-      netDelta: 0,
-      incomeDelta: 0,
-      expenseDelta: 0,
+      netChange: 0,
+      incomeChange: 0,
+      expenseChange: 0,
       volatility: 0,
-      highestIncomeDay: null,
-      highestExpenseDay: null,
-      outlierDates: [],
+      topEarningDay: null,
+      topSpendingDay: null,
+      outlierDays: [],
     }
   }
 
@@ -208,31 +204,31 @@ const extendedStats = computed(() => {
   const avgDailyExpenses = props.summary.totalExpenses / days
   const avgDailyNet = props.summary.totalNet / days
 
-  const movingAverage7 = calculateMovingAverage(netValues, 7)
-  const movingAverage30 = calculateMovingAverage(netValues, 30)
+  const netMA7 = calculateMovingAverage(netValues, 7)
+  const netMA30 = calculateMovingAverage(netValues, 30)
 
   const netTrend = calculateTrend(netValues)
   const incomeTrend = calculateTrend(incomeValues)
   const expenseTrend = calculateTrend(expenseValues)
-  const netDelta = netValues[netValues.length - 1] - netValues[0]
-  const incomeDelta = incomeValues[incomeValues.length - 1] - incomeValues[0]
-  const expenseDelta = expenseValues[expenseValues.length - 1] - expenseValues[0]
+  const netChange = netValues[netValues.length - 1] - netValues[0]
+  const incomeChange = incomeValues[incomeValues.length - 1] - incomeValues[0]
+  const expenseChange = expenseValues[expenseValues.length - 1] - expenseValues[0]
   const volatility = calculateVolatility(netValues)
 
   // Highest income/expense days
   const maxIncomeIdx = incomeValues.indexOf(Math.max(...incomeValues))
   const maxExpenseIdx = expenseValues.indexOf(Math.max(...expenseValues))
-  const highestIncomeDay = data[maxIncomeIdx]
+  const topEarningDay = data[maxIncomeIdx]
     ? { date: data[maxIncomeIdx].date, amount: incomeValues[maxIncomeIdx] }
     : null
-  const highestExpenseDay = data[maxExpenseIdx]
+  const topSpendingDay = data[maxExpenseIdx]
     ? { date: data[maxExpenseIdx].date, amount: expenseValues[maxExpenseIdx] }
     : null
 
   // Basic outlier detection using 2 standard deviations
   const mean = netValues.reduce((a, b) => a + b, 0) / days
   const threshold = 2 * volatility
-  const outlierDates = data
+  const outlierDays = data
     .filter((d, i) => Math.abs(netValues[i] - mean) > threshold)
     .map((d) => d.date)
 
@@ -240,65 +236,65 @@ const extendedStats = computed(() => {
     avgDailyIncome,
     avgDailyExpenses,
     avgDailyNet,
-    movingAverage7,
-    movingAverage30,
+    netMA7,
+    netMA30,
     netTrend,
     incomeTrend,
     expenseTrend,
-    netDelta,
-    incomeDelta,
-    expenseDelta,
+    netChange,
+    incomeChange,
+    expenseChange,
     volatility,
-    highestIncomeDay,
-    highestExpenseDay,
-    outlierDates,
+    topEarningDay,
+    topSpendingDay,
+    outlierDays,
   }
 })
 
 // Trend display helpers
-function labelFromTrend(trend) {
+function trendLabel(trend) {
   if (trend > 0.1) return '↗ Increasing'
   if (trend < -0.1) return '↘ Decreasing'
   return '→ Stable'
 }
 
 const netTrendClass = computed(() => ({
-  'trend-up': extendedStats.value.netTrend > 0,
-  'trend-down': extendedStats.value.netTrend < 0,
-  'trend-flat': extendedStats.value.netTrend === 0,
+  'trend-up': extendedMetrics.value.netTrend > 0,
+  'trend-down': extendedMetrics.value.netTrend < 0,
+  'trend-flat': extendedMetrics.value.netTrend === 0,
 }))
 const incomeTrendClass = computed(() => ({
-  'trend-up': extendedStats.value.incomeTrend > 0,
-  'trend-down': extendedStats.value.incomeTrend < 0,
-  'trend-flat': extendedStats.value.incomeTrend === 0,
+  'trend-up': extendedMetrics.value.incomeTrend > 0,
+  'trend-down': extendedMetrics.value.incomeTrend < 0,
+  'trend-flat': extendedMetrics.value.incomeTrend === 0,
 }))
 const expenseTrendClass = computed(() => ({
-  'trend-up': extendedStats.value.expenseTrend > 0,
-  'trend-down': extendedStats.value.expenseTrend < 0,
-  'trend-flat': extendedStats.value.expenseTrend === 0,
+  'trend-up': extendedMetrics.value.expenseTrend > 0,
+  'trend-down': extendedMetrics.value.expenseTrend < 0,
+  'trend-flat': extendedMetrics.value.expenseTrend === 0,
 }))
 
-const netTrendLabel = computed(() => labelFromTrend(extendedStats.value.netTrend))
-const incomeTrendLabel = computed(() => labelFromTrend(extendedStats.value.incomeTrend))
-const expenseTrendLabel = computed(() => labelFromTrend(extendedStats.value.expenseTrend))
+const netTrendLabel = computed(() => trendLabel(extendedMetrics.value.netTrend))
+const incomeTrendLabel = computed(() => trendLabel(extendedMetrics.value.incomeTrend))
+const expenseTrendLabel = computed(() => trendLabel(extendedMetrics.value.expenseTrend))
 
-const volatilityLabel = computed(() => {
-  const vol = extendedStats.value.volatility
+const volatilityLevel = computed(() => {
+  const vol = extendedMetrics.value.volatility
   if (vol < 50) return 'Low'
   if (vol < 200) return 'Medium'
   return 'High'
 })
 
-const highestIncomeLabel = computed(() => {
-  const hi = extendedStats.value.highestIncomeDay
+const topEarningLabel = computed(() => {
+  const hi = extendedMetrics.value.topEarningDay
   if (!hi) return 'N/A'
   const amt = formatAmount(hi.amount)
   // Show explicit plus sign for highest income
   return `${hi.date} (+${amt})`
 })
 
-const highestExpenseLabel = computed(() => {
-  const he = extendedStats.value.highestExpenseDay
+const topSpendingLabel = computed(() => {
+  const he = extendedMetrics.value.topSpendingDay
   return he ? `${he.date} (${formatAmount(he.amount)})` : 'N/A'
 })
 
@@ -337,7 +333,7 @@ watch(
   () => [props.chartData, props.zoomedOut],
   () => {
     // Trigger reactivity by accessing computed
-    extendedStats.value
+    extendedMetrics.value
   },
   { deep: true },
 )
