@@ -14,6 +14,7 @@ METRIC_NAMES = (
     "errors_total",
     "skips_total",
     "cycle_latency",
+    "net_profit_percent",
 )
 
 
@@ -42,7 +43,7 @@ def parse_metrics(prom_text: str) -> Dict[str, float | int]:
 
     Returns:
         JSON-serializable mapping containing the selected metric values.
-        Missing metrics default to 0.
+        Missing metrics default to ``0``.
     """
     metrics: Dict[str, float | int] = {name: 0 for name in METRIC_NAMES}
 
@@ -55,9 +56,28 @@ def parse_metrics(prom_text: str) -> Dict[str, float | int]:
         name, value = parts
         if name not in metrics:
             continue
-        if name in {"profit_total", "cycle_latency"}:
+        if name in {"profit_total", "cycle_latency", "net_profit_percent"}:
             metrics[name] = float(value)
         else:
             metrics[name] = int(float(value))
 
     return metrics
+
+
+def check_profit_alert(threshold: float) -> Dict[str, float | bool]:
+    """Evaluate whether ``net_profit_percent`` exceeds ``threshold``.
+
+    Args:
+        threshold: Percent threshold to trigger an alert.
+
+    Returns:
+        Mapping with ``net_profit_percent`` and whether an ``alert`` was
+        triggered.
+    """
+    metrics = get_metrics()
+    net_profit = float(metrics.get("net_profit_percent", 0))
+    return {
+        "net_profit_percent": net_profit,
+        "alert": net_profit > threshold,
+        "threshold": threshold,
+    }

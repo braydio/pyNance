@@ -1,14 +1,13 @@
 <template>
   <div class="container py-4">
     <h1>Arbit Dashboard</h1>
+    <ArbitAlerts />
   </div>
-</template>
+ </template>
 
-<script>
+<script setup>
 /**
  * Displays metrics for the optional Arbit dashboard.
  */
-export default {
-  name: 'ArbitDashboard',
-}
+import ArbitAlerts from '@/components/ArbitAlerts.vue'
 </script>
