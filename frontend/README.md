@@ -55,3 +55,14 @@ npm run test:e2e
 ```sh
 npm run lint
 ```
+
+### Develop the Arbit Dashboard Route
+
+1. Ensure the backend Arbit endpoints are running.
+2. Start the frontend development server:
+
+   ```sh
+   npm run dev
+   ```
+
+3. Navigate to `http://localhost:5173/arbit` to view the dashboard.
