@@ -55,3 +55,11 @@ export async function stopArbit() {
   const response = await apiClient.post('/arbit/stop')
   return response.data
 }
+
+/**
+ * Trigger an alert evaluation for net profit percentage.
+ */
+export async function postArbitAlert(threshold: number) {
+  const response = await apiClient.post('/arbit/alerts', { threshold })
+  return response.data
+}

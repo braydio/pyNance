@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import json
+from queue import SimpleQueue
+
 from app.services import arbit_cli, arbit_metrics
 from flask import Blueprint, current_app, jsonify, request
 
 arbit_dashboard = Blueprint("arbit_dashboard", __name__)
+
+# Simple in-memory queue to broadcast alert events to subscribers
+alert_queue: SimpleQueue[dict] = SimpleQueue()
 
 
 def _parse_threshold_fee(data: dict) -> tuple[float, float] | None:
@@ -106,3 +112,29 @@ def update_config():
         ),
         200,
     )
+
+
+@arbit_dashboard.route("/alerts", methods=["POST"])
+def post_alert():
+    """Evaluate profit metrics and emit an alert if the threshold is exceeded."""
+    data = request.get_json(silent=True) or {}
+    try:
+        threshold = float(data["threshold"])
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"error": "Invalid threshold"}), 400
+    result = arbit_metrics.check_profit_alert(threshold)
+    if result["alert"]:
+        alert_queue.put(result)
+    return jsonify(result), 200
+
+
+@arbit_dashboard.route("/alerts/stream", methods=["GET"])
+def alert_stream():
+    """Server-Sent Events stream for profit alerts."""
+
+    def generate():
+        while True:
+            event = alert_queue.get()
+            yield f"data: {json.dumps(event)}\n\n"
+
+    return current_app.response_class(generate(), mimetype="text/event-stream")

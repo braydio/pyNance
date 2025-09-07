@@ -33,6 +33,7 @@ fills_total 8
 errors_total 1
 skips_total 2
 cycle_latency 0.3
+net_profit_percent 4.2
 """
 
     def mock_get(url: str, timeout: int):
@@ -54,6 +55,7 @@ cycle_latency 0.3
         "errors_total": 1,
         "skips_total": 2,
         "cycle_latency": 0.3,
+        "net_profit_percent": 4.2,
     }
 
 
@@ -69,3 +71,17 @@ def test_get_metrics(monkeypatch):
 
     assert arbit_metrics.get_metrics() == {"profit_total": 0}
     assert called["used"] is True
+
+
+def test_check_profit_alert(monkeypatch):
+    """`check_profit_alert` reports whether the threshold is exceeded."""
+
+    def fake_get_metrics():
+        return {"net_profit_percent": 5}
+
+    monkeypatch.setattr(arbit_metrics, "get_metrics", fake_get_metrics)
+
+    result = arbit_metrics.check_profit_alert(4)
+    assert result["alert"] is True
+    assert result["net_profit_percent"] == 5
+    assert result["threshold"] == 4

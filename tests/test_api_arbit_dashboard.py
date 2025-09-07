@@ -180,3 +180,22 @@ def test_config_update_invalid():
     client = app.test_client()
     resp = client.post("/api/arbit/config/update", json={"threshold": -1, "fee": 0.2})
     assert resp.status_code == 400
+
+
+def test_alert_endpoint(monkeypatch):
+    """`/alerts` evaluates metrics and returns the result."""
+    app = make_app(True)
+    called = {}
+
+    def fake_check(threshold):
+        called["threshold"] = threshold
+        return {"alert": True, "net_profit_percent": 6, "threshold": threshold}
+
+    monkeypatch.setattr(
+        "app.routes.arbit_dashboard.arbit_metrics.check_profit_alert", fake_check
+    )
+    client = app.test_client()
+    resp = client.post("/api/arbit/alerts", json={"threshold": 5})
+    assert resp.status_code == 200
+    assert resp.get_json()["alert"] is True
+    assert called["threshold"] == 5
