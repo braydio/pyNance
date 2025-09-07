@@ -13,11 +13,61 @@
         <template #subtitle>View and manage your transactions</template>
       </PageHeader>
     </template>
+    <!-- Internal Transfer Scanner (moved to top) -->
+    <Card class="p-6 rounded-2xl">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-semibold">Internal Transfer Scanner</h2>
+        <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
+          {{ showScanner ? 'Hide' : 'Show' }}
+        </button>
+      </div>
+      <div class="mt-4" v-if="showScanner">
+        <InternalTransferScanner />
+      </div>
+    </Card>
 
-    <!-- Sidebar with import and filters -->
-    <template #sidebar>
-      <AccountActionsSidebar v-model="searchQuery" @open-scanner="activeTab = 'Scanner'" />
-    </template>
+    <!-- Top Controls -->
+    <Card v-if="showControls" id="top-controls" class="p-6">
+      <div class="grid gap-4 md:grid-cols-2">
+        <ImportFileSelector />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search transactions..."
+          class="input w-full"
+        />
+      </div>
+    </Card>
+
+    <!-- Filter Controls -->
+    <Card class="p-6">
+      <div class="flex flex-wrap items-center gap-4">
+        <DateRangeSelector
+          :start-date="startDate"
+          :end-date="endDate"
+          disable-zoom
+          @update:startDate="startDate = $event"
+          @update:endDate="endDate = $event"
+        />
+        <AccountFilter v-model="accountFilter" />
+        <TypeSelector v-model="txType" />
+      </div>
+    </Card>
+
+    <!-- Main Table -->
+    <Card class="p-6 space-y-4">
+      <h2 class="text-2xl font-bold">Recent Transactions</h2>
+      <transition name="fade-in-up" mode="out-in">
+        <UpdateTransactionsTable
+          :key="currentPage"
+          :transactions="filteredTransactions"
+          :sort-key="sortKey"
+          :sort-order="sortOrder"
+          @sort="setSort"
+          @editRecurringFromTransaction="prefillRecurringFromTransaction"
+        />
+      </transition>
+    </Card>
 
     <!-- Activity Tab -->
     <template #Activity>
@@ -70,7 +120,7 @@
 // View for listing and managing transactions with tabbed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
@@ -82,6 +132,9 @@ import Card from '@/components/ui/Card.vue'
 import { CreditCard } from 'lucide-vue-next'
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
+import DateRangeSelector from '@/components/DateRangeSelector.vue'
+import AccountFilter from '@/components/AccountFilter.vue'
+import TypeSelector from '@/components/TypeSelector.vue'
 
 export default {
   name: 'TransactionsView',
@@ -94,11 +147,28 @@ export default {
     Card,
     TabbedPageLayout,
     InternalTransferScanner,
+    DateRangeSelector,
+    AccountFilter,
+    TypeSelector,
   },
   setup() {
     const route = useRoute()
     const txidParam = route.query?.txid
     const initialPageSize = txidParam ? 250 : 10
+    const startDate = ref('')
+    const endDate = ref('')
+    const accountFilter = ref('')
+    const txType = ref('')
+
+    const filters = computed(() => {
+      const f = {}
+      if (startDate.value) f.start_date = startDate.value
+      if (endDate.value) f.end_date = endDate.value
+      if (accountFilter.value) f.account_ids = [accountFilter.value]
+      if (txType.value) f.tx_type = txType.value
+      return f
+    })
+
     const {
       searchQuery,
       currentPage,
@@ -111,6 +181,7 @@ export default {
     } = useTransactions(
       initialPageSize,
       ref(route.query?.promote || route.query?.promote_txid || ''),
+      filters,
     )
 
     const recurringFormRef = ref(null)
@@ -147,6 +218,10 @@ export default {
       recurringFormRef,
       prefillRecurringFromTransaction,
       CreditCard,
+      startDate,
+      endDate,
+      accountFilter,
+      txType,
     }
   },
 }
