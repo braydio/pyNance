@@ -15,10 +15,12 @@ def scan_file_for_top_level_query(filepath: str | Path) -> None:
         tree = ast.parse(f.read(), filename=str(path))
 
     for node in tree.body:
-        if isinstance(node, (ast.Assign, ast.Expr, ast.If)):
-            if ast.dump(node).find(".query") != -1:
-                VIOLATIONS.append(filepath)
-                return
+        if (
+            isinstance(node, (ast.Assign, ast.Expr, ast.If))
+            and ast.dump(node).find(".query") != -1
+        ):
+            VIOLATIONS.append(filepath)
+            return
 
 
 def main():
