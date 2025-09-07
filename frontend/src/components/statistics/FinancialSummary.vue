@@ -11,8 +11,12 @@
     <div class="stats-header">
       <h3 class="stats-title">Financial Snapshot</h3>
       <div class="stats-controls">
-        <button class="stats-toggle-btn" :class="{ extended: isExtendedView }" @click="toggleExtendedView"
-          :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'">
+        <button
+          class="stats-toggle-btn"
+          :class="{ extended: isExtendedView }"
+          @click="toggleExtendedView"
+          :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
+        >
           {{ isExtendedView ? 'Hide Detail View' : 'Show Detail View' }}
         </button>
       </div>
