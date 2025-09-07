@@ -3,6 +3,12 @@
     class="relative w-full max-w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
   >
     <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
+    <div
+      v-if="showEmptyState"
+      class="absolute inset-0 flex items-center justify-center text-center px-6 text-[var(--color-text-muted)]"
+    >
+      Your chart has no items to display. A chart needs items to display for it to feel satisfied and complete.
+    </div>
   </div>
 </template>
 
