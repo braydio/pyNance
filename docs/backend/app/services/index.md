@@ -21,6 +21,10 @@
 - [`sync_service.py`](#sync-service): Orchestrates transaction ingestion from APIs or files.
 - [`transactions.py`](#transactions-service): Core logic for interacting with transaction data.
 
+### Arbitrage
+
+- [`arbit_metrics.py`](#arbit-metrics-service): Retrieves metrics from the Arbit exporter.
+
 ---
 
 ## 📘 `transactions.py`
