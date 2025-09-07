@@ -79,11 +79,14 @@ def _find_invalid_accesses(path, valid):
                 if isinstance(inner.value, ast.Name):
                     pkg = alias_pkg.get(inner.value.id)
                     model_name = inner.attr
-                    if pkg and model_name in valid:
-                        if node.attr not in valid[model_name]:
-                            violations.append(
-                                f"{path}:{node.lineno} {model_name}.{node.attr}"
-                            )
+                    if (
+                        pkg
+                        and model_name in valid
+                        and node.attr not in valid[model_name]
+                    ):
+                        violations.append(
+                            f"{path}:{node.lineno} {model_name}.{node.attr}"
+                        )
     return violations
 
 

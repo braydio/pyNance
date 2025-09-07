@@ -41,11 +41,14 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
         ):
             match = False
         pattern = crit.get("description_pattern")
-        if match and pattern:
-            if not re.search(
+        if (
+            match
+            and pattern
+            and not re.search(
                 pattern, transaction.get("description", ""), re.IGNORECASE
-            ):
-                match = False
+            )
+        ):
+            match = False
         if (
             match
             and "amount_min" in crit
