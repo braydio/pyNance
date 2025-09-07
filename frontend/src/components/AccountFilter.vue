@@ -18,6 +18,7 @@
  * Fetches account list on mount and exposes v-model for the selected account id.
  */
 import { ref, onMounted } from 'vue'
+import api from '@/services/api'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
@@ -32,8 +33,7 @@ function onChange(e) {
 
 onMounted(async () => {
   try {
-    const res = await fetch('/api/accounts/get_accounts')
-    const data = await res.json()
+    const data = await api.getAccounts()
     accounts.value = data.accounts || []
   } catch (err) {
     // silently ignore fetch errors for selector
