@@ -10,6 +10,7 @@
       Your chart has no items to display. A chart needs items to display for it to feel satisfied and complete.
     </div>
   </div>
+  
 </template>
 
 <script setup>
@@ -17,7 +18,7 @@
 // Displays a stacked bar chart of spending. By default, only the top four
 // parent categories are shown individually with the rest grouped into an
 // "Other" bar. Set `groupOthers` to `false` to show all categories.
-import { ref, watch, nextTick, onMounted, onUnmounted, toRefs } from 'vue'
+import { ref, watch, nextTick, onMounted, onUnmounted, toRefs, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
@@ -38,6 +39,7 @@ const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
+const showEmptyState = computed(() => (selectedCategoryIds.value?.length || 0) === 0)
 
 // Cycle through theme accent colors for each dataset segment
 function getGroupColor(idx) {
@@ -57,16 +59,15 @@ function getStyle(name) {
 
 function extractStackedBarData(tree, selectedIds = []) {
   // Only include parents that have at least one selected child
-  const parents = tree.filter((node) =>
-    node.children?.some((child) => selectedIds.includes(child.id)),
-  )
+  const sel = new Set((selectedIds || []).map((x) => String(x)))
+  const parents = tree.filter((node) => node.children?.some((child) => sel.has(String(child.id))))
   const labels = parents.map((p) => p.label)
 
   // Collect unique child IDs for selected categories across all parents
   const childIdSet = new Set()
   parents.forEach((p) =>
     (p.children || []).forEach((c) => {
-      if (selectedIds.includes(c.id)) childIdSet.add(c.id)
+      if (sel.has(String(c.id))) childIdSet.add(String(c.id))
     }),
   )
   const allChildIds = Array.from(childIdSet)
@@ -74,7 +75,7 @@ function extractStackedBarData(tree, selectedIds = []) {
   // Map each child ID to its label for display
   function labelForId(id) {
     for (const p of parents) {
-      const match = (p.children || []).find((c) => c.id === id)
+      const match = (p.children || []).find((c) => String(c.id) === String(id))
       if (match) return match.label
     }
     return ''
@@ -83,7 +84,7 @@ function extractStackedBarData(tree, selectedIds = []) {
   const datasets = allChildIds.map((childId, colorIdx) => ({
     label: labelForId(childId),
     data: parents.map((p) => {
-      const child = (p.children || []).find((c) => c.id === childId)
+      const child = (p.children || []).find((c) => String(c.id) === String(childId))
       return child ? child.amount : 0
     }),
     backgroundColor: getGroupColor(colorIdx),
@@ -104,21 +105,27 @@ async function renderChart() {
   const ctx = canvasEl.getContext('2d')
   if (!ctx) return
 
-  const { labels, datasets } = extractStackedBarData(categoryTree.value, selectedCategoryIds.value)
+  // If nothing is selected, do not render a chart; show the empty-state overlay instead
+  if (showEmptyState.value) {
+    return
+  }
+
+  const { labels, datasets } = extractStackedBarData(
+    categoryTree.value,
+    selectedCategoryIds.value,
+  )
+
+  // If there are no datasets to show (e.g., selected IDs do not match current data),
+  // avoid rendering an empty chart.
+  if (!datasets.length || !labels.length) {
+    return
+  }
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: labels.length ? labels : [' '],
-      datasets: datasets.length
-        ? datasets
-        : [
-            {
-              label: 'Spending',
-              data: [0],
-              backgroundColor: getGroupColor(0),
-            },
-          ],
+      labels,
+      datasets,
     },
     options: {
       responsive: true,
@@ -127,13 +134,40 @@ async function renderChart() {
       plugins: {
         legend: {
           display: true,
-          labels: { color: getStyle('--color-text-muted') },
+          labels: {
+            color: getStyle('--color-text-muted'),
+            // Hide any legend item with text 'Debit'
+            filter: (legendItem) => legendItem.text !== 'Debit',
+          },
         },
         tooltip: {
+          mode: 'index',
+          intersect: false,
+          displayColors: false,
+          filter: (tooltipItem) => tooltipItem.datasetIndex === 0,
           callbacks: {
+            // No title; axis label already shows parent
+            title: () => '',
+            // Show total first in the body
+            beforeBody: (items) => {
+              const label = items?.[0]?.label || ''
+              const node = categoryTree.value.find((cat) => cat.label === label)
+              const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
+              const children = (node?.children || []).filter((c) => sel.has(String(c.id)))
+              const total = children.reduce((sum, c) => sum + (c.amount || 0), 0)
+              return [`Total: ${formatAmount(total)}`]
+            },
+            // Body lists top 5 child categories with amounts
             label: (context) => {
-              const val = context.raw ?? 0
-              return `${context.dataset.label}: ${formatAmount(val)}`
+              const label = context.label || ''
+              const node = categoryTree.value.find((cat) => cat.label === label)
+              const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
+              const children = (node?.children || [])
+                .filter((c) => sel.has(String(c.id)))
+                .sort((a, b) => (b.amount || 0) - (a.amount || 0))
+                .slice(0, 5)
+              if (!children.length) return []
+              return children.map((c) => `${c.label}: ${formatAmount(c.amount || 0)}`)
             },
           },
           backgroundColor: getStyle('--theme-bg'),
@@ -156,9 +190,10 @@ async function renderChart() {
           const label = chartInstance.value.data.labels[index]
           const node = categoryTree.value.find((cat) => cat.label === label)
           // Only emit IDs for categories currently selected by the user
+          const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
           const ids = (node?.children || [])
-            .filter((c) => selectedCategoryIds.value.includes(c.id))
-            .map((c) => c.id)
+            .filter((c) => sel.has(String(c.id)))
+            .map((c) => String(c.id))
           emit('bar-click', { label, ids })
         }
       },
@@ -215,7 +250,7 @@ async function fetchData() {
       categoryTree.value = processed
       emit(
         'categories-change',
-        categoryTree.value.flatMap((cat) => (cat.children || []).map((child) => child.id)),
+        categoryTree.value.flatMap((cat) => (cat.children || []).map((child) => String(child.id))),
       )
       updateSummary()
       await renderChart()
@@ -226,12 +261,13 @@ async function fetchData() {
 }
 
 function sumSelectedAmounts(nodes, selectedIds) {
+  const sel = new Set((selectedIds || []).map((x) => String(x)))
   return (nodes || []).reduce((sum, n) => {
     let subtotal = 0
-    if (selectedIds.includes(n.id)) {
+    if (sel.has(String(n.id))) {
       subtotal += n.amount
     }
-    subtotal += sumSelectedAmounts(n.children || [], selectedIds)
+    subtotal += sumSelectedAmounts(n.children || [], Array.from(sel))
     return sum + subtotal
   }, 0)
 }
