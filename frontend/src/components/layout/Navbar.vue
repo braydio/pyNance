@@ -8,6 +8,7 @@
       <router-link to="/forecast" class="nav-link">Forecasting</router-link>
       <router-link to="/planning" class="nav-link">Planning</router-link>
       <router-link to="/investments" class="nav-link">Investments</router-link>
+      <router-link v-if="showArbit" to="/arbit" class="nav-link">Arbit</router-link>
     </div>
   </nav>
 </template>
@@ -16,8 +17,21 @@
 /**
  * Primary navigation bar with links to top-level routes.
  */
+import { fetchArbitStatus } from '@/api/arbit'
+
 export default {
   name: 'Navbar',
+  data() {
+    return { showArbit: false }
+  },
+  async mounted() {
+    try {
+      const data = await fetchArbitStatus()
+      this.showArbit = Boolean(data?.running)
+    } catch (err) {
+      console.error('Failed to fetch Arbit status', err)
+    }
+  },
 }
 </script>
 
