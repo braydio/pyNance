@@ -16,6 +16,7 @@ import ForecastMock from '@/views/ForecastMock.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
 
 const Investments = () => import('../views/Investments.vue')
+const ArbitDashboard = () => import('../views/ArbitDashboard.vue')
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
@@ -30,6 +31,7 @@ const routes = [
     component: NetYearComparisonChart,
   },
   { path: '/investments', name: 'Investments', component: Investments },
+  { path: '/arbit', name: 'Arbit', component: ArbitDashboard },
   { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/summary', name: 'FinancialSummaryDetailed', component: FinancialSummaryDetailed },
