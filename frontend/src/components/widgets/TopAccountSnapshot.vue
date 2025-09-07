@@ -23,7 +23,7 @@
       </button>
       <button
         class="bs-sort-btn"
-        :style="{ '--accent': expandedAccent }"
+        :style="{ '--accent': groupAccent }"
         @click="toggleSort"
         aria-label="Toggle sort order"
       >
@@ -108,7 +108,7 @@
         <li
           v-if="activeAccounts.length"
           class="bs-summary-row"
-          :style="{ '--accent': expandedAccent }"
+          :style="{ '--accent': groupAccent }"
         >
           <div></div>
           <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
@@ -187,9 +187,12 @@ const spectrum = [
   'var(--color-accent-blue)',
 ]
 
-const expandedAccent = computed(() =>
-  activeGroupId.value === 'liabilities' ? 'var(--color-accent-yellow)' : 'var(--color-accent-cyan)',
-)
+// Map account group IDs to accent colors
+const groupAccents = {
+  assets: 'var(--color-accent-cyan)',
+  liabilities: 'var(--color-accent-yellow)',
+}
+const groupAccent = computed(() => groupAccents[activeGroupId.value] || 'var(--color-accent-cyan)')
 
 /** Return accent color for an account */
 function accentColor(account, index) {
