@@ -17,3 +17,4 @@
 - [Internal](../internal/) – internal notes
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
+- [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI
