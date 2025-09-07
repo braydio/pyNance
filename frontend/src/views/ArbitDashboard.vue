@@ -3,7 +3,7 @@
     <h1>Arbit Dashboard</h1>
     <ArbitAlerts />
   </div>
- </template>
+</template>
 
 <script setup>
 /**

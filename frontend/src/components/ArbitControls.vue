@@ -4,11 +4,7 @@
     <button class="stop-btn" @click="stop">Stop</button>
     <div>Status: {{ status.running ? 'running' : 'stopped' }}</div>
     <div class="alert-config">
-      <input
-        v-model.number="threshold"
-        type="number"
-        placeholder="Alert threshold"
-      />
+      <input v-model.number="threshold" type="number" placeholder="Alert threshold" />
       <button class="alert-btn" @click="checkAlert">Check Profit</button>
     </div>
   </div>
