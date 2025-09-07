@@ -21,7 +21,6 @@ import { ref, onMounted } from 'vue'
 
 import api from '@/services/api'
 
-
 const props = defineProps({
   modelValue: { type: String, default: '' },
 })
@@ -35,7 +34,6 @@ function onChange(e) {
 
 onMounted(async () => {
   try {
-
     const data = await api.getAccounts()
 
     accounts.value = data.accounts || []

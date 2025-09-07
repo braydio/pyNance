@@ -69,7 +69,6 @@
       </transition>
     </Card>
 
-
     <!-- Activity Tab -->
     <template #Activity>
       <Card class="p-6 space-y-4">
