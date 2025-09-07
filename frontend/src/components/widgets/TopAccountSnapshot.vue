@@ -119,9 +119,7 @@
       </ul>
     </Transition>
 
-    <div v-if="activeGroup && !activeAccounts.length" class="bs-empty">
-      No accounts to display
-    </div>
+    <div v-if="activeGroup && !activeAccounts.length" class="bs-empty">No accounts to display</div>
 
     <!-- liabilities section removed -->
   </div>
@@ -190,9 +188,7 @@ const spectrum = [
 ]
 
 const expandedAccent = computed(() =>
-  activeGroupId.value === 'liabilities'
-    ? 'var(--color-accent-yellow)'
-    : 'var(--color-accent-cyan)',
+  activeGroupId.value === 'liabilities' ? 'var(--color-accent-yellow)' : 'var(--color-accent-cyan)',
 )
 
 /** Return accent color for an account */
@@ -219,9 +215,7 @@ function toggleSort() {
   sortAsc.value = !sortAsc.value
 }
 
-const activeGroup = computed(() =>
-  groups.value.find((g) => g.id === activeGroupId.value) || null,
-)
+const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const activeAccounts = computed(() =>
   activeGroup.value
     ? [...activeGroup.value.accounts]

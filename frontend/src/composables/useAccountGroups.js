@@ -18,7 +18,7 @@ export function useAccountGroups() {
     if (!groups.value.length) {
       groups.value.push({ id: 'default', name: 'Group', accounts: [] })
     }
-    if (!groups.value.some(g => g.id === activeGroupId.value)) {
+    if (!groups.value.some((g) => g.id === activeGroupId.value)) {
       activeGroupId.value = groups.value[0].id
     }
   }
