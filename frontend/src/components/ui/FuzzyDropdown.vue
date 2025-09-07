@@ -4,12 +4,23 @@
 -->
 <template>
   <div class="relative" v-click-outside="close">
-    <input v-model="query" type="text" :placeholder="placeholder" class="input w-full mb-2" @focus="open = true"
-      @keydown.esc="open = false" @blur="onBlur" />
+    <input
+      v-model="query"
+      type="text"
+      :placeholder="placeholder"
+      class="input w-full mb-2"
+      @focus="open = true"
+      @keydown.esc="open = false"
+      @blur="onBlur"
+    />
     <div v-show="open" class="dropdown-menu w-full">
       <label v-for="item in filtered" :key="item.id" class="flex items-center gap-2 py-1">
-        <input type="checkbox" :value="item.id" v-model="localValue"
-          :disabled="max > 0 && !localValue.includes(item.id) && localValue.length >= max" />
+        <input
+          type="checkbox"
+          :value="item.id"
+          v-model="localValue"
+          :disabled="max > 0 && !localValue.includes(item.id) && localValue.length >= max"
+        />
         <span>{{ item.name }}</span>
       </label>
       <p v-if="!filtered.length" class="text-sm text-gray-500 py-2">No matches</p>
@@ -33,29 +44,21 @@ const query = ref('')
 const open = ref(false)
 
 // Safe copy for controlled multi-select
-const safeModel = computed(() =>
-  Array.isArray(props.modelValue) ? props.modelValue : []
-)
+const safeModel = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 const localValue = ref([...safeModel.value])
 
 watch(
   () => props.modelValue,
-  val => (localValue.value = [...(Array.isArray(val) ? val : [])])
+  (val) => (localValue.value = [...(Array.isArray(val) ? val : [])]),
 )
-watch(
-  localValue,
-  val => emit('update:modelValue', val),
-  { deep: true }
-)
+watch(localValue, (val) => emit('update:modelValue', val), { deep: true })
 
-const fuse = computed(() =>
-  new Fuse(props.options, { keys: ['name'], threshold: 0.3 })
-)
+const fuse = computed(() => new Fuse(props.options, { keys: ['name'], threshold: 0.3 }))
 const filtered = computed(() => {
   if (!query.value) {
     return props.options.slice(0, props.max || 50)
   }
-  return fuse.value.search(query.value).map(r => r.item)
+  return fuse.value.search(query.value).map((r) => r.item)
 })
 
 // UX: close on blur unless clicking into dropdown

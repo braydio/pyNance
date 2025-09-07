@@ -5,7 +5,7 @@
       :class="[
         'toggle-header flex items-center justify-between w-full p-3 text-left rounded-t-lg',
         'hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors',
-        modelValue ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-900'
+        modelValue ? 'bg-gray-50 dark:bg-gray-800' : 'bg-gray-100 dark:bg-gray-900',
       ]"
     >
       <div class="flex items-center gap-2">
@@ -14,14 +14,15 @@
       </div>
       <div class="flex items-center gap-2">
         <slot name="header-extra" />
-        <ChevronDown 
-          :class="['w-4 h-4 transition-transform', modelValue ? 'rotate-180' : '']" 
-        />
+        <ChevronDown :class="['w-4 h-4 transition-transform', modelValue ? 'rotate-180' : '']" />
       </div>
     </button>
-    
+
     <transition name="slide-down">
-      <div v-if="modelValue" :class="['panel-content border-x border-b rounded-b-lg', dense ? 'p-2' : 'p-4']">
+      <div
+        v-if="modelValue"
+        :class="['panel-content border-x border-b rounded-b-lg', dense ? 'p-2' : 'p-4']"
+      >
         <slot />
       </div>
     </transition>
@@ -34,20 +35,20 @@ import { ChevronDown } from 'lucide-vue-next'
 const props = defineProps({
   title: {
     type: String,
-    required: true
+    required: true,
   },
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   icon: {
     type: [String, Object],
-    default: null
+    default: null,
   },
   dense: {
     type: Boolean,
-    default: false
-  }
+    default: false,
+  },
 })
 
 const emit = defineEmits(['update:modelValue'])
