@@ -345,10 +345,11 @@ function onCatSelected(newIds) {
   catSelected.value = Array.isArray(newIds) ? newIds : [newIds]
 }
 
-// When user changes date range, let next data load re-apply auto-select
+// When user changes date range, clear selections so next data load re-applies auto-select
 watch(
   () => [dateRange.value.start, dateRange.value.end],
   () => {
+    catSelected.value = []
     defaultSet.value = false
   },
 )

@@ -1,8 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { useTransactions } from '../useTransactions.js'
 
-// Ensure filteredTransactions pads results to the requested page size
-// even when search narrows down matches.
+vi.mock('@/api/transactions', () => ({
+  fetchTransactions: vi.fn(),
+}))
+
+// Ensure filteredTransactions returns only search matches without padding
+// when a query is applied.
 describe('useTransactions', () => {
   it('filters results without padding when searching', () => {
     const { transactions, searchQuery, filteredTransactions } = useTransactions(3)

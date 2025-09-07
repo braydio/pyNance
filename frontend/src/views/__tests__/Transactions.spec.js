@@ -16,37 +16,38 @@ describe('Transactions.vue', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
         stubs: [
-          'ImportFileSelector',
+          'AccountActionsSidebar',
           'UpdateTransactionsTable',
           'RecurringTransactionSection',
-          'Button',
+          'InternalTransferScanner',
+          'UiButton',
           'Card',
           'CreditCard',
-          'BasePageLayout',
+          'TabbedPageLayout',
         ],
       },
     })
     expect(wrapper.html()).toMatchSnapshot()
   })
 
-  it('toggles control visibility', async () => {
+  it('defaults to Activity tab', () => {
     const wrapper = shallowMount(Transactions, {
       global: {
         stubs: [
-          'ImportFileSelector',
+          'AccountActionsSidebar',
           'UpdateTransactionsTable',
           'RecurringTransactionSection',
-          'Button',
+          'InternalTransferScanner',
+          'UiButton',
           'Card',
           'CreditCard',
-          'BasePageLayout',
+          'TabbedPageLayout',
         ],
       },
     })
 
-    expect(wrapper.vm.showControls).toBe(false)
-    wrapper.vm.toggleControls()
-    await wrapper.vm.$nextTick()
-    expect(wrapper.vm.showControls).toBe(true)
+    expect(wrapper.vm.activeTab).toBe('Activity')
+    wrapper.vm.activeTab = 'Scanner'
+    expect(wrapper.vm.activeTab).toBe('Scanner')
   })
 })

@@ -43,6 +43,10 @@ It starts the frontend development server and periodically performs a
 `git pull --rebase` when the tracked branch receives new commits, ensuring Git
 hooks run and the server restarts with the latest changes.
 
+## Configuration
+
+- `ENABLE_ARBIT_DASHBOARD` – set to `true` to enable the experimental arbitrage dashboard.
+
 ## Testing
 
 - Backend tests:

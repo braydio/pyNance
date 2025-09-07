@@ -4,7 +4,9 @@
 
 from .constants import DATABASE_NAME, FILES, SQLALCHEMY_DATABASE_URI
 from .environment import (
+    ARBIT_EXPORTER_URL,
     CLIENT_NAME,
+    ENABLE_ARBIT_DASHBOARD,
     FLASK_ENV,
     PLAID_CLIENT_ID,
     PLAID_CLIENT_NAME,
@@ -30,6 +32,8 @@ __all__ = [
     "PLAID_CLIENT_ID",
     "PLAID_SECRET",
     "PLAID_ENV",
+    "ENABLE_ARBIT_DASHBOARD",
+    "ARBIT_EXPORTER_URL",
     "TELLER_API_BASE_URL",
     "TELLER_APP_ID",
     "TELLER_CERTIFICATE",
@@ -60,5 +64,5 @@ logger.debug(f"Initialized main database as {DATABASE_NAME}")
 logger.debug(f"SQLAlchemy Database URI: {SQLALCHEMY_DATABASE_URI}")
 logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
 logger.debug(
-    f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL}\n\n"
+    f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL} \nArbit: {ARBIT_EXPORTER_URL}\n\n"
 )

@@ -21,6 +21,10 @@
 - [`sync_service.py`](#sync-service): Orchestrates transaction ingestion from APIs or files.
 - [`transactions.py`](#transactions-service): Core logic for interacting with transaction data.
 
+### Arbitrage
+
+- [`arbit_metrics.py`](#arbit-metrics-service): Retrieves metrics from the Arbit exporter.
+
 ---
 
 ## 📘 `transactions.py`
@@ -42,15 +46,12 @@ Provides core logic for managing user transactions. Supports listing, filtering,
 ## Primary Functions
 
 - `get_transactions(user_id, filters)`
-
   - Returns a filtered list of transactions for the user
 
 - `create_transaction(user_id, data)`
-
   - Inserts a new user-defined transaction (manual or imported)
 
 - `update_transaction(transaction_id, updates)`
-
   - Modifies editable fields like category, description
 
 - `delete_transaction(transaction_id)`
