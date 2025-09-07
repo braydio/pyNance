@@ -29,6 +29,11 @@ def fetch_metrics() -> Dict[str, float | int]:
     return parse_metrics(response.text)
 
 
+def get_metrics() -> Dict[str, float | int]:
+    """Public wrapper to retrieve exporter metrics."""
+    return fetch_metrics()
+
+
 def parse_metrics(prom_text: str) -> Dict[str, float | int]:
     """Parse Prometheus metrics text into a dictionary.
 

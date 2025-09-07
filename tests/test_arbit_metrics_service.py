@@ -55,3 +55,17 @@ cycle_latency 0.3
         "skips_total": 2,
         "cycle_latency": 0.3,
     }
+
+
+def test_get_metrics(monkeypatch):
+    """`get_metrics` delegates to `fetch_metrics`."""
+    called = {}
+
+    def fake_fetch() -> dict:
+        called["used"] = True
+        return {"profit_total": 0}
+
+    monkeypatch.setattr(arbit_metrics, "fetch_metrics", fake_fetch)
+
+    assert arbit_metrics.get_metrics() == {"profit_total": 0}
+    assert called["used"] is True

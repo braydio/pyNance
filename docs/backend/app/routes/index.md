@@ -5,6 +5,7 @@
 ## Table of Contents
 
 - [`accounts.py`](#accounts-route)
+- [`arbit_dashboard.py`](#arbit-dashboard-route)
 - [`categories.py`](#categories-route)
 - [`GET /categories/tree`](categories.md)
 - [`charts.py`](#charts-route)

@@ -64,6 +64,11 @@ def create_app():
     app.register_blueprint(institutions, url_prefix="/api/institutions")
     app.register_blueprint(summary, url_prefix="/api/summary")
 
+    if ENABLE_ARBIT_DASHBOARD:
+        from app.routes.arbit_dashboard import arbit_dashboard
+
+        app.register_blueprint(arbit_dashboard, url_prefix="/api/arbit")
+
     if TELLER_WEBHOOK_SECRET:
         app.register_blueprint(webhooks, url_prefix="/api/webhooks")
     else:
