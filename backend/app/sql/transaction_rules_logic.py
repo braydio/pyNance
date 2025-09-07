@@ -45,8 +45,8 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
             match
             and pattern
             and not re.search(
-            pattern, transaction.get("description", ""), re.IGNORECASE
-        )
+                pattern, transaction.get("description", ""), re.IGNORECASE
+            )
         ):
             match = False
         if (
