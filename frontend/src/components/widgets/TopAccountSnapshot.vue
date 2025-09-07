@@ -1,7 +1,7 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, sort amounts, and view tinted backgrounds by filter.
+  Users can switch between groups, rename groups, sort amounts, and view tinted backgrounds by filter.
 -->
 <template>
   <div
@@ -12,15 +12,24 @@
     }"
   >
     <div class="bs-toggle-row">
-      <button
-        v-for="g in groups"
-        :key="g.id"
-        :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-        @click="setActiveGroup(g.id)"
-        :aria-label="`Show ${g.name}`"
-      >
-        {{ g.name }}
-      </button>
+      <template v-for="g in groups" :key="g.id">
+        <input
+          v-if="editingGroupId === g.id || !g.name"
+          v-model="g.name"
+          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id, 'bs-tab-edit']"
+          @blur="finishEdit(g.id)"
+          @keydown.enter.prevent="finishEdit(g.id)"
+        />
+        <button
+          v-else
+          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+          @click="setActiveGroup(g.id)"
+          :aria-label="`Show ${g.name}`"
+          @dblclick.prevent="startEdit(g.id)"
+        >
+          {{ g.name }}
+        </button>
+      </template>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
@@ -186,6 +195,7 @@ function toggleDetails(accountId) {
 }
 
 const showGroupMenu = ref(false)
+const editingGroupId = ref(null)
 
 const spectrum = [
   'var(--color-accent-cyan)',
@@ -234,6 +244,24 @@ function addGroup() {
   const id = `group-${Date.now()}`
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
+  editingGroupId.value = id
+}
+
+/** Enter edit mode for a group tab */
+function startEdit(id) {
+  editingGroupId.value = id
+}
+
+/**
+ * Persist edited group name and exit edit mode
+ * @param {string} id - Group identifier
+ */
+function finishEdit(id) {
+  const group = groups.value.find((g) => g.id === id)
+  if (group && typeof group.name === 'string') {
+    group.name = group.name.trim()
+  }
+  editingGroupId.value = null
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
@@ -385,6 +413,14 @@ function initials(name) {
     color 0.2s;
   cursor: pointer;
   position: relative;
+}
+
+.bs-tab-edit {
+  cursor: text;
+}
+
+.bs-tab-edit:focus {
+  outline: none;
 }
 
 .bs-tab-active.bs-tab-assets {
