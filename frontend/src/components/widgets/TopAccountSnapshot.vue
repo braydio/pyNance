@@ -12,15 +12,24 @@
     }"
   >
     <div class="bs-toggle-row">
-      <button
-        v-for="g in groups"
-        :key="g.id"
-        :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-        @click="setActiveGroup(g.id)"
-        :aria-label="`Show ${g.name}`"
-      >
-        {{ g.name }}
-      </button>
+      <template v-for="g in groups" :key="g.id">
+        <input
+          v-if="!g.name || editingGroupId === g.id"
+          v-model="g.name"
+          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id, 'bs-tab-input']"
+          @blur="finishEdit(g)"
+          @keyup.enter="finishEdit(g)"
+        />
+        <button
+          v-else
+          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+          @click="setActiveGroup(g.id)"
+          @dblclick.stop="startEdit(g.id)"
+          :aria-label="`Show ${g.name}`"
+        >
+          {{ g.name }}
+        </button>
+      </template>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
@@ -186,6 +195,7 @@ function toggleDetails(accountId) {
 }
 
 const showGroupMenu = ref(false)
+const editingGroupId = ref(null)
 
 const spectrum = [
   'var(--color-accent-cyan)',
@@ -230,10 +240,25 @@ function selectGroup(id) {
   showGroupMenu.value = false
 }
 
+/** Enable editing for a group tab */
+function startEdit(id) {
+  editingGroupId.value = id
+}
+
+/** Disable editing and persist the group name */
+function finishEdit(group) {
+  editingGroupId.value = null
+  if (!group.name) {
+    editingGroupId.value = group.id
+  }
+}
+
+/** Create a new group and start editing its name */
 function addGroup() {
   const id = `group-${Date.now()}`
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
+  editingGroupId.value = id
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
@@ -385,6 +410,14 @@ function initials(name) {
     color 0.2s;
   cursor: pointer;
   position: relative;
+}
+
+.bs-tab-input {
+  cursor: text;
+}
+
+.bs-tab-input:focus {
+  outline: none;
 }
 
 .bs-tab-active.bs-tab-assets {
