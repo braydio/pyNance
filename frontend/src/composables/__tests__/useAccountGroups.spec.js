@@ -66,4 +66,3 @@ describe('useAccountGroups', () => {
     expect(groups.value[0].accounts.length).toBe(5)
   })
 })
-

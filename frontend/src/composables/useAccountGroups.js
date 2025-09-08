@@ -105,14 +105,17 @@ export function useAccountGroups() {
     return true
   }
 
-  watch(groups, () => {
-    ensureActive()
-    persist()
-  }, { deep: true })
+  watch(
+    groups,
+    () => {
+      ensureActive()
+      persist()
+    },
+    { deep: true },
+  )
   watch(activeGroupId, persist)
   ensureActive()
   persist()
 
   return { groups, activeGroupId, addGroup, setActiveGroup, removeGroup, addAccountToGroup }
 }
-
