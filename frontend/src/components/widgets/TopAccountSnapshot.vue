@@ -1,7 +1,7 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, sort amounts, and view tinted backgrounds by filter.
+  Users can switch between groups, rename groups, reorder accounts via drag handles, and view tinted backgrounds by filter.
 -->
 <template>
   <div
@@ -65,8 +65,15 @@
     </div>
 
     <Transition name="bs-slide">
-      <ul v-if="activeGroup" class="bs-list">
-        <template v-for="(account, idx) in activeAccounts" :key="account.id">
+      <draggable
+        v-if="activeGroup"
+        v-model="activeGroup.accounts"
+        handle=".bs-drag-handle"
+        item-key="id"
+        tag="ul"
+        class="bs-list"
+      >
+        <template #item="{ element: account, index: idx }">
           <li class="bs-account-container">
             <div
               class="bs-row"
@@ -77,6 +84,11 @@
               @keydown.enter="toggleDetails(account.id)"
               @keydown.space="toggleDetails(account.id)"
             >
+              <GripVertical
+                class="bs-drag-handle"
+                @mousedown.stop
+                @touchstart.stop
+              />
               <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
@@ -115,41 +127,42 @@
                 <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
               </div>
             </div>
-          </li>
-          <li v-if="openAccountId === account.id" class="bs-details-row">
-            <div class="bs-details-content">
-              <ul class="bs-details-list">
-                <li
-                  v-for="tx in recentTxs[account.id]"
-                  :key="tx.transaction_id || tx.id"
-                  class="bs-tx-row"
-                >
-                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                  <span class="bs-tx-name">{{
-                    tx.merchant_name || tx.name || tx.description
-                  }}</span>
-                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
-                </li>
-                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
-                  No recent transactions
-                </li>
-              </ul>
+            <div v-if="openAccountId === account.id" class="bs-details-row">
+              <div class="bs-details-content">
+                <ul class="bs-details-list">
+                  <li
+                    v-for="tx in recentTxs[account.id]"
+                    :key="tx.transaction_id || tx.id"
+                    class="bs-tx-row"
+                  >
+                    <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                    <span class="bs-tx-name">{{
+                      tx.merchant_name || tx.name || tx.description
+                    }}</span>
+                    <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                  </li>
+                  <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                    No recent transactions
+                  </li>
+                </ul>
+              </div>
             </div>
           </li>
         </template>
-        <!-- Summary footer -->
-        <li
-          v-if="activeAccounts.length"
-          class="bs-summary-row"
-          :style="{ '--accent': groupAccent }"
-        >
-          <div></div>
-          <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
-          <div class="bs-summary-amount">
-            {{ format(activeTotal) }}
-          </div>
-        </li>
-      </ul>
+        <template #footer>
+          <li
+            v-if="activeAccounts.length"
+            class="bs-summary-row"
+            :style="{ '--accent': groupAccent }"
+          >
+            <div></div>
+            <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
+            <div class="bs-summary-amount">
+              {{ format(activeTotal) }}
+            </div>
+          </li>
+        </template>
+      </draggable>
     </Transition>
 
     <div v-if="activeGroup && !activeAccounts.length" class="bs-empty">No accounts to display</div>
@@ -164,6 +177,8 @@ import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
+import draggable from 'vuedraggable'
+import { GripVertical } from 'lucide-vue-next'
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
@@ -283,11 +298,7 @@ function addGroup() {
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const activeAccounts = computed(() =>
-  activeGroup.value
-    ? [...activeGroup.value.accounts]
-        .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
-        .slice(0, 7)
-    : [],
+  activeGroup.value ? activeGroup.value.accounts : [],
 )
 const activeTotal = computed(() =>
   activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
@@ -551,7 +562,7 @@ function initials(name) {
 
 .bs-row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
@@ -594,6 +605,17 @@ function initials(name) {
   display: inline-block;
   color: var(--accent, var(--color-accent-cyan));
   font-size: 0.8rem;
+}
+
+.bs-drag-handle {
+  cursor: grab;
+  color: var(--accent, var(--color-accent-cyan));
+  display: flex;
+  align-items: center;
+}
+
+.bs-drag-handle:active {
+  cursor: grabbing;
 }
 
 .bs-stripe {

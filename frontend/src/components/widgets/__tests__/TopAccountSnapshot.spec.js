@@ -59,4 +59,26 @@ describe('TopAccountSnapshot group editing', () => {
     const dropdown = wrapper.find('.bs-account-dropdown')
     expect(dropdown.attributes('style')).toContain('opacity: 0.5')
   })
+
+  it('renders drag handles and updates account order', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: {
+        stubs: { AccountSparkline: true },
+      },
+    })
+
+    // populate active group with accounts
+    wrapper.vm.groups[0].accounts = [...sampleAccounts]
+    await nextTick()
+
+    const handles = wrapper.findAll('.bs-drag-handle')
+    expect(handles.length).toBe(sampleAccounts.length)
+
+    // simulate reordering
+    wrapper.vm.groups[0].accounts = [...wrapper.vm.groups[0].accounts].reverse()
+    await nextTick()
+
+    const firstName = wrapper.findAll('.bs-name')[0].text()
+    expect(firstName).toContain('Account 6')
+  })
 })
