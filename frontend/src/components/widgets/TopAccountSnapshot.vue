@@ -13,30 +13,18 @@
   >
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
-        <div v-if="!g.name || editingGroupId === g.id" class="bs-group-editor">
-          <input
-            v-model="g.name"
-            :class="[
-              'bs-tab',
-              activeGroupId === g.id && 'bs-tab-active',
-              'bs-tab-' + g.id,
-              'bs-tab-input',
-            ]"
-            @blur="finishEdit(g)"
-            @keyup.enter="finishEdit(g)"
-          />
-          <div class="bs-account-dropdown" :style="{ opacity: g.accounts.length >= 5 ? 0.5 : 1 }">
-            <label v-for="acc in accounts" :key="acc.id" class="bs-account-option">
-              <input
-                type="checkbox"
-                :value="acc"
-                v-model="g.accounts"
-                :disabled="g.accounts.length >= 5 && !g.accounts.includes(acc)"
-              />
-              {{ acc.name }}
-            </label>
-          </div>
-        </div>
+        <input
+          v-if="!g.name || editingGroupId === g.id"
+          v-model="g.name"
+          :class="[
+            'bs-tab',
+            activeGroupId === g.id && 'bs-tab-active',
+            'bs-tab-' + g.id,
+            'bs-tab-input',
+          ]"
+          @blur="finishEdit(g)"
+          @keyup.enter="finishEdit(g)"
+        />
         <button
           v-else
           :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
