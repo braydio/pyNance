@@ -35,12 +35,16 @@
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col justify-between"
+          class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col gap-4"
         >
-          <h2 class="text-2xl font-bold mb-4 text-[var(--color-accent-green)] text-center">
+          <h2 class="text-2xl font-bold text-[var(--color-accent-green)] text-center">
             Top Accounts
           </h2>
-          <TopAccountSnapshot use-spectrum />
+          <TopAccountSnapshot
+            use-spectrum
+            :groups="groups"
+            v-model:active-group="activeGroupId"
+          />
         </div>
         <!-- Net Income Summary Card -->
         <div
@@ -244,6 +248,7 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
+import { useAccountGroups } from '@/composables/useAccountGroups'
 
 // Transactions and user
 const {
@@ -274,6 +279,7 @@ const netWorthMessage = computed(() => {
   if (netWorth.value > 1000) return 'Ahh... well in the black.'
   return 'Uhh... keep up the... whatever this is.'
 })
+const { groups, activeGroupId } = useAccountGroups()
 
 onMounted(async () => {
   try {
