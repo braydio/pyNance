@@ -13,30 +13,18 @@
   >
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
-        <div v-if="!g.name || editingGroupId === g.id" class="bs-group-editor">
-          <input
-            v-model="g.name"
-            :class="[
-              'bs-tab',
-              activeGroupId === g.id && 'bs-tab-active',
-              'bs-tab-' + g.id,
-              'bs-tab-input',
-            ]"
-            @blur="finishEdit(g)"
-            @keyup.enter="finishEdit(g)"
-          />
-          <div class="bs-account-dropdown" :style="{ opacity: g.accounts.length >= 5 ? 0.5 : 1 }">
-            <label v-for="acc in accounts" :key="acc.id" class="bs-account-option">
-              <input
-                type="checkbox"
-                :value="acc"
-                v-model="g.accounts"
-                :disabled="g.accounts.length >= 5 && !g.accounts.includes(acc)"
-              />
-              {{ acc.name }}
-            </label>
-          </div>
-        </div>
+        <input
+          v-if="!g.name || editingGroupId === g.id"
+          v-model="g.name"
+          :class="[
+            'bs-tab',
+            activeGroupId === g.id && 'bs-tab-active',
+            'bs-tab-' + g.id,
+            'bs-tab-input',
+          ]"
+          @blur="finishEdit(g)"
+          @keyup.enter="finishEdit(g)"
+        />
         <button
           v-else
           :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
@@ -85,6 +73,7 @@
               @keydown.space="toggleDetails(account.id)"
             >
               <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
+
               <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
@@ -161,7 +150,9 @@
       </draggable>
     </Transition>
 
-    <div v-if="activeGroup && !activeAccounts.length" class="bs-empty">No accounts to display</div>
+    <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">
+      No accounts to display
+    </div>
 
     <!-- liabilities section removed -->
   </div>
@@ -169,6 +160,8 @@
 
 <script setup>
 import { ref, reactive, computed, toRef, onMounted, watch } from 'vue'
+import draggable from 'vuedraggable'
+import { GripVertical } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
@@ -293,9 +286,12 @@ function addGroup() {
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+
 const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
 const activeTotal = computed(() =>
-  activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
+  activeGroup.value
+    ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
+    : 0,
 )
 
 const format = (val) => {
