@@ -14,7 +14,6 @@
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
         <input
-
           v-if="!g.name || editingGroupId === g.id"
           v-model="g.name"
           :class="[
@@ -265,7 +264,6 @@ function addGroup() {
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
   editingGroupId.value = id
-
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
