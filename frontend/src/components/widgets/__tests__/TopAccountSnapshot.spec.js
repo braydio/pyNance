@@ -80,9 +80,7 @@ describe('TopAccountSnapshot group editing', () => {
     expect(wrapper.find('.drag-handle').exists()).toBe(true)
 
     const getNames = () =>
-      wrapper
-        .findAll('.bs-name')
-        .map((n) => n.text().replace(/^▶/, '').trim())
+      wrapper.findAll('.bs-name').map((n) => n.text().replace(/^▶/, '').trim())
 
     expect(getNames()).toEqual(sampleAccounts.map((a) => a.name))
 

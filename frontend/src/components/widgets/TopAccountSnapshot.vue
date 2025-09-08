@@ -161,7 +161,9 @@
       </draggable>
     </Transition>
 
-    <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">No accounts to display</div>
+    <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">
+      No accounts to display
+    </div>
 
     <!-- liabilities section removed -->
   </div>
