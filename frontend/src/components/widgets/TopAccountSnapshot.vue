@@ -14,23 +14,24 @@
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
         <input
-          v-if="editingGroupId === g.id || !g.name"
+
+          v-if="!g.name || editingGroupId === g.id"
           v-model="g.name"
           :class="[
             'bs-tab',
             activeGroupId === g.id && 'bs-tab-active',
             'bs-tab-' + g.id,
-            'bs-tab-edit',
+            'bs-tab-input',
           ]"
-          @blur="finishEdit(g.id)"
-          @keydown.enter.prevent="finishEdit(g.id)"
+          @blur="finishEdit(g)"
+          @keyup.enter="finishEdit(g)"
         />
         <button
           v-else
           :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
           @click="setActiveGroup(g.id)"
+          @dblclick.stop="startEdit(g.id)"
           :aria-label="`Show ${g.name}`"
-          @dblclick.prevent="startEdit(g.id)"
         >
           {{ g.name }}
         </button>
@@ -245,28 +246,26 @@ function selectGroup(id) {
   showGroupMenu.value = false
 }
 
+/** Enable editing for a group tab */
+function startEdit(id) {
+  editingGroupId.value = id
+}
+
+/** Disable editing and persist the group name */
+function finishEdit(group) {
+  editingGroupId.value = null
+  if (!group.name) {
+    editingGroupId.value = group.id
+  }
+}
+
+/** Create a new group and start editing its name */
 function addGroup() {
   const id = `group-${Date.now()}`
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
   editingGroupId.value = id
-}
 
-/** Enter edit mode for a group tab */
-function startEdit(id) {
-  editingGroupId.value = id
-}
-
-/**
- * Persist edited group name and exit edit mode
- * @param {string} id - Group identifier
- */
-function finishEdit(id) {
-  const group = groups.value.find((g) => g.id === id)
-  if (group && typeof group.name === 'string') {
-    group.name = group.name.trim()
-  }
-  editingGroupId.value = null
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
@@ -420,11 +419,11 @@ function initials(name) {
   position: relative;
 }
 
-.bs-tab-edit {
+.bs-tab-input {
   cursor: text;
 }
 
-.bs-tab-edit:focus {
+.bs-tab-input:focus {
   outline: none;
 }
 
