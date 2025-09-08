@@ -1,7 +1,7 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, sort amounts, and view tinted backgrounds by filter.
+  Users can switch between groups, rename groups, sort amounts, and view tinted backgrounds by filter.
 -->
 <template>
   <div
@@ -14,6 +14,7 @@
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
         <input
+
           v-if="!g.name || editingGroupId === g.id"
           v-model="g.name"
           :class="[
@@ -264,6 +265,7 @@ function addGroup() {
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
   editingGroupId.value = id
+
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
