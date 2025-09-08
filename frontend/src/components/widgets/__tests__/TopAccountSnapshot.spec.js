@@ -7,13 +7,18 @@ import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 const sampleAccounts = Array.from({ length: 6 }, (_, i) => ({
   id: `acc-${i + 1}`,
   name: `Account ${i + 1}`,
+  adjusted_balance: i + 1,
 }))
+
+const allVisibleAccounts = ref([])
 
 vi.mock('@/composables/useTopAccounts', () => ({
   useTopAccounts: () => ({
     accounts: ref(sampleAccounts),
-    allVisibleAccounts: ref([]),
-    fetchAccounts: vi.fn(),
+    allVisibleAccounts,
+    fetchAccounts: vi.fn(() => {
+      allVisibleAccounts.value = sampleAccounts
+    }),
   }),
 }))
 
@@ -26,6 +31,7 @@ describe('TopAccountSnapshot group editing', () => {
     })
 
     wrapper.vm.addGroup()
+    await nextTick()
     await nextTick()
 
     const input = wrapper.find('input.bs-tab')
@@ -58,5 +64,31 @@ describe('TopAccountSnapshot group editing', () => {
     expect(boxes[5].element.disabled).toBe(true)
     const dropdown = wrapper.find('.bs-account-dropdown')
     expect(dropdown.attributes('style')).toContain('opacity: 0.5')
+  })
+
+  it('renders drag handles and updates order when accounts change', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: {
+        stubs: { AccountSparkline: true },
+      },
+    })
+
+    await nextTick()
+    wrapper.vm.groups[0].accounts = [...sampleAccounts]
+    await nextTick()
+
+    expect(wrapper.find('.drag-handle').exists()).toBe(true)
+
+    const getNames = () =>
+      wrapper
+        .findAll('.bs-name')
+        .map((n) => n.text().replace(/^▶/, '').trim())
+
+    expect(getNames()).toEqual(sampleAccounts.map((a) => a.name))
+
+    wrapper.vm.activeGroup.accounts.reverse()
+    await nextTick()
+
+    expect(getNames()[0]).toBe(sampleAccounts[sampleAccounts.length - 1].name)
   })
 })
