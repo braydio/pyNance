@@ -1,7 +1,7 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, sort amounts, and view tinted backgrounds by filter.
+  Users can switch between groups, rename groups, reorder accounts via drag handles, and view tinted backgrounds by filter.
 -->
 <template>
   <div
@@ -56,7 +56,7 @@
       <draggable
         v-if="activeGroup"
         v-model="activeGroup.accounts"
-        handle=".drag-handle"
+        handle=".bs-drag-handle"
         item-key="id"
         tag="ul"
         class="bs-list"
@@ -72,7 +72,8 @@
               @keydown.enter="toggleDetails(account.id)"
               @keydown.space="toggleDetails(account.id)"
             >
-              <GripVertical class="drag-handle" />
+              <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
+
               <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
@@ -135,7 +136,7 @@
         </template>
         <template #footer>
           <li
-            v-if="activeGroup.accounts.length"
+            v-if="activeAccounts.length"
             class="bs-summary-row"
             :style="{ '--accent': groupAccent }"
           >
@@ -165,6 +166,8 @@ import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
+import draggable from 'vuedraggable'
+import { GripVertical } from 'lucide-vue-next'
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
@@ -283,6 +286,8 @@ function addGroup() {
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+
+const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
 const activeTotal = computed(() =>
   activeGroup.value
     ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
@@ -592,16 +597,15 @@ function initials(name) {
   font-size: 0.8rem;
 }
 
-.drag-handle {
-  width: 16px;
-  height: 16px;
-  color: var(--accent, var(--color-accent-cyan));
-  opacity: 0.6;
+.bs-drag-handle {
   cursor: grab;
+  color: var(--accent, var(--color-accent-cyan));
+  display: flex;
+  align-items: center;
 }
 
-.drag-handle:hover {
-  opacity: 1;
+.bs-drag-handle:active {
+  cursor: grabbing;
 }
 
 .bs-stripe {

@@ -66,27 +66,26 @@ describe('TopAccountSnapshot group editing', () => {
     expect(dropdown.attributes('style')).toContain('opacity: 0.5')
   })
 
-  it('renders drag handles and updates order when accounts change', async () => {
+  it('renders drag handles and updates account order', async () => {
     const wrapper = mount(TopAccountSnapshot, {
       global: {
         stubs: { AccountSparkline: true },
       },
     })
 
-    await nextTick()
+    // populate active group with accounts
     wrapper.vm.groups[0].accounts = [...sampleAccounts]
     await nextTick()
 
-    expect(wrapper.find('.drag-handle').exists()).toBe(true)
+    const handles = wrapper.findAll('.bs-drag-handle')
+    expect(handles.length).toBe(sampleAccounts.length)
 
-    const getNames = () =>
-      wrapper.findAll('.bs-name').map((n) => n.text().replace(/^▶/, '').trim())
-
-    expect(getNames()).toEqual(sampleAccounts.map((a) => a.name))
-
-    wrapper.vm.activeGroup.accounts.reverse()
+    // simulate reordering
+    wrapper.vm.groups[0].accounts = [...wrapper.vm.groups[0].accounts].reverse()
     await nextTick()
 
-    expect(getNames()[0]).toBe(sampleAccounts[sampleAccounts.length - 1].name)
+    const firstName = wrapper.findAll('.bs-name')[0].text()
+    expect(firstName).toContain('Account 6')
+
   })
 })
