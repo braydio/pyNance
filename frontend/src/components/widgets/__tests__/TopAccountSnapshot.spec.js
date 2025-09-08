@@ -86,6 +86,5 @@ describe('TopAccountSnapshot group editing', () => {
 
     const firstName = wrapper.findAll('.bs-name')[0].text()
     expect(firstName).toContain('Account 6')
-
   })
 })
