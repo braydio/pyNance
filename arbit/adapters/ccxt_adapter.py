@@ -59,7 +59,7 @@ class CCXTAdapter(ExchangeAdapter):
 
         qty = getattr(spec, "qty", None)
         if qty is None:
-            qty = getattr(spec, "quantity")
+            qty = spec.quantity
 
         order_type = getattr(spec, "type", None)
         if order_type is None:
