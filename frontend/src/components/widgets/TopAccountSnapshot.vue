@@ -25,15 +25,8 @@
             @blur="finishEdit(g)"
             @keyup.enter="finishEdit(g)"
           />
-          <div
-            class="bs-account-dropdown"
-            :style="{ opacity: g.accounts.length >= 5 ? 0.5 : 1 }"
-          >
-            <label
-              v-for="acc in accounts"
-              :key="acc.id"
-              class="bs-account-option"
-            >
+          <div class="bs-account-dropdown" :style="{ opacity: g.accounts.length >= 5 ? 0.5 : 1 }">
+            <label v-for="acc in accounts" :key="acc.id" class="bs-account-option">
               <input
                 type="checkbox"
                 :value="acc"
@@ -178,7 +171,9 @@ const props = defineProps({
 })
 
 // full account list used for group editing
-const { allVisibleAccounts, accounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
+const { allVisibleAccounts, accounts, fetchAccounts } = useTopAccounts(
+  toRef(props, 'accountSubtype'),
+)
 const { groups, activeGroupId } = useAccountGroups()
 onMounted(fetchAccounts)
 
@@ -284,7 +279,6 @@ function addGroup() {
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
   editingGroupId.value = id
-
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
