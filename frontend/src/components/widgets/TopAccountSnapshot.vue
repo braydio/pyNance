@@ -13,19 +13,30 @@
   >
     <div class="bs-toggle-row">
       <template v-for="g in groups" :key="g.id">
-        <input
-
-          v-if="!g.name || editingGroupId === g.id"
-          v-model="g.name"
-          :class="[
-            'bs-tab',
-            activeGroupId === g.id && 'bs-tab-active',
-            'bs-tab-' + g.id,
-            'bs-tab-input',
-          ]"
-          @blur="finishEdit(g)"
-          @keyup.enter="finishEdit(g)"
-        />
+        <div v-if="!g.name || editingGroupId === g.id" class="bs-group-editor">
+          <input
+            v-model="g.name"
+            :class="[
+              'bs-tab',
+              activeGroupId === g.id && 'bs-tab-active',
+              'bs-tab-' + g.id,
+              'bs-tab-input',
+            ]"
+            @blur="finishEdit(g)"
+            @keyup.enter="finishEdit(g)"
+          />
+          <div class="bs-account-dropdown" :style="{ opacity: g.accounts.length >= 5 ? 0.5 : 1 }">
+            <label v-for="acc in accounts" :key="acc.id" class="bs-account-option">
+              <input
+                type="checkbox"
+                :value="acc"
+                v-model="g.accounts"
+                :disabled="g.accounts.length >= 5 && !g.accounts.includes(acc)"
+              />
+              {{ acc.name }}
+            </label>
+          </div>
+        </div>
         <button
           v-else
           :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
@@ -159,13 +170,16 @@ const props = defineProps({
   useSpectrum: { type: Boolean, default: false },
 })
 
-const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
+// full account list used for group editing
+const { allVisibleAccounts, accounts, fetchAccounts } = useTopAccounts(
+  toRef(props, 'accountSubtype'),
+)
 const { groups, activeGroupId } = useAccountGroups()
 onMounted(fetchAccounts)
 
-watch(allVisibleAccounts, (accounts) => {
-  const assets = accounts ? accounts.filter((a) => a.adjusted_balance >= 0) : []
-  const liabilities = accounts ? accounts.filter((a) => a.adjusted_balance < 0) : []
+watch(allVisibleAccounts, (acctList) => {
+  const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
+  const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
   const assetGroup = groups.value.find((g) => g.id === 'assets')
   if (assetGroup) assetGroup.accounts = assets
   else groups.value.push({ id: 'assets', name: 'Assets', accounts: assets })
@@ -265,7 +279,6 @@ function addGroup() {
   groups.value.push({ id, name: '', accounts: [] })
   selectGroup(id)
   editingGroupId.value = id
-
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
@@ -506,6 +519,24 @@ function initials(name) {
 .bs-group-add {
   font-weight: 700;
   text-align: center;
+}
+
+.bs-group-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-account-dropdown {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bs-account-option {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .bs-list {
