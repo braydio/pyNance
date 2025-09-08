@@ -84,11 +84,7 @@
               @keydown.enter="toggleDetails(account.id)"
               @keydown.space="toggleDetails(account.id)"
             >
-              <GripVertical
-                class="bs-drag-handle"
-                @mousedown.stop
-                @touchstart.stop
-              />
+              <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
               <div class="bs-stripe"></div>
               <div class="bs-logo-container">
                 <img
@@ -297,9 +293,7 @@ function addGroup() {
 }
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-const activeAccounts = computed(() =>
-  activeGroup.value ? activeGroup.value.accounts : [],
-)
+const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
 const activeTotal = computed(() =>
   activeAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
