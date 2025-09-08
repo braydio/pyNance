@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { RouterLink } from 'vue-router'
 import AppFooter from '../AppFooter.vue'
 import pkg from '../../../../package.json' with { type: 'json' }
 

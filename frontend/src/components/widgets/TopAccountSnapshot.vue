@@ -158,13 +158,16 @@ const props = defineProps({
   useSpectrum: { type: Boolean, default: false },
 })
 
-const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
+// full account list used for group editing
+const { allVisibleAccounts, accounts, fetchAccounts } = useTopAccounts(
+  toRef(props, 'accountSubtype'),
+)
 const { groups, activeGroupId } = useAccountGroups()
 onMounted(fetchAccounts)
 
-watch(allVisibleAccounts, (accounts) => {
-  const assets = accounts ? accounts.filter((a) => a.adjusted_balance >= 0) : []
-  const liabilities = accounts ? accounts.filter((a) => a.adjusted_balance < 0) : []
+watch(allVisibleAccounts, (acctList) => {
+  const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
+  const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
   const assetGroup = groups.value.find((g) => g.id === 'assets')
   if (assetGroup) assetGroup.accounts = assets
   else groups.value.push({ id: 'assets', name: 'Assets', accounts: assets })
@@ -504,6 +507,24 @@ function initials(name) {
 .bs-group-add {
   font-weight: 700;
   text-align: center;
+}
+
+.bs-group-editor {
+  display: flex;
+  flex-direction: column;
+}
+
+.bs-account-dropdown {
+  margin-top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bs-account-option {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .bs-list {
