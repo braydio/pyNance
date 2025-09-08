@@ -16,7 +16,12 @@
         <input
           v-if="!g.name || editingGroupId === g.id"
           v-model="g.name"
-          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id, 'bs-tab-input']"
+          :class="[
+            'bs-tab',
+            activeGroupId === g.id && 'bs-tab-active',
+            'bs-tab-' + g.id,
+            'bs-tab-input',
+          ]"
           @blur="finishEdit(g)"
           @keyup.enter="finishEdit(g)"
         />
