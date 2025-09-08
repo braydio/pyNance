@@ -12,43 +12,49 @@
     }"
   >
     <div class="bs-toggle-row">
-      <template v-for="g in groups" :key="g.id">
-        <input
-          v-if="!g.name || editingGroupId === g.id"
-          v-model="g.name"
-          :class="[
-            'bs-tab',
-            activeGroupId === g.id && 'bs-tab-active',
-            'bs-tab-' + g.id,
-            'bs-tab-input',
-          ]"
-          @blur="finishEdit(g)"
-          @keyup.enter="finishEdit(g)"
-        />
-        <button
-          v-else
-          :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-          @click="setActiveGroup(g.id)"
-          @dblclick.stop="startEdit(g.id)"
-          :aria-label="`Show ${g.name}`"
-        >
-          {{ g.name }}
-        </button>
-      </template>
+      <div class="bs-tabs-scroll">
+        <TransitionGroup name="fade-in" tag="div" class="bs-tab-list">
+          <template v-for="g in groups" :key="g.id">
+            <input
+              v-if="!g.name || editingGroupId === g.id"
+              v-model="g.name"
+              :class="[
+                'bs-tab',
+                activeGroupId === g.id && 'bs-tab-active',
+                'bs-tab-' + g.id,
+                'bs-tab-input',
+              ]"
+              @blur="finishEdit(g)"
+              @keyup.enter="finishEdit(g)"
+            />
+            <button
+              v-else
+              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+              @click="setActiveGroup(g.id)"
+              @dblclick.stop="startEdit(g.id)"
+              :aria-label="`Show ${g.name}`"
+            >
+              {{ g.name }}
+            </button>
+          </template>
+        </TransitionGroup>
+      </div>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
         </button>
-        <ul v-if="showGroupMenu" class="bs-group-menu">
-          <li v-for="g in groups" :key="g.id">
-            <button class="bs-group-item" @click="selectGroup(g.id)">
-              {{ g.name || '(unnamed)' }}
-            </button>
-          </li>
-          <li>
-            <button class="bs-group-item bs-group-add" @click="addGroup">+</button>
-          </li>
-        </ul>
+        <Transition name="slide-down">
+          <ul v-if="showGroupMenu" class="bs-group-menu">
+            <li v-for="g in groups" :key="g.id">
+              <button class="bs-group-item" @click="selectGroup(g.id)">
+                {{ g.name || '(unnamed)' }}
+              </button>
+            </li>
+            <li>
+              <button class="bs-group-item bs-group-add" @click="addGroup">+</button>
+            </li>
+          </ul>
+        </Transition>
       </div>
     </div>
 
@@ -166,9 +172,6 @@ import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
-import draggable from 'vuedraggable'
-import { GripVertical } from 'lucide-vue-next'
-
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
@@ -418,6 +421,22 @@ function initials(name) {
   border-radius: 1rem 1rem 0 0;
 }
 
+.bs-tabs-scroll {
+  flex: 1 1 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.bs-tab-list {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.bs-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 .bs-tab {
   padding: 0.5rem 1rem;
   background: var(--color-bg-sec);
@@ -463,6 +482,8 @@ function initials(name) {
 
 .bs-group-dropdown {
   position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .bs-group-btn {
@@ -836,6 +857,32 @@ function initials(name) {
   transform: translateY(-15px) scale(0.97);
 }
 
+.fade-in-enter-active {
+  animation: fade-in 0.3s ease;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: all 0.2s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
 /* Responsive */
 @media (max-width: 630px) {
   .bank-statement-list {
@@ -851,6 +898,18 @@ function initials(name) {
   .bs-group-btn {
     padding: 0.45rem 0.75rem;
     font-size: 0.8rem;
+  }
+
+  .bs-tabs-scroll {
+    overflow-x: auto;
+  }
+
+  .bs-tab-list {
+    flex-wrap: nowrap;
+  }
+
+  .bs-group-dropdown {
+    margin-left: 0.4rem;
   }
 
   .bs-list {
