@@ -30,6 +30,22 @@ vi.mock('@/api/transactions', () => ({
   fetchTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
 }))
 
+vi.mock('@/composables/useAccountGroups', () => ({
+  useAccountGroups: () => ({ groups: ref([]), activeGroupId: ref(null) }),
+}))
+
+let receivedProps = null
+const TopAccountSnapshotStub = {
+  name: 'TopAccountSnapshot',
+  template: '<div class="tas-stub"></div>',
+  props: ['groups', 'modelValue'],
+  setup(props) {
+    receivedProps = props
+  },
+}
+
+const PassThrough = { template: '<div><slot /></div>' }
+
 // Tests for Dashboard.vue date range behavior
 
 describe('Dashboard.vue', () => {
@@ -37,8 +53,8 @@ describe('Dashboard.vue', () => {
     const wrapper = shallowMount(Dashboard, {
       global: {
         stubs: {
-          AppLayout: true,
-          BasePageLayout: true,
+          AppLayout: PassThrough,
+          BasePageLayout: PassThrough,
           DailyNetChart: true,
           CategoryBreakdownChart: true,
           ChartWidgetTopBar: true,
@@ -48,13 +64,16 @@ describe('Dashboard.vue', () => {
           TransactionsTable: true,
           PaginationControls: true,
           TransactionModal: true,
-          TopAccountSnapshot: true,
+          TopAccountSnapshot: TopAccountSnapshotStub,
           GroupedCategoryDropdown: true,
           FinancialSummary: true,
           SpendingInsights: true,
         },
       },
     })
+
+    expect(receivedProps).not.toBeNull()
+    expect(receivedProps.groups).toBeDefined()
 
     wrapper.vm.allCategoryIds = ['a', 'b', 'c', 'd', 'e', 'f']
     await nextTick()
