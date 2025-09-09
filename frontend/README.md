@@ -56,6 +56,21 @@ npm run test:e2e
 npm run lint
 ```
 
+### Account Groups
+
+The dashboard lets you organize accounts into custom groups. Groups and the
+currently active selection are stored in `localStorage`, so your layout is
+restored on reload.
+
+- **Create & select** – use the group dropdown to switch groups or press the
+  **+** button to add a new one.
+- **Rename** – double-click a group tab, edit the name, then press
+  <kbd>Enter</kbd> or click away to save.
+- **Assign accounts** – choose up to five accounts for a group using the account
+  selector.
+- **Reorder accounts** – drag the handle beside an account to change its order
+  within the active group.
+
 ### Develop the Arbit Dashboard Route
 
 1. Ensure the backend Arbit endpoints are running.

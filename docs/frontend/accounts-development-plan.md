@@ -10,7 +10,7 @@ The **Accounts Page** provides a detailed, organized view of all user accounts g
 
 ### 1. Institution Overview
 
-- **Institution Filter/Dropdown**  
+- **Institution Filter/Dropdown**
   - Select "All" or filter by specific institution (bank, credit union, etc.)
 
 - **Institution Cards**
@@ -69,6 +69,16 @@ When a user clicks "View Details" on any account:
 - Download CSV/PDF report
 - Link new institution
 
+### 6. Account Groups
+
+- Create custom account groups to organize frequently used accounts.
+- Groups persist in `localStorage`; the last active group is restored on page
+  reload.
+- Reorder accounts within a group by dragging the handle next to each entry.
+- Double-click a group tab to edit its name and press <kbd>Enter</kbd> to save.
+- Each group can include up to **five** accounts; create another group or
+  remove one to add more.
+
 ---
 
 ## UX Patterns
@@ -93,3 +103,4 @@ When a user clicks "View Details" on any account:
 |   - Slate Credit     ...$330.25   [chart] [View]
 |
 | [Add Account] [Download CSV]
+```
