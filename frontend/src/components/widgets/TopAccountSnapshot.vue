@@ -171,7 +171,6 @@ import { fetchRecentTransactions } from '@/api/accounts'
 useTopAccounts()
 const { groups, activeGroupId } = useAccountGroups()
 
-
 // Details dropdown state
 const openAccountId = ref(null)
 const recentTxs = reactive({})
