@@ -40,7 +40,7 @@
           <h2 class="text-2xl font-bold text-[var(--color-accent-green)] text-center">
             Top Accounts
           </h2>
-          <TopAccountSnapshot use-spectrum :groups="groups" v-model:active-group="activeGroupId" />
+          <TopAccountSnapshot :groups="groups" v-model:active-group="activeGroupId" />
         </div>
         <!-- Net Income Summary Card -->
         <div

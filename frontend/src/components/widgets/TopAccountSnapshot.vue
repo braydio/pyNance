@@ -292,7 +292,12 @@ function finishEdit(group) {
 /** Create a new group and start editing its name */
 function addGroup() {
   const id = `group-${Date.now()}`
-  groups.value.push({ id, name: '', accounts: [] })
+  groups.value.push({
+    id,
+    name: '',
+    accounts: [],
+    accent: 'var(--color-accent-cyan)',
+  })
   selectGroup(id)
   editingGroupId.value = id
 }

@@ -128,4 +128,21 @@ describe('TopAccountSnapshot', () => {
     const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(names).toContain('Saved')
   })
+
+  it('derives accent color from group data or defaults', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    // assets group should expose its accent color
+    wrapper.vm.activeGroupId = 'assets'
+    await nextTick()
+    expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
+
+    // default group lacks an accent and falls back to theme accent
+    wrapper.vm.activeGroupId = 'group-1'
+    await nextTick()
+    expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
+  })
 })
