@@ -236,9 +236,7 @@ function toggleDetails(accountId) {
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 
-const activeGroup = computed(() =>
-  groups.value.find((g) => g.id === activeGroupId.value) || null,
-)
+const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
 const spectrum = [
   'var(--color-accent-cyan)',
@@ -251,9 +249,7 @@ const spectrum = [
  * Accent color for the currently active group.
  * Falls back to the theme's primary accent when not specified.
  */
-const groupAccent = computed(
-  () => activeGroup.value?.accent || 'var(--color-accent-cyan)',
-)
+const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 /** Return accent color for an account */
 function accentColor(account, index) {
