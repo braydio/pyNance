@@ -1,8 +1,9 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, and reorder accounts via drag handles.
-  -->
+  Users can switch between groups, rename groups, reorder accounts via drag handles.
+  Group colors derive from group data or the default theme rather than hardcoded identifiers.
+-->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
@@ -184,25 +185,25 @@ watch(allVisibleAccounts, (acctList) => {
   const assetGroup = groups.value.find((g) => g.id === 'assets')
   if (assetGroup) {
     assetGroup.accounts = assets
-    assetGroup.accent = assetGroup.accent || 'var(--color-accent-cyan)'
+    assetGroup.color = assetGroup.color || 'var(--color-accent-cyan)'
   } else {
     groups.value.push({
       id: 'assets',
       name: 'Assets',
+      color: 'var(--color-accent-cyan)',
       accounts: assets,
-      accent: 'var(--color-accent-cyan)',
     })
   }
   const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
   if (liabilityGroup) {
     liabilityGroup.accounts = liabilities
-    liabilityGroup.accent = liabilityGroup.accent || 'var(--color-accent-yellow)'
+    liabilityGroup.color = liabilityGroup.color || 'var(--color-accent-yellow)'
   } else {
     groups.value.push({
       id: 'liabilities',
       name: 'Liabilities',
+      color: 'var(--color-accent-yellow)',
       accounts: liabilities,
-      accent: 'var(--color-accent-yellow)',
     })
   }
 })
@@ -237,6 +238,7 @@ const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
 const spectrum = [
   'var(--color-accent-cyan)',
@@ -244,12 +246,6 @@ const spectrum = [
   'var(--color-accent-red)',
   'var(--color-accent-blue)',
 ]
-
-/**
- * Accent color for the currently active group.
- * Falls back to the theme's primary accent when not specified.
- */
-const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 /** Return accent color for an account */
 function accentColor(account, index) {
