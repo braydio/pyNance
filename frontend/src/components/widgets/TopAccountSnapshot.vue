@@ -1,8 +1,7 @@
 <!--
   TopAccountSnapshot.vue
-  Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, reorder accounts via drag handles.
-  Group colors derive from group data or the default theme rather than hardcoded identifiers.
+  Displays accounts grouped with totals.
+  Users can switch between groups, rename groups, and reorder accounts via drag handles.
 -->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
@@ -62,11 +61,11 @@
         tag="ul"
         class="bs-list"
       >
-        <template #item="{ element: account, index: idx }">
+        <template #item="{ element: account }">
           <li class="bs-account-container">
             <div
               class="bs-row"
-              :style="{ '--accent': accentColor(account, idx) }"
+              :style="{ '--accent': accentColor(account) }"
               @click="toggleDetails(account.id)"
               role="button"
               tabindex="0"
@@ -160,53 +159,17 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, toRef, onMounted, watch } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import draggable from 'vuedraggable'
 import { GripVertical } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
-const props = defineProps({
-  accountSubtype: { type: String, default: '' },
-  useSpectrum: { type: Boolean, default: false },
-})
 
-// full account list used for group editing
-const { allVisibleAccounts, accounts, fetchAccounts } = useTopAccounts(
-  toRef(props, 'accountSubtype'),
-)
+// fetch accounts generically for potential group management
+useTopAccounts()
 const { groups, activeGroupId } = useAccountGroups()
-onMounted(fetchAccounts)
-
-watch(allVisibleAccounts, (acctList) => {
-  const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
-  const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
-  const assetGroup = groups.value.find((g) => g.id === 'assets')
-  if (assetGroup) {
-    assetGroup.accounts = assets
-    assetGroup.color = assetGroup.color || 'var(--color-accent-cyan)'
-  } else {
-    groups.value.push({
-      id: 'assets',
-      name: 'Assets',
-      color: 'var(--color-accent-cyan)',
-      accounts: assets,
-    })
-  }
-  const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
-  if (liabilityGroup) {
-    liabilityGroup.accounts = liabilities
-    liabilityGroup.color = liabilityGroup.color || 'var(--color-accent-yellow)'
-  } else {
-    groups.value.push({
-      id: 'liabilities',
-      name: 'Liabilities',
-      color: 'var(--color-accent-yellow)',
-      accounts: liabilities,
-    })
-  }
-})
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -240,26 +203,14 @@ const editingGroupId = ref(null)
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
-const spectrum = [
-  'var(--color-accent-cyan)',
-  'var(--color-accent-yellow)',
-  'var(--color-accent-red)',
-  'var(--color-accent-blue)',
-]
+/**
+ * Accent color for the currently active group.
+ * Falls back to the theme's primary accent when not specified.
+ */
+const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
-/** Return accent color for an account */
-function accentColor(account, index) {
-  if (props.useSpectrum) {
-    const subtype = (account.subtype || '').toLowerCase()
-    const map = {
-      checking: 'var(--color-accent-cyan)',
-      savings: 'var(--color-accent-blue)',
-      credit: 'var(--color-accent-red)',
-      'credit card': 'var(--color-accent-red)',
-      loan: 'var(--color-accent-yellow)',
-    }
-    return map[subtype] || spectrum[index % spectrum.length]
-  }
+/** Return accent color for an account based on its balance sign */
+function accentColor(account) {
   return account.adjusted_balance >= 0 ? 'var(--color-accent-cyan)' : 'var(--color-accent-yellow)'
 }
 
