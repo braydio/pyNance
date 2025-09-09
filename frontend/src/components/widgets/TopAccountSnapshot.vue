@@ -171,6 +171,7 @@ import { fetchRecentTransactions } from '@/api/accounts'
 useTopAccounts()
 const { groups, activeGroupId } = useAccountGroups()
 
+
 // Details dropdown state
 const openAccountId = ref(null)
 const recentTxs = reactive({})
@@ -201,6 +202,7 @@ const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
 /**
  * Accent color for the currently active group.
