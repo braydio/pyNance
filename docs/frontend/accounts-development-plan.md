@@ -68,6 +68,15 @@ When a user clicks "View Details" on any account:
 - Hide/Show closed accounts
 - Download CSV/PDF report
 - Link new institution
+### 6. Account Groups
+
+- Create custom account groups to organize frequently used accounts.
+- Groups persist in `localStorage`; the last active group is restored on page
+  reload.
+- Reorder accounts within a group by dragging the handle next to each entry.
+- Double-click a group tab to edit its name and press <kbd>Enter</kbd> to save.
+- Each group can include up to **five** accounts; create another group or
+  remove one to add more.
 
 ---
 
@@ -93,3 +102,4 @@ When a user clicks "View Details" on any account:
 |   - Slate Credit     ...$330.25   [chart] [View]
 |
 | [Add Account] [Download CSV]
+```
