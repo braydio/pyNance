@@ -10,7 +10,7 @@ The **Accounts Page** provides a detailed, organized view of all user accounts g
 
 ### 1. Institution Overview
 
-- **Institution Filter/Dropdown**  
+- **Institution Filter/Dropdown**
   - Select "All" or filter by specific institution (bank, credit union, etc.)
 
 - **Institution Cards**
@@ -68,6 +68,7 @@ When a user clicks "View Details" on any account:
 - Hide/Show closed accounts
 - Download CSV/PDF report
 - Link new institution
+
 ### 6. Account Groups
 
 - Create custom account groups to organize frequently used accounts.
