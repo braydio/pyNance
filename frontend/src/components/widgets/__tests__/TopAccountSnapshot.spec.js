@@ -4,28 +4,22 @@ import { mount } from '@vue/test-utils'
 import { ref, watch, nextTick } from 'vue'
 import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 
-// Sample accounts include six assets and one liability
-const assetAccounts = Array.from({ length: 6 }, (_, i) => ({
-  id: `asset-${i + 1}`,
-  name: `Asset ${i + 1}`,
-  adjusted_balance: i + 1,
-}))
-const liabilityAccount = { id: 'debt-1', name: 'Debt 1', adjusted_balance: -1 }
+// Sample accounts used for localStorage-backed groups
+const sampleAccounts = [
+  { id: 'acc-1', name: 'Account 1', adjusted_balance: 1 },
+  { id: 'acc-2', name: 'Account 2', adjusted_balance: 2 },
+]
 
 // --- Composable Mocks ---
 
-// Mock useTopAccounts to return the sample accounts while enforcing the
-// five‑account visibility limit used by the real composable.
+// Mock useTopAccounts to mimic a generic account fetch
 vi.mock('@/composables/useTopAccounts', () => {
-  const accounts = ref([])
-  const allVisibleAccounts = ref([])
-  const fetchAccounts = vi.fn(() => {
-    accounts.value = [...assetAccounts, liabilityAccount]
-    // only expose five asset accounts plus any liabilities
-    allVisibleAccounts.value = [...assetAccounts.slice(0, 5), liabilityAccount]
-  })
+  const fetchAccounts = vi.fn()
   return {
-    useTopAccounts: () => ({ accounts, allVisibleAccounts, fetchAccounts }),
+    useTopAccounts: () => {
+      fetchAccounts()
+      return { fetchAccounts }
+    },
   }
 })
 
@@ -64,14 +58,11 @@ describe('TopAccountSnapshot', () => {
       global: { stubs: { AccountSparkline: true } },
     })
 
-    // trigger account fetch and watchers
     await nextTick()
 
-    // default group exists
     const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(names).toContain('Group')
 
-    // add and rename a group
     wrapper.vm.addGroup()
     await nextTick()
     const input = wrapper.find('input.bs-tab')
@@ -83,30 +74,21 @@ describe('TopAccountSnapshot', () => {
     expect(updated).toContain('My Group')
   })
 
-  it('limits visible accounts to five per group', async () => {
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: true } },
-    })
-
-    await nextTick()
-    const assets = wrapper.vm.groups.find((g) => g.id === 'assets')
-    expect(assets.accounts.length).toBe(5)
-    const accountNames = assets.accounts.map((a) => a.name)
-    expect(accountNames).not.toContain('Asset 6')
-  })
-
   it('updates group order when accounts are reordered', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: sampleAccounts }],
+        activeGroupId: 'group-1',
+      }),
+    )
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },
     })
 
-    await nextTick()
-    await nextTick()
-    const assetsIdx = wrapper.vm.groups.findIndex((g) => g.id === 'assets')
-    wrapper.vm.activeGroupId = 'assets'
     await nextTick()
     const firstBefore = wrapper.findAll('.bs-name')[0].text()
-    wrapper.vm.groups[assetsIdx].accounts.reverse()
+    wrapper.vm.groups[0].accounts.reverse()
     await nextTick()
     const firstAfter = wrapper.findAll('.bs-name')[0].text()
     expect(firstAfter).not.toBe(firstBefore)
@@ -130,17 +112,23 @@ describe('TopAccountSnapshot', () => {
   })
 
   it('derives accent color from group data or defaults', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'colored', name: 'Colored', accounts: [], accent: 'var(--color-accent-red)' },
+          { id: 'group-1', name: 'Group', accounts: [] },
+        ],
+        activeGroupId: 'colored',
+      }),
+    )
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },
     })
 
     await nextTick()
-    // assets group should expose its accent color
-    wrapper.vm.activeGroupId = 'assets'
-    await nextTick()
-    expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
+    expect(wrapper.vm.groupAccent).toBe('var(--color-accent-red)')
 
-    // default group lacks an accent and falls back to theme accent
     wrapper.vm.activeGroupId = 'group-1'
     await nextTick()
     expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
