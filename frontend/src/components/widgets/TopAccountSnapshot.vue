@@ -1,16 +1,10 @@
 <!--
   TopAccountSnapshot.vue
   Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, reorder accounts via drag handles, and view tinted backgrounds by filter.
--->
+  Users can switch between groups, rename groups, and reorder accounts via drag handles.
+  -->
 <template>
-  <div
-    class="bank-statement-list bs-collapsible w-full h-full"
-    :class="{
-      'bs-assets-bg': activeGroupId === 'assets',
-      'bs-liabilities-bg': activeGroupId === 'liabilities',
-    }"
-  >
+  <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
         <TransitionGroup name="fade-in" tag="div" class="bs-tab-list">
@@ -188,11 +182,29 @@ watch(allVisibleAccounts, (acctList) => {
   const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
   const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
   const assetGroup = groups.value.find((g) => g.id === 'assets')
-  if (assetGroup) assetGroup.accounts = assets
-  else groups.value.push({ id: 'assets', name: 'Assets', accounts: assets })
+  if (assetGroup) {
+    assetGroup.accounts = assets
+    assetGroup.accent = assetGroup.accent || 'var(--color-accent-cyan)'
+  } else {
+    groups.value.push({
+      id: 'assets',
+      name: 'Assets',
+      accounts: assets,
+      accent: 'var(--color-accent-cyan)',
+    })
+  }
   const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
-  if (liabilityGroup) liabilityGroup.accounts = liabilities
-  else groups.value.push({ id: 'liabilities', name: 'Liabilities', accounts: liabilities })
+  if (liabilityGroup) {
+    liabilityGroup.accounts = liabilities
+    liabilityGroup.accent = liabilityGroup.accent || 'var(--color-accent-yellow)'
+  } else {
+    groups.value.push({
+      id: 'liabilities',
+      name: 'Liabilities',
+      accounts: liabilities,
+      accent: 'var(--color-accent-yellow)',
+    })
+  }
 })
 
 // Details dropdown state
@@ -224,6 +236,10 @@ function toggleDetails(accountId) {
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 
+const activeGroup = computed(() =>
+  groups.value.find((g) => g.id === activeGroupId.value) || null,
+)
+
 const spectrum = [
   'var(--color-accent-cyan)',
   'var(--color-accent-yellow)',
@@ -231,12 +247,13 @@ const spectrum = [
   'var(--color-accent-blue)',
 ]
 
-// Map account group IDs to accent colors
-const groupAccents = {
-  assets: 'var(--color-accent-cyan)',
-  liabilities: 'var(--color-accent-yellow)',
-}
-const groupAccent = computed(() => groupAccents[activeGroupId.value] || 'var(--color-accent-cyan)')
+/**
+ * Accent color for the currently active group.
+ * Falls back to the theme's primary accent when not specified.
+ */
+const groupAccent = computed(
+  () => activeGroup.value?.accent || 'var(--color-accent-cyan)',
+)
 
 /** Return accent color for an account */
 function accentColor(account, index) {
@@ -283,12 +300,15 @@ function finishEdit(group) {
 /** Create a new group and start editing its name */
 function addGroup() {
   const id = `group-${Date.now()}`
-  groups.value.push({ id, name: '', accounts: [] })
+  groups.value.push({
+    id,
+    name: '',
+    accounts: [],
+    accent: 'var(--color-accent-cyan)',
+  })
   selectGroup(id)
   editingGroupId.value = id
 }
-
-const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
 const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
 const activeTotal = computed(() =>
@@ -401,14 +421,6 @@ function initials(name) {
   background: transparent;
   box-shadow: none;
   border: none;
-}
-
-.bs-assets-bg {
-  background-color: rgba(129, 178, 154, 0.08);
-}
-
-.bs-liabilities-bg {
-  background-color: rgba(201, 79, 109, 0.08);
 }
 
 .bs-toggle-row {
