@@ -22,10 +22,7 @@ vi.mock('@/composables/useTopAccounts', () => {
   const fetchAccounts = vi.fn(() => {
     accounts.value = [...assetAccounts, liabilityAccount]
     // only expose five asset accounts plus any liabilities
-    allVisibleAccounts.value = [
-      ...assetAccounts.slice(0, 5),
-      liabilityAccount,
-    ]
+    allVisibleAccounts.value = [...assetAccounts.slice(0, 5), liabilityAccount]
   })
   return {
     useTopAccounts: () => ({ accounts, allVisibleAccounts, fetchAccounts }),
@@ -38,9 +35,7 @@ vi.mock('@/composables/useAccountGroups', () => {
   return {
     useAccountGroups() {
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
-      const groups = ref(
-        stored?.groups || [{ id: 'group-1', name: 'Group', accounts: [] }],
-      )
+      const groups = ref(stored?.groups || [{ id: 'group-1', name: 'Group', accounts: [] }])
       const activeGroupId = ref(stored?.activeGroupId || groups.value[0].id)
 
       watch(
@@ -120,7 +115,10 @@ describe('TopAccountSnapshot', () => {
   it('restores groups from localStorage', async () => {
     localStorage.setItem(
       'accountGroups',
-      JSON.stringify({ groups: [{ id: 'saved', name: 'Saved', accounts: [] }], activeGroupId: 'saved' }),
+      JSON.stringify({
+        groups: [{ id: 'saved', name: 'Saved', accounts: [] }],
+        activeGroupId: 'saved',
+      }),
     )
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },
@@ -131,4 +129,3 @@ describe('TopAccountSnapshot', () => {
     expect(names).toContain('Saved')
   })
 })
-
