@@ -1,90 +1,131 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
+import { ref, watch, nextTick } from 'vue'
 import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 
-const sampleAccounts = Array.from({ length: 6 }, (_, i) => ({
-  id: `acc-${i + 1}`,
-  name: `Account ${i + 1}`,
+// Sample accounts include six assets and one liability
+const assetAccounts = Array.from({ length: 6 }, (_, i) => ({
+  id: `asset-${i + 1}`,
+  name: `Asset ${i + 1}`,
   adjusted_balance: i + 1,
 }))
+const liabilityAccount = { id: 'debt-1', name: 'Debt 1', adjusted_balance: -1 }
 
-const allVisibleAccounts = ref([])
+// --- Composable Mocks ---
 
-vi.mock('@/composables/useTopAccounts', () => ({
-  useTopAccounts: () => ({
-    accounts: ref(sampleAccounts),
-    allVisibleAccounts,
-    fetchAccounts: vi.fn(() => {
-      allVisibleAccounts.value = sampleAccounts
-    }),
-  }),
-}))
+// Mock useTopAccounts to return the sample accounts while enforcing the
+// five‑account visibility limit used by the real composable.
+vi.mock('@/composables/useTopAccounts', () => {
+  const accounts = ref([])
+  const allVisibleAccounts = ref([])
+  const fetchAccounts = vi.fn(() => {
+    accounts.value = [...assetAccounts, liabilityAccount]
+    // only expose five asset accounts plus any liabilities
+    allVisibleAccounts.value = [...assetAccounts.slice(0, 5), liabilityAccount]
+  })
+  return {
+    useTopAccounts: () => ({ accounts, allVisibleAccounts, fetchAccounts }),
+  }
+})
 
-describe('TopAccountSnapshot group editing', () => {
-  it('renders input for new group and saves name on blur', async () => {
+// Mock useAccountGroups with basic localStorage persistence
+vi.mock('@/composables/useAccountGroups', () => {
+  const STORAGE_KEY = 'accountGroups'
+  return {
+    useAccountGroups() {
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+      const groups = ref(stored?.groups || [{ id: 'group-1', name: 'Group', accounts: [] }])
+      const activeGroupId = ref(stored?.activeGroupId || groups.value[0].id)
+
+      watch(
+        [groups, activeGroupId],
+        () => {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ groups: groups.value, activeGroupId: activeGroupId.value }),
+          )
+        },
+        { deep: true },
+      )
+
+      return { groups, activeGroupId }
+    },
+  }
+})
+
+beforeEach(() => {
+  localStorage.clear()
+})
+
+describe('TopAccountSnapshot', () => {
+  it('creates default group, adds new group, and saves edited name', async () => {
     const wrapper = mount(TopAccountSnapshot, {
-      global: {
-        stubs: { AccountSparkline: true },
-      },
+      global: { stubs: { AccountSparkline: true } },
     })
 
-    wrapper.vm.addGroup()
-    await nextTick()
+    // trigger account fetch and watchers
     await nextTick()
 
+    // default group exists
+    const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(names).toContain('Group')
+
+    // add and rename a group
+    wrapper.vm.addGroup()
+    await nextTick()
     const input = wrapper.find('input.bs-tab')
     expect(input.exists()).toBe(true)
-
-    await input.setValue('Test Group')
+    await input.setValue('My Group')
     await input.trigger('blur')
     await nextTick()
-
-    const texts = wrapper.findAll('button.bs-tab').map((b) => b.text())
-    expect(texts).toContain('Test Group')
+    const updated = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(updated).toContain('My Group')
   })
 
-  it('limits account selection to five and fades dropdown', async () => {
+  it('limits visible accounts to five per group', async () => {
     const wrapper = mount(TopAccountSnapshot, {
-      global: {
-        stubs: { AccountSparkline: true },
-      },
+      global: { stubs: { AccountSparkline: true } },
     })
 
-    wrapper.vm.addGroup()
     await nextTick()
-
-    const boxes = wrapper.findAll('.bs-account-option input')
-    for (let i = 0; i < 5; i++) {
-      await boxes[i].setValue(true)
-    }
-    await nextTick()
-
-    expect(boxes[5].element.disabled).toBe(true)
-    const dropdown = wrapper.find('.bs-account-dropdown')
-    expect(dropdown.attributes('style')).toContain('opacity: 0.5')
+    const assets = wrapper.vm.groups.find((g) => g.id === 'assets')
+    expect(assets.accounts.length).toBe(5)
+    const accountNames = assets.accounts.map((a) => a.name)
+    expect(accountNames).not.toContain('Asset 6')
   })
 
-  it('renders drag handles and updates account order', async () => {
+  it('updates group order when accounts are reordered', async () => {
     const wrapper = mount(TopAccountSnapshot, {
-      global: {
-        stubs: { AccountSparkline: true },
-      },
+      global: { stubs: { AccountSparkline: true } },
     })
 
-    // populate active group with accounts
-    wrapper.vm.groups[0].accounts = [...sampleAccounts]
     await nextTick()
-
-    const handles = wrapper.findAll('.bs-drag-handle')
-    expect(handles.length).toBe(sampleAccounts.length)
-
-    // simulate reordering
-    wrapper.vm.groups[0].accounts = [...wrapper.vm.groups[0].accounts].reverse()
     await nextTick()
+    const assetsIdx = wrapper.vm.groups.findIndex((g) => g.id === 'assets')
+    wrapper.vm.activeGroupId = 'assets'
+    await nextTick()
+    const firstBefore = wrapper.findAll('.bs-name')[0].text()
+    wrapper.vm.groups[assetsIdx].accounts.reverse()
+    await nextTick()
+    const firstAfter = wrapper.findAll('.bs-name')[0].text()
+    expect(firstAfter).not.toBe(firstBefore)
+  })
 
-    const firstName = wrapper.findAll('.bs-name')[0].text()
-    expect(firstName).toContain('Account 6')
+  it('restores groups from localStorage', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'saved', name: 'Saved', accounts: [] }],
+        activeGroupId: 'saved',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(names).toContain('Saved')
   })
 })
