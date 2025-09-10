@@ -6,9 +6,18 @@
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
-      <div class="bs-tabs-scroll">
+      <div class="bs-tabs-scroll" :style="{ '--accent': groupAccent }">
+        <button
+          v-if="groups.length > 3"
+          class="bs-nav-btn"
+          @click="shiftWindow(-1)"
+          :disabled="visibleGroupIndex === 0"
+          aria-label="Previous group"
+        >
+          &lt;
+        </button>
         <TransitionGroup name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in groups" :key="g.id">
+          <template v-for="g in visibleGroups" :key="g.id">
             <input
               v-if="!g.name || editingGroupId === g.id"
               v-model="g.name"
@@ -40,6 +49,15 @@
             +
           </button>
         </TransitionGroup>
+        <button
+          v-if="groups.length > 3"
+          class="bs-nav-btn"
+          @click="shiftWindow(1)"
+          :disabled="visibleGroupIndex + 3 >= groups.length"
+          aria-label="Next group"
+        >
+          &gt;
+        </button>
       </div>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
@@ -176,10 +194,67 @@ import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
+const props = defineProps({
+  accountSubtype: { type: String, default: '' },
+  useSpectrum: { type: Boolean, default: false },
+})
 
-// fetch accounts generically for potential group management
-useTopAccounts()
+// full account list used for group editing
+const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
 const { groups, activeGroupId } = useAccountGroups()
+onMounted(fetchAccounts)
+
+// initialize groups from loaded accounts
+watch(allVisibleAccounts, (acctList) => {
+  const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
+  const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
+  const assetGroup = groups.value.find((g) => g.id === 'assets')
+  const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
+
+  if (!assetGroup && !liabilityGroup && groups.value.every((g) => !g.accounts.length)) {
+    // first-time setup: replace default group with auto groups
+    groups.value = [
+      {
+        id: 'assets',
+        name: 'Assets',
+        color: 'var(--color-accent-cyan)',
+        accounts: assets,
+      },
+      {
+        id: 'liabilities',
+        name: 'Liabilities',
+        color: 'var(--color-accent-yellow)',
+        accounts: liabilities,
+      },
+    ]
+    activeGroupId.value = assets.length ? 'assets' : 'liabilities'
+    return
+  }
+
+  if (assetGroup) {
+    assetGroup.accounts = assets
+    assetGroup.color = assetGroup.color || 'var(--color-accent-cyan)'
+  } else {
+    groups.value.push({
+      id: 'assets',
+      name: 'Assets',
+      color: 'var(--color-accent-cyan)',
+      accounts: assets,
+    })
+  }
+
+  if (liabilityGroup) {
+    liabilityGroup.accounts = liabilities
+    liabilityGroup.color = liabilityGroup.color || 'var(--color-accent-yellow)'
+  } else {
+    groups.value.push({
+      id: 'liabilities',
+      name: 'Liabilities',
+      color: 'var(--color-accent-yellow)',
+      accounts: liabilities,
+    })
+  }
+})
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -212,15 +287,61 @@ const editingGroupId = ref(null)
 const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
-/**
- * Accent color for the currently active group.
- * Falls back to the theme's primary accent when not specified.
- */
-const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
+const visibleGroupIndex = ref(0)
+const visibleGroups = computed(() =>
+  groups.value.slice(visibleGroupIndex.value, visibleGroupIndex.value + 3),
+)
 
-/** Return accent color for an account based on its balance sign */
-function accentColor(account) {
+/** Shift the visible tab window left or right */
+function shiftWindow(direction) {
+  const maxStart = Math.max(0, groups.value.length - 3)
+  visibleGroupIndex.value = Math.min(maxStart, Math.max(0, visibleGroupIndex.value + direction))
+}
+
+/** Keep active group within the visible range */
+watch(activeGroupId, (id) => {
+  const idx = groups.value.findIndex((g) => g.id === id)
+  if (idx === -1) return
+  if (idx < visibleGroupIndex.value) {
+    visibleGroupIndex.value = idx
+  } else if (idx > visibleGroupIndex.value + 2) {
+    visibleGroupIndex.value = idx - 2
+  }
+})
+
+/** Adjust window when group list changes */
+watch(
+  () => groups.value.length,
+  (len) => {
+    const maxStart = Math.max(0, len - 3)
+    if (visibleGroupIndex.value > maxStart) {
+      visibleGroupIndex.value = maxStart
+    }
+  },
+)
+
+const spectrum = [
+  'var(--color-accent-cyan)',
+  'var(--color-accent-yellow)',
+  'var(--color-accent-red)',
+  'var(--color-accent-blue)',
+]
+
+/** Return accent color for an account */
+function accentColor(account, index) {
+  if (props.useSpectrum) {
+    const subtype = (account.subtype || '').toLowerCase()
+    const map = {
+      checking: 'var(--color-accent-cyan)',
+      savings: 'var(--color-accent-blue)',
+      credit: 'var(--color-accent-red)',
+      'credit card': 'var(--color-accent-red)',
+      loan: 'var(--color-accent-yellow)',
+    }
+    return map[subtype] || spectrum[index % spectrum.length]
+  }
   return account.adjusted_balance >= 0 ? 'var(--color-accent-cyan)' : 'var(--color-accent-yellow)'
 }
 
@@ -393,8 +514,10 @@ function initials(name) {
 
 .bs-tabs-scroll {
   flex: 1 1 auto;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  overflow: hidden;
 }
 
 .bs-tab-list {
@@ -471,6 +594,34 @@ function initials(name) {
   transition:
     background 0.2s,
     color 0.2s;
+}
+
+.bs-nav-btn {
+  padding: 0.4rem 0.6rem;
+  background: var(--color-bg-sec);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.bs-nav-btn:hover,
+.bs-nav-btn:focus-visible {
+  background: var(--accent);
+  color: var(--color-bg-dark);
+}
+
+.bs-nav-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .bs-group-btn:hover,
@@ -870,8 +1021,13 @@ function initials(name) {
     font-size: 0.8rem;
   }
 
+  .bs-nav-btn {
+    padding: 0.45rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
   .bs-tabs-scroll {
-    overflow-x: auto;
+    overflow: hidden;
   }
 
   .bs-tab-list {
