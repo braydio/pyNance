@@ -191,9 +191,7 @@ const props = defineProps({
 })
 
 // full account list used for group editing
-const { allVisibleAccounts, fetchAccounts } = useTopAccounts(
-  toRef(props, 'accountSubtype'),
-)
+const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
 const { groups, activeGroupId } = useAccountGroups()
 onMounted(fetchAccounts)
 
@@ -289,10 +287,7 @@ const visibleGroups = computed(() =>
 /** Shift the visible tab window left or right */
 function shiftWindow(direction) {
   const maxStart = Math.max(0, groups.value.length - 3)
-  visibleGroupIndex.value = Math.min(
-    maxStart,
-    Math.max(0, visibleGroupIndex.value + direction),
-  )
+  visibleGroupIndex.value = Math.min(maxStart, Math.max(0, visibleGroupIndex.value + direction))
 }
 
 /** Keep active group within the visible range */
