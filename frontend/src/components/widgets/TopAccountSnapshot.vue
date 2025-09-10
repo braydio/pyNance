@@ -1,8 +1,7 @@
 <!--
   TopAccountSnapshot.vue
-  Displays top accounts grouped (e.g., assets or liabilities) with totals.
-  Users can switch between groups, rename groups, reorder accounts via drag handles.
-  Group colors derive from group data or the default theme rather than hardcoded identifiers.
+  Displays accounts grouped with totals.
+  Users can switch between groups, rename groups, and reorder accounts via drag handles.
 -->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
@@ -41,6 +40,14 @@
               {{ g.name }}
             </button>
           </template>
+          <button
+            v-if="isEditingGroups"
+            key="add-group"
+            class="bs-tab bs-tab-add"
+            @click="addGroup"
+          >
+            +
+          </button>
         </TransitionGroup>
         <button
           v-if="groups.length > 3"
@@ -64,7 +71,9 @@
               </button>
             </li>
             <li>
-              <button class="bs-group-item bs-group-add" @click="addGroup">+</button>
+              <button class="bs-group-item" @click="toggleEditGroups">
+                {{ isEditingGroups ? 'Done' : 'Edit' }}
+              </button>
             </li>
           </ul>
         </Transition>
@@ -80,11 +89,11 @@
         tag="ul"
         class="bs-list"
       >
-        <template #item="{ element: account, index: idx }">
+        <template #item="{ element: account }">
           <li class="bs-account-container">
             <div
               class="bs-row"
-              :style="{ '--accent': accentColor(account, idx) }"
+              :style="{ '--accent': accentColor(account) }"
               @click="toggleDetails(account.id)"
               role="button"
               tabindex="0"
@@ -178,7 +187,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, toRef, onMounted, watch } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import draggable from 'vuedraggable'
 import { GripVertical } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -275,6 +284,7 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
+const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
@@ -345,6 +355,11 @@ function toggleGroupMenu() {
 
 function selectGroup(id) {
   setActiveGroup(id)
+  showGroupMenu.value = false
+}
+
+function toggleEditGroups() {
+  isEditingGroups.value = !isEditingGroups.value
   showGroupMenu.value = false
 }
 
@@ -644,7 +659,7 @@ function initials(name) {
   color: var(--color-bg-dark);
 }
 
-.bs-group-add {
+.bs-tab-add {
   font-weight: 700;
   text-align: center;
 }

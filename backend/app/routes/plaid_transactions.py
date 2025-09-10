@@ -15,6 +15,7 @@ from app.helpers.plaid_helpers import (
     remove_item,
 )
 from app.models import Account, PlaidAccount
+from app.services.plaid_sync import sync_account_transactions
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
 from plaid.model.country_code import CountryCode
@@ -358,3 +359,22 @@ def generate_update_link_token():
             ),
             500,
         )
+
+
+@plaid_transactions.route("/sync", methods=["POST"])
+def sync_transactions_endpoint():
+    """Trigger Plaid transactions/sync for a single account.
+
+    Body: { "account_id": "..." }
+    """
+    try:
+        data = request.get_json() or {}
+        account_id = data.get("account_id")
+        if not account_id:
+            return jsonify({"status": "error", "message": "Missing account_id"}), 400
+
+        result = sync_account_transactions(account_id)
+        return jsonify({"status": "success", "result": result}), 200
+    except Exception as e:
+        logger.error(f"Error during Plaid sync: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
