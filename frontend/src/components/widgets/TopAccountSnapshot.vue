@@ -562,7 +562,6 @@ function initials(name) {
   color: var(--color-bg-dark);
 }
 
-
 .bs-tab-add {
   font-weight: 700;
   text-align: center;
