@@ -59,6 +59,7 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
             institution_price_as_of=s.get("institution_price_as_of"),
             market_identifier_code=s.get("market_identifier_code"),
             iso_currency_code=s.get("iso_currency_code"),
+            raw=s,
         )
         db.session.merge(security)
         sec_upserts += 1
@@ -72,6 +73,7 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
             cost_basis=h.get("cost_basis"),
             institution_value=h.get("institution_value"),
             as_of=h.get("institution_price_as_of"),
+            raw=h,
         )
         db.session.merge(holding)
         holding_upserts += 1
@@ -104,6 +106,7 @@ def upsert_investment_transactions(items: List[dict]) -> int:
             name=t.get("name"),
             fees=t.get("fees"),
             iso_currency_code=t.get("iso_currency_code"),
+            raw=t,
         )
         db.session.merge(tx)
         count += 1

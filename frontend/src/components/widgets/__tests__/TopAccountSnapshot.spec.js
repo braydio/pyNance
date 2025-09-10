@@ -159,10 +159,12 @@ describe('TopAccountSnapshot', () => {
     )
     const wrapper = mount(TopAccountSnapshot, {
       props: { isEditingGroups: true },
+
       global: { stubs: { AccountSparkline: true } },
     })
 
     await nextTick()
+
     const inputs = wrapper.findAll('input.bs-tab-input')
     expect(inputs).toHaveLength(2)
     await inputs[0].setValue('AA')
@@ -217,5 +219,6 @@ describe('TopAccountSnapshot', () => {
     const stored = JSON.parse(localStorage.getItem('accountGroups'))
     expect(stored.groups).toHaveLength(1)
     expect(stored.groups[0].id).toBe('b')
+
   })
 })

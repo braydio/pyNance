@@ -8,17 +8,16 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
 
 ### Implemented
 
-- **Data model** – `PlaidAccount` already has a `sync_cursor` column for storing per-item cursors.
-- **Routing stub** – `POST /transactions/sync` endpoint exists and delegates to a service layer.
-- **Legacy fetch** – Transaction ingestion uses Plaid's `transactions/get` with manual pagination.
+- Data model – `PlaidAccount.sync_cursor` present and used to persist cursors.
+- Plaid sync service – `app/services/plaid_sync.py` implements `/transactions/sync` with paging and atomic upserts/deletes; persists `next_cursor` and updates `last_refreshed`.
+- Flask endpoint – `POST /api/plaid/transactions/sync` accepts `{ account_id }` and invokes the sync service.
+- Legacy fetch – Still available via `refresh_accounts` for ad‑hoc range pulls during migration.
 
 ### Missing
 
-- **Provider sync logic** – `plaid.sync_transactions` and `teller.sync_transactions` implementations.
-- **Cursor persistence** – logic to update `PlaidAccount.sync_cursor` after successful sync.
-- **Webhook handler** – no listener for Plaid `SYNC_UPDATES_AVAILABLE` webhooks.
-- **Patch application** – no atomic handling of added/modified/removed transactions.
-- **Tests & monitoring** – no automated coverage for sync paths or webhook events.
+- Plaid webhooks – add `/api/webhooks/plaid` for `SYNC_UPDATES_AVAILABLE` to trigger account/item syncs.
+- Teller sync parity – optional; Teller doesn’t provide a cursored sync API, but we can align naming.
+- Tests & monitoring – add unit tests for service logic and route, and basic metrics logs.
 
 ## 3. Migration Plan
 
@@ -30,20 +29,19 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
    - Add `plaid_item_cursor` table if account-scoped cursors prove insufficient.
 
 3. **Sync Service**
-   - Implement `plaid.sync_transactions(access_token, cursor)` to call `/transactions/sync` with paging and mutation restart.
-   - Apply added/modified/removed arrays in a single DB transaction, then persist the final `next_cursor` to `PlaidAccount.sync_cursor`.
-   - Expose `sync_transactions(provider, account_id)` via existing service and route.
+   - Implemented in `app/services/plaid_sync.py` (paging, atomic apply, cursor persistence).
+   - Exposed via `POST /api/plaid/transactions/sync`.
 
 4. **Webhook Handler**
-   - Add `/webhooks/plaid/transactions` endpoint responding to `SYNC_UPDATES_AVAILABLE` by invoking the sync service for the affected item.
+   - TODO: add `/api/webhooks/plaid` handler to receive `SYNC_UPDATES_AVAILABLE` and invoke sync for impacted accounts/items.
 
 5. **Onboarding Strategy**
    - For each existing item, choose: full historical sync (empty cursor) or fast-forward (`cursor="now"`).
    - Record migration choice in ops log.
 
 6. **Cutover**
-   - Feature flag items as they migrate.
-   - Disable scheduled `transactions/get` jobs for migrated items.
+   - Feature flag items as they migrate (cursor presence can be the flag).
+   - Disable scheduled `transactions/get` jobs for items once cursor is set and first sync completes.
 
 7. **Decommission Legacy**
    - Remove `transactions/get` helper and related webhooks once all items use Sync.
@@ -58,4 +56,4 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
 
 ---
 
-_Last updated: $(date -u +"%Y-%m-%d")_
+_Last updated: 2025-09-09_

@@ -1,7 +1,9 @@
 """Transaction-related models: Transaction, Category, RecurringTransaction, Rules, PlaidTransactionMeta."""
 
 from datetime import datetime, timezone
+
 from app.extensions import db
+
 from .mixins import TimestampMixin
 
 
@@ -143,5 +145,7 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
     website = db.Column(db.String(256), nullable=True)
     pfc_confidence_level = db.Column(db.String(32), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    # Full raw Plaid transaction payload (for audit/rehydration)
+    raw = db.Column(db.JSON, nullable=True)
 
     __table_args__ = (db.UniqueConstraint("transaction_id"),)
