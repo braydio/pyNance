@@ -31,6 +31,14 @@
               {{ g.name }}
             </button>
           </template>
+          <button
+            v-if="isEditingGroups"
+            key="add-group"
+            class="bs-tab bs-tab-add"
+            @click="addGroup"
+          >
+            +
+          </button>
         </TransitionGroup>
       </div>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
@@ -45,7 +53,9 @@
               </button>
             </li>
             <li>
-              <button class="bs-group-item bs-group-add" @click="addGroup">+</button>
+              <button class="bs-group-item" @click="toggleEditGroups">
+                {{ isEditingGroups ? 'Done' : 'Edit' }}
+              </button>
             </li>
           </ul>
         </Transition>
@@ -199,6 +209,7 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
+const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
@@ -223,6 +234,11 @@ function toggleGroupMenu() {
 
 function selectGroup(id) {
   setActiveGroup(id)
+  showGroupMenu.value = false
+}
+
+function toggleEditGroups() {
+  isEditingGroups.value = !isEditingGroups.value
   showGroupMenu.value = false
 }
 
@@ -492,7 +508,7 @@ function initials(name) {
   color: var(--color-bg-dark);
 }
 
-.bs-group-add {
+.bs-tab-add {
   font-weight: 700;
   text-align: center;
 }
