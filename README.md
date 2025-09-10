@@ -68,6 +68,15 @@ hooks run and the server restarts with the latest changes.
 
 - `ENABLE_ARBIT_DASHBOARD` – set to `true` to enable the experimental arbitrage dashboard.
 
+### Discord arbitrage feed
+
+To surface live R/S arbitrage data in the UI, add the dashboard flag and run the Discord bot that publishes snapshots:
+
+1. In `backend/.env` set `ENABLE_ARBIT_DASHBOARD=true`.
+2. Run your Arbit Discord bot so it writes JSON updates to `backend/app/logs/rs_arbitrage.json`.
+   The API reads this file and serves it at `/api/arbitrage/current`.
+3. Start the backend and frontend, then visit `/arbitrage` in the browser to view the feed.
+
 ## Testing
 
 - Backend tests:
