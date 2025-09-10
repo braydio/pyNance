@@ -19,6 +19,8 @@ class Security(db.Model, TimestampMixin):
     institution_price_as_of = db.Column(db.Date, nullable=True)
     market_identifier_code = db.Column(db.String(64), nullable=True)
     iso_currency_code = db.Column(db.String(8), nullable=True)
+    # Full raw security payload (optional)
+    raw = db.Column(db.JSON, nullable=True)
 
 
 class InvestmentHolding(db.Model, TimestampMixin):
@@ -38,6 +40,8 @@ class InvestmentHolding(db.Model, TimestampMixin):
     cost_basis = db.Column(db.Float, nullable=True)
     institution_value = db.Column(db.Float, nullable=True)
     as_of = db.Column(db.Date, nullable=True)
+    # Full raw holding payload (optional)
+    raw = db.Column(db.JSON, nullable=True)
 
     __table_args__ = (
         db.UniqueConstraint(
@@ -68,3 +72,5 @@ class InvestmentTransaction(db.Model, TimestampMixin):
     name = db.Column(db.String(256), nullable=True)
     fees = db.Column(db.Float, nullable=True)
     iso_currency_code = db.Column(db.String(8), nullable=True)
+    # Full raw investment transaction payload (optional)
+    raw = db.Column(db.JSON, nullable=True)

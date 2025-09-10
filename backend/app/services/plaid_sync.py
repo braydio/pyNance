@@ -91,6 +91,8 @@ def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) ->
             existing.merchant_name = merchant_name
             existing.merchant_type = merchant_type
             existing.provider = "Plaid"
+            existing.personal_finance_category = pfc or None
+            existing.personal_finance_category_icon_url = pfc_icon
         # Always refresh Plaid metadata (keeps aux fields current)
         refresh_or_insert_plaid_metadata(tx, existing, plaid_acct.account_id)
         detect_internal_transfer(existing)
@@ -108,6 +110,8 @@ def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) ->
             merchant_type=merchant_type,
             provider="Plaid",
             user_id=account.user_id,
+            personal_finance_category=pfc or None,
+            personal_finance_category_icon_url=pfc_icon,
         )
         db.session.add(new_txn)
         refresh_or_insert_plaid_metadata(tx, new_txn, plaid_acct.account_id)
@@ -201,4 +205,3 @@ def sync_account_transactions(account_id: str) -> Dict:
         "removed": total_removed,
         "next_cursor": next_cursor,
     }
-

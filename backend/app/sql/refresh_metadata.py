@@ -49,6 +49,9 @@ def refresh_or_insert_plaid_metadata(
     pfcat = plaid_tx.get("personal_finance_category", {})
     meta.pfc_confidence_level = pfcat.get("confidence_level") if pfcat else None
 
+    # Store full raw payload for audit/debug/rehydration
+    meta.raw = plaid_tx
+
     # Mark as active
     meta.is_active = True
 
