@@ -186,12 +186,8 @@
           @fetch-accounts="selector.fetchAccounts"
         />
         <div class="bs-selector-actions">
-          <button class="bs-selector-confirm" @click="confirmSelection">
-            Add Selected
-          </button>
-          <button class="bs-selector-cancel" @click="closeSelector">
-            Cancel
-          </button>
+          <button class="bs-selector-confirm" @click="confirmSelection">Add Selected</button>
+          <button class="bs-selector-cancel" @click="closeSelector">Cancel</button>
         </div>
       </div>
     </div>
@@ -217,8 +213,7 @@ const { isEditingGroups } = defineProps({
 
 // fetch accounts generically for potential group management
 useTopAccounts()
-const { groups, activeGroupId, addAccountToGroup, removeAccountFromGroup } =
-  useAccountGroups()
+const { groups, activeGroupId, addAccountToGroup, removeAccountFromGroup } = useAccountGroups()
 
 const selector = useAccountSelector()
 const showSelector = ref(false)
@@ -260,9 +255,7 @@ function closeSelector() {
 
 function confirmSelection() {
   if (!activeGroup.value) return
-  selector.selectedAccounts.value.forEach((acc) =>
-    addAccountToGroup(activeGroup.value.id, acc),
-  )
+  selector.selectedAccounts.value.forEach((acc) => addAccountToGroup(activeGroup.value.id, acc))
   closeSelector()
 }
 
@@ -272,9 +265,7 @@ function removeAccount(accountId) {
   }
 }
 
-const canAddAccount = computed(
-  () => activeGroup.value && activeGroup.value.accounts.length < 5,
-)
+const canAddAccount = computed(() => activeGroup.value && activeGroup.value.accounts.length < 5)
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)

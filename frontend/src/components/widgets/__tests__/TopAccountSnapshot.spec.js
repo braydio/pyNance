@@ -182,10 +182,16 @@ describe('TopAccountSnapshot', () => {
   })
 
   it('disables add account row when group is full', async () => {
-    const fullAccounts = Array.from({ length: 5 }, (_, i) => ({ id: `acc-${i}`, adjusted_balance: i }))
+    const fullAccounts = Array.from({ length: 5 }, (_, i) => ({
+      id: `acc-${i}`,
+      adjusted_balance: i,
+    }))
     localStorage.setItem(
       STORAGE_KEY,
-      JSON.stringify({ groups: [{ id: 'group-1', name: 'Group', accounts: fullAccounts }], activeGroupId: 'group-1' }),
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: fullAccounts }],
+        activeGroupId: 'group-1',
+      }),
     )
     const wrapper = mount(TopAccountSnapshot, {
       props: { isEditingGroups: true },
