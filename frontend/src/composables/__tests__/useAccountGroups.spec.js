@@ -65,4 +65,17 @@ describe('useAccountGroups', () => {
     expect(addAccountToGroup(id, 'acc-5')).toBe(false)
     expect(groups.value[0].accounts.length).toBe(5)
   })
+
+  it('removes accounts from groups and persists', async () => {
+    const { addAccountToGroup, removeAccountFromGroup, groups } = useAccountGroups()
+    const id = groups.value[0].id
+    addAccountToGroup(id, { id: 'acc-1' })
+    await nextTick()
+    expect(groups.value[0].accounts.length).toBe(1)
+    expect(removeAccountFromGroup(id, 'acc-1')).toBe(true)
+    await nextTick()
+    expect(groups.value[0].accounts.length).toBe(0)
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(stored.groups[0].accounts.length).toBe(0)
+  })
 })

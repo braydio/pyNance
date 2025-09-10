@@ -105,6 +105,23 @@ export function useAccountGroups() {
     return true
   }
 
+  /**
+   * Remove an account from a group by identifier.
+   * @param {string} groupId
+   * @param {string} accountId
+   * @returns {boolean} true if the account was removed
+   */
+  function removeAccountFromGroup(groupId, accountId) {
+    const group = groups.value.find((g) => g.id === groupId)
+    if (!group) return false
+    const idx = group.accounts.findIndex(
+      (a) => a.id === accountId || a.account_id === accountId,
+    )
+    if (idx === -1) return false
+    group.accounts.splice(idx, 1)
+    return true
+  }
+
   watch(
     groups,
     () => {
@@ -117,5 +134,13 @@ export function useAccountGroups() {
   ensureActive()
   persist()
 
-  return { groups, activeGroupId, addGroup, setActiveGroup, removeGroup, addAccountToGroup }
+  return {
+    groups,
+    activeGroupId,
+    addGroup,
+    setActiveGroup,
+    removeGroup,
+    addAccountToGroup,
+    removeAccountFromGroup,
+  }
 }

@@ -111,6 +111,14 @@
               <div class="bs-amount-section">
                 <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
               </div>
+              <button
+                v-if="isEditingGroups"
+                class="bs-delete-btn"
+                @click.stop="removeAccount(account.id)"
+                aria-label="Remove account"
+              >
+                <X class="bs-delete-icon" />
+              </button>
             </div>
             <div v-if="openAccountId === account.id" class="bs-details-row">
               <div class="bs-details-content">
@@ -136,6 +144,16 @@
         </template>
         <template #footer>
           <li
+            v-if="isEditingGroups"
+            class="bs-account-container bs-add-account"
+            :class="{ 'bs-add-account-disabled': !canAddAccount }"
+            @click="canAddAccount ? openSelector() : null"
+          >
+            <div class="bs-row bs-row-add">
+              <span class="bs-add-text">+ Add Account</span>
+            </div>
+          </li>
+          <li
             v-if="activeAccounts.length"
             class="bs-summary-row"
             :style="{ '--accent': groupAccent }"
@@ -154,6 +172,30 @@
       No accounts to display
     </div>
 
+    <div v-if="showSelector" class="bs-selector-overlay">
+      <div class="bs-selector-modal">
+        <AccountSelector
+          :selected-account-ids="selector.selectedAccountIds"
+          :available-accounts="selector.availableAccounts"
+          :loading="selector.loading"
+          :error="selector.error"
+          @toggle-account="selector.toggleAccount"
+          @select-all="selector.selectAll"
+          @deselect-all="selector.deselectAll"
+          @select-accounts-by-type="selector.selectAccountsByType"
+          @fetch-accounts="selector.fetchAccounts"
+        />
+        <div class="bs-selector-actions">
+          <button class="bs-selector-confirm" @click="confirmSelection">
+            Add Selected
+          </button>
+          <button class="bs-selector-cancel" @click="closeSelector">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- liabilities section removed -->
   </div>
 </template>
@@ -161,15 +203,25 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import draggable from 'vuedraggable'
-import { GripVertical } from 'lucide-vue-next'
+import { GripVertical, X } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
+import { useAccountSelector } from '@/composables/useAccountSelector'
+import AccountSelector from '@/components/ui/AccountSelector.vue'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
 
+const { isEditingGroups } = defineProps({
+  isEditingGroups: { type: Boolean, default: false },
+})
+
 // fetch accounts generically for potential group management
 useTopAccounts()
-const { groups, activeGroupId } = useAccountGroups()
+const { groups, activeGroupId, addAccountToGroup, removeAccountFromGroup } =
+  useAccountGroups()
+
+const selector = useAccountSelector()
+const showSelector = ref(false)
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -197,11 +249,37 @@ function toggleDetails(accountId) {
   }
 }
 
+function openSelector() {
+  showSelector.value = true
+  selector.deselectAll()
+}
+
+function closeSelector() {
+  showSelector.value = false
+}
+
+function confirmSelection() {
+  if (!activeGroup.value) return
+  selector.selectedAccounts.value.forEach((acc) =>
+    addAccountToGroup(activeGroup.value.id, acc),
+  )
+  closeSelector()
+}
+
+function removeAccount(accountId) {
+  if (activeGroup.value) {
+    removeAccountFromGroup(activeGroup.value.id, accountId)
+  }
+}
+
+const canAddAccount = computed(
+  () => activeGroup.value && activeGroup.value.accounts.length < 5,
+)
+
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
 /**
  * Accent color for the currently active group.
@@ -496,6 +574,81 @@ function initials(name) {
 .bs-group-add {
   font-weight: 700;
   text-align: center;
+}
+
+/* Editing controls */
+.bs-delete-btn {
+  background: transparent;
+  border: none;
+  color: var(--color-text-light);
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.bs-delete-btn:hover {
+  color: var(--color-accent-yellow);
+}
+
+.bs-add-account {
+  cursor: pointer;
+}
+
+.bs-add-account-disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.bs-row-add {
+  justify-content: center;
+}
+
+.bs-add-text {
+  color: var(--color-text-light);
+  font-weight: 600;
+}
+
+.bs-selector-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.bs-selector-modal {
+  background: var(--color-bg-dark);
+  padding: 1rem;
+  border-radius: 0.5rem;
+  max-width: 90%;
+  max-height: 90%;
+  overflow: auto;
+}
+
+.bs-selector-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.bs-selector-confirm,
+.bs-selector-cancel {
+  padding: 0.4rem 0.8rem;
+  border: none;
+  border-radius: 0.25rem;
+  cursor: pointer;
+}
+
+.bs-selector-confirm {
+  background: var(--color-accent-cyan);
+  color: var(--color-bg-dark);
+}
+
+.bs-selector-cancel {
+  background: var(--color-bg-sec);
+  color: var(--color-text-light);
 }
 
 .bs-group-editor {
