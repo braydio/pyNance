@@ -1,23 +1,36 @@
 <!--
   TopAccountSnapshot.vue
   Displays accounts grouped with totals.
-  Users can switch between groups, rename groups, and reorder accounts via drag handles.
+  Users can switch between groups, rename groups, reorder them via drag handles,
+  and remove groups when editing mode is enabled.
 -->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
-      <div class="bs-tabs-scroll" :style="{ '--accent': groupAccent }">
-        <button
-          v-if="groups.length > 3"
-          class="bs-nav-btn"
-          @click="shiftWindow(-1)"
-          :disabled="visibleGroupIndex === 0"
-          aria-label="Previous group"
+      <div class="bs-tabs-scroll">
+        <draggable
+          v-if="isEditingGroups"
+          v-model="groups"
+          item-key="id"
+          handle=".bs-tab-handle"
+          tag="div"
+          class="bs-tab-list"
         >
-          &lt;
-        </button>
-        <TransitionGroup name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in visibleGroups" :key="g.id">
+          <template #item="{ element: g }">
+            <div :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
+              <GripVertical class="bs-tab-handle" />
+              <input
+                v-model="g.name"
+                class="bs-tab-input"
+                @blur="finishEdit(g)"
+                @keyup.enter="finishEdit(g)"
+              />
+              <X class="bs-tab-delete" @click.stop="removeGroup(g.id)" />
+            </div>
+          </template>
+        </draggable>
+        <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
+          <template v-for="g in groups" :key="g.id">
             <input
               v-if="!g.name || editingGroupId === g.id"
               v-model="g.name"
@@ -189,7 +202,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import draggable from 'vuedraggable'
-import { GripVertical } from 'lucide-vue-next'
+import { GripVertical, X } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
@@ -199,62 +212,14 @@ const props = defineProps({
   useSpectrum: { type: Boolean, default: false },
 })
 
-// full account list used for group editing
-const { allVisibleAccounts, fetchAccounts } = useTopAccounts(toRef(props, 'accountSubtype'))
-const { groups, activeGroupId } = useAccountGroups()
-onMounted(fetchAccounts)
-
-// initialize groups from loaded accounts
-watch(allVisibleAccounts, (acctList) => {
-  const assets = acctList ? acctList.filter((a) => a.adjusted_balance >= 0) : []
-  const liabilities = acctList ? acctList.filter((a) => a.adjusted_balance < 0) : []
-  const assetGroup = groups.value.find((g) => g.id === 'assets')
-  const liabilityGroup = groups.value.find((g) => g.id === 'liabilities')
-
-  if (!assetGroup && !liabilityGroup && groups.value.every((g) => !g.accounts.length)) {
-    // first-time setup: replace default group with auto groups
-    groups.value = [
-      {
-        id: 'assets',
-        name: 'Assets',
-        color: 'var(--color-accent-cyan)',
-        accounts: assets,
-      },
-      {
-        id: 'liabilities',
-        name: 'Liabilities',
-        color: 'var(--color-accent-yellow)',
-        accounts: liabilities,
-      },
-    ]
-    activeGroupId.value = assets.length ? 'assets' : 'liabilities'
-    return
-  }
-
-  if (assetGroup) {
-    assetGroup.accounts = assets
-    assetGroup.color = assetGroup.color || 'var(--color-accent-cyan)'
-  } else {
-    groups.value.push({
-      id: 'assets',
-      name: 'Assets',
-      color: 'var(--color-accent-cyan)',
-      accounts: assets,
-    })
-  }
-
-  if (liabilityGroup) {
-    liabilityGroup.accounts = liabilities
-    liabilityGroup.color = liabilityGroup.color || 'var(--color-accent-yellow)'
-  } else {
-    groups.value.push({
-      id: 'liabilities',
-      name: 'Liabilities',
-      color: 'var(--color-accent-yellow)',
-      accounts: liabilities,
-    })
-  }
+// fetch accounts generically for potential group management
+useTopAccounts()
+const { isEditingGroups } = defineProps({
+  isEditingGroups: { type: Boolean, default: false },
 })
+const { groups, activeGroupId, removeGroup } = useAccountGroups()
+
+
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -287,7 +252,6 @@ const editingGroupId = ref(null)
 const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-const groupAccent = computed(() => activeGroup.value?.color || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
 const visibleGroups = computed(() =>
@@ -531,6 +495,9 @@ function initials(name) {
 }
 
 .bs-tab {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   padding: 0.5rem 1rem;
   background: var(--color-bg-sec);
   color: var(--color-accent-cyan);
@@ -551,6 +518,18 @@ function initials(name) {
 
 .bs-tab-input:focus {
   outline: none;
+}
+
+.bs-tab-handle {
+  cursor: move;
+  width: 1rem;
+  height: 1rem;
+}
+
+.bs-tab-delete {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
 }
 
 .bs-tab-active.bs-tab-assets {

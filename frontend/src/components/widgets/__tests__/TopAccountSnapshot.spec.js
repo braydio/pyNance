@@ -32,18 +32,30 @@ vi.mock('@/composables/useAccountGroups', () => {
       const groups = ref(stored?.groups || [{ id: 'group-1', name: 'Group', accounts: [] }])
       const activeGroupId = ref(stored?.activeGroupId || groups.value[0].id)
 
-      watch(
-        [groups, activeGroupId],
-        () => {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify({ groups: groups.value, activeGroupId: activeGroupId.value }),
-          )
-        },
-        { deep: true },
-      )
+      function persist() {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify({ groups: groups.value, activeGroupId: activeGroupId.value }),
+        )
+      }
 
-      return { groups, activeGroupId }
+      function removeGroup(id) {
+        const idx = groups.value.findIndex((g) => g.id === id)
+        if (idx !== -1) {
+          groups.value.splice(idx, 1)
+          if (!groups.value.length) {
+            groups.value.push({ id: 'group-1', name: 'Group', accounts: [] })
+          }
+          if (!groups.value.some((g) => g.id === activeGroupId.value)) {
+            activeGroupId.value = groups.value[0].id
+          }
+        }
+      }
+
+      watch([groups, activeGroupId], persist, { deep: true })
+      persist()
+
+      return { groups, activeGroupId, removeGroup }
     },
   }
 })
@@ -134,20 +146,79 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
   })
 
-  it('toggles group editing to show inline add tab', async () => {
+  it('renders group names as inputs when editing and saves changes', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
     const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+
       global: { stubs: { AccountSparkline: true } },
     })
 
     await nextTick()
 
-    await wrapper.find('.bs-group-btn').trigger('click')
-    const buttons = wrapper.findAll('.bs-group-item')
-    const editBtn = buttons.find((b) => b.text() === 'Edit')
-    expect(editBtn).toBeTruthy()
-    await editBtn.trigger('click')
+    const inputs = wrapper.findAll('input.bs-tab-input')
+    expect(inputs).toHaveLength(2)
+    await inputs[0].setValue('AA')
+    await inputs[0].trigger('blur')
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].name).toBe('AA')
+  })
+
+  it('persists group order changes when dragged', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+      global: { stubs: { AccountSparkline: true } },
+    })
+
     await nextTick()
-    expect(wrapper.vm.isEditingGroups).toBe(true)
-    expect(wrapper.find('.bs-tab-add').exists()).toBe(true)
+    wrapper.vm.groups.reverse()
+    await nextTick()
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].id).toBe('b')
+  })
+
+  it('deletes a group and persists removal', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    const del = wrapper.findAll('.bs-tab-delete')[0]
+    await del.trigger('click')
+    await nextTick()
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups).toHaveLength(1)
+    expect(stored.groups[0].id).toBe('b')
+
   })
 })
