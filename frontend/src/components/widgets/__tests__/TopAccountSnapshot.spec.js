@@ -133,4 +133,21 @@ describe('TopAccountSnapshot', () => {
     await nextTick()
     expect(wrapper.vm.groupAccent).toBe('var(--color-accent-cyan)')
   })
+
+  it('toggles group editing to show inline add tab', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    await wrapper.find('.bs-group-btn').trigger('click')
+    const buttons = wrapper.findAll('.bs-group-item')
+    const editBtn = buttons.find((b) => b.text() === 'Edit')
+    expect(editBtn).toBeTruthy()
+    await editBtn.trigger('click')
+    await nextTick()
+    expect(wrapper.vm.isEditingGroups).toBe(true)
+    expect(wrapper.find('.bs-tab-add').exists()).toBe(true)
+  })
 })
