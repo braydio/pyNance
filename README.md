@@ -11,6 +11,27 @@ pyNance is a full-stack personal finance dashboard that combines a Flask API, a 
 - **Investment tracking** alongside banking activity.
 - **Scenario planning** with planned bills and allocations (experimental).
 
+## Sync & Webhooks
+
+- Banking transactions use Plaid’s delta-based Transactions Sync with cursors.
+  - Webhook: `POST /api/webhooks/plaid` listens for `TRANSACTIONS:SYNC_UPDATES_AVAILABLE` and triggers per‑account sync.
+  - Manual: `POST /api/plaid/transactions/sync` exists for targeted refresh.
+- Investments refresh automatically via Plaid webhooks:
+  - `INVESTMENTS_TRANSACTIONS` → fetch recent investment transactions and upsert.
+  - `HOLDINGS` → refresh holdings and securities.
+- Raw payload storage: full Plaid objects are stored for audit/rehydration. See `docs/RAW_PAYLOAD_STORAGE.md`.
+
+Webhook URL should point to `/api/webhooks/plaid`.
+
+## Database Migrations
+
+New JSON columns are used for raw payload storage. After pulling changes:
+
+```bash
+flask --app backend.run db migrate -m "add raw JSON cols for Plaid meta + investments"
+flask --app backend.run db upgrade
+```
+
 ## Installation
 
 ```bash
