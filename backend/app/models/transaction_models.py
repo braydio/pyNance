@@ -1,7 +1,9 @@
 """Transaction-related models: Transaction, Category, RecurringTransaction, Rules, PlaidTransactionMeta."""
 
 from datetime import datetime, timezone
+
 from app.extensions import db
+
 from .mixins import TimestampMixin
 
 

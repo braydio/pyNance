@@ -2,17 +2,16 @@
 
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request
-
 from app.config import logger
 from app.extensions import db
 from app.models import PlaidAccount, PlaidWebhookLog
 from app.services.plaid_sync import sync_account_transactions
+from flask import Blueprint, jsonify, request
 
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
 
 
-@plaid_webhooks.route("/plaid", methods=["POST"]) 
+@plaid_webhooks.route("/plaid", methods=["POST"])
 def handle_plaid_webhook():
     payload = request.get_json(silent=True) or {}
     webhook_type = payload.get("webhook_type")
@@ -57,4 +56,3 @@ def handle_plaid_webhook():
 
     # Non-transaction webhook types
     return jsonify({"status": "ignored"}), 200
-
