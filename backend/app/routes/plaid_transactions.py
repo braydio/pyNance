@@ -15,6 +15,7 @@ from app.helpers.plaid_helpers import (
     remove_item,
 )
 from app.models import Account, PlaidAccount
+from app.services.plaid_sync import sync_account_transactions
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
 from plaid.model.country_code import CountryCode
@@ -22,7 +23,6 @@ from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
 from plaid.model.products import Products
 from sqlalchemy.orm import joinedload
-from app.services.plaid_sync import sync_account_transactions
 
 plaid_transactions = Blueprint("plaid_transactions", __name__)
 

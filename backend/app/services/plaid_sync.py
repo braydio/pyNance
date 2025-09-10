@@ -12,13 +12,13 @@ from typing import Dict, List, Tuple
 from app.config import logger, plaid_client
 from app.extensions import db
 from app.models import Account, Category, PlaidAccount, Transaction
-from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
+from app.sql import transaction_rules_logic
 from app.sql.account_logic import (
-    get_or_create_category,
     detect_internal_transfer,
+    get_or_create_category,
     normalize_balance,
 )
-from app.sql import transaction_rules_logic
+from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 
 try:
     # Plaid SDK v13+ style imports
@@ -67,7 +67,9 @@ def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) ->
     txn_date = _parse_txn_date(tx.get("date"))
     description = tx.get("name") or tx.get("description") or "[no description]"
     merchant_name = tx.get("merchant_name") or "Unknown"
-    merchant_type = (tx.get("payment_meta", {}) or {}).get("payment_method") or "Unknown"
+    merchant_type = (tx.get("payment_meta", {}) or {}).get(
+        "payment_method"
+    ) or "Unknown"
     pending = bool(tx.get("pending", False))
 
     existing = Transaction.query.filter_by(transaction_id=txn_id).first()
@@ -125,10 +127,8 @@ def _apply_removed(removed: List[dict]) -> int:
     ids = [r.get("transaction_id") for r in removed if r.get("transaction_id")]
     if not ids:
         return 0
-    deleted = (
-        Transaction.query.filter(Transaction.transaction_id.in_(ids)).delete(
-            synchronize_session=False
-        )
+    deleted = Transaction.query.filter(Transaction.transaction_id.in_(ids)).delete(
+        synchronize_session=False
     )
     return int(deleted or 0)
 
