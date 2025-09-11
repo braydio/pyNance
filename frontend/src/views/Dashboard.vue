@@ -35,11 +35,8 @@
       <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
         <!-- Top Accounts Snapshot Card -->
         <div
-          class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-6 flex flex-col gap-4"
+          class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col"
         >
-          <h2 class="text-2xl font-bold text-[var(--color-accent-green)] text-center">
-            Top Accounts
-          </h2>
           <TopAccountSnapshot :groups="groups" v-model:active-group="activeGroupId" />
         </div>
         <!-- Net Income Summary Card -->

@@ -1,0 +1,29 @@
+# Caddyfile for local dev reverse proxy
+#
+# Routes:
+# - /api/*  -> Backend Flask API (BACKEND_UPSTREAM)
+# - everything else -> Frontend dev server (FRONTEND_UPSTREAM)
+#
+# Usage:
+#   export BACKEND_UPSTREAM=192.168.1.198:5000   # DietPi backend
+#   export FRONTEND_UPSTREAM=192.168.1.237:5173  # Desktop Vite dev server
+#   caddy run --config scripts/Caddyfile
+#
+# Notes:
+# - This serves HTTP on :8080 inside your LAN. For public TLS, put Caddy behind
+#   Cloudflare Tunnel or configure a domain and enable automatic HTTPS.
+
+:8080 {
+    encode zstd gzip
+
+    # Proxy API requests to the backend
+    @api path /api/*
+    handle @api {
+        reverse_proxy {$BACKEND_UPSTREAM}
+    }
+
+    # All other routes go to the frontend dev server
+    handle {
+        reverse_proxy {$FRONTEND_UPSTREAM}
+    }
+}
