@@ -2,7 +2,7 @@
   TopAccountSnapshot.vue
   Displays accounts grouped with totals.
   Users can switch between groups, rename groups, reorder them via drag handles,
-  and remove groups when editing mode is enabled.
+  remove groups, and add or remove accounts when editing mode is enabled.
 -->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
@@ -151,6 +151,11 @@
               </div>
               <div class="bs-amount-section">
                 <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+                <X
+                  v-if="isEditingGroups"
+                  class="bs-account-delete"
+                  @click.stop="removeAccount(account.id)"
+                />
               </div>
             </div>
             <div v-if="openAccountId === account.id" class="bs-details-row">
@@ -177,6 +182,39 @@
         </template>
         <template #footer>
           <li
+            class="bs-account-container bs-add-account"
+            :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+          >
+            <div v-if="showAccountSelector" class="bs-row">
+              <select
+                v-model="selectedAccountId"
+                @change="confirmAddAccount"
+                class="bs-add-select"
+              >
+                <option value="" disabled>Select account</option>
+                <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+                  {{ acct.name }}
+                </option>
+              </select>
+            </div>
+            <div
+              v-else
+              class="bs-row bs-add-placeholder"
+              @click="startAddAccount"
+              role="button"
+              tabindex="0"
+              @keydown.enter.prevent="startAddAccount"
+              @keydown.space.prevent="startAddAccount"
+            >
+              <div class="bs-logo-container">
+                <Plus class="bs-add-icon" />
+              </div>
+              <div class="bs-details">
+                <div class="bs-name">Add Account</div>
+              </div>
+            </div>
+          </li>
+          <li
             v-if="activeAccounts.length"
             class="bs-summary-row"
             :style="{ '--accent': groupAccent }"
@@ -202,7 +240,7 @@
 <script setup>
 import { ref, reactive, computed } from 'vue'
 import draggable from 'vuedraggable'
-import { GripVertical, X } from 'lucide-vue-next'
+import { GripVertical, X, Plus } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
@@ -210,14 +248,18 @@ import { fetchRecentTransactions } from '@/api/accounts'
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
+  isEditingGroups: { type: Boolean, default: false },
 })
 
 // fetch accounts generically for potential group management
-useTopAccounts()
-const { isEditingGroups } = defineProps({
-  isEditingGroups: { type: Boolean, default: false },
-})
-const { groups, activeGroupId, removeGroup } = useAccountGroups()
+const { allVisibleAccounts } = useTopAccounts()
+const {
+  groups,
+  activeGroupId,
+  removeGroup,
+  addAccountToGroup,
+  removeAccountFromGroup,
+} = useAccountGroups()
 
 
 
@@ -249,7 +291,7 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
-const isEditingGroups = ref(false)
+const isEditingGroups = ref(props.isEditingGroups)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
@@ -354,6 +396,35 @@ function addGroup() {
 }
 
 const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
+const availableAccounts = computed(() =>
+  allVisibleAccounts.value.filter(
+    (acct) => !activeAccounts.value.some((a) => a.id === acct.id)
+  ),
+)
+const showAccountSelector = ref(false)
+const selectedAccountId = ref('')
+
+function startAddAccount() {
+  if (activeAccounts.value.length >= 5) return
+  showAccountSelector.value = true
+}
+
+function confirmAddAccount() {
+  const acct = availableAccounts.value.find((a) => a.id === selectedAccountId.value)
+  if (acct) {
+    addAccountToGroup(activeGroupId.value, acct)
+  }
+  showAccountSelector.value = false
+  selectedAccountId.value = ''
+}
+
+function removeAccount(id) {
+  removeAccountFromGroup(activeGroupId.value, id)
+}
+
+const groupAccent = computed(
+  () => activeGroup.value?.accent || 'var(--color-accent-cyan)',
+)
 const activeTotal = computed(() =>
   activeGroup.value
     ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
@@ -530,6 +601,36 @@ function initials(name) {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
+}
+
+.bs-account-delete {
+  width: 1rem;
+  height: 1rem;
+  cursor: pointer;
+}
+
+.bs-add-account {
+  list-style: none;
+}
+
+.bs-add-placeholder {
+  opacity: 0.8;
+}
+
+.bs-add-icon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.bs-add-account.bs-disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.bs-add-select {
+  width: 100%;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
 }
 
 .bs-tab-active.bs-tab-assets {
