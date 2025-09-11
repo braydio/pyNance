@@ -158,11 +158,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
-
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
 
     const inputs = wrapper.findAll('input.bs-tab-input')
@@ -185,10 +185,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
     wrapper.vm.groups.reverse()
     await nextTick()
@@ -208,10 +209,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
     const del = wrapper.findAll('.bs-tab-delete')[0]
     await del.trigger('click')
@@ -220,5 +222,30 @@ describe('TopAccountSnapshot', () => {
     expect(stored.groups).toHaveLength(1)
     expect(stored.groups[0].id).toBe('b')
 
+  })
+
+  it('marks the active group in the dropdown menu', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    wrapper.vm.toggleGroupMenu()
+    await nextTick()
+
+    const activeItem = wrapper.find('.bs-group-item-active')
+    expect(activeItem.exists()).toBe(true)
+    expect(activeItem.text()).toContain('A')
+    expect(activeItem.find('svg').exists()).toBe(true)
   })
 })
