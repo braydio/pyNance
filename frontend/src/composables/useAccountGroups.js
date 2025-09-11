@@ -126,9 +126,7 @@ export function useAccountGroups() {
   function removeAccountFromGroup(groupId, accountId) {
     const group = groups.value.find((g) => g.id === groupId)
     if (!group) return false
-    const idx = group.accounts.findIndex(
-      (a) => (typeof a === 'object' ? a.id : a) === accountId,
-    )
+    const idx = group.accounts.findIndex((a) => (typeof a === 'object' ? a.id : a) === accountId)
     if (idx !== -1) {
       group.accounts.splice(idx, 1)
       return true
