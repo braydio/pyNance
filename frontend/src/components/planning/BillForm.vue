@@ -6,7 +6,15 @@
     </div>
     <div>
       <label for="amount" class="label">Amount</label>
-      <input id="amount" v-model.number="bill.amount" type="number" min="0" step="0.01" class="input w-full" required />
+      <input
+        id="amount"
+        v-model.number="bill.amount"
+        type="number"
+        min="0"
+        step="0.01"
+        class="input w-full"
+        required
+      />
     </div>
     <div>
       <label for="dueDate" class="label">Due Date</label>
@@ -98,4 +106,3 @@ function emitCancel() {
 <style scoped>
 /* Basic styling placeholder for BillForm */
 </style>
-
