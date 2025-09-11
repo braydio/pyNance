@@ -205,7 +205,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, toRefs } from 'vue'
 import draggable from 'vuedraggable'
 import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -215,7 +215,10 @@ import { fetchRecentTransactions } from '@/api/accounts'
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
+  // Controls whether group names and ordering are editable
+  isEditingGroups: { type: Boolean, default: false },
 })
+const { isEditingGroups } = toRefs(props)
 
 // fetch accounts generically for potential group management
 useTopAccounts()
@@ -249,7 +252,6 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
-const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
@@ -324,8 +326,9 @@ function selectGroup(id) {
   showGroupMenu.value = false
 }
 
+const emit = defineEmits(['update:isEditingGroups'])
 function toggleEditGroups() {
-  isEditingGroups.value = !isEditingGroups.value
+  emit('update:isEditingGroups', !isEditingGroups.value)
   showGroupMenu.value = false
 }
 
