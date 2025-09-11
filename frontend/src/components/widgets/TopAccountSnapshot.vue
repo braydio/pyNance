@@ -200,7 +200,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { GripVertical, X } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -210,13 +210,11 @@ import { fetchRecentTransactions } from '@/api/accounts'
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
+  isEditingGroups: { type: Boolean, default: false },
 })
 
 // fetch accounts generically for potential group management
 useTopAccounts()
-const { isEditingGroups } = defineProps({
-  isEditingGroups: { type: Boolean, default: false },
-})
 const { groups, activeGroupId, removeGroup } = useAccountGroups()
 
 
@@ -249,10 +247,16 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
-const isEditingGroups = ref(false)
+const isEditingGroups = ref(props.isEditingGroups)
+watch(
+  () => props.isEditingGroups,
+  (val) => {
+    isEditingGroups.value = val
+  },
+)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-
+const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 const visibleGroupIndex = ref(0)
 const visibleGroups = computed(() =>
   groups.value.slice(visibleGroupIndex.value, visibleGroupIndex.value + 3),
