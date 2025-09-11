@@ -13,11 +13,14 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
 - Flask endpoint – `POST /api/plaid/transactions/sync` accepts `{ account_id }` and invokes the sync service.
 - Legacy fetch – Still available via `refresh_accounts` for ad‑hoc range pulls during migration.
 
-### Missing
+### Recently Completed
 
-- Plaid webhooks – add `/api/webhooks/plaid` for `SYNC_UPDATES_AVAILABLE` to trigger account/item syncs.
-- Teller sync parity – optional; Teller doesn’t provide a cursored sync API, but we can align naming.
-- Tests & monitoring – add unit tests for service logic and route, and basic metrics logs.
+- Plaid webhooks – `/api/webhooks/plaid` handles `TRANSACTIONS:SYNC_UPDATES_AVAILABLE` and triggers account syncs.
+- Raw payload storage – full Plaid transaction payload now stored in `plaid_transaction_meta.raw`.
+
+### Remaining
+
+- Tests & monitoring – unit tests for sync flow and webhook handler; add lightweight metrics/logging.
 
 ## 3. Migration Plan
 
@@ -33,7 +36,7 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
    - Exposed via `POST /api/plaid/transactions/sync`.
 
 4. **Webhook Handler**
-   - TODO: add `/api/webhooks/plaid` handler to receive `SYNC_UPDATES_AVAILABLE` and invoke sync for impacted accounts/items.
+   - DONE: `/api/webhooks/plaid` handles transaction sync notifications and dispatches cursored sync per account.
 
 5. **Onboarding Strategy**
    - For each existing item, choose: full historical sync (empty cursor) or fast-forward (`cursor="now"`).
@@ -44,8 +47,7 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
    - Disable scheduled `transactions/get` jobs for items once cursor is set and first sync completes.
 
 7. **Decommission Legacy**
-   - Remove `transactions/get` helper and related webhooks once all items use Sync.
-   - Retain `/transactions/refresh` only for on-demand refresh UI.
+   - Remove `transactions/get` helper usage once all items use Sync. Keep `/accounts/refresh` for on-demand flows.
 
 ## 4. Completion Metrics
 
@@ -56,4 +58,4 @@ Move pyNance from Plaid's legacy `transactions/get` flow to the delta-based `tra
 
 ---
 
-_Last updated: 2025-09-09_
+_Last updated: 2025-09-10_
