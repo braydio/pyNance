@@ -78,6 +78,10 @@ def create_app():
     else:
         app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
     app.cli.add_command(sync_accounts)
+    # Dev CLI: reconcile local Items with Plaid live status
+    from app.cli.reconcile_plaid_items import reconcile_plaid_items
+
+    app.cli.add_command(reconcile_plaid_items)
 
     if plaid_client:
         logger.info("Plaid client initialized.")

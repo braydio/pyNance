@@ -79,7 +79,12 @@
         <Transition name="slide-down">
           <ul v-if="showGroupMenu" class="bs-group-menu">
             <li v-for="g in groups" :key="g.id">
-              <button class="bs-group-item" @click="selectGroup(g.id)">
+              <button
+                class="bs-group-item"
+                :class="{ 'bs-group-item-active': g.id === activeGroupId }"
+                @click="selectGroup(g.id)"
+              >
+                <Check v-if="g.id === activeGroupId" class="bs-group-check" />
                 {{ g.name || '(unnamed)' }}
               </button>
             </li>
@@ -200,9 +205,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch, toRefs } from 'vue'
 import draggable from 'vuedraggable'
-import { GripVertical, X } from 'lucide-vue-next'
+import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
@@ -210,16 +215,14 @@ import { fetchRecentTransactions } from '@/api/accounts'
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
+  // Controls whether group names and ordering are editable
+  isEditingGroups: { type: Boolean, default: false },
 })
+const { isEditingGroups } = toRefs(props)
 
 // fetch accounts generically for potential group management
 useTopAccounts()
-const { isEditingGroups } = defineProps({
-  isEditingGroups: { type: Boolean, default: false },
-})
 const { groups, activeGroupId, removeGroup } = useAccountGroups()
-
-
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -249,9 +252,10 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
-const isEditingGroups = ref(false)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+
+const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
 const visibleGroups = computed(() =>
@@ -322,8 +326,9 @@ function selectGroup(id) {
   showGroupMenu.value = false
 }
 
+const emit = defineEmits(['update:isEditingGroups'])
 function toggleEditGroups() {
-  isEditingGroups.value = !isEditingGroups.value
+  emit('update:isEditingGroups', !isEditingGroups.value)
   showGroupMenu.value = false
 }
 
@@ -630,12 +635,24 @@ function initials(name) {
   border: none;
   text-align: left;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .bs-group-item:hover,
 .bs-group-item:focus-visible {
   background: var(--accent);
   color: var(--color-bg-dark);
+}
+
+.bs-group-item-active {
+  font-weight: 600;
+}
+
+.bs-group-check {
+  width: 0.9rem;
+  height: 0.9rem;
 }
 
 .bs-tab-add {

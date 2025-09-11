@@ -1,16 +1,13 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
-from datetime import datetime, timezone
-
-from datetime import date, timedelta
-from flask import Blueprint, jsonify, request
+from datetime import date, datetime, timedelta, timezone
 
 from app.config import logger
 from app.extensions import db
-from app.models import PlaidAccount, PlaidWebhookLog
-from app.sql import investments_logic
 from app.helpers.plaid_helpers import get_investment_transactions
+from app.models import PlaidAccount, PlaidWebhookLog
 from app.services.plaid_sync import sync_account_transactions
+from app.sql import investments_logic
 from flask import Blueprint, jsonify, request
 
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
@@ -66,14 +63,18 @@ def handle_plaid_webhook():
         "HISTORICAL_UPDATE",
     ):
         if not item_id:
-            logger.warning("Investments webhook missing item_id; cannot dispatch refresh")
+            logger.warning(
+                "Investments webhook missing item_id; cannot dispatch refresh"
+            )
             return jsonify({"status": "ignored"}), 200
 
         # Determine a safe fetch window (last 30 days)
         end_date = date.today().isoformat()
         start_date = (date.today() - timedelta(days=30)).isoformat()
 
-        accounts = PlaidAccount.query.filter_by(item_id=item_id, product="investments").all()
+        accounts = PlaidAccount.query.filter_by(
+            item_id=item_id, product="investments"
+        ).all()
         triggered = []
         for pa in accounts:
             try:
@@ -87,14 +88,14 @@ def handle_plaid_webhook():
         return jsonify({"status": "ok", "triggered": triggered}), 200
 
     # Holdings price/position changes webhook
-    if webhook_type == "HOLDINGS" and webhook_code in (
-        "DEFAULT_UPDATE",
-    ):
+    if webhook_type == "HOLDINGS" and webhook_code in ("DEFAULT_UPDATE",):
         if not item_id:
             logger.warning("Holdings webhook missing item_id; cannot dispatch refresh")
             return jsonify({"status": "ignored"}), 200
 
-        accounts = PlaidAccount.query.filter_by(item_id=item_id, product="investments").all()
+        accounts = PlaidAccount.query.filter_by(
+            item_id=item_id, product="investments"
+        ).all()
         triggered = []
         for pa in accounts:
             try:
