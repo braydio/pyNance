@@ -221,6 +221,5 @@ describe('TopAccountSnapshot', () => {
     const stored = JSON.parse(localStorage.getItem('accountGroups'))
     expect(stored.groups).toHaveLength(1)
     expect(stored.groups[0].id).toBe('b')
-
   })
 })

@@ -217,8 +217,6 @@ const props = defineProps({
 useTopAccounts()
 const { groups, activeGroupId, removeGroup } = useAccountGroups()
 
-
-
 // Details dropdown state
 const openAccountId = ref(null)
 const recentTxs = reactive({})
