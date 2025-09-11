@@ -40,6 +40,10 @@ TELLER_WEBHOOK_SECRET = os.getenv("TELLER_WEBHOOK_SECRET", "No Teller Webhook in
 # Base URL for Arbit metrics exporter
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
 
+# Public URL of this backend (used to register Plaid webhooks)
+# Example: https://your-domain.example or https://abcd1234.ngrok.app
+BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL")
+
 # Feature toggles
 # Enable optional arbitrage dashboard
 ENABLE_ARBIT_DASHBOARD = os.getenv("ENABLE_ARBIT_DASHBOARD", "false").lower() in {
