@@ -186,11 +186,7 @@
             :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
           >
             <div v-if="showAccountSelector" class="bs-row">
-              <select
-                v-model="selectedAccountId"
-                @change="confirmAddAccount"
-                class="bs-add-select"
-              >
+              <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
                 <option value="" disabled>Select account</option>
                 <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
                   {{ acct.name }}
@@ -253,15 +249,8 @@ const props = defineProps({
 
 // fetch accounts generically for potential group management
 const { allVisibleAccounts } = useTopAccounts()
-const {
-  groups,
-  activeGroupId,
-  removeGroup,
-  addAccountToGroup,
-  removeAccountFromGroup,
-} = useAccountGroups()
-
-
+const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFromGroup } =
+  useAccountGroups()
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -397,9 +386,7 @@ function addGroup() {
 
 const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
 const availableAccounts = computed(() =>
-  allVisibleAccounts.value.filter(
-    (acct) => !activeAccounts.value.some((a) => a.id === acct.id)
-  ),
+  allVisibleAccounts.value.filter((acct) => !activeAccounts.value.some((a) => a.id === acct.id)),
 )
 const showAccountSelector = ref(false)
 const selectedAccountId = ref('')
@@ -422,9 +409,7 @@ function removeAccount(id) {
   removeAccountFromGroup(activeGroupId.value, id)
 }
 
-const groupAccent = computed(
-  () => activeGroup.value?.accent || 'var(--color-accent-cyan)',
-)
+const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 const activeTotal = computed(() =>
   activeGroup.value
     ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
