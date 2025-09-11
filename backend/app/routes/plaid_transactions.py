@@ -147,7 +147,9 @@ def exchange_public_token_endpoint():
                         is_active=True,
                     )
                 )
-            logger.debug(f"Upserted PlaidItem for item_id={item_id} (product={product})")
+            logger.debug(
+                f"Upserted PlaidItem for item_id={item_id} (product={product})"
+            )
         except Exception as e:
             logger.error(f"Failed to upsert PlaidItem: {e}")
 
