@@ -2,7 +2,7 @@
 
 import json
 
-from app.config import FILES, PLAID_CLIENT_NAME, plaid_client
+from app.config import FILES, PLAID_CLIENT_NAME, BACKEND_PUBLIC_URL, plaid_client
 from app.config.log_setup import setup_logger
 from app.extensions import db
 from app.models import Category
@@ -128,12 +128,19 @@ def generate_link_token(user_id: str, products=None):
         product_enums = [Products(p) for p in products]
         country_enum = [CountryCode("US")]
 
+        webhook_url = None
+        if BACKEND_PUBLIC_URL:
+            # Ensure no trailing slash
+            base = str(BACKEND_PUBLIC_URL).rstrip("/")
+            webhook_url = f"{base}/api/webhooks/plaid"
+
         plaid_request = LinkTokenCreateRequest(
             user=LinkTokenCreateRequestUser(client_user_id=user_id),
             client_name=PLAID_CLIENT_NAME,
             products=product_enums,
             language="en",
             country_codes=country_enum,
+            webhook=webhook_url,
         )
 
         response = plaid_client.link_token_create(plaid_request)
