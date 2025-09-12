@@ -15,10 +15,14 @@ const sampleAccounts = [
 // Mock useTopAccounts to mimic a generic account fetch
 vi.mock('@/composables/useTopAccounts', () => {
   const fetchAccounts = vi.fn()
+  const allVisibleAccounts = ref([
+    { id: 'acc-1', name: 'Account 1', adjusted_balance: 1 },
+    { id: 'acc-2', name: 'Account 2', adjusted_balance: 2 },
+  ])
   return {
     useTopAccounts: () => {
       fetchAccounts()
-      return { fetchAccounts }
+      return { fetchAccounts, allVisibleAccounts }
     },
   }
 })
@@ -52,10 +56,32 @@ vi.mock('@/composables/useAccountGroups', () => {
         }
       }
 
+      function addAccountToGroup(groupId, account) {
+        const group = groups.value.find((g) => g.id === groupId)
+        if (group && group.accounts.length < 5) {
+          group.accounts.push(account)
+        }
+      }
+
+      function removeAccountFromGroup(groupId, accountId) {
+        const group = groups.value.find((g) => g.id === groupId)
+        if (!group) return
+        const idx = group.accounts.findIndex((a) => a.id === accountId)
+        if (idx !== -1) {
+          group.accounts.splice(idx, 1)
+        }
+      }
+
       watch([groups, activeGroupId], persist, { deep: true })
       persist()
 
-      return { groups, activeGroupId, removeGroup }
+      return {
+        groups,
+        activeGroupId,
+        removeGroup,
+        addAccountToGroup,
+        removeAccountFromGroup,
+      }
     },
   }
 })
@@ -158,11 +184,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
-
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
 
     const inputs = wrapper.findAll('input.bs-tab-input')
@@ -187,10 +213,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
     wrapper.vm.groups.reverse()
     await nextTick()
@@ -210,10 +237,11 @@ describe('TopAccountSnapshot', () => {
       }),
     )
     const wrapper = mount(TopAccountSnapshot, {
-      props: { isEditingGroups: true },
       global: { stubs: { AccountSparkline: true } },
     })
 
+    await nextTick()
+    wrapper.vm.isEditingGroups = true
     await nextTick()
     const del = wrapper.findAll('.bs-tab-delete')[0]
     await del.trigger('click')
@@ -221,5 +249,99 @@ describe('TopAccountSnapshot', () => {
     const stored = JSON.parse(localStorage.getItem('accountGroups'))
     expect(stored.groups).toHaveLength(1)
     expect(stored.groups[0].id).toBe('b')
+  })
+
+  it('adds account through placeholder and persists', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'g', name: 'G', accounts: [sampleAccounts[0]] }],
+        activeGroupId: 'g',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+    await wrapper.find('.bs-add-placeholder').trigger('click')
+    const select = wrapper.find('select.bs-add-select')
+    await select.setValue('acc-2')
+    await nextTick()
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].accounts).toHaveLength(2)
+    expect(stored.groups[0].accounts[1].id).toBe('acc-2')
+  })
+
+  it('shows delete icon when editing and removes account', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'g', name: 'G', accounts: [sampleAccounts[0]] }],
+        activeGroupId: 'g',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    wrapper.vm.isEditingGroups = true
+    await nextTick()
+    const del = wrapper.find('.bs-account-delete')
+    expect(del.exists()).toBe(true)
+    await del.trigger('click')
+    await nextTick()
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].accounts).toHaveLength(0)
+  })
+
+  it('disables add account row at five accounts', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          {
+            id: 'g',
+            name: 'G',
+            accounts: [
+              sampleAccounts[0],
+              sampleAccounts[1],
+              { id: 'a3', name: 'A3', adjusted_balance: 3 },
+              { id: 'a4', name: 'A4', adjusted_balance: 4 },
+              { id: 'a5', name: 'A5', adjusted_balance: 5 },
+            ],
+          },
+        ],
+        activeGroupId: 'g',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+    expect(wrapper.find('.bs-add-account').classes()).toContain('bs-disabled')
+  })
+
+  it('marks the active group in the dropdown menu', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    wrapper.vm.toggleGroupMenu()
+    await nextTick()
+
+    const activeItem = wrapper.find('.bs-group-item-active')
+    expect(activeItem.exists()).toBe(true)
+    expect(activeItem.text()).toContain('A')
+    expect(activeItem.find('svg').exists()).toBe(true)
   })
 })

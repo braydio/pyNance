@@ -14,7 +14,7 @@ from app.helpers.plaid_helpers import (
     get_item,
     remove_item,
 )
-from app.models import Account, PlaidAccount
+from app.models import Account, PlaidAccount, PlaidItem
 from app.services.plaid_sync import sync_account_transactions
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
@@ -125,6 +125,31 @@ def exchange_public_token_endpoint():
 
         accounts = get_accounts(access_token, user_id)
         logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
+
+        # --- Persist 1 row per Item in secure table ---
+        try:
+            product = (data.get("product") or "transactions").strip() or "transactions"
+            existing_item = PlaidItem.query.filter_by(item_id=item_id).first()
+            if existing_item:
+                existing_item.access_token = access_token
+                existing_item.user_id = str(user_id)
+                existing_item.institution_name = institution_name
+                existing_item.product = product
+                existing_item.is_active = True
+            else:
+                db.session.add(
+                    PlaidItem(
+                        user_id=str(user_id),
+                        item_id=item_id,
+                        access_token=access_token,
+                        institution_name=institution_name,
+                        product=product,
+                        is_active=True,
+                    )
+                )
+            logger.debug(f"Upserted PlaidItem for item_id={item_id} (product={product})")
+        except Exception as e:
+            logger.error(f"Failed to upsert PlaidItem: {e}")
 
         # --- PATCH: Persist PlaidAccount entries ---
         for acct in accounts:

@@ -36,6 +36,7 @@ def create_app():
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.plaid_webhook import plaid_webhooks
+    from app.routes.plaid_webhook_admin import plaid_webhook_admin
     from app.routes.recurring import recurring
     from app.routes.rules import rules as rules_bp
     from app.routes.summary import summary
@@ -59,6 +60,7 @@ def create_app():
     app.register_blueprint(plaid_routes, url_prefix="/api/plaid")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_webhooks, url_prefix="/api/webhooks")
+    app.register_blueprint(plaid_webhook_admin, url_prefix="/api/plaid/webhook")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
     app.register_blueprint(investments, url_prefix="/api/investments")
     app.register_blueprint(link_teller, url_prefix="/api/teller")
@@ -76,6 +78,10 @@ def create_app():
     else:
         app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
     app.cli.add_command(sync_accounts)
+    # Dev CLI: reconcile local Items with Plaid live status
+    from app.cli.reconcile_plaid_items import reconcile_plaid_items
+
+    app.cli.add_command(reconcile_plaid_items)
 
     if plaid_client:
         logger.info("Plaid client initialized.")
