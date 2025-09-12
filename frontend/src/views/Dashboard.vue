@@ -37,7 +37,7 @@
         <div
           class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col"
         >
-          <TopAccountSnapshot :groups="groups" v-model:active-group="activeGroupId" />
+          <TopAccountSnapshot />
         </div>
         <!-- Net Income Summary Card -->
         <div
@@ -241,7 +241,6 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
-import { useAccountGroups } from '@/composables/useAccountGroups'
 
 // Transactions and user
 const {
@@ -272,7 +271,6 @@ const netWorthMessage = computed(() => {
   if (netWorth.value > 1000) return 'Ahh... well in the black.'
   return 'Uhh... keep up the... whatever this is.'
 })
-const { groups, activeGroupId } = useAccountGroups()
 
 onMounted(async () => {
   try {
