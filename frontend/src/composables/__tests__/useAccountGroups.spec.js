@@ -56,10 +56,10 @@ describe('useAccountGroups', () => {
     expect(activeGroupId.value).toBe(groups.value[0].id)
   })
 
-  it('persists reordered and deleted groups', async () => {
-    const { groups, removeGroup } = useAccountGroups()
+  it('reorders groups and persists deletions', async () => {
+    const { groups, reorderGroups, removeGroup } = useAccountGroups()
     groups.value.push({ id: 'b', name: 'B', accounts: [] })
-    groups.value.reverse()
+    reorderGroups([...groups.value].reverse())
     await nextTick()
     let stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
     expect(stored.groups[0].id).toBe('b')
@@ -67,6 +67,19 @@ describe('useAccountGroups', () => {
     await nextTick()
     stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
     expect(stored.groups.some((g) => g.id === 'b')).toBe(false)
+  })
+
+  it('prevents duplicate accounts and removes accounts', async () => {
+    const { addAccountToGroup, removeAccountFromGroup, groups } = useAccountGroups()
+    const id = groups.value[0].id
+    const acc = { id: 'a1' }
+    expect(addAccountToGroup(id, acc)).toBe(true)
+    expect(addAccountToGroup(id, acc)).toBe(false)
+    removeAccountFromGroup(id, 'a1')
+    await nextTick()
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    expect(groups.value[0].accounts.length).toBe(0)
+    expect(stored.groups[0].accounts.length).toBe(0)
   })
 
   it('enforces a maximum of five accounts per group', () => {

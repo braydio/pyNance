@@ -93,6 +93,14 @@ export function useAccountGroups() {
   }
 
   /**
+   * Reorder groups in the provided order.
+   * @param {Array} newOrder - The reordered array of groups.
+   */
+  function reorderGroups(newOrder) {
+    groups.value = [...newOrder]
+  }
+
+  /**
    * Add an account to a group enforcing a max of five accounts.
    * @param {string} groupId
    * @param {unknown} account
@@ -101,12 +109,17 @@ export function useAccountGroups() {
   function addAccountToGroup(groupId, account) {
     const group = groups.value.find((g) => g.id === groupId)
     if (!group || group.accounts.length >= 5) return false
+    const accountId = typeof account === 'object' ? account.id : account
+    if (group.accounts.some((a) => (typeof a === 'object' ? a.id : a) === accountId)) {
+      return false
+    }
     group.accounts.push(account)
     return true
   }
 
   /**
-   * Remove an account from the specified group.
+   * Remove an account from a group by account identifier.
+
    * @param {string} groupId
    * @param {string} accountId
    * @returns {boolean} true if the account was removed
@@ -114,10 +127,15 @@ export function useAccountGroups() {
   function removeAccountFromGroup(groupId, accountId) {
     const group = groups.value.find((g) => g.id === groupId)
     if (!group) return false
-    const idx = group.accounts.findIndex((a) => a.id === accountId)
-    if (idx === -1) return false
-    group.accounts.splice(idx, 1)
-    return true
+
+    const idx = group.accounts.findIndex((a) => (typeof a === 'object' ? a.id : a) === accountId)
+    if (idx !== -1) {
+      group.accounts.splice(idx, 1)
+      return true
+    }
+    return false
+
+
   }
 
   watch(
@@ -138,6 +156,9 @@ export function useAccountGroups() {
     addGroup,
     setActiveGroup,
     removeGroup,
+
+    reorderGroups,
+
     addAccountToGroup,
     removeAccountFromGroup,
   }
