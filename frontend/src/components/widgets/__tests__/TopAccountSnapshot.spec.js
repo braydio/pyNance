@@ -341,6 +341,5 @@ describe('TopAccountSnapshot', () => {
     expect(activeItem.exists()).toBe(true)
     expect(activeItem.text()).toContain('A')
     expect(activeItem.find('svg').exists()).toBe(true)
-
   })
 })
