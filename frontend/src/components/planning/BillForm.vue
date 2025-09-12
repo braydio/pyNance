@@ -46,19 +46,18 @@
 /**
  * BillForm component.
  *
- * Provides a form for creating or editing a bill with validation for
- * required fields, positive amount and valid due date.
+ * Renders a form for creating or editing a bill with validation for
+ * required fields, a positive amount and a valid due date.
  *
- * Emits:
- * - `saveBill` when the form is submitted with valid data
- * - `cancel` when the user cancels the form
+ * @emits saveBill Emits the bill payload when the form is submitted.
+ * @emits cancel   Emitted when the user cancels the form.
  */
 import { reactive, ref } from 'vue'
 import UiButton from '@/components/ui/Button.vue'
 
 const emit = defineEmits(['saveBill', 'cancel'])
 
-/** Form data for the bill. */
+/** Reactive form model for the bill. */
 const bill = reactive({
   name: '',
   amount: null,
@@ -71,7 +70,7 @@ const bill = reactive({
 const error = ref('')
 
 /**
- * Validate form input and emit save event when valid.
+ * Validate form input and emit `saveBill` when valid.
  *
  * @returns {void}
  */
@@ -94,7 +93,7 @@ function onSubmit() {
 }
 
 /**
- * Emit cancel event to parent component.
+ * Emit the `cancel` event to the parent component.
  *
  * @returns {void}
  */
