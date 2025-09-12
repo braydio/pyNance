@@ -86,10 +86,10 @@ def create_app():
     # Dev CLI: run Plaid transactions/sync
     try:
         from app.cli.sync_plaid_transactions import sync_plaid_tx
+
         app.cli.add_command(sync_plaid_tx)
     except Exception:
         pass
-
 
     if plaid_client:
         logger.info("Plaid client initialized.")

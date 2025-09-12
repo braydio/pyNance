@@ -7,11 +7,10 @@ Usage:
 """
 
 import click
-from flask.cli import with_appcontext
-
 from app.config import logger
 from app.models import PlaidAccount
 from app.services.plaid_sync import sync_account_transactions
+from flask.cli import with_appcontext
 
 
 @click.command("sync-plaid-tx")
@@ -43,8 +42,10 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
             seen.add(pa.item_id)
             try:
                 res = sync_account_transactions(pa.account_id)
-                total += (res.get("added", 0) or 0)
-                click.echo(f"OK {pa.item_id}: +{res.get('added',0)}/~{res.get('modified',0)} -{res.get('removed',0)}")
+                total += res.get("added", 0) or 0
+                click.echo(
+                    f"OK {pa.item_id}: +{res.get('added', 0)}/~{res.get('modified', 0)} -{res.get('removed', 0)}"
+                )
             except Exception as e:
                 logger.error(f"Sync failed for item {pa.item_id}: {e}")
                 click.echo(f"ERR {pa.item_id}: {e}")
