@@ -125,9 +125,9 @@ def refresh_all_accounts():
                         # Add remediation info for ITEM_LOGIN_REQUIRED
                         if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                             error_map[key]["requires_reauth"] = True
-                            error_map[key]["update_link_token_endpoint"] = (
-                                "/api/plaid/transactions/generate_update_link_token"
-                            )
+                            error_map[key][
+                                "update_link_token_endpoint"
+                            ] = "/api/plaid/transactions/generate_update_link_token"
                             error_map[key]["affected_account_ids"] = [
                                 account.account_id
                             ]
@@ -548,27 +548,33 @@ def match_account_by_fields():
 
 @accounts.route("/<account_id>/net_changes", methods=["GET"])
 def account_net_changes(account_id):
-    """Return net income and expense totals for an account."""
+    """Return net balance change for an account between two dates.
+
+    The endpoint expects ``start_date`` and ``end_date`` query parameters
+    in ``YYYY-MM-DD`` format and computes the difference between the
+    account's ending and starting balances using :class:`AccountHistory`
+    records.
+    """
+
     try:
         from app.sql import account_logic
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
+        if not start_date_str or not end_date_str:
+            return (
+                jsonify({"error": "start_date and end_date are required"}),
+                400,
+            )
 
-        start_date = (
-            datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            if start_date_str
-            else None
-        )
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
-        )
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-        data = account_logic.get_net_changes(account_id, start_date, end_date)
-        return jsonify({"status": "success", "data": data}), 200
+        data = account_logic.get_net_change(account_id, start_date, end_date)
+        return jsonify(data), 200
     except Exception as e:
         logger.error(f"Error in account_net_changes: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 # Endpoint to fetch account balance history

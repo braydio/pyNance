@@ -5,6 +5,7 @@ import time
 from datetime import date as pydate
 from datetime import datetime, timedelta, timezone
 from tempfile import NamedTemporaryFile
+from typing import Optional
 
 import requests
 from app.config import FILES, logger
@@ -574,28 +575,57 @@ def get_paginated_transactions(
     return serialized, total
 
 
-def get_net_changes(account_id, start_date=None, end_date=None):
-    """Return net income and expense totals for the given account."""
-    base_query = Transaction.query.filter(Transaction.account_id == account_id)
-    if start_date:
-        base_query = base_query.filter(Transaction.date >= start_date)
-    if end_date:
-        base_query = base_query.filter(Transaction.date <= end_date)
+def get_balance_at(account_id: str, target_date: pydate) -> Optional[float]:
+    """Return the balance for ``account_id`` on ``target_date``.
 
-    income = (
-        base_query.filter(Transaction.amount > 0)
-        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
-        .scalar()
-        or 0
-    )
-    expense = (
-        base_query.filter(Transaction.amount < 0)
-        .with_entities(func.coalesce(func.sum(Transaction.amount), 0))
-        .scalar()
-        or 0
-    )
+    Args:
+        account_id: External account identifier.
+        target_date: Date to fetch the balance for.
 
-    return {"income": income, "expense": expense, "net": income + expense}
+    Returns:
+        Balance as ``float`` if a snapshot exists, otherwise ``None``.
+    """
+
+    row = (
+        AccountHistory.query.filter(AccountHistory.account_id == account_id)
+        .filter(AccountHistory.date == target_date)
+        .with_entities(AccountHistory.balance)
+        .first()
+    )
+    if not row:
+        return None
+    balance = getattr(row, "balance", row[0])
+    return float(balance)
+
+
+def get_net_change(account_id: str, start_date: pydate, end_date: pydate) -> dict:
+    """Compute net balance change between two dates.
+
+    Fetches balances at ``start_date`` and ``end_date`` and returns their
+    difference as ``end_balance - start_balance``.
+
+    Args:
+        account_id: External account identifier.
+        start_date: Beginning of the period.
+        end_date: End of the period.
+
+    Returns:
+        Dictionary with account_id, net_change, and period metadata.
+
+    Raises:
+        ValueError: If a balance snapshot is missing for either date.
+    """
+
+    start_balance = get_balance_at(account_id, start_date)
+    end_balance = get_balance_at(account_id, end_date)
+    if start_balance is None or end_balance is None:
+        raise ValueError("Balance missing for start_date or end_date")
+
+    return {
+        "account_id": account_id,
+        "net_change": end_balance - start_balance,
+        "period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
+    }
 
 
 def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url):
