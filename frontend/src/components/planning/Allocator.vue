@@ -1,10 +1,6 @@
 <template>
   <div>
-    <div
-      v-for="category in categories"
-      :key="category"
-      class="mb-4"
-    >
+    <div v-for="category in categories" :key="category" class="mb-4">
       <label class="block mb-1">{{ category }}</label>
       <input
         type="range"
@@ -66,25 +62,19 @@ watch(
     Object.keys(allocations).forEach((k) => delete allocations[k])
     Object.assign(allocations, val)
   },
-  { deep: true }
+  { deep: true },
 )
 
 /** Watch local allocations and sync with parent via v-model. */
-watch(
-  allocations,
-  (val) => emit('update:modelValue', { ...val }),
-  { deep: true }
-)
+watch(allocations, (val) => emit('update:modelValue', { ...val }), { deep: true })
 
 /** Total allocation percentage across all categories. */
 const total = computed(() =>
-  Object.values(allocations).reduce((sum, val) => sum + Number(val || 0), 0)
+  Object.values(allocations).reduce((sum, val) => sum + Number(val || 0), 0),
 )
 
 /** Error message shown when total exceeds 100%. */
-const error = computed(() =>
-  total.value > 100 ? 'Total allocation cannot exceed 100%.' : ''
-)
+const error = computed(() => (total.value > 100 ? 'Total allocation cannot exceed 100%.' : ''))
 
 /**
  * Update allocation for a specific category.
@@ -101,4 +91,3 @@ function updateAllocation(category, value) {
 <style scoped>
 /* Basic styling placeholder for Allocator */
 </style>
-
