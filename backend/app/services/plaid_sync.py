@@ -7,7 +7,7 @@ removed transactions inside a single DB transaction and persists the cursor.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -41,7 +41,7 @@ def _parse_txn_date(val) -> datetime:
         return datetime.now(timezone.utc)
 
 
-def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) -> None:
+def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> None:
     txn_id = tx.get("transaction_id")
     if not txn_id:
         return
@@ -96,7 +96,8 @@ def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) ->
             existing.personal_finance_category = pfc or None
             existing.personal_finance_category_icon_url = pfc_icon
         # Always refresh Plaid metadata (keeps aux fields current)
-        refresh_or_insert_plaid_metadata(tx, existing, plaid_acct.account_id)
+        if plaid_acct:
+            refresh_or_insert_plaid_metadata(tx, existing, plaid_acct.account_id)
         detect_internal_transfer(existing)
     else:
         new_txn = Transaction(
@@ -116,7 +117,8 @@ def _upsert_transaction(tx: dict, account: Account, plaid_acct: PlaidAccount) ->
             personal_finance_category_icon_url=pfc_icon,
         )
         db.session.add(new_txn)
-        refresh_or_insert_plaid_metadata(tx, new_txn, plaid_acct.account_id)
+        if plaid_acct:
+            refresh_or_insert_plaid_metadata(tx, new_txn, plaid_acct.account_id)
         detect_internal_transfer(new_txn)
 
 
@@ -155,6 +157,21 @@ def sync_account_transactions(account_id: str) -> Dict:
     cursor = plaid_acct.sync_cursor or None
     access_token = plaid_acct.access_token
 
+    # Build per-item account maps
+    item_id = plaid_acct.item_id
+    item_plaid_accts = (PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct])
+    acct_ids = [pa.account_id for pa in item_plaid_accts if pa.account_id]
+    accounts = Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
+    account_map = {a.account_id: a for a in accounts}
+    plaid_map = {pa.account_id: pa for pa in item_plaid_accts}
+
+    # Choose a shared cursor if any exists
+    if cursor is None:
+        for pa in item_plaid_accts:
+            if pa.sync_cursor:
+                cursor = pa.sync_cursor
+                break
+
     total_added = 0
     total_modified = 0
     total_removed = 0
@@ -174,9 +191,9 @@ def sync_account_transactions(account_id: str) -> Dict:
         # Atomic batch apply
         try:
             for tx in added:
-                _upsert_transaction(tx, account, plaid_acct)
+                _upsert_transaction(tx, account_map.get(tx.get("account_id")) or account, plaid_map.get(tx.get("account_id")))
             for tx in modified:
-                _upsert_transaction(tx, account, plaid_acct)
+                _upsert_transaction(tx, account_map.get(tx.get("account_id")) or account, plaid_map.get(tx.get("account_id")))
             total_removed += _apply_removed(removed)
             db.session.commit()
         except Exception as e:
@@ -190,7 +207,13 @@ def sync_account_transactions(account_id: str) -> Dict:
         if not has_more:
             break
 
-    # Persist final cursor
+    # Persist final cursor for all accounts under this item
+    for pa in item_plaid_accts:
+        pa.sync_cursor = next_cursor
+        pa.last_refreshed = datetime.now(timezone.utc)
+    db.session.commit()
+
+    # Legacy: Persist final cursor
     plaid_acct.sync_cursor = next_cursor
     plaid_acct.last_refreshed = datetime.now(timezone.utc)
     db.session.commit()
