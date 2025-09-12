@@ -1,11 +1,12 @@
 from app.config import logger
+from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
     get_investment_transactions,
 )
-from app.models import PlaidAccount
+from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
 from app.sql.account_logic import save_plaid_account, upsert_accounts
 from flask import Blueprint, jsonify, request
@@ -54,6 +55,28 @@ def exchange_public_token_investments():
             acct_id = acct.get("account_id")
             if acct_id:
                 save_plaid_account(acct_id, item_id, access_token, "investments")
+        # Ensure 1 entry per Item in secure table
+        try:
+            existing_item = PlaidItem.query.filter_by(item_id=item_id).first()
+            if existing_item:
+                existing_item.access_token = access_token
+                existing_item.user_id = str(user_id)
+                existing_item.product = "investments"
+                existing_item.is_active = True
+            else:
+                db.session.add(
+                    PlaidItem(
+                        user_id=str(user_id),
+                        item_id=item_id,
+                        access_token=access_token,
+                        institution_name=None,
+                        product="investments",
+                        is_active=True,
+                    )
+                )
+            db.session.commit()
+        except Exception as e:
+            logger.error(f"Failed to upsert PlaidItem for investments: {e}")
         # Save initial investments data (if you have specific logic, call it here)
         # e.g., account_logic.save_investments_data(user_id, access_token)
         return (

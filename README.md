@@ -23,6 +23,26 @@ pyNance is a full-stack personal finance dashboard that combines a Flask API, a 
 
 Webhook URL should point to `/api/webhooks/plaid`.
 
+Pointing Plaid Webhooks
+
+- New items (during Link): set `BACKEND_PUBLIC_URL` in `backend/.env` to your public backend URL (e.g., `https://your-domain.example` or your tunnel URL). Link tokens will include `webhook = <BACKEND_PUBLIC_URL>/api/webhooks/plaid` automatically.
+- Existing items: call the admin endpoint to update the webhook URL:
+  ```bash
+  curl -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{"item_id":"<PLAID_ITEM_ID>"}' \
+    <BACKEND_PUBLIC_URL>/api/plaid/webhook/update
+  ```
+  Or pass `{ "account_id": "<ACCOUNT_ID>" }` to resolve the item from an account.
+  You can also override with `{ "webhook_url": "https://.../api/webhooks/plaid" }`.
+  - Bulk update all items:
+  ```bash
+  curl -X POST \
+    -H 'Content-Type: application/json' \
+    -d '{}' \
+    <BACKEND_PUBLIC_URL>/api/plaid/webhook/update_all
+  ```
+
 ## Database Migrations
 
 New JSON columns are used for raw payload storage. After pulling changes:
