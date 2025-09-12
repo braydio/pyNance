@@ -317,4 +317,30 @@ describe('TopAccountSnapshot', () => {
     await nextTick()
     expect(wrapper.find('.bs-add-account').classes()).toContain('bs-disabled')
   })
+
+  it('marks the active group in the dropdown menu', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'a', name: 'A', accounts: [] },
+          { id: 'b', name: 'B', accounts: [] },
+        ],
+        activeGroupId: 'a',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    wrapper.vm.toggleGroupMenu()
+    await nextTick()
+
+    const activeItem = wrapper.find('.bs-group-item-active')
+    expect(activeItem.exists()).toBe(true)
+    expect(activeItem.text()).toContain('A')
+    expect(activeItem.find('svg').exists()).toBe(true)
+
+  })
 })
