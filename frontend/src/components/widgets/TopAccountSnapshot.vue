@@ -13,8 +13,8 @@
           v-model="groups"
           item-key="id"
           handle=".bs-tab-handle"
-          tag="div"
-          class="bs-tab-list"
+          tag="transition-group"
+          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }"
         >
           <template #item="{ element: g }">
             <div :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
@@ -104,8 +104,8 @@
         v-model="activeGroup.accounts"
         handle=".bs-drag-handle"
         item-key="id"
-        tag="ul"
-        class="bs-list"
+        tag="transition-group"
+        :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
       >
         <template #item="{ element: account }">
           <li class="bs-account-container">
@@ -597,12 +597,23 @@ function initials(name) {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
 }
 
 .bs-account-delete {
   width: 1rem;
   height: 1rem;
   cursor: pointer;
+  color: var(--color-text-muted);
+  transition: color 0.2s ease;
+}
+
+.bs-tab-delete:hover,
+.bs-tab-delete:focus-visible,
+.bs-account-delete:hover,
+.bs-account-delete:focus-visible {
+  color: var(--color-accent-red);
 }
 
 .bs-add-account {
@@ -611,11 +622,25 @@ function initials(name) {
 
 .bs-add-placeholder {
   opacity: 0.8;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  border: 2px dashed var(--accent, var(--color-accent-cyan));
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.bs-add-placeholder:hover,
+.bs-add-placeholder:focus-visible {
+  background: var(--accent, var(--color-accent-cyan));
+  color: var(--color-bg-dark);
 }
 
 .bs-add-icon {
   width: 1rem;
   height: 1rem;
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-add-account.bs-disabled {
@@ -678,8 +703,8 @@ function initials(name) {
   color: var(--accent);
   border: 1px solid var(--accent);
   border-radius: 0.8rem;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1066,6 +1091,17 @@ function initials(name) {
   transform: translateY(-15px) scale(0.97);
 }
 
+.list-fade-enter-active,
+.list-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.list-fade-enter-from,
+.list-fade-leave-to {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
 .fade-in-enter-active {
   animation: fade-in 0.3s ease;
 }
@@ -1111,7 +1147,7 @@ function initials(name) {
 
   .bs-nav-btn {
     padding: 0.45rem 0.6rem;
-    font-size: 0.8rem;
+    font-size: var(--font-size-sm);
   }
 
   .bs-tabs-scroll {
