@@ -7,7 +7,7 @@ removed transactions inside a single DB transaction and persists the cursor.
 from __future__ import annotations
 
 from datetime import datetime, timezone
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Optional, Tuple
 
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -41,7 +41,9 @@ def _parse_txn_date(val) -> datetime:
         return datetime.now(timezone.utc)
 
 
-def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> None:
+def _upsert_transaction(
+    tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]
+) -> None:
     txn_id = tx.get("transaction_id")
     if not txn_id:
         return
@@ -159,9 +161,13 @@ def sync_account_transactions(account_id: str) -> Dict:
 
     # Build per-item account maps
     item_id = plaid_acct.item_id
-    item_plaid_accts = (PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct])
+    item_plaid_accts = (
+        PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct]
+    )
     acct_ids = [pa.account_id for pa in item_plaid_accts if pa.account_id]
-    accounts = Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
+    accounts = (
+        Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
+    )
     account_map = {a.account_id: a for a in accounts}
     plaid_map = {pa.account_id: pa for pa in item_plaid_accts}
 
@@ -191,9 +197,17 @@ def sync_account_transactions(account_id: str) -> Dict:
         # Atomic batch apply
         try:
             for tx in added:
-                _upsert_transaction(tx, account_map.get(tx.get("account_id")) or account, plaid_map.get(tx.get("account_id")))
+                _upsert_transaction(
+                    tx,
+                    account_map.get(tx.get("account_id")) or account,
+                    plaid_map.get(tx.get("account_id")),
+                )
             for tx in modified:
-                _upsert_transaction(tx, account_map.get(tx.get("account_id")) or account, plaid_map.get(tx.get("account_id")))
+                _upsert_transaction(
+                    tx,
+                    account_map.get(tx.get("account_id")) or account,
+                    plaid_map.get(tx.get("account_id")),
+                )
             total_removed += _apply_removed(removed)
             db.session.commit()
         except Exception as e:
