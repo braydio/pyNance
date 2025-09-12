@@ -2,7 +2,7 @@
 
 import json
 
-from app.config import FILES, PLAID_CLIENT_NAME, BACKEND_PUBLIC_URL, plaid_client
+from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, plaid_client
 from app.config.log_setup import setup_logger
 from app.extensions import db
 from app.models import Category
