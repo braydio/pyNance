@@ -20,10 +20,9 @@ compare with a dashboard export separately (future enhancement).
 from __future__ import annotations
 
 import click
-from flask.cli import with_appcontext
-
 from app.config import logger, plaid_client
 from app.models import PlaidAccount, PlaidItem
+from flask.cli import with_appcontext
 from plaid.model.item_get_request import ItemGetRequest
 
 
@@ -45,7 +44,9 @@ def reconcile_plaid_items(verbose: bool) -> None:
 
     # Fallbacks from PlaidAccount (one token per item)
     rows = (
-        PlaidAccount.query.with_entities(PlaidAccount.item_id, PlaidAccount.access_token)
+        PlaidAccount.query.with_entities(
+            PlaidAccount.item_id, PlaidAccount.access_token
+        )
         .filter(PlaidAccount.item_id.isnot(None))
         .filter(PlaidAccount.item_id != "")
         .all()
@@ -67,7 +68,9 @@ def reconcile_plaid_items(verbose: bool) -> None:
             resp = plaid_client.item_get(req)
             status = getattr(resp.item, "error", None)
             if verbose:
-                click.echo(f"✔ {item_id} OK (institution={getattr(resp.item, 'institution_id', 'n/a')})")
+                click.echo(
+                    f"✔ {item_id} OK (institution={getattr(resp.item, 'institution_id', 'n/a')})"
+                )
             live_ok += 1
         except Exception as e:  # Plaid ApiException or transport error
             msg = getattr(e, "body", str(e)) or str(e)
@@ -89,4 +92,3 @@ def reconcile_plaid_items(verbose: bool) -> None:
             # Keep first line short if Plaid returns JSON
             msg = str(err).splitlines()[0][:200]
             click.echo(f"- {iid}: {msg}")
-

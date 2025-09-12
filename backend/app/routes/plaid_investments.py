@@ -1,4 +1,5 @@
 from app.config import logger
+from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
@@ -6,7 +7,6 @@ from app.helpers.plaid_helpers import (
     get_investment_transactions,
 )
 from app.models import PlaidAccount, PlaidItem
-from app.extensions import db
 from app.sql import investments_logic
 from app.sql.account_logic import save_plaid_account, upsert_accounts
 from flask import Blueprint, jsonify, request
