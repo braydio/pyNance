@@ -193,6 +193,8 @@ describe('TopAccountSnapshot', () => {
 
     const inputs = wrapper.findAll('input.bs-tab-input')
     expect(inputs).toHaveLength(2)
+    expect(wrapper.findAll('.bs-tab-handle')).toHaveLength(2)
+    expect(wrapper.findAll('.bs-tab-delete')).toHaveLength(2)
     await inputs[0].setValue('AA')
     await inputs[0].trigger('blur')
     const stored = JSON.parse(localStorage.getItem('accountGroups'))

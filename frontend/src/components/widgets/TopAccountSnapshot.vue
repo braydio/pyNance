@@ -239,7 +239,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, toRefs } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import draggable from 'vuedraggable'
 import { GripVertical, X, Plus } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -253,9 +253,9 @@ const props = defineProps({
 })
 
 // fetch accounts generically for potential group management
-const { allVisibleAccounts } = useTopAccounts()
-const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFromGroup } =
-  useAccountGroups()
+useTopAccounts()
+const { groups, activeGroupId, removeGroup } = useAccountGroups()
+
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -286,9 +286,14 @@ function toggleDetails(accountId) {
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
 const isEditingGroups = ref(props.isEditingGroups)
+watch(
+  () => props.isEditingGroups,
+  (val) => {
+    isEditingGroups.value = val
+  },
+)
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-
 const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
