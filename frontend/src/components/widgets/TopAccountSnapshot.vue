@@ -256,7 +256,6 @@ const props = defineProps({
 useTopAccounts()
 const { groups, activeGroupId, removeGroup } = useAccountGroups()
 
-
 // Details dropdown state
 const openAccountId = ref(null)
 const recentTxs = reactive({})
@@ -422,7 +421,6 @@ function removeAccount(id) {
   removeAccountFromGroup(activeGroupId.value, id)
 }
 
-const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 const activeTotal = computed(() =>
   activeGroup.value
     ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
