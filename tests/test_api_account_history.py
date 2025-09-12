@@ -7,7 +7,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 from flask import Flask
@@ -56,13 +56,13 @@ class _Col:
         self.name = name
 
     def __ge__(self, other):
-        return True
+        return (">=", other)
 
     def __le__(self, other):
-        return True
+        return ("<=", other)
 
     def __eq__(self, other):
-        return True
+        return ("==", other)
 
 
 models_stub.Transaction = type(
@@ -118,16 +118,33 @@ def client(monkeypatch):
     )
     monkeypatch.setitem(sys.modules, "app.models", models_stub)
 
-    # Stub db.session.query chain
+    transactions = [(date(2024, 1, 1), 0.0)]
+
+    # Stub db.session.query chain that respects date filters
     class TxQuery:
-        def filter(self, *a, **k):
+        def __init__(self):
+            self.start = None
+            self.end = None
+
+        def filter(self, condition):
+            if isinstance(condition, tuple):
+                op, val = condition
+                if op == ">=":
+                    self.start = val
+                elif op == "<=":
+                    self.end = val
             return self
 
         def group_by(self, *a, **k):
             return self
 
         def all(self):
-            return [(date(2024, 1, 1), 0.0)]
+            return [
+                t
+                for t in transactions
+                if (self.start is None or t[0] >= self.start)
+                and (self.end is None or t[0] <= self.end)
+            ]
 
     monkeypatch.setattr(
         accounts_module.db,
@@ -161,3 +178,84 @@ def test_history_accepts_account_id(client):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["accountId"] == "acc1"
+
+
+def test_history_exact_range(client, monkeypatch):
+    captured = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        captured["txs"] = txs
+        return []
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+
+    resp = client.get(
+        "/api/accounts/acc1/history?start_date=2024-01-01&end_date=2024-01-01"
+    )
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 1)
+    assert captured["end"] == date(2024, 1, 1)
+    assert captured["txs"] == [{"date": date(2024, 1, 1), "amount": 0.0}]
+
+
+def test_history_open_ended_start_only(client, monkeypatch):
+    class MockDateTime:
+        @staticmethod
+        def now(tz=None):
+            return datetime(2024, 1, 10, tzinfo=timezone.utc)
+
+        @staticmethod
+        def strptime(value, fmt):
+            return datetime.strptime(value, fmt)
+
+    monkeypatch.setattr(accounts_module, "datetime", MockDateTime)
+
+    captured = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        return []
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+
+    resp = client.get("/api/accounts/acc1/history?start_date=2024-01-01")
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 1)
+    assert captured["end"] == date(2024, 1, 10)
+
+
+def test_history_open_ended_end_only(client, monkeypatch):
+    captured = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        return []
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+
+    resp = client.get("/api/accounts/acc1/history?end_date=2024-01-05&range=3d")
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 3)
+    assert captured["end"] == date(2024, 1, 5)
+
+
+def test_history_empty_results(client, monkeypatch):
+    captured = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["txs"] = txs
+        return []
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+
+    resp = client.get(
+        "/api/accounts/acc1/history?start_date=2024-02-01&end_date=2024-02-10"
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["balances"] == []
+    assert captured["txs"] == []

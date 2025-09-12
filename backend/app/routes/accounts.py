@@ -125,9 +125,9 @@ def refresh_all_accounts():
                         # Add remediation info for ITEM_LOGIN_REQUIRED
                         if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                             error_map[key]["requires_reauth"] = True
-                            error_map[key]["update_link_token_endpoint"] = (
-                                "/api/plaid/transactions/generate_update_link_token"
-                            )
+                            error_map[key][
+                                "update_link_token_endpoint"
+                            ] = "/api/plaid/transactions/generate_update_link_token"
                             error_map[key]["affected_account_ids"] = [
                                 account.account_id
                             ]
@@ -578,9 +578,10 @@ def get_account_history(account_id):
 
     The calculation starts from the account's current balance and walks
     backwards through transaction deltas to derive prior day balances.
-    A ``range`` query parameter like ``7d`` or ``30d`` limits how many
-    days are returned. Both the external ``account_id`` and internal numeric
-    ``id`` are accepted in the path segment.
+    Optional ``start_date`` and ``end_date`` parameters (``YYYY-MM-DD``)
+    bound the date range. If omitted, ``range`` like ``7d`` or ``30d``
+    limits how many days are returned. Both the external ``account_id``
+    and internal numeric ``id`` are accepted in the path segment.
     """
     from datetime import timedelta
 
@@ -591,14 +592,24 @@ def get_account_history(account_id):
         range_param = request.args.get("range", "30d")
         days = int(range_param.rstrip("d")) if range_param.endswith("d") else 30
 
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+
         # Use the robust account resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
             logger.warning(f"Account history request for unknown account: {account_id}")
             return jsonify({"error": "Account not found"}), 404
 
-        end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=days - 1)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        else:
+            end_date = datetime.now(timezone.utc).date()
+
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        else:
+            start_date = end_date - timedelta(days=days - 1)
 
         tx_rows = (
             db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
@@ -623,6 +634,8 @@ def get_account_history(account_id):
             ),
             200,
         )
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logger.error(f"Error in get_account_history: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

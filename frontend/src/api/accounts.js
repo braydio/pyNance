@@ -27,10 +27,18 @@ export const fetchRecentTransactions = async (accountId, limit = 10) => {
  * Fetch recent balance history for an account.
  *
  * @param {string} accountId
- * @param {string} [range='30d'] - Range of days (e.g. '7d', '30d').
+ * @param {object} [options]
+ * @param {string} [options.range='30d'] - Range of days (e.g. '7d', '30d').
+ * @param {string} [options.startDate] - Inclusive start date (YYYY-MM-DD).
+ * @param {string} [options.endDate] - Inclusive end date (YYYY-MM-DD).
  */
-export const fetchAccountHistory = async (accountId, range = '30d') => {
+export const fetchAccountHistory = async (
+  accountId,
+  { range = '30d', startDate, endDate } = {}
+) => {
   const params = { range }
+  if (startDate) params.start_date = startDate
+  if (endDate) params.end_date = endDate
   const response = await axios.get(
     `/api/accounts/${accountId}/history`,
     { params }
