@@ -65,4 +65,3 @@ const emit = defineEmits(['edit', 'delete'])
   cursor: pointer;
 }
 </style>
-
