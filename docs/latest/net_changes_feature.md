@@ -1,11 +1,14 @@
 # Net Changes API
 
-The `/api/accounts/<account_id>/net_changes` endpoint reports income and expense totals for an account.
+The `/api/accounts/<account_id>/net_changes` endpoint reports balance
+movements for an account.
 
 ## Logic Overview
-- `account_logic.get_net_changes` aggregates transactions within an optional date range using SQL sum functions.
-- The accounts route parses `start_date` and `end_date` query params and returns JSON `{income, expense, net}`.
+- `account_logic.get_net_change` looks up balances in `AccountHistory` for
+  the provided `start_date` and `end_date`.
+- The net change is computed as `end_balance - start_balance`.
+- The route returns JSON `{account_id, net_change, period:{start,end}}`.
 
 ## Potential Issues
-- Missing transactions or incorrect date parsing can lead to inaccurate totals.
-- This endpoint currently relies on `Transaction.amount` signs to determine income vs expense.
+- Missing `AccountHistory` snapshots for the requested dates will raise an
+  error.

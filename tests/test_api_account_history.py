@@ -161,3 +161,40 @@ def test_history_accepts_account_id(client):
     assert resp.status_code == 200
     data = resp.get_json()
     assert data["accountId"] == "acc1"
+
+
+def _patch_account_logic(monkeypatch, delta):
+    """Helper to stub ``account_logic.get_net_change`` with ``delta``."""
+    account_logic_stub = types.SimpleNamespace(
+        get_net_change=lambda aid, s, e: {
+            "account_id": aid,
+            "net_change": delta,
+            "period": {"start": s.isoformat(), "end": e.isoformat()},
+        }
+    )
+    sql_pkg.account_logic = account_logic_stub
+    monkeypatch.setitem(sys.modules, "app.sql.account_logic", account_logic_stub)
+
+
+def test_net_changes_positive_delta(client, monkeypatch):
+    _patch_account_logic(monkeypatch, 50.0)
+    resp = client.get(
+        "/api/accounts/acc1/net_changes?start_date=2024-01-01&end_date=2024-02-01"
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["account_id"] == "acc1"
+    assert data["net_change"] == 50.0
+    assert data["period"] == {"start": "2024-01-01", "end": "2024-02-01"}
+
+
+def test_net_changes_negative_delta(client, monkeypatch):
+    _patch_account_logic(monkeypatch, -25.0)
+    resp = client.get(
+        "/api/accounts/acc1/net_changes?start_date=2024-01-01&end_date=2024-02-01"
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["net_change"] == -25.0
+    assert data["period"]["start"] == "2024-01-01"
+    assert data["period"]["end"] == "2024-02-01"
