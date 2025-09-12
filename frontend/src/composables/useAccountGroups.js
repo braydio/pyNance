@@ -134,8 +134,6 @@ export function useAccountGroups() {
       return true
     }
     return false
-
-
   }
 
   watch(
