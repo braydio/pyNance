@@ -10,10 +10,10 @@
 #   caddy run --config scripts/Caddyfile
 #
 # Notes:
-# - This serves HTTP on :8080 inside your LAN. For public TLS, put Caddy behind
+# - This serves HTTP on :8985 inside your LAN. For public TLS, put Caddy behind
 #   Cloudflare Tunnel or configure a domain and enable automatic HTTPS.
 
-:8080 {
+:8985 {
     encode zstd gzip
 
     # Proxy API requests to the backend
