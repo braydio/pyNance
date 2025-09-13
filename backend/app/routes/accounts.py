@@ -585,8 +585,9 @@ def get_account_history(account_id):
     The calculation starts from the account's current balance and walks
     backwards through transaction deltas to derive prior day balances.
     A ``range`` query parameter like ``7d`` or ``30d`` limits how many
-    days are returned. Both the external ``account_id`` and internal numeric
-    ``id`` are accepted in the path segment.
+    days are returned when explicit ``start_date`` and ``end_date``
+    parameters are not provided. Both the external ``account_id`` and
+    internal numeric ``id`` are accepted in the path segment.
     """
     from datetime import timedelta
 
@@ -597,14 +598,45 @@ def get_account_history(account_id):
         range_param = request.args.get("range", "30d")
         days = int(range_param.rstrip("d")) if range_param.endswith("d") else 30
 
+        start_date_str = request.args.get("start_date")
+        end_date_str = request.args.get("end_date")
+
+        now_date = datetime.now(timezone.utc).date()
+        start_date = None
+        end_date = None
+
+        if start_date_str:
+            try:
+                start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return (
+                    jsonify({"error": "Invalid start_date format. Use YYYY-MM-DD"}),
+                    400,
+                )
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+            except ValueError:
+                return (
+                    jsonify({"error": "Invalid end_date format. Use YYYY-MM-DD"}),
+                    400,
+                )
+
+        if start_date and end_date:
+            pass
+        elif start_date and not end_date:
+            end_date = start_date + timedelta(days=days - 1)
+        elif end_date and not start_date:
+            start_date = end_date - timedelta(days=days - 1)
+        else:
+            end_date = now_date
+            start_date = end_date - timedelta(days=days - 1)
+
         # Use the robust account resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
             logger.warning(f"Account history request for unknown account: {account_id}")
             return jsonify({"error": "Account not found"}), 404
-
-        end_date = datetime.now(timezone.utc).date()
-        start_date = end_date - timedelta(days=days - 1)
 
         tx_rows = (
             db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
