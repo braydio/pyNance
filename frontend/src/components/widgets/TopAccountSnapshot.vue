@@ -241,7 +241,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import draggable from 'vuedraggable'
-import { GripVertical, X, Plus } from 'lucide-vue-next'
+import { GripVertical, X, Plus, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
@@ -253,8 +253,14 @@ const props = defineProps({
 })
 
 // fetch accounts generically for potential group management
-useTopAccounts()
-const { groups, activeGroupId, removeGroup } = useAccountGroups()
+const { allVisibleAccounts } = useTopAccounts()
+const {
+  groups,
+  activeGroupId,
+  removeGroup,
+  addAccountToGroup,
+  removeAccountFromGroup,
+} = useAccountGroups()
 
 // Details dropdown state
 const openAccountId = ref(null)
