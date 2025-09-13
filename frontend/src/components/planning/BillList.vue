@@ -1,7 +1,7 @@
 <!--
   BillList.vue
   -------------
-  Display a list of bills with edit and delete actions.
+  Renders a collection of bills with edit and delete controls.
 -->
 
 <template>
@@ -9,9 +9,11 @@
     <li v-for="bill in bills" :key="bill.id" class="bill-item">
       <span class="bill-name">{{ bill.name }}</span>
       <span class="bill-amount">{{ formatAmount(bill.amount) }}</span>
-      <span class="bill-due">Due: {{ bill.due_date }}</span>
-      <button class="btn-edit" @click="emit('edit', bill)">Edit</button>
-      <button class="btn-delete" @click="emit('delete', bill.id)">Delete</button>
+      <span class="bill-due">Due: {{ bill.dueDate || bill.due_date }}</span>
+      <UiButton variant="outline" class="btn-edit" @click="emit('edit', bill)">Edit</UiButton>
+      <UiButton variant="alert" class="btn-delete" @click="emit('delete', bill.id)"
+        >Delete</UiButton
+      >
     </li>
   </ul>
 </template>
@@ -24,6 +26,7 @@
  * - `edit` with the full bill object.
  * - `delete` with the bill identifier.
  */
+import UiButton from '@/components/ui/Button.vue'
 import { formatAmount } from '@/utils/format'
 
 const props = defineProps({
