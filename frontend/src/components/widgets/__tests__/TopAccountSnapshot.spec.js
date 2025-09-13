@@ -346,11 +346,12 @@ describe('TopAccountSnapshot', () => {
   })
 
   it('shifts tab window when active group moves out of view', async () => {
-    const groups = Array.from({ length: 5 }, (_, i) => ({ id: `g${i + 1}`, name: `G${i + 1}`, accounts: [] }))
-    localStorage.setItem(
-      'accountGroups',
-      JSON.stringify({ groups, activeGroupId: 'g1' }),
-    )
+    const groups = Array.from({ length: 5 }, (_, i) => ({
+      id: `g${i + 1}`,
+      name: `G${i + 1}`,
+      accounts: [],
+    }))
+    localStorage.setItem('accountGroups', JSON.stringify({ groups, activeGroupId: 'g1' }))
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },
     })
