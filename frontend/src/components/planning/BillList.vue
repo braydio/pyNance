@@ -11,7 +11,9 @@
       <span class="bill-amount">{{ formatAmount(bill.amount) }}</span>
       <span class="bill-due">Due: {{ bill.dueDate || bill.due_date }}</span>
       <UiButton variant="outline" class="btn-edit" @click="emit('edit', bill)">Edit</UiButton>
-      <UiButton variant="alert" class="btn-delete" @click="emit('delete', bill.id)">Delete</UiButton>
+      <UiButton variant="alert" class="btn-delete" @click="emit('delete', bill.id)"
+        >Delete</UiButton
+      >
     </li>
   </ul>
 </template>
