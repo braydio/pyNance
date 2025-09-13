@@ -110,134 +110,134 @@
           tag="transition-group"
           :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
         >
-        <template #item="{ element: account }">
-          <li class="bs-account-container">
-            <div
-              class="bs-row"
-              :style="{ '--accent': accentColor(account) }"
-              @click="toggleDetails(account.id)"
-              role="button"
-              tabindex="0"
-              @keydown.enter="toggleDetails(account.id)"
-              @keydown.space="toggleDetails(account.id)"
-            >
-              <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
+          <template #item="{ element: account }">
+            <li class="bs-account-container">
+              <div
+                class="bs-row"
+                :style="{ '--accent': accentColor(account) }"
+                @click="toggleDetails(account.id)"
+                role="button"
+                tabindex="0"
+                @keydown.enter="toggleDetails(account.id)"
+                @keydown.space="toggleDetails(account.id)"
+              >
+                <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
-              <div class="bs-stripe"></div>
-              <div class="bs-logo-container">
-                <img
-                  v-if="account.institution_icon_url"
-                  :src="account.institution_icon_url"
-                  alt="Bank logo"
-                  class="bs-logo"
-                  loading="lazy"
-                />
-                <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-              </div>
-              <div class="bs-details">
-                <div class="bs-name">
-                  <span
-                    class="bs-toggle-icon"
-                    :class="{ 'bs-expanded': openAccountId === account.id }"
-                    >▶</span
-                  >
-                  {{ account.name }}
+                <div class="bs-stripe"></div>
+                <div class="bs-logo-container">
+                  <img
+                    v-if="account.institution_icon_url"
+                    :src="account.institution_icon_url"
+                    alt="Bank logo"
+                    class="bs-logo"
+                    loading="lazy"
+                  />
+                  <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
                 </div>
-                <div class="bs-mask">
-                  <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                  <span
-                    v-else
-                    class="bs-no-mask-icon"
-                    role="img"
-                    aria-label="Account number unavailable"
-                    >∗</span
-                  >
-                </div>
-              </div>
-              <div class="bs-sparkline">
-                <AccountSparkline :account-id="account.id" />
-              </div>
-              <div class="bs-amount-section">
-                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
-                <X
-                  v-if="isEditingGroups"
-                  class="bs-account-delete"
-                  @click.stop="removeAccount(account.id)"
-                />
-              </div>
-            </div>
-            <div v-if="openAccountId === account.id" class="bs-details-row">
-              <div class="bs-details-content">
-                <ul class="bs-details-list">
-                  <li
-                    v-for="tx in recentTxs[account.id]"
-                    :key="tx.transaction_id || tx.id"
-                    class="bs-tx-row"
-                  >
-                    <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                    <span class="bs-tx-name">{{
-                      tx.merchant_name || tx.name || tx.description
-                    }}</span>
-                    <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
-                  </li>
-                  <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
-                    No recent transactions
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </li>
-        </template>
-        <template #footer>
-          <Transition name="fade-in">
-            <li
-              class="bs-account-container bs-add-account"
-              :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
-            >
-              <Transition name="slide-down">
-                <div v-if="showAccountSelector" class="bs-row">
-                  <select
-                    v-model="selectedAccountId"
-                    @change="confirmAddAccount"
-                    class="bs-add-select"
-                  >
-                    <option value="" disabled>Select account</option>
-                    <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
-                      {{ acct.name }}
-                    </option>
-                  </select>
-                </div>
-                <div
-                  v-else
-                  class="bs-row bs-add-placeholder"
-                  @click="startAddAccount"
-                  role="button"
-                  tabindex="0"
-                  @keydown.enter.prevent="startAddAccount"
-                  @keydown.space.prevent="startAddAccount"
-                >
-                  <div class="bs-logo-container">
-                    <Plus class="bs-add-icon" />
+                <div class="bs-details">
+                  <div class="bs-name">
+                    <span
+                      class="bs-toggle-icon"
+                      :class="{ 'bs-expanded': openAccountId === account.id }"
+                      >▶</span
+                    >
+                    {{ account.name }}
                   </div>
-                  <div class="bs-details">
-                    <div class="bs-name">Add Account</div>
+                  <div class="bs-mask">
+                    <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                    <span
+                      v-else
+                      class="bs-no-mask-icon"
+                      role="img"
+                      aria-label="Account number unavailable"
+                      >∗</span
+                    >
                   </div>
                 </div>
-              </Transition>
+                <div class="bs-sparkline">
+                  <AccountSparkline :account-id="account.id" />
+                </div>
+                <div class="bs-amount-section">
+                  <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+                  <X
+                    v-if="isEditingGroups"
+                    class="bs-account-delete"
+                    @click.stop="removeAccount(account.id)"
+                  />
+                </div>
+              </div>
+              <div v-if="openAccountId === account.id" class="bs-details-row">
+                <div class="bs-details-content">
+                  <ul class="bs-details-list">
+                    <li
+                      v-for="tx in recentTxs[account.id]"
+                      :key="tx.transaction_id || tx.id"
+                      class="bs-tx-row"
+                    >
+                      <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                      <span class="bs-tx-name">{{
+                        tx.merchant_name || tx.name || tx.description
+                      }}</span>
+                      <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                    </li>
+                    <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                      No recent transactions
+                    </li>
+                  </ul>
+                </div>
+              </div>
             </li>
-          </Transition>
-          <li
-            v-if="activeAccounts.length"
-            class="bs-summary-row"
-            :style="{ '--accent': groupAccent }"
-          >
-            <div></div>
-            <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
-            <div class="bs-summary-amount">
-              {{ format(activeTotal) }}
-            </div>
-          </li>
-        </template>
+          </template>
+          <template #footer>
+            <Transition name="fade-in">
+              <li
+                class="bs-account-container bs-add-account"
+                :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+              >
+                <Transition name="slide-down">
+                  <div v-if="showAccountSelector" class="bs-row">
+                    <select
+                      v-model="selectedAccountId"
+                      @change="confirmAddAccount"
+                      class="bs-add-select"
+                    >
+                      <option value="" disabled>Select account</option>
+                      <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+                        {{ acct.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    v-else
+                    class="bs-row bs-add-placeholder"
+                    @click="startAddAccount"
+                    role="button"
+                    tabindex="0"
+                    @keydown.enter.prevent="startAddAccount"
+                    @keydown.space.prevent="startAddAccount"
+                  >
+                    <div class="bs-logo-container">
+                      <Plus class="bs-add-icon" />
+                    </div>
+                    <div class="bs-details">
+                      <div class="bs-name">Add Account</div>
+                    </div>
+                  </div>
+                </Transition>
+              </li>
+            </Transition>
+            <li
+              v-if="activeAccounts.length"
+              class="bs-summary-row"
+              :style="{ '--accent': groupAccent }"
+            >
+              <div></div>
+              <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
+              <div class="bs-summary-amount">
+                {{ format(activeTotal) }}
+              </div>
+            </li>
+          </template>
         </draggable>
       </div>
     </Transition>
