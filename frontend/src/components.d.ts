@@ -70,6 +70,7 @@ declare module 'vue' {
     PageHeader: typeof import('./components/ui/PageHeader.vue')['default']
     PaginationControls: typeof import('./components/tables/PaginationControls.vue')['default']
     PlaidProductScopeSelector: typeof import('./components/forms/PlaidProductScopeSelector.vue')['default']
+    PlanningSummary: typeof import('./components/planning/PlanningSummary.vue')['default']
     PortfolioAllocationChart: typeof import('./components/charts/PortfolioAllocationChart.vue')['default']
     RecurringCalendar: typeof import('./components/recurring/RecurringCalendar.vue')['default']
     RecurringTransactionSection: typeof import('./components/recurring/RecurringTransactionSection.vue')['default']

@@ -122,8 +122,18 @@ function sparklineData(trend = []) {
 }
 
 onMounted(async () => {
-  topMerchants.value = await fetchTopMerchants()
-  topCategories.value = await fetchTopCategories()
+  try {
+    const [merchants, categories] = await Promise.all([
+      fetchTopMerchants().catch(() => []),
+      fetchTopCategories().catch(() => []),
+    ])
+    topMerchants.value = Array.isArray(merchants) ? merchants : []
+    topCategories.value = Array.isArray(categories) ? categories : []
+  } catch (err) {
+    console.error('Failed to load spending insights:', err)
+    topMerchants.value = []
+    topCategories.value = []
+  }
 })
 
 // Simple trend slope-based signals

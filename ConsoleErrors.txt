@@ -1,0 +1,36 @@
+
+
+[Vue warn]: Unhandled error during execution of mounted hook 
+  at <Draggable modelValue= 
+Array [ {…} ]
+ onUpdate:modelValue=fn handle=".bs-drag-handle"  ... > 
+  at <BaseTransition appear=false persisted=false mode=undefined  ... > 
+  at <Transition name="bs-slide" > 
+  at <TopAccountSnapshot > 
+  at <BasePageLayout gap="gap-8" > 
+  at <AppLayout > 
+  at <Dashboard onVnodeUnmounted=fn<onVnodeUnmounted> ref=Ref< 
+Proxy { <target>: Proxy, <handler>: {…} }
+ > > 
+  at <RouterView > 
+  at <App> chunk-F5TDZ6MO.js:2429:13
+Uncaught (in promise) TypeError: can't access property "__draggable_context", domElement is null
+    addContext2 componentStructure.js:2
+    updated componentStructure.js:33
+    updated componentStructure.js:32
+    mounted vuedraggable.js:125
+    node_modules chunk-F5TDZ6MO.js:10328
+    callWithErrorHandling runtime-core.esm-bundler.js:199
+    callWithAsyncErrorHandling runtime-core.esm-bundler.js:206
+    __weh runtime-core.esm-bundler.js:2859
+    flushPostFlushCbs runtime-core.esm-bundler.js:385
+    flushJobs runtime-core.esm-bundler.js:427
+vuedraggable.js:12999:17
+    logError runtime-core.esm-bundler.js:268
+    handleError runtime-core.esm-bundler.js:255
+    callWithErrorHandling runtime-core.esm-bundler.js:201
+    callWithAsyncErrorHandling runtime-core.esm-bundler.js:206
+    __weh runtime-core.esm-bundler.js:2859
+    flushPostFlushCbs runtime-core.esm-bundler.js:385
+    flushJobs runtime-core.esm-bundler.js:427
+

@@ -47,3 +47,4 @@
 - If container enter/leave animations are required, wrap a parent `<div>` in `<Transition>` and place `<draggable>` inside that `<div>`. This preserves animations without interfering with vuedraggable’s DOM expectations.
 - When using draggable, always provide `item-key` and ensure the bound `v-model` is an array (never `null` or `undefined`).
 - Prefer toggling visibility around the container that holds draggable (or conditionally rendering via `v-if`) without transition wrappers; animate within the draggable list instead.
+- Wrap API calls made during `mounted`/setup in `try/catch` (or use `Promise.allSettled`) and default UI state sensibly on failure. Some endpoints (e.g., experimental analytics) may not be enabled; components should degrade gracefully without throwing unhandled promise rejections.

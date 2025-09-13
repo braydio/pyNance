@@ -17,7 +17,7 @@
           :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }"
         >
           <template #item="{ element: g }">
-            <div :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
+            <div :key="g.id" :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
               <GripVertical class="bs-tab-handle" />
               <input
                 v-model="g.name"
@@ -100,28 +100,26 @@
       </div>
     </div>
 
-    <!-- Use a wrapper div for enter/leave animations; avoid transitioning draggable directly -->
-    <Transition name="bs-slide">
-      <div v-if="activeGroup">
-        <draggable
-          v-model="activeGroup.accounts"
-          handle=".bs-drag-handle"
-          item-key="id"
-          tag="transition-group"
-          :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
-        >
-          <template #item="{ element: account }">
-            <li class="bs-account-container">
-              <div
-                class="bs-row"
-                :style="{ '--accent': accentColor(account) }"
-                @click="toggleDetails(account.id)"
-                role="button"
-                tabindex="0"
-                @keydown.enter="toggleDetails(account.id)"
-                @keydown.space="toggleDetails(account.id)"
-              >
-                <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
+    <!-- Render draggable without container Transition to avoid DOM detachment issues -->
+    <draggable
+      v-model="accountsModel"
+      handle=".bs-drag-handle"
+      :item-key="accountKey"
+      tag="transition-group"
+      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
+    >
+        <template #item="{ element: account }">
+          <li class="bs-account-container" :key="account.id">
+            <div
+              class="bs-row"
+              :style="{ '--accent': accentColor(account) }"
+              @click="toggleDetails(account.id)"
+              role="button"
+              tabindex="0"
+              @keydown.enter="toggleDetails(account.id)"
+              @keydown.space="toggleDetails(account.id)"
+            >
+              <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
                 <div class="bs-stripe"></div>
                 <div class="bs-logo-container">
@@ -216,31 +214,89 @@
                     @keydown.enter.prevent="startAddAccount"
                     @keydown.space.prevent="startAddAccount"
                   >
-                    <div class="bs-logo-container">
-                      <Plus class="bs-add-icon" />
-                    </div>
-                    <div class="bs-details">
-                      <div class="bs-name">Add Account</div>
-                    </div>
-                  </div>
-                </Transition>
-              </li>
-            </Transition>
-            <li
-              v-if="activeAccounts.length"
-              class="bs-summary-row"
-              :style="{ '--accent': groupAccent }"
+                </div>
+              </div>
+              <div class="bs-sparkline">
+                <AccountSparkline :account-id="String(account.id)" />
+              </div>
+              <div class="bs-amount-section">
+                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+                <X
+                  v-if="isEditingGroups"
+                  class="bs-account-delete"
+                  @click.stop="removeAccount(account.id)"
+                />
+              </div>
+            </div>
+            <div v-if="openAccountId === account.id" class="bs-details-row">
+              <div class="bs-details-content">
+                <ul class="bs-details-list">
+                  <li
+                    v-for="tx in recentTxs[account.id]"
+                    :key="tx.transaction_id || tx.id"
+                    class="bs-tx-row"
+                  >
+                    <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                    <span class="bs-tx-name">{{
+                      tx.merchant_name || tx.name || tx.description
+                    }}</span>
+                    <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                  </li>
+                  <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                    No recent transactions
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </li>
+        </template>
+        <template #footer>
+          <li
+            class="bs-account-container bs-add-account"
+            :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+            :key="'add-' + activeGroupId"
+          >
+            <div v-if="showAccountSelector" class="bs-row">
+              <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
+                <option value="" disabled>Select account</option>
+                <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+                  {{ acct.name }}
+                </option>
+              </select>
+            </div>
+            <div
+              v-else
+              class="bs-row bs-add-placeholder"
+              @click="startAddAccount"
+              role="button"
+              tabindex="0"
+              @keydown.enter.prevent="startAddAccount"
+              @keydown.space.prevent="startAddAccount"
             >
               <div></div>
               <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
               <div class="bs-summary-amount">
                 {{ format(activeTotal) }}
               </div>
-            </li>
-          </template>
-        </draggable>
-      </div>
-    </Transition>
+              <div class="bs-details">
+                <div class="bs-name">Add Account</div>
+              </div>
+            </div>
+          </li>
+          <li
+            v-if="activeAccounts.length"
+            class="bs-summary-row"
+            :key="'summary-' + activeGroupId"
+            :style="{ '--accent': groupAccent }"
+          >
+            <div></div>
+            <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
+            <div class="bs-summary-amount">
+              {{ format(activeTotal) }}
+            </div>
+          </li>
+        </template>
+    </draggable>
 
     <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">
       No accounts to display
@@ -306,6 +362,28 @@ watch(
 )
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+/** Normalize account entity to expected shape */
+function normalizeAccount(a) {
+  if (!a) return null
+  if (typeof a === 'object') return a
+  // try to resolve by id from available accounts
+  const found = allVisibleAccounts.value.find((acct) => String(acct.id) === String(a))
+  return found || { id: String(a), name: '', adjusted_balance: 0 }
+}
+/** Stable model for draggable binding with guards */
+const accountsModel = computed({
+  get() {
+    const arr = activeGroup.value?.accounts || []
+    return arr.filter(Boolean).map(normalizeAccount)
+  },
+  set(newList) {
+    if (!activeGroup.value) return
+    activeGroup.value.accounts = (Array.isArray(newList) ? newList : [])
+      .filter(Boolean)
+      .map(normalizeAccount)
+  },
+})
+const accountKey = (account) => String(account?.id ?? '')
 const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
@@ -409,7 +487,7 @@ function addGroup() {
   editingGroupId.value = id
 }
 
-const activeAccounts = computed(() => (activeGroup.value ? activeGroup.value.accounts : []))
+const activeAccounts = computed(() => accountsModel.value)
 const availableAccounts = computed(() =>
   allVisibleAccounts.value.filter((acct) => !activeAccounts.value.some((a) => a.id === acct.id)),
 )
