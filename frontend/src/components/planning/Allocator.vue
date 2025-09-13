@@ -5,7 +5,7 @@
       <input
         type="range"
         min="0"
-        max="100"
+        :max="maxFor(category)"
         :value="allocations[category]"
         @input="(e) => updateAllocation(category, Number(e.target.value))"
         class="w-full"
@@ -32,6 +32,7 @@
  *
  * Emits:
  * - `update:modelValue` - emitted whenever allocations change.
+ * - `change` - provides allocation details and validation info.
  */
 import { reactive, computed, watch } from 'vue'
 
@@ -41,8 +42,13 @@ const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
 })
 
-/** Emit update event for v-model. */
-const emit = defineEmits(['update:modelValue'])
+/**
+ * Emit events to propagate allocation changes to parent components.
+ *
+ * - `update:modelValue` supports `v-model` usage.
+ * - `change` emits detailed allocation info and validation state.
+ */
+const emit = defineEmits(['update:modelValue', 'change'])
 
 /**
  * Internal reactive copy of allocations to track slider changes.
@@ -65,8 +71,19 @@ watch(
   { deep: true },
 )
 
-/** Watch local allocations and sync with parent via v-model. */
-watch(allocations, (val) => emit('update:modelValue', { ...val }), { deep: true })
+/**
+ * Watch local allocations and sync with parent via v-model while
+ * also emitting a `change` event containing the totals.
+ */
+watch(
+  allocations,
+  (val) => {
+    const payload = { ...val }
+    emit('update:modelValue', payload)
+    emit('change', { allocations: payload, total: total.value, valid: total.value <= 100 })
+  },
+  { deep: true },
+)
 
 /** Total allocation percentage across all categories. */
 const total = computed(() =>
@@ -85,6 +102,17 @@ const error = computed(() => (total.value > 100 ? 'Total allocation cannot excee
  */
 function updateAllocation(category, value) {
   allocations[category] = value
+}
+
+/**
+ * Determine the maximum slider value for a category so that the
+ * grand total never exceeds 100%.
+ *
+ * @param {string} category - Name of the category being adjusted.
+ * @returns {number} The maximum allowed percentage for the slider.
+ */
+function maxFor(category) {
+  return 100 - (total.value - Number(allocations[category] || 0))
 }
 </script>
 
