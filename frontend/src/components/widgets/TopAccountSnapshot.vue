@@ -186,35 +186,47 @@
           </li>
         </template>
         <template #footer>
-          <li
-            class="bs-account-container bs-add-account"
-            :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
-          >
-            <div v-if="showAccountSelector" class="bs-row">
-              <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
-                <option value="" disabled>Select account</option>
-                <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
-                  {{ acct.name }}
-                </option>
-              </select>
-            </div>
-            <div
-              v-else
-              class="bs-row bs-add-placeholder"
-              @click="startAddAccount"
-              role="button"
-              tabindex="0"
-              @keydown.enter.prevent="startAddAccount"
-              @keydown.space.prevent="startAddAccount"
+          <Transition name="fade-in">
+            <li
+              class="bs-account-container bs-add-account"
+              :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
             >
-              <div class="bs-logo-container">
-                <Plus class="bs-add-icon" />
-              </div>
-              <div class="bs-details">
-                <div class="bs-name">Add Account</div>
-              </div>
-            </div>
-          </li>
+              <Transition name="slide-down">
+                <div v-if="showAccountSelector" class="bs-row">
+                  <select
+                    v-model="selectedAccountId"
+                    @change="confirmAddAccount"
+                    class="bs-add-select"
+                  >
+                    <option value="" disabled>Select account</option>
+                    <option
+                      v-for="acct in availableAccounts"
+                      :key="acct.id"
+                      :value="acct.id"
+                    >
+                      {{ acct.name }}
+                    </option>
+                  </select>
+                </div>
+                <div
+                  v-else
+                  class="bs-row bs-add-placeholder"
+                  @click="startAddAccount"
+                  role="button"
+                  tabindex="0"
+                  @keydown.enter.prevent="startAddAccount"
+                  @keydown.space.prevent="startAddAccount"
+                >
+                  <div class="bs-logo-container">
+                    <Plus class="bs-add-icon" />
+                  </div>
+                  <div class="bs-details">
+                    <div class="bs-name">Add Account</div>
+                  </div>
+                </div>
+              </Transition>
+            </li>
+          </Transition>
           <li
             v-if="activeAccounts.length"
             class="bs-summary-row"
@@ -1152,11 +1164,17 @@ function initials(name) {
   }
 
   .bs-tabs-scroll {
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
   }
 
   .bs-tab-list {
     flex-wrap: nowrap;
+    width: max-content;
+  }
+
+  .bs-add-select {
+    font-size: 0.85rem;
   }
 
   .bs-group-dropdown {
