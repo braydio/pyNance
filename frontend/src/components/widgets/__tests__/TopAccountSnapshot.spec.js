@@ -344,4 +344,29 @@ describe('TopAccountSnapshot', () => {
     expect(activeItem.text()).toContain('A')
     expect(activeItem.find('svg').exists()).toBe(true)
   })
+
+  it('shifts tab window when active group moves out of view', async () => {
+    const groups = Array.from({ length: 5 }, (_, i) => ({ id: `g${i + 1}`, name: `G${i + 1}`, accounts: [] }))
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({ groups, activeGroupId: 'g1' }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    const tabTexts = () => wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(tabTexts()).toEqual(['G1', 'G2', 'G3'])
+
+    wrapper.vm.setActiveGroup('g4')
+    await nextTick()
+    expect(wrapper.vm.visibleGroupIndex).toBe(1)
+    expect(tabTexts()).toEqual(['G2', 'G3', 'G4'])
+
+    wrapper.vm.setActiveGroup('g5')
+    await nextTick()
+    expect(wrapper.vm.visibleGroupIndex).toBe(2)
+    expect(tabTexts()).toEqual(['G3', 'G4', 'G5'])
+  })
 })

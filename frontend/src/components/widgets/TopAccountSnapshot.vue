@@ -39,40 +39,51 @@
             </button>
           </template>
         </draggable>
-        <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in groups" :key="g.id">
-            <input
-              v-if="!g.name || editingGroupId === g.id"
-              v-model="g.name"
-              :class="[
-                'bs-tab',
-                activeGroupId === g.id && 'bs-tab-active',
-                'bs-tab-' + g.id,
-                'bs-tab-input',
-              ]"
-              @blur="finishEdit(g)"
-              @keyup.enter="finishEdit(g)"
-            />
-            <button
-              v-else
-              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-              @click="setActiveGroup(g.id)"
-              @dblclick.stop="startEdit(g.id)"
-              :aria-label="`Show ${g.name}`"
-            >
-              {{ g.name }}
-            </button>
-          </template>
-        </TransitionGroup>
-        <button
-          v-if="groups.length > 3"
-          class="bs-nav-btn"
-          @click="shiftWindow(1)"
-          :disabled="visibleGroupIndex + 3 >= groups.length"
-          aria-label="Next group"
-        >
-          &gt;
-        </button>
+        <template v-else>
+          <button
+            v-if="groups.length > 3"
+            class="bs-nav-btn"
+            @click="shiftWindow(-1)"
+            :disabled="visibleGroupIndex === 0"
+            aria-label="Previous group"
+          >
+            &lt;
+          </button>
+          <TransitionGroup name="fade-in" tag="div" class="bs-tab-list">
+            <template v-for="g in visibleGroups" :key="g.id">
+              <input
+                v-if="!g.name || editingGroupId === g.id"
+                v-model="g.name"
+                :class="[
+                  'bs-tab',
+                  activeGroupId === g.id && 'bs-tab-active',
+                  'bs-tab-' + g.id,
+                  'bs-tab-input',
+                ]"
+                @blur="finishEdit(g)"
+                @keyup.enter="finishEdit(g)"
+              />
+              <button
+                v-else
+                :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+                @click="setActiveGroup(g.id)"
+                @dblclick.stop="startEdit(g.id)"
+                :aria-label="`Show ${g.name}`"
+              >
+                {{ g.name }}
+              </button>
+            </template>
+          </TransitionGroup>
+          <button
+            v-if="groups.length > 3"
+            class="bs-nav-btn"
+            @click="shiftWindow(1)"
+            :disabled="visibleGroupIndex + 3 >= groups.length"
+            aria-label="Next group"
+          >
+            &gt;
+          </button>
+        </template>
       </div>
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
