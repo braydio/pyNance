@@ -28,6 +28,16 @@
               <X class="bs-tab-delete" @click.stop="removeGroup(g.id)" />
             </div>
           </template>
+          <template #footer>
+            <button
+              key="add-group"
+              class="bs-tab bs-tab-add"
+              @click="addGroup"
+              aria-label="Add group"
+            >
+              +
+            </button>
+          </template>
         </draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
           <template v-for="g in groups" :key="g.id">
@@ -53,14 +63,6 @@
               {{ g.name }}
             </button>
           </template>
-          <button
-            v-if="isEditingGroups"
-            key="add-group"
-            class="bs-tab bs-tab-add"
-            @click="addGroup"
-          >
-            +
-          </button>
         </TransitionGroup>
         <button
           v-if="groups.length > 3"
@@ -98,15 +100,16 @@
       </div>
     </div>
 
+    <!-- Use a wrapper div for enter/leave animations; avoid transitioning draggable directly -->
     <Transition name="bs-slide">
-      <draggable
-        v-if="activeGroup"
-        v-model="activeGroup.accounts"
-        handle=".bs-drag-handle"
-        item-key="id"
-        tag="transition-group"
-        :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
-      >
+      <div v-if="activeGroup">
+        <draggable
+          v-model="activeGroup.accounts"
+          handle=".bs-drag-handle"
+          item-key="id"
+          tag="transition-group"
+          :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
+        >
         <template #item="{ element: account }">
           <li class="bs-account-container">
             <div
@@ -227,7 +230,8 @@
             </div>
           </li>
         </template>
-      </draggable>
+        </draggable>
+      </div>
     </Transition>
 
     <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">

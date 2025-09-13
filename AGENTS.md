@@ -40,3 +40,10 @@
 - Environment: copy `backend/example.env` to `backend/.env` (never commit secrets). Frontend uses `frontend/.env` similarly.
 - Security checks: `bandit -r backend/app/routes` (also enforced via pre-commit).
 - Git hooks: repository uses `.githooks` via the setup script; ensure hooks are active for consistent validation.
+
+## Frontend Notes
+
+- vuedraggable (Vue 3): Do not wrap a `<draggable>` component with `<Transition>` or `<TransitionGroup>` wrappers. Use `tag="transition-group"` with `:component-data` on the draggable itself to animate items. Wrapping can cause `domElement is null` errors stemming from `__draggable_context` when Vue transitions temporarily detach nodes.
+- If container enter/leave animations are required, wrap a parent `<div>` in `<Transition>` and place `<draggable>` inside that `<div>`. This preserves animations without interfering with vuedraggable’s DOM expectations.
+- When using draggable, always provide `item-key` and ensure the bound `v-model` is an array (never `null` or `undefined`).
+- Prefer toggling visibility around the container that holds draggable (or conditionally rendering via `v-if`) without transition wrappers; animate within the draggable list instead.
