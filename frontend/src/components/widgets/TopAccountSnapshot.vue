@@ -254,13 +254,8 @@ const props = defineProps({
 
 // fetch accounts generically for potential group management
 const { allVisibleAccounts } = useTopAccounts()
-const {
-  groups,
-  activeGroupId,
-  removeGroup,
-  addAccountToGroup,
-  removeAccountFromGroup,
-} = useAccountGroups()
+const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFromGroup } =
+  useAccountGroups()
 
 // Details dropdown state
 const openAccountId = ref(null)
