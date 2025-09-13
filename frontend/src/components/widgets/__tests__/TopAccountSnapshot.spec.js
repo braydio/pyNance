@@ -201,6 +201,23 @@ describe('TopAccountSnapshot', () => {
     expect(stored.groups[0].name).toBe('AA')
   })
 
+  it('truncates group names longer than 30 characters with ellipsis', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    const group = wrapper.vm.groups[0]
+    wrapper.vm.startEdit(group.id)
+    group.name = 'A'.repeat(35)
+    wrapper.vm.finishEdit(group)
+    await nextTick()
+    const expected = 'A'.repeat(30) + '…'
+    expect(wrapper.find('button.bs-tab').text()).toBe(expected)
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].name).toBe(expected)
+  })
+
   it('persists group order changes when dragged', async () => {
     localStorage.setItem(
       'accountGroups',

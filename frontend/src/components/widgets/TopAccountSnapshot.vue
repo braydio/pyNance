@@ -22,6 +22,7 @@
               <input
                 v-model="g.name"
                 class="bs-tab-input"
+                maxlength="30"
                 @blur="finishEdit(g)"
                 @keyup.enter="finishEdit(g)"
               />
@@ -50,6 +51,7 @@
                 'bs-tab-' + g.id,
                 'bs-tab-input',
               ]"
+              maxlength="30"
               @blur="finishEdit(g)"
               @keyup.enter="finishEdit(g)"
             />
@@ -389,10 +391,19 @@ function startEdit(id) {
 }
 
 /** Disable editing and persist the group name */
+/**
+ * Disable editing and persist the group name.
+ * Truncates names longer than 30 characters and appends an ellipsis.
+ */
 function finishEdit(group) {
   editingGroupId.value = null
   if (!group.name) {
     editingGroupId.value = group.id
+    return
+  }
+  const MAX_LEN = 30
+  if (group.name.length > MAX_LEN) {
+    group.name = group.name.slice(0, MAX_LEN) + '…'
   }
 }
 
