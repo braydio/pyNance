@@ -199,11 +199,7 @@
                     class="bs-add-select"
                   >
                     <option value="" disabled>Select account</option>
-                    <option
-                      v-for="acct in availableAccounts"
-                      :key="acct.id"
-                      :value="acct.id"
-                    >
+                    <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
                       {{ acct.name }}
                     </option>
                   </select>
