@@ -3,20 +3,16 @@
     <slot name="header" />
     <div class="flex gap-8">
       <div class="flex-1">
-        <nav class="border-b mb-4" data-testid="tabbed-nav">
-          <ul class="flex gap-4">
+        <nav class="border-b border-muted mb-4 pb-2" data-testid="tabbed-nav">
+          <ul class="flex gap-2">
             <li v-for="tab in tabs" :key="tab">
-              <button
-                class="pb-2 border-b-2"
-                :class="
-                  activeTab === tab
-                    ? 'border-primary text-primary'
-                    : 'border-transparent hover:border-muted'
-                "
+              <UiButton
+                :variant="activeTab === tab ? 'primary' : 'outline'"
+                class="btn-sm"
                 @click="selectTab(tab)"
               >
                 {{ tab }}
-              </button>
+              </UiButton>
             </li>
           </ul>
         </nav>
@@ -34,6 +30,7 @@
 /**
  * TabbedPageLayout
  * Layout component providing a header slot, tab navigation, and optional sidebar.
+ * Tab navigation buttons use the shared UiButton component for consistent theming.
  *
  * Props:
  * - tabs: array of tab labels displayed in navigation
@@ -41,6 +38,7 @@
  */
 import { computed } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
+import UiButton from '@/components/ui/Button.vue'
 
 const props = defineProps({
   /** Array of tab labels */
