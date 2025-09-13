@@ -27,10 +27,14 @@ export const fetchRecentTransactions = async (accountId, limit = 10) => {
  * Fetch recent balance history for an account.
  *
  * @param {string} accountId
- * @param {string} [range='30d'] - Range of days (e.g. '7d', '30d').
+ * @param {object|string} [options] - Either a range string (e.g. '30d') or an
+ *   options object with `range`, `start_date`, and `end_date`.
  */
-export const fetchAccountHistory = async (accountId, range = '30d') => {
-  const params = { range }
+export const fetchAccountHistory = async (accountId, options = {}) => {
+  const params =
+    typeof options === 'string'
+      ? { range: options }
+      : { range: '30d', ...options }
   const response = await axios.get(
     `/api/accounts/${accountId}/history`,
     { params }

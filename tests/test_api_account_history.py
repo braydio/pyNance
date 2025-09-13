@@ -163,6 +163,78 @@ def test_history_accepts_account_id(client):
     assert data["accountId"] == "acc1"
 
 
+def test_history_exact_date_range(client, monkeypatch):
+    captured: dict[str, date] = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        return [{"date": start_date.isoformat(), "balance": 0.0}]
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+    resp = client.get(
+        "/api/accounts/acc1/history?start_date=2024-01-01&end_date=2024-01-05"
+    )
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 1)
+    assert captured["end"] == date(2024, 1, 5)
+
+
+def test_history_open_start_date(client, monkeypatch):
+    captured: dict[str, date] = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        return [{"date": start_date.isoformat(), "balance": 0.0}]
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+    resp = client.get("/api/accounts/acc1/history?start_date=2024-01-01&range=3d")
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 1)
+    assert captured["end"] == date(2024, 1, 3)
+
+
+def test_history_open_end_date(client, monkeypatch):
+    captured: dict[str, date] = {}
+
+    def fake_compute(balance, txs, start_date, end_date):
+        captured["start"] = start_date
+        captured["end"] = end_date
+        return [{"date": start_date.isoformat(), "balance": 0.0}]
+
+    monkeypatch.setattr(history_stub, "compute_balance_history", fake_compute)
+    resp = client.get("/api/accounts/acc1/history?end_date=2024-01-10&range=3d")
+    assert resp.status_code == 200
+    assert captured["start"] == date(2024, 1, 8)
+    assert captured["end"] == date(2024, 1, 10)
+
+
+def test_history_empty_results(client, monkeypatch):
+    class EmptyTxQuery:
+        def filter(self, *a, **k):
+            return self
+
+        def group_by(self, *a, **k):
+            return self
+
+        def all(self):
+            return []
+
+    monkeypatch.setattr(
+        accounts_module.db,
+        "session",
+        types.SimpleNamespace(query=lambda *a, **k: EmptyTxQuery()),
+    )
+    monkeypatch.setattr(history_stub, "compute_balance_history", lambda *a, **k: [])
+
+    resp = client.get(
+        "/api/accounts/acc1/history?start_date=2024-01-01&end_date=2024-01-05"
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["balances"] == []
+
+
 def _patch_account_logic(monkeypatch, delta):
     """Helper to stub ``account_logic.get_net_change`` with ``delta``."""
     account_logic_stub = types.SimpleNamespace(
