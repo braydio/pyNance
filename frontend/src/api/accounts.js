@@ -7,19 +7,13 @@
 import axios from 'axios'
 
 export const fetchNetChanges = async (accountId, params = {}) => {
-  const response = await axios.get(
-    `/api/accounts/${accountId}/net_changes`,
-    { params }
-  )
+  const response = await axios.get(`/api/accounts/${accountId}/net_changes`, { params })
   return response.data
 }
 
 export const fetchRecentTransactions = async (accountId, limit = 10) => {
   const params = { recent: true, limit }
-  const response = await axios.get(
-    `/api/transactions/${accountId}/transactions`,
-    { params }
-  )
+  const response = await axios.get(`/api/transactions/${accountId}/transactions`, { params })
   return response.data
 }
 
@@ -31,14 +25,8 @@ export const fetchRecentTransactions = async (accountId, limit = 10) => {
  *   options object with `range`, `start_date`, and `end_date`.
  */
 export const fetchAccountHistory = async (accountId, options = {}) => {
-  const params =
-    typeof options === 'string'
-      ? { range: options }
-      : { range: '30d', ...options }
-  const response = await axios.get(
-    `/api/accounts/${accountId}/history`,
-    { params }
-  )
+  const params = typeof options === 'string' ? { range: options } : { range: '30d', ...options }
+  const response = await axios.get(`/api/accounts/${accountId}/history`, { params })
   return response.data
 }
 
@@ -50,9 +38,6 @@ export const fetchAccountHistory = async (accountId, options = {}) => {
  * @param {object} params
  */
 export const fetchAccountTransactionHistory = async (accountId, params = {}) => {
-  const response = await axios.get(
-    `/api/accounts/${accountId}/transaction_history`,
-    { params }
-  )
+  const response = await axios.get(`/api/accounts/${accountId}/transaction_history`, { params })
   return response.data
 }
