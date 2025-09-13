@@ -8,6 +8,15 @@
   <div class="bank-statement-list bs-collapsible w-full h-full">
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
+        <button
+          v-if="!isEditingGroups && groups.length > 3"
+          class="bs-nav-btn"
+          @click="shiftWindow(-1)"
+          :disabled="visibleGroupIndex === 0"
+          aria-label="Previous group"
+        >
+          &lt;
+        </button>
         <draggable
           v-if="isEditingGroups"
           v-model="groups"
@@ -40,7 +49,7 @@
           </template>
         </draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in groups" :key="g.id">
+          <template v-for="g in visibleGroups" :key="g.id">
             <input
               v-if="!g.name || editingGroupId === g.id"
               v-model="g.name"
@@ -65,7 +74,7 @@
           </template>
         </TransitionGroup>
         <button
-          v-if="groups.length > 3"
+          v-if="!isEditingGroups && groups.length > 3"
           class="bs-nav-btn"
           @click="shiftWindow(1)"
           :disabled="visibleGroupIndex + 3 >= groups.length"
