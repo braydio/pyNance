@@ -37,9 +37,7 @@ const { state } = usePlanning()
  *
  * @returns {string} formatted total of all bills
  */
-const totalBills = computed(() =>
-  formatAmount(selectTotalBillsCents(state) / 100),
-)
+const totalBills = computed(() => formatAmount(selectTotalBillsCents(state) / 100))
 
 /**
  * Remaining unallocated cash for the active scenario formatted as
@@ -56,4 +54,3 @@ const remainingCash = computed(() => {
 <style scoped>
 /* Basic styling placeholder for PlanningSummary */
 </style>
-
