@@ -79,4 +79,35 @@ describe('useAccountHistory', () => {
         expect(params.get('end_date')).to.eq(end)
       })
   })
+
+  it('supports manual refresh with explicit dates', () => {
+    const ManualComponent = defineComponent({
+      props: { id: String, range: String },
+      template:
+        `<div><button id="refresh" @click="loadHistory('2024-02-01','2024-02-05')"></button>` +
+        `<ul><li v-for="pt in history" :key="pt.date">{{ pt.balance }}</li></ul></div>`,
+      setup(props) {
+        const { history, loadHistory } = useAccountHistory(
+          toRef(props, 'id'),
+          toRef(props, 'range'),
+        )
+        return { history, loadHistory }
+      },
+    })
+
+    cy.intercept('GET', '/api/accounts/123/history*', (req) => {
+      if (req.url.includes('start_date')) {
+        req.reply({ statusCode: 200, body: { history: [{ date: '2024-02-02', balance: 200 }] } })
+      } else {
+        req.reply({ statusCode: 200, body: { history: [] } })
+      }
+    }).as('getHistory')
+
+    cy.mount(ManualComponent, { props: { id: '123', range: '30d' } })
+    cy.wait('@getHistory')
+
+    cy.get('#refresh').click()
+    cy.wait('@getHistory').its('request.url').should('include', 'start_date=2024-02-01')
+    cy.get('li').should('have.length', 1).first().should('contain', '200')
+  })
 })

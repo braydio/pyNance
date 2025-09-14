@@ -1,8 +1,9 @@
 /**
  * Composable to fetch and expose balance history for a single account.
+ * Results are memoized per account and range and can be refreshed manually.
  */
 import { ref, isRef, watch } from 'vue'
-import { fetchAccountHistory, rangeToDates } from '@/api/accounts'
+import { fetchAccountHistory } from '@/api/accounts'
 
 /**
  * Cache of previously fetched histories keyed by `${accountId}-${range}`.
@@ -17,7 +18,7 @@ const historyCache = new Map()
  */
 export function useAccountHistory(accountId, rangeRef) {
   const accountIdRef = isRef(accountId) ? accountId : ref(accountId)
-  const range = isRef(rangeRef) ? rangeRef : ref(rangeRef)
+  rangeRef = isRef(rangeRef) ? rangeRef : ref(rangeRef)
   const history = ref([])
   const loading = ref(false)
 
@@ -59,7 +60,7 @@ export function useAccountHistory(accountId, rangeRef) {
     }
   }
 
-  watch([accountIdRef, range], () => fetchHistory(), { immediate: true })
+  watch([accountIdRef, rangeRef], () => fetchHistory(), { immediate: true })
 
   const loadHistory = (start, end) => fetchHistory(start, end, { force: true })
 
