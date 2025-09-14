@@ -1,12 +1,19 @@
 <!--
   PlanningSummary.vue
   -------------------
-  Display a summary of total bills and remaining cash.
+  Concise readout of the user's budgeting progress.
+
+  The component queries shared planning selectors to surface two key
+  figures:
+  - **Total Bills** – aggregate amount of all scheduled bills.
+  - **Remaining Cash** – unallocated funds still available after bills.
+  Both values are formatted as currency for readability.
 -->
 
 <template>
   <div class="planning-summary">
     <h3>Planning Summary</h3>
+    <!-- Display formatted bill total and remaining cash amounts -->
     <p>Total Bills: {{ totalBills }}</p>
     <p>Remaining Cash: {{ remainingCash }}</p>
   </div>
