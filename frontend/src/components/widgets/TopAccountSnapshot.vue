@@ -12,17 +12,36 @@
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
         <!-- Editable Group Tabs -->
-        <draggable v-if="isEditingGroups" v-model="groups" item-key="id" handle=".bs-tab-handle" tag="transition-group"
-          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }">
+        <draggable
+          v-if="isEditingGroups"
+          v-model="groups"
+          item-key="id"
+          handle=".bs-tab-handle"
+          tag="transition-group"
+          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }"
+        >
           <template #item="{ element: g }">
-            <div :key="g.id" :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
+            <div
+              :key="g.id"
+              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+            >
               <GripVertical class="bs-tab-handle" />
-              <input v-model="g.name" class="bs-tab-input" @blur="finishEdit(g)" @keyup.enter="finishEdit(g)" />
+              <input
+                v-model="g.name"
+                class="bs-tab-input"
+                @blur="finishEdit(g)"
+                @keyup.enter="finishEdit(g)"
+              />
               <X class="bs-tab-delete" @click.stop="removeGroup(g.id)" />
             </div>
           </template>
           <template #footer>
-            <button key="add-group" class="bs-tab bs-tab-add" @click="addGroup" aria-label="Add group">
+            <button
+              key="add-group"
+              class="bs-tab bs-tab-add"
+              @click="addGroup"
+              aria-label="Add group"
+            >
               +
             </button>
           </template>
@@ -31,21 +50,37 @@
         <!-- Static Group Tabs -->
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
           <template v-for="g in groups" :key="g.id">
-            <input v-if="!g.name || editingGroupId === g.id" v-model="g.name" :class="[
-              'bs-tab',
-              activeGroupId === g.id && 'bs-tab-active',
-              'bs-tab-' + g.id,
-              'bs-tab-input',
-            ]" @blur="finishEdit(g)" @keyup.enter="finishEdit(g)" />
-            <button v-else :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-              @click="setActiveGroup(g.id)" @dblclick.stop="startEdit(g.id)" :aria-label="`Show ${g.name}`">
+            <input
+              v-if="!g.name || editingGroupId === g.id"
+              v-model="g.name"
+              :class="[
+                'bs-tab',
+                activeGroupId === g.id && 'bs-tab-active',
+                'bs-tab-' + g.id,
+                'bs-tab-input',
+              ]"
+              @blur="finishEdit(g)"
+              @keyup.enter="finishEdit(g)"
+            />
+            <button
+              v-else
+              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+              @click="setActiveGroup(g.id)"
+              @dblclick.stop="startEdit(g.id)"
+              :aria-label="`Show ${g.name}`"
+            >
               {{ g.name }}
             </button>
           </template>
         </TransitionGroup>
 
-        <button v-if="groups.length > 3" class="bs-nav-btn" @click="shiftWindow(1)"
-          :disabled="visibleGroupIndex + 3 >= groups.length" aria-label="Next group">
+        <button
+          v-if="groups.length > 3"
+          class="bs-nav-btn"
+          @click="shiftWindow(1)"
+          :disabled="visibleGroupIndex + 3 >= groups.length"
+          aria-label="Next group"
+        >
           &gt;
         </button>
       </div>
@@ -58,8 +93,11 @@
         <Transition name="slide-down">
           <ul v-if="showGroupMenu" class="bs-group-menu">
             <li v-for="g in groups" :key="g.id">
-              <button class="bs-group-item" :class="{ 'bs-group-item-active': g.id === activeGroupId }"
-                @click="selectGroup(g.id)">
+              <button
+                class="bs-group-item"
+                :class="{ 'bs-group-item-active': g.id === activeGroupId }"
+                @click="selectGroup(g.id)"
+              >
                 <Check v-if="g.id === activeGroupId" class="bs-group-check" />
                 {{ g.name || '(unnamed)' }}
               </button>
@@ -75,30 +113,56 @@
     </div>
 
     <!-- Accounts List -->
-    <draggable v-model="accountsModel" handle=".bs-drag-handle" :item-key="accountKey" tag="transition-group"
-      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }">
+    <draggable
+      v-model="accountsModel"
+      handle=".bs-drag-handle"
+      :item-key="accountKey"
+      tag="transition-group"
+      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
+    >
       <template #item="{ element: account }">
         <li class="bs-account-container" :key="account.id">
-          <div class="bs-row" :style="{ '--accent': accentColor(account) }" @click="toggleDetails(account.id)"
-            role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)"
-            @keydown.space="toggleDetails(account.id)">
+          <div
+            class="bs-row"
+            :style="{ '--accent': accentColor(account) }"
+            @click="toggleDetails(account.id)"
+            role="button"
+            tabindex="0"
+            @keydown.enter="toggleDetails(account.id)"
+            @keydown.space="toggleDetails(account.id)"
+          >
             <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
             <div class="bs-stripe"></div>
 
             <div class="bs-logo-container">
-              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo"
-                class="bs-logo" loading="lazy" />
+              <img
+                v-if="account.institution_icon_url"
+                :src="account.institution_icon_url"
+                alt="Bank logo"
+                class="bs-logo"
+                loading="lazy"
+              />
               <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
 
             <div class="bs-details">
               <div class="bs-name">
-                <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
+                <span
+                  class="bs-toggle-icon"
+                  :class="{ 'bs-expanded': openAccountId === account.id }"
+                  >▶</span
+                >
                 {{ account.name }}
               </div>
               <div class="bs-mask">
                 <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                <span
+                  v-else
+                  class="bs-no-mask-icon"
+                  role="img"
+                  aria-label="Account number unavailable"
+                  >∗</span
+                >
               </div>
             </div>
 
@@ -108,16 +172,26 @@
 
             <div class="bs-amount-section">
               <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
-              <X v-if="isEditingGroups" class="bs-account-delete" @click.stop="removeAccount(account.id)" />
+              <X
+                v-if="isEditingGroups"
+                class="bs-account-delete"
+                @click.stop="removeAccount(account.id)"
+              />
             </div>
           </div>
 
           <div v-if="openAccountId === account.id" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
-                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                <li
+                  v-for="tx in recentTxs[account.id]"
+                  :key="tx.transaction_id || tx.id"
+                  class="bs-tx-row"
+                >
                   <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
+                  <span class="bs-tx-name">{{
+                    tx.merchant_name || tx.name || tx.description
+                  }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
@@ -131,8 +205,11 @@
 
       <!-- Add Account + Summary -->
       <template #footer>
-        <li class="bs-account-container bs-add-account" :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
-          :key="'add-' + activeGroupId">
+        <li
+          class="bs-account-container bs-add-account"
+          :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+          :key="'add-' + activeGroupId"
+        >
           <div v-if="showAccountSelector" class="bs-row">
             <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
               <option value="" disabled>Select account</option>
@@ -141,16 +218,27 @@
               </option>
             </select>
           </div>
-          <div v-else class="bs-row bs-add-placeholder" @click="startAddAccount" role="button" tabindex="0"
-            @keydown.enter.prevent="startAddAccount" @keydown.space.prevent="startAddAccount">
+          <div
+            v-else
+            class="bs-row bs-add-placeholder"
+            @click="startAddAccount"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="startAddAccount"
+            @keydown.space.prevent="startAddAccount"
+          >
             <div class="bs-details">
               <div class="bs-name">Add Account</div>
             </div>
           </div>
         </li>
 
-        <li v-if="activeAccounts.length" class="bs-summary-row" :key="'summary-' + activeGroupId"
-          :style="{ '--accent': groupAccent }">
+        <li
+          v-if="activeAccounts.length"
+          class="bs-summary-row"
+          :key="'summary-' + activeGroupId"
+          :style="{ '--accent': groupAccent }"
+        >
           <div></div>
           <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
           <div class="bs-summary-amount">{{ format(activeTotal) }}</div>
@@ -163,7 +251,6 @@
     </div>
   </div>
 </template>
-
 
 <!-- liabilities section removed -->
 

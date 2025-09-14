@@ -74,9 +74,7 @@ export default defineConfig(async () => {
       },
     },
     server: {
-      allowedHosts: [
-        '.ngrok-free.app',
-      ],
+      allowedHosts: ['.ngrok-free.app'],
       host: '0.0.0.0',
       port: 3353,
       proxy: {
