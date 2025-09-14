@@ -1,35 +1,38 @@
 // frontend/src/utils/currency.ts
 
 /**
- * Convert a numeric dollar value into integer cents.
+ * Utilities for formatting and converting currency values.
  *
- * @param n - The dollar amount to convert.
- * @returns The amount in cents, rounded to the nearest integer.
+ * These helpers standardize the presentation of monetary amounts and
+ * handle conversions using a provided exchange-rate table.
  */
-export const toCents = (n: number | string): number =>
-  Math.round(Number(n || 0) * 100);
 
 /**
- * Convert an integer cent value into dollars.
+ * Format a numeric value as a localized currency string.
  *
- * @param c - The value in cents.
- * @returns The value converted to dollars.
- */
-export const fromCents = (c: number): number => Number(c || 0) / 100;
-
-/**
- * Format an integer cent value for display using locale currency rules.
- *
- * @param cents - The value in cents.
- * @param locale - BCP 47 language tag, defaults to `en-US`.
- * @param currency - ISO 4217 currency code, defaults to `USD`.
+ * @param value - The numeric amount to format.
+ * @param currency - ISO 4217 currency code. Defaults to `USD`.
+ * @param locale - BCP 47 locale string for formatting. Defaults to `en-US`.
  * @returns A localized currency string.
  */
-export const formatCurrency = (
-  cents: number,
-  locale = "en-US",
-  currency = "USD"
-): string =>
-  new Intl.NumberFormat(locale, { style: "currency", currency }).format(
-    fromCents(cents)
-  );
+export function formatCurrency(value: number, currency = 'USD', locale = 'en-US'): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value)
+}
+
+/**
+ * Convert an amount from one currency to another using a rate table.
+ *
+ * @param amount - The numeric amount to convert.
+ * @param from - ISO 4217 code representing the source currency.
+ * @param to - ISO 4217 code representing the target currency.
+ * @param rateTable - Mapping of currency codes to their relative rates.
+ * @returns The converted amount in the target currency.
+ */
+export function convertCurrency(
+  amount: number,
+  from: string,
+  to: string,
+  rateTable: Record<string, number>,
+): number {
+  return (amount / rateTable[from]) * rateTable[to]
+}
