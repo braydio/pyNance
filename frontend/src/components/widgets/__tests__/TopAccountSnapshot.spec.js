@@ -415,7 +415,6 @@ describe('TopAccountSnapshot', () => {
 
     const shiftedTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(shiftedTabs).toEqual(['G2', 'G3', 'G4'])
-
     ;[left, right] = wrapper.findAll('button.bs-nav-btn')
     expect(left.element.disabled).toBe(false)
     expect(right.element.disabled).toBe(true)
@@ -425,7 +424,6 @@ describe('TopAccountSnapshot', () => {
 
     const revertedTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(revertedTabs).toEqual(['G1', 'G2', 'G3'])
-
     ;[left, right] = wrapper.findAll('button.bs-nav-btn')
     expect(left.element.disabled).toBe(true)
     expect(right.element.disabled).toBe(false)
