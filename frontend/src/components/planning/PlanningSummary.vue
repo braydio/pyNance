@@ -14,8 +14,14 @@
   <div class="planning-summary">
     <h3>Planning Summary</h3>
     <!-- Display formatted bill total and remaining cash amounts -->
-    <p>Total Bills: {{ totalBills }}</p>
-    <p>Remaining Cash: {{ remainingCash }}</p>
+    <p>
+      Total Bills:
+      <strong>{{ totalBills }}</strong>
+    </p>
+    <p>
+      Remaining Cash:
+      <strong>{{ remainingCash }}</strong>
+    </p>
   </div>
 </template>
 
@@ -40,6 +46,13 @@ import { formatAmount } from '@/utils/format'
 const { state } = usePlanning()
 
 /**
+ * Currently active planning scenario.
+ *
+ * @returns {Object|undefined} scenario object or undefined if none active
+ */
+const activeScenario = computed(() => selectActiveScenario(state))
+
+/**
  * Total amount across all bills formatted as currency.
  *
  * @returns {string} formatted total of all bills
@@ -53,8 +66,7 @@ const totalBills = computed(() => formatAmount(selectTotalBillsCents(state) / 10
  * @returns {string} formatted remaining cash
  */
 const remainingCash = computed(() => {
-  const scenario = selectActiveScenario(state)
-  return formatAmount(selectRemainingCents(scenario) / 100)
+  return formatAmount(selectRemainingCents(activeScenario.value) / 100)
 })
 </script>
 

@@ -72,7 +72,7 @@
             />
             <AccountBalanceHistoryChart
               v-else
-              :balances="accountHistory"
+              :history-data="accountHistory"
               :selected-range="selectedRange"
               data-testid="history-chart"
             />
@@ -262,6 +262,7 @@ watch(
     if (newAccountId) {
       accountId.value = newAccountId
       selectedRange.value = accountPrefs.getSelectedRange(newAccountId)
+      accountPrefs.setSelectedRange(newAccountId, selectedRange.value)
       loadData()
     }
   },

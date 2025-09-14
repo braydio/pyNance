@@ -107,11 +107,33 @@ describe('TopAccountSnapshot', () => {
     await nextTick()
     const input = wrapper.find('input.bs-tab')
     expect(input.exists()).toBe(true)
+    expect(input.attributes('maxlength')).toBe('30')
     await input.setValue('My Group')
     await input.trigger('blur')
     await nextTick()
     const updated = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(updated).toContain('My Group')
+  })
+
+  it('truncates group names longer than 30 characters with ellipsis', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+
+    wrapper.vm.addGroup()
+    await nextTick()
+
+    const input = wrapper.find('input.bs-tab')
+    const longName = 'a'.repeat(40)
+    await input.setValue(longName)
+    await input.trigger('blur')
+    await nextTick()
+
+    const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    const truncated = 'a'.repeat(29) + '…'
+    expect(names).toContain(truncated)
+    expect(truncated.length).toBe(30)
   })
 
   it('updates group order when accounts are reordered', async () => {
@@ -444,18 +466,19 @@ describe('TopAccountSnapshot', () => {
 
     await nextTick()
 
-    let row = wrapper.find('.bs-account-container .bs-row')
+    const row = wrapper.find('.bs-account-container .bs-row')
+    const focusSpy = vi.spyOn(row.element, 'focus')
     row.element.focus()
+    expect(focusSpy).toHaveBeenCalledTimes(1)
 
     await row.trigger('keydown.enter')
     await nextTick()
-    row = wrapper.find('.bs-account-container .bs-row')
     expect(row.find('.bs-toggle-icon').classes()).toContain('bs-expanded')
+    expect(focusSpy).toHaveBeenCalledTimes(2)
 
     await row.trigger('keydown.space')
     await nextTick()
-    row = wrapper.find('.bs-account-container .bs-row')
     expect(row.find('.bs-toggle-icon').classes()).not.toContain('bs-expanded')
-    // TODO: jsdom does not preserve focus reliably; manual verification ensures focus remains on the row.
+    expect(focusSpy).toHaveBeenCalledTimes(3)
   })
 })

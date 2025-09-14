@@ -131,14 +131,15 @@
     >
       <template #item="{ element: account }">
         <li class="bs-account-container" :key="account.id">
+          <!-- Enter and space should toggle details without moving focus -->
           <div
             class="bs-row"
             :style="{ '--accent': accentColor(account) }"
-            @click="toggleDetails(account.id)"
+            @click="toggleDetails(account.id, $event)"
             role="button"
             tabindex="0"
-            @keydown.enter.prevent="toggleDetails(account.id)"
-            @keydown.space.prevent="toggleDetails(account.id)"
+            @keydown.enter.prevent="toggleDetails(account.id, $event)"
+            @keydown.space.prevent="toggleDetails(account.id, $event)"
           >
             <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
@@ -271,8 +272,10 @@ const openAccountId = ref(null)
 const recentTxs = reactive({})
 
 /** Toggle details dropdown for an account and load recent transactions */
-function toggleDetails(accountId) {
+function toggleDetails(accountId, event) {
   openAccountId.value = openAccountId.value === accountId ? null : accountId
+  // Ensure the originating row retains focus for accessibility
+  event?.currentTarget?.focus()
   if (openAccountId.value === accountId && !recentTxs[accountId]) {
     fetchRecentTransactions(accountId, 3)
       .then((res) => {
@@ -294,6 +297,7 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
+// Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
 const isEditingGroups = ref(props.isEditingGroups)
 watch(
@@ -405,7 +409,7 @@ function startEdit(id) {
 
 /**
  * Disable editing and persist the group name.
- * Truncates names longer than MAX_GROUP_NAME_LENGTH characters and appends an ellipsis.
+ * Truncates names longer than MAX_GROUP_NAME_LENGTH characters (including ellipsis).
  */
 function finishEdit(group) {
   editingGroupId.value = null
@@ -414,7 +418,7 @@ function finishEdit(group) {
     return
   }
   if (group.name.length > MAX_GROUP_NAME_LENGTH) {
-    group.name = `${group.name.slice(0, MAX_GROUP_NAME_LENGTH)}…`
+    group.name = `${group.name.slice(0, MAX_GROUP_NAME_LENGTH - 1)}…`
   }
 }
 
