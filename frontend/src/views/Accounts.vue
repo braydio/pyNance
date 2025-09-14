@@ -131,7 +131,12 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
-import { fetchNetChanges, fetchRecentTransactions, fetchAccountHistory, rangeToDates } from '@/api/accounts'
+import {
+  fetchNetChanges,
+  fetchRecentTransactions,
+  fetchAccountHistory,
+  rangeToDates,
+} from '@/api/accounts'
 import { formatAmount } from '@/utils/format'
 
 // UI Components
