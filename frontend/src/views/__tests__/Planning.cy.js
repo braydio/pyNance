@@ -38,9 +38,7 @@ describe('planning selectors', () => {
     expect(selectTotalBillsCents(state)).to.eq(50000)
 
     // edit
-    state.bills = state.bills.map((b) =>
-      b.id === bill.id ? { ...b, amountCents: 60000 } : b
-    )
+    state.bills = state.bills.map((b) => (b.id === bill.id ? { ...b, amountCents: 60000 } : b))
     expect(selectTotalBillsCents(state)).to.eq(60000)
 
     // delete
@@ -93,9 +91,7 @@ describe('planning selectors', () => {
         id: 's1',
         name: 'Base',
         planningBalanceCents: 100000,
-        allocations: [
-          { id: 'a1', target: 'savings:emergency', kind: 'fixed', value: 20000 },
-        ],
+        allocations: [{ id: 'a1', target: 'savings:emergency', kind: 'fixed', value: 20000 }],
         accountId: '',
       },
     ]
