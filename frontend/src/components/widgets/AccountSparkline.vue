@@ -26,7 +26,11 @@ const props = defineProps({
 const dataType = ref('balance')
 
 // Fetch both types of data
-const { history: balanceHistory } = useAccountHistory(toRef(props, 'accountId'))
+const range = ref('30d')
+const { history: balanceHistory } = useAccountHistory(
+  toRef(props, 'accountId'),
+  range
+)
 
 // Only fetch transaction history if the composable is available
 // For now, fall back to balance data to ensure functionality
