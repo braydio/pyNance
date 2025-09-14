@@ -3,7 +3,7 @@
  * Results are memoized per account and range and can be refreshed manually.
  */
 import { ref, isRef, watch } from 'vue'
-import { fetchAccountHistory } from '@/api/accounts'
+import { fetchAccountHistory, rangeToDates } from '@/api/accounts'
 
 /**
  * Cache of previously fetched histories keyed by `${accountId}-${range}`.
@@ -30,7 +30,7 @@ export function useAccountHistory(accountId, rangeRef) {
     let e = end
     let rangeKey
     if (!s || !e) {
-      rangeKey = typeof start === 'string' && !end ? start : range.value
+      rangeKey = typeof start === 'string' && !end ? start : rangeRef.value
       ;({ start: s, end: e } = rangeToDates(rangeKey))
     } else {
       rangeKey = `${s}-${e}`
