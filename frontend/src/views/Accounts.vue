@@ -131,7 +131,12 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
-import { fetchNetChanges, fetchRecentTransactions, fetchAccountHistory } from '@/api/accounts'
+import {
+  fetchNetChanges,
+  fetchRecentTransactions,
+  fetchAccountHistory,
+  rangeToDates,
+} from '@/api/accounts'
 import { formatAmount } from '@/utils/format'
 
 // UI Components
@@ -197,7 +202,8 @@ async function loadHistory() {
   historyError.value = null
   loadingHistory.value = true
   try {
-    const res = await fetchAccountHistory(accountId.value, selectedRange.value)
+    const { start, end } = rangeToDates(selectedRange.value)
+    const res = await fetchAccountHistory(accountId.value, start, end)
     accountHistory.value = res.balances || []
   } catch (e) {
     historyError.value = e

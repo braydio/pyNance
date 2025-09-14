@@ -1,12 +1,23 @@
 import Accounts from '../Accounts.vue'
 
 function mountPage() {
+  const today = new Date()
+  const end = today.toISOString().slice(0, 10)
+
+  const start30 = new Date(today)
+  start30.setDate(start30.getDate() - 30)
+  const start30Str = start30.toISOString().slice(0, 10)
+
+  const start90 = new Date(today)
+  start90.setDate(start90.getDate() - 90)
+  const start90Str = start90.toISOString().slice(0, 10)
+
   cy.intercept('GET', '/api/accounts/acc1/net_changes*', {
     statusCode: 200,
     body: { status: 'success', data: { income: 1000, expense: -400, net: 600 } },
   }).as('net')
 
-  cy.intercept('GET', '/api/accounts/acc1/history?range=30d', {
+  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start30Str}&end_date=${end}`, {
     statusCode: 200,
     body: {
       accountId: 'acc1',
@@ -18,7 +29,7 @@ function mountPage() {
     },
   }).as('hist30')
 
-  cy.intercept('GET', '/api/accounts/acc1/history?range=90d', {
+  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start90Str}&end_date=${end}`, {
     statusCode: 200,
     body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] },
   }).as('hist90')

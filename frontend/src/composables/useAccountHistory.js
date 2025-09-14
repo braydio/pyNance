@@ -2,7 +2,7 @@
  * Composable to fetch and expose balance history for a single account.
  */
 import { ref, isRef, watch } from 'vue'
-import { fetchAccountHistory } from '@/api/accounts'
+import { fetchAccountHistory, rangeToDates } from '@/api/accounts'
 
 /**
  * Cache of previously fetched histories keyed by `${accountId}-${range}`.

@@ -18,14 +18,39 @@ export const fetchRecentTransactions = async (accountId, limit = 10) => {
 }
 
 /**
+ * Convert a relative range string (e.g. `"30d"`) into ISO date strings.
+ *
+ * @param {string} range - Number of days followed by `d`.
+ * @returns {{ start: string, end: string }} ISO start and end dates.
+ */
+export function rangeToDates(range = '30d') {
+  const days = parseInt(range, 10) || 30
+  const end = new Date()
+  const start = new Date(end)
+  start.setDate(start.getDate() - days)
+  const toIso = (d) => d.toISOString().slice(0, 10)
+  return { start: toIso(start), end: toIso(end) }
+}
+
+/**
  * Fetch recent balance history for an account.
  *
  * @param {string} accountId
- * @param {object|string} [options] - Either a range string (e.g. '30d') or an
- *   options object with `range`, `start_date`, and `end_date`.
+ * @param {string|undefined} start - ISO start date.
+ * @param {string|undefined} end - ISO end date.
+ *
+ * If start and end are omitted, they will be derived from a range string
+ * (either provided as `start` or defaulting to `'30d'`) for backward
+ * compatibility with previous range-based calls.
  */
-export const fetchAccountHistory = async (accountId, options = {}) => {
-  const params = typeof options === 'string' ? { range: options } : { range: '30d', ...options }
+export const fetchAccountHistory = async (accountId, start, end) => {
+  let s = start
+  let e = end
+  if (!s || !e) {
+    const range = typeof start === 'string' && !end ? start : '30d'
+    ;({ start: s, end: e } = rangeToDates(range))
+  }
+  const params = { start_date: s, end_date: e }
   const response = await axios.get(`/api/accounts/${accountId}/history`, { params })
   return response.data
 }

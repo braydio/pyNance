@@ -220,6 +220,26 @@ describe('TopAccountSnapshot', () => {
     expect(stored.groups[0].name).toBe(expected)
   })
 
+  it('limits group name input to 30 characters', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+    const group = wrapper.vm.groups[0]
+    wrapper.vm.startEdit(group.id)
+    await nextTick()
+    const input = wrapper.find('input.bs-tab')
+    expect(input.attributes('maxlength')).toBe('30')
+    await input.setValue('A'.repeat(35))
+    await input.trigger('blur')
+    await nextTick()
+    const expected = 'A'.repeat(30) + '…'
+    expect(wrapper.find('button.bs-tab').text()).toBe(expected)
+    const stored = JSON.parse(localStorage.getItem('accountGroups'))
+    expect(stored.groups[0].name).toBe(expected)
+  })
+
   it('persists group order changes when dragged', async () => {
     localStorage.setItem(
       'accountGroups',
