@@ -451,6 +451,52 @@ describe('TopAccountSnapshot', () => {
     expect(right.element.disabled).toBe(false)
   })
 
+  it('renders only three tabs and scrolls through groups with arrows', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'g1', name: 'G1', accounts: [] },
+          { id: 'g2', name: 'G2', accounts: [] },
+          { id: 'g3', name: 'G3', accounts: [] },
+          { id: 'g4', name: 'G4', accounts: [] },
+        ],
+        activeGroupId: 'g1',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+
+    // Only first three groups should be visible
+    const initialTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(initialTabs).toEqual(['G1', 'G2', 'G3'])
+
+    let [left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(true)
+    expect(right.element.disabled).toBe(false)
+
+    // Move forward to reveal the next group
+    await right.trigger('click')
+    await nextTick()
+    const forwardTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(forwardTabs).toEqual(['G2', 'G3', 'G4'])
+    ;[left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(false)
+    expect(right.element.disabled).toBe(true)
+
+    // Move back to the original view
+    await left.trigger('click')
+    await nextTick()
+    const backTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(backTabs).toEqual(['G1', 'G2', 'G3'])
+    ;[left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(true)
+    expect(right.element.disabled).toBe(false)
+  })
+
   it('keeps focus on account row when toggling details via keyboard', async () => {
     localStorage.setItem(
       'accountGroups',
