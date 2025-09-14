@@ -36,21 +36,34 @@ export function rangeToDates(range = '30d') {
  * Fetch recent balance history for an account.
  *
  * @param {string} accountId
- * @param {string|undefined} start - ISO start date.
+ * @param {string|object|undefined} start - ISO start date or legacy params object.
  * @param {string|undefined} end - ISO end date.
  *
- * If start and end are omitted, they will be derived from a range string
- * (either provided as `start` or defaulting to `'30d'`) for backward
- * compatibility with previous range-based calls.
+ * If start and end are omitted, a `range` value may be supplied (either as the
+ * second argument or within the legacy params object) and will be converted to
+ * explicit dates for backward compatibility.
  */
 export const fetchAccountHistory = async (accountId, start, end) => {
-  let s = start
-  let e = end
-  if (!s || !e) {
-    const range = typeof start === 'string' && !end ? start : '30d'
-    ;({ start: s, end: e } = rangeToDates(range))
+  let startDate = start
+  let endDate = end
+
+  // Support legacy calls where a params object with range or explicit dates was provided.
+  if (typeof start === 'object' && start !== null) {
+    const params = start
+    if (params.start_date && params.end_date) {
+      ;({ start_date: startDate, end_date: endDate } = params)
+    } else if (params.range) {
+      ;({ start: startDate, end: endDate } = rangeToDates(params.range))
+    }
   }
-  const params = { start_date: s, end_date: e }
+
+  // Backward compatibility: allow passing a range string as the second arg.
+  if (!startDate || !endDate) {
+    const range = typeof start === 'string' && !end ? start : '30d'
+    ;({ start: startDate, end: endDate } = rangeToDates(range))
+  }
+
+  const params = { start_date: startDate, end_date: endDate }
   const response = await axios.get(`/api/accounts/${accountId}/history`, { params })
   return response.data
 }

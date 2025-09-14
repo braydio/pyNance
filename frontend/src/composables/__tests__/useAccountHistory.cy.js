@@ -1,5 +1,6 @@
 import { defineComponent, ref, toRef } from 'vue'
 import { useAccountHistory } from '../useAccountHistory'
+import { rangeToDates } from '@/api/accounts'
 
 const TestComponent = defineComponent({
   props: { id: String, range: String },
@@ -60,8 +61,22 @@ describe('useAccountHistory', () => {
     }).as('getHistory')
 
     cy.mount(RangeComponent, { props: { id: '123' } })
-    cy.wait('@getHistory').its('request.url').should('include', 'range=30d')
+    cy.wait('@getHistory')
+      .its('request.url')
+      .then((url) => {
+        const params = new URL(url).searchParams
+        const { start, end } = rangeToDates('30d')
+        expect(params.get('start_date')).to.eq(start)
+        expect(params.get('end_date')).to.eq(end)
+      })
     cy.get('#change').click()
-    cy.wait('@getHistory').its('request.url').should('include', 'range=60d')
+    cy.wait('@getHistory')
+      .its('request.url')
+      .then((url) => {
+        const params = new URL(url).searchParams
+        const { start, end } = rangeToDates('60d')
+        expect(params.get('start_date')).to.eq(start)
+        expect(params.get('end_date')).to.eq(end)
+      })
   })
 })
