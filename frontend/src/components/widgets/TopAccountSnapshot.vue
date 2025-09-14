@@ -4,8 +4,11 @@
   Users can switch between groups, rename groups, reorder them via drag handles,
   remove groups, and add or remove accounts when editing mode is enabled.
 -->
+
+<!-- TopAccountSnapshot.vue -->
 <template>
   <div class="bank-statement-list bs-collapsible w-full h-full">
+    <!-- Group Tabs -->
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
         <button
@@ -28,63 +31,38 @@
           <template #item="{ element: g }">
             <div :key="g.id" :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
               <GripVertical class="bs-tab-handle" />
-              <input
-                v-model="g.name"
-                class="bs-tab-input"
-                maxlength="30"
-                @blur="finishEdit(g)"
-                @keyup.enter="finishEdit(g)"
-              />
+              <input v-model="g.name" class="bs-tab-input" @blur="finishEdit(g)" @keyup.enter="finishEdit(g)" />
               <X class="bs-tab-delete" @click.stop="removeGroup(g.id)" />
             </div>
           </template>
           <template #footer>
-            <button
-              key="add-group"
-              class="bs-tab bs-tab-add"
-              @click="addGroup"
-              aria-label="Add group"
-            >
+            <button key="add-group" class="bs-tab bs-tab-add" @click="addGroup" aria-label="Add group">
               +
             </button>
           </template>
         </Draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in visibleGroups" :key="g.id">
-            <input
-              v-if="!g.name || editingGroupId === g.id"
-              v-model="g.name"
-              :class="[
-                'bs-tab',
-                activeGroupId === g.id && 'bs-tab-active',
-                'bs-tab-' + g.id,
-                'bs-tab-input',
-              ]"
-              maxlength="30"
-              @blur="finishEdit(g)"
-              @keyup.enter="finishEdit(g)"
-            />
-            <button
-              v-else
-              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-              @click="setActiveGroup(g.id)"
-              @dblclick.stop="startEdit(g.id)"
-              :aria-label="`Show ${g.name}`"
-            >
+          <template v-for="g in groups" :key="g.id">
+            <input v-if="!g.name || editingGroupId === g.id" v-model="g.name" :class="[
+              'bs-tab',
+              activeGroupId === g.id && 'bs-tab-active',
+              'bs-tab-' + g.id,
+              'bs-tab-input',
+            ]" @blur="finishEdit(g)" @keyup.enter="finishEdit(g)" />
+            <button v-else :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
+              @click="setActiveGroup(g.id)" @dblclick.stop="startEdit(g.id)" :aria-label="`Show ${g.name}`">
               {{ g.name }}
             </button>
           </template>
         </TransitionGroup>
-        <button
-          v-if="!isEditingGroups && groups.length > 3"
-          class="bs-nav-btn"
-          @click="shiftWindow(1)"
-          :disabled="visibleGroupIndex + 3 >= groups.length"
-          aria-label="Next group"
-        >
+
+        <button v-if="groups.length > 3" class="bs-nav-btn" @click="shiftWindow(1)"
+          :disabled="visibleGroupIndex + 3 >= groups.length" aria-label="Next group">
           &gt;
         </button>
       </div>
+
+      <!-- Group Dropdown -->
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
@@ -92,11 +70,8 @@
         <Transition name="slide-down">
           <ul v-if="showGroupMenu" class="bs-group-menu">
             <li v-for="g in groups" :key="g.id">
-              <button
-                class="bs-group-item"
-                :class="{ 'bs-group-item-active': g.id === activeGroupId }"
-                @click="selectGroup(g.id)"
-              >
+              <button class="bs-group-item" :class="{ 'bs-group-item-active': g.id === activeGroupId }"
+                @click="selectGroup(g.id)">
                 <Check v-if="g.id === activeGroupId" class="bs-group-check" />
                 {{ g.name || '(unnamed)' }}
               </button>
@@ -230,81 +205,57 @@
               </div>
               <div class="bs-sparkline">
                 <AccountSparkline :account-id="String(account.id)" />
+
               </div>
-              <div class="bs-amount-section">
-                <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
-                <X
-                  v-if="isEditingGroups"
-                  class="bs-account-delete"
-                  @click.stop="removeAccount(account.id)"
-                />
+              <div class="bs-mask">
+                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
               </div>
             </div>
-            <div v-if="openAccountId === account.id" class="bs-details-row">
-              <div class="bs-details-content">
-                <ul class="bs-details-list">
-                  <li
-                    v-for="tx in recentTxs[account.id]"
-                    :key="tx.transaction_id || tx.id"
-                    class="bs-tx-row"
-                  >
-                    <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
-                    <span class="bs-tx-name">{{
-                      tx.merchant_name || tx.name || tx.description
-                    }}</span>
-                    <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
-                  </li>
-                  <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
-                    No recent transactions
-                  </li>
-                </ul>
-              </div>
+
+            <div class="bs-sparkline">
+              <AccountSparkline :account-id="account.id" />
             </div>
-          </li>
-        </template>
-        <template #footer>
-          <li
-            class="bs-account-container bs-add-account"
-            :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
-            :key="'add-' + activeGroupId"
-          >
-            <div v-if="showAccountSelector" class="bs-row">
-              <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
-                <option value="" disabled>Select account</option>
-                <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
-                  {{ acct.name }}
-                </option>
-              </select>
+
+            <div class="bs-amount-section">
+              <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+              <X v-if="isEditingGroups" class="bs-account-delete" @click.stop="removeAccount(account.id)" />
             </div>
-            <div
-              v-else
-              class="bs-row bs-add-placeholder"
-              @click="startAddAccount"
-              role="button"
-              tabindex="0"
-              @keydown.enter.prevent="startAddAccount"
-              @keydown.space.prevent="startAddAccount"
-            >
-              <div></div>
-              <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
-              <div class="bs-summary-amount">
-                {{ format(activeTotal) }}
-              </div>
-              <div class="bs-details">
-                <div class="bs-name">Add Account</div>
-              </div>
+          </div>
+
+          <div v-if="openAccountId === account.id" class="bs-details-row">
+            <div class="bs-details-content">
+              <ul class="bs-details-list">
+                <li v-for="tx in recentTxs[account.id]" :key="tx.transaction_id || tx.id" class="bs-tx-row">
+                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
+                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                </li>
+                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                  No recent transactions
+                </li>
+              </ul>
             </div>
-          </li>
-          <li
-            v-if="activeAccounts.length"
-            class="bs-summary-row"
-            :key="'summary-' + activeGroupId"
-            :style="{ '--accent': groupAccent }"
-          >
-            <div></div>
-            <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
-            <div class="bs-summary-amount">
-              {{ format(activeTotal) }}
+          </div>
+        </li>
+      </template>
+
+      <!-- Add Account + Summary -->
+      <template #footer>
+        <li class="bs-account-container bs-add-account" :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+          :key="'add-' + activeGroupId">
+          <div v-if="showAccountSelector" class="bs-row">
+            <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
+              <option value="" disabled>Select account</option>
+              <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+                {{ acct.name }}
+              </option>
+            </select>
+          </div>
+          <div v-else class="bs-row bs-add-placeholder" @click="startAddAccount" role="button" tabindex="0"
+            @keydown.enter.prevent="startAddAccount" @keydown.space.prevent="startAddAccount">
+            <div class="bs-details">
+              <div class="bs-name">Add Account</div>
             </div>
           </li>
         </template>
@@ -313,10 +264,11 @@
     <div v-if="activeGroup && !accounts.length" class="bs-empty">
       No accounts to display
     </div>
-
-    <!-- liabilities section removed -->
   </div>
 </template>
+
+
+<!-- liabilities section removed -->
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
@@ -571,6 +523,7 @@ function initials(name) {
   justify-content: center;
   z-index: 2;
 }
+
 .bs-details-btn {
   background: none;
   border: none;
@@ -581,34 +534,41 @@ function initials(name) {
   border-radius: 0.25rem;
   transition: background 0.2s;
 }
+
 .bs-details-btn:hover {
   background: var(--color-bg-dark);
 }
+
 .bs-details-row {
   grid-column: 1 / -1;
   background: var(--color-bg-dark);
   padding: 0.5rem 1rem;
 }
+
 .bs-details-content {
   font-size: 0.85rem;
   color: var(--color-text-light);
 }
+
 .bs-details-list {
   list-style: none;
   margin: 0;
   padding: 0;
 }
+
 .bs-tx-row {
   display: flex;
   justify-content: space-between;
   padding: 0.25rem 0;
   border-bottom: 1px solid var(--divider);
 }
+
 .bs-tx-date {
   flex: 0 0 auto;
   width: 5ch;
   color: var(--color-text-muted);
 }
+
 .bs-tx-name {
   flex: 1 1 auto;
   padding: 0 0.5rem;
@@ -616,17 +576,20 @@ function initials(name) {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
 .bs-tx-amount {
   flex: 0 0 auto;
   width: 7ch;
   text-align: right;
 }
+
 .bs-tx-empty {
   text-align: center;
   color: var(--color-text-muted);
   font-style: italic;
   padding: 0.5rem 0;
 }
+
 .bank-statement-list {
   max-width: unset;
   margin: 0;
@@ -1218,6 +1181,7 @@ function initials(name) {
     opacity: 0;
     transform: translateY(-4px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
