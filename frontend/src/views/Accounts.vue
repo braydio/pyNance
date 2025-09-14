@@ -54,16 +54,15 @@
           <Card class="p-6 space-y-4">
             <div class="flex justify-between items-center">
               <h2 class="text-xl font-semibold">Balance History</h2>
-              <div class="flex gap-2" data-testid="history-range-controls">
-                <button
-                  v-for="range in ranges"
-                  :key="range"
-                  @click="selectedRange = range"
-                  :class="['btn btn-sm', selectedRange === range ? '' : 'btn-outline']"
-                >
+              <select
+                v-model="selectedRange"
+                class="select select-sm"
+                data-testid="history-range-select"
+              >
+                <option v-for="range in ranges" :key="range" :value="range">
                   {{ range }}
-                </button>
-              </div>
+                </option>
+              </select>
             </div>
             <SkeletonCard v-if="loadingHistory" />
             <RetryError
@@ -74,6 +73,7 @@
             <AccountBalanceHistoryChart
               v-else
               :balances="accountHistory"
+              :selected-range="selectedRange"
               data-testid="history-chart"
             />
           </Card>
@@ -138,6 +138,7 @@ import {
   rangeToDates,
 } from '@/api/accounts'
 import { formatAmount } from '@/utils/format'
+import { useAccountPreferences } from '@/stores/useAccountPreferences'
 
 // UI Components
 import UiButton from '@/components/ui/Button.vue'
@@ -166,6 +167,7 @@ import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistor
 const route = useRoute()
 const router = useRouter()
 const accountId = ref(route.params.accountId || 'acc1')
+const accountPrefs = useAccountPreferences()
 
 // Tabs
 const tabs = ['Summary', 'Transactions', 'Charts', 'Accounts']
@@ -178,7 +180,8 @@ const reorderChart = ref(null)
 const netSummary = ref({ income: 0, expense: 0, net: 0 })
 const recentTransactions = ref([])
 const accountHistory = ref([])
-const selectedRange = ref('30d')
+const selectedRange = ref(accountPrefs.getSelectedRange(accountId.value))
+accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
 const ranges = ['7d', '30d', '90d', '365d']
 
 // Loading/Error States
@@ -247,7 +250,10 @@ async function loadData() {
 // Lifecycle and watchers
 onMounted(loadData)
 
-watch(selectedRange, loadHistory)
+watch(selectedRange, (range) => {
+  accountPrefs.setSelectedRange(accountId.value, range)
+  loadHistory()
+})
 
 // Reload when account ID changes
 watch(
@@ -255,6 +261,7 @@ watch(
   (newAccountId) => {
     if (newAccountId) {
       accountId.value = newAccountId
+      selectedRange.value = accountPrefs.getSelectedRange(newAccountId)
       loadData()
     }
   },
