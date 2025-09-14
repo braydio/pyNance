@@ -15,14 +15,8 @@
  * @param locale - BCP 47 locale string for formatting. Defaults to `en-US`.
  * @returns A localized currency string.
  */
-export function formatCurrency(
-  value: number,
-  currency = "USD",
-  locale = "en-US",
-): string {
-  return new Intl.NumberFormat(locale, { style: "currency", currency }).format(
-    value,
-  )
+export function formatCurrency(value: number, currency = 'USD', locale = 'en-US'): string {
+  return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(value)
 }
 
 /**
@@ -42,4 +36,3 @@ export function convertCurrency(
 ): number {
   return (amount / rateTable[from]) * rateTable[to]
 }
-
