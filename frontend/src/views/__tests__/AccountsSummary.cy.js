@@ -1,7 +1,8 @@
 import Accounts from '../Accounts.vue'
 import { createPinia } from 'pinia'
+import { createMemoryHistory, createRouter } from 'vue-router'
 
-function mountPage(expected = '@hist30', clear = true) {
+function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
   if (clear) {
     localStorage.clear()
   }
@@ -16,15 +17,15 @@ function mountPage(expected = '@hist30', clear = true) {
   start90.setDate(start90.getDate() - 90)
   const start90Str = start90.toISOString().slice(0, 10)
 
-  cy.intercept('GET', '/api/accounts/acc1/net_changes*', {
+  cy.intercept('GET', `/api/accounts/${account}/net_changes*`, {
     statusCode: 200,
     body: { status: 'success', data: { income: 1000, expense: -400, net: 600 } },
   }).as('net')
 
-  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start30Str}&end_date=${end}`, {
+  cy.intercept('GET', `/api/accounts/${account}/history?start_date=${start30Str}&end_date=${end}`, {
     statusCode: 200,
     body: {
-      accountId: 'acc1',
+      accountId: account,
       asOfDate: '2025-08-03',
       balances: [
         { date: '2025-08-01', balance: 50 },
@@ -33,12 +34,12 @@ function mountPage(expected = '@hist30', clear = true) {
     },
   }).as('hist30')
 
-  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start90Str}&end_date=${end}`, {
+  cy.intercept('GET', `/api/accounts/${account}/history?start_date=${start90Str}&end_date=${end}`, {
     statusCode: 200,
-    body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] },
+    body: { accountId: account, asOfDate: '2025-08-03', balances: [] },
   }).as('hist90')
 
-  cy.intercept('GET', '/api/transactions/acc1/transactions*', {
+  cy.intercept('GET', `/api/transactions/${account}/transactions*`, {
     statusCode: 200,
     body: {
       status: 'success',
@@ -46,9 +47,16 @@ function mountPage(expected = '@hist30', clear = true) {
     },
   }).as('tx')
 
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: [{ path: '/accounts/:accountId', component: Accounts }],
+  })
+
+  router.push(`/accounts/${account}`)
+
   cy.mount(Accounts, {
     global: {
-      plugins: [createPinia()],
+      plugins: [router, createPinia()],
       stubs: {
         AccountActionsSidebar: true,
         NetYearComparisonChart: true,
@@ -60,7 +68,7 @@ function mountPage(expected = '@hist30', clear = true) {
     },
   })
 
-  return cy.wait('@net').wait('@tx').wait(expected)
+  return cy.wrap(router.isReady()).then(() => cy.wait('@net').wait('@tx').wait(expected))
 }
 
 describe('Accounts summary', () => {
@@ -87,7 +95,17 @@ describe('Accounts summary', () => {
     cy.get('[data-testid="history-range-select"]').select('90d')
     cy.wait('@hist90')
     cy.reload()
-    mountPage('@hist90', false)
+    mountPage('acc1', '@hist90', false)
+    cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
+  })
+
+  it('restores range when switching accounts', () => {
+    mountPage('acc1')
+    cy.get('[data-testid="history-range-select"]').select('90d')
+    cy.wait('@hist90')
+    mountPage('acc2', '@hist30', false)
+    cy.get('[data-testid="history-range-select"]').should('have.value', '30d')
+    mountPage('acc1', '@hist90', false)
     cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 })
