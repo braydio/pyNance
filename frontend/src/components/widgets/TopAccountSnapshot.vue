@@ -131,14 +131,15 @@
     >
       <template #item="{ element: account }">
         <li class="bs-account-container" :key="account.id">
+          <!-- Enter and space should toggle details without moving focus -->
           <div
             class="bs-row"
             :style="{ '--accent': accentColor(account) }"
-            @click="toggleDetails(account.id)"
+            @click="toggleDetails(account.id, $event)"
             role="button"
             tabindex="0"
-            @keydown.enter.prevent="toggleDetails(account.id)"
-            @keydown.space.prevent="toggleDetails(account.id)"
+            @keydown.enter.prevent="toggleDetails(account.id, $event)"
+            @keydown.space.prevent="toggleDetails(account.id, $event)"
           >
             <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
@@ -271,8 +272,10 @@ const openAccountId = ref(null)
 const recentTxs = reactive({})
 
 /** Toggle details dropdown for an account and load recent transactions */
-function toggleDetails(accountId) {
+function toggleDetails(accountId, event) {
   openAccountId.value = openAccountId.value === accountId ? null : accountId
+  // Ensure the originating row retains focus for accessibility
+  event?.currentTarget?.focus()
   if (openAccountId.value === accountId && !recentTxs[accountId]) {
     fetchRecentTransactions(accountId, 3)
       .then((res) => {

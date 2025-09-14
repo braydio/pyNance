@@ -466,18 +466,19 @@ describe('TopAccountSnapshot', () => {
 
     await nextTick()
 
-    let row = wrapper.find('.bs-account-container .bs-row')
+    const row = wrapper.find('.bs-account-container .bs-row')
+    const focusSpy = vi.spyOn(row.element, 'focus')
     row.element.focus()
+    expect(focusSpy).toHaveBeenCalledTimes(1)
 
     await row.trigger('keydown.enter')
     await nextTick()
-    row = wrapper.find('.bs-account-container .bs-row')
     expect(row.find('.bs-toggle-icon').classes()).toContain('bs-expanded')
+    expect(focusSpy).toHaveBeenCalledTimes(2)
 
     await row.trigger('keydown.space')
     await nextTick()
-    row = wrapper.find('.bs-account-container .bs-row')
     expect(row.find('.bs-toggle-icon').classes()).not.toContain('bs-expanded')
-    // TODO: jsdom does not preserve focus reliably; manual verification ensures focus remains on the row.
+    expect(focusSpy).toHaveBeenCalledTimes(3)
   })
 })
