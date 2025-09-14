@@ -19,17 +19,21 @@ function mountWithFailingHistory() {
     body: { status: 'success', data: { transactions: [] } },
   }).as('tx')
 
-  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start30Str}&end_date=${end}`, (req) => {
-    call += 1
-    if (call === 1) {
-      req.reply({ statusCode: 500, body: {} })
-    } else {
-      req.reply({
-        statusCode: 200,
-        body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] },
-      })
-    }
-  }).as('hist')
+  cy.intercept(
+    'GET',
+    `/api/accounts/acc1/history?start_date=${start30Str}&end_date=${end}`,
+    (req) => {
+      call += 1
+      if (call === 1) {
+        req.reply({ statusCode: 500, body: {} })
+      } else {
+        req.reply({
+          statusCode: 200,
+          body: { accountId: 'acc1', asOfDate: '2025-08-03', balances: [] },
+        })
+      }
+    },
+  ).as('hist')
 
   cy.mount(Accounts, {
     global: {
