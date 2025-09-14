@@ -5,7 +5,13 @@
 -->
 <template>
   <div class="sparkline-container" @click="toggleDataType" :title="toggleTitle">
-    <svg v-if="points" viewBox="0 0 100 100" class="bs-sparkline" role="img" :aria-label="ariaLabel">
+    <svg
+      v-if="points"
+      viewBox="0 0 100 100"
+      class="bs-sparkline"
+      role="img"
+      :aria-label="ariaLabel"
+    >
       <polyline :points="points" :class="sparklineClass" />
     </svg>
     <span v-else class="bs-sparkline-placeholder" role="img" :aria-label="noDataLabel"></span>
@@ -19,7 +25,7 @@ import { useAccountHistory } from '@/composables/useAccountHistory'
 import { useAccountTransactionHistory } from '@/composables/useAccountTransactionHistory'
 
 const props = defineProps({
-  accountId: { type: String, required: true }
+  accountId: { type: String, required: true },
 })
 
 // Data type: 'balance' or 'transactions'
@@ -27,10 +33,7 @@ const dataType = ref('balance')
 
 // Fetch both types of data
 const range = ref('30d')
-const { history: balanceHistory } = useAccountHistory(
-  toRef(props, 'accountId'),
-  range
-)
+const { history: balanceHistory } = useAccountHistory(toRef(props, 'accountId'), range)
 
 // Only fetch transaction history if the composable is available
 // For now, fall back to balance data to ensure functionality
@@ -50,54 +53,48 @@ function toggleDataType() {
 }
 
 // Computed properties for UI
-const toggleTitle = computed(() => 
-  `Click to toggle to ${dataType.value === 'balance' ? 'transaction' : 'balance'} view`
+const toggleTitle = computed(
+  () => `Click to toggle to ${dataType.value === 'balance' ? 'transaction' : 'balance'} view`,
 )
 
-const dataTypeIndicator = computed(() => 
-  dataType.value === 'balance' ? 'B' : 'T'
-)
+const dataTypeIndicator = computed(() => (dataType.value === 'balance' ? 'B' : 'T'))
 
 const indicatorClass = computed(() => ({
   'indicator-balance': dataType.value === 'balance',
-  'indicator-transactions': dataType.value === 'transactions'
+  'indicator-transactions': dataType.value === 'transactions',
 }))
 
 const sparklineClass = computed(() => ({
   'sparkline-balance': dataType.value === 'balance',
-  'sparkline-transactions': dataType.value === 'transactions'
+  'sparkline-transactions': dataType.value === 'transactions',
 }))
 
-const ariaLabel = computed(() => 
-  `Recent ${dataType.value} history for account ${props.accountId}`
-)
+const ariaLabel = computed(() => `Recent ${dataType.value} history for account ${props.accountId}`)
 
-const noDataLabel = computed(() => 
-  `No ${dataType.value} history available`
-)
+const noDataLabel = computed(() => `No ${dataType.value} history available`)
 
 // Current data based on selected type
-const currentData = computed(() => 
-  dataType.value === 'balance' ? balanceHistory.value : transactionHistory.value
+const currentData = computed(() =>
+  dataType.value === 'balance' ? balanceHistory.value : transactionHistory.value,
 )
 
 // Generate sparkline points
 const points = computed(() => {
   const data = currentData.value
   if (!data.length) return ''
-  
+
   let values
   if (dataType.value === 'balance') {
-    values = data.map(d => d.balance)
+    values = data.map((d) => d.balance)
   } else {
     // For transactions, use net amounts or transaction counts
-    values = data.map(d => d.net_amount || d.transaction_count || 0)
+    values = data.map((d) => d.net_amount || d.transaction_count || 0)
   }
-  
+
   const max = Math.max(...values)
   const min = Math.min(...values)
   const range = max - min || 1
-  
+
   return data
     .map((d, idx) => {
       const x = (idx / (data.length - 1)) * 100

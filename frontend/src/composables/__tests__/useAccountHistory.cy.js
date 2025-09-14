@@ -7,7 +7,7 @@ const TestComponent = defineComponent({
   setup(props) {
     const { history } = useAccountHistory(toRef(props, 'id'), toRef(props, 'range'))
     return { history }
-  }
+  },
 })
 
 describe('useAccountHistory', () => {
@@ -19,9 +19,9 @@ describe('useAccountHistory', () => {
         status: 'success',
         history: [
           { date: '2024-01-01', balance: 100 },
-          { date: '2024-01-02', balance: 110 }
-        ]
-      }
+          { date: '2024-01-02', balance: 110 },
+        ],
+      },
     }).as('getHistory')
 
     cy.mount(TestComponent, { props: { id: '123', range: '30d' } })
@@ -32,7 +32,7 @@ describe('useAccountHistory', () => {
   it('memoizes history per account and range', () => {
     cy.intercept('GET', '/api/accounts/123/history*', {
       statusCode: 200,
-      body: { history: [] }
+      body: { history: [] },
     }).as('getHistory')
 
     cy.mount(TestComponent, { props: { id: '123', range: '30d' } })
@@ -51,12 +51,13 @@ describe('useAccountHistory', () => {
         const range = ref('30d')
         const { history } = useAccountHistory(toRef(props, 'id'), range)
         return { history, range }
-      }
+      },
     })
 
-    cy.intercept('GET', '/api/accounts/123/history*', { statusCode: 200, body: { history: [] } }).as(
-      'getHistory'
-    )
+    cy.intercept('GET', '/api/accounts/123/history*', {
+      statusCode: 200,
+      body: { history: [] },
+    }).as('getHistory')
 
     cy.mount(RangeComponent, { props: { id: '123' } })
     cy.wait('@getHistory').its('request.url').should('include', 'range=30d')

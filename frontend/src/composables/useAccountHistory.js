@@ -31,8 +31,7 @@ export function useAccountHistory(accountId, rangeRef) {
     }
     loading.value = true
     try {
-      const options =
-        start && end ? { start_date: start, end_date: end } : { range: rangeKey }
+      const options = start && end ? { start_date: start, end_date: end } : { range: rangeKey }
       const response = await fetchAccountHistory(accountIdRef.value, options)
       let hist = []
       if (Array.isArray(response?.data?.history)) {
