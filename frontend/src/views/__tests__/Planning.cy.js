@@ -40,13 +40,11 @@ describe('planning helpers', () => {
     expect(selectTotalBillsCents(state)).to.eq(50000)
 
     // edit
-    state.bills = state.bills.map(b =>
-      b.id === bill.id ? { ...b, amountCents: 60000 } : b,
-    )
+    state.bills = state.bills.map((b) => (b.id === bill.id ? { ...b, amountCents: 60000 } : b))
     expect(selectTotalBillsCents(state)).to.eq(60000)
 
     // delete
-    state.bills = state.bills.filter(b => b.id !== bill.id)
+    state.bills = state.bills.filter((b) => b.id !== bill.id)
     expect(selectTotalBillsCents(state)).to.eq(0)
   })
 
@@ -95,12 +93,14 @@ describe('planning helpers', () => {
         id: 's1',
         name: 'Base',
         planningBalanceCents: 100000,
-        allocations: [{
-          id: 'a1',
-          target: 'savings:emergency',
-          kind: 'fixed',
-          value: 20000,
-        }],
+        allocations: [
+          {
+            id: 'a1',
+            target: 'savings:emergency',
+            kind: 'fixed',
+            value: 20000,
+          },
+        ],
         accountId: '',
       },
     ]
@@ -112,4 +112,3 @@ describe('planning helpers', () => {
     expect(remaining).to.eq(80000)
   })
 })
-
