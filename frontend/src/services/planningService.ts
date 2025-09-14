@@ -1,222 +1,128 @@
-// frontend/src/services/planningService.ts
-
-import { PlanningState, Scenario, Bill, Allocation } from "@/types/planning";
-import { getBillsByAccount, getScenariosByAccount } from '@/composables/usePlanning'
-
-const KEY = "pyNance:planning:v2";
-
-export function loadPlanning(): PlanningState | null {
-  try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return null;
-    return migrate(JSON.parse(raw));
-  } catch {
-    return null;
-  }
-}
-
-export function savePlanning(state: PlanningState) {
-  try {
-    localStorage.setItem(KEY, JSON.stringify(state));
-  } catch {
-    // ignore quota issues
-  }
-}
-
-function migrate(data: any): PlanningState | null {
-  if (!data || typeof data !== "object") return null;
-  // This is now handled in usePlanning.ts migrateState function
-  // Keep minimal migration for compatibility
-  if (!data.version) data.version = 1;
-  return data as PlanningState;
-}
-
 /**
- * Return all stored planning scenarios.
- */
-export async function listScenarios(): Promise<Scenario[]> {
-  return loadPlanning()?.scenarios ?? [];
-}
-
-/**
- * Retrieve a single scenario by identifier.
+ * Planning service for bills and allocations.
  *
- * @param id - Scenario identifier.
+ * Provides CRUD operations using Axios to communicate with the backend.
  */
-export async function getScenario(
-  id: string
-): Promise<Scenario | undefined> {
-  const scenarios = await listScenarios();
-  return scenarios.find((s) => s.id === id);
+import axios from 'axios'
+import type { Bill, Allocation } from '@/types/planning'
+
+const apiClient = axios.create({
+  baseURL: import.meta.env.VITE_APP_API_BASE_URL || '/api',
+  headers: { 'Content-Type': 'application/json' },
+})
+
+/**
+ * Retrieve all bills.
+ */
+export async function fetchBills(): Promise<Bill[]> {
+  const response = await apiClient.get<Bill[]>('/planning/bills')
+  return response.data
 }
 
 /**
- * Upsert a scenario and persist the planning state.
+ * Fetch a single bill by identifier.
  *
- * @param scenario - Scenario data to store.
+ * @param id - Bill identifier
  */
-export async function putScenario(scenario: Scenario): Promise<void> {
-  const state =
-    loadPlanning() ?? {
-      version: 2,
-      devMode: false,
-      bills: [],
-      scenarios: [],
-      activeScenarioId: "",
-      activeScenarioIdByAccount: {},
-      lastSavedAt: "",
-    };
-  const idx = state.scenarios.findIndex((s) => s.id === scenario.id);
-  if (idx >= 0) {
-    state.scenarios[idx] = scenario;
-  } else {
-    state.scenarios.push(scenario);
-  }
-  state.lastSavedAt = new Date().toISOString();
-  savePlanning(state);
-}
-
-// Account-scoped helpers
-
-/**
- * Get bills for a specific account
- */
-export function listBills(accountId: string): Bill[] {
-  return getBillsByAccount(accountId)
+export async function fetchBill(id: string): Promise<Bill> {
+  const response = await apiClient.get<Bill>(`/planning/bills/${id}`)
+  return response.data
 }
 
 /**
- * Upsert a bill and persist state
+ * Create a new bill.
+ *
+ * @param bill - Bill data to create (without id)
  */
-export function upsertBill(bill: Bill): void {
-  const state = loadPlanning() ?? {
-    version: 2,
-    devMode: false,
-    bills: [],
-    scenarios: [],
-    activeScenarioId: "",
-    activeScenarioIdByAccount: {},
-    lastSavedAt: "",
-  };
-  
-  const idx = state.bills.findIndex(b => b.id === bill.id)
-  if (idx >= 0) {
-    state.bills[idx] = bill
-  } else {
-    state.bills.push(bill)
-  }
-  
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
+export async function createBill(bill: Omit<Bill, 'id'>): Promise<Bill> {
+  const response = await apiClient.post<Bill>('/planning/bills', bill)
+  return response.data
 }
 
 /**
- * Delete a bill by ID
+ * Update an existing bill.
+ *
+ * @param id - Bill identifier
+ * @param bill - Partial bill data to update
  */
-export function deleteBill(id: string): void {
-  const state = loadPlanning()
-  if (!state) return
-  
-  state.bills = state.bills.filter(b => b.id !== id)
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
+export async function updateBill(
+  id: string,
+  bill: Partial<Omit<Bill, 'id'>>,
+): Promise<Bill> {
+  const response = await apiClient.put<Bill>(`/planning/bills/${id}`, bill)
+  return response.data
 }
 
 /**
- * Get scenarios for a specific account
+ * Delete a bill.
+ *
+ * @param id - Bill identifier
  */
-export function listScenariosForAccount(accountId: string): Scenario[] {
-  return getScenariosByAccount(accountId)
+export async function deleteBill(id: string): Promise<void> {
+  await apiClient.delete(`/planning/bills/${id}`)
 }
 
 /**
- * Upsert a scenario and persist state
+ * Retrieve allocations for a scenario.
+ *
+ * @param scenarioId - Scenario identifier
  */
-export function upsertScenario(scenario: Scenario): void {
-  const state = loadPlanning() ?? {
-    version: 2,
-    devMode: false,
-    bills: [],
-    scenarios: [],
-    activeScenarioId: "",
-    activeScenarioIdByAccount: {},
-    lastSavedAt: "",
-  };
-  
-  const idx = state.scenarios.findIndex(s => s.id === scenario.id)
-  if (idx >= 0) {
-    state.scenarios[idx] = scenario
-  } else {
-    state.scenarios.push(scenario)
-  }
-  
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
+export async function fetchAllocations(
+  scenarioId: string,
+): Promise<Allocation[]> {
+  const response = await apiClient.get<Allocation[]>(
+    `/planning/scenarios/${scenarioId}/allocations`,
+  )
+  return response.data
 }
 
 /**
- * Delete a scenario by ID
+ * Create an allocation for a scenario.
+ *
+ * @param scenarioId - Scenario identifier
+ * @param allocation - Allocation data (without id)
  */
-export function deleteScenario(id: string): void {
-  const state = loadPlanning()
-  if (!state) return
-  
-  state.scenarios = state.scenarios.filter(s => s.id !== id)
-  // Clean up associated active scenario references
-  Object.keys(state.activeScenarioIdByAccount).forEach(accountId => {
-    if (state.activeScenarioIdByAccount[accountId] === id) {
-      delete state.activeScenarioIdByAccount[accountId]
-    }
-  })
-  
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
+export async function createAllocation(
+  scenarioId: string,
+  allocation: Omit<Allocation, 'id'>,
+): Promise<Allocation> {
+  const response = await apiClient.post<Allocation>(
+    `/planning/scenarios/${scenarioId}/allocations`,
+    allocation,
+  )
+  return response.data
 }
 
 /**
- * Get allocations for a specific scenario
+ * Update an allocation within a scenario.
+ *
+ * @param scenarioId - Scenario identifier
+ * @param allocationId - Allocation identifier
+ * @param allocation - Partial allocation data to update
  */
-export function listAllocations(scenarioId: string): Allocation[] {
-  const state = loadPlanning()
-  if (!state) return []
-  
-  const scenario = state.scenarios.find(s => s.id === scenarioId)
-  return scenario?.allocations || []
+export async function updateAllocation(
+  scenarioId: string,
+  allocationId: string,
+  allocation: Partial<Omit<Allocation, 'id'>>,
+): Promise<Allocation> {
+  const response = await apiClient.put<Allocation>(
+    `/planning/scenarios/${scenarioId}/allocations/${allocationId}`,
+    allocation,
+  )
+  return response.data
 }
 
 /**
- * Upsert an allocation within a scenario
+ * Delete an allocation from a scenario.
+ *
+ * @param scenarioId - Scenario identifier
+ * @param allocationId - Allocation identifier
  */
-export function upsertAllocation(scenarioId: string, allocation: Allocation): void {
-  const state = loadPlanning()
-  if (!state) return
-  
-  const scenario = state.scenarios.find(s => s.id === scenarioId)
-  if (!scenario) return
-  
-  const idx = scenario.allocations.findIndex(a => a.id === allocation.id)
-  if (idx >= 0) {
-    scenario.allocations[idx] = allocation
-  } else {
-    scenario.allocations.push(allocation)
-  }
-  
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
-}
-
-/**
- * Delete an allocation by ID from a scenario
- */
-export function deleteAllocation(scenarioId: string, allocationId: string): void {
-  const state = loadPlanning()
-  if (!state) return
-  
-  const scenario = state.scenarios.find(s => s.id === scenarioId)
-  if (!scenario) return
-  
-  scenario.allocations = scenario.allocations.filter(a => a.id !== allocationId)
-  
-  state.lastSavedAt = new Date().toISOString()
-  savePlanning(state)
+export async function deleteAllocation(
+  scenarioId: string,
+  allocationId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/planning/scenarios/${scenarioId}/allocations/${allocationId}`,
+  )
 }
