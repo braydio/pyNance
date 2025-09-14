@@ -72,7 +72,7 @@
             />
             <AccountBalanceHistoryChart
               v-else
-              :balances="accountHistory"
+              :history-data="accountHistory"
               :selected-range="selectedRange"
               data-testid="history-chart"
             />
