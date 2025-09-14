@@ -262,6 +262,7 @@ watch(
     if (newAccountId) {
       accountId.value = newAccountId
       selectedRange.value = accountPrefs.getSelectedRange(newAccountId)
+      accountPrefs.setSelectedRange(newAccountId, selectedRange.value)
       loadData()
     }
   },
