@@ -1,6 +1,10 @@
 import Accounts from '../Accounts.vue'
+import { createPinia } from 'pinia'
 
-function mountPage() {
+function mountPage(expected = '@hist30', clear = true) {
+  if (clear) {
+    localStorage.clear()
+  }
   const today = new Date()
   const end = today.toISOString().slice(0, 10)
 
@@ -44,6 +48,7 @@ function mountPage() {
 
   cy.mount(Accounts, {
     global: {
+      plugins: [createPinia()],
       stubs: {
         AccountActionsSidebar: true,
         NetYearComparisonChart: true,
@@ -55,7 +60,7 @@ function mountPage() {
     },
   })
 
-  return cy.wait('@net').wait('@tx').wait('@hist30')
+  return cy.wait('@net').wait('@tx').wait(expected)
 }
 
 describe('Accounts summary', () => {
@@ -73,7 +78,16 @@ describe('Accounts summary', () => {
     cy.get('netyearcomparisonchart-stub').should('exist')
     cy.get('[data-testid="tabbed-nav"]').contains('Accounts').click()
     cy.get('accountstable-stub').should('exist')
-    cy.get('[data-testid="history-range-controls"] button').contains('90d').click()
+    cy.get('[data-testid="history-range-select"]').select('90d')
     cy.wait('@hist90')
+  })
+
+  it('persists selected range after reload', () => {
+    mountPage()
+    cy.get('[data-testid="history-range-select"]').select('90d')
+    cy.wait('@hist90')
+    cy.reload()
+    mountPage('@hist90', false)
+    cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 })
