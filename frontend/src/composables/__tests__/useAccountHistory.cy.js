@@ -61,18 +61,22 @@ describe('useAccountHistory', () => {
     }).as('getHistory')
 
     cy.mount(RangeComponent, { props: { id: '123' } })
-    cy.wait('@getHistory').its('request.url').then((url) => {
-      const params = new URL(url).searchParams
-      const { start, end } = rangeToDates('30d')
-      expect(params.get('start_date')).to.eq(start)
-      expect(params.get('end_date')).to.eq(end)
-    })
+    cy.wait('@getHistory')
+      .its('request.url')
+      .then((url) => {
+        const params = new URL(url).searchParams
+        const { start, end } = rangeToDates('30d')
+        expect(params.get('start_date')).to.eq(start)
+        expect(params.get('end_date')).to.eq(end)
+      })
     cy.get('#change').click()
-    cy.wait('@getHistory').its('request.url').then((url) => {
-      const params = new URL(url).searchParams
-      const { start, end } = rangeToDates('60d')
-      expect(params.get('start_date')).to.eq(start)
-      expect(params.get('end_date')).to.eq(end)
-    })
+    cy.wait('@getHistory')
+      .its('request.url')
+      .then((url) => {
+        const params = new URL(url).searchParams
+        const { start, end } = rangeToDates('60d')
+        expect(params.get('start_date')).to.eq(start)
+        expect(params.get('end_date')).to.eq(end)
+      })
   })
 })
