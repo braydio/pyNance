@@ -7,11 +7,7 @@
         ref="chartCanvas"
         style="width: 100%; height: 100%"
       ></canvas>
-      <p
-        v-else
-        class="text-center text-sm"
-        style="color: var(--color-text-muted)"
-      >
+      <p v-else class="text-center text-sm" style="color: var(--color-text-muted)">
         No history available for this period
       </p>
     </Transition>
@@ -138,7 +134,9 @@ function getStyle(name) {
 @reference "../../assets/css/main.css";
 .fade-slide-enter-active,
 .fade-slide-leave-active {
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 .fade-slide-enter-from,
 .fade-slide-leave-to {
