@@ -56,7 +56,7 @@
           </template>
         </Draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in groups" :key="g.id">
+          <template v-for="g in visibleGroups" :key="g.id">
             <input
               v-if="!g.name || editingGroupId === g.id"
               v-model="g.name"

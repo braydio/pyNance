@@ -384,6 +384,53 @@ describe('TopAccountSnapshot', () => {
     expect(activeItem.find('svg').exists()).toBe(true)
   })
 
+  it('navigates group tabs with arrow buttons', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'g1', name: 'G1', accounts: [] },
+          { id: 'g2', name: 'G2', accounts: [] },
+          { id: 'g3', name: 'G3', accounts: [] },
+          { id: 'g4', name: 'G4', accounts: [] },
+        ],
+        activeGroupId: 'g1',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+
+    const initialTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(initialTabs).toEqual(['G1', 'G2', 'G3'])
+
+    let [left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(true)
+    expect(right.element.disabled).toBe(false)
+
+    await right.trigger('click')
+    await nextTick()
+
+    const shiftedTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(shiftedTabs).toEqual(['G2', 'G3', 'G4'])
+
+    ;[left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(false)
+    expect(right.element.disabled).toBe(true)
+
+    await left.trigger('click')
+    await nextTick()
+
+    const revertedTabs = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    expect(revertedTabs).toEqual(['G1', 'G2', 'G3'])
+
+    ;[left, right] = wrapper.findAll('button.bs-nav-btn')
+    expect(left.element.disabled).toBe(true)
+    expect(right.element.disabled).toBe(false)
+  })
+
   it('keeps focus on account row when toggling details via keyboard', async () => {
     localStorage.setItem(
       'accountGroups',
