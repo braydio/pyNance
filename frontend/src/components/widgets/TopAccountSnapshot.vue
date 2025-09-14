@@ -294,6 +294,7 @@ function toggleDetails(accountId) {
 
 const showGroupMenu = ref(false)
 const editingGroupId = ref(null)
+// Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
 const isEditingGroups = ref(props.isEditingGroups)
 watch(
@@ -405,7 +406,7 @@ function startEdit(id) {
 
 /**
  * Disable editing and persist the group name.
- * Truncates names longer than MAX_GROUP_NAME_LENGTH characters and appends an ellipsis.
+ * Truncates names longer than MAX_GROUP_NAME_LENGTH characters (including ellipsis).
  */
 function finishEdit(group) {
   editingGroupId.value = null
@@ -414,7 +415,7 @@ function finishEdit(group) {
     return
   }
   if (group.name.length > MAX_GROUP_NAME_LENGTH) {
-    group.name = `${group.name.slice(0, MAX_GROUP_NAME_LENGTH)}…`
+    group.name = `${group.name.slice(0, MAX_GROUP_NAME_LENGTH - 1)}…`
   }
 }
 
