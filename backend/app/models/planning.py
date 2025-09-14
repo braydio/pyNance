@@ -26,7 +26,9 @@ class Bill(BaseModel):  # pylint: disable=too-few-public-methods
     predicted: bool = Field(default=False, description="Whether bill is predicted")
 
     @validator("name")
-    def name_must_not_be_blank(cls, value: str) -> str:  # pylint: disable=no-self-argument
+    def name_must_not_be_blank(
+        cls, value: str
+    ) -> str:  # pylint: disable=no-self-argument
         """Ensure the bill name is not empty."""
         if not value.strip():
             raise ValueError("name must not be empty")
@@ -49,7 +51,9 @@ class Allocation(BaseModel):  # pylint: disable=too-few-public-methods
         return value
 
     @validator("value")
-    def validate_value(cls, v: int, values: dict) -> int:  # pylint: disable=no-self-argument
+    def validate_value(
+        cls, v: int, values: dict
+    ) -> int:  # pylint: disable=no-self-argument
         """Validate allocation value according to its kind."""
         kind = values.get("kind")
         if kind == "fixed" and v < 0:
