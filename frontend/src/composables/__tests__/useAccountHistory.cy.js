@@ -72,7 +72,10 @@ describe('useAccountHistory', () => {
         `<div><button id="refresh" @click="loadHistory('2024-02-01','2024-02-05')"></button>` +
         `<ul><li v-for="pt in history" :key="pt.date">{{ pt.balance }}</li></ul></div>`,
       setup(props) {
-        const { history, loadHistory } = useAccountHistory(toRef(props, 'id'), toRef(props, 'range'))
+        const { history, loadHistory } = useAccountHistory(
+          toRef(props, 'id'),
+          toRef(props, 'range'),
+        )
         return { history, loadHistory }
       },
     })
