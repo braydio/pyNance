@@ -21,9 +21,19 @@ export function useAccountHistory(accountId, rangeRef) {
   const history = ref([])
   const loading = ref(false)
 
+  // Load history for the provided date range. When `start` and `end` are
+  // omitted, the current reactive range is converted to explicit dates.
   const fetchHistory = async (start, end, { force = false } = {}) => {
     if (!accountIdRef.value) return
-    const rangeKey = start && end ? `${start}-${end}` : range.value
+    let s = start
+    let e = end
+    let rangeKey
+    if (!s || !e) {
+      rangeKey = typeof start === 'string' && !end ? start : range.value
+      ;({ start: s, end: e } = rangeToDates(rangeKey))
+    } else {
+      rangeKey = `${s}-${e}`
+    }
     const cacheKey = `${accountIdRef.value}-${rangeKey || ''}`
     if (!force && historyCache.has(cacheKey)) {
       history.value = historyCache.get(cacheKey)
@@ -31,8 +41,7 @@ export function useAccountHistory(accountId, rangeRef) {
     }
     loading.value = true
     try {
-      const options = start && end ? { start_date: start, end_date: end } : { range: rangeKey }
-      const response = await fetchAccountHistory(accountIdRef.value, options)
+      const response = await fetchAccountHistory(accountIdRef.value, s, e)
       let hist = []
       if (Array.isArray(response?.data?.history)) {
         hist = response.data.history
