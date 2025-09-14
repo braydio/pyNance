@@ -17,7 +17,7 @@
         >
           &lt;
         </button>
-        <draggable
+        <Draggable
           v-if="isEditingGroups"
           v-model="groups"
           item-key="id"
@@ -48,7 +48,7 @@
               +
             </button>
           </template>
-        </draggable>
+        </Draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
           <template v-for="g in visibleGroups" :key="g.id">
             <input
@@ -112,10 +112,11 @@
     </div>
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
-    <draggable
-      v-model="accountsModel"
+    <Draggable
+      v-if="accounts && accounts.length"
+      v-model="accounts"
+      item-key="id"
       handle=".bs-drag-handle"
-      :item-key="accountKey"
       tag="transition-group"
       :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
     >
@@ -307,9 +308,9 @@
             </div>
           </li>
         </template>
-    </draggable>
+    </Draggable>
 
-    <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">
+    <div v-if="activeGroup && !accounts.length" class="bs-empty">
       No accounts to display
     </div>
 
@@ -319,12 +320,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import draggable from 'vuedraggable'
-import { GripVertical, X, Plus, Check } from 'lucide-vue-next'
+import Draggable from 'vuedraggable'
+import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
+const accounts = ref([])
+
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
@@ -373,28 +376,23 @@ watch(
 )
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-/** Normalize account entity to expected shape */
-function normalizeAccount(a) {
-  if (!a) return null
-  if (typeof a === 'object') return a
-  // try to resolve by id from available accounts
-  const found = allVisibleAccounts.value.find((acct) => String(acct.id) === String(a))
-  return found || { id: String(a), name: '', adjusted_balance: 0 }
-}
-/** Stable model for draggable binding with guards */
-const accountsModel = computed({
-  get() {
-    const arr = activeGroup.value?.accounts || []
-    return arr.filter(Boolean).map(normalizeAccount)
+
+watch(
+  () => activeGroup.value?.accounts,
+  (val) => {
+    accounts.value = Array.isArray(val) ? [...val] : []
   },
-  set(newList) {
-    if (!activeGroup.value) return
-    activeGroup.value.accounts = (Array.isArray(newList) ? newList : [])
-      .filter(Boolean)
-      .map(normalizeAccount)
+  { immediate: true, deep: true },
+)
+
+watch(
+  accounts,
+  (val) => {
+    if (activeGroup.value) activeGroup.value.accounts = val
   },
-})
-const accountKey = (account) => String(account?.id ?? '')
+  { deep: true },
+)
+
 const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
@@ -507,7 +505,7 @@ function addGroup() {
   editingGroupId.value = id
 }
 
-const activeAccounts = computed(() => accountsModel.value)
+const activeAccounts = computed(() => accounts.value)
 const availableAccounts = computed(() =>
   allVisibleAccounts.value.filter((acct) => !activeAccounts.value.some((a) => a.id === acct.id)),
 )
@@ -533,9 +531,7 @@ function removeAccount(id) {
 }
 
 const activeTotal = computed(() =>
-  activeGroup.value
-    ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
-    : 0,
+  accounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
 
 const format = (val) => {

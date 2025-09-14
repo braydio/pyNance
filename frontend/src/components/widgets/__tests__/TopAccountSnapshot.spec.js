@@ -98,6 +98,8 @@ describe('TopAccountSnapshot', () => {
 
     await nextTick()
 
+    expect(Array.isArray(wrapper.vm.accounts.value)).toBe(true)
+
     const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(names).toContain('Group')
 
@@ -126,7 +128,7 @@ describe('TopAccountSnapshot', () => {
 
     await nextTick()
     const firstBefore = wrapper.findAll('.bs-name')[0].text()
-    wrapper.vm.groups[0].accounts.reverse()
+    wrapper.vm.accounts.value.reverse()
     await nextTick()
     const firstAfter = wrapper.findAll('.bs-name')[0].text()
     expect(firstAfter).not.toBe(firstBefore)
