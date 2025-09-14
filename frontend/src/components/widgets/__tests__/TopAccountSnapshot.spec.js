@@ -107,11 +107,33 @@ describe('TopAccountSnapshot', () => {
     await nextTick()
     const input = wrapper.find('input.bs-tab')
     expect(input.exists()).toBe(true)
+    expect(input.attributes('maxlength')).toBe('30')
     await input.setValue('My Group')
     await input.trigger('blur')
     await nextTick()
     const updated = wrapper.findAll('button.bs-tab').map((b) => b.text())
     expect(updated).toContain('My Group')
+  })
+
+  it('truncates group names longer than 30 characters with ellipsis', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+
+    wrapper.vm.addGroup()
+    await nextTick()
+
+    const input = wrapper.find('input.bs-tab')
+    const longName = 'a'.repeat(40)
+    await input.setValue(longName)
+    await input.trigger('blur')
+    await nextTick()
+
+    const names = wrapper.findAll('button.bs-tab').map((b) => b.text())
+    const truncated = 'a'.repeat(29) + '…'
+    expect(names).toContain(truncated)
+    expect(truncated.length).toBe(30)
   })
 
   it('updates group order when accounts are reordered', async () => {
