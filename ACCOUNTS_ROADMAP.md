@@ -50,7 +50,7 @@ Use the existing `fetchAccountHistory` API and render a line chart (see `Account
 ### 3.4 Filter Controls
 
 - Add dropdown with 7d, 30d, 90d, 365d ranges.
-- Pass selected range to `fetchAccountHistory`.
+- Convert the selected range to explicit dates and call `fetchAccountHistory` with `start` and `end`.
 
 ### 3.5 Cypress Tests
 
