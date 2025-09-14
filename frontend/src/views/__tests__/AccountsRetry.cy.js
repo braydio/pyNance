@@ -3,6 +3,12 @@ import Accounts from '../Accounts.vue'
 function mountWithFailingHistory() {
   let call = 0
 
+  const today = new Date()
+  const end = today.toISOString().slice(0, 10)
+  const start30 = new Date(today)
+  start30.setDate(start30.getDate() - 30)
+  const start30Str = start30.toISOString().slice(0, 10)
+
   cy.intercept('GET', '/api/accounts/acc1/net_changes*', {
     statusCode: 200,
     body: { status: 'success', data: { income: 0, expense: 0, net: 0 } },
@@ -13,7 +19,7 @@ function mountWithFailingHistory() {
     body: { status: 'success', data: { transactions: [] } },
   }).as('tx')
 
-  cy.intercept('GET', '/api/accounts/acc1/history?range=30d', (req) => {
+  cy.intercept('GET', `/api/accounts/acc1/history?start_date=${start30Str}&end_date=${end}`, (req) => {
     call += 1
     if (call === 1) {
       req.reply({ statusCode: 500, body: {} })

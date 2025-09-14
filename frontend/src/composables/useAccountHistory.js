@@ -2,7 +2,7 @@
  * Composable to fetch and expose balance history for a single account.
  */
 import { ref, isRef, watch } from 'vue'
-import { fetchAccountHistory } from '@/api/accounts'
+import { fetchAccountHistory, rangeToDates } from '@/api/accounts'
 
 /**
  * Reactive helper to load recent balance history for an account.
@@ -17,7 +17,8 @@ export function useAccountHistory(accountId) {
     if (!accountIdRef.value) return
     loading.value = true
     try {
-      const response = await fetchAccountHistory(accountIdRef.value)
+      const { start, end } = rangeToDates('30d')
+      const response = await fetchAccountHistory(accountIdRef.value, start, end)
       let hist = []
       if (Array.isArray(response?.data?.history)) {
         hist = response.data.history
