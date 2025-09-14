@@ -23,7 +23,7 @@ export const useAccountPreferences = defineStore('accountPreferences', () => {
     (val) => {
       localStorage.setItem('accountPreferences', JSON.stringify({ selectedRanges: val }))
     },
-    { deep: true }
+    { deep: true },
   )
 
   /**
