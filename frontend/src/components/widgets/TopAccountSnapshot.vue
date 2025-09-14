@@ -137,8 +137,8 @@
             @click="toggleDetails(account.id)"
             role="button"
             tabindex="0"
-            @keydown.enter="toggleDetails(account.id)"
-            @keydown.space="toggleDetails(account.id)"
+            @keydown.enter.prevent="toggleDetails(account.id)"
+            @keydown.space.prevent="toggleDetails(account.id)"
           >
             <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
