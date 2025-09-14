@@ -45,10 +45,7 @@ export async function createBill(bill: Omit<Bill, 'id'>): Promise<Bill> {
  * @param id - Bill identifier
  * @param bill - Partial bill data to update
  */
-export async function updateBill(
-  id: string,
-  bill: Partial<Omit<Bill, 'id'>>,
-): Promise<Bill> {
+export async function updateBill(id: string, bill: Partial<Omit<Bill, 'id'>>): Promise<Bill> {
   const response = await apiClient.put<Bill>(`/planning/bills/${id}`, bill)
   return response.data
 }
@@ -67,9 +64,7 @@ export async function deleteBill(id: string): Promise<void> {
  *
  * @param scenarioId - Scenario identifier
  */
-export async function fetchAllocations(
-  scenarioId: string,
-): Promise<Allocation[]> {
+export async function fetchAllocations(scenarioId: string): Promise<Allocation[]> {
   const response = await apiClient.get<Allocation[]>(
     `/planning/scenarios/${scenarioId}/allocations`,
   )
@@ -118,11 +113,6 @@ export async function updateAllocation(
  * @param scenarioId - Scenario identifier
  * @param allocationId - Allocation identifier
  */
-export async function deleteAllocation(
-  scenarioId: string,
-  allocationId: string,
-): Promise<void> {
-  await apiClient.delete(
-    `/planning/scenarios/${scenarioId}/allocations/${allocationId}`,
-  )
+export async function deleteAllocation(scenarioId: string, allocationId: string): Promise<void> {
+  await apiClient.delete(`/planning/scenarios/${scenarioId}/allocations/${allocationId}`)
 }
