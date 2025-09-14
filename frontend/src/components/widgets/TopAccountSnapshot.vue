@@ -11,9 +11,23 @@
     <!-- Group Tabs -->
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
-        <!-- Editable Group Tabs -->
-        <draggable v-if="isEditingGroups" v-model="groups" item-key="id" handle=".bs-tab-handle" tag="transition-group"
-          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }">
+        <button
+          v-if="!isEditingGroups && groups.length > 3"
+          class="bs-nav-btn"
+          @click="shiftWindow(-1)"
+          :disabled="visibleGroupIndex === 0"
+          aria-label="Previous group"
+        >
+          &lt;
+        </button>
+        <Draggable
+          v-if="isEditingGroups"
+          v-model="groups"
+          item-key="id"
+          handle=".bs-tab-handle"
+          tag="transition-group"
+          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }"
+        >
           <template #item="{ element: g }">
             <div :key="g.id" :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]">
               <GripVertical class="bs-tab-handle" />
@@ -26,9 +40,7 @@
               +
             </button>
           </template>
-        </draggable>
-
-        <!-- Static Group Tabs -->
+        </Draggable>
         <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
           <template v-for="g in groups" :key="g.id">
             <input v-if="!g.name || editingGroupId === g.id" v-model="g.name" :class="[
@@ -74,27 +86,126 @@
       </div>
     </div>
 
-    <!-- Accounts List -->
-    <draggable v-model="accountsModel" handle=".bs-drag-handle" :item-key="accountKey" tag="transition-group"
-      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }">
-      <template #item="{ element: account }">
-        <li class="bs-account-container" :key="account.id">
-          <div class="bs-row" :style="{ '--accent': accentColor(account) }" @click="toggleDetails(account.id)"
-            role="button" tabindex="0" @keydown.enter="toggleDetails(account.id)"
-            @keydown.space="toggleDetails(account.id)">
-            <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
-            <div class="bs-stripe"></div>
+    <!-- Render draggable without container Transition to avoid DOM detachment issues -->
+    <Draggable
+      v-if="accounts && accounts.length"
+      v-model="accounts"
+      item-key="id"
+      handle=".bs-drag-handle"
+      tag="transition-group"
+      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
+    >
+        <template #item="{ element: account }">
+          <li class="bs-account-container" :key="account.id">
+            <div
+              class="bs-row"
+              :style="{ '--accent': accentColor(account) }"
+              @click="toggleDetails(account.id)"
+              role="button"
+              tabindex="0"
+              @keydown.enter="toggleDetails(account.id)"
+              @keydown.space="toggleDetails(account.id)"
+            >
+              <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
-            <div class="bs-logo-container">
-              <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo"
-                class="bs-logo" loading="lazy" />
-              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
-            </div>
+                <div class="bs-stripe"></div>
+                <div class="bs-logo-container">
+                  <img
+                    v-if="account.institution_icon_url"
+                    :src="account.institution_icon_url"
+                    alt="Bank logo"
+                    class="bs-logo"
+                    loading="lazy"
+                  />
+                  <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
+                </div>
+                <div class="bs-details">
+                  <div class="bs-name">
+                    <span
+                      class="bs-toggle-icon"
+                      :class="{ 'bs-expanded': openAccountId === account.id }"
+                      >▶</span
+                    >
+                    {{ account.name }}
+                  </div>
+                  <div class="bs-mask">
+                    <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                    <span
+                      v-else
+                      class="bs-no-mask-icon"
+                      role="img"
+                      aria-label="Account number unavailable"
+                      >∗</span
+                    >
+                  </div>
+                </div>
+                <div class="bs-sparkline">
+                  <AccountSparkline :account-id="account.id" />
+                </div>
+                <div class="bs-amount-section">
+                  <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+                  <X
+                    v-if="isEditingGroups"
+                    class="bs-account-delete"
+                    @click.stop="removeAccount(account.id)"
+                  />
+                </div>
+              </div>
+              <div v-if="openAccountId === account.id" class="bs-details-row">
+                <div class="bs-details-content">
+                  <ul class="bs-details-list">
+                    <li
+                      v-for="tx in recentTxs[account.id]"
+                      :key="tx.transaction_id || tx.id"
+                      class="bs-tx-row"
+                    >
+                      <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                      <span class="bs-tx-name">{{
+                        tx.merchant_name || tx.name || tx.description
+                      }}</span>
+                      <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                    </li>
+                    <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                      No recent transactions
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </li>
+          </template>
+          <template #footer>
+            <Transition name="fade-in">
+              <li
+                class="bs-account-container bs-add-account"
+                :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+              >
+                <Transition name="slide-down">
+                  <div v-if="showAccountSelector" class="bs-row">
+                    <select
+                      v-model="selectedAccountId"
+                      @change="confirmAddAccount"
+                      class="bs-add-select"
+                    >
+                      <option value="" disabled>Select account</option>
+                      <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+                        {{ acct.name }}
+                      </option>
+                    </select>
+                  </div>
+                  <div
+                    v-else
+                    class="bs-row bs-add-placeholder"
+                    @click="startAddAccount"
+                    role="button"
+                    tabindex="0"
+                    @keydown.enter.prevent="startAddAccount"
+                    @keydown.space.prevent="startAddAccount"
+                  >
+                </div>
+              </div>
+              <div class="bs-sparkline">
+                <AccountSparkline :account-id="String(account.id)" />
 
-            <div class="bs-details">
-              <div class="bs-name">
-                <span class="bs-toggle-icon" :class="{ 'bs-expanded': openAccountId === account.id }">▶</span>
-                {{ account.name }}
               </div>
               <div class="bs-mask">
                 <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
@@ -146,19 +257,11 @@
             <div class="bs-details">
               <div class="bs-name">Add Account</div>
             </div>
-          </div>
-        </li>
+          </li>
+        </template>
+    </Draggable>
 
-        <li v-if="activeAccounts.length" class="bs-summary-row" :key="'summary-' + activeGroupId"
-          :style="{ '--accent': groupAccent }">
-          <div></div>
-          <div class="bs-summary-label">Total {{ activeGroup.name }}</div>
-          <div class="bs-summary-amount">{{ format(activeTotal) }}</div>
-        </li>
-      </template>
-    </draggable>
-
-    <div v-if="activeGroup && !activeGroup.accounts.length" class="bs-empty">
+    <div v-if="activeGroup && !accounts.length" class="bs-empty">
       No accounts to display
     </div>
   </div>
@@ -169,12 +272,14 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import draggable from 'vuedraggable'
-import { GripVertical, X, Plus, Check } from 'lucide-vue-next'
+import Draggable from 'vuedraggable'
+import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
+const accounts = ref([])
+
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
@@ -223,28 +328,23 @@ watch(
 )
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
-/** Normalize account entity to expected shape */
-function normalizeAccount(a) {
-  if (!a) return null
-  if (typeof a === 'object') return a
-  // try to resolve by id from available accounts
-  const found = allVisibleAccounts.value.find((acct) => String(acct.id) === String(a))
-  return found || { id: String(a), name: '', adjusted_balance: 0 }
-}
-/** Stable model for draggable binding with guards */
-const accountsModel = computed({
-  get() {
-    const arr = activeGroup.value?.accounts || []
-    return arr.filter(Boolean).map(normalizeAccount)
+
+watch(
+  () => activeGroup.value?.accounts,
+  (val) => {
+    accounts.value = Array.isArray(val) ? [...val] : []
   },
-  set(newList) {
-    if (!activeGroup.value) return
-    activeGroup.value.accounts = (Array.isArray(newList) ? newList : [])
-      .filter(Boolean)
-      .map(normalizeAccount)
+  { immediate: true, deep: true },
+)
+
+watch(
+  accounts,
+  (val) => {
+    if (activeGroup.value) activeGroup.value.accounts = val
   },
-})
-const accountKey = (account) => String(account?.id ?? '')
+  { deep: true },
+)
+
 const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
 
 const visibleGroupIndex = ref(0)
@@ -357,7 +457,7 @@ function addGroup() {
   editingGroupId.value = id
 }
 
-const activeAccounts = computed(() => accountsModel.value)
+const activeAccounts = computed(() => accounts.value)
 const availableAccounts = computed(() =>
   allVisibleAccounts.value.filter((acct) => !activeAccounts.value.some((a) => a.id === acct.id)),
 )
@@ -383,9 +483,7 @@ function removeAccount(id) {
 }
 
 const activeTotal = computed(() =>
-  activeGroup.value
-    ? activeGroup.value.accounts.reduce((sum, a) => sum + a.adjusted_balance, 0)
-    : 0,
+  accounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
 )
 
 const format = (val) => {
