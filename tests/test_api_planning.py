@@ -4,6 +4,7 @@ This module stubs minimal application components to exercise the
 planning logic via HTTP requests. It verifies that bills can be added
 to a scenario and that percent allocation caps are enforced.
 """
+
 # pylint: disable=import-error,too-few-public-methods,redefined-outer-name
 
 import importlib.util
