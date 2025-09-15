@@ -78,6 +78,7 @@ describe('useAccountHistory', () => {
         expect(params.get('start_date')).to.eq(start)
         expect(params.get('end_date')).to.eq(end)
       })
+    cy.get('@getHistory.all').should('have.length', 2)
   })
 
   it('supports manual refresh with explicit dates', () => {
