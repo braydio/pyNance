@@ -4,12 +4,44 @@
  * Provides CRUD operations using Axios to communicate with the backend.
  */
 import axios from 'axios'
-import type { Bill, Allocation } from '@/types/planning'
+import type { Bill, Allocation, PlanningState } from '@/types/planning'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_APP_API_BASE_URL || '/api',
   headers: { 'Content-Type': 'application/json' },
 })
+
+// --- Local persistence helpers for planning state ---
+const STORAGE_KEY = 'planningState'
+
+/**
+ * Load planning state from localStorage.
+ * Returns null if unavailable or invalid so callers can fallback to defaults.
+ */
+export function loadPlanning(): Partial<PlanningState> | null {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return null
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    return typeof parsed === 'object' && parsed ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Save planning state to localStorage.
+ * Silently no-ops in non-browser environments or on quota errors.
+ */
+export function savePlanning(state: PlanningState): void {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+  } catch {
+    // ignore storage errors to avoid breaking UX
+  }
+}
 
 /**
  * Retrieve all bills.
