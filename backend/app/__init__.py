@@ -37,6 +37,7 @@ def create_app():
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.plaid_webhook import plaid_webhooks
     from app.routes.plaid_webhook_admin import plaid_webhook_admin
+    from app.routes.planning import planning
     from app.routes.recurring import recurring
     from app.routes.rules import rules as rules_bp
     from app.routes.summary import summary
@@ -63,6 +64,7 @@ def create_app():
     app.register_blueprint(plaid_webhook_admin, url_prefix="/api/plaid/webhook")
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
     app.register_blueprint(investments, url_prefix="/api/investments")
+    app.register_blueprint(planning, url_prefix="/api/planning")
     app.register_blueprint(link_teller, url_prefix="/api/teller")
     app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
     app.register_blueprint(institutions, url_prefix="/api/institutions")
