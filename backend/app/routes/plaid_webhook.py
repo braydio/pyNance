@@ -1,20 +1,94 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
+import hashlib
+import hmac
 from datetime import date, datetime, timedelta, timezone
 
-from app.config import logger
+from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
 from app.models import PlaidAccount, PlaidWebhookLog
 from app.services.plaid_sync import sync_account_transactions
 from app.sql import investments_logic
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, Request, jsonify, request
 
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
 
 
+def _verify_plaid_signature(req: Request) -> bool:
+    """Validate the Plaid webhook signature using the shared secret.
+
+    Args:
+        req: Incoming Flask request containing the webhook payload.
+
+    Returns:
+        bool: ``True`` when the `Plaid-Signature` header matches the computed
+        signature; otherwise ``False``.
+    """
+
+    signature_header = req.headers.get("Plaid-Signature")
+    if not signature_header:
+        logger.warning("Plaid webhook missing Plaid-Signature header.")
+        return False
+
+    components = {}
+    try:
+        for part in signature_header.split(","):
+            if "=" not in part:
+                continue
+            key, value = (section.strip() for section in part.split("=", 1))
+            components[key] = value
+    except (IndexError, ValueError):
+        logger.warning("Malformed Plaid-Signature header: %s", signature_header)
+        return False
+
+    timestamp = components.get("t")
+    provided_signature = components.get("v1")
+
+    if not timestamp or not provided_signature:
+        logger.warning(
+            "Plaid webhook signature header missing timestamp or signature component."
+        )
+        return False
+
+    raw_body = req.get_data(as_text=True) or ""
+    payload = f"{timestamp}.{raw_body}".encode("utf-8")
+    computed_signature = hmac.new(
+        PLAID_WEBHOOK_SECRET.encode("utf-8"),
+        msg=payload,
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    is_valid = hmac.compare_digest(computed_signature, provided_signature)
+
+    if not is_valid:
+        logger.warning("Invalid Plaid webhook signature.")
+
+    return is_valid
+
+
 @plaid_webhooks.route("/plaid", methods=["POST"])
 def handle_plaid_webhook():
+    """Process Plaid webhook events after validating the request signature.
+
+    Returns:
+        Tuple[Response, int]: Flask response payload and HTTP status code.
+    """
+
+    if not PLAID_WEBHOOK_SECRET:
+        logger.error("PLAID_WEBHOOK_SECRET is not configured; rejecting webhook.")
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Plaid webhook secret not configured.",
+                }
+            ),
+            500,
+        )
+
+    if not _verify_plaid_signature(request):
+        return jsonify({"status": "invalid_signature"}), 400
+
     payload = request.get_json(silent=True) or {}
     webhook_type = payload.get("webhook_type")
     webhook_code = payload.get("webhook_code")
