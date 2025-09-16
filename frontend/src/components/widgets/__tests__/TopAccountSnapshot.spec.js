@@ -115,6 +115,24 @@ describe('TopAccountSnapshot', () => {
     expect(updated).toContain('My Group')
   })
 
+  it('displays add account placeholder when group has no accounts', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    await nextTick()
+    expect(wrapper.find('.bs-add-placeholder').exists()).toBe(true)
+  })
+
+  it('toggles editing mode locally when toggleEditGroups is called', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+    expect(wrapper.vm.isEditingGroups.value).toBe(false)
+    wrapper.vm.toggleEditGroups()
+    await nextTick()
+    expect(wrapper.vm.isEditingGroups.value).toBe(true)
+  })
+
   it('truncates group names longer than 30 characters with ellipsis', async () => {
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },

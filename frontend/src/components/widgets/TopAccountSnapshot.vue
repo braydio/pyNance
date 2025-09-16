@@ -122,7 +122,7 @@
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
-      v-if="accounts && accounts.length"
+      v-if="activeGroup"
       v-model="accounts"
       item-key="id"
       handle=".bs-drag-handle"
@@ -398,7 +398,8 @@ function selectGroup(id) {
 
 const emit = defineEmits(['update:isEditingGroups'])
 function toggleEditGroups() {
-  emit('update:isEditingGroups', !isEditingGroups.value)
+  isEditingGroups.value = !isEditingGroups.value
+  emit('update:isEditingGroups', isEditingGroups.value)
   showGroupMenu.value = false
 }
 
