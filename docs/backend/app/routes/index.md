@@ -16,6 +16,7 @@
 - [`plaid.py`](#plaid-integration-route)
 - [`plaid_investments.py`](#plaid-investments-route) – see [Plaid Investments integration](../../integrations/plaid_investments.md)
 - [`plaid_transactions.py`](#plaid-transactions-route)
+- [`plaid_webhook.py`](plaid_webhook.md)
 - [`plaid_transfer.py`](#plaid-transfer-route)
 - [`product_transactions.py`](#product-transactions-route)
 - [`recurring.py`](#recurring-transactions-route)

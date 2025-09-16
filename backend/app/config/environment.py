@@ -22,6 +22,9 @@ PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
 PLAID_SECRET = os.getenv("PLAID_SECRET_KEY")
 PLAID_CLIENT_NAME = os.getenv("CLIENT_NAME")
 
+# Shared secret used to validate Plaid webhook signatures
+PLAID_WEBHOOK_SECRET = os.getenv("PLAID_WEBHOOK_SECRET")
+
 # Misc Plaid environment setup
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")

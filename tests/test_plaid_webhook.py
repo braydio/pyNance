@@ -264,7 +264,7 @@ investments_logic_stub = types.SimpleNamespace(
 )
 transaction_rules_logic_stub = types.SimpleNamespace(
     apply_rules=lambda user_id, tx: tx,
-)
+# )
 refresh_metadata_stub = types.SimpleNamespace(
     refresh_or_insert_plaid_metadata=lambda *args, **kwargs: None,
 )
