@@ -34,6 +34,7 @@ config_stub.logger = types.SimpleNamespace(
 config_stub.PLAID_WEBHOOK_SECRET = "unit_secret"
 sys.modules["app.config"] = config_stub
 
+
 class SessionRecorder:
     def __init__(self):
         self.added = []
@@ -69,6 +70,7 @@ helpers_pkg.plaid_helpers = helpers_stub
 sys.modules["app.helpers"] = helpers_pkg
 sys.modules["app.helpers.plaid_helpers"] = helpers_stub
 
+
 class DummyPlaidAccount:
     query = types.SimpleNamespace(filter_by=lambda **kwargs: _default_query())
 
@@ -92,27 +94,23 @@ sys.modules["app.models"] = models_stub
 
 services_pkg = types.ModuleType("app.services")
 services_stub = types.ModuleType("app.services.plaid_sync")
-services_stub.sync_account_transactions = lambda account_id: {
-    "account_id": account_id
-}
+services_stub.sync_account_transactions = lambda account_id: {"account_id": account_id}
 services_pkg.plaid_sync = services_stub
 sys.modules["app.services"] = services_pkg
 sys.modules["app.services.plaid_sync"] = services_stub
 
 investments_logic_stub = types.ModuleType("app.sql.investments_logic")
 investments_logic_stub.upsert_investment_transactions = lambda txs: len(txs)
-investments_logic_stub.upsert_investments_from_plaid = (
-    lambda user_id, token: {"holdings": 0}
-)
+investments_logic_stub.upsert_investments_from_plaid = lambda user_id, token: {
+    "holdings": 0
+}
 sql_pkg = types.ModuleType("app.sql")
 sql_pkg.investments_logic = investments_logic_stub
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.investments_logic"] = investments_logic_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "plaid_webhook.py")
-spec = importlib.util.spec_from_file_location(
-    "app.routes.plaid_webhook", ROUTE_PATH
-)
+spec = importlib.util.spec_from_file_location("app.routes.plaid_webhook", ROUTE_PATH)
 plaid_webhook = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plaid_webhook)
 
@@ -206,9 +204,7 @@ def test_valid_signature_allows_processing(client, monkeypatch):
     monkeypatch.setattr(
         plaid_webhook.PlaidAccount,
         "query",
-        types.SimpleNamespace(
-            filter_by=lambda **kwargs: _make_query_result([])
-        ),
+        types.SimpleNamespace(filter_by=lambda **kwargs: _make_query_result([])),
         raising=False,
     )
 

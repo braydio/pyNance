@@ -1,8 +1,8 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
-from datetime import date, datetime, timedelta, timezone
 import hashlib
 import hmac
+from datetime import date, datetime, timedelta, timezone
 
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
