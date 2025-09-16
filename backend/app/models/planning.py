@@ -1,9 +1,7 @@
-"""Pydantic models for planning features.
+"""Planning schemas.
 
-Defines schema objects used by the planning API to validate and
-serialize data related to bills and allocation targets. These models
-mirror the SQLAlchemy models but are framework agnostic and focused on
-input/output validation.
+Pydantic models used by the planning API to validate and serialize
+bill and allocation data.
 """
 
 from __future__ import annotations
@@ -14,9 +12,27 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field, validator
 
+__all__ = ["Bill", "Allocation"]
+
 
 class Bill(BaseModel):  # pylint: disable=too-few-public-methods
-    """Represents a planned bill within a scenario."""
+    """Schema describing a bill in a planning scenario.
+
+    Attributes
+    ----------
+    id : UUID, optional
+        Unique bill identifier.
+    name : str
+        Human readable bill name.
+    amount_cents : int
+        Bill amount in cents; must be non-negative.
+    due_date : date, optional
+        When the bill is due.
+    category : str, optional
+        Category label for display or grouping.
+    predicted : bool
+        Whether the bill is predicted rather than confirmed.
+    """
 
     id: Optional[UUID] = Field(default=None, description="Bill identifier")
     name: str = Field(..., min_length=1, description="Human readable bill name")
@@ -26,7 +42,9 @@ class Bill(BaseModel):  # pylint: disable=too-few-public-methods
     predicted: bool = Field(default=False, description="Whether bill is predicted")
 
     @validator("name")
-    def name_must_not_be_blank(cls, value: str) -> str:  # pylint: disable=no-self-argument
+    def name_must_not_be_blank(  # pylint: disable=no-self-argument
+        cls, value: str
+    ) -> str:
         """Ensure the bill name is not empty."""
         if not value.strip():
             raise ValueError("name must not be empty")
@@ -34,7 +52,19 @@ class Bill(BaseModel):  # pylint: disable=too-few-public-methods
 
 
 class Allocation(BaseModel):  # pylint: disable=too-few-public-methods
-    """Represents an allocation target for a planning scenario."""
+    """Schema representing a target allocation for a scenario.
+
+    Attributes
+    ----------
+    id : UUID, optional
+        Unique allocation identifier.
+    target : str
+        Allocation target label.
+    kind : Literal["fixed", "percent"]
+        Indicates whether ``value`` is an absolute amount or percentage.
+    value : int
+        Value in cents for fixed allocations or percent for percent allocations.
+    """
 
     id: Optional[UUID] = Field(default=None, description="Allocation identifier")
     target: str = Field(..., min_length=1, description="Allocation target label")
@@ -49,7 +79,9 @@ class Allocation(BaseModel):  # pylint: disable=too-few-public-methods
         return value
 
     @validator("value")
-    def validate_value(cls, v: int, values: dict) -> int:  # pylint: disable=no-self-argument
+    def validate_value(  # pylint: disable=no-self-argument
+        cls, v: int, values: dict
+    ) -> int:
         """Validate allocation value according to its kind."""
         kind = values.get("kind")
         if kind == "fixed" and v < 0:
