@@ -145,9 +145,7 @@ class QueryStub:
     def first(self) -> Optional[object]:
         return self._items[0] if self._items else None
 
-    def delete(
-        self, synchronize_session: bool = False
-    ) -> int:  # noqa: ARG002 - parity with SQLAlchemy
+    def delete(self, synchronize_session: bool = False) -> int:  # noqa: ARG002 - parity with SQLAlchemy
         if not self._pending_delete_ids:
             return 0
         if self._deleted_log is not None:
