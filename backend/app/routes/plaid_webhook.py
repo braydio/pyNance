@@ -1,6 +1,8 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
+from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
+from typing import Tuple
 
 from app.config import logger
 from app.extensions import db
@@ -10,11 +12,81 @@ from app.services.plaid_sync import sync_account_transactions
 from app.sql import investments_logic
 from flask import Blueprint, jsonify, request
 
+try:  # pragma: no cover - optional dependency
+    from prometheus_client import Counter as PrometheusCounter
+except Exception:  # pragma: no cover
+    PrometheusCounter = None  # type: ignore[assignment]
+
+PROM_COUNTER_NAME = "plaid_webhook_events_total"
+PROM_COUNTER_HELP = "Total Plaid webhook outcomes by status and code"
+
+
+def _build_prometheus_counter() -> "PrometheusCounter | None":
+    """Create or retrieve the Prometheus counter for webhook outcomes."""
+
+    if PrometheusCounter is None:  # Dependency not installed
+        return None
+
+    try:
+        return PrometheusCounter(
+            PROM_COUNTER_NAME, PROM_COUNTER_HELP, ["status", "code"]
+        )
+    except ValueError:  # pragma: no cover - already registered
+        try:
+            from prometheus_client import REGISTRY  # type: ignore
+
+            return REGISTRY._names_to_collectors.get(PROM_COUNTER_NAME)  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover - registry internals changed
+            return None
+
+
+PROM_COUNTER = _build_prometheus_counter()
+
+
+class WebhookMetrics:
+    """Track webhook outcomes and optionally publish Prometheus counters."""
+
+    def __init__(self) -> None:
+        self._counts: MemoryCounter[Tuple[str, str]] = MemoryCounter()
+
+    def increment(self, status: str, code: str | None, amount: int = 1) -> None:
+        """Record a webhook result for observability.
+
+        Args:
+            status: Outcome label such as ``"success"`` or ``"failure"``.
+            code: Plaid webhook code associated with the outcome.
+            amount: Number of results represented by this increment.
+        """
+
+        if amount <= 0:
+            return
+
+        normalized = (code or "unknown").upper()
+        self._counts[(status, normalized)] += amount
+        if PROM_COUNTER is not None:
+            PROM_COUNTER.labels(status=status, code=normalized).inc(amount)
+
+    def count(self, status: str, code: str | None) -> int:
+        """Return the stored count for a status/code pair."""
+
+        normalized = (code or "unknown").upper()
+        return int(self._counts.get((status, normalized), 0))
+
+    def reset(self) -> None:
+        """Clear in-memory metrics (useful for unit tests)."""
+
+        self._counts.clear()
+
+
+webhook_metrics = WebhookMetrics()
+
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
 
 
 @plaid_webhooks.route("/plaid", methods=["POST"])
 def handle_plaid_webhook():
+    """Process Plaid webhook payloads and dispatch downstream sync tasks."""
+
     payload = request.get_json(silent=True) or {}
     webhook_type = payload.get("webhook_type")
     webhook_code = payload.get("webhook_code")
@@ -43,18 +115,43 @@ def handle_plaid_webhook():
     ):
         if not item_id:
             logger.warning("Plaid webhook missing item_id; cannot dispatch sync")
+            webhook_metrics.increment("failure", webhook_code)
             return jsonify({"status": "ignored"}), 200
 
         # Trigger sync for each account under this item
         accounts = PlaidAccount.query.filter_by(item_id=item_id).all()
+        if not accounts:
+            logger.info(
+                "Plaid webhook %s:%s had no matching accounts for item %s",
+                webhook_type,
+                webhook_code,
+                item_id,
+            )
+            webhook_metrics.increment("failure", webhook_code)
+            return jsonify({"status": "ignored", "triggered": []}), 200
+
         triggered = []
+        success_count = 0
+        failure_count = 0
         for pa in accounts:
             try:
                 res = sync_account_transactions(pa.account_id)
                 triggered.append(res.get("account_id") or pa.account_id)
+                success_count += 1
+                webhook_metrics.increment("success", webhook_code)
             except Exception as e:
                 logger.error(f"Sync failed for account {pa.account_id}: {e}")
+                failure_count += 1
+                webhook_metrics.increment("failure", webhook_code)
 
+        logger.info(
+            ("Plaid webhook %s:%s processed for item %s (success=%d, failure=%d)"),
+            webhook_type,
+            webhook_code,
+            item_id,
+            success_count,
+            failure_count,
+        )
         return jsonify({"status": "ok", "triggered": triggered}), 200
 
     # Investments transactions webhook
