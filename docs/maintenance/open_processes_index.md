@@ -1,6 +1,30 @@
 # 📌 Open Processes & Planning Index
 
-This document consolidates active development plans across the repository so they are easy to locate. Each section references the original planning file that contains more detail.
+This document consolidates active development plans across the repository so they are easy to locate. Each section references the canonical planning file that contains more detail.
+
+## Accounts Experience
+
+- **Docs:** `docs/roadmaps/accounts.md`
+- Finish the dedicated history chart, add range presets, and annotate large balance swings.
+- Instrument `/api/accounts/<id>/history` for latency/error metrics and extend unit/integration coverage.
+
+## Transactions Sync Hardening
+
+- **Docs:** `docs/roadmaps/transactions.md`
+- Add focused tests for Plaid delta-sync (duplicate cursors, removed transactions, error propagation).
+- Emit sync metrics and document replay/backfill procedures for operations.
+
+## Planning & Allocations
+
+- **Docs:** `docs/roadmaps/planning.md`
+- Ship the planning components (`BillForm`, `BillList`, `Allocator`, `PlanningSummary`) with optimistic UI flows.
+- Transition the Flask planning routes from in-memory storage to persistent models and enforce allocation caps end-to-end.
+
+## Investments & Liabilities Sync
+
+- **Docs:** `docs/roadmaps/investments.md`
+- Harden webhook-triggered refreshes with tests and metrics; capture Plaid identifiers in logs.
+- Build allocation/performance dashboards and export tooling on the frontend.
 
 ## Forecast Engine
 
@@ -14,12 +38,6 @@ This document consolidates active development plans across the repository so the
 - **Docs:** `docs/CODEX_REPORT.md`
 - Validate recurring rule edits and provide confirmation dialogs.
 - Add pattern detection and simulate upcoming instances.
-
-## Investments & Liabilities Sync
-
-- **Docs:** `docs/organize/routing_refactor/Investments_Integration-Summary_Overview.md`
-- Create `routes/product_investments.py` and `services/investments.py`.
-- Implement Plaid `/investments` calls and register the new route.
 
 ## Routing Refactor
 
