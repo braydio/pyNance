@@ -46,14 +46,14 @@ def metrics():
 
 @arbit_dashboard.route("/opportunities", methods=["GET"])
 def opportunities():
-    """Placeholder for opportunity data."""
-    return jsonify([]), 200
+    """Return an empty opportunities payload using the public response shape."""
+    return jsonify({"opportunities": []}), 200
 
 
 @arbit_dashboard.route("/trades", methods=["GET"])
 def trades():
-    """Placeholder for trade data."""
-    return jsonify([]), 200
+    """Return an empty trades payload using the public response shape."""
+    return jsonify({"trades": []}), 200
 
 
 @arbit_dashboard.route("/start", methods=["POST"])
