@@ -6,6 +6,9 @@ services:
     startCommand: gunicorn "backend.run:app" --bind 0.0.0.0:$PORT
     plan: free
     autoDeploy: true
+    envVars:
+      - key: BACKEND_PUBLIC_URL
+        value: https://your-worker.example
     buildFilter:
       paths:
         - backend/**

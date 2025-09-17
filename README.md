@@ -25,7 +25,8 @@ Webhook URL should point to `/api/webhooks/plaid`.
 
 Pointing Plaid Webhooks
 
-- New items (during Link): set `BACKEND_PUBLIC_URL` in `backend/.env` to your public backend URL (e.g., `https://your-domain.example` or your tunnel URL). Link tokens will include `webhook = <BACKEND_PUBLIC_URL>/api/webhooks/plaid` automatically.
+- New items (during Link): set `BACKEND_PUBLIC_URL` in `backend/.env` to your public backend URL. When using a Cloudflare Worker to proxy Plaid webhooks, set this to the worker's domain (e.g., `https://your-worker.example`). Link tokens will include `webhook = <BACKEND_PUBLIC_URL>/api/webhooks/plaid` automatically.
+- After updating `BACKEND_PUBLIC_URL`, regenerate link tokens so Plaid registers the new webhook URL.
 - Existing items: call the admin endpoint to update the webhook URL:
   ```bash
   curl -X POST \
