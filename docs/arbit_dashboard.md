@@ -47,9 +47,7 @@ Retrieves chart-ready series derived from the exporter. Each series contains a
     { "label": "Errors", "value": 1 },
     { "label": "Skips", "value": 2 }
   ],
-  "latency": [
-    { "label": "Cycle Latency (s)", "value": 0.8 }
-  ]
+  "latency": [{ "label": "Cycle Latency (s)", "value": 0.8 }]
 }
 ```
 
