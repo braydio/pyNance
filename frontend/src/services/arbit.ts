@@ -16,10 +16,17 @@ export async function fetchArbitStatus() {
   return response.data
 }
 
+export type MetricPoint = { label: string; value: number }
+
+export type ArbitMetricsResponse = {
+  profit: MetricPoint[]
+  latency: MetricPoint[]
+}
+
 /**
  * Retrieve profit and latency metrics.
  */
-export async function fetchArbitMetrics() {
+export async function fetchArbitMetrics(): Promise<ArbitMetricsResponse> {
   const response = await apiClient.get('/arbit/metrics')
   return response.data
 }
