@@ -4,12 +4,12 @@ This directory consolidates the active product roadmaps for pyNance so they live
 
 ## Workstream directory
 
-| Area | Current focus | Detailed plan |
-| --- | --- | --- |
-| Accounts experience | Balance history visualisation, range filters, and richer account insights | [Accounts roadmap](./accounts.md) |
-| Transactions sync | Plaid delta-sync hardening, webhook coverage, and migration clean-up | [Transactions sync roadmap](./transactions.md) |
-| Planning & allocations | Bill management UI, allocation enforcement, and Flask planning APIs | [Planning roadmap](./planning.md) |
-| Investments | Holdings/transaction refresh reliability and analytics surfacing | [Investments roadmap](./investments.md) |
+| Area                   | Current focus                                                             | Detailed plan                                  |
+| ---------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- |
+| Accounts experience    | Balance history visualisation, range filters, and richer account insights | [Accounts roadmap](./accounts.md)              |
+| Transactions sync      | Plaid delta-sync hardening, webhook coverage, and migration clean-up      | [Transactions sync roadmap](./transactions.md) |
+| Planning & allocations | Bill management UI, allocation enforcement, and Flask planning APIs       | [Planning roadmap](./planning.md)              |
+| Investments            | Holdings/transaction refresh reliability and analytics surfacing          | [Investments roadmap](./investments.md)        |
 
 Additional feature planning (forecasting, routing refactors, and UI audit items) remains indexed under [`docs/maintenance/open_processes_index.md`](../maintenance/open_processes_index.md).
 
