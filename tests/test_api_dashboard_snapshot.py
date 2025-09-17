@@ -26,9 +26,7 @@ sys.modules["app.config"] = config_stub
 services_stub = types.ModuleType("app.services.account_snapshot")
 services_stub.DEFAULT_USER_SCOPE = "default"
 services_stub.build_snapshot_payload = lambda user_id=None: {}
-services_stub.update_snapshot_selection = (
-    lambda selected_account_ids, user_id=None: {}
-)
+services_stub.update_snapshot_selection = lambda selected_account_ids, user_id=None: {}
 sys.modules["app.services.account_snapshot"] = services_stub
 
 

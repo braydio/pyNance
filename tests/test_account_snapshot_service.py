@@ -7,7 +7,6 @@ import types
 
 import pytest
 
-
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
@@ -31,9 +30,7 @@ sys.modules["app.utils.finance_utils"] = finance_stub
 
 
 SERVICE_PATH = os.path.join(BASE_BACKEND, "app", "services", "account_snapshot.py")
-spec = importlib.util.spec_from_file_location(
-    "account_snapshot_service", SERVICE_PATH
-)
+spec = importlib.util.spec_from_file_location("account_snapshot_service", SERVICE_PATH)
 snapshot_service = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(snapshot_service)
 
@@ -91,7 +88,9 @@ def setup_session(monkeypatch):
 def test_build_snapshot_payload_creates_preference(monkeypatch):
     accounts = make_accounts()
     monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
-    monkeypatch.setattr(snapshot_service, "AccountSnapshotPreference", make_preference(None))
+    monkeypatch.setattr(
+        snapshot_service, "AccountSnapshotPreference", make_preference(None)
+    )
     added, commits = setup_session(monkeypatch)
 
     data = snapshot_service.build_snapshot_payload(user_id="user-x")
