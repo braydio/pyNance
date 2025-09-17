@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict
+from typing import Dict, TypedDict
 
 import requests
 from flask import current_app
@@ -18,6 +18,13 @@ METRIC_NAMES = (
 )
 
 
+class MetricPoint(TypedDict):
+    """Typed mapping describing a chart data point."""
+
+    label: str
+    value: float
+
+
 def fetch_metrics() -> Dict[str, float | int]:
     """Fetch the `/metrics` endpoint and parse select values.
 
@@ -30,9 +37,11 @@ def fetch_metrics() -> Dict[str, float | int]:
     return parse_metrics(response.text)
 
 
-def get_metrics() -> Dict[str, float | int]:
-    """Public wrapper to retrieve exporter metrics."""
-    return fetch_metrics()
+def get_metrics() -> Dict[str, list[MetricPoint]]:
+    """Retrieve exporter metrics formatted for chart consumption."""
+
+    raw_metrics = fetch_metrics()
+    return _format_chart_metrics(raw_metrics)
 
 
 def parse_metrics(prom_text: str) -> Dict[str, float | int]:
@@ -64,6 +73,33 @@ def parse_metrics(prom_text: str) -> Dict[str, float | int]:
     return metrics
 
 
+def _format_chart_metrics(raw: Dict[str, float | int]) -> Dict[str, list[MetricPoint]]:
+    """Convert raw exporter metrics into chart-friendly series."""
+
+    def add_point(series: list[MetricPoint], label: str, key: str) -> None:
+        value = raw.get(key)
+        if value is None:
+            return
+        try:
+            numeric = float(value)
+        except (TypeError, ValueError):
+            return
+        series.append({"label": label, "value": numeric})
+
+    profit: list[MetricPoint] = []
+    add_point(profit, "Total Profit ($)", "profit_total")
+    add_point(profit, "Net Profit (%)", "net_profit_percent")
+    add_point(profit, "Orders", "orders_total")
+    add_point(profit, "Fills", "fills_total")
+    add_point(profit, "Errors", "errors_total")
+    add_point(profit, "Skips", "skips_total")
+
+    latency: list[MetricPoint] = []
+    add_point(latency, "Cycle Latency (s)", "cycle_latency")
+
+    return {"profit": profit, "latency": latency}
+
+
 def check_profit_alert(threshold: float) -> Dict[str, float | bool]:
     """Evaluate whether ``net_profit_percent`` exceeds ``threshold``.
 
@@ -74,7 +110,7 @@ def check_profit_alert(threshold: float) -> Dict[str, float | bool]:
         Mapping with ``net_profit_percent`` and whether an ``alert`` was
         triggered.
     """
-    metrics = get_metrics()
+    metrics = fetch_metrics()
     net_profit = float(metrics.get("net_profit_percent", 0))
     return {
         "net_profit_percent": net_profit,
