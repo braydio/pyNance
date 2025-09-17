@@ -25,7 +25,9 @@ describe('ArbitControls.vue', () => {
     await flushPromises()
 
     expect(startArbit).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('Enter the minimum spread percentage required to start trading.')
+    expect(wrapper.text()).toContain(
+      'Enter the minimum spread percentage required to start trading.',
+    )
     expect(wrapper.text()).toContain('Provide the expected percentage cost of executing the trade.')
   })
 
