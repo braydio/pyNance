@@ -69,15 +69,15 @@ def test_metrics_endpoint(monkeypatch):
 
 
 def test_stub_endpoints():
-    """`/opportunities` and `/trades` return empty lists."""
+    """`/opportunities` and `/trades` expose the standardized payload shape."""
     app = make_app(True)
     client = app.test_client()
     resp = client.get("/api/arbit/opportunities")
     assert resp.status_code == 200
-    assert resp.get_json() == []
+    assert resp.get_json() == {"opportunities": []}
     resp = client.get("/api/arbit/trades")
     assert resp.status_code == 200
-    assert resp.get_json() == []
+    assert resp.get_json() == {"trades": []}
 
 
 def test_start_endpoint(monkeypatch):
