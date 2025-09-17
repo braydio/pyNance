@@ -110,6 +110,11 @@ To surface live R/S arbitrage data in the UI, add the dashboard flag and run the
   npm run test:unit
   ```
 
+## Documentation
+
+- Browse `docs/index/INDEX.md` for the structured documentation tree.
+- Product roadmaps now live in `docs/roadmaps/`, keeping planning artifacts versioned with the codebase.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for coding standards and contribution guidelines.
