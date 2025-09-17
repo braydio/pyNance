@@ -46,18 +46,23 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 /**
  * Control panel to configure spread/fee requirements and control the arbitrage engine.
  */
 import { ref, onMounted } from 'vue'
 import { startArbit, stopArbit, fetchArbitStatus, postArbitAlert } from '@/services/arbit'
 
-const status = ref({ running: false })
-const startThreshold = ref(null)
-const startFee = ref(null)
-const startErrors = ref({})
-const alertThreshold = ref(0)
+type StartFormErrors = {
+  threshold?: string
+  fee?: string
+}
+
+const status = ref<{ running: boolean }>({ running: false })
+const startThreshold = ref<number | null>(null)
+const startFee = ref<number | null>(null)
+const startErrors = ref<StartFormErrors>({})
+const alertThreshold = ref<number>(0)
 
 async function refresh() {
   status.value = await fetchArbitStatus()
@@ -81,8 +86,11 @@ async function checkAlert() {
   await postArbitAlert(alertThreshold.value)
 }
 
-function validateStartConfig() {
-  const errors = {}
+/**
+ * Validate and sanitize the configured spread and fee percentages before starting.
+ */
+function validateStartConfig(): { valid: boolean; threshold: number; fee: number } {
+  const errors: StartFormErrors = {}
   const thresholdNumber = Number(startThreshold.value)
   const feeNumber = Number(startFee.value)
 
