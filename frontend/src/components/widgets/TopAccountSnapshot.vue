@@ -264,7 +264,12 @@ import { fetchRecentTransactions } from '@/api/accounts'
 const groupAccounts = ref([])
 const MAX_ACCOUNTS_PER_GROUP = 5
 
-const accountId = (account) => (account && (account.id || account.account_id)) || ''
+const accountId = (account) => {
+  if (!account) return ''
+  const raw = account.id ?? account.account_id ?? ''
+  if (raw === null || raw === undefined) return ''
+  return typeof raw === 'number' ? String(raw) : raw
+}
 
 const normalizeAccount = (account) => {
   if (!account || typeof account !== 'object') return null
@@ -275,9 +280,16 @@ const normalizeAccount = (account) => {
 
 const normalizeAccounts = (list) => {
   if (!Array.isArray(list)) return []
-  return list
-    .map(normalizeAccount)
-    .filter(Boolean)
+  const seen = new Set()
+  const normalized = []
+  for (const entry of list) {
+    const normalizedEntry = normalizeAccount(entry)
+    if (!normalizedEntry) continue
+    if (seen.has(normalizedEntry.id)) continue
+    seen.add(normalizedEntry.id)
+    normalized.push(normalizedEntry)
+  }
+  return normalized
 }
 
 const props = defineProps({

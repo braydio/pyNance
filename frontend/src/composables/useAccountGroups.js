@@ -20,10 +20,12 @@ function cloneDefaultGroup() {
 }
 
 function resolveAccountId(account) {
-  if (account && typeof account === 'object') {
-    return account.id || account.account_id || null
-  }
-  return account || null
+  const raw =
+    account && typeof account === 'object'
+      ? account.id ?? account.account_id
+      : account
+  if (raw === null || raw === undefined) return null
+  return typeof raw === 'number' ? String(raw) : raw
 }
 
 /**

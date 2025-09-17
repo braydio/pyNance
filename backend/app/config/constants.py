@@ -2,6 +2,7 @@
 
 """Centralized file paths and runtime constants for the Flask backend."""
 import os
+from pathlib import Path
 
 from .environment import PLAID_ENV
 from .paths import DIRECTORIES
@@ -32,7 +33,16 @@ DATABASE_NAME = os.getenv(
     "DATABASE_NAME",
     "developing_dash.db" if PLAID_ENV == "sandbox" else "dashboard_database.db",
 )
-SQLALCHEMY_DATABASE_URI = f"sqlite:///{DIRECTORIES['DATA_DIR']}/{DATABASE_NAME}"
+
+_default_base_dir = Path("/mnt/netstorage/Data/pyNance/Database")
+DATABASE_BASE_DIR = Path(os.getenv("DATABASE_BASE_DIR", _default_base_dir)).expanduser()
+if not DATABASE_BASE_DIR.is_absolute():
+    DATABASE_BASE_DIR = (DIRECTORIES["DATA_DIR"] / DATABASE_BASE_DIR).resolve(strict=False)
+else:
+    DATABASE_BASE_DIR = DATABASE_BASE_DIR.resolve(strict=False)
+
+DATABASE_PATH = DATABASE_BASE_DIR / DATABASE_NAME
+SQLALCHEMY_DATABASE_URI = f"sqlite:///{DATABASE_PATH}"
 TELEMETRY = {"enabled": True, "track_modifications": False}
 
 # Path to the R/S arbitrage dashboard data produced by the Discord bot.
