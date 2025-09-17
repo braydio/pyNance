@@ -58,7 +58,10 @@ def test_status_enabled():
 def test_metrics_endpoint(monkeypatch):
     """`/metrics` proxies results from `arbit_metrics.get_metrics`."""
     app = make_app(True)
-    sample = {"profit_total": 1}
+    sample = {
+        "profit": [{"label": "Total Profit ($)", "value": 1.0}],
+        "latency": [{"label": "Cycle Latency (s)", "value": 0.5}],
+    }
     monkeypatch.setattr(
         "app.routes.arbit_dashboard.arbit_metrics.get_metrics", lambda: sample
     )

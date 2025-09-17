@@ -16,10 +16,17 @@ export async function fetchArbitStatus() {
   return response.data
 }
 
+export type MetricPoint = { label: string; value: number }
+
+export type ArbitMetricsResponse = {
+  profit: MetricPoint[]
+  latency: MetricPoint[]
+}
+
 /**
  * Retrieve profit and latency metrics.
  */
-export async function fetchArbitMetrics() {
+export async function fetchArbitMetrics(): Promise<ArbitMetricsResponse> {
   const response = await apiClient.get('/arbit/metrics')
   return response.data
 }
@@ -41,10 +48,13 @@ export async function fetchArbitTrades() {
 }
 
 /**
- * Start the arbitrage engine.
+ * Start the arbitrage engine with configured spread and fee thresholds.
+ *
+ * @param threshold Minimum spread percentage required to execute trades.
+ * @param fee Estimated combined exchange fee percentage.
  */
-export async function startArbit() {
-  const response = await apiClient.post('/arbit/start')
+export async function startArbit(threshold: number, fee: number) {
+  const response = await apiClient.post('/arbit/start', { threshold, fee })
   return response.data
 }
 

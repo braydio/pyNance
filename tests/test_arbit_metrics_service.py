@@ -60,26 +60,44 @@ net_profit_percent 4.2
 
 
 def test_get_metrics(monkeypatch):
-    """`get_metrics` delegates to `fetch_metrics`."""
+    """`get_metrics` returns chart-formatted series."""
     called = {}
 
     def fake_fetch() -> dict:
         called["used"] = True
-        return {"profit_total": 0}
+        return {
+            "profit_total": 12.5,
+            "net_profit_percent": 3.2,
+            "orders_total": 4,
+            "fills_total": 3,
+            "errors_total": 1,
+            "skips_total": 2,
+            "cycle_latency": 0.8,
+        }
 
     monkeypatch.setattr(arbit_metrics, "fetch_metrics", fake_fetch)
 
-    assert arbit_metrics.get_metrics() == {"profit_total": 0}
+    assert arbit_metrics.get_metrics() == {
+        "profit": [
+            {"label": "Total Profit ($)", "value": 12.5},
+            {"label": "Net Profit (%)", "value": 3.2},
+            {"label": "Orders", "value": 4.0},
+            {"label": "Fills", "value": 3.0},
+            {"label": "Errors", "value": 1.0},
+            {"label": "Skips", "value": 2.0},
+        ],
+        "latency": [{"label": "Cycle Latency (s)", "value": 0.8}],
+    }
     assert called["used"] is True
 
 
 def test_check_profit_alert(monkeypatch):
     """`check_profit_alert` reports whether the threshold is exceeded."""
 
-    def fake_get_metrics():
+    def fake_fetch_metrics():
         return {"net_profit_percent": 5}
 
-    monkeypatch.setattr(arbit_metrics, "get_metrics", fake_get_metrics)
+    monkeypatch.setattr(arbit_metrics, "fetch_metrics", fake_fetch_metrics)
 
     result = arbit_metrics.check_profit_alert(4)
     assert result["alert"] is True

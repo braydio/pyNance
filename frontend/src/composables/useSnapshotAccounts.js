@@ -1,82 +1,217 @@
 // src/composables/useSnapshotAccounts.js
 /**
  * Manage selected accounts for the dashboard snapshot view.
- * Fetches account data and upcoming recurring reminders.
+ * Fetches persisted selections, account data, and upcoming recurring reminders.
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
 import axios from 'axios'
 
-export function useSnapshotAccounts(maxSelection = 5) {
+const REMINDER_PATH = id => `/api/recurring/${id}/recurring`
+
+export function useSnapshotAccounts(fallbackMaxSelection = 5) {
   const accounts = ref([])
   const selectedIds = ref([])
   const reminders = ref({})
+  const metadata = ref({})
 
-  function initSelection() {
-    const stored = localStorage.getItem('snapshotAccounts')
-    if (stored) {
-      try {
-        selectedIds.value = JSON.parse(stored).slice(0, maxSelection)
-      } catch {
-        selectedIds.value = []
+  const isLoading = ref(false)
+  const isSaving = ref(false)
+  const remindersLoading = ref(false)
+  const error = ref(null)
+
+  const initialized = ref(false)
+  const lastPersisted = ref([])
+  let reminderRequestId = 0
+
+  const maxSelection = computed(
+    () => metadata.value?.max_selection || fallbackMaxSelection,
+  )
+
+  const selectedAccounts = computed(() =>
+    selectedIds.value
+      .map(id => accounts.value.find(account => account.account_id === id))
+      .filter(Boolean),
+  )
+
+  const availableAccounts = computed(() =>
+    accounts.value.filter(account => !selectedIds.value.includes(account.account_id)),
+  )
+
+  const snapshotReady = computed(() => initialized.value && !isLoading.value)
+
+  const areIdsEqual = (a = [], b = []) => {
+    if (a.length !== b.length) return false
+    return a.every((val, idx) => val === b[idx])
+  }
+
+  const loadSnapshot = async () => {
+    const wasInitialized = initialized.value
+    initialized.value = false
+    isLoading.value = true
+    error.value = null
+    try {
+      const response = await api.getAccountSnapshot()
+      if (response?.status !== 'success') {
+        throw new Error(response?.message || 'Unable to load snapshot preferences')
       }
-    } else if (accounts.value.length) {
-      selectedIds.value = accounts.value.slice(0, maxSelection).map(a => a.account_id)
+      const data = response.data || {}
+      accounts.value = (data.available_accounts || []).slice()
+      metadata.value = data.metadata || {}
+
+      const serverSelection = (data.selected_account_ids || []).slice(0, maxSelection.value)
+      selectedIds.value = serverSelection
+      lastPersisted.value = serverSelection.slice()
+
+      if (!serverSelection.length && accounts.value.length) {
+        const fallback = accounts.value
+          .slice(0, maxSelection.value)
+          .map(account => account.account_id)
+        selectedIds.value = fallback
+        lastPersisted.value = []
+        await persistSelection(fallback)
+      }
+    } catch (err) {
+      error.value = err
+      console.error('Failed to load snapshot preferences', err)
+    } finally {
+      isLoading.value = false
+      initialized.value = wasInitialized
     }
   }
 
-  const loadAccounts = async () => {
+  const persistSelection = async ids => {
+    const limited = ids.slice(0, maxSelection.value)
+    if (areIdsEqual(limited, lastPersisted.value)) {
+      return
+    }
+
+    isSaving.value = true
+    error.value = null
     try {
-      const res = await api.getAccounts()
-      if (res.status === 'success') {
-        accounts.value = res.accounts
-          .slice()
-          .sort((a, b) => {
-            const aName = `${a.institution_name || ''} ${a.name}`.trim()
-            const bName = `${b.institution_name || ''} ${b.name}`.trim()
-            return aName.localeCompare(bName)
-          })
-        initSelection()
+      const response = await api.updateAccountSnapshot({
+        selected_account_ids: limited,
+      })
+      if (response?.status !== 'success') {
+        throw new Error(response?.message || 'Unable to update snapshot selection')
+      }
+      const data = response.data || {}
+      if (Array.isArray(data.available_accounts)) {
+        accounts.value = data.available_accounts.slice()
+      }
+      metadata.value = { ...metadata.value, ...(data.metadata || {}) }
+      const persisted = (data.selected_account_ids || limited).slice(0, maxSelection.value)
+      lastPersisted.value = persisted
+      if (!areIdsEqual(selectedIds.value, persisted)) {
+        initialized.value = false
+        selectedIds.value = persisted
+        initialized.value = true
       }
     } catch (err) {
-      console.error('Failed to load accounts', err)
+      error.value = err
+      console.error('Failed to persist snapshot selection', err)
+      throw err
+    } finally {
+      isSaving.value = false
     }
   }
 
   const fetchReminders = async () => {
-    const all = {}
-    for (const id of selectedIds.value) {
-      try {
-        const res = await axios.get(`/api/recurring/${id}/recurring`)
-        if (res.data.status === 'success') {
-          all[id] = res.data.reminders
-        }
-      } catch (err) {
-        console.error('Failed to load reminders for', id, err)
+    if (!snapshotReady.value || !selectedIds.value.length) {
+      reminders.value = {}
+      return
+    }
+
+    reminderRequestId += 1
+    const requestId = reminderRequestId
+    remindersLoading.value = true
+    try {
+      const entries = await Promise.all(
+        selectedIds.value.map(async accountId => {
+          try {
+            const res = await axios.get(REMINDER_PATH(accountId))
+            if (res.data?.status === 'success') {
+              return [accountId, res.data.reminders || []]
+            }
+          } catch (err) {
+            console.error(`Failed to load reminders for ${accountId}`, err)
+          }
+          return [accountId, []]
+        }),
+      )
+      if (requestId === reminderRequestId) {
+        reminders.value = Object.fromEntries(entries)
+      }
+    } finally {
+      if (requestId === reminderRequestId) {
+        remindersLoading.value = false
       }
     }
-    reminders.value = all
   }
 
-  watch(
-    selectedIds,
-    val => {
-      localStorage.setItem('snapshotAccounts', JSON.stringify(val.slice(0, maxSelection)))
-      fetchReminders()
-    },
-    { deep: true }
-  )
+  const handleSelectionChange = ids => {
+    if (!initialized.value) {
+      return
+    }
+    const limited = ids.slice(0, maxSelection.value)
+    if (!areIdsEqual(ids, limited)) {
+      selectedIds.value = limited
+      return
+    }
+
+    persistSelection(limited)
+      .catch(() => {})
+      .finally(() => {
+        fetchReminders()
+      })
+  }
+
+  watch(selectedIds, handleSelectionChange, { deep: false })
 
   onMounted(async () => {
-    await loadAccounts()
+    await loadSnapshot()
+    initialized.value = true
     if (selectedIds.value.length) {
       fetchReminders()
     }
   })
 
-  const selectedAccounts = computed(() =>
-    accounts.value.filter(acc => selectedIds.value.includes(acc.account_id))
-  )
+  const addAccount = accountId => {
+    if (!accountId) return
+    if (selectedIds.value.includes(accountId)) return
+    const limit = maxSelection.value
+    if (selectedIds.value.length >= limit) {
+      const next = selectedIds.value.slice(1)
+      selectedIds.value = [...next, accountId]
+    } else {
+      selectedIds.value = [...selectedIds.value, accountId]
+    }
+  }
 
-  return { accounts, selectedAccounts, selectedIds, reminders, loadAccounts }
+  const removeAccount = accountId => {
+    selectedIds.value = selectedIds.value.filter(id => id !== accountId)
+  }
+
+  const setSelection = ids => {
+    selectedIds.value = (ids || []).slice(0, maxSelection.value)
+  }
+
+  return {
+    accounts,
+    selectedAccounts,
+    selectedIds,
+    reminders,
+    metadata,
+    maxSelection,
+    availableAccounts,
+    isLoading,
+    isSaving,
+    remindersLoading,
+    error,
+    addAccount,
+    removeAccount,
+    setSelection,
+    refreshSnapshot: loadSnapshot,
+    refreshReminders: fetchReminders,
+  }
 }

@@ -67,3 +67,16 @@ class FinancialGoal(db.Model, TimestampMixin):
     notes = db.Column(db.String(256), nullable=True)
 
     account = db.relationship("Account", backref="goals")
+
+
+class AccountSnapshotPreference(db.Model, TimestampMixin):
+    __tablename__ = "account_snapshot_preferences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    selected_account_ids = db.Column(db.JSON, nullable=False, default=list)
+
+    @property
+    def selected_ids(self) -> list[str]:
+        raw = self.selected_account_ids or []
+        return list(raw)

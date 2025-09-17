@@ -1,8 +1,6 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
-
 from collections import Counter as MemoryCounter
-
 from datetime import date, datetime, timedelta, timezone
 from typing import Tuple
 

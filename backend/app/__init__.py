@@ -25,6 +25,7 @@ def create_app():
     from app.routes.arbitrage import arbitrage
     from app.routes.categories import categories
     from app.routes.charts import charts
+    from app.routes.dashboard import dashboard
     from app.routes.export import export
     from app.routes.forecast import forecast
     from app.routes.frontend import frontend
@@ -48,6 +49,7 @@ def create_app():
 
     app.register_blueprint(frontend, url_prefix="/")
     app.register_blueprint(export, url_prefix="/api/export")
+    app.register_blueprint(dashboard, url_prefix="/api/dashboard")
     app.register_blueprint(categories, url_prefix="/api/categories")
     app.register_blueprint(transactions, url_prefix="/api/transactions")
     app.register_blueprint(rules_bp, url_prefix="/api/rules")

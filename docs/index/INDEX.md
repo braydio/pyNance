@@ -8,6 +8,7 @@
 - [Process](../process/) – development workflows
 - [Maintenance](../maintenance/) – operations and upkeep
 - [Maps](../maps/) – diagrams and visual references
+- [Roadmaps](../roadmaps/) – active product planning and workstream status
 
 ## Additional Resources
 
