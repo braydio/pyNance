@@ -55,6 +55,16 @@ export default {
     return response.data
   },
 
+  async getAccountSnapshot(params = {}) {
+    const response = await apiClient.get('/dashboard/account_snapshot', { params })
+    return response.data
+  },
+
+  async updateAccountSnapshot(payload = {}) {
+    const response = await apiClient.put('/dashboard/account_snapshot', payload)
+    return response.data
+  },
+
   async fetchNetAssets() {
     const response = await apiClient.get('/charts/net_assets')
     return response.data

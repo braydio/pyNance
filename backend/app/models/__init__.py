@@ -4,7 +4,12 @@ This package exposes all SQLAlchemy models grouped into modules.
 """
 
 # Accounts
-from .account_models import Account, AccountHistory, FinancialGoal
+from .account_models import (
+    Account,
+    AccountHistory,
+    AccountSnapshotPreference,
+    FinancialGoal,
+)
 
 # Institutions & linked accounts
 from .institution_models import (
@@ -52,6 +57,7 @@ __all__ = [
     # Accounts
     "Account",
     "AccountHistory",
+    "AccountSnapshotPreference",
     "FinancialGoal",
     # Transactions
     "Category",
