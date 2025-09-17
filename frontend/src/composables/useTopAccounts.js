@@ -37,6 +37,8 @@ export function useTopAccounts(subtype = '') {
       if (data?.status === 'success') {
         accounts.value = data.accounts.map(acc => ({
           ...acc,
+          // Normalise identifier so downstream components can rely on `id`.
+          id: acc.id || acc.account_id,
           adjusted_balance: acc.balance ?? 0,
         }))
       }

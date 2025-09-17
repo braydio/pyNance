@@ -12,6 +12,20 @@ import { ref, watch } from 'vue'
 const STORAGE_KEY = 'accountGroups'
 const DEFAULT_GROUP = { id: 'group-1', name: 'Group', accounts: [] }
 
+function cloneDefaultGroup() {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(DEFAULT_GROUP)
+  }
+  return JSON.parse(JSON.stringify(DEFAULT_GROUP))
+}
+
+function resolveAccountId(account) {
+  if (account && typeof account === 'object') {
+    return account.id || account.account_id || null
+  }
+  return account || null
+}
+
 /**
  * Load groups and active id from localStorage.
  * @returns {{ groups: Array, activeGroupId: string }}
@@ -31,7 +45,7 @@ function load() {
   } catch (e) {
     // fall back to default group on parse errors
   }
-  return { groups: [structuredClone(DEFAULT_GROUP)], activeGroupId: DEFAULT_GROUP.id }
+  return { groups: [cloneDefaultGroup()], activeGroupId: DEFAULT_GROUP.id }
 }
 
 /**
@@ -51,7 +65,7 @@ export function useAccountGroups() {
 
   function ensureActive() {
     if (!groups.value.length) {
-      groups.value.push(structuredClone(DEFAULT_GROUP))
+      groups.value.push(cloneDefaultGroup())
     }
     if (!groups.value.some((g) => g.id === activeGroupId.value)) {
       activeGroupId.value = groups.value[0].id
@@ -109,11 +123,16 @@ export function useAccountGroups() {
   function addAccountToGroup(groupId, account) {
     const group = groups.value.find((g) => g.id === groupId)
     if (!group || group.accounts.length >= 5) return false
-    const accountId = typeof account === 'object' ? account.id : account
-    if (group.accounts.some((a) => (typeof a === 'object' ? a.id : a) === accountId)) {
+    const accountId = resolveAccountId(account)
+    if (!accountId) return false
+    if (group.accounts.some((a) => resolveAccountId(a) === accountId)) {
       return false
     }
-    group.accounts.push(account)
+    if (typeof account === 'object') {
+      group.accounts.push({ ...account, id: accountId })
+    } else {
+      group.accounts.push({ id: accountId })
+    }
     return true
   }
 
@@ -127,13 +146,11 @@ export function useAccountGroups() {
   function removeAccountFromGroup(groupId, accountId) {
     const group = groups.value.find((g) => g.id === groupId)
     if (!group) return false
-
-    const idx = group.accounts.findIndex((a) => (typeof a === 'object' ? a.id : a) === accountId)
-    if (idx !== -1) {
-      group.accounts.splice(idx, 1)
-      return true
-    }
-    return false
+    const resolvedId = resolveAccountId(accountId)
+    const idx = group.accounts.findIndex((a) => resolveAccountId(a) === resolvedId)
+    if (idx === -1) return false
+    group.accounts.splice(idx, 1)
+    return true
   }
 
   watch(

@@ -123,23 +123,23 @@
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
       v-if="activeGroup"
-      v-model="accounts"
+      v-model="groupAccounts"
       item-key="id"
       handle=".bs-drag-handle"
       tag="transition-group"
       :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
     >
       <template #item="{ element: account }">
-        <li class="bs-account-container" :key="account.id">
+        <li class="bs-account-container" :key="accountId(account)">
           <!-- Enter and space should toggle details without moving focus -->
           <div
             class="bs-row"
             :style="{ '--accent': accentColor(account) }"
-            @click="toggleDetails(account.id, $event)"
+            @click="toggleDetails(accountId(account), $event)"
             role="button"
             tabindex="0"
-            @keydown.enter.prevent="toggleDetails(account.id, $event)"
-            @keydown.space.prevent="toggleDetails(account.id, $event)"
+            @keydown.enter.prevent="toggleDetails(accountId(account), $event)"
+            @keydown.space.prevent="toggleDetails(accountId(account), $event)"
           >
             <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
@@ -158,7 +158,7 @@
               <div class="bs-name">
                 <span
                   class="bs-toggle-icon"
-                  :class="{ 'bs-expanded': openAccountId === account.id }"
+                  :class="{ 'bs-expanded': openAccountId === accountId(account) }"
                   >▶</span
                 >
                 {{ account.name }}
@@ -175,22 +175,22 @@
               </div>
             </div>
             <div class="bs-sparkline">
-              <AccountSparkline :account-id="account.id" />
+              <AccountSparkline :account-id="accountId(account)" />
             </div>
             <div class="bs-amount-section">
               <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
               <X
                 v-if="isEditingGroups"
                 class="bs-account-delete"
-                @click.stop="removeAccount(account.id)"
+                @click.stop="removeAccount(accountId(account))"
               />
             </div>
           </div>
-          <div v-if="openAccountId === account.id" class="bs-details-row">
+          <div v-if="openAccountId === accountId(account)" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
                 <li
-                  v-for="tx in recentTxs[account.id]"
+                  v-for="tx in recentTxs[accountId(account)]"
                   :key="tx.transaction_id || tx.id"
                   class="bs-tx-row"
                 >
@@ -200,7 +200,7 @@
                   }}</span>
                   <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
                 </li>
-                <li v-if="recentTxs[account.id]?.length === 0" class="bs-tx-empty">
+                <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
                 </li>
               </ul>
@@ -212,13 +212,17 @@
       <template #footer>
         <li
           class="bs-account-container bs-add-account"
-          :class="{ 'bs-disabled': activeAccounts.length >= 5 }"
+          :class="{ 'bs-disabled': activeAccounts.length >= MAX_ACCOUNTS_PER_GROUP }"
           :key="'add-' + activeGroupId"
         >
           <div v-if="showAccountSelector" class="bs-row">
             <select v-model="selectedAccountId" @change="confirmAddAccount" class="bs-add-select">
               <option value="" disabled>Select account</option>
-              <option v-for="acct in availableAccounts" :key="acct.id" :value="acct.id">
+              <option
+                v-for="acct in availableAccounts"
+                :key="accountId(acct)"
+                :value="accountId(acct)"
+              >
                 {{ acct.name }}
               </option>
             </select>
@@ -240,7 +244,9 @@
       </template>
     </Draggable>
 
-    <div v-if="activeGroup && !accounts.length" class="bs-empty">No accounts to display</div>
+    <div v-if="activeGroup && !groupAccounts.length" class="bs-empty">
+      No accounts to display
+    </div>
   </div>
 </template>
 
@@ -254,7 +260,25 @@ import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
-const accounts = ref([])
+
+const groupAccounts = ref([])
+const MAX_ACCOUNTS_PER_GROUP = 5
+
+const accountId = (account) => (account && (account.id || account.account_id)) || ''
+
+const normalizeAccount = (account) => {
+  if (!account || typeof account !== 'object') return null
+  const id = accountId(account)
+  if (!id) return null
+  return { ...account, id }
+}
+
+const normalizeAccounts = (list) => {
+  if (!Array.isArray(list)) return []
+  return list
+    .map(normalizeAccount)
+    .filter(Boolean)
+}
 
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
@@ -263,7 +287,7 @@ const props = defineProps({
 })
 
 // fetch accounts generically for potential group management
-const { allVisibleAccounts } = useTopAccounts()
+const { accounts: allAccounts } = useTopAccounts()
 const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFromGroup } =
   useAccountGroups()
 
@@ -271,8 +295,12 @@ const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFrom
 const openAccountId = ref(null)
 const recentTxs = reactive({})
 
+let syncingFromActive = false
+let syncingToActive = false
+
 /** Toggle details dropdown for an account and load recent transactions */
 function toggleDetails(accountId, event) {
+  if (!accountId) return
   openAccountId.value = openAccountId.value === accountId ? null : accountId
   // Ensure the originating row retains focus for accessibility
   event?.currentTarget?.focus()
@@ -312,15 +340,25 @@ const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroup
 watch(
   () => activeGroup.value?.accounts,
   (val) => {
-    accounts.value = Array.isArray(val) ? [...val] : []
+    if (syncingToActive) return
+    syncingFromActive = true
+    groupAccounts.value = normalizeAccounts(val)
+    syncingFromActive = false
   },
   { immediate: true, deep: true },
 )
 
 watch(
-  accounts,
+  groupAccounts,
   (val) => {
-    if (activeGroup.value) activeGroup.value.accounts = val
+    if (syncingFromActive || !activeGroup.value) return
+    syncingToActive = true
+    const normalized = normalizeAccounts(val)
+    if (!Array.isArray(activeGroup.value.accounts)) {
+      activeGroup.value.accounts = []
+    }
+    activeGroup.value.accounts.splice(0, activeGroup.value.accounts.length, ...normalized)
+    syncingToActive = false
   },
   { deep: true },
 )
@@ -436,20 +474,32 @@ function addGroup() {
   editingGroupId.value = id
 }
 
-const activeAccounts = computed(() => accounts.value)
-const availableAccounts = computed(() =>
-  allVisibleAccounts.value.filter((acct) => !activeAccounts.value.some((a) => a.id === acct.id)),
-)
+const activeAccounts = computed(() => groupAccounts.value)
+const availableAccounts = computed(() => {
+  const taken = new Set(activeAccounts.value.map((acct) => accountId(acct)))
+  return normalizeAccounts(allAccounts.value)
+    .filter((acct) => !taken.has(accountId(acct)))
+    .sort((a, b) => {
+      const aLabel = `${a.institution_name || ''} ${a.name || ''}`.trim().toLowerCase()
+      const bLabel = `${b.institution_name || ''} ${b.name || ''}`.trim().toLowerCase()
+      return aLabel.localeCompare(bLabel)
+    })
+})
 const showAccountSelector = ref(false)
 const selectedAccountId = ref('')
 
 function startAddAccount() {
-  if (activeAccounts.value.length >= 5) return
+  if (activeAccounts.value.length >= MAX_ACCOUNTS_PER_GROUP) return
+  selectedAccountId.value = ''
   showAccountSelector.value = true
 }
 
 function confirmAddAccount() {
-  const acct = availableAccounts.value.find((a) => a.id === selectedAccountId.value)
+  if (!selectedAccountId.value) {
+    showAccountSelector.value = false
+    return
+  }
+  const acct = availableAccounts.value.find((a) => accountId(a) === selectedAccountId.value)
   if (acct) {
     addAccountToGroup(activeGroupId.value, acct)
   }
@@ -458,10 +508,20 @@ function confirmAddAccount() {
 }
 
 function removeAccount(id) {
-  removeAccountFromGroup(activeGroupId.value, id)
+  if (removeAccountFromGroup(activeGroupId.value, id)) {
+    groupAccounts.value = groupAccounts.value.filter((acct) => accountId(acct) !== id)
+    if (openAccountId.value === id) {
+      openAccountId.value = null
+    }
+    if (id in recentTxs) {
+      delete recentTxs[id]
+    }
+  }
 }
 
-const activeTotal = computed(() => accounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0))
+const activeTotal = computed(() =>
+  activeAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
+)
 
 const format = (val) => {
   const formatter = new Intl.NumberFormat('en-US', {
