@@ -1,13 +1,12 @@
 """Dashboard-specific API routes."""
 
-from flask import Blueprint, jsonify, request
-
 from app.config import logger
 from app.services.account_snapshot import (
     DEFAULT_USER_SCOPE,
     build_snapshot_payload,
     update_snapshot_selection,
 )
+from flask import Blueprint, jsonify, request
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -20,7 +19,9 @@ def get_account_snapshot():
         data = build_snapshot_payload(user_id=user_id)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error("Failed to load account snapshot preferences: %s", exc, exc_info=True)
+        logger.error(
+            "Failed to load account snapshot preferences: %s", exc, exc_info=True
+        )
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -29,9 +30,7 @@ def update_account_snapshot():
     """Persist a new snapshot selection."""
     payload = request.get_json(silent=True) or {}
     user_id = (
-        payload.get("user_id")
-        or request.args.get("user_id")
-        or DEFAULT_USER_SCOPE
+        payload.get("user_id") or request.args.get("user_id") or DEFAULT_USER_SCOPE
     )
     selected_ids = payload.get("selected_account_ids")
 
@@ -42,7 +41,9 @@ def update_account_snapshot():
         )
     if not isinstance(selected_ids, list):
         return (
-            jsonify({"status": "error", "message": "selected_account_ids must be a list"}),
+            jsonify(
+                {"status": "error", "message": "selected_account_ids must be a list"}
+            ),
             400,
         )
 
@@ -50,5 +51,7 @@ def update_account_snapshot():
         data = update_snapshot_selection(selected_ids, user_id=user_id)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error("Failed to update account snapshot preferences: %s", exc, exc_info=True)
+        logger.error(
+            "Failed to update account snapshot preferences: %s", exc, exc_info=True
+        )
         return jsonify({"status": "error", "message": str(exc)}), 500

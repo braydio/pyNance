@@ -54,7 +54,9 @@
       </div>
     </header>
 
-    <section class="mt-6 rounded-2xl border border-gray-100 bg-white/80 p-4 dark:border-gray-800 dark:bg-gray-900/60">
+    <section
+      class="mt-6 rounded-2xl border border-gray-100 bg-white/80 p-4 dark:border-gray-800 dark:bg-gray-900/60"
+    >
       <dl class="grid gap-4 sm:grid-cols-2">
         <div>
           <dt class="text-xs uppercase tracking-wide text-gray-400">Total balance</dt>
@@ -134,8 +136,12 @@
             @keydown.space.prevent="toggleDetails(account.account_id)"
           >
             <div class="flex flex-col gap-1">
-              <span class="text-sm font-semibold text-blue-950 dark:text-blue-100">{{ account.name }}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{ account.institution_name || '—' }}</span>
+              <span class="text-sm font-semibold text-blue-950 dark:text-blue-100">{{
+                account.name
+              }}</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{
+                account.institution_name || '—'
+              }}</span>
               <span class="text-[10px] uppercase tracking-wide text-gray-400">
                 Tap to view recent activity
               </span>
@@ -171,7 +177,9 @@
                   class="flex items-start justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800/60"
                 >
                   <div>
-                    <p class="font-semibold text-gray-700 dark:text-gray-200">{{ reminder.description }}</p>
+                    <p class="font-semibold text-gray-700 dark:text-gray-200">
+                      {{ reminder.description }}
+                    </p>
                     <p
                       v-if="reminder.next_due_date"
                       class="text-[10px] uppercase tracking-wide text-gray-400"
@@ -193,7 +201,10 @@
                 <li v-if="recentTxs[account.account_id] === undefined" class="italic text-gray-400">
                   Loading…
                 </li>
-                <li v-else-if="recentTxs[account.account_id]?.length === 0" class="italic text-gray-400">
+                <li
+                  v-else-if="recentTxs[account.account_id]?.length === 0"
+                  class="italic text-gray-400"
+                >
                   No recent transactions.
                 </li>
                 <li
@@ -336,7 +347,7 @@ function netUpcoming(account) {
 function upcomingForAccount(account) {
   if (!account) return []
   if (Array.isArray(reminders.value)) {
-    return reminders.value.filter(tx => tx.account_id === account.account_id)
+    return reminders.value.filter((tx) => tx.account_id === account.account_id)
   }
   return reminders.value[account.account_id] || []
 }
@@ -347,7 +358,7 @@ function toggleDetails(accountId) {
   if (nextOpen && !(accountId in recentTxs)) {
     recentTxs[accountId] = undefined
     fetchRecentTransactions(accountId, 3)
-      .then(res => {
+      .then((res) => {
         let txs = []
         if (Array.isArray(res?.transactions)) {
           txs = res.transactions

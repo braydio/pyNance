@@ -1,7 +1,8 @@
 """Account models: Account, AccountHistory, FinancialGoal."""
 
-from sqlalchemy.ext.hybrid import hybrid_property
 from app.extensions import db
+from sqlalchemy.ext.hybrid import hybrid_property
+
 from .mixins import TimestampMixin
 
 

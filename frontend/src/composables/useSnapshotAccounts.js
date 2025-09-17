@@ -7,7 +7,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
 import axios from 'axios'
 
-const REMINDER_PATH = id => `/api/recurring/${id}/recurring`
+const REMINDER_PATH = (id) => `/api/recurring/${id}/recurring`
 
 export function useSnapshotAccounts(fallbackMaxSelection = 5) {
   const accounts = ref([])
@@ -24,18 +24,16 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
   const lastPersisted = ref([])
   let reminderRequestId = 0
 
-  const maxSelection = computed(
-    () => metadata.value?.max_selection || fallbackMaxSelection,
-  )
+  const maxSelection = computed(() => metadata.value?.max_selection || fallbackMaxSelection)
 
   const selectedAccounts = computed(() =>
     selectedIds.value
-      .map(id => accounts.value.find(account => account.account_id === id))
+      .map((id) => accounts.value.find((account) => account.account_id === id))
       .filter(Boolean),
   )
 
   const availableAccounts = computed(() =>
-    accounts.value.filter(account => !selectedIds.value.includes(account.account_id)),
+    accounts.value.filter((account) => !selectedIds.value.includes(account.account_id)),
   )
 
   const snapshotReady = computed(() => initialized.value && !isLoading.value)
@@ -66,7 +64,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
       if (!serverSelection.length && accounts.value.length) {
         const fallback = accounts.value
           .slice(0, maxSelection.value)
-          .map(account => account.account_id)
+          .map((account) => account.account_id)
         selectedIds.value = fallback
         lastPersisted.value = []
         await persistSelection(fallback)
@@ -80,7 +78,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
     }
   }
 
-  const persistSelection = async ids => {
+  const persistSelection = async (ids) => {
     const limited = ids.slice(0, maxSelection.value)
     if (areIdsEqual(limited, lastPersisted.value)) {
       return
@@ -127,7 +125,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
     remindersLoading.value = true
     try {
       const entries = await Promise.all(
-        selectedIds.value.map(async accountId => {
+        selectedIds.value.map(async (accountId) => {
           try {
             const res = await axios.get(REMINDER_PATH(accountId))
             if (res.data?.status === 'success') {
@@ -149,7 +147,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
     }
   }
 
-  const handleSelectionChange = ids => {
+  const handleSelectionChange = (ids) => {
     if (!initialized.value) {
       return
     }
@@ -176,7 +174,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
     }
   })
 
-  const addAccount = accountId => {
+  const addAccount = (accountId) => {
     if (!accountId) return
     if (selectedIds.value.includes(accountId)) return
     const limit = maxSelection.value
@@ -188,11 +186,11 @@ export function useSnapshotAccounts(fallbackMaxSelection = 5) {
     }
   }
 
-  const removeAccount = accountId => {
-    selectedIds.value = selectedIds.value.filter(id => id !== accountId)
+  const removeAccount = (accountId) => {
+    selectedIds.value = selectedIds.value.filter((id) => id !== accountId)
   }
 
-  const setSelection = ids => {
+  const setSelection = (ids) => {
     selectedIds.value = (ids || []).slice(0, maxSelection.value)
   }
 
