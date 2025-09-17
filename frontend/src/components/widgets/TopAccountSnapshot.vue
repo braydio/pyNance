@@ -244,9 +244,7 @@
       </template>
     </Draggable>
 
-    <div v-if="activeGroup && !groupAccounts.length" class="bs-empty">
-      No accounts to display
-    </div>
+    <div v-if="activeGroup && !groupAccounts.length" class="bs-empty">No accounts to display</div>
   </div>
 </template>
 

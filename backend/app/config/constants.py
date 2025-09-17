@@ -1,6 +1,7 @@
 # backend/app/config/constants.py
 
 """Centralized file paths and runtime constants for the Flask backend."""
+
 import os
 from pathlib import Path
 
@@ -40,7 +41,9 @@ DATABASE_BACKUP_PATH = DATABASE_BACKUP_DIR / DATABASE_NAME
 _default_network_dir = Path("/mnt/netstorage/Data/pyNance/backend/app/data")
 DATABASE_BASE_DIR = Path(os.getenv("DATABASE_BASE_DIR", _default_network_dir)).expanduser()
 if not DATABASE_BASE_DIR.is_absolute():
-    DATABASE_BASE_DIR = (DIRECTORIES["DATA_DIR"] / DATABASE_BASE_DIR).resolve(strict=False)
+    DATABASE_BASE_DIR = (DIRECTORIES["DATA_DIR"] / DATABASE_BASE_DIR).resolve(
+        strict=False
+    )
 else:
     DATABASE_BASE_DIR = DATABASE_BASE_DIR.resolve(strict=False)
 
