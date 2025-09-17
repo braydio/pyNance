@@ -14,38 +14,38 @@ for the experimental arbitrage engine. The backend exposes a Flask blueprint at
 
 ## HTTP Endpoints
 
-- `GET /api/arbit/status` – reports whether the dashboard is enabled and echoes
-  the configured exporter URL.
-- `GET /api/arbit/metrics` – returns chart-ready metrics aggregated by
-  `app.services.arbit_metrics`.
-- `GET /api/arbit/opportunities` – placeholder that currently returns an empty
-  list.
-- `GET /api/arbit/trades` – placeholder that currently returns an empty list.
-- `POST /api/arbit/start` – launch the Arbit CLI with the provided threshold and
-  fee.
-- `POST /api/arbit/stop` – halt the CLI process.
-- `POST /api/arbit/config/update` – update CLI thresholds without restarting.
-- `POST /api/arbit/alerts` – evaluate profitability against a user-supplied
-  threshold.
-- `GET /api/arbit/alerts/stream` – Server-Sent Events stream for alert
-  notifications.
+The blueprint currently exposes the routes below. Unless otherwise noted, all
+responses are JSON encoded and use HTTP 200 on success.
 
-## Metrics Payload
+### `GET /api/arbit/status`
 
-The exporter metrics are normalized into chart-friendly series before being
-returned to the client. Missing metrics are omitted from the arrays.
+Returns whether the dashboard is enabled and echoes the relevant configuration.
 
+```json
+{
+  "running": true,
+  "config": {
+    "arbit_exporter_url": "http://localhost:9876",
+    "enable_arbit_dashboard": true
+  }
+}
 ```
-GET /api/arbit/metrics
 
+### `GET /api/arbit/metrics`
+
+Retrieves chart-ready series derived from the exporter. Each series contains a
+`label` and numeric `value` for the profit and latency groups that
+`frontend/src/components/ArbitMetrics.vue` can render directly.
+
+```json
 {
   "profit": [
     { "label": "Total Profit ($)", "value": 12.5 },
     { "label": "Net Profit (%)", "value": 3.2 },
-    { "label": "Orders", "value": 4.0 },
-    { "label": "Fills", "value": 3.0 },
-    { "label": "Errors", "value": 1.0 },
-    { "label": "Skips", "value": 2.0 }
+    { "label": "Orders", "value": 4 },
+    { "label": "Fills", "value": 3 },
+    { "label": "Errors", "value": 1 },
+    { "label": "Skips", "value": 2 }
   ],
   "latency": [
     { "label": "Cycle Latency (s)", "value": 0.8 }
@@ -53,11 +53,80 @@ GET /api/arbit/metrics
 }
 ```
 
-`frontend/src/components/ArbitMetrics.vue` consumes the response and renders the
-series through `PortfolioAllocationChart.vue`.
+### `GET /api/arbit/opportunities`
 
-## UI
+Placeholder that currently returns an empty list. Reserved for surfaced trade
+candidates.
 
-Visit `/arbit` in the frontend to access the dashboard. The view displays
-status, charts for the metrics above, opportunity placeholders, and alert
-notifications.
+### `GET /api/arbit/trades`
+
+Placeholder returning an empty list for completed trade history.
+
+### `POST /api/arbit/start`
+
+Launches the CLI worker with the supplied configuration. The request **must**
+include both `threshold` (profit percent trigger, must be greater than zero)
+and `fee` (expected fees, zero or greater).
+
+```bash
+curl -X POST /api/arbit/start \
+  -H 'Content-Type: application/json' \
+  -d '{"threshold": 2.5, "fee": 0.15}'
+```
+
+Successful responses include the captured CLI output:
+
+```json
+{
+  "stdout": "...",
+  "stderr": "...",
+  "returncode": 0
+}
+```
+
+### `POST /api/arbit/stop`
+
+Stops the running CLI process. No request body is required. The response mirrors
+`/start` by returning `stdout`, `stderr`, and the `returncode` produced by the
+shutdown command.
+
+### `POST /api/arbit/config/update`
+
+Hot-reloads CLI parameters without restarting the worker. Supply the same JSON
+payload as `/start`:
+
+```json
+{ "threshold": 2.5, "fee": 0.15 }
+```
+
+### `POST /api/arbit/alerts`
+
+Evaluates the most recent exporter metrics against a provided profit threshold.
+The request body must include a numeric `threshold` property. If the
+`net_profit_percent` exceeds that value, the response marks `"alert": true` and
+queues the event for the stream described below.
+
+### `GET /api/arbit/alerts/stream`
+
+Server-Sent Events (SSE) feed that broadcasts alert payloads as soon as they are
+produced. Clients should subscribe with `EventSource` (or an equivalent SSE
+library) and expect messages shaped like:
+
+```json
+{
+  "net_profit_percent": 3.7,
+  "alert": true,
+  "threshold": 2.5
+}
+```
+
+The stream remains open until the client disconnects. Remember to close the
+connection when unmounting UI components to prevent resource leaks.
+
+## Frontend View
+
+`frontend/src/views/ArbitDashboard.vue` currently renders the `ArbitAlerts`
+component, which listens to the `/api/arbit/alerts/stream` SSE endpoint via the
+browser's `EventSource` API. Operators must ensure the blueprint is enabled and
+that the frontend's API base URL correctly proxies `/api/arbit` so the component
+can establish the stream.
