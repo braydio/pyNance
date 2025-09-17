@@ -1,0 +1,46 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ArbitDashboard.vue > matches snapshot 1`] = `
+"<div data-v-db7eac05="" class="pass-through arbit-dashboard" gap="gap-10">
+  <div data-v-db7eac05="" class="page-header-stub" icon="(props, { slots, attrs }) => vue.h(
+  Icon,
+  {
+    ...attrs,
+    ...props,
+    iconNode,
+    name: iconName
+  },
+  slots
+)">Arbitrage Command CenterMonitor engine status, opportunities, and trades</div>
+  <section data-v-db7eac05="" data-testid="status-controls" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4">
+      <h2 data-v-db7eac05="" class="section-title">Engine Status</h2>
+      <div data-v-db7eac05="" data-test="arbit-status-stub"></div>
+    </div>
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4 xl:col-span-2">
+      <h2 data-v-db7eac05="" class="section-title">Control Panel</h2>
+      <div data-v-db7eac05="" data-test="arbit-controls-stub"></div>
+    </div>
+  </section>
+  <section data-v-db7eac05="" data-testid="metrics-alerts" class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4 lg:col-span-2">
+      <h2 data-v-db7eac05="" class="section-title">Performance Metrics</h2>
+      <div data-v-db7eac05="" data-test="arbit-metrics-stub"></div>
+    </div>
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4">
+      <h2 data-v-db7eac05="" class="section-title">Live Alerts</h2>
+      <div data-v-db7eac05="" data-test="arbit-alerts-stub"></div>
+    </div>
+  </section>
+  <section data-v-db7eac05="" data-testid="opportunities-trades" class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4">
+      <h2 data-v-db7eac05="" class="section-title">Current Opportunities</h2>
+      <div data-v-db7eac05="" data-test="arbit-opportunities-stub"></div>
+    </div>
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4 xl:col-span-2 overflow-x-auto">
+      <h2 data-v-db7eac05="" class="section-title">Recent Trades</h2>
+      <div data-v-db7eac05="" data-test="arbit-trades-stub"></div>
+    </div>
+  </section>
+</div>"
+`;
