@@ -34,14 +34,19 @@ DATABASE_NAME = os.getenv(
     "developing_dash.db" if PLAID_ENV == "sandbox" else "dashboard_database.db",
 )
 
-_default_base_dir = Path("/mnt/netstorage/Data/pyNance/Database")
-DATABASE_BASE_DIR = Path(os.getenv("DATABASE_BASE_DIR", _default_base_dir)).expanduser()
+DATABASE_BACKUP_DIR = DIRECTORIES["DATA_DIR"]
+DATABASE_BACKUP_PATH = DATABASE_BACKUP_DIR / DATABASE_NAME
+
+_default_network_dir = Path("/mnt/netstorage/Data/pyNance/backend/app/data")
+DATABASE_BASE_DIR = Path(os.getenv("DATABASE_BASE_DIR", _default_network_dir)).expanduser()
 if not DATABASE_BASE_DIR.is_absolute():
     DATABASE_BASE_DIR = (DIRECTORIES["DATA_DIR"] / DATABASE_BASE_DIR).resolve(strict=False)
 else:
     DATABASE_BASE_DIR = DATABASE_BASE_DIR.resolve(strict=False)
 
-DATABASE_PATH = DATABASE_BASE_DIR / DATABASE_NAME
+CURRENT_DATABASE_PATH = DATABASE_BASE_DIR / DATABASE_NAME
+
+DATABASE_PATH = DATABASE_BACKUP_PATH
 SQLALCHEMY_DATABASE_URI = f"sqlite:///{DATABASE_PATH}"
 TELEMETRY = {"enabled": True, "track_modifications": False}
 

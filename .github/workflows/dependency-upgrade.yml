@@ -1,0 +1,232 @@
+name: Dependency Upgrade
+
+on:
+  workflow_dispatch:
+    inputs:
+      package:
+        description: "PyPI package name to upgrade"
+        required: true
+        default: requests
+      requirements_files:
+        description: "Whitespace-separated requirement files to update"
+        required: false
+        default: "requirements.txt requirements-dev.txt requirements-slim.txt"
+
+jobs:
+  upgrade:
+    name: Upgrade dependency
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip packaging
+
+      - name: Prepare metadata
+        id: metadata
+        env:
+          INPUT_PACKAGE: ${{ github.event.inputs.package }}
+          INPUT_FILES: ${{ github.event.inputs.requirements_files }}
+        run: |
+          python - <<'PY'
+          import os
+          import re
+
+          package = os.environ["INPUT_PACKAGE"].strip()
+          files = os.environ.get("INPUT_FILES", "").strip()
+
+          sanitized = re.sub(r"[^a-z0-9._-]+", "-", package.lower())
+          sanitized = re.sub(r"-+", "-", sanitized).strip("-") or "dependency"
+          branch = f"chore/upgrade-{sanitized}"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"package={package}\n")
+              fh.write(f"files={files}\n")
+              fh.write(f"branch={branch}\n")
+              fh.write(f"sanitized_package={sanitized}\n")
+          PY
+
+      - name: Resolve latest version
+        id: resolve
+        env:
+          PACKAGE_NAME: ${{ steps.metadata.outputs.package }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.request
+
+          package = os.environ["PACKAGE_NAME"].strip()
+          url = f"https://pypi.org/pypi/{package}/json"
+
+          try:
+              with urllib.request.urlopen(url) as response:
+                  data = json.load(response)
+          except Exception as exc:  # pragma: no cover - network failure surfaced in logs
+              print(f"::error::Unable to fetch package metadata for {package}: {exc}")
+              sys.exit(1)
+
+          version = data["info"]["version"]
+          print(f"Latest version for {package}: {version}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"version={version}\n")
+          PY
+
+      - name: Update requirement files
+        id: update
+        env:
+          PACKAGE_NAME: ${{ steps.metadata.outputs.package }}
+          PACKAGE_VERSION: ${{ steps.resolve.outputs.version }}
+          REQUIREMENTS_FILES: ${{ steps.metadata.outputs.files }}
+        run: |
+          python - <<'PY'
+          from __future__ import annotations
+
+          import os
+          import sys
+          from pathlib import Path
+
+          from packaging.requirements import Requirement
+          from packaging.utils import canonicalize_name
+
+          package = os.environ["PACKAGE_NAME"].strip()
+          version = os.environ["PACKAGE_VERSION"].strip()
+          files_env = os.environ.get("REQUIREMENTS_FILES", "").strip()
+
+          candidate_paths = [Path(part) for part in files_env.split()] if files_env else []
+          if not candidate_paths:
+              candidate_paths = [Path("requirements.txt")]
+
+          existing_paths = [path for path in candidate_paths if path.exists()]
+          if not existing_paths:
+              print("::error::None of the specified requirement files exist.")
+              sys.exit(1)
+
+          target = canonicalize_name(package)
+          updated_files: list[str] = []
+          requirement_was_found = False
+          results: list[tuple[Path, list[str], list[str], bool, bool]] = []
+
+          for path in existing_paths:
+              raw_lines = path.read_text(encoding="utf-8").splitlines()
+              new_lines: list[str] = []
+              file_changed = False
+              contains_package = False
+
+              for original in raw_lines:
+                  line = original.rstrip("\n")
+                  stripped = line.strip()
+                  if not stripped or stripped.startswith("#"):
+                      new_lines.append(line)
+                      continue
+
+                  leading_ws = line[: len(line) - len(line.lstrip())]
+                  remainder = line[len(leading_ws):]
+                  hash_index = remainder.find("#")
+                  if hash_index >= 0:
+                      base_part = remainder[:hash_index]
+                      comment_part = remainder[hash_index:]
+                  else:
+                      base_part = remainder
+                      comment_part = ""
+
+                  base_str = base_part.strip()
+                  if not base_str:
+                      new_lines.append(line)
+                      continue
+
+                  try:
+                      req = Requirement(base_str)
+                  except Exception:
+                      new_lines.append(line)
+                      continue
+
+                  if canonicalize_name(req.name) != target:
+                      new_lines.append(line)
+                      continue
+
+                  contains_package = True
+                  requirement_was_found = True
+
+                  extras = f"[{','.join(sorted(req.extras))}]" if req.extras else ""
+                  marker = f"; {req.marker}" if req.marker else ""
+
+                  trailing_ws = base_part[len(base_part.rstrip()):]
+                  if comment_part and not trailing_ws:
+                      trailing_ws = "  "
+
+                  new_base = f"{req.name}{extras}=={version}{marker}"
+                  new_line = f"{leading_ws}{new_base}{trailing_ws}{comment_part}"
+
+                  if new_line != line:
+                      file_changed = True
+
+                  new_lines.append(new_line)
+
+              results.append((path, raw_lines, new_lines, file_changed, contains_package))
+
+          for path, original_lines, replacement_lines, file_changed, contains_package in results:
+              if file_changed:
+                  path.write_text("\n".join(replacement_lines) + "\n", encoding="utf-8")
+                  updated_files.append(str(path))
+
+          if not requirement_was_found:
+              target_file = next(iter(existing_paths))
+              existing_content = target_file.read_text(encoding="utf-8").splitlines()
+              if existing_content and existing_content[-1].strip():
+                  existing_content.append("")
+              existing_content.append(f"{package}=={version}")
+              target_file.write_text("\n".join(existing_content) + "\n", encoding="utf-8")
+              updated_files.append(str(target_file))
+
+          if not updated_files:
+              print("Requested version already present; no files changed.")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+              fh.write(f"changed_files={' '.join(updated_files)}\n")
+              fh.write(f"package_found={str(requirement_was_found).lower()}\n")
+          PY
+
+      - name: Detect changes
+        id: git_status
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git status --short
+          fi
+
+      - name: Create pull request
+        if: steps.git_status.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ steps.metadata.outputs.branch }}
+          commit-message: "chore(deps): upgrade ${{ steps.metadata.outputs.package }} to ${{ steps.resolve.outputs.version }}"
+          title: "chore(deps): upgrade ${{ steps.metadata.outputs.package }} to ${{ steps.resolve.outputs.version }}"
+          body: |
+            ## Summary
+            - Upgrades `${{ steps.metadata.outputs.package }}` to `${{ steps.resolve.outputs.version }}`
+            - Updated files: `${{ steps.update.outputs.changed_files || 'none' }}`
+
+            _Automated by the dependency upgrade workflow._
+          labels: dependencies, automated-pr
+          delete-branch: true
+
+      - name: No changes detected
+        if: steps.git_status.outputs.changed != 'true'
+        run: echo "No dependency updates were necessary."
