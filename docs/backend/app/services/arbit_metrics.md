@@ -8,7 +8,7 @@ Fetch metrics from the Arbit exporter and parse key values for dashboard use.
 - Extract `profit_total`, `orders_total`, `fills_total`, `errors_total`, `skips_total`, and `cycle_latency` from the Prometheus text.
 - Use `SERIES_CONFIG` to map exporter keys into chart-ready series grouped into
   `profit` and `latency` arrays, each containing `{"label": str, "value":
-  float}` mappings for use in the frontend charts.
+float}` mappings for use in the frontend charts.
 
 ## Usage
 

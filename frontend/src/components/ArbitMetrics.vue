@@ -1,13 +1,7 @@
 <template>
   <div>
-    <PortfolioAllocationChart
-      v-if="metrics.profit.length"
-      :allocations="metrics.profit"
-    />
-    <PortfolioAllocationChart
-      v-if="metrics.latency.length"
-      :allocations="metrics.latency"
-    />
+    <PortfolioAllocationChart v-if="metrics.profit.length" :allocations="metrics.profit" />
+    <PortfolioAllocationChart v-if="metrics.latency.length" :allocations="metrics.latency" />
   </div>
 </template>
 
