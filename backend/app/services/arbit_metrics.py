@@ -2,19 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Dict, TypedDict
+from typing import Dict, Tuple, TypedDict
 
 import requests
 from flask import current_app
 
-METRIC_NAMES = (
-    "profit_total",
-    "orders_total",
-    "fills_total",
-    "errors_total",
-    "skips_total",
-    "cycle_latency",
-    "net_profit_percent",
+SERIES_CONFIG: Dict[str, Tuple[Tuple[str, str], ...]] = {
+    "profit": (
+        ("Total Profit ($)", "profit_total"),
+        ("Net Profit (%)", "net_profit_percent"),
+        ("Orders", "orders_total"),
+        ("Fills", "fills_total"),
+        ("Errors", "errors_total"),
+        ("Skips", "skips_total"),
+    ),
+    "latency": (("Cycle Latency (s)", "cycle_latency"),),
+}
+
+METRIC_NAMES = tuple(
+    metric for series in SERIES_CONFIG.values() for _, metric in series
 )
 
 
@@ -74,30 +80,24 @@ def parse_metrics(prom_text: str) -> Dict[str, float | int]:
 
 
 def _format_chart_metrics(raw: Dict[str, float | int]) -> Dict[str, list[MetricPoint]]:
-    """Convert raw exporter metrics into chart-friendly series."""
+    """Convert raw exporter metrics into chart-friendly series using ``SERIES_CONFIG``."""
 
-    def add_point(series: list[MetricPoint], label: str, key: str) -> None:
-        value = raw.get(key)
-        if value is None:
-            return
-        try:
-            numeric = float(value)
-        except (TypeError, ValueError):
-            return
-        series.append({"label": label, "value": numeric})
+    formatted: Dict[str, list[MetricPoint]] = {}
 
-    profit: list[MetricPoint] = []
-    add_point(profit, "Total Profit ($)", "profit_total")
-    add_point(profit, "Net Profit (%)", "net_profit_percent")
-    add_point(profit, "Orders", "orders_total")
-    add_point(profit, "Fills", "fills_total")
-    add_point(profit, "Errors", "errors_total")
-    add_point(profit, "Skips", "skips_total")
+    for series_name, fields in SERIES_CONFIG.items():
+        points: list[MetricPoint] = []
+        for label, key in fields:
+            value = raw.get(key)
+            if value is None:
+                continue
+            try:
+                numeric = float(value)
+            except (TypeError, ValueError):
+                continue
+            points.append({"label": label, "value": numeric})
+        formatted[series_name] = points
 
-    latency: list[MetricPoint] = []
-    add_point(latency, "Cycle Latency (s)", "cycle_latency")
-
-    return {"profit": profit, "latency": latency}
+    return formatted
 
 
 def check_profit_alert(threshold: float) -> Dict[str, float | bool]:

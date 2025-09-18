@@ -1,7 +1,13 @@
 <template>
   <div>
-    <PortfolioAllocationChart v-if="profit.length" :allocations="profit" />
-    <PortfolioAllocationChart v-if="latency.length" :allocations="latency" />
+    <PortfolioAllocationChart
+      v-if="metrics.profit.length"
+      :allocations="metrics.profit"
+    />
+    <PortfolioAllocationChart
+      v-if="metrics.latency.length"
+      :allocations="metrics.latency"
+    />
   </div>
 </template>
 
@@ -9,17 +15,16 @@
 /**
  * Renders profit and latency metrics using existing chart components.
  */
-import { ref, onMounted } from 'vue'
-import { fetchArbitMetrics, type MetricPoint } from '@/services/arbit'
+import { reactive, onMounted } from 'vue'
+import { fetchArbitMetrics, type ArbitMetricsResponse } from '@/services/arbit'
 import PortfolioAllocationChart from '@/components/charts/PortfolioAllocationChart.vue'
 
-const profit = ref<MetricPoint[]>([])
-const latency = ref<MetricPoint[]>([])
+const metrics = reactive<ArbitMetricsResponse>({ profit: [], latency: [] })
 
 async function load() {
   const data = await fetchArbitMetrics()
-  profit.value = data.profit || []
-  latency.value = data.latency || []
+  metrics.profit = data.profit ?? []
+  metrics.latency = data.latency ?? []
 }
 
 onMounted(load)

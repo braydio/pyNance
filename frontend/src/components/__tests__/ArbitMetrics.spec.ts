@@ -5,8 +5,8 @@ import ArbitMetrics from '../ArbitMetrics.vue'
 
 vi.mock('@/services/arbit', () => ({
   fetchArbitMetrics: vi.fn().mockResolvedValue({
-    profit: [{ label: 'p', value: 1 }],
-    latency: [{ label: 'l', value: 2 }],
+    profit: [{ label: 'Total Profit ($)', value: 1 }],
+    latency: [{ label: 'Cycle Latency (s)', value: 2 }],
   }),
 }))
 
@@ -17,7 +17,8 @@ describe('ArbitMetrics.vue', () => {
         stubs: {
           PortfolioAllocationChart: {
             props: ['allocations'],
-            template: '<div class="chart">{{ allocations.length }}</div>',
+            template:
+              '<div class="chart">{{ allocations[0].label }}:{{ allocations[0].value }}</div>',
           },
         },
       },
@@ -25,7 +26,7 @@ describe('ArbitMetrics.vue', () => {
     await flushPromises()
     const charts = wrapper.findAll('.chart')
     expect(charts).toHaveLength(2)
-    expect(charts[0].text()).toBe('1')
-    expect(charts[1].text()).toBe('1')
+    expect(charts[0].text()).toBe('Total Profit ($):1')
+    expect(charts[1].text()).toBe('Cycle Latency (s):2')
   })
 })
