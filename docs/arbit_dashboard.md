@@ -35,7 +35,9 @@ Returns whether the dashboard is enabled and echoes the relevant configuration.
 
 Retrieves chart-ready series derived from the exporter. Each series contains a
 `label` and numeric `value` for the profit and latency groups that
-`frontend/src/components/ArbitMetrics.vue` can render directly.
+`frontend/src/components/ArbitMetrics.vue` can render directly. The backend
+maps the raw Prometheus scalars into these groups using a static
+configuration, so clients always receive the chart-friendly structure below.
 
 ```json
 {
