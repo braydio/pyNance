@@ -46,15 +46,18 @@ scenarios: dict[uuid.UUID, "PlanningScenario"] = {}
 class Session:
     """Minimal DB session stub that stores scenarios in-memory."""
 
-    def add(self, obj) -> None:
+    @staticmethod
+    def add(obj) -> None:
         """Store the object if it exposes an ``id`` attribute."""
         if getattr(obj, "id", None):
             scenarios[obj.id] = obj
 
-    def commit(self) -> None:
+    @staticmethod
+    def commit() -> None:
         """No-op commit to satisfy the interface."""
 
-    def delete(self, obj) -> None:
+    @staticmethod
+    def delete(obj) -> None:
         """Remove the object from in-memory storage."""
         scenarios.pop(obj.id, None)
 
@@ -68,7 +71,8 @@ sys.modules["app.extensions"] = extensions_stub
 class Query:
     """Simplistic query helper for fetching scenarios by ID."""
 
-    def filter_by(self, **kwargs):
+    @staticmethod
+    def filter_by(**kwargs):
         """Return an object with a ``first`` method yielding a scenario."""
         scenario_id = kwargs.get("id")
         return types.SimpleNamespace(first=lambda: scenarios.get(scenario_id))
