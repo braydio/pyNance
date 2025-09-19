@@ -1,11 +1,77 @@
 """Endpoints for retrieving investment account information and data."""
 
+from datetime import datetime, date
+from typing import Dict, Mapping, Optional
+
 from app.extensions import db
 from app.models import InvestmentHolding, InvestmentTransaction, Security
 from app.sql import investments_logic
 from flask import Blueprint, jsonify, request
 
 investments = Blueprint("investments", __name__)
+
+
+DATE_PARAM_FORMAT = "%Y-%m-%d"
+
+
+def parse_transaction_filter_params(args: Mapping[str, str]) -> Dict[str, Optional[str | date]]:
+    """Parse and validate optional filter params for investment transactions.
+
+    Args:
+        args: Mapping of query parameters from the incoming request.
+
+    Returns:
+        Dictionary containing the normalized filters with `date` objects for
+        date fields and raw strings for identity filters.
+
+    Raises:
+        ValueError: If the provided date parameters are not ISO formatted or if
+        ``end_date`` is before ``start_date``.
+    """
+
+    account_id = args.get("account_id") or None
+    security_id = args.get("security_id") or None
+    txn_type = args.get("type") or None
+    subtype = args.get("subtype") or None
+
+    start_date_raw = args.get("start_date") or None
+    end_date_raw = args.get("end_date") or None
+
+    start_date = _parse_iso_date(start_date_raw) if start_date_raw else None
+    end_date = _parse_iso_date(end_date_raw) if end_date_raw else None
+
+    if start_date and end_date and end_date < start_date:
+        raise ValueError("end_date must be greater than or equal to start_date")
+
+    return {
+        "account_id": account_id,
+        "security_id": security_id,
+        "type": txn_type,
+        "subtype": subtype,
+        "start_date": start_date,
+        "end_date": end_date,
+    }
+
+
+def _parse_iso_date(value: str) -> date:
+    """Convert an ISO ``YYYY-MM-DD`` string to a :class:`datetime.date`.
+
+    Args:
+        value: String representation of the date.
+
+    Returns:
+        Parsed :class:`datetime.date` instance.
+
+    Raises:
+        ValueError: If the input is not parseable using the expected format.
+    """
+
+    try:
+        return datetime.strptime(value, DATE_PARAM_FORMAT).date()
+    except ValueError as exc:  # pragma: no cover - defensive guard
+        raise ValueError(
+            f"Invalid date '{value}'. Expected format YYYY-MM-DD."
+        ) from exc
 
 
 @investments.route("/accounts", methods=["GET"])
@@ -56,16 +122,37 @@ def list_investment_transactions():
     - page, page_size
     - account_id (optional)
     - security_id (optional)
+    - type (optional)
+    - subtype (optional)
+    - start_date / end_date (optional, ISO ``YYYY-MM-DD``)
     """
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 25))
-    account_id = request.args.get("account_id")
-    security_id = request.args.get("security_id")
+
+    try:
+        filters = parse_transaction_filter_params(request.args)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+
     q = InvestmentTransaction.query
+    account_id = filters["account_id"]
     if account_id:
         q = q.filter(InvestmentTransaction.account_id == account_id)
+    security_id = filters["security_id"]
     if security_id:
         q = q.filter(InvestmentTransaction.security_id == security_id)
+    txn_type = filters["type"]
+    if txn_type:
+        q = q.filter(InvestmentTransaction.type == txn_type)
+    subtype = filters["subtype"]
+    if subtype:
+        q = q.filter(InvestmentTransaction.subtype == subtype)
+    start_date = filters["start_date"]
+    if start_date:
+        q = q.filter(InvestmentTransaction.date >= start_date)
+    end_date = filters["end_date"]
+    if end_date:
+        q = q.filter(InvestmentTransaction.date <= end_date)
     q = q.order_by(InvestmentTransaction.date.desc())
     total = q.count()
     items = q.offset((page - 1) * page_size).limit(page_size).all()
@@ -86,7 +173,16 @@ def list_investment_transactions():
         }
         for t in items
     ]
-    return (
-        jsonify({"status": "success", "data": {"transactions": data, "total": total}}),
-        200,
-    )
+    response_payload = {
+        "transactions": data,
+        "total": total,
+        "filters": {
+            "account_id": account_id,
+            "security_id": security_id,
+            "type": txn_type,
+            "subtype": subtype,
+            "start_date": start_date.isoformat() if start_date else None,
+            "end_date": end_date.isoformat() if end_date else None,
+        },
+    }
+    return jsonify({"status": "success", "data": response_payload}), 200
