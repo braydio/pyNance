@@ -76,6 +76,7 @@ export default defineConfig(async () => {
     server: {
       allowedHosts: [
         '.ngrok-free.app',
+        '.trycloudflare.com',
       ],
       host: '0.0.0.0',
       port: 3353,
