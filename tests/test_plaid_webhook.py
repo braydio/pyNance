@@ -398,6 +398,13 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     assert body == {"status": "ok", "triggered": ["acct-1", "acct-2"]}
     assert calls == ["acct-1", "acct-2"]
 
+    info_logs = fake_logger.records["info"]
+    assert any(
+        "Received Plaid webhook TRANSACTIONS:SYNC_UPDATES_AVAILABLE for item item-1"
+        in msg
+        for msg in info_logs
+    )
+
     assert session.commits == 1
     assert len(session.added) == 1
     log_entry = session.added[0]
