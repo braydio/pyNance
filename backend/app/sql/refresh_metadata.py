@@ -79,9 +79,7 @@ def refresh_or_insert_plaid_metadata(
     # Plaid-specific fields
     meta.account_owner = plaid_tx.get("account_owner")
     meta.authorized_date = _coerce_date(plaid_tx.get("authorized_date"))
-    meta.authorized_datetime = _coerce_datetime(
-        plaid_tx.get("authorized_datetime")
-    )
+    meta.authorized_datetime = _coerce_datetime(plaid_tx.get("authorized_datetime"))
     meta.category = _sanitize_for_json(plaid_tx.get("category"))
     meta.category_id = plaid_tx.get("category_id")
     meta.check_number = plaid_tx.get("check_number")
