@@ -6,7 +6,7 @@ removed transactions inside a single DB transaction and persists the cursor.
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Dict, List, Optional, Tuple
 
 from app.config import logger, plaid_client
@@ -31,6 +31,8 @@ def _parse_txn_date(val) -> datetime:
     if isinstance(val, datetime):
         # Ensure tz-aware in UTC
         return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+    if isinstance(val, date):
+        return datetime.combine(val, datetime.min.time(), tzinfo=timezone.utc)
     # Expect YYYY-MM-DD
     try:
         d = datetime.strptime(val, "%Y-%m-%d").date()
@@ -184,7 +186,10 @@ def sync_account_transactions(account_id: str) -> Dict:
     next_cursor = cursor
 
     while True:
-        req = TransactionsSyncRequest(access_token=access_token, cursor=next_cursor)
+        req_kwargs = {"access_token": access_token}
+        if next_cursor:
+            req_kwargs["cursor"] = next_cursor
+        req = TransactionsSyncRequest(**req_kwargs)
         resp = plaid_client.transactions_sync(req)
         data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
 
