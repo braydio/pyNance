@@ -136,12 +136,28 @@ def _verify_plaid_signature(req: Request) -> bool:
 
 @plaid_webhooks.route("/plaid", methods=["POST"])
 def handle_plaid_webhook():
-    """Process Plaid webhook payloads and dispatch downstream sync tasks."""
+    """Process Plaid webhook payloads and dispatch downstream sync tasks.
+
+    The handler also logs each inbound event to help operators confirm that
+    Plaid delivered transaction sync notifications to the API.
+    """
 
     payload = request.get_json(silent=True) or {}
     webhook_type = payload.get("webhook_type")
     webhook_code = payload.get("webhook_code")
     item_id = payload.get("item_id")
+
+    logger.info(
+        (
+            "Received Plaid webhook %s:%s for item %s "
+            "(new_transactions=%s, delivery_id=%s)"
+        ),
+        webhook_type or "UNKNOWN",
+        webhook_code or "UNKNOWN",
+        item_id or "UNKNOWN",
+        payload.get("new_transactions"),
+        payload.get("webhook_delivery_id") or payload.get("webhook_id"),
+    )
 
     # Persist webhook log for observability
     try:
