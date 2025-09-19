@@ -1,56 +1,145 @@
+"""Routes for managing Teller tokens, accounts, and transactions."""
+
 import json
 from datetime import datetime, timezone
+from typing import Any, Callable, Dict, Iterable, List
 
 from app.config import FILES, TELLER_API_BASE_URL, logger
 from app.extensions import db
-from app.helpers.teller_helpers import load_tokens  # Use the shared helper
+from app.helpers.teller_helpers import load_tokens, save_tokens
 from app.models import Account, Transaction
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
 
 teller_transactions = Blueprint("teller_transactions", __name__)
 
-# In case later I want to split out Link Teller Account logic into its own routes
-# teller_link = Blueprint("teller-link", __name__)
+
+def _build_token_map(tokens: Iterable[Dict[str, Any]]) -> Dict[str, str]:
+    """Return a mapping of ``user_id`` to access token, excluding invalid rows."""
+
+    mapping: Dict[str, str] = {}
+    for token in tokens:
+        user_id = token.get("user_id") if isinstance(token, dict) else None
+        access_token = token.get("access_token") if isinstance(token, dict) else None
+        if not user_id or not access_token:
+            logger.warning("Ignoring invalid Teller token entry: %s", token)
+            continue
+
+        if user_id in mapping:
+            logger.debug(
+                "Overwriting existing access token for Teller user %s", user_id
+            )
+        mapping[user_id] = access_token
+
+    return mapping
+
+
+def _refresh_teller_account(
+    account: Account, access_token: str, *, touch_last_refreshed: bool = False
+) -> bool:
+    """Refresh account data and optionally bump ``last_refreshed``."""
+
+    updated = account_logic.refresh_data_for_teller_account(
+        account,
+        access_token,
+        FILES["TELLER_DOT_CERT"],
+        FILES["TELLER_DOT_KEY"],
+        TELLER_API_BASE_URL,
+    )
+    if updated and touch_last_refreshed:
+        account.last_refreshed = datetime.now(timezone.utc)
+    return bool(updated)
+
+
+def _apply_transaction_updates(
+    txn: Transaction, payload: Dict[str, Any]
+) -> Dict[str, bool]:
+    """Apply allowed transaction updates and return a map of changed fields."""
+
+    changes: Dict[str, bool] = {}
+    converters: Dict[str, Callable[[Any], Any]] = {
+        "amount": lambda value: float(value),
+        "date": lambda value: value,
+        "description": lambda value: value,
+        "category": lambda value: value,
+        "merchant_name": lambda value: value,
+        "merchant_type": lambda value: value,
+    }
+
+    for field, transform in converters.items():
+        if field not in payload:
+            continue
+
+        try:
+            new_value = transform(payload[field])
+        except Exception as exc:  # pragma: no cover - defensive path
+            logger.warning(
+                "Failed to parse update for field %s on transaction %s: %s",
+                field,
+                txn.transaction_id,
+                exc,
+            )
+            continue
+
+        setattr(txn, field, new_value)
+        changes[field] = True
+
+    return changes
 
 
 @teller_transactions.route("/save_access_token", methods=["POST"])
 def save_teller_token():
-    try:
-        data = request.get_json()
-        access_token = data.get("access_token")
-        user_id = data.get("user_id", "default-user")
+    """Persist or update a Teller access token for the supplied user."""
 
-        if not access_token:
+    try:
+        payload = request.get_json(silent=True) or {}
+        access_token = payload.get("access_token")
+        user_id = payload.get("user_id", "default-user")
+
+        if not isinstance(access_token, str) or not access_token.strip():
             logger.warning("Missing access token in request body.")
             return (
                 jsonify({"status": "error", "message": "Access token is required."}),
                 400,
             )
 
-        logger.debug(f"Saving access token for user {user_id}")
-        tokens = load_tokens()
-        tokens.append({"user_id": user_id, "access_token": access_token})
-        with open(FILES["TELLER_TOKENS"], "w") as f:
-            json.dump(tokens, f, indent=4)
+        access_token = access_token.strip()
+        logger.debug("Saving access token for user %s", user_id)
+        tokens: List[Dict[str, Any]] = load_tokens()
+        if not isinstance(tokens, list):
+            logger.warning("Tokens file returned non-list payload; resetting store.")
+            tokens = []
 
-        logger.info("Access token saved successfully.")
+        updated = False
+        for token in tokens:
+            if isinstance(token, dict) and token.get("user_id") == user_id:
+                token["access_token"] = access_token
+                updated = True
+                break
+
+        if not updated:
+            tokens.append({"user_id": user_id, "access_token": access_token})
+
+        save_tokens(tokens)
+        logger.info("Access token saved successfully for user %s", user_id)
         return jsonify({"status": "success"}), 200
 
-    except Exception as e:
-        logger.error(f"Error saving Teller token: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error saving Teller token: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @teller_transactions.route("/exchange_public_token", methods=["POST"])
 def teller_exchange_public_token():
+    """Inform callers that Teller tokens are provided directly without exchange."""
+
     logger.error(
         "Teller does not have an exchange process. Save response as linked token."
     )
     return (
         jsonify(
             {
-                "error": "You are looking for the /teller_transactions/save_access_token route. This incorrect route is being depreciated."
+                "error": "You are looking for the /teller_transactions/save_access_token route. This incorrect route is being depreciated.",
             }
         ),
         500,
@@ -59,36 +148,34 @@ def teller_exchange_public_token():
 
 @teller_transactions.route("/refresh_accounts", methods=["POST"])
 def teller_refresh_accounts():
-    """
-    Refresh Teller accounts and transactions using the stored tokens.
-    """
+    """Refresh Teller accounts and transactions using stored access tokens."""
+
     try:
         logger.debug("Refreshing Teller accounts from database.")
+        token_map = _build_token_map(load_tokens())
+        if not token_map:
+            logger.warning("No Teller access tokens found; skipping refresh.")
+
         accounts = Account.query.all()
-        updated_accounts = []
-        tokens = load_tokens()
+        updated_accounts: List[str] = []
         for account in accounts:
-            access_token = None
-            for token in tokens:
-                if token.get("user_id") == account.user_id:
-                    access_token = token.get("access_token")
-                    break
+            access_token = token_map.get(account.user_id)
             if not access_token:
-                logger.warning(f"No access token found for user {account.user_id}")
+                logger.warning(
+                    "No access token found for Teller user %s", account.user_id
+                )
                 continue
+
             logger.debug(
-                f"Refreshing Teller account {account.name} ({account.account_id}) with token: {access_token}"
+                "Refreshing Teller account %s (%s)",
+                account.name,
+                account.account_id,
             )
-            updated = account_logic.refresh_data_for_teller_account(
-                account,
-                access_token,
-                FILES["TELLER_DOT_CERT"],
-                FILES["TELLER_DOT_KEY"],
-                TELLER_API_BASE_URL,
-            )
-            if updated:
+            if _refresh_teller_account(
+                account, access_token, touch_last_refreshed=True
+            ):
                 updated_accounts.append(account.name)
-                account.last_refreshed = datetime.now(timezone.utc)
+
         db.session.commit()
         return (
             jsonify(
@@ -100,16 +187,15 @@ def teller_refresh_accounts():
             ),
             200,
         )
-    except Exception as e:
-        logger.error(f"Error refreshing Teller accounts: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error refreshing Teller accounts: %s", exc, exc_info=True)
+        return jsonify({"error": str(exc)}), 500
 
 
 @teller_transactions.route("/get_transactions", methods=["GET"])
 def teller_get_transactions():
-    """
-    Return paginated Teller transactions.
-    """
+    """Return Teller transactions with optional pagination and filters."""
+
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
@@ -143,56 +229,51 @@ def teller_get_transactions():
             ),
             200,
         )
-    except Exception as e:
-        logger.error(f"Error fetching Teller transactions: {e}", exc_info=True)
-        return jsonify({"error": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error fetching Teller transactions: %s", exc, exc_info=True)
+        return jsonify({"error": str(exc)}), 500
 
 
 @teller_transactions.route("/list_teller_accounts", methods=["GET"])
 def get_accounts():
+    """Return Teller accounts persisted in the database."""
+
     try:
         logger.debug("Fetching accounts from the database.")
         accounts = account_logic.get_accounts_from_db()
-        logger.debug(f"Fetched {len(accounts)} accounts from DB.")
+        logger.debug("Fetched %s accounts from DB.", len(accounts))
         return jsonify({"status": "success", "data": {"accounts": accounts}}), 200
-    except Exception as e:
-        logger.error(f"Error fetching accounts from DB: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error fetching accounts from DB: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @teller_transactions.route("/refresh_balances", methods=["POST"])
 def refresh_balances():
-    """
-    Refresh Teller account balances and update historical records.
-    """
+    """Refresh Teller account balances and update historical records."""
+
     try:
+        token_map = _build_token_map(load_tokens())
         accounts = account_logic.get_accounts_from_db()
-        updated_accounts = []
-        tokens = load_tokens()
+        updated_accounts: List[Dict[str, Any]] = []
         for acc in accounts:
             account = Account.query.filter_by(account_id=acc["account_id"]).first()
             if not account:
-                logger.warning(f"Account {acc['account_id']} not found in DB.")
+                logger.warning("Account %s not found in DB.", acc["account_id"])
                 continue
-            access_token = None
-            for token in tokens:
-                if token.get("user_id") == acc["user_id"]:
-                    access_token = token.get("access_token")
-                    break
+
+            access_token = token_map.get(acc["user_id"])
             if not access_token:
-                logger.warning(f"No access token found for account {acc['account_id']}")
+                logger.warning(
+                    "No access token found for Teller account %s", acc["account_id"]
+                )
                 continue
-            updated = account_logic.refresh_data_for_teller_account(
-                account,
-                access_token,
-                FILES["TELLER_DOT_CERT"],
-                FILES["TELLER_DOT_KEY"],
-                TELLER_API_BASE_URL,
-            )
-            if updated:
+
+            if _refresh_teller_account(account, access_token):
                 updated_accounts.append({"account_name": acc["name"]})
+
         db.session.commit()
-        logger.debug(f"Balances refreshed for accounts: {updated_accounts}")
+        logger.debug("Balances refreshed for accounts: %s", updated_accounts)
         return (
             jsonify(
                 {
@@ -203,18 +284,17 @@ def refresh_balances():
             ),
             200,
         )
-    except Exception as e:
-        logger.error(f"Error refreshing balances: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error refreshing balances: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @teller_transactions.route("/update", methods=["PUT"])
 def update_transaction():
-    """
-    Update a transaction's editable details.
-    """
+    """Update a transaction's editable details."""
+
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         transaction_id = data.get("transaction_id")
         if not transaction_id:
             return (
@@ -226,45 +306,38 @@ def update_transaction():
         if not txn:
             return jsonify({"status": "error", "message": "Transaction not found"}), 404
 
-        changed_fields = {}
-        if "amount" in data:
-            txn.amount = float(data["amount"])
-            changed_fields["amount"] = True
-        if "date" in data:
-            txn.date = data["date"]
-            changed_fields["date"] = True
-        if "description" in data:
-            txn.description = data["description"]
-            changed_fields["description"] = True
-        if "category" in data:
-            txn.category = data["category"]
-            changed_fields["category"] = True
-        if "merchant_name" in data:
-            txn.merchant_name = data["merchant_name"]
-            changed_fields["merchant_name"] = True
-        if "merchant_type" in data:
-            txn.merchant_type = data["merchant_type"]
-            changed_fields["merchant_type"] = True
+        changed_fields = _apply_transaction_updates(txn, data)
+        if not changed_fields:
+            return jsonify({"status": "success", "message": "No changes applied"}), 200
 
         txn.user_modified = True
-        existing_fields = {}
+        existing_fields: Dict[str, bool] = {}
         if txn.user_modified_fields:
-            existing_fields = json.loads(txn.user_modified_fields)
+            try:
+                existing_fields = json.loads(txn.user_modified_fields)
+            except json.JSONDecodeError:  # pragma: no cover - defensive path
+                logger.warning(
+                    "Corrupt user_modified_fields JSON for transaction %s",
+                    transaction_id,
+                )
+                existing_fields = {}
         for field in changed_fields:
             existing_fields[field] = True
         txn.user_modified_fields = json.dumps(existing_fields)
 
         db.session.commit()
         return jsonify({"status": "success"}), 200
-    except Exception as e:
-        logger.error(f"Error updating transaction: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error updating transaction: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @teller_transactions.route("/delete_account", methods=["DELETE"])
 def delete_teller_account():
+    """Remove a Teller account and cascading data from the database."""
+
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         account_id = data.get("account_id")
         if not account_id:
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
@@ -272,7 +345,7 @@ def delete_teller_account():
         Account.query.filter_by(account_id=account_id).delete()
         db.session.commit()
         logger.info(
-            f"Deleted Teller account {account_id} and related records via cascade."
+            "Deleted Teller account %s and related records via cascade.", account_id
         )
         return (
             jsonify(
@@ -280,6 +353,6 @@ def delete_teller_account():
             ),
             200,
         )
-    except Exception as e:
-        logger.error(f"Error deleting Teller account: {e}", exc_info=True)
-        return jsonify({"status": "error", "message": str(e)}), 500
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Error deleting Teller account: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
