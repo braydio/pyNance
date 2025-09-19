@@ -15,7 +15,7 @@
 * `teller_helpers.py`: Fetches Teller account objects, returns JSON only; does not persist balances
 * `account_refresh_dispatcher.py`: Handles periodic sync, routes to provider-specific logic
 * `refresh_dispatcher.py`: Removed legacy dispatcher
-* `helpers.py`, `import_helpers.py`: Misc utilities, not relevant to forecast
+* `import_helpers.py`: Misc utilities, not relevant to forecast
 
 ### ⚠️ Issues & Observations
 
