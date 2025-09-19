@@ -9,12 +9,12 @@
 
 ## Progress update (2025-09-17)
 
-| Theme | Status | Notes |
-| --- | --- | --- |
+| Theme                          | Status         | Notes                                                                                                                                                                                |
+| ------------------------------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Backend reliability & coverage | 🚧 In progress | API filtering has been hardened with server-side validation for type/subtype and date ranges. Webhook-driven tests and instrumentation for refresh timings remain to be implemented. |
-| Data enrichment | ⏳ Not started | Persisting cost basis deltas and unrealised gain/loss data still needs modelling and ETL updates. |
-| Frontend analytics | 🚧 In progress | Vue client can request scoped transactions; UI work for allocation visualisations and CSV export is still pending. |
-| Interaction polish | 🚧 In progress | Backend filter plumbing is complete, but UI caching of filters and security detail drawer UX are open tasks. |
+| Data enrichment                | ⏳ Not started | Persisting cost basis deltas and unrealised gain/loss data still needs modelling and ETL updates.                                                                                    |
+| Frontend analytics             | 🚧 In progress | Vue client can request scoped transactions; UI work for allocation visualisations and CSV export is still pending.                                                                   |
+| Interaction polish             | 🚧 In progress | Backend filter plumbing is complete, but UI caching of filters and security detail drawer UX are open tasks.                                                                         |
 
 ## Backend priorities
 

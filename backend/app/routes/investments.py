@@ -1,6 +1,6 @@
 """Endpoints for retrieving investment account information and data."""
 
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Dict, Mapping, Optional
 
 from app.extensions import db
@@ -14,7 +14,9 @@ investments = Blueprint("investments", __name__)
 DATE_PARAM_FORMAT = "%Y-%m-%d"
 
 
-def parse_transaction_filter_params(args: Mapping[str, str]) -> Dict[str, Optional[str | date]]:
+def parse_transaction_filter_params(
+    args: Mapping[str, str],
+) -> Dict[str, Optional[str | date]]:
     """Parse and validate optional filter params for investment transactions.
 
     Args:
