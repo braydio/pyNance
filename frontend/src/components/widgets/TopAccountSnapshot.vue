@@ -658,6 +658,7 @@ function initials(name) {
   margin-bottom: 1.1rem;
   background: transparent;
   border-radius: 1rem 1rem 0 0;
+  flex-wrap: wrap;
 }
 
 .bs-tabs-scroll {
@@ -666,6 +667,7 @@ function initials(name) {
   align-items: center;
   gap: 0.4rem;
   overflow: hidden;
+  min-width: 0;
 }
 
 .bs-tab-list {
@@ -795,6 +797,23 @@ function initials(name) {
   position: relative;
   margin-left: auto;
   flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .bs-toggle-row {
+    row-gap: 0.5rem;
+  }
+
+  .bs-tabs-scroll {
+    flex-basis: 100%;
+  }
+
+  .bs-group-dropdown {
+    margin-left: 0;
+    flex-basis: 100%;
+    display: flex;
+    justify-content: flex-end;
+  }
 }
 
 .bs-group-btn {
