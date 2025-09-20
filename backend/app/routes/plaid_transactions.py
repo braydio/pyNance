@@ -15,7 +15,6 @@ from app.helpers.plaid_helpers import (
     remove_item,
 )
 from app.models import Account, PlaidAccount, PlaidItem
-from app.services.plaid_sync import sync_account_transactions
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from flask import Blueprint, jsonify, request
 from plaid.model.country_code import CountryCode
@@ -400,8 +399,69 @@ def sync_transactions_endpoint():
         if not account_id:
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
 
-        result = sync_account_transactions(account_id)
-        return jsonify({"status": "success", "result": result}), 200
+        plaid_account = (
+            PlaidAccount.query.options(joinedload(PlaidAccount.account))
+            .filter_by(account_id=account_id)
+            .first()
+        )
+        if not plaid_account or not plaid_account.access_token:
+            logger.warning(
+                "Sync requested for unknown or unlinked Plaid account %s",
+                account_id,
+            )
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Plaid account not found or missing access token",
+                    }
+                ),
+                404,
+            )
+
+        result = account_logic.refresh_data_for_plaid_account(
+            plaid_account.access_token, plaid_account.account_id
+        )
+        if isinstance(result, tuple) and len(result) == 2:
+            updated, error = result
+        else:
+            updated, error = bool(result), None
+
+        if error:
+            logger.error(
+                "Plaid refresh returned an error for %s: %s",
+                plaid_account.account_id,
+                error,
+            )
+            db.session.rollback()
+            return (
+                jsonify({"status": "success", "result": {"updated": updated, "error": error}}),
+                200,
+            )
+
+        timestamp = datetime.now(timezone.utc)
+        plaid_account.last_refreshed = timestamp
+        if plaid_account.account:
+            plaid_account.account.updated_at = timestamp
+
+        try:
+            db.session.commit()
+        except Exception as commit_err:  # pragma: no cover - defensive
+            db.session.rollback()
+            logger.error(
+                "Failed to persist Plaid sync metadata for account %s: %s",
+                plaid_account.account_id,
+                commit_err,
+            )
+            return (
+                jsonify({"status": "error", "message": "Failed to update metadata"}),
+                500,
+            )
+
+        return (
+            jsonify({"status": "success", "result": {"updated": updated, "error": None}}),
+            200,
+        )
     except Exception as e:
         logger.error(f"Error during Plaid sync: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500

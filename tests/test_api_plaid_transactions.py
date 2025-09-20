@@ -4,7 +4,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytest
 from flask import Flask
@@ -79,8 +79,10 @@ class DummyColumn:
 
 
 class DummyPlaidAcct:
-    def __init__(self, token):
+    def __init__(self, token, account=None):
         self.access_token = token
+        self.account = account
+        self.last_refreshed = None
 
 
 class DummyAccount:
@@ -92,7 +94,9 @@ class DummyAccount:
         self._account_id = account_id
         self._user_id = user_id
         self.name = name
-        self.plaid_account = DummyPlaidAcct(f"t-{account_id}")
+        self.balance = 0.0
+        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        self.plaid_account = DummyPlaidAcct(f"t-{account_id}", account=self)
 
 
 class QueryStub:
@@ -196,3 +200,64 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
     resp = client.delete("/api/accounts/delete_account", json={"account_id": "acct"})
     assert resp.status_code == 200
     assert called.get("token") == "tok123"
+
+
+def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
+    account = DummyAccount("acct-123", "user-1", "Main")
+    plaid_account = account.plaid_account
+    history: list[tuple[str, float]] = []
+
+    class SessionStub:
+        def __init__(self):
+            self.commits = 0
+            self.rollbacks = 0
+
+        def commit(self):
+            self.commits += 1
+
+        def rollback(self):
+            self.rollbacks += 1
+
+    session_stub = SessionStub()
+    plaid_module.db = types.SimpleNamespace(session=session_stub)
+
+    class Query:
+        def __init__(self, record):
+            self.record = record
+
+        def options(self, *args, **kwargs):
+            return self
+
+        def filter_by(self, **kwargs):
+            account_id = kwargs.get("account_id")
+            if account_id == self.record.account_id:
+                return types.SimpleNamespace(first=lambda: self.record)
+            return types.SimpleNamespace(first=lambda: None)
+
+    plaid_module.PlaidAccount.query = Query(plaid_account)
+
+    def fake_refresh(access_token, account_id):
+        assert access_token == plaid_account.access_token
+        account.balance += 25.0
+        history.append((account_id, account.balance))
+        return True, None
+
+    monkeypatch.setattr(
+        plaid_module.account_logic,
+        "refresh_data_for_plaid_account",
+        fake_refresh,
+    )
+
+    resp = client.post("/api/accounts/sync", json={"account_id": account.account_id})
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload == {
+        "status": "success",
+        "result": {"updated": True, "error": None},
+    }
+    assert plaid_account.last_refreshed is not None
+    assert account.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
+    assert account.balance == 25.0
+    assert history == [(account.account_id, 25.0)]
+    assert session_stub.commits == 1
+    assert session_stub.rollbacks == 0
