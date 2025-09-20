@@ -11,12 +11,35 @@
 ### Frontend
 
 1. **Component build-out**
-   - Implement `frontend/src/components/planning/BillForm.vue`, `BillList.vue`, `Allocator.vue`, and `PlanningSummary.vue` with composition API + TypeScript props.
-   - Replace the placeholder currency helpers by exporting `formatCurrency` and `convertCurrency` utilities from `frontend/src/utils/currency.ts`.
-2. **Data synchronisation**
+   - **`frontend/src/components/planning/BillForm.vue`**
+     - **Props:** accept an optional `bill?: Bill` to edit existing entries, a `currencyCode: string` sourced from the active scenario/account, and an optional `mode: 'create' | 'edit'` flag for button labels.
+     - **Emits:** surface `update:bill` as the user types (so parents can persist a draft), `save` with a normalized payload (`amountCents` not decimals) once validation passes, and `cancel` when the modal closes.
+     - **Shared helpers:** reuse `formatCurrency`/`convertCurrency` from `frontend/src/utils/currency.ts` plus a shared mapper that converts between the persisted `Bill` shape and editable form state.
+     - **Remaining TODO:** replace the temporary reactive form + inline error strings with typed validation, migrate away from the JSON preview, and thread saved bills back through `usePlanning`/`updatePlanning` rather than leaving state patching to callers.
+   - **`frontend/src/components/planning/BillList.vue`**
+     - **Props:** receive `bills: Bill[]`, `currencyCode: string`, and an optional `selectedBillId` to highlight the active row.
+     - **Emits:** fire `select` when a row is chosen, `edit` with the full bill payload, and `delete` with the identifier for removal confirmation.
+     - **Shared helpers:** switch from the placeholder `@/utils/format` helper to `formatCurrency` for amount columns and reuse any shared empty-state renderer once it lands.
+     - **Remaining TODO:** wire list actions to the planning service methods (optimistic updates will come later), replace inline `dueDate` fallbacks with a dedicated formatter, and remove the temporary styling stub.
+   - **`frontend/src/components/planning/Allocator.vue`**
+     - **Props:** take `categories: string[]`, a `modelValue: Record<string, number>` for `v-model`, and the `currencyCode: string` needed to format fixed allocation previews.
+     - **Emits:** continue emitting `update:modelValue` for reactivity plus a richer `change` payload containing totals and validation booleans so parents can gate saves.
+     - **Shared helpers:** centralize percentage math in a shared helper (e.g., `clampAllocations`) and rely on `formatCurrency` when displaying total allocated cash alongside the percent bars.
+     - **Remaining TODO:** replace the inline `maxFor` computation with the shared helper once extracted and ensure errors flow back through a consistent toast/banner system instead of the placeholder paragraph.
+   - **`frontend/src/components/planning/PlanningSummary.vue`**
+     - **Props:** accept optional overrides for `scenarioId` and `currencyCode` so the summary can be reused in account dashboards while defaulting to the active scenario.
+     - **Emits:** expose a `refresh` event hook (even if unused initially) to let parents force recomputation when cross-view data changes.
+     - **Shared helpers:** continue using `usePlanning` alongside `selectActiveScenario`, `selectTotalBillsCents`, and `selectRemainingCents`, but route final strings through `formatCurrency` instead of the legacy formatter.
+     - **Remaining TODO:** swap the hard-coded headings for design-system typography and replace the inline computed formatting with a shared selector once totals move server-side.
+2. **Planning view composition**
+   - Mount the four planning components within `frontend/src/views/Planning.vue`, sourcing state via `usePlanning()` and the selectors in `frontend/src/selectors/planning.ts` (e.g., hydrate `BillList` with `state.bills` filtered by the active scenario and feed `Allocator` with `selectActiveScenario(state)?.allocations`).
+   - On mount, derive the active scenario/currency from planning state, load existing bills through `planningService.ts`, and pass a `currencyCode` prop to each child so they can delegate to `formatCurrency`/`convertCurrency` consistently.
+   - Handle emitted events locally: call the planning service helpers on `save`/`delete`, update the reactive store via `updatePlanning`, and feed allocation changes back through selectors so `PlanningSummary` stays in sync.
+   - Replace the JSON `<pre>` scaffold with the composed layout, leaving TODO comments where API wiring or optimistic updates are still pending so the remaining placeholder logic is obvious to implementers.
+3. **Data synchronisation**
    - Extend `planningService.ts` with `listBills`, `createBill`, `updateBill`, and `deleteBill` calls that point at `/api/planning/bills` endpoints (feature flag for local vs. API mode).
    - Add optimistic updates with rollback on failure so the UI remains responsive offline.
-3. **Validation & UX polish**
+4. **Validation & UX polish**
    - Enforce total allocation ≤ 100% with inline feedback, and surface predicted bill indicators.
    - Provide empty states and error toasts consistent with the design system.
 
