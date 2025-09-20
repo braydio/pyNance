@@ -8,8 +8,7 @@ from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
 from app.models import Account, PlaidAccount, PlaidWebhookLog
-from app.sql import account_logic
-from app.sql import investments_logic
+from app.sql import account_logic, investments_logic
 from flask import Blueprint, Request, jsonify, request
 from sqlalchemy.orm import joinedload
 

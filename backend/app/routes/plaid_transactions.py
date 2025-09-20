@@ -435,7 +435,12 @@ def sync_transactions_endpoint():
             )
             db.session.rollback()
             return (
-                jsonify({"status": "success", "result": {"updated": updated, "error": error}}),
+                jsonify(
+                    {
+                        "status": "success",
+                        "result": {"updated": updated, "error": error},
+                    }
+                ),
                 200,
             )
 
@@ -459,7 +464,9 @@ def sync_transactions_endpoint():
             )
 
         return (
-            jsonify({"status": "success", "result": {"updated": updated, "error": None}}),
+            jsonify(
+                {"status": "success", "result": {"updated": updated, "error": None}}
+            ),
             200,
         )
     except Exception as e:

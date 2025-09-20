@@ -10,13 +10,12 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 
 import click
-from sqlalchemy.orm import joinedload
-
 from app.config import logger
 from app.extensions import db
 from app.models import PlaidAccount
 from app.sql import account_logic
 from flask.cli import with_appcontext
+from sqlalchemy.orm import joinedload
 
 
 def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
@@ -76,10 +75,12 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
                 return
             updated, error = _refresh_plaid_account(pa)
             if error:
-                logger.error(
-                    "Refresh failed for account %s: %s", pa.account_id, error
+                logger.error("Refresh failed for account %s: %s", pa.account_id, error)
+                message = (
+                    error.get("plaid_error_message")
+                    if isinstance(error, dict)
+                    else str(error)
                 )
-                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                 click.echo(f"ERR {pa.account_id}: {message}")
             else:
                 click.echo(f"OK {pa.account_id}: updated={bool(updated)}")
@@ -100,10 +101,16 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
             updated, error = _refresh_plaid_account(pa)
             if error:
                 logger.error("Refresh failed for item %s: %s", item_id, error)
-                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
+                message = (
+                    error.get("plaid_error_message")
+                    if isinstance(error, dict)
+                    else str(error)
+                )
                 click.echo(f"ERR {item_id}: {message}")
             else:
-                click.echo(f"OK {item_id}: account={pa.account_id} updated={bool(updated)}")
+                click.echo(
+                    f"OK {item_id}: account={pa.account_id} updated={bool(updated)}"
+                )
             return
 
         # Default: sync one account per distinct item
@@ -134,7 +141,11 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
                         pa.account_id,
                         error,
                     )
-                    message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
+                    message = (
+                        error.get("plaid_error_message")
+                        if isinstance(error, dict)
+                        else str(error)
+                    )
                     click.echo(f"ERR {pa.item_id}: {message}")
                     continue
 
