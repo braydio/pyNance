@@ -2,15 +2,15 @@
 
 from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
-from typing import Tuple
+from typing import Optional, Tuple
 
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
-from app.models import PlaidAccount, PlaidWebhookLog
-from app.services.plaid_sync import sync_account_transactions
-from app.sql import investments_logic
+from app.models import Account, PlaidAccount, PlaidWebhookLog
+from app.sql import account_logic, investments_logic
 from flask import Blueprint, Request, jsonify, request
+from sqlalchemy.orm import joinedload
 
 try:  # pragma: no cover - optional dependency
     from prometheus_client import Counter as PrometheusCounter
@@ -186,7 +186,11 @@ def handle_plaid_webhook():
             return jsonify({"status": "ignored"}), 200
 
         # Trigger sync for each account under this item
-        accounts = PlaidAccount.query.filter_by(item_id=item_id).all()
+        accounts = (
+            PlaidAccount.query.options(joinedload(PlaidAccount.account))
+            .filter_by(item_id=item_id)
+            .all()
+        )
         if not accounts:
             logger.info(
                 "Plaid webhook %s:%s had no matching accounts for item %s",
@@ -202,12 +206,56 @@ def handle_plaid_webhook():
         failure_count = 0
         for pa in accounts:
             try:
-                res = sync_account_transactions(pa.account_id)
-                triggered.append(res.get("account_id") or pa.account_id)
+                if not pa.access_token:
+                    logger.warning(
+                        "Skipping Plaid account %s due to missing access token",
+                        pa.account_id,
+                    )
+                    failure_count += 1
+                    webhook_metrics.increment("failure", webhook_code)
+                    continue
+
+                result = account_logic.refresh_data_for_plaid_account(
+                    pa.access_token, pa.account_id
+                )
+                if isinstance(result, tuple) and len(result) == 2:
+                    _updated, error = result
+                else:
+                    _updated, error = bool(result), None
+
+                if error:
+                    logger.error(
+                        "Plaid refresh failed for account %s: %s", pa.account_id, error
+                    )
+                    failure_count += 1
+                    webhook_metrics.increment("failure", webhook_code)
+                    continue
+
+                timestamp = datetime.now(timezone.utc)
+                pa.last_refreshed = timestamp
+
+                account: Optional[Account] = pa.account
+                if account is None:
+                    account = Account.query.filter_by(account_id=pa.account_id).first()
+                if account:
+                    account.updated_at = timestamp
+
+                triggered.append(pa.account_id)
                 success_count += 1
                 webhook_metrics.increment("success", webhook_code)
+
+                try:
+                    db.session.commit()
+                except Exception as commit_err:  # pragma: no cover - defensive
+                    db.session.rollback()
+                    logger.error(
+                        "Failed to persist Plaid refresh metadata for account %s: %s",
+                        pa.account_id,
+                        commit_err,
+                    )
             except Exception as e:
                 logger.error(f"Sync failed for account {pa.account_id}: {e}")
+                db.session.rollback()
                 failure_count += 1
                 webhook_metrics.increment("failure", webhook_code)
 

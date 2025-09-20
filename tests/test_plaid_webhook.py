@@ -4,7 +4,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Iterable, List, Optional
 
 import pytest
@@ -175,9 +175,11 @@ class FakeAccount:
 
     account_id = ColumnDescriptor("_account_id", "account_id")
 
-    def __init__(self, account_id: str, user_id: str) -> None:
+    def __init__(self, account_id: str, user_id: str, balance: float = 0.0) -> None:
         self._account_id = account_id
         self.user_id = user_id
+        self.balance = balance
+        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
 
 class FakePlaidAccount:
@@ -264,7 +266,7 @@ investments_logic_stub = types.SimpleNamespace(
 )
 transaction_rules_logic_stub = types.SimpleNamespace(
     apply_rules=lambda user_id, tx: tx,
-# )
+)
 refresh_metadata_stub = types.SimpleNamespace(
     refresh_or_insert_plaid_metadata=lambda *args, **kwargs: None,
 )
@@ -272,6 +274,7 @@ account_logic_stub = types.SimpleNamespace(
     detect_internal_transfer=lambda *args, **kwargs: None,
     get_or_create_category=lambda *args, **kwargs: FakeCategory(),
     normalize_balance=lambda balance: balance,
+    refresh_data_for_plaid_account=lambda *args, **kwargs: (True, None),
 )
 sql_pkg.investments_logic = investments_logic_stub
 sql_pkg.transaction_rules_logic = transaction_rules_logic_stub
@@ -366,19 +369,34 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     config_stub.logger = fake_logger
     plaid_webhook_module.logger = fake_logger
 
-    accounts = [
-        FakePlaidAccount("acct-1", "item-1", "token-1"),
-        FakePlaidAccount("acct-2", "item-1", "token-2"),
-    ]
-    plaid_webhook_module.PlaidAccount.query = QueryStub(accounts)
+    account_a = FakeAccount("acct-1", "user-1", balance=100.0)
+    account_b = FakeAccount("acct-2", "user-1", balance=200.0)
+    plaid_a = FakePlaidAccount("acct-1", "item-1", "token-1")
+    plaid_a.account = account_a
+    plaid_b = FakePlaidAccount("acct-2", "item-1", "token-2")
+    plaid_b.account = None  # Force route to resolve via Account.query
 
-    calls: list[str] = []
+    plaid_accounts = [plaid_a, plaid_b]
+    plaid_webhook_module.PlaidAccount.query = QueryStub(plaid_accounts)
+    plaid_webhook_module.Account.query = QueryStub([account_a, account_b])
 
-    def fake_sync(account_id: str) -> dict[str, str]:
-        calls.append(account_id)
-        return {"account_id": account_id}
+    calls: list[tuple[str, str]] = []
+    history_updates: dict[str, list[float]] = {}
 
-    monkeypatch.setattr(plaid_webhook_module, "sync_account_transactions", fake_sync)
+    lookup = {account_a.account_id: account_a, account_b.account_id: account_b}
+
+    def fake_refresh(access_token: str, account_id: str) -> tuple[bool, None]:
+        calls.append((access_token, account_id))
+        acct = lookup[account_id]
+        acct.balance += 10
+        history_updates.setdefault(account_id, []).append(acct.balance)
+        return True, None
+
+    monkeypatch.setattr(
+        plaid_webhook_module.account_logic,
+        "refresh_data_for_plaid_account",
+        fake_refresh,
+    )
 
     app = Flask(__name__)
     app.register_blueprint(plaid_webhook_module.plaid_webhooks)
@@ -396,7 +414,14 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     assert resp.status_code == 200
     body = resp.get_json()
     assert body == {"status": "ok", "triggered": ["acct-1", "acct-2"]}
-    assert calls == ["acct-1", "acct-2"]
+    assert calls == [("token-1", "acct-1"), ("token-2", "acct-2")]
+    assert history_updates == {"acct-1": [110.0], "acct-2": [210.0]}
+    assert account_a.balance == 110.0
+    assert account_b.balance == 210.0
+    assert account_a.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
+    assert account_b.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
+    assert plaid_a.last_refreshed is not None
+    assert plaid_b.last_refreshed is not None
 
     info_logs = fake_logger.records["info"]
     assert any(
@@ -405,7 +430,8 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
         for msg in info_logs
     )
 
-    assert session.commits == 1
+    # One commit for the webhook log plus one per successful account refresh
+    assert session.commits == 1 + len(plaid_accounts)
     assert len(session.added) == 1
     log_entry = session.added[0]
     assert log_entry.event_type == "TRANSACTIONS:SYNC_UPDATES_AVAILABLE"
