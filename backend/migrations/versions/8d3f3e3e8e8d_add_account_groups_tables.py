@@ -1,8 +1,7 @@
 """Create account group tables for dashboard preferences."""
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "8d3f3e3e8e8d"
@@ -17,7 +16,9 @@ def upgrade():
         "account_groups",
         sa.Column("id", sa.String(length=36), primary_key=True),
         sa.Column("user_id", sa.String(length=64), nullable=False),
-        sa.Column("name", sa.String(length=128), nullable=False, server_default="Group"),
+        sa.Column(
+            "name", sa.String(length=128), nullable=False, server_default="Group"
+        ),
         sa.Column("position", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("accent", sa.String(length=64), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),

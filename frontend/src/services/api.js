@@ -162,10 +162,7 @@ export default {
   },
 
   async addAccountToGroup(groupId, payload = {}) {
-    const response = await apiClient.post(
-      `/dashboard/account-groups/${groupId}/accounts`,
-      payload,
-    )
+    const response = await apiClient.post(`/dashboard/account-groups/${groupId}/accounts`, payload)
     return response.data
   },
 
