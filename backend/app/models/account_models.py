@@ -1,4 +1,8 @@
-"""Account models: Account, AccountHistory, FinancialGoal."""
+"""Account models: Account, AccountHistory, FinancialGoal, and related tables."""
+
+from __future__ import annotations
+
+from uuid import uuid4
 
 from app.extensions import db
 from sqlalchemy.ext.hybrid import hybrid_property
@@ -81,3 +85,78 @@ class AccountSnapshotPreference(db.Model, TimestampMixin):
     def selected_ids(self) -> list[str]:
         raw = self.selected_account_ids or []
         return list(raw)
+
+
+class AccountGroup(db.Model, TimestampMixin):
+    """Persistent grouping of accounts for a specific user."""
+
+    __tablename__ = "account_groups"
+
+    id = db.Column(
+        db.String(36), primary_key=True, default=lambda: str(uuid4()), unique=True
+    )
+    user_id = db.Column(db.String(64), nullable=False, index=True)
+    name = db.Column(db.String(128), nullable=False, default="Group")
+    position = db.Column(db.Integer, nullable=False, default=0)
+    accent = db.Column(db.String(64), nullable=True)
+
+    memberships = db.relationship(
+        "AccountGroupMembership",
+        back_populates="group",
+        cascade="all, delete-orphan",
+        order_by="AccountGroupMembership.position",
+    )
+    preference = db.relationship(
+        "AccountGroupPreference", back_populates="active_group", uselist=False
+    )
+
+
+class AccountGroupMembership(db.Model, TimestampMixin):
+    """Join table linking accounts to account groups with ordering metadata."""
+
+    __tablename__ = "account_group_memberships"
+
+    id = db.Column(db.Integer, primary_key=True)
+    group_id = db.Column(
+        db.String(36),
+        db.ForeignKey("account_groups.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    account_id = db.Column(
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    position = db.Column(db.Integer, nullable=False, default=0)
+
+    group = db.relationship("AccountGroup", back_populates="memberships")
+    account = db.relationship(
+        "Account", primaryjoin="Account.account_id == AccountGroupMembership.account_id"
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "group_id", "account_id", name="uq_account_group_membership"
+        ),
+    )
+
+
+class AccountGroupPreference(db.Model, TimestampMixin):
+    """Active account group selection per user."""
+
+    __tablename__ = "account_group_preferences"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=False, unique=True, index=True)
+    active_group_id = db.Column(
+        db.String(36),
+        db.ForeignKey("account_groups.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+
+    active_group = db.relationship(
+        "AccountGroup", back_populates="preference", foreign_keys=[active_group_id]
+    )

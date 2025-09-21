@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 
 const sampleAccounts = [
@@ -45,7 +45,52 @@ vi.mock('@/composables/useAccountGroups', () => {
         )
       }
 
-      const removeGroup = vi.fn()
+      function setActiveGroup(id) {
+        if (groups.value.some((group) => group.id === id)) {
+          activeGroupId.value = id
+        }
+      }
+
+      const removeGroup = vi.fn((id) => {
+        const idx = groups.value.findIndex((group) => group.id === id)
+        if (idx !== -1) {
+          groups.value.splice(idx, 1)
+          if (!groups.value.length) {
+            groups.value.push({ id: 'group-1', name: 'Group', accounts: [] })
+          }
+          if (!groups.value.some((group) => group.id === activeGroupId.value)) {
+            activeGroupId.value = groups.value[0].id
+          }
+        }
+      })
+
+      const createGroup = (name = 'Group') => {
+        const id = crypto.randomUUID ? crypto.randomUUID() : `group-${Date.now()}`
+        groups.value.push({ id, name, accounts: [] })
+        setActiveGroup(id)
+        return id
+      }
+
+      const updateGroup = (id, updates = {}) => {
+        const target = groups.value.find((group) => group.id === id)
+        if (!target) return
+        if (Object.prototype.hasOwnProperty.call(updates, 'name')) {
+          target.name = updates.name || target.name
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, 'accent')) {
+          target.accent = updates.accent
+        }
+      }
+
+      const reorderGroups = (order) => {
+        const ordered = order.map((entry) => (typeof entry === 'string' ? entry : entry.id))
+        const next = ordered
+          .map((id) => groups.value.find((group) => group.id === id))
+          .filter(Boolean)
+        if (next.length === groups.value.length) {
+          groups.value = [...next]
+        }
+      }
 
       const addAccountToGroup = (groupId, account) => {
         addAccountToGroupMock(groupId, account)
@@ -74,14 +119,27 @@ vi.mock('@/composables/useAccountGroups', () => {
         return true
       }
 
+      const syncGroupAccounts = (groupId, accounts) => {
+        const target = groups.value.find((group) => group.id === groupId)
+        if (!target) return
+        target.accounts = [...accounts]
+        persist()
+      }
+
+      watch([groups, activeGroupId], persist, { deep: true })
       persist()
 
       return {
         groups,
         activeGroupId,
+        createGroup,
+        updateGroup,
         removeGroup,
+        reorderGroups,
+        setActiveGroup,
         addAccountToGroup,
         removeAccountFromGroup,
+        syncGroupAccounts,
       }
     },
   }

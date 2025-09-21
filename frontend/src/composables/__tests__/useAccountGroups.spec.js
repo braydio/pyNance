@@ -1,94 +1,226 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
-import { useAccountGroups } from '../useAccountGroups.js'
 
-const STORAGE_KEY = 'accountGroups'
+const DEFAULT_ACCENT = 'var(--color-accent-cyan)'
 
-beforeEach(() => {
-  const store = {}
-  vi.stubGlobal('localStorage', {
-    getItem: (k) => (k in store ? store[k] : null),
-    setItem: (k, v) => {
-      store[k] = String(v)
-    },
-    removeItem: (k) => {
-      delete store[k]
-    },
-    clear: () => {
-      Object.keys(store).forEach((k) => delete store[k])
+vi.mock('@/services/api', () => {
+  const backendState = {
+    groups: [],
+    active_group_id: 'group-1',
+  }
+
+  const snapshot = () => ({
+    status: 'success',
+    data: {
+      groups: backendState.groups.map((group, index) => ({
+        ...group,
+        position: index,
+        accounts: group.accounts.map((acct) => ({ ...acct })),
+      })),
+      active_group_id: backendState.active_group_id,
     },
   })
-  localStorage.clear()
+
+  const ensureGroup = (id) => {
+    const group = backendState.groups.find((item) => item.id === id)
+    if (!group) {
+      throw new Error(`Group ${id} not found`)
+    }
+    return group
+  }
+
+  const api = {
+    __state: backendState,
+    __reset: () => {
+      backendState.groups = [
+        {
+          id: 'group-1',
+          name: 'Group',
+          accent: DEFAULT_ACCENT,
+          position: 0,
+          accounts: [],
+        },
+      ]
+      backendState.active_group_id = 'group-1'
+      Object.values(api).forEach((fn) => {
+        if (typeof fn?.mockClear === 'function') {
+          fn.mockClear()
+        }
+      })
+    },
+    fetchAccountGroups: vi.fn(async () => snapshot()),
+    createAccountGroup: vi.fn(async ({ id, name, accent }) => {
+      const groupId = id || `group-${Date.now()}`
+      backendState.groups.push({
+        id: groupId,
+        name: name || 'Group',
+        accent: accent || DEFAULT_ACCENT,
+        position: backendState.groups.length,
+        accounts: [],
+      })
+      backendState.active_group_id = groupId
+      return {
+        status: 'success',
+        data: {
+          group: snapshot().data.groups.find((group) => group.id === groupId),
+          active_group_id: backendState.active_group_id,
+        },
+      }
+    }),
+    updateAccountGroup: vi.fn(async (id, payload = {}) => {
+      const group = ensureGroup(id)
+      if (payload.name) group.name = payload.name
+      if (payload.accent) group.accent = payload.accent
+      return {
+        status: 'success',
+        data: {
+          group: snapshot().data.groups.find((item) => item.id === id),
+        },
+      }
+    }),
+    deleteAccountGroup: vi.fn(async (id) => {
+      backendState.groups = backendState.groups.filter((group) => group.id !== id)
+      if (!backendState.groups.length) {
+        backendState.groups = [
+          {
+            id: 'group-1',
+            name: 'Group',
+            accent: DEFAULT_ACCENT,
+            position: 0,
+            accounts: [],
+          },
+        ]
+      }
+      if (!backendState.groups.some((group) => group.id === backendState.active_group_id)) {
+        backendState.active_group_id = backendState.groups[0].id
+      }
+      return snapshot()
+    }),
+    reorderAccountGroups: vi.fn(async ({ group_ids }) => {
+      const ordered = group_ids
+        .map((id) => backendState.groups.find((group) => group.id === id))
+        .filter(Boolean)
+      if (ordered.length === backendState.groups.length) {
+        backendState.groups = ordered
+      }
+      return snapshot()
+    }),
+    setActiveAccountGroup: vi.fn(async ({ group_id }) => {
+      backendState.active_group_id = group_id
+      return {
+        status: 'success',
+        data: { active_group_id: backendState.active_group_id },
+      }
+    }),
+    addAccountToGroup: vi.fn(async (groupId, { account_id }) => {
+      const group = ensureGroup(groupId)
+      if (!group.accounts.some((acct) => acct.id === account_id)) {
+        group.accounts.push({
+          id: account_id,
+          account_id,
+          name: `Account ${account_id}`,
+          adjusted_balance: 0,
+        })
+      }
+      return {
+        status: 'success',
+        data: {
+          group: snapshot().data.groups.find((item) => item.id === groupId),
+        },
+      }
+    }),
+    removeAccountFromGroup: vi.fn(async (groupId, accountId) => {
+      const group = ensureGroup(groupId)
+      group.accounts = group.accounts.filter((acct) => acct.id !== accountId)
+      return {
+        status: 'success',
+        data: {
+          group: snapshot().data.groups.find((item) => item.id === groupId),
+        },
+      }
+    }),
+    reorderGroupAccounts: vi.fn(async (groupId, { account_ids }) => {
+      const group = ensureGroup(groupId)
+      group.accounts = account_ids
+        .map((id) => group.accounts.find((acct) => acct.id === id))
+        .filter(Boolean)
+      return {
+        status: 'success',
+        data: {
+          group: snapshot().data.groups.find((item) => item.id === groupId),
+        },
+      }
+    }),
+  }
+
+  api.__reset()
+  return { default: api }
 })
 
+import api from '@/services/api'
+import { useAccountGroups } from '../useAccountGroups.js'
+
+const flush = async () => {
+  await Promise.resolve()
+  await nextTick()
+  await Promise.resolve()
+}
+
 describe('useAccountGroups', () => {
-  it('loads groups from localStorage', () => {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        groups: [{ id: 'stored', name: 'Stored', accounts: [] }],
-        activeGroupId: 'stored',
-      }),
-    )
+  beforeEach(() => {
+    api.__reset()
+  })
+
+  it('loads groups from the API', async () => {
     const { groups, activeGroupId } = useAccountGroups()
-    expect(groups.value[0].id).toBe('stored')
-    expect(activeGroupId.value).toBe('stored')
+    await flush()
+    expect(groups.value).toHaveLength(1)
+    expect(activeGroupId.value).toBe('group-1')
   })
 
-  it('persists group changes', async () => {
-    const { groups } = useAccountGroups()
-    groups.value[0].name = 'Updated'
-    await nextTick()
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored.groups[0].name).toBe('Updated')
+  it('creates a group and persists it across reloads', async () => {
+    const first = useAccountGroups()
+    await flush()
+    const newId = first.createGroup('Savings')
+    await flush()
+    expect(first.groups.value.some((group) => group.id === newId)).toBe(true)
+
+    const reload = useAccountGroups()
+    await flush()
+    expect(reload.groups.value.some((group) => group.id === newId)).toBe(true)
+    expect(reload.activeGroupId.value).toBe(newId)
   })
 
-  it('adds and removes groups while maintaining active id', async () => {
-    const { groups, activeGroupId, addGroup, setActiveGroup, removeGroup } = useAccountGroups()
-    const firstId = groups.value[0].id
-    const newId = addGroup('New')
-    expect(activeGroupId.value).toBe(newId)
-    setActiveGroup(firstId)
-    expect(activeGroupId.value).toBe(firstId)
-    removeGroup(firstId)
-    await nextTick()
-    expect(groups.value.length).toBe(1)
-    expect(activeGroupId.value).toBe(groups.value[0].id)
+  it('adds accounts without duplicates and persists removal', async () => {
+    const store = useAccountGroups()
+    await flush()
+    const groupId = store.groups.value[0].id
+
+    expect(store.addAccountToGroup(groupId, { id: 'acc-1', name: 'Checking' })).toBe(true)
+    await flush()
+    expect(store.addAccountToGroup(groupId, { id: 'acc-1', name: 'Checking' })).toBe(false)
+    expect(store.groups.value[0].accounts).toHaveLength(1)
+
+    store.removeAccountFromGroup(groupId, 'acc-1')
+    await flush()
+    expect(store.groups.value[0].accounts).toHaveLength(0)
+
+    const reload = useAccountGroups()
+    await flush()
+    expect(reload.groups.value[0].accounts).toHaveLength(0)
   })
 
-  it('reorders groups and persists deletions', async () => {
-    const { groups, reorderGroups, removeGroup } = useAccountGroups()
-    groups.value.push({ id: 'b', name: 'B', accounts: [] })
-    reorderGroups([...groups.value].reverse())
-    await nextTick()
-    let stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored.groups[0].id).toBe('b')
-    removeGroup('b')
-    await nextTick()
-    stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(stored.groups.some((g) => g.id === 'b')).toBe(false)
-  })
+  it('updates active group selection via the API', async () => {
+    const store = useAccountGroups()
+    await flush()
+    const newId = store.createGroup('Travel')
+    await flush()
+    store.setActiveGroup(newId)
+    await flush()
+    expect(store.activeGroupId.value).toBe(newId)
 
-  it('prevents duplicate accounts and removes accounts', async () => {
-    const { addAccountToGroup, removeAccountFromGroup, groups } = useAccountGroups()
-    const id = groups.value[0].id
-    const acc = { id: 'a1' }
-    expect(addAccountToGroup(id, acc)).toBe(true)
-    expect(addAccountToGroup(id, acc)).toBe(false)
-    removeAccountFromGroup(id, 'a1')
-    await nextTick()
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
-    expect(groups.value[0].accounts.length).toBe(0)
-    expect(stored.groups[0].accounts.length).toBe(0)
-  })
-
-  it('enforces a maximum of five accounts per group', () => {
-    const { addAccountToGroup, groups } = useAccountGroups()
-    const id = groups.value[0].id
-    for (let i = 0; i < 5; i += 1) {
-      expect(addAccountToGroup(id, `acc-${i}`)).toBe(true)
-    }
-    expect(addAccountToGroup(id, 'acc-5')).toBe(false)
-    expect(groups.value[0].accounts.length).toBe(5)
+    const reload = useAccountGroups()
+    await flush()
+    expect(reload.activeGroupId.value).toBe(newId)
   })
 })

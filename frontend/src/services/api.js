@@ -128,4 +128,60 @@ export default {
     const response = await apiClient.put(`/accounts/${account_id}/hidden`, { hidden })
     return response.data
   },
+
+  async fetchAccountGroups(params = {}) {
+    const response = await apiClient.get('/dashboard/account-groups', { params })
+    return response.data
+  },
+
+  async createAccountGroup(payload = {}) {
+    const response = await apiClient.post('/dashboard/account-groups', payload)
+    return response.data
+  },
+
+  async updateAccountGroup(groupId, payload = {}) {
+    const response = await apiClient.put(`/dashboard/account-groups/${groupId}`, payload)
+    return response.data
+  },
+
+  async deleteAccountGroup(groupId, payload = {}) {
+    const response = await apiClient.delete(`/dashboard/account-groups/${groupId}`, {
+      data: payload,
+    })
+    return response.data
+  },
+
+  async reorderAccountGroups(payload = {}) {
+    const response = await apiClient.post('/dashboard/account-groups/reorder', payload)
+    return response.data
+  },
+
+  async setActiveAccountGroup(payload = {}) {
+    const response = await apiClient.put('/dashboard/account-groups/active', payload)
+    return response.data
+  },
+
+  async addAccountToGroup(groupId, payload = {}) {
+    const response = await apiClient.post(
+      `/dashboard/account-groups/${groupId}/accounts`,
+      payload,
+    )
+    return response.data
+  },
+
+  async removeAccountFromGroup(groupId, accountId, payload = {}) {
+    const response = await apiClient.delete(
+      `/dashboard/account-groups/${groupId}/accounts/${accountId}`,
+      { data: payload },
+    )
+    return response.data
+  },
+
+  async reorderGroupAccounts(groupId, payload = {}) {
+    const response = await apiClient.post(
+      `/dashboard/account-groups/${groupId}/accounts/reorder`,
+      payload,
+    )
+    return response.data
+  },
 }

@@ -43,6 +43,30 @@ vi.mock('@/composables/useAccountGroups', () => {
         )
       }
 
+      function setActiveGroup(id) {
+        if (groups.value.some((group) => group.id === id)) {
+          activeGroupId.value = id
+        }
+      }
+
+      function createGroup(name = 'Group') {
+        const id = crypto.randomUUID ? crypto.randomUUID() : `group-${Date.now()}`
+        groups.value.push({ id, name, accounts: [], accent: 'var(--color-accent-cyan)' })
+        setActiveGroup(id)
+        return id
+      }
+
+      function updateGroup(id, updates = {}) {
+        const group = groups.value.find((item) => item.id === id)
+        if (!group) return
+        if (Object.prototype.hasOwnProperty.call(updates, 'name')) {
+          group.name = updates.name || group.name
+        }
+        if (Object.prototype.hasOwnProperty.call(updates, 'accent')) {
+          group.accent = updates.accent
+        }
+      }
+
       function removeGroup(id) {
         const idx = groups.value.findIndex((g) => g.id === id)
         if (idx !== -1) {
@@ -72,15 +96,36 @@ vi.mock('@/composables/useAccountGroups', () => {
         }
       }
 
+      function reorderGroups(order) {
+        const ordered = order.map((entry) => (typeof entry === 'string' ? entry : entry.id))
+        const next = ordered
+          .map((id) => groups.value.find((group) => group.id === id))
+          .filter(Boolean)
+        if (next.length === groups.value.length) {
+          groups.value = [...next]
+        }
+      }
+
+      function syncGroupAccounts(groupId, accounts) {
+        const group = groups.value.find((g) => g.id === groupId)
+        if (!group) return
+        group.accounts = [...accounts]
+      }
+
       watch([groups, activeGroupId], persist, { deep: true })
       persist()
 
       return {
         groups,
         activeGroupId,
+        createGroup,
+        updateGroup,
         removeGroup,
+        reorderGroups,
+        setActiveGroup,
         addAccountToGroup,
         removeAccountFromGroup,
+        syncGroupAccounts,
       }
     },
   }
