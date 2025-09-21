@@ -8,6 +8,11 @@
 
 set -euo pipefail
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ORIGINAL_DIR="$(pwd)"
+trap 'cd "$ORIGINAL_DIR"' EXIT
+cd "$REPO_ROOT"
+
 USE_SLIM=0
 for arg in "$@"; do
   case "$arg" in
@@ -68,24 +73,25 @@ git config core.hooksPath .githooks
 chmod +x .githooks/* || true
 
 ## 5. Frontend setup (if present)
-if [ -d frontend ] && [ -f frontend/package.json ]; then
+if [ -d "$REPO_ROOT/frontend" ] && [ -f "$REPO_ROOT/frontend/package.json" ]; then
   echo "Setting up frontend..."
-  cd frontend
+  (
+    cd "$REPO_ROOT/frontend"
 
-  if [ -f ../.nvmrc ] && command -v nvm &>/dev/null; then
-    echo "Using Node version from .nvmrc..."
-    nvm install
-    nvm use
-  fi
+    if [ -f "$REPO_ROOT/.nvmrc" ] && command -v nvm &>/dev/null; then
+      echo "Using Node version from .nvmrc..."
+      nvm install
+      nvm use
+    fi
 
-  if ! command -v npm &>/dev/null; then
-    echo "npm not found. Please install Node.js and npm."
-    exit 1
-  fi
+    if ! command -v npm &>/dev/null; then
+      echo "npm not found. Please install Node.js and npm."
+      exit 1
+    fi
 
-  echo "Installing frontend dependencies..."
-  npm install
-  cd ..
+    echo "Installing frontend dependencies..."
+    npm install
+  )
 else
   echo "No frontend setup detected. Skipping."
 fi
