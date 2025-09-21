@@ -153,9 +153,7 @@ const subtitlePrefix = computed(() => (props.kind === 'category' ? 'Category' : 
  * Ensure category visuals remain visible unless explicitly hidden by the
  * consumer. Non-category modals always render visuals.
  */
-const showCategoryVisuals = computed(
-  () => props.kind !== 'category' || !props.hideCategoryVisuals,
-)
+const showCategoryVisuals = computed(() => props.kind !== 'category' || !props.hideCategoryVisuals)
 
 // --- SUMMARY COMPUTATION ---
 const summary = computed(() => {
