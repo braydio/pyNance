@@ -128,7 +128,10 @@ const toggleSidebar = () => {
   color: var(--color-accent-cyan);
   font-size: 0.85rem;
   font-weight: 600;
-  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .chart-details-sidebar__toggle:hover,
