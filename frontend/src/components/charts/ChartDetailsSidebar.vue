@@ -7,7 +7,8 @@
   >
     <button
       type="button"
-      class="chart-details-sidebar__toggle"
+      class="chart-details-sidebar__toggle gradient-toggle-btn"
+      :class="{ 'is-active': isOpen }"
       :aria-expanded="isOpen.toString()"
       :aria-controls="contentId"
       @click="toggleSidebar"
@@ -121,25 +122,12 @@ const toggleSidebar = () => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid var(--color-accent-cyan);
-  background: color-mix(in srgb, var(--color-accent-cyan) 12%, transparent);
-  color: var(--color-accent-cyan);
-  font-size: 0.85rem;
-  font-weight: 600;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease;
+  min-width: 8.5rem;
+  transition: box-shadow 0.3s ease;
 }
 
-.chart-details-sidebar__toggle:hover,
 .chart-details-sidebar__toggle:focus-visible {
-  background: color-mix(in srgb, var(--color-accent-cyan) 22%, transparent);
-  color: var(--color-accent-cyan);
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 35%, transparent);
 }
 
 .chart-details-sidebar__icon {

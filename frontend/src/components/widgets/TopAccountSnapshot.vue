@@ -13,7 +13,7 @@
       <div class="bs-tabs-scroll">
         <button
           v-if="!isEditingGroups && groups.length > 3"
-          class="bs-nav-btn"
+          class="bs-nav-btn gradient-toggle-btn"
           @click="shiftWindow(-1)"
           :disabled="visibleGroupIndex === 0"
           aria-label="Previous group"
@@ -85,7 +85,7 @@
 
         <button
           v-if="groups.length > 3"
-          class="bs-nav-btn"
+          class="bs-nav-btn gradient-toggle-btn"
           @click="shiftWindow(1)"
           :disabled="visibleGroupIndex + 3 >= groups.length"
           aria-label="Next group"
@@ -96,7 +96,11 @@
 
       <!-- Group Dropdown -->
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
-        <button class="bs-group-btn" @click="toggleGroupMenu" aria-label="Select account group">
+        <button
+          class="bs-group-btn gradient-toggle-btn"
+          @click="toggleGroupMenu"
+          aria-label="Select account group"
+        >
           {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
         </button>
         <Transition name="slide-down">
@@ -847,54 +851,38 @@ defineExpose({
 }
 
 .bs-group-btn {
-  padding: 0.4rem 0.8rem;
-  background: var(--color-bg-sec);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 0.8rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 0.65rem;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  transition:
-    background 0.2s,
-    color 0.2s;
+  gap: 0.35rem;
+}
+
+.bs-group-btn:focus-visible {
+  outline: none;
 }
 
 .bs-nav-btn {
-  padding: 0.4rem 0.6rem;
-  background: var(--color-bg-sec);
-  color: var(--accent);
-  border: 1px solid var(--accent);
-  border-radius: 0.8rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 0.65rem;
   font-size: var(--font-size-lg);
   font-weight: var(--font-weight-semibold);
   cursor: pointer;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition:
-    background 0.2s,
-    color 0.2s;
 }
 
-.bs-nav-btn:hover,
 .bs-nav-btn:focus-visible {
-  background: var(--accent);
-  color: var(--color-bg-dark);
+  outline: none;
 }
 
 .bs-nav-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: not-allowed;
-}
-
-.bs-group-btn:hover,
-.bs-group-btn:focus-visible {
-  background: var(--accent);
-  color: var(--color-bg-dark);
 }
 
 .bs-group-menu {
