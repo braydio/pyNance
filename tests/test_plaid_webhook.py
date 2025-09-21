@@ -116,6 +116,11 @@ class QueryStub:
         self._deleted_log = deleted_log
         self._pending_delete_ids: Optional[List[str]] = None
 
+    def options(self, *args: object, **kwargs: object) -> "QueryStub":
+        """Ignore eager-loading hints while retaining fluent API support."""
+
+        return self
+
     def filter_by(self, **kwargs: object) -> "QueryStub":
         filtered = [
             obj
@@ -182,8 +187,18 @@ class FakeAccount:
         self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
 
+class FakeAccountHistory:
+    """Mutable representation of an ``AccountHistory`` row for assertions."""
+
+    def __init__(self, balance: float = 0.0) -> None:
+        self.balance = balance
+        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+
 class FakePlaidAccount:
     """Minimal Plaid account representation."""
+
+    account: FakeAccount | None = None
 
     def __init__(
         self,
@@ -246,6 +261,7 @@ class FakePlaidClient:
 config_stub = types.ModuleType("app.config")
 config_stub.logger = FakeLogger()
 config_stub.plaid_client = None
+config_stub.PLAID_WEBHOOK_SECRET = "test-secret"
 _set_module("app.config", config_stub)
 
 extensions_stub = types.ModuleType("app.extensions")
@@ -338,6 +354,7 @@ plaid_webhook_spec = importlib.util.spec_from_file_location(
 plaid_webhook_module = importlib.util.module_from_spec(plaid_webhook_spec)
 assert plaid_webhook_spec.loader is not None
 plaid_webhook_spec.loader.exec_module(plaid_webhook_module)
+plaid_webhook_module.joinedload = lambda *args, **kwargs: None
 sys.modules["app.routes.plaid_webhook"] = plaid_webhook_module
 
 PLAID_SYNC_PATH = os.path.join(BASE_BACKEND, "app", "services", "plaid_sync.py")
@@ -381,15 +398,24 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     plaid_webhook_module.Account.query = QueryStub([account_a, account_b])
 
     calls: list[tuple[str, str]] = []
-    history_updates: dict[str, list[float]] = {}
-
     lookup = {account_a.account_id: account_a, account_b.account_id: account_b}
+    history_records = {
+        account_a.account_id: FakeAccountHistory(balance=account_a.balance),
+        account_b.account_id: FakeAccountHistory(balance=account_b.balance),
+    }
+    history_updates: dict[str, list[float]] = {}
+    initial_history_stamps = {
+        account_id: record.updated_at for account_id, record in history_records.items()
+    }
 
     def fake_refresh(access_token: str, account_id: str) -> tuple[bool, None]:
         calls.append((access_token, account_id))
         acct = lookup[account_id]
         acct.balance += 10
         history_updates.setdefault(account_id, []).append(acct.balance)
+        entry = history_records[account_id]
+        entry.balance = acct.balance
+        entry.updated_at = datetime.now(timezone.utc)
         return True, None
 
     monkeypatch.setattr(
@@ -422,6 +448,9 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     assert account_b.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
     assert plaid_a.last_refreshed is not None
     assert plaid_b.last_refreshed is not None
+    for account_id, entry in history_records.items():
+        assert entry.balance == lookup[account_id].balance
+        assert entry.updated_at > initial_history_stamps[account_id]
 
     info_logs = fake_logger.records["info"]
     assert any(

@@ -1,5 +1,7 @@
 """Plaid webhooks endpoint for transactions and investments notifications."""
 
+import hashlib
+import hmac
 from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
