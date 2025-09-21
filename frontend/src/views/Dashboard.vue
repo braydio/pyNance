@@ -429,7 +429,8 @@ async function onCategoryBarClick(payload) {
   // Configure modal for category mode
   modalKind.value = 'category'
   modalShowDate.value = true
-  modalHideCategoryVisuals.value = true
+  // Keep category visuals enabled so parent/child labels remain visible
+  modalHideCategoryVisuals.value = false
 
   // Focus on category label only in header; dates move to table
   modalSubtitle.value = label
