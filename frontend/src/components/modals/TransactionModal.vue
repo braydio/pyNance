@@ -170,14 +170,17 @@ const summary = computed(() => {
 /**
  * Navigate to the Transactions route, pre-populating highlight and filters
  * based on the clicked transaction.
+ *
+ * @param {Record<string, unknown>} tx - The transaction that was clicked.
  */
 function onRowClick(tx) {
-  const txid = tx?.transaction_id || tx?.id
-  const accountId = tx?.account_id || tx?.accountId
+  const txid = tx?.transaction_id ?? tx?.id
+  const accountId = tx?.account_id ?? tx?.accountId
   const query = {}
 
-  if (txid) query.promote = txid
-  if (accountId) query.account_id = accountId
+  if (txid !== undefined && txid !== null && txid !== '') query.promote = String(txid)
+  if (accountId !== undefined && accountId !== null && accountId !== '')
+    query.account_id = String(accountId)
 
   if (Object.keys(query).length) router.push({ name: 'Transactions', query })
   else router.push({ name: 'Transactions' })
