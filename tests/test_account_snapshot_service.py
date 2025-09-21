@@ -101,6 +101,66 @@ def test_build_snapshot_payload_creates_preference(monkeypatch):
     assert commits  # commit performed for new preference
 
 
+def test_default_selection_prioritizes_top_balances(monkeypatch):
+    def account(idx, balance):
+        account_type = "depository" if balance >= 0 else "credit"
+        return types.SimpleNamespace(
+            id=idx,
+            account_id=f"acc-{idx}",
+            name=f"Account {idx}",
+            institution_name="Bank",
+            type=account_type,
+            subtype="checking",
+            link_type="Plaid",
+            balance=balance,
+            is_hidden=False,
+            plaid_account=types.SimpleNamespace(last_refreshed=None),
+            teller_account=types.SimpleNamespace(last_refreshed=None),
+        )
+
+    balances = [
+        9500.0,
+        8700.0,
+        7200.0,
+        6100.0,
+        5400.0,
+        2100.0,
+        -5200.0,
+        -4800.0,
+        -3600.0,
+        -3100.0,
+        -2500.0,
+        -900.0,
+    ]
+    accounts = [account(idx + 1, value) for idx, value in enumerate(balances)]
+
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
+    monkeypatch.setattr(
+        snapshot_service, "AccountSnapshotPreference", make_preference(None)
+    )
+    added, commits = setup_session(monkeypatch)
+
+    data = snapshot_service.build_snapshot_payload(user_id="user-top")
+
+    expected = [
+        "acc-1",
+        "acc-2",
+        "acc-3",
+        "acc-4",
+        "acc-5",
+        "acc-7",
+        "acc-8",
+        "acc-9",
+        "acc-10",
+        "acc-11",
+    ]
+
+    assert data["selected_account_ids"] == expected
+    assert len(data["selected_accounts"]) == snapshot_service.MAX_SNAPSHOT_SELECTION
+    assert added and added[0].selected_account_ids == expected
+    assert commits
+
+
 def test_build_snapshot_payload_sanitizes_selection(monkeypatch):
     accounts = make_accounts()
     monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)

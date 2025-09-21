@@ -9,7 +9,7 @@ import axios from 'axios'
 
 const REMINDER_PATH = (id) => `/api/recurring/${id}/recurring`
 
-export function useSnapshotAccounts(fallbackMaxSelection = 5) {
+export function useSnapshotAccounts(fallbackMaxSelection = 10) {
   const accounts = ref([])
   const selectedIds = ref([])
   const reminders = ref({})

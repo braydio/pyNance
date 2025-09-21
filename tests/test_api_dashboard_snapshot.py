@@ -46,7 +46,7 @@ def client():
 
 
 def test_get_snapshot_success(client, monkeypatch):
-    payload = {"selected_account_ids": ["acc-1"], "metadata": {"max_selection": 5}}
+    payload = {"selected_account_ids": ["acc-1"], "metadata": {"max_selection": 10}}
 
     def fake_build(user_id=None):
         assert user_id == "user-123"
