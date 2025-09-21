@@ -167,10 +167,21 @@ const summary = computed(() => {
   }
 })
 
+/**
+ * Navigate to the Transactions route, pre-populating highlight and filters
+ * based on the clicked transaction.
+ */
 function onRowClick(tx) {
   const txid = tx?.transaction_id || tx?.id
-  if (txid) router.push({ name: 'Transactions', query: { promote: txid } })
+  const accountId = tx?.account_id || tx?.accountId
+  const query = {}
+
+  if (txid) query.promote = txid
+  if (accountId) query.account_id = accountId
+
+  if (Object.keys(query).length) router.push({ name: 'Transactions', query })
   else router.push({ name: 'Transactions' })
+
   emitClose()
 }
 </script>
