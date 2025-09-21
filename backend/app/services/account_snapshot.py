@@ -8,7 +8,9 @@ from app.extensions import db
 from app.models import Account, AccountSnapshotPreference
 from app.utils.finance_utils import normalize_account_balance
 
-MAX_SNAPSHOT_SELECTION = 5
+DEFAULT_ASSET_LIMIT = 5
+DEFAULT_LIABILITY_LIMIT = 5
+MAX_SNAPSHOT_SELECTION = DEFAULT_ASSET_LIMIT + DEFAULT_LIABILITY_LIMIT
 DEFAULT_USER_SCOPE = "default"
 
 
@@ -69,9 +71,7 @@ def _ensure_preference(
             db.session.commit()
         return preference
 
-    default_ids = [acc.account_id for acc in accounts if acc.account_id][
-        :MAX_SNAPSHOT_SELECTION
-    ]
+    default_ids = _default_snapshot_ids(accounts)
     preference = AccountSnapshotPreference(
         user_id=user_id,
         selected_account_ids=default_ids,
@@ -79,6 +79,74 @@ def _ensure_preference(
     db.session.add(preference)
     db.session.commit()
     return preference
+
+
+def _default_snapshot_ids(accounts: Sequence[Account]) -> List[str]:
+    """Return default account IDs emphasising top asset and liability balances."""
+
+    if not accounts:
+        return []
+
+    seen: set[str] = set()
+    scored: List[Tuple[str, float]] = []
+
+    for account in accounts:
+        account_id = getattr(account, "account_id", None)
+        if not account_id:
+            continue
+        account_id = str(account_id)
+        if account_id in seen:
+            continue
+
+        balance_value = getattr(account, "balance", 0) or 0
+        normalized_balance = normalize_account_balance(
+            balance_value, getattr(account, "type", "") or ""
+        )
+        try:
+            numeric_balance = float(normalized_balance)
+        except (TypeError, ValueError):  # pragma: no cover - defensive
+            continue
+
+        scored.append((account_id, numeric_balance))
+        seen.add(account_id)
+
+    if not scored:
+        return []
+
+    assets = sorted(
+        (entry for entry in scored if entry[1] >= 0),
+        key=lambda entry: entry[1],
+        reverse=True,
+    )
+    liabilities = sorted(
+        (entry for entry in scored if entry[1] < 0),
+        key=lambda entry: abs(entry[1]),
+        reverse=True,
+    )
+
+    selection: List[str] = []
+    selection.extend(
+        account_id for account_id, _ in assets[:DEFAULT_ASSET_LIMIT]
+    )
+    selection.extend(
+        account_id for account_id, _ in liabilities[:DEFAULT_LIABILITY_LIMIT]
+    )
+
+    if len(selection) < MAX_SNAPSHOT_SELECTION:
+        ranked_remaining = sorted(
+            scored,
+            key=lambda entry: abs(entry[1]),
+            reverse=True,
+        )
+        chosen = set(selection)
+        for account_id, _ in ranked_remaining:
+            if account_id in chosen:
+                continue
+            selection.append(account_id)
+            if len(selection) >= MAX_SNAPSHOT_SELECTION:
+                break
+
+    return selection[:MAX_SNAPSHOT_SELECTION]
 
 
 def _normalize_ids(raw_ids: Iterable[str] | None) -> List[str]:

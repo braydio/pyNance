@@ -25,7 +25,10 @@ for module in [
 
 from app.extensions import db
 from app.models import Account, AccountSnapshotPreference
-from app.services.account_snapshot import build_snapshot_payload
+from app.services.account_snapshot import (
+    MAX_SNAPSHOT_SELECTION,
+    build_snapshot_payload,
+)
 
 
 @pytest.fixture()
@@ -46,15 +49,20 @@ def sqlite_app():
 
 
 def _make_account(
-    account_id: str, name: str, balance: float, institution: str
+    account_id: str,
+    name: str,
+    balance: float,
+    institution: str,
+    account_type: str = "depository",
+    subtype: str = "checking",
 ) -> Account:
     """Create an :class:`Account` instance for integration testing."""
     return Account(
         account_id=account_id,
         user_id="integration-user",
         name=name,
-        type="depository",
-        subtype="checking",
+        type=account_type,
+        subtype=subtype,
         institution_name=institution,
         balance=balance,
         link_type="manual",
@@ -67,12 +75,65 @@ def _make_account(
 def test_build_snapshot_payload_creates_preference_sqlite(sqlite_app):
     """`build_snapshot_payload` should persist defaults using an actual session."""
     with sqlite_app.app_context():
-        accounts = [
-            _make_account("acc-1", "Checking", 125.50, "First Bank"),
-            _make_account("acc-2", "Savings", 980.00, "First Bank"),
-            _make_account("acc-3", "Brokerage", 1540.75, "InvestCo"),
+        asset_accounts = [
+            _make_account("asset-1", "High-Yield Savings", 12500.0, "First Bank"),
+            _make_account("asset-2", "Brokerage", 9600.0, "InvestCo"),
+            _make_account("asset-3", "Retirement", 8300.0, "RetireWell"),
+            _make_account("asset-4", "Emergency Fund", 6100.0, "Credit Union"),
+            _make_account("asset-5", "Vacation Savings", 5400.0, "First Bank"),
+            _make_account("asset-6", "Overflow Checking", 1800.0, "Credit Union"),
         ]
-        db.session.add_all(accounts)
+        liability_accounts = [
+            _make_account(
+                "liability-1",
+                "Travel Rewards Card",
+                8200.0,
+                "Big Card",
+                account_type="credit card",
+                subtype="credit",
+            ),
+            _make_account(
+                "liability-2",
+                "Everyday Card",
+                6100.0,
+                "Everyday Bank",
+                account_type="credit card",
+                subtype="credit",
+            ),
+            _make_account(
+                "liability-3",
+                "Auto Loan",
+                4700.0,
+                "Auto Lender",
+                account_type="loan",
+                subtype="auto",
+            ),
+            _make_account(
+                "liability-4",
+                "Student Loan",
+                3600.0,
+                "Education Lender",
+                account_type="loan",
+                subtype="student",
+            ),
+            _make_account(
+                "liability-5",
+                "Store Card",
+                2400.0,
+                "Retail Bank",
+                account_type="credit card",
+                subtype="credit",
+            ),
+            _make_account(
+                "liability-6",
+                "Home Equity Line",
+                1500.0,
+                "Neighborhood Bank",
+                account_type="loan",
+                subtype="home",
+            ),
+        ]
+        db.session.add_all(asset_accounts + liability_accounts)
         db.session.commit()
 
         payload = build_snapshot_payload(user_id="integration-user")
@@ -81,12 +142,24 @@ def test_build_snapshot_payload_creates_preference_sqlite(sqlite_app):
             user_id="integration-user"
         ).first()
         assert preference is not None
-        assert preference.selected_account_ids == ["acc-1", "acc-2", "acc-3"]
+        expected_selection = [
+            "asset-1",
+            "asset-2",
+            "asset-3",
+            "asset-4",
+            "asset-5",
+            "liability-1",
+            "liability-2",
+            "liability-3",
+            "liability-4",
+            "liability-5",
+        ]
 
-        assert payload["selected_account_ids"] == ["acc-1", "acc-2", "acc-3"]
-        assert len(payload["selected_accounts"]) == 3
+        assert preference.selected_account_ids == expected_selection
+
+        assert payload["selected_account_ids"] == expected_selection
+        assert len(payload["selected_accounts"]) == len(expected_selection)
+        assert payload["metadata"].get("max_selection") == MAX_SNAPSHOT_SELECTION
         assert {acc["account_id"] for acc in payload["available_accounts"]} == {
-            "acc-1",
-            "acc-2",
-            "acc-3",
+            acct.account_id for acct in asset_accounts + liability_accounts
         }
