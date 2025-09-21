@@ -79,9 +79,12 @@ class DummyColumn:
 
 
 class DummyPlaidAcct:
+    account = None
+
     def __init__(self, token, account=None):
         self.access_token = token
         self.account = account
+        self.account_id = getattr(account, "account_id", None)
         self.last_refreshed = None
 
 
@@ -97,6 +100,14 @@ class DummyAccount:
         self.balance = 0.0
         self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
         self.plaid_account = DummyPlaidAcct(f"t-{account_id}", account=self)
+
+
+class DummyAccountHistory:
+    """Mutable stand-in for ``AccountHistory`` rows."""
+
+    def __init__(self, balance: float = 0.0) -> None:
+        self.balance = balance
+        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
 
 class QueryStub:
@@ -123,6 +134,7 @@ class QueryStub:
 
 models_stub.Account = DummyAccount
 models_stub.PlaidAccount = DummyPlaidAcct
+models_stub.PlaidItem = type("PlaidItem", (), {})
 sys.modules["app.models"] = models_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "plaid_transactions.py")
@@ -203,9 +215,13 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
 
 
 def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
+    """Ensure ``/sync`` updates balances and ``AccountHistory`` entries."""
+
     account = DummyAccount("acct-123", "user-1", "Main")
     plaid_account = account.plaid_account
     history: list[tuple[str, float]] = []
+    history_entry = DummyAccountHistory(balance=account.balance)
+    initial_history_updated_at = history_entry.updated_at
 
     class SessionStub:
         def __init__(self):
@@ -240,6 +256,8 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
         assert access_token == plaid_account.access_token
         account.balance += 25.0
         history.append((account_id, account.balance))
+        history_entry.balance = account.balance
+        history_entry.updated_at = datetime.now(timezone.utc)
         return True, None
 
     monkeypatch.setattr(
@@ -259,5 +277,7 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
     assert account.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
     assert account.balance == 25.0
     assert history == [(account.account_id, 25.0)]
+    assert history_entry.balance == 25.0
+    assert history_entry.updated_at > initial_history_updated_at
     assert session_stub.commits == 1
     assert session_stub.rollbacks == 0
