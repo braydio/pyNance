@@ -120,7 +120,7 @@
 // View for listing and managing transactions with tabbed layout and paging.
 // Editing is restricted to date, amount, description, category and merchant name;
 // account identifiers and provider metadata remain read-only.
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
@@ -153,12 +153,52 @@ export default {
   },
   setup() {
     const route = useRoute()
-    const txidParam = route.query?.txid
+
+    /**
+     * Normalize a vue-router query parameter to a single string value.
+     *
+     * @param {string | string[] | null | undefined} value
+     * @returns {string}
+     */
+    function coerceQueryValue(value) {
+      if (Array.isArray(value)) {
+        return value[0] ?? ''
+      }
+      if (value == null) return ''
+      return String(value)
+    }
+
+    const txidParam = coerceQueryValue(route.query?.txid)
     const initialPageSize = txidParam ? 250 : 10
     const startDate = ref('')
     const endDate = ref('')
-    const accountFilter = ref('')
+    const accountFilter = ref(coerceQueryValue(route.query?.account_id))
     const txType = ref('')
+    const promotedTransactionId = ref(
+      coerceQueryValue(route.query?.promote || route.query?.promote_txid),
+    )
+
+    watch(
+      () => route.query.account_id,
+      (newAccountId) => {
+        const normalizedAccountId = coerceQueryValue(newAccountId)
+        if (normalizedAccountId !== accountFilter.value) {
+          accountFilter.value = normalizedAccountId
+        }
+      },
+      { immediate: true },
+    )
+
+    watch(
+      () => [route.query.promote, route.query.promote_txid],
+      ([newPromote, newPromoteTxid]) => {
+        const normalizedPromoteId = coerceQueryValue(newPromote || newPromoteTxid)
+        if (normalizedPromoteId !== promotedTransactionId.value) {
+          promotedTransactionId.value = normalizedPromoteId
+        }
+      },
+      { immediate: true },
+    )
 
     const filters = computed(() => {
       const f = {}
@@ -178,11 +218,7 @@ export default {
       sortKey,
       sortOrder,
       setSort,
-    } = useTransactions(
-      initialPageSize,
-      ref(route.query?.promote || route.query?.promote_txid || ''),
-      filters,
-    )
+    } = useTransactions(initialPageSize, promotedTransactionId, filters)
 
     const recurringFormRef = ref(null)
     const tabs = ['Activity', 'Recurring', 'Scanner']
@@ -200,7 +236,7 @@ export default {
 
     onMounted(() => {
       if (txidParam) {
-        searchQuery.value = String(txidParam)
+        searchQuery.value = txidParam
       }
     })
 
