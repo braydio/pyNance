@@ -125,9 +125,7 @@ def _default_snapshot_ids(accounts: Sequence[Account]) -> List[str]:
     )
 
     selection: List[str] = []
-    selection.extend(
-        account_id for account_id, _ in assets[:DEFAULT_ASSET_LIMIT]
-    )
+    selection.extend(account_id for account_id, _ in assets[:DEFAULT_ASSET_LIMIT])
     selection.extend(
         account_id for account_id, _ in liabilities[:DEFAULT_LIABILITY_LIMIT]
     )
