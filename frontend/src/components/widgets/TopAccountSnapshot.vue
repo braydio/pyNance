@@ -25,8 +25,8 @@
           v-model="groups"
           item-key="id"
           handle=".bs-tab-handle"
-          tag="transition-group"
-          :component-data="{ tag: 'div', class: 'bs-tab-list', name: 'list-fade' }"
+          tag="div"
+          class="bs-tab-list"
         >
           <template #item="{ element: g }">
             <div
@@ -126,8 +126,8 @@
       v-model="groupAccounts"
       item-key="id"
       handle=".bs-drag-handle"
-      tag="transition-group"
-      :component-data="{ tag: 'ul', class: 'bs-list', name: 'list-fade' }"
+      tag="ul"
+      class="bs-list"
     >
       <template #item="{ element: account }">
         <li class="bs-account-container" :key="accountId(account)">
@@ -560,6 +560,20 @@ function initials(name) {
     .toUpperCase()
     .slice(0, 2)
 }
+
+defineExpose({
+  accounts: allAccounts,
+  allAccounts,
+  groups,
+  activeGroupId,
+  groupAccounts,
+  groupAccent,
+  isEditingGroups,
+  selectedAccountId,
+  showAccountSelector,
+  startAddAccount,
+  confirmAddAccount,
+})
 </script>
 
 <style scoped>
