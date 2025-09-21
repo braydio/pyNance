@@ -27,6 +27,7 @@
           handle=".bs-tab-handle"
           tag="div"
           class="bs-tab-list"
+          @end="persistGroupOrder"
         >
           <template #item="{ element: g }">
             <div
@@ -128,6 +129,7 @@
       handle=".bs-drag-handle"
       tag="ul"
       class="bs-list"
+      @end="persistAccountOrder"
     >
       <template #item="{ element: account }">
         <li class="bs-account-container" :key="accountId(account)">
@@ -298,8 +300,18 @@ const props = defineProps({
 
 // fetch accounts generically for potential group management
 const { accounts: allAccounts } = useTopAccounts()
-const { groups, activeGroupId, removeGroup, addAccountToGroup, removeAccountFromGroup } =
-  useAccountGroups()
+const {
+  groups,
+  activeGroupId,
+  createGroup,
+  updateGroup,
+  removeGroup,
+  reorderGroups,
+  setActiveGroup: persistActiveGroup,
+  addAccountToGroup,
+  removeAccountFromGroup,
+  syncGroupAccounts,
+} = useAccountGroups()
 
 // Details dropdown state
 const openAccountId = ref(null)
@@ -432,7 +444,7 @@ function accentColor(account, index) {
 }
 
 function setActiveGroup(id) {
-  activeGroupId.value = id
+  persistActiveGroup(id)
 }
 
 function toggleGroupMenu() {
@@ -442,6 +454,10 @@ function toggleGroupMenu() {
 function selectGroup(id) {
   setActiveGroup(id)
   showGroupMenu.value = false
+}
+
+function persistGroupOrder() {
+  reorderGroups(groups.value)
 }
 
 const emit = defineEmits(['update:isEditingGroups'])
@@ -469,17 +485,12 @@ function finishEdit(group) {
   if (group.name.length > MAX_GROUP_NAME_LENGTH) {
     group.name = `${group.name.slice(0, MAX_GROUP_NAME_LENGTH - 1)}…`
   }
+  updateGroup(group.id, { name: group.name })
 }
 
 /** Create a new group and start editing its name */
 function addGroup() {
-  const id = `group-${Date.now()}`
-  groups.value.push({
-    id,
-    name: '',
-    accounts: [],
-    accent: 'var(--color-accent-cyan)',
-  })
+  const id = createGroup()
   selectGroup(id)
   editingGroupId.value = id
 }
@@ -515,6 +526,11 @@ function confirmAddAccount() {
   }
   showAccountSelector.value = false
   selectedAccountId.value = ''
+}
+
+function persistAccountOrder() {
+  if (!activeGroupId.value) return
+  syncGroupAccounts(activeGroupId.value, groupAccounts.value)
 }
 
 function removeAccount(id) {

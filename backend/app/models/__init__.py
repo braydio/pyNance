@@ -6,6 +6,9 @@ This package exposes all SQLAlchemy models grouped into modules.
 # Accounts
 from .account_models import (
     Account,
+    AccountGroup,
+    AccountGroupMembership,
+    AccountGroupPreference,
     AccountHistory,
     AccountSnapshotPreference,
     FinancialGoal,
@@ -19,11 +22,7 @@ from .institution_models import (
     PlaidWebhookLog,
     TellerAccount,
 )
-from .investment_models import (
-    InvestmentHolding,
-    InvestmentTransaction,
-    Security,
-)
+from .investment_models import InvestmentHolding, InvestmentTransaction, Security
 
 # Mixins
 from .mixins import TimestampMixin
@@ -56,6 +55,9 @@ __all__ = [
     "TellerAccount",
     # Accounts
     "Account",
+    "AccountGroup",
+    "AccountGroupMembership",
+    "AccountGroupPreference",
     "AccountHistory",
     "AccountSnapshotPreference",
     "FinancialGoal",
