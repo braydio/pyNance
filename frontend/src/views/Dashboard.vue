@@ -41,20 +41,20 @@
         </div>
         <!-- Net Income Summary Card -->
         <div
-          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3"
+          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
         >
+          <ChartDetailsSidebar
+            v-model:show7-day="show7Day"
+            v-model:show30-day="show30Day"
+            v-model:show-avg-income="showAvgIncome"
+            v-model:show-avg-expenses="showAvgExpenses"
+          />
           <div class="flex items-center justify-center mb-4">
             <h2 class="daily-net-chart-title">
               <span class="title-text">Net Income</span>
               <span class="title-subtitle">(Daily)</span>
             </h2>
           </div>
-          <ChartControls
-            v-model:show7-day="show7Day"
-            v-model:show30-day="show30Day"
-            v-model:show-avg-income="showAvgIncome"
-            v-model:show-avg-expenses="showAvgExpenses"
-          />
 
           <DailyNetChart
             :start-date="dateRange.start"
@@ -225,7 +225,7 @@ import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
-import ChartControls from '@/components/ChartControls.vue'
+import ChartDetailsSidebar from '@/components/charts/ChartDetailsSidebar.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'

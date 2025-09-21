@@ -38,7 +38,10 @@ let receivedProps = null
 const TopAccountSnapshotStub = {
   name: 'TopAccountSnapshot',
   template: '<div class="tas-stub"></div>',
-  props: ['groups', 'modelValue'],
+  props: {
+    groups: { type: Array, default: () => [] },
+    modelValue: { type: Array, default: () => [] },
+  },
   setup(props) {
     receivedProps = props
   },
@@ -58,7 +61,7 @@ describe('Dashboard.vue', () => {
           DailyNetChart: true,
           CategoryBreakdownChart: true,
           ChartWidgetTopBar: true,
-          ChartControls: true,
+          ChartDetailsSidebar: true,
           DateRangeSelector: true,
           AccountsTable: true,
           TransactionsTable: true,
