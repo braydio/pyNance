@@ -49,11 +49,16 @@
 ### Backend
 
 1. **Persistence & validation**
-   - Replace in-memory stores with SQLAlchemy models once schema is finalised; enforce 100% allocation cap and bill uniqueness at the service layer.
-   - Introduce schema validation using Marshmallow or Pydantic dataclasses to keep request handling explicit.
-2. **Service coverage**
+   - Replace the in-memory service with the SQLAlchemy flow defined in `backend/app/models/planning_models.py` and `backend/app/sql/planning_logic.py`. Update `backend/app/routes/planning.py` to inject the new SQL-backed service, translate database exceptions into Flask `BadRequest`/`Conflict` responses, and serialise responses with the same schema used for request validation.
+   - Introduce schema validation using Marshmallow or Pydantic dataclasses to keep request handling explicit, and ensure outbound payloads reuse the serializer so route responses stay in sync with the persisted models.
+2. **Schema migrations**
+   - Author Alembic migrations that create the `planning_scenarios`, `planned_bills`, and `scenario_allocations` tables. Store the migration scripts under `backend/migrations/versions/` with clear revision slugs and upgrade/downgrade paths that mirror the SQLAlchemy models.
+3. **Service coverage**
    - Expand tests around `planning_service.update_allocations` to cover concurrency and negative flows.
    - Ensure Flask blueprints raise `BadRequest`/`Conflict` with descriptive messages for failed validations.
+4. **Test updates**
+   - Extend `tests/test_api_planning.py` to cover database-backed CRUD flows, schema validation failures, and enforcement of the 100% allocation cap.
+   - Add Flask integration tests (or adapt existing FastAPI harness cases) that execute against the migrated schema to confirm persistence wiring, serialisation, and error translation once the SQL service is active.
 
 ### Quality & automation
 
