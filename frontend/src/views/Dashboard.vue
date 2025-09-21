@@ -387,13 +387,13 @@ async function loadCategoryGroups() {
 // Handle clicks on the DailyNetChart bars and open a modal for that date.
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
-  modalTransactions.value = result.transactions || []
-  // Configure modal for date mode
-  modalKind.value = 'date'
-  modalShowDate.value = false
-  modalHideCategoryVisuals.value = false
-  modalSubtitle.value = label
-  showModal.value = true
+  configureTransactionModal({
+    transactions: result.transactions || [],
+    kind: 'date',
+    showDateColumn: false,
+    hideCategoryVisuals: false,
+    subtitle: label,
+  })
 }
 
 /**
@@ -424,16 +424,38 @@ async function onCategoryBarClick(payload) {
     start_date: start,
     end_date: end,
   })
-  modalTransactions.value = result.transactions || []
+  configureTransactionModal({
+    transactions: result.transactions || [],
+    kind: 'category',
+    showDateColumn: true,
+    hideCategoryVisuals: false,
+    subtitle: label, // Focus on category label only in header; dates move to table.
+  })
+}
 
-  // Configure modal for category mode
-  modalKind.value = 'category'
-  modalShowDate.value = true
-  // Keep category visuals enabled so parent/child labels remain visible
-  modalHideCategoryVisuals.value = false
-
-  // Focus on category label only in header; dates move to table
-  modalSubtitle.value = label
+/**
+ * Centralize modal state mutations so chart handlers cannot accidentally hide
+ * category visuals when opening transaction details.
+ *
+ * @param {Object} options - Modal configuration overrides.
+ * @param {Array} options.transactions - Transactions to display.
+ * @param {string} options.kind - Modal layout mode, e.g. 'date' or 'category'.
+ * @param {boolean} options.showDateColumn - Whether to show the date column.
+ * @param {boolean} options.hideCategoryVisuals - Hide category visuals inside the modal.
+ * @param {string} options.subtitle - Subtitle label rendered in the modal header.
+ */
+function configureTransactionModal({
+  transactions = [],
+  kind = 'date',
+  showDateColumn = false,
+  hideCategoryVisuals = false,
+  subtitle = '',
+}) {
+  modalTransactions.value = Array.isArray(transactions) ? transactions : []
+  modalKind.value = kind
+  modalShowDate.value = Boolean(showDateColumn)
+  modalHideCategoryVisuals.value = Boolean(hideCategoryVisuals)
+  modalSubtitle.value = subtitle
   showModal.value = true
 }
 </script>

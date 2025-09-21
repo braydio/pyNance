@@ -105,7 +105,7 @@
             :transactions="transactions"
             :title-date="''"
             :show-date-column="kind === 'category' && showDateColumn"
-            :show-category-visuals="!(kind === 'category' && hideCategoryVisuals)"
+            :show-category-visuals="showCategoryVisuals"
             @row-click="onRowClick"
           />
         </div>
@@ -148,6 +148,14 @@ const titleLabel = computed(() =>
   props.kind === 'category' ? 'Category Transactions' : 'Transactions',
 )
 const subtitlePrefix = computed(() => (props.kind === 'category' ? 'Category' : 'Date'))
+
+/**
+ * Ensure category visuals remain visible unless explicitly hidden by the
+ * consumer. Non-category modals always render visuals.
+ */
+const showCategoryVisuals = computed(
+  () => props.kind !== 'category' || !props.hideCategoryVisuals,
+)
 
 // --- SUMMARY COMPUTATION ---
 const summary = computed(() => {
