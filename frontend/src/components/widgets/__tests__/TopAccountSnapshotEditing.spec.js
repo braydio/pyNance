@@ -152,7 +152,10 @@ describe('TopAccountSnapshot editing behaviour', () => {
     await nextTick()
 
     expect(confirmStub).toHaveBeenCalled()
-    expect(addAccountToGroupMock).toHaveBeenCalledWith('group-1', expect.objectContaining({ id: 'acc-2' }))
+    expect(addAccountToGroupMock).toHaveBeenCalledWith(
+      'group-1',
+      expect.objectContaining({ id: 'acc-2' }),
+    )
     expect(wrapper.vm.showAccountSelector).toBe(false)
     expect(wrapper.vm.selectedAccountId).toBe('')
   })
