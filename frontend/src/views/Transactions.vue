@@ -172,33 +172,41 @@ export default {
     const initialPageSize = txidParam ? 250 : 10
     const startDate = ref('')
     const endDate = ref('')
-    const accountFilter = ref(coerceQueryValue(route.query?.account_id))
+    const initialAccountId = coerceQueryValue(route.query?.account_id)
+    const accountFilter = ref(initialAccountId)
     const txType = ref('')
-    const promotedTransactionId = ref(
-      coerceQueryValue(route.query?.promote || route.query?.promote_txid),
-    )
+    const initialPromoteId = coerceQueryValue(route.query?.promote || route.query?.promote_txid)
+    const promotedTransactionId = ref(initialPromoteId)
 
-    watch(
-      () => route.query.account_id,
-      (newAccountId) => {
-        const normalizedAccountId = coerceQueryValue(newAccountId)
-        if (normalizedAccountId !== accountFilter.value) {
-          accountFilter.value = normalizedAccountId
-        }
-      },
-      { immediate: true },
-    )
+    /**
+     * Keep the provided ref synchronized with vue-router query parameters.
+     *
+     * @param {import('vue').Ref<string>} targetRef - Ref to synchronize.
+     * @param {string[]} keys - Query parameter keys ordered by preference.
+     */
+    function syncQueryParam(targetRef, keys) {
+      watch(
+        () => keys.map((key) => route.query?.[key]),
+        (values) => {
+          let nextValue = ''
+          for (const value of values) {
+            const normalized = coerceQueryValue(value)
+            if (normalized) {
+              nextValue = normalized
+              break
+            }
+          }
 
-    watch(
-      () => [route.query.promote, route.query.promote_txid],
-      ([newPromote, newPromoteTxid]) => {
-        const normalizedPromoteId = coerceQueryValue(newPromote || newPromoteTxid)
-        if (normalizedPromoteId !== promotedTransactionId.value) {
-          promotedTransactionId.value = normalizedPromoteId
-        }
-      },
-      { immediate: true },
-    )
+          if (nextValue !== targetRef.value) {
+            targetRef.value = nextValue
+          }
+        },
+        { immediate: true },
+      )
+    }
+
+    syncQueryParam(accountFilter, ['account_id'])
+    syncQueryParam(promotedTransactionId, ['promote', 'promote_txid'])
 
     const filters = computed(() => {
       const f = {}
