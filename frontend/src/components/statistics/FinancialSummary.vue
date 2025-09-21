@@ -12,7 +12,7 @@
       <h3 class="stats-title">Financial Snapshot</h3>
       <div class="stats-controls">
         <button
-          class="stats-toggle-btn"
+          class="gradient-toggle-btn"
           :class="{ extended: isExtendedView }"
           @click="toggleExtendedView"
           :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
@@ -366,30 +366,6 @@ watch(
   font-weight: 600;
   color: var(--color-accent-cyan);
   margin: 0;
-}
-
-.stats-toggle-btn {
-  background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-  border: 1px solid var(--color-accent-cyan);
-  color: var(--color-accent-cyan);
-  padding: 0.25rem 0.75rem;
-  border-radius: 0.5rem;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.stats-toggle-btn:hover {
-  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
-  color: var(--color-bg-dark);
-  border-color: var(--color-accent-cyan);
-}
-
-.stats-toggle-btn.extended {
-  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
-  color: var(--color-bg-dark);
-  border-color: var(--color-accent-cyan);
 }
 
 .basic-stats {

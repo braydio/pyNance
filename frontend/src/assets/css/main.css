@@ -52,6 +52,44 @@
     color: var(--color-bg-dark);
   }
 
+  .gradient-toggle-btn {
+    background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
+    border: 1px solid var(--color-accent-cyan);
+    color: var(--color-accent-cyan);
+    padding: 0.35rem 0.9rem;
+    border-radius: 0.65rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .gradient-toggle-btn:hover,
+  .gradient-toggle-btn:focus-visible {
+    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
+    color: var(--color-bg-dark);
+    border-color: var(--color-accent-cyan);
+    outline: none;
+  }
+
+  .gradient-toggle-btn.extended,
+  .gradient-toggle-btn.is-active {
+    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
+    color: var(--color-bg-dark);
+    border-color: var(--color-accent-cyan);
+  }
+
+  .gradient-toggle-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
   .btn-primary {
     @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
     background-color: var(--primary);
