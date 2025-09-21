@@ -46,7 +46,7 @@ if [ "$USE_SLIM" -eq 1 ]; then
   fi
 else
   if [ -f requirements.txt ] && [ -f requirements-dev.txt ]; then
-    if ! pip install -r requirements.txt -r requirements-dev.txt; then
+    if ! pip install -r requirements-dev.txt; then
       echo "Dependency installation failed. Please check requirements." >&2
       exit 1
     fi
