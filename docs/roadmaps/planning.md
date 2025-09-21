@@ -63,9 +63,48 @@
 
 ## Milestones
 
-1. **M1 – Component scaffolding**: ship the four planning components with local persistence wired through the composable.
-2. **M2 – API mode**: toggle to the Flask endpoints, add optimistic updates, and document the API contract in `docs/API_REFERENCE.md`.
-3. **M3 – Validation polish**: enforce allocation/bill rules across backend and frontend with meaningful user feedback.
-4. **M4 – Automated coverage**: ensure Cypress suites and backend tests cover CRUD, caps, and error paths.
+1. **M1 – Planning view composition (frontend foundation)**
+   - **Deliverables**
+     - Compose `frontend/src/views/Planning.vue` with `BillForm.vue`, `BillList.vue`, `Allocator.vue`, and `PlanningSummary.vue`, wiring selectors from `frontend/src/selectors/planning.ts` and local persistence through `frontend/src/composables/usePlanning.ts`.
+     - Stub shared helpers in `frontend/src/utils/currency.ts` and any new allocation math utility to unblock follow-up refinements.
+     - Add placeholder/unit scaffolding in `frontend/src/components/planning/__tests__/` (or extend `frontend/src/views/__tests__/Planning.cy.js`) to exercise event wiring and confirm local mode renders without API calls.
+   - **Acceptance tests & docs**
+     - Update Cypress smoke coverage to assert the composed view loads and can create/edit/delete bills using the local storage path.
+     - Capture component notes in `docs/ui/planning.md` (or append to the existing planning section) outlining props/emits so backend/API contributors understand forthcoming integration points.
+   - **Dependencies**
+     - Establishes the baseline UI state required before API toggling (M2) and backend persistence (M3) can proceed.
 
-_Last updated: 2025-09-10_
+2. **M2 – API mode enablement (service orchestration)**
+   - **Deliverables**
+     - Implement the `planningMode` toggle and async helpers inside `frontend/src/composables/usePlanning.ts` to call `frontend/src/services/planningService.ts` and reconcile optimistic updates.
+     - Ensure `frontend/src/services/planningService.ts` covers all REST verbs used by the planning view, aligned with `backend/app/routes/planning.py` endpoints.
+     - Document the request/response schema additions in `docs/API_REFERENCE.md` and, if introduced, add fixtures under `tests/fixtures/planning/`.
+   - **Acceptance tests & docs**
+     - Expand `tests/test_api_planning.py` to cover happy-path CRUD plus failure responses that the frontend will surface.
+     - Add API-mode Cypress specs (or a Playwright alternative) verifying optimistic updates and fallback on API errors.
+   - **Dependencies**
+     - Builds on the composed frontend from M1 and unblocks backend persistence work in M3 by validating the contract surface.
+
+3. **M3 – Persistence & validation hardening (backend-first)**
+   - **Deliverables**
+     - Replace the in-memory planning store with SQLAlchemy models under `backend/app/models/` and update `backend/app/services/planning_service.py` to enforce allocation caps and bill uniqueness.
+     - Add Marshmallow/Pydantic schemas in `backend/app/schemas/planning.py` (or equivalent) and integrate them into `backend/app/routes/planning.py`.
+     - Align frontend validation helpers in `frontend/src/composables/usePlanning.ts` and supporting components with backend rules to display consistent feedback.
+   - **Acceptance tests & docs**
+     - Extend backend unit/integration coverage (e.g., `tests/test_api_planning.py`, new `tests/test_planning_service.py`) for concurrency, rollback, and validation failures.
+     - Update migration notes in `docs/backend/persistence.md` (or create the section) describing schema changes and rollout steps.
+   - **Dependencies**
+     - Requires the API contract from M2; once persistence is stable, QA automation (M4) can assert against real data flows.
+
+4. **M4 – QA automation & regression safety (end-to-end)**
+   - **Deliverables**
+     - Broaden Cypress suites in `frontend/src/views/__tests__/Planning.cy.js` and component specs to cover CRUD, allocation caps, empty states, and error recovery using seeded backend data.
+     - Add backend regression tests (pytest, contract tests) to guard against schema drift and ensure API compatibility with the frontend selectors.
+     - Wire coverage reporting (e.g., Cypress code coverage plugin, pytest-cov) into CI configuration files under `.github/workflows/` or `scripts/`.
+   - **Acceptance tests & docs**
+     - Publish QA runbooks or updates in `docs/qa/planning-checklist.md`, detailing automation entry/exit criteria.
+     - Record coverage thresholds and dashboards in `README.md` or `docs/roadmaps/qa.md` so contributors can track completion.
+   - **Dependencies**
+     - Depends on stable backend persistence (M3) and API-integrated frontend (M2); serves as the release gate for planning features.
+
+_Last updated: 2024-05-29_
