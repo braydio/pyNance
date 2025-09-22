@@ -6,7 +6,7 @@ Transaction rules let users automatically modify transactions during sync based 
 
 - **Model**: `TransactionRule`
 - **Purpose**: Persist user-defined criteria that trigger updates on incoming transactions.
-- **Location**: `backend/app/models.py` and accompanying SQL helpers.
+- **Location**: [`backend/app/models/transaction_models.py`](../../../backend/app/models/transaction_models.py) with rule execution logic in [`backend/app/sql/transaction_rules_logic.py`](../../../backend/app/sql/transaction_rules_logic.py).
 
 ## Rule Fields
 
@@ -38,4 +38,4 @@ These endpoints complement the existing `/transactions/update` flow.
 
 ## Migration
 
-See [../temp_migrations/versions/transaction_rules_add_table.md](../temp_migrations/versions/transaction_rules_add_table.md) for Alembic instructions to create the table.
+Review the Alembic revision under [`backend/migrations/versions/`](../../../backend/migrations/versions) that introduces the `transaction_rules` table (look for `add_transaction_rules_table`).
