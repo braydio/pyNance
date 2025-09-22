@@ -61,7 +61,6 @@ These call into `helpers/` modules, where the true sync logic begins.
 ### 📁 `sql/category_logic.py`
 
 - Sync-related support functions:
-
   - `upsert_categories_from_plaid_data`
   - `resolve_or_create_category`
 
@@ -70,7 +69,6 @@ These call into `helpers/` modules, where the true sync logic begins.
 ### 📁 `backend/app/models/`
 
 - Central schema definitions are now split across dedicated modules:
-
   - [`account_models.py`](../../../../backend/app/models/account_models.py) – `Account`, `PlaidAccount`, `TellerAccount`, and related history tables.
   - [`transaction_models.py`](../../../../backend/app/models/transaction_models.py) – `Transaction`, `RecurringTransaction`, `TransactionRule`, `Category`, and Plaid transaction metadata.
 

@@ -32,6 +32,7 @@ Below is what’s happening and how to resolve it.
        [`backend/migrations/versions/0bc042573c3a_initial_prod_db.py`](../../backend/migrations/versions/0bc042573c3a_initial_prod_db.py)
 
     3. **SQLAlchemy is therefore trying to `SELECT transactions.user_id` against a SQLite table that doesn’t have it.**
+
 For example, in your paginated‑transactions logic you do:
 
            query = (
