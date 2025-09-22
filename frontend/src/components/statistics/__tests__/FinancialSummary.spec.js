@@ -25,7 +25,9 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    await wrapper.find('.stats-toggle-btn').trigger('click')
+    const toggleButton = wrapper.find('.gradient-toggle-btn')
+    expect(toggleButton.exists()).toBe(true)
+    await toggleButton.trigger('click')
     const html = wrapper.html()
     expect(html).toContain('Income Trend')
     expect(html).toContain('+$100.00')
