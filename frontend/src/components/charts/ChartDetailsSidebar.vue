@@ -4,6 +4,7 @@
     :class="{ 'chart-details-sidebar--open': isOpen }"
     role="complementary"
     :aria-labelledby="headerId"
+    ref="sidebarRef"
   >
     <button
       type="button"
@@ -37,7 +38,7 @@
           <input
             type="checkbox"
             :checked="show7Day"
-            @change="emit('update:show7Day', $event.target.checked)"
+            @change="onOptionChange('update:show7Day', $event.target.checked)"
           />
           7 Day Trended
         </label>
@@ -45,7 +46,7 @@
           <input
             type="checkbox"
             :checked="show30Day"
-            @change="emit('update:show30Day', $event.target.checked)"
+            @change="onOptionChange('update:show30Day', $event.target.checked)"
           />
           30 Day Trended
         </label>
@@ -53,7 +54,7 @@
           <input
             type="checkbox"
             :checked="showAvgIncome"
-            @change="emit('update:showAvgIncome', $event.target.checked)"
+            @change="onOptionChange('update:showAvgIncome', $event.target.checked)"
           />
           Avg Income
         </label>
@@ -61,7 +62,7 @@
           <input
             type="checkbox"
             :checked="showAvgExpenses"
-            @change="emit('update:showAvgExpenses', $event.target.checked)"
+            @change="onOptionChange('update:showAvgExpenses', $event.target.checked)"
           />
           Avg Expenses
         </label>
@@ -73,8 +74,11 @@
 <script setup>
 /**
  * Sidebar displaying chart overlay controls with accessible toggle behavior.
+ *
+ * Loads in a collapsed state and automatically collapses again whenever the user
+ * selects an option or clicks outside the sidebar.
  */
-import { ref, toRefs } from 'vue'
+import { ref, toRefs, onMounted, onBeforeUnmount } from 'vue'
 
 const props = defineProps({
   show7Day: { type: Boolean, default: false },
@@ -92,7 +96,8 @@ const emit = defineEmits([
 
 const { show7Day, show30Day, showAvgIncome, showAvgExpenses } = toRefs(props)
 
-const isOpen = ref(true)
+const isOpen = ref(false)
+const sidebarRef = ref(null)
 const uniqueId = Math.random().toString(36).slice(2, 9)
 const contentId = `chart-details-${uniqueId}`
 const headerId = `${contentId}-header`
@@ -100,6 +105,32 @@ const headerId = `${contentId}-header`
 const toggleSidebar = () => {
   isOpen.value = !isOpen.value
 }
+
+const closeSidebar = () => {
+  isOpen.value = false
+}
+
+const onOptionChange = (eventName, checked) => {
+  emit(eventName, checked)
+  closeSidebar()
+}
+
+const handleDocumentClick = (event) => {
+  if (!isOpen.value) return
+  const sidebarEl = sidebarRef.value
+  if (!sidebarEl) return
+  if (!sidebarEl.contains(event.target)) {
+    closeSidebar()
+  }
+}
+
+onMounted(() => {
+  document.addEventListener('click', handleDocumentClick)
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <style scoped>
