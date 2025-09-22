@@ -254,7 +254,7 @@ export default {
     },
     targetedAccounts() {
       const ids = this.selectedAccounts?.length ? new Set(this.selectedAccounts) : null
-      return (this.accounts || []).filter((a) => (ids ? ids.has(a.account_id) : true))
+      return (this.accounts ?? []).filter((account) => ids?.has(account.account_id) ?? true)
     },
     targetedAccountsByInstitution() {
       const grouped = {}
