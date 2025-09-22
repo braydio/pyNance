@@ -102,7 +102,7 @@ class TransactionRule(db.Model, TimestampMixin):
     user_id = db.Column(db.String(64), index=True)
     match_criteria = db.Column(db.JSON, nullable=False)
     action = db.Column(db.JSON, nullable=False)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
 
 
 class PlaidTransactionMeta(db.Model, TimestampMixin):

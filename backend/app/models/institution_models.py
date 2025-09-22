@@ -1,7 +1,9 @@
 """Institution-related models: Institution, Plaid, Teller."""
 
 from datetime import datetime, timezone
+
 from app.extensions import db
+
 from .mixins import TimestampMixin
 
 
@@ -43,7 +45,7 @@ class PlaidAccount(db.Model, TimestampMixin):
     )
     institution = db.relationship("Institution", back_populates="plaid_accounts")
     sync_cursor = db.Column(db.String(256), nullable=True)
-    is_active = db.Column(db.Boolean, default=True)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
     last_error = db.Column(db.Text, nullable=True)
 
 
