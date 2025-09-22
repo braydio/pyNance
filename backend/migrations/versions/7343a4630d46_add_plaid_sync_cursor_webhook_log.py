@@ -18,7 +18,9 @@ depends_on = None
 def upgrade() -> None:
     """Add cursor tracking fields and create the webhook log table."""
     with op.batch_alter_table("plaid_accounts", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("sync_cursor", sa.String(length=256), nullable=True))
+        batch_op.add_column(
+            sa.Column("sync_cursor", sa.String(length=256), nullable=True)
+        )
         batch_op.add_column(
             sa.Column(
                 "is_active",
