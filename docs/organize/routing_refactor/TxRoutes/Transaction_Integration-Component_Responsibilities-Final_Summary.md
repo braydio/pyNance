@@ -67,18 +67,17 @@ These call into `helpers/` modules, where the true sync logic begins.
 
 - Used by both Plaid and Teller sync to resolve category names and create them if missing.
 
-### 📄 `backend/app/models.py`
+### 📁 `backend/app/models/`
 
-- Central schema definition for:
+- Central schema definitions are now split across dedicated modules:
 
-  - `Account`, `PlaidAccount`, `TellerAccount`
-  - `Transaction`, `RecurringTransaction`, `AccountHistory`, `Category`
+  - [`account_models.py`](../../../../backend/app/models/account_models.py) – `Account`, `PlaidAccount`, `TellerAccount`, and related history tables.
+  - [`transaction_models.py`](../../../../backend/app/models/transaction_models.py) – `Transaction`, `RecurringTransaction`, `TransactionRule`, `Category`, and Plaid transaction metadata.
 
-- Relationships (e.g., account-category, transaction-category) are wired via foreign keys
-- Attributes like `user_modified`, `pending`, `merchant_name`, `provider` overlap with sync outputs from Plaid and Teller
+- Relationships (e.g., account-category, transaction-category) remain wired via foreign keys across these modules.
+- Attributes like `user_modified`, `pending`, `merchant_name`, and `provider` still align with Plaid and Teller sync outputs.
 
-➡️ This file serves as the single source of truth for all sync-related schema definitions
-➡️ It should remain unchanged, but referenced heavily during provider/service implementation
+➡️ The models package continues to act as the single source of truth for sync-oriented schemas and should be referenced heavily during provider/service implementation.
 
 ---
 
