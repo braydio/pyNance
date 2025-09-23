@@ -6,7 +6,7 @@ Transaction rules let users automatically modify transactions during sync based 
 
 - **Model**: `TransactionRule`
 - **Purpose**: Persist user-defined criteria that trigger updates on incoming transactions.
-- **Location**: `backend/app/models.py` and accompanying SQL helpers.
+- **Location**: [`backend/app/models/transaction_models.py`](../../../backend/app/models/transaction_models.py) with rule execution logic in [`backend/app/sql/transaction_rules_logic.py`](../../../backend/app/sql/transaction_rules_logic.py).
 
 ## Rule Fields
 

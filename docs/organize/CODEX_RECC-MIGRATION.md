@@ -6,7 +6,7 @@ Below is what’s happening and how to resolve it.
 ## What’s going on
 
     1. **Your model defines `user_id` on `transactions`, but your DB schema does not.**
-       In **models.py** you have:
+       In **models/transaction_models.py** you have:
 
            class Transaction(db.Model):
                __tablename__ = "transactions"
@@ -15,7 +15,7 @@ Below is what’s happening and how to resolve it.
                transaction_id = db.Column(db.String(64), unique=True, nullable=False)
                …
 
-       [backend/app/models.py](/home/braydenchaffee/Projects/pyNance/backend/app/models.py)
+       [`backend/app/models/transaction_models.py`](../../backend/app/models/transaction_models.py)
     2. **Your initial Alembic migration never created that column.**
        In **backend/migrations/versions/0bc042573c3a_initial_prod_db.py** the `transactions` table is built without a `user_id` column:
 
@@ -29,9 +29,10 @@ Below is what’s happening and how to resolve it.
                sa.UniqueConstraint('transaction_id')
            )
 
-       [backend/migrations/versions/0bc042573c3a_initial_prod_db.py](/home/braydenchaffee/Projects/pyNance/backend/migrations/versions/0bc042573c3a_initial_
+       [`backend/migrations/versions/0bc042573c3a_initial_prod_db.py`](../../backend/migrations/versions/0bc042573c3a_initial_prod_db.py)
 
-prod_db.py) 3. **SQLAlchemy is therefore trying to `SELECT transactions.user_id` against a SQLite table that doesn’t have it.**
+    3. **SQLAlchemy is therefore trying to `SELECT transactions.user_id` against a SQLite table that doesn’t have it.**
+
 For example, in your paginated‑transactions logic you do:
 
            query = (
@@ -41,7 +42,7 @@ For example, in your paginated‑transactions logic you do:
            )
            total = query.count()
 
-       [backend/app/sql/account_logic.py](/home/braydenchaffee/Projects/pyNance/backend/app/sql/account_logic.py)
+       [`backend/app/sql/account_logic.py`](../../backend/app/sql/account_logic.py)
 
        Calling `.count()` on a multi‑entity query wraps the original select (including every column of `Transaction`, among them `user_id`) in a `SELECT
 
