@@ -38,4 +38,10 @@ These endpoints complement the existing `/transactions/update` flow.
 
 ## Migration
 
-Review the Alembic revision under [`backend/migrations/versions/`](../../../backend/migrations/versions) that introduces the `transaction_rules` table (look for `add_transaction_rules_table`).
+Schema support ships with the Alembic revision
+[`c6e1f4b0d2a3_create_transaction_rules_table.py`](../migrations/versions/c6e1f4b0d2a3_create_transaction_rules_table.md).
+Apply migrations with:
+
+```bash
+flask --app backend.run db upgrade
+```
