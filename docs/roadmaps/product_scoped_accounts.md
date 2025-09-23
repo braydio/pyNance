@@ -62,6 +62,7 @@
 
 1. Create `backend/app/providers/__init__.py` exporting `ProviderRegistry` and `SyncResult` dataclasses.
 2. Implement `backend/app/providers/plaid.py`:
+
    ```python
    from backend.app.helpers.plaid.transactions import sync_transactions as plaid_sync
 
@@ -69,6 +70,7 @@
        refreshed = await plaid_sync(account_id=account_id, user_id=user_id)
        return SyncResult(updated=refreshed.updated, errors=refreshed.errors)
    ```
+
 3. Implement `backend/app/providers/teller.py` mirroring the Plaid adapter but delegating to Teller logic.
 4. Refactor `backend/app/services/transactions.py` to select adapters via `ProviderRegistry.for_account(account)` and to normalise responses.
 5. Update `backend/app/routes/product_transactions.py` to propagate adapter errors:
@@ -138,12 +140,12 @@
 
 ## Timeline & Dependencies
 
-| Milestone | Target Sprint | Dependencies |
-|-----------|----------------|--------------|
-| Phase 1 complete | Sprint 25.03 | Alembic migrations reviewed |
-| Phase 2 complete | Sprint 25.04 | Phase 1 data guarantees |
-| Phase 3 complete | Sprint 25.05 | Phase 2 service registry |
-| Phase 4 complete | Sprint 25.06 | All previous phases |
+| Milestone        | Target Sprint | Dependencies                |
+| ---------------- | ------------- | --------------------------- |
+| Phase 1 complete | Sprint 25.03  | Alembic migrations reviewed |
+| Phase 2 complete | Sprint 25.04  | Phase 1 data guarantees     |
+| Phase 3 complete | Sprint 25.05  | Phase 2 service registry    |
+| Phase 4 complete | Sprint 25.06  | All previous phases         |
 
 ## Acceptance Criteria
 
