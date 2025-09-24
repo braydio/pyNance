@@ -4,12 +4,13 @@ This directory consolidates the active product roadmaps for pyNance so they live
 
 ## Workstream directory
 
-| Area                   | Current focus                                                             | Detailed plan                                  |
-| ---------------------- | ------------------------------------------------------------------------- | ---------------------------------------------- |
-| Accounts experience    | Balance history visualisation, range filters, and richer account insights | [Accounts roadmap](./accounts.md)              |
-| Transactions sync      | Plaid delta-sync hardening, webhook coverage, and migration clean-up      | [Transactions sync roadmap](./transactions.md) |
-| Planning & allocations | Bill management UI, allocation enforcement, and Flask planning APIs       | [Planning roadmap](./planning.md)              |
-| Investments            | Holdings/transaction refresh reliability and analytics surfacing          | [Investments roadmap](./investments.md)        |
+| Area                    | Current focus                                                              | Detailed plan                                                   |
+| ----------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| Accounts experience     | Balance history visualisation, range filters, and richer account insights  | [Accounts roadmap](./accounts.md)                               |
+| Transactions sync       | Plaid delta-sync hardening, webhook coverage, and migration clean-up       | [Transactions sync roadmap](./transactions.md)                  |
+| Planning & allocations  | Bill management UI, allocation enforcement, and Flask planning APIs        | [Planning roadmap](./planning.md)                               |
+| Investments             | Holdings/transaction refresh reliability and analytics surfacing           | [Investments roadmap](./investments.md)                         |
+| Product-scoped accounts | Enforcing Plaid product tags, provider adapters, and helper modularisation | [Product-scoped accounts roadmap](./product_scoped_accounts.md) |
 
 Additional feature planning (forecasting, routing refactors, and UI audit items) remains indexed under [`docs/maintenance/open_processes_index.md`](../maintenance/open_processes_index.md).
 
@@ -31,4 +32,4 @@ Additional feature planning (forecasting, routing refactors, and UI audit items)
 - Apply new database migrations immediately after pulling backend changes so JSON payload columns and indices remain in sync.
 - Keep roadmap docs versioned alongside the code: update the relevant plan whenever a milestone completes or scope shifts.
 
-_Last updated: 2025-09-10_
+_Last updated: 2025-10-03_
