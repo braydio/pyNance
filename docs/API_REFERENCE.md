@@ -14,7 +14,7 @@ This document serves as the authoritative reference for API routing conventions,
 | `plaid_transactions.py`  | Plaid-specific account + transaction routes             |
 | `teller_transactions.py` | Teller-specific account + transaction routes            |
 | `goals.py`               | Manage user-defined financial goals                     |
-| `accounts.py` (future)   | Shared account listings & deletion                      |
+| `accounts.py`            | Account refresh, history, and transaction helpers       |
 
 ## 🌐 API Endpoint Convention
 
@@ -152,9 +152,14 @@ endpoint returns candidate matches but does not modify any transaction flags.
 ```
 POST   /api/plaid/transactions/exchange_public_token
 POST   /api/plaid/transactions/refresh_accounts
+POST   /api/plaid/transactions/sync
 POST   /api/plaid/transactions/generate_update_link_token
 DELETE /api/plaid/transactions/delete_account
-POST   /api/teller/transactions/sync
+POST   /api/teller/transactions/save_access_token
+GET    /api/teller/transactions/get_transactions
+POST   /api/teller/transactions/refresh_accounts
+POST   /api/teller/transactions/refresh_balances
+PUT    /api/teller/transactions/update
 DELETE /api/teller/transactions/delete_account
 ```
 
