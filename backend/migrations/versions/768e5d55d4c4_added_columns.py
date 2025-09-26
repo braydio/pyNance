@@ -10,7 +10,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "768e5d55d4c4"
-down_revision = None
+down_revision = "0ee5338170fd"
 branch_labels = None
 depends_on = None
 
@@ -25,31 +25,53 @@ def upgrade():
         "_alembic_tmp_teller_accounts",
     ):
         op.execute(f"DROP TABLE IF EXISTS {tmp_table}")
-    # Drop existing index to avoid conflicts (SQLite may retain old index)
-    try:
-        op.drop_index("ix_accounts_institution_db_id", table_name="accounts")
-    except Exception:
-        pass
-    with op.batch_alter_table("accounts", schema=None) as batch_op:
-        batch_op.add_column(sa.Column("institution_db_id", sa.Integer(), nullable=True))
-        batch_op.create_index(
-            batch_op.f("ix_accounts_institution_db_id"),
-            ["institution_db_id"],
-            unique=False,
-        )
-        batch_op.create_foreign_key(
-            batch_op.f("fk_accounts_institution_db_id_institutions"),
+    conn = op.get_bind()
+    insp = sa.inspect(conn)
+    account_columns = {col["name"] for col in insp.get_columns("accounts")}
+    account_indexes = {idx["name"] for idx in insp.get_indexes("accounts")}
+    account_fks = {fk["name"] for fk in insp.get_foreign_keys("accounts")}
+    has_institutions = insp.has_table("institutions")
+
+    if not has_institutions:
+        op.create_table(
             "institutions",
-            ["institution_db_id"],
-            ["id"],
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("name", sa.String(length=128), nullable=False),
+            sa.Column("provider", sa.String(length=64), nullable=False),
+            sa.Column("last_refreshed", sa.DateTime(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=True),
+            sa.Column("updated_at", sa.DateTime(), nullable=True),
         )
+        has_institutions = True
+
+    with op.batch_alter_table("accounts", schema=None) as batch_op:
+        if "institution_db_id" not in account_columns:
+            batch_op.add_column(
+                sa.Column("institution_db_id", sa.Integer(), nullable=True)
+            )
+        if "ix_accounts_institution_db_id" not in account_indexes:
+            batch_op.create_index(
+                batch_op.f("ix_accounts_institution_db_id"),
+                ["institution_db_id"],
+                unique=False,
+            )
+        if (
+            has_institutions
+            and "fk_accounts_institution_db_id_institutions" not in account_fks
+        ):
+            batch_op.create_foreign_key(
+                batch_op.f("fk_accounts_institution_db_id_institutions"),
+                "institutions",
+                ["institution_db_id"],
+                ["id"],
+            )
 
     # Determine if SQLite (skip complex table rebuilds and FKs for SQLite)
-    bind = op.get_bind()
-    is_sqlite = bind.dialect.name == "sqlite"
+    is_sqlite = conn.dialect.name == "sqlite"
 
     # PLAID_ACCOUNTS: add two columns, FK only for non-SQLite
     if not is_sqlite:
+        plaid_fks = {fk["name"] for fk in insp.get_foreign_keys("plaid_accounts")}
         with op.batch_alter_table("plaid_accounts", schema=None) as batch_op:
             batch_op.add_column(
                 sa.Column("plaid_institution_id", sa.String(length=128), nullable=True)
@@ -57,12 +79,15 @@ def upgrade():
             batch_op.add_column(
                 sa.Column("institution_db_id", sa.Integer(), nullable=True)
             )
-            batch_op.create_foreign_key(
-                batch_op.f("fk_plaid_accounts_institution_db_id_institutions"),
-                "institutions",
-                ["institution_db_id"],
-                ["id"],
-            )
+            if has_institutions and (
+                "fk_plaid_accounts_institution_db_id_institutions" not in plaid_fks
+            ):
+                batch_op.create_foreign_key(
+                    batch_op.f("fk_plaid_accounts_institution_db_id_institutions"),
+                    "institutions",
+                    ["institution_db_id"],
+                    ["id"],
+                )
     else:
         # Add columns only if they do not already exist (SQLite alters lack IF NOT EXISTS)
         conn = op.get_bind()
@@ -80,17 +105,29 @@ def upgrade():
             )
 
     # RECURRING_TRANSACTIONS: add FK only for non-SQLite
+    recurring_columns = {
+        col["name"] for col in insp.get_columns("recurring_transactions")
+    }
+    recurring_fks = {
+        fk["name"] for fk in insp.get_foreign_keys("recurring_transactions")
+    }
     if not is_sqlite:
         with op.batch_alter_table("recurring_transactions", schema=None) as batch_op:
-            batch_op.create_foreign_key(
-                batch_op.f("fk_recurring_transactions_account_id_accounts"),
-                "accounts",
-                ["account_id"],
-                ["account_id"],
-            )
+            if "account_id" not in recurring_columns:
+                batch_op.add_column(
+                    sa.Column("account_id", sa.String(length=64), nullable=True)
+                )
+            if "fk_recurring_transactions_account_id_accounts" not in recurring_fks:
+                batch_op.create_foreign_key(
+                    batch_op.f("fk_recurring_transactions_account_id_accounts"),
+                    "accounts",
+                    ["account_id"],
+                    ["account_id"],
+                )
 
     # TELLER_ACCOUNTS: add/drop columns and FK only for non-SQLite; simple adds for SQLite
     if not is_sqlite:
+        teller_fks = {fk["name"] for fk in insp.get_foreign_keys("teller_accounts")}
         with op.batch_alter_table("teller_accounts", schema=None) as batch_op:
             batch_op.add_column(
                 sa.Column("teller_institution_id", sa.String(length=128), nullable=True)
@@ -98,12 +135,16 @@ def upgrade():
             batch_op.add_column(
                 sa.Column("institution_db_id", sa.Integer(), nullable=True)
             )
-            batch_op.create_foreign_key(
-                batch_op.f("fk_teller_accounts_institution_db_id_institutions"),
-                "institutions",
-                ["institution_db_id"],
-                ["id"],
-            )
+            if has_institutions and (
+                "fk_teller_accounts_institution_db_id_institutions"
+                not in teller_fks
+            ):
+                batch_op.create_foreign_key(
+                    batch_op.f("fk_teller_accounts_institution_db_id_institutions"),
+                    "institutions",
+                    ["institution_db_id"],
+                    ["id"],
+                )
             batch_op.drop_column("institution_id")
     else:
         # Add columns only if not present

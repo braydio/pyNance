@@ -4,8 +4,8 @@ from datetime import datetime, timedelta, timezone
 from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, RecurringTransaction, Transaction
+from app.sql.dialect_utils import dialect_insert
 from sqlalchemy import func
-from sqlalchemy.dialects.sqlite import insert
 
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
@@ -27,22 +27,24 @@ def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
 
 
 def update_account_history(account_id, user_id, balance, is_hidden=None):
-    today = datetime.now(timezone.utc).date()
     now = datetime.now(timezone.utc)
+    today = now.date()
+    dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
 
     try:
-        stmt = (
-            insert(AccountHistory)
-            .values(
-                account_id=account_id,
-                user_id=user_id,
-                date=today,
-                balance=balance,
-                is_hidden=is_hidden,
-                created_at=now,
-                updated_at=now,
-            )
-            .on_conflict_do_update(
+        stmt = dialect_insert(AccountHistory).values(
+            account_id=account_id,
+            user_id=user_id,
+            date=dt_today,
+            balance=balance,
+            is_hidden=is_hidden,
+            created_at=now,
+            updated_at=now,
+        )
+
+        on_conflict = getattr(stmt, "on_conflict_do_update", None)
+        if callable(on_conflict):
+            stmt = on_conflict(
                 index_elements=["account_id", "date"],
                 set_={
                     "balance": balance,
@@ -50,8 +52,28 @@ def update_account_history(account_id, user_id, balance, is_hidden=None):
                     "is_hidden": is_hidden,
                 },
             )
-        )
-        db.session.execute(stmt)
+            db.session.execute(stmt)
+        else:
+            history = AccountHistory.query.filter_by(
+                account_id=account_id, date=dt_today
+            ).first()
+            if history:
+                history.balance = balance
+                history.updated_at = now
+                history.is_hidden = is_hidden
+            else:
+                db.session.add(
+                    AccountHistory(
+                        account_id=account_id,
+                        user_id=user_id,
+                        date=dt_today,
+                        balance=balance,
+                        is_hidden=is_hidden,
+                        created_at=now,
+                        updated_at=now,
+                    )
+                )
+
         db.session.commit()
         logger.debug(f"AccountHistory upserted for {account_id} on {today}")
     except Exception as e:

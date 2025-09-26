@@ -14,11 +14,11 @@ from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
 from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
 from app.sql import transaction_rules_logic
+from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
 from plaid import ApiException
 from sqlalchemy import func
-from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
@@ -224,29 +224,46 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
             # Existing AccountHistory logic follows...
 
             # Patched: safely upsert AccountHistory with conflict resolution
-            today = datetime.now(timezone.utc).date()
+            now_utc = datetime.now(timezone.utc)
+            today = now_utc.date()
             dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)
-            stmt = (
-                insert(AccountHistory)
-                .values(
-                    account_id=account_id,
-                    user_id=user_id,
-                    date=dt_today,
-                    balance=balance,
-                    created_at=datetime.now(timezone.utc),
-                    updated_at=datetime.now(timezone.utc),
-                )
-                .on_conflict_do_update(
+            stmt = dialect_insert(AccountHistory).values(
+                account_id=account_id,
+                user_id=user_id,
+                date=dt_today,
+                balance=balance,
+                created_at=now_utc,
+                updated_at=now_utc,
+            )
+
+            on_conflict = getattr(stmt, "on_conflict_do_update", None)
+            if callable(on_conflict):
+                stmt = on_conflict(
                     index_elements=["account_id", "date"],
                     set_={
                         "balance": balance,
-                        "updated_at": datetime.now(timezone.utc),
+                        "updated_at": now_utc,
                     },
                 )
-            )
-            db.session.execute(
-                stmt
-            )  # <-- PATCHED: conflict-safe upsert via insert().on_conflict_do_update
+                db.session.execute(stmt)
+            else:
+                history = AccountHistory.query.filter_by(
+                    account_id=account_id, date=dt_today
+                ).first()
+                if history:
+                    history.balance = balance
+                    history.updated_at = now_utc
+                else:
+                    db.session.add(
+                        AccountHistory(
+                            account_id=account_id,
+                            user_id=user_id,
+                            date=dt_today,
+                            balance=balance,
+                            created_at=now_utc,
+                            updated_at=now_utc,
+                        )
+                    )
 
             count += 1
             if count % 100 == 0:
