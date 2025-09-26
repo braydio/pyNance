@@ -16,7 +16,7 @@ not configured.
 ## Key Endpoints
 
 - `POST /api/webhooks/teller`
-- `POST /api/webhooks/teller` *(disabled variant when no secret is set)*
+- `POST /api/webhooks/teller` _(disabled variant when no secret is set)_
 
 ## Inputs & Outputs
 
@@ -26,7 +26,7 @@ not configured.
     ```json
     {
       "event": "transaction.posted",
-      "data": {"account_id": "acct_123"}
+      "data": { "account_id": "acct_123" }
     }
     ```
   - **Success:** `{ "status": "ok" }`
@@ -34,7 +34,7 @@ not configured.
     - `401` with `{ "status": "unauthorized" }` for missing/invalid signatures
     - `400` with `{ "status": "invalid" }` when payload lacks `event` or `account_id`
 
-- **POST /api/webhooks/teller** *(disabled blueprint)*
+- **POST /api/webhooks/teller** _(disabled blueprint)_
   - **Output:** `{ "status": "disabled", "message": "Webhook is not enabled..." }`
   - Triggered when `TELLER_WEBHOOK_SECRET` is absent in configuration.
 
@@ -52,7 +52,7 @@ not configured.
 - Refreshes the affected account and updates `last_refreshed` timestamp
   when Teller reports posted or updated transactions.
 - Logs and safely ignores webhook calls for unknown accounts or missing
-tokens.
+  tokens.
 
 ## Related Docs
 

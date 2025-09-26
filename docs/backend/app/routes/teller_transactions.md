@@ -60,7 +60,7 @@ frontend when Plaid coverage is unavailable.
     {
       "status": "success",
       "message": "Balances refreshed",
-      "updated_accounts": [{"account_name": "Checking"}]
+      "updated_accounts": [{ "account_name": "Checking" }]
     }
     ```
 
