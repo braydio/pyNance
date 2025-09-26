@@ -1,10 +1,11 @@
 """Added columns
 
 Revision ID: 768e5d55d4c4
-Revises: 
+Revises:
 Create Date: 2025-06-24 14:54:35.855869
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
@@ -136,8 +137,7 @@ def upgrade():
                 sa.Column("institution_db_id", sa.Integer(), nullable=True)
             )
             if has_institutions and (
-                "fk_teller_accounts_institution_db_id_institutions"
-                not in teller_fks
+                "fk_teller_accounts_institution_db_id_institutions" not in teller_fks
             ):
                 batch_op.create_foreign_key(
                     batch_op.f("fk_teller_accounts_institution_db_id_institutions"),

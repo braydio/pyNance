@@ -7,9 +7,8 @@ the codebase can remain agnostic to the active database.
 
 from __future__ import annotations
 
-from sqlalchemy import insert as generic_insert
-
 from app.extensions import db
+from sqlalchemy import insert as generic_insert
 
 
 def _current_dialect_name() -> str:
@@ -48,4 +47,3 @@ def dialect_insert(table):
     # Fallback to the generic insert which at least allows basic inserts even
     # if dialect-specific conflict resolution is unavailable.
     return generic_insert(table)
-
