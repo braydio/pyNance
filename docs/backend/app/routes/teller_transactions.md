@@ -1,4 +1,4 @@
-backend/app/routes Documentation
+# backend/app/routes Documentation
 
 ---
 
@@ -9,48 +9,85 @@ backend/app/routes Documentation
 
 ## Purpose
 
-Exposes transaction data retrieved from the Teller API. Supports access to synced financial activity including filtering, syncing, and transaction lookup.
+Expose Teller-linked account utilities, including token management,
+manual refresh flows, and transaction retrieval helpers used by the
+frontend when Plaid coverage is unavailable.
 
 ## Key Endpoints
 
-- `GET /teller/transactions`: Retrieve list of synced transactions.
-- `GET /teller/transactions/<id>`: Get a specific Teller transaction.
-- `POST /teller/transactions/sync`: Force synchronization of latest data.
+- `POST /api/teller/transactions/save_access_token`
+- `POST /api/teller/transactions/refresh_accounts`
+- `GET /api/teller/transactions/get_transactions`
+- `GET /api/teller/transactions/list_teller_accounts`
+- `POST /api/teller/transactions/refresh_balances`
+- `PUT /api/teller/transactions/update`
+- `DELETE /api/teller/transactions/delete_account`
+
+> ℹ️ `POST /api/teller/transactions/exchange_public_token` exists only
+> to warn callers that Teller bypasses Plaid-style public-token
+> exchanges. It always returns an error instructing clients to call
+> `save_access_token` instead.
 
 ## Inputs & Outputs
 
-- **GET /teller/transactions**
-  - **Params:** `start_date`, `end_date`, `category`, `account_ids[]` (optional)
+- **POST /api/teller/transactions/save_access_token**
+  - **Body:** `{ "user_id": "uuid", "access_token": "teller-access-..." }`
+  - **Output:** `{ "status": "success" }`
+
+- **POST /api/teller/transactions/refresh_accounts**
+  - **Body:** none (tokens loaded from disk)
   - **Output:**
     ```json
-    [
-      {
-        "id": "txn_042",
-        "date": "2024-11-12",
-        "description": "Starbucks",
-        "amount": -4.75,
-        "category": "Coffee"
-      }
-    ]
+    {
+      "status": "success",
+      "message": "Teller account data refreshed",
+      "updated_accounts": ["Checking", "Savings"]
+    }
     ```
 
-- **GET /teller/transactions/<id>`**
-  - **Output:** Full transaction metadata (institution ID, type, raw payload)
+- **GET /api/teller/transactions/get_transactions**
+  - **Params:** `page`, `page_size`, `start_date`, `end_date`, `category`
+  - **Output:** `{ "status": "success", "data": { "transactions": [...], "total": 42 } }`
 
-- **POST /teller/transactions/sync**
-  - **Output:** `{ success: true, imported_count: int }`
+- **GET /api/teller/transactions/list_teller_accounts**
+  - **Params:** none
+  - **Output:** `{ "status": "success", "data": { "accounts": [...] } }`
+
+- **POST /api/teller/transactions/refresh_balances**
+  - **Body:** `{ "account_ids": ["acct_123"] }` (optional filter)
+  - **Output:**
+    ```json
+    {
+      "status": "success",
+      "message": "Balances refreshed",
+      "updated_accounts": [{"account_name": "Checking"}]
+    }
+    ```
+
+- **PUT /api/teller/transactions/update**
+  - **Body:** Transaction fields to mutate (amount, date, description, category,
+    merchant metadata)
+  - **Output:** `{ "status": "success" }` or `{ "status": "success", "message": "No changes applied" }`
+
+- **DELETE /api/teller/transactions/delete_account**
+  - **Body:** `{ "account_id": "acct_123" }`
+  - **Output:** `{ "status": "success", "message": "Account and related records deleted" }`
 
 ## Internal Dependencies
 
-- `services.teller_transaction_service`
-- `models.Transaction`
-- Token + session context validation
+- `app.helpers.teller_helpers.load_tokens/save_tokens`
+- `app.sql.account_logic.refresh_data_for_teller_account`
+- `app.models.Account` / `app.models.Transaction`
+- `app.extensions.db`
 
 ## Known Behaviors
 
-- Includes Plaid-style normalized output
-- New transactions trigger enrichment and categorization
-- May fallback to raw Teller data if enrichment fails
+- Persists Teller credentials in `TellerDotTokens.json` for CLI-friendly
+  management.
+- Refresh endpoints update `account.last_refreshed` timestamps when new
+  data is fetched.
+- Transaction update path tracks field-level edits so downstream rules
+  can audit manual overrides.
 
 ## Related Docs
 
@@ -60,4 +97,4 @@ Exposes transaction data retrieved from the Teller API. Supports access to synce
 
 ---
 
-Next: `teller_webhook.py`?
+Next: `teller_webhook.py`
