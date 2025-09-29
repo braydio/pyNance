@@ -2,64 +2,6 @@
 
 ---
 
-## 📘 `teller_transactions.py`
-
-````markdown
-# Teller Transactions Route
-
-## Purpose
-
-Exposes transaction data retrieved from the Teller API. Supports access to synced financial activity including filtering, syncing, and transaction lookup.
-
-## Key Endpoints
-
-- `GET /teller/transactions`: Retrieve list of synced transactions.
-- `GET /teller/transactions/<id>`: Get a specific Teller transaction.
-- `POST /teller/transactions/sync`: Force synchronization of latest data.
-
-## Inputs & Outputs
-
-- **GET /teller/transactions**
-  - **Params:** `start_date`, `end_date`, `account_ids[]` (optional)
-  - **Output:**
-    ```json
-    [
-      {
-        "id": "txn_042",
-        "date": "2024-11-12",
-        "description": "Starbucks",
-        "amount": -4.75,
-        "category": "Coffee"
-      }
-    ]
-    ```
-
-- **GET /teller/transactions/<id>`**
-  - **Output:** Full transaction metadata (institution ID, type, raw payload)
-
-- **POST /teller/transactions/sync**
-  - **Output:** `{ success: true, imported_count: int }`
-
-## Internal Dependencies
-
-- `services.teller_transaction_service`
-- `models.Transaction`
-- Token + session context validation
-
-## Known Behaviors
-
-- Includes Plaid-style normalized output
-- New transactions trigger enrichment and categorization
-- May fallback to raw Teller data if enrichment fails
-
-## Related Docs
-
-- [`docs/dataflow/teller_transaction_sync.md`](../../dataflow/teller_transaction_sync.md)
-- [`docs/models/Transaction.md`](../../models/Transaction.md)
-````
-
----
-
 ## 📘 `teller_webhook.py`
 
 ````markdown
@@ -67,45 +9,57 @@ Exposes transaction data retrieved from the Teller API. Supports access to synce
 
 ## Purpose
 
-Processes webhook events sent by Teller, such as transaction updates, balance changes, or account status changes. Responsible for triggering backend sync jobs and refreshing relevant data.
+Handle Teller webhook callbacks and reconcile account data when Teller
+signals a change. Provides a disabled handler when webhook processing is
+not configured.
 
 ## Key Endpoints
 
-- `POST /teller/webhook`: Entry point for Teller webhook events.
+- `POST /api/webhooks/teller`
+- `POST /api/webhooks/teller` _(disabled variant when no secret is set)_
 
 ## Inputs & Outputs
 
-- **POST /teller/webhook**
-  - **Input:** Webhook event body sent from Teller:
+- **POST /api/webhooks/teller**
+  - **Headers:** `Teller-Signature` HMAC SHA-256 signature
+  - **Body:**
     ```json
     {
-      "type": "transaction.created",
-      "data": {
-        "transaction_id": "txn_999",
-        "account_id": "acct_001"
-      }
+      "event": "transaction.posted",
+      "data": { "account_id": "acct_123" }
     }
     ```
-  - **Output:** `{ received: true }` or `{ error: "reason" }`
+  - **Success:** `{ "status": "ok" }`
+  - **Failures:**
+    - `401` with `{ "status": "unauthorized" }` for missing/invalid signatures
+    - `400` with `{ "status": "invalid" }` when payload lacks `event` or `account_id`
+
+- **POST /api/webhooks/teller** _(disabled blueprint)_
+  - **Output:** `{ "status": "disabled", "message": "Webhook is not enabled..." }`
+  - Triggered when `TELLER_WEBHOOK_SECRET` is absent in configuration.
 
 ## Internal Dependencies
 
-- `services.teller_webhook_service`
-- `jobs.sync_transaction_job`
-- `models.Transaction`, `models.WebhookLog`
+- `app.helpers.teller_helpers.load_tokens`
+- `app.sql.account_logic.refresh_data_for_teller_account`
+- `app.models.Account`
+- `app.extensions.db`
+- `FILES["TELLER_DOT_CERT"]` / `FILES["TELLER_DOT_KEY"]`
 
 ## Known Behaviors
 
-- Verifies signature or token for authenticity
-- Idempotent handling of repeated webhook events
-- Push-triggered ingestion pipeline for low-latency updates
+- Uses `TELLER_WEBHOOK_SECRET` to verify signatures via HMAC + base64.
+- Refreshes the affected account and updates `last_refreshed` timestamp
+  when Teller reports posted or updated transactions.
+- Logs and safely ignores webhook calls for unknown accounts or missing
+  tokens.
 
 ## Related Docs
 
 - [`docs/dataflow/teller_webhook.md`](../../dataflow/teller_webhook.md)
-- [`docs/jobs/sync_transaction_job.md`](../../jobs/sync_transaction_job.md)
+- [`docs/backend/app/routes/teller_transactions.md`](./teller_transactions.md)
 ````
 
 ---
 
-All `teller_*.py` routes now fully documented. Let me know when you're ready for the next module set.
+All `teller_*.py` routes now reflect live code behavior.
