@@ -3,7 +3,9 @@
 """Centralized file paths and runtime constants for the Flask backend."""
 
 import os
-from pathlib import Path
+
+from sqlalchemy.engine import make_url
+from sqlalchemy.exc import ArgumentError
 
 from .environment import PLAID_ENV
 from .paths import DIRECTORIES
@@ -29,37 +31,20 @@ FILES = {
 
 FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/dist")
 
-# Allow overriding the database name via environment variable for demos/tests
-DEFAULT_DATABASE_NAME = "dashboard_database.db"
-DATABASE_NAME = os.getenv("DATABASE_NAME", DEFAULT_DATABASE_NAME)
-
-DATABASE_BACKUP_DIR = DIRECTORIES["DATA_DIR"]
-DATABASE_BACKUP_PATH = DATABASE_BACKUP_DIR / DATABASE_NAME
-
-_default_network_dir = Path("/mnt/netstorage/Data/pyNance/backend/app/data")
-DATABASE_BASE_DIR = Path(
-    os.getenv("DATABASE_BASE_DIR", _default_network_dir)
-).expanduser()
-if not DATABASE_BASE_DIR.is_absolute():
-    DATABASE_BASE_DIR = (DIRECTORIES["DATA_DIR"] / DATABASE_BASE_DIR).resolve(
-        strict=False
+SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
+if not SQLALCHEMY_DATABASE_URI:
+    raise RuntimeError(
+        "SQLALCHEMY_DATABASE_URI must be defined when running against PostgreSQL."
     )
-else:
-    DATABASE_BASE_DIR = DATABASE_BASE_DIR.resolve(strict=False)
 
-CURRENT_DATABASE_PATH = DATABASE_BASE_DIR / DATABASE_NAME
+try:
+    _parsed_uri = make_url(SQLALCHEMY_DATABASE_URI)
+    DATABASE_NAME = _parsed_uri.database
+except ArgumentError as exc:  # pragma: no cover - misconfiguration guard
+    raise RuntimeError(
+        "SQLALCHEMY_DATABASE_URI is not a valid SQLAlchemy URL."
+    ) from exc
 
-DATABASE_PATH = DATABASE_BACKUP_PATH
-
-
-def _build_default_sqlite_uri() -> str:
-    """Return the SQLite URI used when no explicit database URL is provided."""
-
-    return f"sqlite:///{DATABASE_PATH}"
-
-
-_ENV_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
-SQLALCHEMY_DATABASE_URI = _ENV_DATABASE_URI or _build_default_sqlite_uri()
 TELEMETRY = {"enabled": True, "track_modifications": False}
 
 # Path to the R/S arbitrage dashboard data produced by the Discord bot.

@@ -31,7 +31,11 @@ class PlaidAccount(db.Model, TimestampMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False, index=True
+        db.String(64),
+        db.ForeignKey("accounts.account_id"),
+        nullable=False,
+        index=True,
+        unique=True,
     )
     plaid_institution_id = db.Column(db.String(128), nullable=True)
     access_token = db.Column(db.String(256), nullable=False)

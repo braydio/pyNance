@@ -13,6 +13,7 @@ Use this guide to keep contributions consistent with the project's structure, to
 - `cd frontend && npm run dev` starts the Vue dev server.
 - `pytest -q` executes backend tests; scope with `pytest tests/test_<feature>.py -q` when iterating.
 - `pre-commit run --all-files` runs Black, Ruff, Isort, MyPy, Pylint, and Bandit.
+- Configure `SQLALCHEMY_DATABASE_URI` for PostgreSQL and apply migrations with `flask db upgrade` before running the API.
 
 ## Coding Style & Naming Conventions
 - Follow Black's 120-character formatting; use Isort (Black profile) for imports and Ruff for linting.

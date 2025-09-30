@@ -53,6 +53,10 @@ data/
 app/data/
 app/temp/
 
+# Backend app data directory and SQLite dump
+backend/app/data/
+backend/sqlite_dump.sql
+
 # Imports and generated files
 imports/*
 !imports/README.md
@@ -92,8 +96,13 @@ design/
 
 # Backend dev utilities
 backend/dev/*
-backend/migrations/
-!backend/migrations/versions
+# Alembic migrations — keep tracked
+!backend/migrations/
+!backend/migrations/versions/
+!backend/migrations/versions/**
+!backend/migrations/env.py
+!backend/migrations/script.py.mako
+backend/migrations/__pycache__/
 
 # Miscellaneous
 *.egg-info/

@@ -2,16 +2,7 @@
 
 """Expose configuration constants and logger setup across the app."""
 
-from .constants import (
-    CURRENT_DATABASE_PATH,
-    DATABASE_BACKUP_DIR,
-    DATABASE_BACKUP_PATH,
-    DATABASE_BASE_DIR,
-    DATABASE_NAME,
-    DATABASE_PATH,
-    FILES,
-    SQLALCHEMY_DATABASE_URI,
-)
+from .constants import DATABASE_NAME, FILES, SQLALCHEMY_DATABASE_URI
 from .environment import (
     ARBIT_EXPORTER_URL,
     BACKEND_PUBLIC_URL,
@@ -56,12 +47,7 @@ __all__ = [
     "VARIABLE_ENV_ID",
     "PRODUCTS",
     "FILES",
-    "DATABASE_BASE_DIR",
-    "DATABASE_BACKUP_DIR",
-    "DATABASE_BACKUP_PATH",
     "DATABASE_NAME",
-    "DATABASE_PATH",
-    "CURRENT_DATABASE_PATH",
     "SQLALCHEMY_DATABASE_URI",
     "DIRECTORIES",
     "plaid_client",
@@ -80,10 +66,8 @@ logger.debug(f"Running in {FLASK_ENV} environment.")
 logger.debug(f"Loaded config from {__name__}")
 logger.debug(f"Initialized main database as {DATABASE_NAME}")
 logger.debug(f"SQLAlchemy Database URI: {SQLALCHEMY_DATABASE_URI}")
-logger.debug(f"Network database directory: {DATABASE_BASE_DIR}")
-logger.debug(f"Network database path: {CURRENT_DATABASE_PATH}")
-logger.debug(f"Local database backup directory: {DATABASE_BACKUP_DIR}")
-logger.debug(f"Local database path: {DATABASE_PATH}")
+if DATABASE_NAME:
+    logger.debug(f"Connected database: {DATABASE_NAME}")
 logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
 logger.debug(
     f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL} \nArbit: {ARBIT_EXPORTER_URL}\n\n"
