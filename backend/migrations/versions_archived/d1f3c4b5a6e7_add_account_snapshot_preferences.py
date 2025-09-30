@@ -6,9 +6,8 @@ Create Date: 2024-07-15 00:00:00.000000
 
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "d1f3c4b5a6e7"
@@ -30,15 +29,11 @@ def upgrade():
             sa.Column("created_at", sa.DateTime(), nullable=True),
             sa.Column("updated_at", sa.DateTime(), nullable=True),
             sa.PrimaryKeyConstraint("id"),
-            sa.UniqueConstraint(
-                "user_id", name="uq_account_snapshot_preferences_user"
-            ),
+            sa.UniqueConstraint("user_id", name="uq_account_snapshot_preferences_user"),
         )
         insp = sa.inspect(bind)
 
-    indexes = {
-        idx["name"] for idx in insp.get_indexes("account_snapshot_preferences")
-    }
+    indexes = {idx["name"] for idx in insp.get_indexes("account_snapshot_preferences")}
     if "ix_account_snapshot_preferences_user_id" not in indexes:
         op.create_index(
             "ix_account_snapshot_preferences_user_id",

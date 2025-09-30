@@ -3,9 +3,8 @@
 from alembic import op
 from flask import current_app
 
-
 # revision identifiers, used by Alembic.
-revision = 'cc9e65c88885'
+revision = "cc9e65c88885"
 down_revision = None
 branch_labels = None
 depends_on = None

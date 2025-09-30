@@ -5,13 +5,13 @@ Revises: c60f2ab5d27e
 Create Date: 2025-09-10 14:13:23.970397
 
 """
-from alembic import op
-import sqlalchemy as sa
 
+import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '7d392159f553'
-down_revision = 'c60f2ab5d27e'
+revision = "7d392159f553"
+down_revision = "c60f2ab5d27e"
 branch_labels = None
 depends_on = None
 
@@ -21,108 +21,112 @@ def upgrade():
     bind = op.get_bind()
     insp = sa.inspect(bind)
 
-    if not insp.has_table('plaid_transaction_meta'):
+    if not insp.has_table("plaid_transaction_meta"):
         op.create_table(
-            'plaid_transaction_meta',
-            sa.Column('id', sa.Integer(), primary_key=True),
+            "plaid_transaction_meta",
+            sa.Column("id", sa.Integer(), primary_key=True),
             sa.Column(
-                'transaction_id',
+                "transaction_id",
                 sa.String(length=64),
-                sa.ForeignKey('transactions.transaction_id'),
+                sa.ForeignKey("transactions.transaction_id"),
                 nullable=False,
                 unique=True,
             ),
             sa.Column(
-                'plaid_account_id',
+                "plaid_account_id",
                 sa.String(length=64),
                 nullable=False,
             ),
-            sa.Column('created_at', sa.DateTime(), nullable=True),
-            sa.Column('updated_at', sa.DateTime(), nullable=True),
+            sa.Column("created_at", sa.DateTime(), nullable=True),
+            sa.Column("updated_at", sa.DateTime(), nullable=True),
         )
         insp = sa.inspect(bind)
 
-    with op.batch_alter_table('investment_holdings', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('raw', sa.JSON(), nullable=True))
+    with op.batch_alter_table("investment_holdings", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("raw", sa.JSON(), nullable=True))
 
-    with op.batch_alter_table('investment_transactions', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('raw', sa.JSON(), nullable=True))
+    with op.batch_alter_table("investment_transactions", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("raw", sa.JSON(), nullable=True))
 
-    plaid_meta_columns = {col['name'] for col in insp.get_columns('plaid_transaction_meta')}
-    with op.batch_alter_table('plaid_transaction_meta', schema=None) as batch_op:
-        if 'raw' not in plaid_meta_columns:
-            batch_op.add_column(sa.Column('raw', sa.JSON(), nullable=True))
+    plaid_meta_columns = {
+        col["name"] for col in insp.get_columns("plaid_transaction_meta")
+    }
+    with op.batch_alter_table("plaid_transaction_meta", schema=None) as batch_op:
+        if "raw" not in plaid_meta_columns:
+            batch_op.add_column(sa.Column("raw", sa.JSON(), nullable=True))
 
-    with op.batch_alter_table('planned_bills', schema=None) as batch_op:
-        batch_op.alter_column('id',
-               existing_type=sa.NUMERIC(),
-               type_=sa.UUID(),
-               existing_nullable=False)
-        batch_op.alter_column('scenario_id',
-               existing_type=sa.NUMERIC(),
-               type_=sa.UUID(),
-               existing_nullable=False)
+    with op.batch_alter_table("planned_bills", schema=None) as batch_op:
+        batch_op.alter_column(
+            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
+        )
+        batch_op.alter_column(
+            "scenario_id",
+            existing_type=sa.NUMERIC(),
+            type_=sa.UUID(),
+            existing_nullable=False,
+        )
 
-    with op.batch_alter_table('planning_scenarios', schema=None) as batch_op:
-        batch_op.alter_column('id',
-               existing_type=sa.NUMERIC(),
-               type_=sa.UUID(),
-               existing_nullable=False)
+    with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
+        batch_op.alter_column(
+            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
+        )
 
-    with op.batch_alter_table('scenario_allocations', schema=None) as batch_op:
-        batch_op.alter_column('id',
-               existing_type=sa.NUMERIC(),
-               type_=sa.UUID(),
-               existing_nullable=False)
-        batch_op.alter_column('scenario_id',
-               existing_type=sa.NUMERIC(),
-               type_=sa.UUID(),
-               existing_nullable=False)
+    with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
+        batch_op.alter_column(
+            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
+        )
+        batch_op.alter_column(
+            "scenario_id",
+            existing_type=sa.NUMERIC(),
+            type_=sa.UUID(),
+            existing_nullable=False,
+        )
 
-    with op.batch_alter_table('securities', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('raw', sa.JSON(), nullable=True))
+    with op.batch_alter_table("securities", schema=None) as batch_op:
+        batch_op.add_column(sa.Column("raw", sa.JSON(), nullable=True))
 
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    with op.batch_alter_table('securities', schema=None) as batch_op:
-        batch_op.drop_column('raw')
+    with op.batch_alter_table("securities", schema=None) as batch_op:
+        batch_op.drop_column("raw")
 
-    with op.batch_alter_table('scenario_allocations', schema=None) as batch_op:
-        batch_op.alter_column('scenario_id',
-               existing_type=sa.UUID(),
-               type_=sa.NUMERIC(),
-               existing_nullable=False)
-        batch_op.alter_column('id',
-               existing_type=sa.UUID(),
-               type_=sa.NUMERIC(),
-               existing_nullable=False)
+    with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
+        batch_op.alter_column(
+            "scenario_id",
+            existing_type=sa.UUID(),
+            type_=sa.NUMERIC(),
+            existing_nullable=False,
+        )
+        batch_op.alter_column(
+            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
+        )
 
-    with op.batch_alter_table('planning_scenarios', schema=None) as batch_op:
-        batch_op.alter_column('id',
-               existing_type=sa.UUID(),
-               type_=sa.NUMERIC(),
-               existing_nullable=False)
+    with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
+        batch_op.alter_column(
+            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
+        )
 
-    with op.batch_alter_table('planned_bills', schema=None) as batch_op:
-        batch_op.alter_column('scenario_id',
-               existing_type=sa.UUID(),
-               type_=sa.NUMERIC(),
-               existing_nullable=False)
-        batch_op.alter_column('id',
-               existing_type=sa.UUID(),
-               type_=sa.NUMERIC(),
-               existing_nullable=False)
+    with op.batch_alter_table("planned_bills", schema=None) as batch_op:
+        batch_op.alter_column(
+            "scenario_id",
+            existing_type=sa.UUID(),
+            type_=sa.NUMERIC(),
+            existing_nullable=False,
+        )
+        batch_op.alter_column(
+            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
+        )
 
-    with op.batch_alter_table('plaid_transaction_meta', schema=None) as batch_op:
-        batch_op.drop_column('raw')
+    with op.batch_alter_table("plaid_transaction_meta", schema=None) as batch_op:
+        batch_op.drop_column("raw")
 
-    with op.batch_alter_table('investment_transactions', schema=None) as batch_op:
-        batch_op.drop_column('raw')
+    with op.batch_alter_table("investment_transactions", schema=None) as batch_op:
+        batch_op.drop_column("raw")
 
-    with op.batch_alter_table('investment_holdings', schema=None) as batch_op:
-        batch_op.drop_column('raw')
+    with op.batch_alter_table("investment_holdings", schema=None) as batch_op:
+        batch_op.drop_column("raw")
 
     # ### end Alembic commands ###
