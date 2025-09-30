@@ -102,7 +102,9 @@ def postgres_has_rows(pg_engine: Engine, table: Table) -> bool:
     return count > 0
 
 
-def copy_table(sqlite_engine: Engine, pg_engine: Engine, table: Table, chunk_size: int) -> None:
+def copy_table(
+    sqlite_engine: Engine, pg_engine: Engine, table: Table, chunk_size: int
+) -> None:
     if table.name in TABLE_SKIP:
         return
 
@@ -145,7 +147,9 @@ def main() -> None:
         for table in metadata.sorted_tables:
             copy_table(sqlite_engine, pg_engine, table, args.chunk_size)
 
-    print("Data migration complete. Run 'flask db upgrade' if additional migrations exist.")
+    print(
+        "Data migration complete. Run 'flask db upgrade' if additional migrations exist."
+    )
 
 
 if __name__ == "__main__":
