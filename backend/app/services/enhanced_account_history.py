@@ -63,9 +63,11 @@ def get_cached_history(account_id: str, start: date, end: date):
 
     return [
         {
-            "date": record.date.isoformat()
-            if hasattr(record.date, "isoformat")
-            else str(record.date),
+            "date": (
+                record.date.isoformat()
+                if hasattr(record.date, "isoformat")
+                else str(record.date)
+            ),
             "balance": round(float(record.balance or 0), 2),
         }
         for record in records
