@@ -287,12 +287,16 @@ def get_net_assets():
             and acc.balance is not None
         )
 
+        net_value = float(net) if net is not None else 0.0
+        assets_value = float(assets) if assets is not None else 0.0
+        liabilities_value = float(liabilities) if liabilities is not None else 0.0
+
         data.append(
             {
                 "date": month.isoformat(),
-                "net_assets": net,
-                "assets": assets,
-                "liabilities": liabilities,
+                "net_assets": round(net_value, 2),
+                "assets": round(assets_value, 2),
+                "liabilities": round(liabilities_value, 2),
             }
         )
         logger.debug(
@@ -416,7 +420,7 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": normalize_account_balance(acc.balance, acc.type),
+            "balance": float(normalize_account_balance(acc.balance, acc.type)),
             "type": acc.type,
             "subtype": acc.subtype,
         }

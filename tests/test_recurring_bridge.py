@@ -8,6 +8,7 @@ import logging
 import os
 import sys
 import types
+from decimal import Decimal
 
 import pytest
 from flask import Flask
@@ -143,7 +144,7 @@ def test_sync_to_db_inserts_recurring(db_ctx):
         rec = models.RecurringTransaction.query.first()
         assert rec.id == results[0]
         assert rec.frequency, "Expected frequency to be inferred"
-        assert rec.transaction.amount == 9.99
+        assert rec.transaction.amount == Decimal("9.99")
 
     except AssertionError as ae:
         logger.error(f"Assertion failed: {ae}")

@@ -1,18 +1,38 @@
+"""Helpers for normalizing monetary amounts to ``Decimal`` values."""
+
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
+
+TWOPLACES = Decimal("0.01")
+
+
+def _to_decimal(value) -> Decimal:
+    """Convert ``value`` to a ``Decimal`` rounded to two places."""
+
+    if isinstance(value, Decimal):
+        return value.quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+    try:
+        return Decimal(str(value)).quantize(TWOPLACES, rounding=ROUND_HALF_UP)
+    except (InvalidOperation, TypeError) as exc:
+        raise ValueError(f"Unable to convert {value!r} to Decimal") from exc
+
+
 def normalize_amount(data):
-    """
-    Normalize a monetary amount to a float. Supports:
-    - raw values (e.g. "$1,200.50", -100, "1.000,50")
-    - dicts like {"amount": 123.45, "transaction_type": "debit"}
+    """Normalize a monetary amount to a ``Decimal``.
+
+    Supports:
+    - raw values (e.g. ``"$1,200.50"``, ``-100``, ``"1.000,50"``)
+    - dicts like ``{"amount": 123.45, "transaction_type": "debit"}``
 
     Args:
-        data (str | int | float | dict): The input monetary amount or a dict.
+        data (str | int | float | Decimal | dict): The input monetary amount or a dict.
 
     Returns:
-        float: Signed amount (negative for debits/liabilities, positive for credits/assets).
+        Decimal: Signed amount (negative for debits/liabilities, positive for credits/assets).
 
     Raises:
         ValueError: If the input is invalid or unrecognized.
     """
+
     if data is None:
         raise ValueError("Input data is None.")
 
@@ -21,12 +41,12 @@ def normalize_amount(data):
         ttype = data.get("transaction_type", "").lower()
         if ttype in ["debit", "liability", "credit card", "credit_card"]:
             return -abs(amount)
-        elif ttype in ["credit", "depository", "asset"]:
+        if ttype in ["credit", "depository", "asset"]:
             return abs(amount)
         return amount  # fallback if unknown type
 
-    if isinstance(data, (int, float)):
-        return float(data)
+    if isinstance(data, (int, float, Decimal)):
+        return _to_decimal(data)
 
     normalized = str(data).strip()
 
@@ -41,6 +61,6 @@ def normalize_amount(data):
         normalized = normalized.replace(",", "")
 
     try:
-        return float(normalized)
-    except ValueError as e:
-        raise ValueError(f"Unable to normalize amount from input: {data}") from e
+        return _to_decimal(normalized)
+    except ValueError as exc:
+        raise ValueError(f"Unable to normalize amount from input: {data}") from exc
