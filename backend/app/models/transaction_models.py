@@ -1,6 +1,7 @@
 """Transaction-related models: Transaction, Category, RecurringTransaction, Rules, PlaidTransactionMeta."""
 
 from datetime import datetime, timezone
+from decimal import Decimal
 
 from app.extensions import db
 
@@ -41,8 +42,8 @@ class Transaction(db.Model):
     user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
-    amount = db.Column(db.Float, default=0)
-    date = db.Column(db.DateTime, nullable=False)
+    amount = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
+    date = db.Column(db.DateTime(timezone=True), nullable=False)
     description = db.Column(db.String(256))
     provider = db.Column(db.String(64), default="manual")
     merchant_name = db.Column(db.String(128), default="Unknown")

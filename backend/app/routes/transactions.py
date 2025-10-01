@@ -6,7 +6,8 @@ records across all linked accounts.
 
 import json
 import traceback
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation
 
 from app.config import logger
 from app.extensions import db
@@ -16,6 +17,29 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy import func
 
 transactions = Blueprint("transactions", __name__)
+
+UTC = timezone.utc
+TWOPLACES = Decimal("0.01")
+AMOUNT_EPSILON = TWOPLACES
+
+
+def _parse_iso_datetime(value: str) -> datetime:
+    """Return a timezone-aware ``datetime`` parsed from ``value``."""
+
+    dt = datetime.fromisoformat(value)
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
+
+
+def _ensure_utc(dt: datetime | None) -> datetime | None:
+    """Attach UTC timezone information to naive datetimes."""
+
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC)
+    return dt.astimezone(UTC)
 
 
 @transactions.route("/update", methods=["PUT"])
@@ -42,13 +66,13 @@ def update_transaction():
         changed_fields = {}
         if "amount" in data:
             try:
-                txn.amount = float(data["amount"])
-            except (TypeError, ValueError):
+                txn.amount = Decimal(str(data["amount"])).quantize(TWOPLACES)
+            except (InvalidOperation, TypeError, ValueError):
                 return jsonify({"status": "error", "message": "Invalid amount"}), 400
             changed_fields["amount"] = True
         if "date" in data:
             try:
-                txn.date = datetime.fromisoformat(data["date"])
+                txn.date = _parse_iso_datetime(data["date"])
             except (TypeError, ValueError):
                 return (
                     jsonify({"status": "error", "message": "Invalid date format"}),
@@ -132,7 +156,7 @@ def scan_internal_transfers():
                 .filter(Transaction.account_id != txn.account_id)
                 .filter(Transaction.date >= start)
                 .filter(Transaction.date <= end)
-                .filter(func.abs(Transaction.amount + txn.amount) <= 0.01)
+                .filter(func.abs(Transaction.amount + txn.amount) <= AMOUNT_EPSILON)
                 .filter(Transaction.is_internal.is_(False))
                 .first()
             )
@@ -141,12 +165,12 @@ def scan_internal_transfers():
                     {
                         "transaction_id": txn.transaction_id,
                         "counterpart_id": counterpart.transaction_id,
-                        "amount": txn.amount,
+                        "amount": float(txn.amount),
                         "date": txn.date.isoformat(),
                         "description": txn.description,
                         "counterpart": {
                             "transaction_id": counterpart.transaction_id,
-                            "amount": counterpart.amount,
+                            "amount": float(counterpart.amount),
                             "date": counterpart.date.isoformat(),
                             "description": counterpart.description,
                         },
@@ -182,13 +206,13 @@ def user_modified_update_transaction():
         changed_fields = {}
         if "amount" in data:
             try:
-                txn.amount = float(data["amount"])
-            except (TypeError, ValueError):
+                txn.amount = Decimal(str(data["amount"])).quantize(TWOPLACES)
+            except (InvalidOperation, TypeError, ValueError):
                 return jsonify({"status": "error", "message": "Invalid amount"}), 400
             changed_fields["amount"] = True
         if "date" in data:
             try:
-                txn.date = datetime.fromisoformat(data["date"])
+                txn.date = _parse_iso_datetime(data["date"])
             except (TypeError, ValueError):
                 return (
                     jsonify({"status": "error", "message": "Invalid date format"}),
@@ -242,13 +266,15 @@ def get_transactions_paginated():
         account_ids_str = request.args.get("account_ids")
         tx_type = request.args.get("tx_type") or request.args.get("type")
 
-        start_date = (
+        start_date = _ensure_utc(
             datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
         )
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d")
-            + timedelta(days=1)
-            - timedelta(microseconds=1)
+        end_date = _ensure_utc(
+            (
+                datetime.strptime(end_date_str, "%Y-%m-%d")
+                + timedelta(days=1)
+                - timedelta(microseconds=1)
+            )
             if end_date_str
             else None
         )
@@ -291,17 +317,19 @@ def get_account_transactions(account_id):
         recent = request.args.get("recent") == "true"
         limit = int(request.args.get("limit", 10))
 
-        start_date = (
+        start_date = _ensure_utc(
             datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
         )
         logger.debug(
             f"Changed date string {start_date_str} to datetime object: {start_date}"
         )
 
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d")
-            + timedelta(days=1)
-            - timedelta(microseconds=1)
+        end_date = _ensure_utc(
+            (
+                datetime.strptime(end_date_str, "%Y-%m-%d")
+                + timedelta(days=1)
+                - timedelta(microseconds=1)
+            )
             if end_date_str
             else None
         )

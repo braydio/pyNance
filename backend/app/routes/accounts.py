@@ -366,6 +366,11 @@ def get_accounts():
                 elif a.teller_account and a.teller_account.last_refreshed:
                     last_refreshed = a.teller_account.last_refreshed
                 normalized_balance = normalize_account_balance(a.balance, a.type)
+                balance_value = (
+                    float(normalized_balance)
+                    if normalized_balance is not None
+                    else None
+                )
                 logger.info(
                     f"Normalized original balance of {a.balance} to {normalized_balance} because account type {a.type}"
                 )
@@ -377,8 +382,8 @@ def get_accounts():
                         "name": a.name,
                         "institution_name": a.institution_name,
                         "type": a.type,
-                        "balance": normalized_balance,
-                        "adjusted_balance": normalized_balance,
+                        "balance": balance_value,
+                        "adjusted_balance": balance_value,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
                         "last_refreshed": last_refreshed,

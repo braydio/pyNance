@@ -4,7 +4,8 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime
+from datetime import datetime, timezone
+from decimal import Decimal
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -32,7 +33,9 @@ app_pkg.__path__ = []
 sys.modules["app"] = app_pkg
 
 helpers_norm = types.ModuleType("app.helpers.normalize")
-helpers_norm.normalize_amount = lambda x: x["amount"] if isinstance(x, dict) else x
+helpers_norm.normalize_amount = lambda x: Decimal(
+    str((x.get("amount") if isinstance(x, dict) else x))
+).quantize(Decimal("0.01"))
 sys.modules["app.helpers.normalize"] = helpers_norm
 
 plaid_helpers = types.ModuleType("app.helpers.plaid_helpers")
@@ -118,7 +121,7 @@ def test_detect_internal_transfer_marks_both_transactions():
             account_id="A1",
             user_id="u1",
             amount=-100.0,
-            date=datetime(2024, 1, 1).date(),
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
             description="Payment to Credit Card",
         )
         t2 = models.Transaction(
@@ -126,7 +129,7 @@ def test_detect_internal_transfer_marks_both_transactions():
             account_id="A2",
             user_id="u1",
             amount=100.0,
-            date=datetime(2024, 1, 1).date(),
+            date=datetime(2024, 1, 1, tzinfo=timezone.utc),
             description="Payment from Checking",
         )
         db.session.add_all([t1, t2])
@@ -155,7 +158,7 @@ def test_detect_internal_transfer_without_description_match():
             account_id="B1",
             user_id="u1",
             amount=-50.0,
-            date=datetime(2024, 2, 1).date(),
+            date=datetime(2024, 2, 1, tzinfo=timezone.utc),
             description="Zelle transfer",
         )
         t2 = models.Transaction(
@@ -163,7 +166,7 @@ def test_detect_internal_transfer_without_description_match():
             account_id="B2",
             user_id="u1",
             amount=50.0,
-            date=datetime(2024, 2, 1).date(),
+            date=datetime(2024, 2, 1, tzinfo=timezone.utc),
             description="Incoming",
         )
         db.session.add_all([t1, t2])
@@ -193,7 +196,7 @@ def test_scan_internal_transfers_endpoint():
             account_id="C1",
             user_id="u1",
             amount=-25.0,
-            date=datetime(2024, 3, 1).date(),
+            date=datetime(2024, 3, 1, tzinfo=timezone.utc),
             description="Transfer out",
         )
         t2 = models.Transaction(
@@ -201,7 +204,7 @@ def test_scan_internal_transfers_endpoint():
             account_id="C2",
             user_id="u1",
             amount=25.0,
-            date=datetime(2024, 3, 1).date(),
+            date=datetime(2024, 3, 1, tzinfo=timezone.utc),
             description="Transfer in",
         )
         db.session.add_all([t1, t2])

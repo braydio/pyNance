@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from decimal import Decimal
 from uuid import uuid4
 
 from app.extensions import db
@@ -25,7 +26,7 @@ class Account(db.Model, TimestampMixin):
     )
     status = db.Column(db.String(64), default="active")
     is_hidden = db.Column(db.Boolean, default=False)
-    balance = db.Column(db.Float, default=0)
+    balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     link_type = db.Column(db.String(64), default="manual")
 
     plaid_account = db.relationship(
@@ -50,7 +51,7 @@ class AccountHistory(db.Model, TimestampMixin):
     )
     user_id = db.Column(db.String(64), nullable=True, index=True)
     date = db.Column(db.DateTime, nullable=False)
-    balance = db.Column(db.Float, default=0)
+    balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     is_hidden = db.Column(db.Boolean, default=None)
 
     __table_args__ = (
@@ -67,7 +68,7 @@ class FinancialGoal(db.Model, TimestampMixin):
         db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
     )
     name = db.Column(db.String(128), nullable=False)
-    target_amount = db.Column(db.Float, nullable=False)
+    target_amount = db.Column(db.Numeric(18, 2), nullable=False)
     due_date = db.Column(db.Date, nullable=False)
     notes = db.Column(db.String(256), nullable=True)
 

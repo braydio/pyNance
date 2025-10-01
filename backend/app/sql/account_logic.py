@@ -4,6 +4,7 @@ import json
 import time
 from datetime import date as pydate
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from tempfile import NamedTemporaryFile
 from typing import Optional
 
@@ -45,13 +46,14 @@ def normalize_balance(amount, account_type):
 
 
 def detect_internal_transfer(
-    txn, date_epsilon: int = 1, amount_epsilon: float = 0.01
+    txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")
 ) -> None:
     """Flag ``txn`` and a matching counterpart as an internal transfer.
 
     A counterpart is any transaction for the same user in a different account
     with an equal and opposite amount within ``date_epsilon`` days. The
-    closest date match is selected when multiple candidates exist.
+    closest date match is selected when multiple candidates exist. Monetary
+    comparisons use ``Decimal`` values to avoid floating point drift.
     """
 
     account = Account.query.filter_by(account_id=txn.account_id).first()
@@ -110,7 +112,7 @@ def get_accounts_from_db(include_hidden: bool = False):
                 "type": acc.type,
                 "subtype": acc.subtype,
                 "institution_name": acc.institution_name,
-                "balance": acc.balance,
+                "balance": float(acc.balance) if acc.balance is not None else None,
                 "status": acc.status,
             }
         )
@@ -807,12 +809,13 @@ def refresh_data_for_plaid_account(
             )
             description = txn.get("name") or "[no description]"
             pending = txn.get("pending", False)
+            txn_amount = process_transaction_amount(txn.get("amount") or 0)
 
             existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
 
             if existing_txn:
                 needs_update = (
-                    existing_txn.amount != txn.get("amount")
+                    existing_txn.amount != txn_amount
                     or existing_txn.date != txn_date
                     or existing_txn.description != description
                     or existing_txn.pending != pending
@@ -821,7 +824,7 @@ def refresh_data_for_plaid_account(
                     or existing_txn.merchant_type != merchant_type
                 )
                 if needs_update:
-                    existing_txn.amount = txn.get("amount")
+                    existing_txn.amount = txn_amount
                     existing_txn.date = txn_date
                     existing_txn.description = description
                     existing_txn.pending = pending
@@ -845,7 +848,7 @@ def refresh_data_for_plaid_account(
             else:
                 new_txn = Transaction(
                     transaction_id=txn_id,
-                    amount=txn.get("amount"),
+                    amount=txn_amount,
                     date=txn_date,
                     description=description,
                     pending=pending,
