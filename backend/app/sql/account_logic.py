@@ -776,9 +776,9 @@ def refresh_data_for_plaid_account(
                 continue
 
             txn_date = txn.get("date")
+            # Normalize txn_date to timezone-aware datetime for the DB model
             if isinstance(txn_date, str):
                 try:
-                    # Parse as date then convert to UTC datetime to match model type
                     parsed_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
                     txn_date = datetime.combine(
                         parsed_date, datetime.min.time(), tzinfo=timezone.utc
@@ -786,6 +786,10 @@ def refresh_data_for_plaid_account(
                 except ValueError:
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue
+            elif isinstance(txn_date, date) and not isinstance(txn_date, datetime):
+                txn_date = datetime.combine(
+                    txn_date, datetime.min.time(), tzinfo=timezone.utc
+                )
 
             # Plaid PFC fields
             pfc_obj = txn.get("personal_finance_category", {})
