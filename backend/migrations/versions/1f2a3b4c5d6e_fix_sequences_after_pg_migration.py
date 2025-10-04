@@ -8,7 +8,6 @@ by setting the underlying sequences to max(id) for affected tables.
 
 from alembic import op
 
-
 # revision identifiers, used by Alembic.
 revision = "1f2a3b4c5d6e"
 down_revision = "4b9af1d3db6d"
@@ -40,4 +39,3 @@ def upgrade() -> None:
 def downgrade() -> None:
     # No-op: sequence positions are safe to leave as-is.
     pass
-
