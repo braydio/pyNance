@@ -786,7 +786,7 @@ def refresh_data_for_plaid_account(
                 except ValueError:
                     logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
                     continue
-            elif isinstance(txn_date, date) and not isinstance(txn_date, datetime):
+            elif isinstance(txn_date, pydate) and not isinstance(txn_date, datetime):
                 txn_date = datetime.combine(
                     txn_date, datetime.min.time(), tzinfo=timezone.utc
                 )
