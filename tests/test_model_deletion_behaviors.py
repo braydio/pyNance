@@ -28,8 +28,8 @@ from app.models import (  # noqa: E402
     InvestmentTransaction,
     PlaidAccount,
     PlaidTransactionMeta,
-    PlanningScenario,
     PlannedBill,
+    PlanningScenario,
     RecurringTransaction,
     ScenarioAllocation,
     Security,
@@ -205,7 +205,9 @@ def test_category_delete_retains_transactions(app_context):
     db.session.commit()
 
     assert db.session.get(Category, child.id).parent_id is None
-    remaining_txn = db.session.query(Transaction).filter_by(transaction_id="txn-2").one()
+    remaining_txn = (
+        db.session.query(Transaction).filter_by(transaction_id="txn-2").one()
+    )
     assert remaining_txn.category_id is None
 
 
