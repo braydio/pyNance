@@ -22,7 +22,10 @@ class Account(db.Model, TimestampMixin):
     subtype = db.Column(db.String(64), nullable=True)
     institution_name = db.Column(db.String(128), nullable=True)
     institution_db_id = db.Column(
-        db.Integer, db.ForeignKey("institutions.id"), nullable=True, index=True
+        db.Integer,
+        db.ForeignKey("institutions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )
     status = db.Column(db.String(64), default="active")
     is_hidden = db.Column(db.Boolean, default=False)
@@ -47,7 +50,9 @@ class AccountHistory(db.Model, TimestampMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        nullable=False,
     )
     user_id = db.Column(db.String(64), nullable=True, index=True)
     date = db.Column(db.DateTime, nullable=False)
@@ -65,7 +70,10 @@ class FinancialGoal(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(64), index=True, nullable=False)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
     name = db.Column(db.String(128), nullable=False)
     target_amount = db.Column(db.Numeric(18, 2), nullable=False)

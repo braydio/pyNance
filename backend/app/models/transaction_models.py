@@ -19,7 +19,9 @@ class Category(db.Model):
     pfc_detailed = db.Column(db.String(64), nullable=True)
     pfc_icon_url = db.Column(db.String(256), nullable=True)
     display_name = db.Column(db.String(256), default="Unknown")
-    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
+    parent_id = db.Column(
+        db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
+    )
     parent = db.relationship("Category", remote_side=[id])
 
     __table_args__ = (
@@ -41,7 +43,9 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id"))
+    account_id = db.Column(
+        db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE")
+    )
     amount = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     date = db.Column(db.DateTime(timezone=True), nullable=False)
     description = db.Column(db.String(256))
@@ -51,7 +55,9 @@ class Transaction(db.Model):
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)
     updated_by_rule = db.Column(db.Boolean, default=False)
-    category_id = db.Column(db.Integer, db.ForeignKey("categories.id"))
+    category_id = db.Column(
+        db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL")
+    )
     category = db.Column(db.String(128))
     personal_finance_category = db.Column(db.JSON, nullable=True)
     personal_finance_category_icon_url = db.Column(db.String, nullable=True)
@@ -79,11 +85,16 @@ class RecurringTransaction(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(
-        db.String(64), db.ForeignKey("transactions.transaction_id"), nullable=False
+        db.String(64),
+        db.ForeignKey("transactions.transaction_id", ondelete="CASCADE"),
+        nullable=False,
     )
     transaction = db.relationship("Transaction", backref="recurrence_rule")
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False, index=True
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     frequency = db.Column(db.String(64), nullable=False)
     next_due_date = db.Column(db.Date, nullable=False)
@@ -112,7 +123,7 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True)
     transaction_id = db.Column(
         db.String(64),
-        db.ForeignKey("transactions.transaction_id"),
+        db.ForeignKey("transactions.transaction_id", ondelete="CASCADE"),
         unique=True,
         nullable=False,
     )
@@ -121,7 +132,9 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
     )
 
     plaid_account_id = db.Column(
-        db.String(64), db.ForeignKey("plaid_accounts.account_id"), nullable=False
+        db.String(64),
+        db.ForeignKey("plaid_accounts.account_id", ondelete="CASCADE"),
+        nullable=False,
     )
     plaid_account = db.relationship("PlaidAccount", backref="transaction_meta")
 
