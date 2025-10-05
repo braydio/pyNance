@@ -12,7 +12,7 @@ import os
 import sys
 import types
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 from fastapi import FastAPI, HTTPException
@@ -89,7 +89,9 @@ class PlanningScenario:
         self.name = name
         self.bills: list[PlannedBill] = []  # type: ignore[name-defined]
         self.allocations: list[ScenarioAllocation] = []  # type: ignore[name-defined]
-        self.created_at = date.today()
+        now = datetime.now(timezone.utc)
+        self.created_at = now
+        self.updated_at = now
 
 
 class PlannedBill:

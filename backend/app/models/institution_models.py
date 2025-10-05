@@ -32,7 +32,7 @@ class PlaidAccount(db.Model, TimestampMixin):
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
         db.String(64),
-        db.ForeignKey("accounts.account_id"),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
         nullable=False,
         index=True,
         unique=True,
@@ -45,7 +45,9 @@ class PlaidAccount(db.Model, TimestampMixin):
     webhook = db.Column(db.String(256), nullable=True)
     last_refreshed = db.Column(db.DateTime, nullable=True)
     institution_db_id = db.Column(
-        db.Integer, db.ForeignKey("institutions.id"), nullable=True
+        db.Integer,
+        db.ForeignKey("institutions.id", ondelete="CASCADE"),
+        nullable=True,
     )
     institution = db.relationship("Institution", back_populates="plaid_accounts")
     sync_cursor = db.Column(db.String(256), nullable=True)
@@ -84,7 +86,9 @@ class TellerAccount(db.Model, TimestampMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), nullable=False
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        nullable=False,
     )
     access_token = db.Column(db.String(256), nullable=False)
     enrollment_id = db.Column(db.String(128), nullable=True)
@@ -92,6 +96,8 @@ class TellerAccount(db.Model, TimestampMixin):
     provider = db.Column(db.String(64), default="Teller")
     last_refreshed = db.Column(db.DateTime, nullable=True)
     institution_db_id = db.Column(
-        db.Integer, db.ForeignKey("institutions.id"), nullable=True
+        db.Integer,
+        db.ForeignKey("institutions.id", ondelete="CASCADE"),
+        nullable=True,
     )
     institution = db.relationship("Institution", back_populates="teller_accounts")

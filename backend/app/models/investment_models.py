@@ -28,11 +28,14 @@ class InvestmentHolding(db.Model, TimestampMixin):
 
     id = db.Column(db.Integer, primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
     security_id = db.Column(
         db.String(128),
-        db.ForeignKey("securities.security_id"),
+        db.ForeignKey("securities.security_id", ondelete="CASCADE"),
         index=True,
         nullable=False,
     )
@@ -55,11 +58,14 @@ class InvestmentTransaction(db.Model, TimestampMixin):
 
     investment_transaction_id = db.Column(db.String(128), primary_key=True)
     account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id"), index=True, nullable=False
+        db.String(64),
+        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
+        index=True,
+        nullable=False,
     )
     security_id = db.Column(
         db.String(128),
-        db.ForeignKey("securities.security_id"),
+        db.ForeignKey("securities.security_id", ondelete="SET NULL"),
         index=True,
         nullable=True,
     )
