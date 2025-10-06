@@ -1,11 +1,12 @@
 """Account management and refresh routes."""
 
 import logging
+import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from app.config import logger
+from app.config import DIRECTORIES, FILES, logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.sql.forecast_logic import update_account_history
@@ -145,7 +146,6 @@ def _refresh_plaid_investments(
 def refresh_all_accounts():
     """Refresh all linked accounts for their enabled products."""
     try:
-        from app.config import FILES, TELLER_API_BASE_URL
         from app.sql import account_logic
 
         data = request.get_json() or {}
@@ -209,9 +209,9 @@ def refresh_all_accounts():
 
                                 if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key]["update_link_token_endpoint"] = (
-                                        "/api/plaid/transactions/generate_update_link_token"
-                                    )
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -292,9 +292,9 @@ def refresh_all_accounts():
                 updated = account_logic.refresh_data_for_teller_account(
                     account,
                     access_token,
-                    FILES["TELLER_DOT_CERT"],
-                    FILES["TELLER_DOT_KEY"],
-                    TELLER_API_BASE_URL,
+                TELLER_CERT_PATH,
+                TELLER_KEY_PATH,
+                TELLER_API_BASE_URL,
                     start_date=start_date,
                     end_date=end_date,
                 )
@@ -356,7 +356,6 @@ def refresh_all_accounts():
 @accounts.route("/<account_id>/refresh", methods=["POST"])
 def refresh_single_account(account_id):
     """Refresh a single account for its enabled product set."""
-    from app.config import FILES, TELLER_API_BASE_URL
     from app.sql import account_logic
 
     data = request.get_json() or {}
@@ -487,8 +486,8 @@ def refresh_single_account(account_id):
         updated = account_logic.refresh_data_for_teller_account(
             account,
             access_token,
-            FILES["TELLER_DOT_CERT"],
-            FILES["TELLER_DOT_KEY"],
+            TELLER_CERT_PATH,
+            TELLER_KEY_PATH,
             TELLER_API_BASE_URL,
             start_date=start_date,
             end_date=end_date,
@@ -984,3 +983,10 @@ def transaction_history(account_id):
             jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}),
             500,
         )
+TELLER_CERT_PATH = FILES.get(
+    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
+)
+TELLER_KEY_PATH = FILES.get(
+    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
+)
+TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")

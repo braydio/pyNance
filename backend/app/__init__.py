@@ -1,8 +1,9 @@
 """Application factory for the Flask backend."""
 
+import os
+
 from app.cli.sync import sync_accounts
 from app.config import logger, plaid_client
-from app.config.environment import TELLER_WEBHOOK_SECRET
 from app.extensions import db
 from flask import Flask
 from flask_cors import CORS
@@ -77,7 +78,9 @@ def create_app():
 
         app.register_blueprint(arbit_dashboard, url_prefix="/api/arbit")
 
-    if TELLER_WEBHOOK_SECRET:
+    teller_webhook_secret = os.getenv("TELLER_WEBHOOK_SECRET")
+
+    if teller_webhook_secret:
         app.register_blueprint(webhooks, url_prefix="/api/webhooks")
     else:
         app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")

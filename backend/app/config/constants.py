@@ -7,7 +7,6 @@ import os
 from sqlalchemy.engine import make_url
 from sqlalchemy.exc import ArgumentError
 
-from .environment import PLAID_ENV
 from .paths import DIRECTORIES
 
 FILES = {
@@ -23,10 +22,6 @@ FILES = {
     "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
     "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
     "PLAID_TOKENS": DIRECTORIES["DATA_DIR"] / "PlaidTokens.json",
-    "TELLER_TOKENS": DIRECTORIES["DATA_DIR"] / "TellerDotTokens.json",
-    "TELLER_ACCOUNTS": DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json",
-    "TELLER_DOT_CERT": DIRECTORIES["CERTS_DIR"] / "certificate.pem",
-    "TELLER_DOT_KEY": DIRECTORIES["CERTS_DIR"] / "private_key.pem",
 }
 
 FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/dist")

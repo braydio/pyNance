@@ -7,6 +7,7 @@ import importlib.util
 import os
 import sys
 import types
+from pathlib import Path
 
 import pytest
 from flask import Flask
@@ -45,6 +46,10 @@ def setup_app(tmp_path):
     config_stub.FILES = {
         "LAST_TX_REFRESH": os.path.join(tmp_path, "last.json"),
         "TRANSACTIONS_RAW_ENRICHED": os.path.join(tmp_path, "enriched.json"),
+    }
+    config_stub.DIRECTORIES = {
+        "CERTS_DIR": Path(tmp_path),
+        "DATA_DIR": Path(tmp_path),
     }
     sys.modules["app.config"] = config_stub
 

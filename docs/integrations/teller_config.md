@@ -7,7 +7,8 @@ This page summarizes the environment variables and certificate files required to
 - `TELLER_APP_ID` – application ID registered with Teller. Used by the frontend when launching the link flow and passed to backend routes for API requests.
 - `TELLER_WEBHOOK_SECRET` – secret used to validate Teller webhook signatures. If not set, the webhook route is disabled.
 
-These variables are loaded by `backend/app/config/environment.py` from your `.env` file.
+Set these variables in your runtime environment (for example via the shell or process manager).
+The backend modules read them directly using ``os.getenv`` when Teller endpoints are invoked.
 
 ## Certificate Placement
 

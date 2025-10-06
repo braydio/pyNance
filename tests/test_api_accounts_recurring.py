@@ -3,6 +3,7 @@ import os
 import sys
 import types
 from datetime import date, datetime
+from pathlib import Path
 
 import pytest
 from flask import Flask
@@ -31,7 +32,11 @@ config_stub.FILES = {
     "LAST_TX_REFRESH": "tx.json",
     "PLAID_TOKENS": "tokens.json",
 }
-config_stub.TELLER_API_BASE_URL = "https://example.com"
+config_stub.DIRECTORIES = {
+    "CERTS_DIR": Path("/tmp"),
+    "DATA_DIR": Path("/tmp"),
+}
+os.environ.setdefault("TELLER_API_BASE_URL", "https://example.com")
 sys.modules["app.config"] = config_stub
 
 env_stub = types.ModuleType("app.config.environment")

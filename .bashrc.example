@@ -15,10 +15,6 @@ export PLAID_SECRET=""
 export PLAID_ENV="sandbox"
 export PRODUCTS="transactions"
 
-# --- Teller configuration ---
-export TELLER_APP_ID=""
-export TELLER_WEBHOOK_SECRET=""
-
 # --- Miscellaneous tokens ---
 export VARIABLE_ENV_TOKEN=""
 export VARIABLE_ENV_ID=""
@@ -26,8 +22,6 @@ export VARIABLE_ENV_ID=""
 # --- Frontend (Vite) configuration ---
 export VITE_SESSION_MODE="development"
 export VITE_APP_API_BASE_URL="http://localhost:5000/api"
-export VITE_TELLER_APP_ID=""
-export VITE_TELLER_ENV="sandbox"
 export VITE_PLAID_CLIENT_ID=""
 export VITE_USER_ID_PLAID=""
 export PHONE_NBR="+10000000000"

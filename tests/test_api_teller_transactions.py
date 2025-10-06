@@ -3,6 +3,7 @@ import os
 import sys
 import types
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 from flask import Flask
@@ -20,7 +21,11 @@ config_stub.logger = types.SimpleNamespace(
     error=lambda *a, **k: None,
 )
 config_stub.FILES = {}
-config_stub.TELLER_API_BASE_URL = "https://example.com"
+config_stub.DIRECTORIES = {
+    "CERTS_DIR": Path("/tmp"),
+    "DATA_DIR": Path("/tmp"),
+}
+os.environ.setdefault("TELLER_API_BASE_URL", "https://example.com")
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 

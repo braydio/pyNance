@@ -9,8 +9,6 @@ import os
 
 from dotenv import load_dotenv
 
-from .paths import DIRECTORIES
-
 load_dotenv()
 
 # Dev Environment Check
@@ -28,17 +26,6 @@ PLAID_WEBHOOK_SECRET = os.getenv("PLAID_WEBHOOK_SECRET")
 # Misc Plaid environment setup
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
-
-# Base URLs for  Teller API Endpoints
-TELLER_API_BASE_URL = "https://api.teller.io"
-
-# Teller application ID, certificates and API key for authentication
-TELLER_APP_ID = os.getenv("TELLER_APP_ID")
-TELLER_CERTIFICATE = DIRECTORIES["CERTS_DIR"] / "certificate.pem"
-TELLER_PRIVATE_KEY = DIRECTORIES["CERTS_DIR"] / "private_key.pem"
-
-# Webhook for product update notifications
-TELLER_WEBHOOK_SECRET = os.getenv("TELLER_WEBHOOK_SECRET", "No Teller Webhook in .env")
 
 # Base URL for Arbit metrics exporter
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
