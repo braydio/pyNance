@@ -270,7 +270,7 @@ const MAX_ACCOUNTS_PER_GROUP = 5
 
 const accountId = (account) => {
   if (!account) return ''
-  const raw = account.id ?? account.account_id ?? ''
+  const raw = account.account_id ?? account.id ?? ''
   if (raw === null || raw === undefined) return ''
   return typeof raw === 'number' ? String(raw) : raw
 }

@@ -23,7 +23,8 @@ function generateId() {
 }
 
 function resolveAccountId(account) {
-  const raw = account && typeof account === 'object' ? (account.id ?? account.account_id) : account
+  // Prefer the external account_id over internal numeric id
+  const raw = account && typeof account === 'object' ? (account.account_id ?? account.id) : account
   if (raw === null || raw === undefined) return null
   return typeof raw === 'number' ? String(raw) : String(raw)
 }
@@ -273,7 +274,7 @@ export function useAccountGroups(options = {}) {
     const previous = group.accounts.slice()
     group.accounts.push(normalized)
     api
-      .addAccountToGroup(groupId, scopedPayload({ account_id: normalized.id }))
+      .addAccountToGroup(groupId, scopedPayload({ account_id: normalized.account_id }))
       .then((response) => syncFromGroupResponse(response))
       .catch((err) => {
         handleError(err, () => {
@@ -311,7 +312,7 @@ export function useAccountGroups(options = {}) {
     api
       .reorderGroupAccounts(
         groupId,
-        scopedPayload({ account_ids: normalized.map((acct) => acct.id) }),
+        scopedPayload({ account_ids: normalized.map((acct) => acct.account_id) }),
       )
       .then((response) => syncFromGroupResponse(response))
       .catch((err) => {
