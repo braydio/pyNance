@@ -1,7 +1,6 @@
-# Frontend Duplicate Component Review 
+# Frontend Duplicate Component Review
 
 This document tracks likely duplicated or unclear components for review and cleaning.
-
 
 ```text
 Component | Role | Action
@@ -23,18 +22,16 @@ UploadCSV.vue vs UploadDownloadCSV.vue | Sizes match, function may overlap | 最
   `TransactionModal.vue` in `Dashboard.vue`, eliminating the redundant wrapper components.
 
 Likely obsolete:
- - AccountsTableLite.vue (1-byte dommy file)
- - LinkAccountFullProducts.vue (empty)
- - backups/ (staging or deprecated)
 
+- AccountsTableLite.vue (1-byte dommy file)
+- LinkAccountFullProducts.vue (empty)
+- backups/ (staging or deprecated)
 
 Tasks:
- 1. Grep for component usages:
+
+1.  Grep for component usages:
     `grep -r "LinkAccountFullProducts" frontend/src``
 
- 2. Merge URL and DownloadCSV files with similar size and flags;
+2.  Merge URL and DownloadCSV files with similar size and flags;
     - Strong candidates by input token
     - Share styles and bland layout
-
-
-       
