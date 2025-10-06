@@ -123,6 +123,16 @@
           </ul>
         </Transition>
       </div>
+
+      <button
+        v-if="isEditingGroups"
+        type="button"
+        class="bs-done-btn gradient-toggle-btn"
+        @click="finishEditingSession"
+        aria-label="Finish editing account groups"
+      >
+        Done
+      </button>
     </div>
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
@@ -471,6 +481,15 @@ function toggleEditGroups() {
   showGroupMenu.value = false
 }
 
+function finishEditingSession() {
+  if (!isEditingGroups.value) return
+  persistGroupOrder()
+  persistAccountOrder()
+  isEditingGroups.value = false
+  emit('update:isEditingGroups', false)
+  showGroupMenu.value = false
+}
+
 /** Enable editing for a group tab */
 function startEdit(id) {
   editingGroupId.value = id
@@ -589,6 +608,7 @@ defineExpose({
   groupAccounts,
   groupAccent,
   isEditingGroups,
+  finishEditingSession,
   selectedAccountId,
   showAccountSelector,
   startAddAccount,
@@ -862,6 +882,19 @@ defineExpose({
 }
 
 .bs-group-btn:focus-visible {
+  outline: none;
+}
+
+.bs-done-btn {
+  padding: 0.35rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.bs-done-btn:focus-visible {
   outline: none;
 }
 
