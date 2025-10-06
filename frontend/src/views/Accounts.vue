@@ -130,6 +130,7 @@
 // Dependencies and 3rd party
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import api from '@/services/api'
 import { Wallet } from 'lucide-vue-next'
 import {
   fetchNetChanges,
@@ -166,6 +167,7 @@ import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistor
 // Routing
 const route = useRoute()
 const router = useRouter()
+// Default to route param; if absent, we'll resolve a real account on mount
 const accountId = ref(route.params.accountId || 'acc1')
 const accountPrefs = useAccountPreferences()
 
@@ -202,6 +204,7 @@ function navigateToPlanning() {
 }
 
 async function loadHistory() {
+  if (!accountId.value) return
   historyError.value = null
   loadingHistory.value = true
   try {
@@ -216,6 +219,7 @@ async function loadHistory() {
 }
 
 async function loadData() {
+  if (!accountId.value) return
   summaryError.value = null
   transactionsError.value = null
   historyError.value = null
@@ -224,7 +228,11 @@ async function loadData() {
   loadingHistory.value = true
 
   try {
-    const res = await fetchNetChanges(accountId.value)
+    const { start, end } = rangeToDates(selectedRange.value)
+    const res = await fetchNetChanges(accountId.value, {
+      start_date: start,
+      end_date: end,
+    })
     if (res?.status === 'success') {
       netSummary.value = res.data
     }
@@ -247,8 +255,33 @@ async function loadData() {
   await loadHistory()
 }
 
+// Resolve a valid account on mount if the current ID is unknown
+async function initAccount() {
+  try {
+    const resp = await api.getAccounts({ include_hidden: true })
+    const accounts = resp?.accounts || []
+    if (!accounts.length) {
+      // No accounts; leave accountId as-is and just attempt loadData (will show errors)
+      await loadData()
+      return
+    }
+    const ids = new Set(accounts.map((a) => a.account_id))
+    if (!ids.has(accountId.value)) {
+      // Prefer first visible account
+      accountId.value = accounts[0].account_id
+      // Sync range preference for the resolved account
+      selectedRange.value = accountPrefs.getSelectedRange(accountId.value)
+      accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
+    }
+  } catch (_) {
+    // Ignore account list failures; fall back to existing ID
+  } finally {
+    await loadData()
+  }
+}
+
 // Lifecycle and watchers
-onMounted(loadData)
+onMounted(initAccount)
 
 watch(selectedRange, (range) => {
   accountPrefs.setSelectedRange(accountId.value, range)
