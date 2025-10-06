@@ -178,6 +178,25 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.vm.isEditingGroups.value).toBe(true)
   })
 
+  it('shows a Done button while editing that exits edit mode and emits updates', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const doneButton = wrapper.find('button.bs-done-btn')
+    expect(doneButton.exists()).toBe(true)
+
+    await doneButton.trigger('click')
+    await nextTick()
+
+    expect(wrapper.vm.$.exposed.isEditingGroups.value).toBe(false)
+    const updates = wrapper.emitted()['update:isEditingGroups'] || []
+    expect(updates.at(-1)).toEqual([false])
+  })
+
   it('truncates group names longer than 30 characters with ellipsis', async () => {
     const wrapper = mount(TopAccountSnapshot, {
       global: { stubs: { AccountSparkline: true } },
