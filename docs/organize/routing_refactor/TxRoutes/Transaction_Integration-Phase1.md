@@ -9,9 +9,9 @@
 
 ### Existing Files to Phase Out (non-destructive during migration)
 
-| File                     | Reason                                                |
-| ------------------------ | ----------------------------------------------------- |
-| `plaid_transactions.py`  | Redundant after routing abstraction                   |
+| File                    | Reason                              |
+| ----------------------- | ----------------------------------- |
+| `plaid_transactions.py` | Redundant after routing abstraction |
 
 ---
 

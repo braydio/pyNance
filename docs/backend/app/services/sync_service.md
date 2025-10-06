@@ -16,11 +16,9 @@ Orchestrates synchronization jobs for pulling in external financial data from pr
 ## Primary Functions
 
 - `run_sync(user_id, source="plaid|csv")`
-
   - Main entrypoint to kick off sync routines by provider
 
 - `ingest_transactions(transactions, source)`
-
   - Converts external transaction format to internal schema
 
 - `deduplicate(entries)`

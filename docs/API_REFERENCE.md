@@ -8,12 +8,12 @@ This document serves as the authoritative reference for API routing conventions,
 
 ### 📁 `routes/` Directory Structure
 
-| Module File              | Responsibility                                          |
-| ------------------------ | ------------------------------------------------------- |
-| `transactions.py`        | Shared transaction operations (paginated views, search) |
-| `plaid_transactions.py`  | Plaid-specific account + transaction routes             |
-| `goals.py`               | Manage user-defined financial goals                     |
-| `accounts.py`            | Account refresh, history, and transaction helpers       |
+| Module File             | Responsibility                                          |
+| ----------------------- | ------------------------------------------------------- |
+| `transactions.py`       | Shared transaction operations (paginated views, search) |
+| `plaid_transactions.py` | Plaid-specific account + transaction routes             |
+| `goals.py`              | Manage user-defined financial goals                     |
+| `accounts.py`           | Account refresh, history, and transaction helpers       |
 
 ## 🌐 API Endpoint Convention
 

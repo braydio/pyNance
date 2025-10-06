@@ -19,7 +19,7 @@ The proposed API response format for /api/forecast is outlined in frontend/src/c
 Current State
 Backend
 
-The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` to assemble labels, forecast values, actuals, and metadata.  The orchestrator queries recurring transactions and account history via helpers in `sql/forecast_logic.py`.
+The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` to assemble labels, forecast values, actuals, and metadata. The orchestrator queries recurring transactions and account history via helpers in `sql/forecast_logic.py`.
 
 ForecastEngine and ForecastStatModel remain available for internal use, but rule-based orchestration is the default path.
 
@@ -44,14 +44,14 @@ Endpoint specification – `/api/forecast` accepts `view_type`, `manual_income`,
 
 Response Structure
 {
-  "labels": ["May 1", "May 2", "May 3", ...],
-  "forecast": [4200.0, 4320.0, 4350.0, ...],
-  "actuals": [4200.0, 4280.0, null, ...],
-  "metadata": {
-    "account_count": 3,
-    "recurring_count": 5,
-    "data_age_days": 0
-  }
+"labels": ["May 1", "May 2", "May 3", ...],
+"forecast": [4200.0, 4320.0, 4350.0, ...],
+"actuals": [4200.0, 4280.0, null, ...],
+"metadata": {
+"account_count": 3,
+"recurring_count": 5,
+"data_age_days": 0
+}
 }
 (Example from 02REF_API_Integration.md)
 

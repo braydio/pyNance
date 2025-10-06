@@ -50,7 +50,6 @@ These call into `helpers/` modules, where the true sync logic begins.
 ### 📁 `sql/category_logic.py`
 
 - Sync-related support functions:
-
   - `upsert_categories_from_plaid_data`
   - `resolve_or_create_category`
 

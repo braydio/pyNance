@@ -82,7 +82,7 @@ Identify repeating charges/income for use in forecasting.
 
   ```ts
   {
-    label, amount, frequency, start_date
+    ;(label, amount, frequency, start_date)
   }
   ```
 
@@ -100,7 +100,6 @@ Expose forecast and actuals data for frontend via REST API.
 ### 󰐥 Steps
 
 - [ ] Add endpoints in `routes/forecast.py`:
-
   - `GET /forecast`
   - `GET /actuals`
   - `GET /transactions`

@@ -20,11 +20,9 @@ Contains SQL-level helpers and routines related to the user account system. Prim
 ## Primary Functions
 
 - `get_account_by_id(account_id)`
-
   - Simple ID lookup using raw SQL or query builder
 
 - `get_accounts_for_user(user_id)`
-
   - Joins user context to account list, filters by active status
 
 - `verify_account_ownership(user_id, account_id)`

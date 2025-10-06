@@ -9,9 +9,9 @@
 
 ### Existing Files to Phase Out (non-destructive during migration)
 
-| File                     | Reason                                                |
-| ------------------------ | ----------------------------------------------------- |
-| `plaid_transactions.py`  | Redundant after routing abstraction                   |
+| File                    | Reason                              |
+| ----------------------- | ----------------------------------- |
+| `plaid_transactions.py` | Redundant after routing abstraction |
 
 ---
 
@@ -41,46 +41,36 @@
 ### Phase 1 – Bootstrapping
 
 - [x] Create `routes/product_transactions.py`
-
   - ✅ Confirmed: Exists as new file alongside `transactions.py`
 
 - [ ] Create `services/transactions.py`
-
   - 🔍 Not present in current `services/`; will be new
 
 - [ ] Stub methods in `providers/plaid.py`
-
   - 🔍 `plaid_transactions.py` exists with inline logic
   - 🔍 `providers/` folder does not currently exist, will need creation
 
 - [ ] Register router in `__init__.py`
-
   - 🔍 `backend/app/__init__.py` exists and includes `include_router(...)` logic
 
 ### Phase 2 – Integration
 
 - [ ] Validate frontend can call `/transactions/sync`
-
   - 🔍 Frontend routes and clients unknown; requires simulation or frontend alignment
 
 - [ ] Migrate logic from `plaid_transactions.py`
-
   - 🔍 Logic includes full transaction sync flow and error handling
 
 - [ ] Apply shared middleware (auth, logging, validation)
-
   - 🔍 Existing route files use inline error handling; no global middleware layer currently observed
 
 ### Phase 3 – Cleanup
 
 - [ ] Mark `plaid_transactions.py` as deprecated
-
   - 🔍 Located in `backend/app/routes`; contains tightly-coupled logic
 
 - [ ] Update `docs/backend_routing_plan.md`
-
   - ✅ File exists with accurate format
 
 - [ ] Add tests or sandbox payload checks
-
   - 🔍 Test coverage not reviewed yet; assumed to be handled manually or externally

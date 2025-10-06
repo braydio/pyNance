@@ -5,7 +5,6 @@
 ---
 
 1. Open `backend/app/sql/account_logic.py`. Cut out the following functions (include all their helper functions such as `fetch_url_with_backoff`):
-
    - `fetch_url_with_backoff`
    - `refresh_data_for_plaid_account`
    - `get_paginated_transactions`
@@ -13,7 +12,6 @@
 2. Create full implementations of these functions in `backend/app/sql/transactions_logic.py`. Add necessary imports (`json`, `datetime`, `NamedTemporaryFile`, models, etc.) and a module-level docstring summarizing its role.
 3. In `account_logic.py`, import these functions from `.transactions_logic` and expose them so that `account_logic.refresh_data_for_plaid_account` still works (temporary backward compatibility).
 4. Update route modules that call these helpers to import from `app.sql.transactions_logic` instead:
-
    - `backend/app/routes/transactions.py`
    - `backend/app/routes/plaid_transactions.py`
    - `backend/app/routes/accounts.py`
@@ -30,7 +28,6 @@
 ---
 
 1. Edit `backend/app/routes/categories.py`:
-
    - Replace the manual loop inside `refresh_plaid_categories` with a call to `category_logic.upsert_categories_from_plaid_data(response.to_dict())`.
    - Remove the direct `db.session.commit()` if `category_logic` already commits.
    - Ensure `from app.sql import category_logic` is imported.
