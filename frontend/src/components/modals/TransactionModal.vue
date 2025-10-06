@@ -8,7 +8,7 @@
       tabindex="0"
     >
       <div
-        class="relative w-full max-w-3xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 animate-fadeInUp flex flex-col overflow-hidden"
+        class="relative w-full max-w-5xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 animate-fadeInUp flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Transactions Modal"

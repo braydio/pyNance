@@ -203,14 +203,17 @@
         </transition>
       </div>
 
-      <TransactionModal
-        :show="showModal"
-        :subtitle="modalSubtitle"
-        :transactions="modalTransactions"
-        :kind="modalKind"
-        :show-date-column="modalShowDate"
-        :hide-category-visuals="modalHideCategoryVisuals"
-        @close="showModal = false"
+      <DailyNetTransactionsModal
+        :show="showDailyModal"
+        :subtitle="dailyModalSubtitle"
+        :transactions="dailyModalTransactions"
+        @close="showDailyModal = false"
+      />
+      <CategoryTransactionsModal
+        :show="showCategoryModal"
+        :subtitle="categoryModalSubtitle"
+        :transactions="categoryModalTransactions"
+        @close="showCategoryModal = false"
       />
     </BasePageLayout>
 
@@ -230,7 +233,8 @@ import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
-import TransactionModal from '@/components/modals/TransactionModal.vue'
+import DailyNetTransactionsModal from '@/components/modals/DailyNetTransactionsModal.vue'
+import CategoryTransactionsModal from '@/components/modals/CategoryTransactionsModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
@@ -253,12 +257,15 @@ const {
   setSort,
   changePage,
 } = useTransactions(15)
-const showModal = ref(false)
-const modalTransactions = ref([])
-const modalSubtitle = ref('')
-const modalKind = ref('date')
-const modalShowDate = ref(false)
-const modalHideCategoryVisuals = ref(false)
+// Daily Net modal state
+const showDailyModal = ref(false)
+const dailyModalTransactions = ref([])
+const dailyModalSubtitle = ref('')
+
+// Category modal state
+const showCategoryModal = ref(false)
+const categoryModalTransactions = ref([])
+const categoryModalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
@@ -387,13 +394,9 @@ async function loadCategoryGroups() {
 // Handle clicks on the DailyNetChart bars and open a modal for that date.
 async function onNetBarClick(label) {
   const result = await fetchTransactions({ start_date: label, end_date: label })
-  configureTransactionModal({
-    transactions: result.transactions || [],
-    kind: 'date',
-    showDateColumn: false,
-    hideCategoryVisuals: false,
-    subtitle: label,
-  })
+  dailyModalTransactions.value = result.transactions || []
+  dailyModalSubtitle.value = label
+  showDailyModal.value = true
 }
 
 /**
@@ -424,13 +427,9 @@ async function onCategoryBarClick(payload) {
     start_date: start,
     end_date: end,
   })
-  configureTransactionModal({
-    transactions: result.transactions || [],
-    kind: 'category',
-    showDateColumn: true,
-    hideCategoryVisuals: false,
-    subtitle: label, // Focus on category label only in header; dates move to table.
-  })
+  categoryModalTransactions.value = result.transactions || []
+  categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
+  showCategoryModal.value = true
 }
 
 /**
@@ -444,20 +443,7 @@ async function onCategoryBarClick(payload) {
  * @param {boolean} options.hideCategoryVisuals - Hide category visuals inside the modal.
  * @param {string} options.subtitle - Subtitle label rendered in the modal header.
  */
-function configureTransactionModal({
-  transactions = [],
-  kind = 'date',
-  showDateColumn = false,
-  hideCategoryVisuals = false,
-  subtitle = '',
-}) {
-  modalTransactions.value = Array.isArray(transactions) ? transactions : []
-  modalKind.value = kind
-  modalShowDate.value = Boolean(showDateColumn)
-  modalHideCategoryVisuals.value = Boolean(hideCategoryVisuals)
-  modalSubtitle.value = subtitle
-  showModal.value = true
-}
+// No shared configure function anymore; each modal manages its own state
 </script>
 
 <style scoped>

@@ -11,8 +11,8 @@
         <tr class="bg-[var(--color-bg-dark)] text-[var(--color-text-light)]">
           <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
           <th class="px-6 py-4 font-semibold text-left">Merchant</th>
-          <th class="px-6 py-4 text-right font-semibold">Amount</th>
-          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold">Date</th>
+          <th class="px-6 py-4 text-right font-semibold whitespace-nowrap">Amount</th>
+          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold whitespace-nowrap">Date</th>
         </tr>
       </thead>
       <tbody>
@@ -25,7 +25,7 @@
           @click="$emit('row-click', tx)"
         >
           <!-- Account column with accent bar and institution badge -->
-          <td class="pl-8 pr-2 py-4 relative min-w-[140px]">
+          <td class="pl-8 pr-2 py-4 relative min-w-[160px]">
             <div
               :class="[
                 'absolute left-0 top-5 bottom-3 w-0.5 rounded-full opacity-90',
@@ -46,7 +46,7 @@
                 {{ initials(tx.institution_name) }}
               </span>
               <div class="flex flex-col">
-                <div class="font-bold text-base">{{ tx.account_name }}</div>
+                <div class="font-bold text-[0.95rem]">{{ tx.account_name }}</div>
                 <div class="text-xs text-[var(--color-text-muted)]">{{ tx.institution_name }}</div>
               </div>
             </div>
@@ -74,7 +74,7 @@
               </div>
             </div>
           </td>
-          <td class="px-6 py-4 text-right">
+          <td class="px-6 py-4 text-right whitespace-nowrap">
             <span
               :class="[
                 'font-bold tracking-tight group-hover:opacity-80',
@@ -88,7 +88,7 @@
               {{ formatAmount(tx.amount) }}
             </span>
           </td>
-          <td v-if="showDateColumn" class="px-6 py-4 text-right text-[var(--color-text-muted)]">
+          <td v-if="showDateColumn" class="px-6 py-4 text-right text-[var(--color-text-muted)] whitespace-nowrap">
             {{ formatDate(tx.date || tx.transaction_date) }}
           </td>
         </tr>
