@@ -12,7 +12,9 @@
           <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
           <th class="px-6 py-4 font-semibold text-left">Merchant</th>
           <th class="px-6 py-4 text-right font-semibold whitespace-nowrap">Amount</th>
-          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold whitespace-nowrap">Date</th>
+          <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold whitespace-nowrap">
+            Date
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -88,7 +90,10 @@
               {{ formatAmount(tx.amount) }}
             </span>
           </td>
-          <td v-if="showDateColumn" class="px-6 py-4 text-right text-[var(--color-text-muted)] whitespace-nowrap">
+          <td
+            v-if="showDateColumn"
+            class="px-6 py-4 text-right text-[var(--color-text-muted)] whitespace-nowrap"
+          >
             {{ formatDate(tx.date || tx.transaction_date) }}
           </td>
         </tr>

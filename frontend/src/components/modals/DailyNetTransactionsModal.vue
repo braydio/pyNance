@@ -8,7 +8,6 @@
     :hide-category-visuals="false"
     @close="$emit('close')"
   />
-  
 </template>
 
 <script setup>
@@ -23,4 +22,3 @@ defineProps({
 
 defineEmits(['close'])
 </script>
-

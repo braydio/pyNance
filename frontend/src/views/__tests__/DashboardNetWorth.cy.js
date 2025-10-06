@@ -2,14 +2,8 @@
 // Ensures Dashboard displays appropriate net worth message based on balance.
 import Dashboard from '../Dashboard.vue'
 
-const NEGATIVE_MESSAGES = [
-  "Yikes! You're in the red.",
-  'Looks like debts outweigh assets.'
-]
-const POSITIVE_MESSAGES = [
-  'Awesome! Your fortune grows.',
-  "You're well in the black."
-]
+const NEGATIVE_MESSAGES = ["Yikes! You're in the red.", 'Looks like debts outweigh assets.']
+const POSITIVE_MESSAGES = ['Awesome! Your fortune grows.', "You're well in the black."]
 const NEUTRAL_MESSAGES = ['Steady as she goes.', 'Room for growth ahead.']
 
 function mountWithWorth(value) {
@@ -41,22 +35,28 @@ function mountWithWorth(value) {
 describe('Dashboard net worth message', () => {
   it('uses negative balance pool', () => {
     mountWithWorth(-500)
-    cy.get('p.italic').invoke('text').should(text => {
-      expect(NEGATIVE_MESSAGES).to.include(text.trim())
-    })
+    cy.get('p.italic')
+      .invoke('text')
+      .should((text) => {
+        expect(NEGATIVE_MESSAGES).to.include(text.trim())
+      })
   })
 
   it('uses positive balance pool', () => {
     mountWithWorth(1500)
-    cy.get('p.italic').invoke('text').should(text => {
-      expect(POSITIVE_MESSAGES).to.include(text.trim())
-    })
+    cy.get('p.italic')
+      .invoke('text')
+      .should((text) => {
+        expect(POSITIVE_MESSAGES).to.include(text.trim())
+      })
   })
 
   it('uses neutral balance pool', () => {
     mountWithWorth(500)
-    cy.get('p.italic').invoke('text').should(text => {
-      expect(NEUTRAL_MESSAGES).to.include(text.trim())
-    })
+    cy.get('p.italic')
+      .invoke('text')
+      .should((text) => {
+        expect(NEUTRAL_MESSAGES).to.include(text.trim())
+      })
   })
 })
