@@ -10,7 +10,8 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9d3f4c21a7b9"
-down_revision = "8f2b541c2d5a"
+# Merge both parallel heads to continue on a single lineage
+down_revision = ("8f2b541c2d5a", "1f2a3b4c5d6e")
 branch_labels = None
 depends_on = None
 
@@ -25,38 +26,21 @@ provider_type = sa.Enum("manual", "plaid", "teller", name="provider_type")
 def upgrade() -> None:
     bind = op.get_bind()
     dialect = bind.dialect.name
+    inspector = sa.inspect(bind)
 
     # 1) accounts: switch primary key to account_id and drop surrogate id
-    if dialect == "postgresql":
-        op.execute("ALTER TABLE accounts DROP CONSTRAINT IF EXISTS accounts_pkey")
-        op.execute("ALTER TABLE accounts ADD PRIMARY KEY (account_id)")
-        with op.batch_alter_table("accounts") as batch_op:
-            # Drop integer id column if present
-            cols = [
-                c["name"]
-                for c in bind.engine.execute(
-                    sa.text(
-                        """
-                SELECT column_name FROM information_schema.columns
-                WHERE table_name='accounts'
-                """
-                    )
-                ).fetchall()
-            ]
+    with op.batch_alter_table("accounts") as batch_op:
+        try:
+            batch_op.drop_constraint("accounts_pkey", type_="primary")
+        except Exception:
+            pass
+        batch_op.create_primary_key("accounts_pkey", ["account_id"])
+        try:
+            cols = [c["name"] for c in inspector.get_columns("accounts")]
             if "id" in cols:
                 batch_op.drop_column("id")
-    else:
-        # Fallback using batch operations (SQLite)
-        with op.batch_alter_table("accounts") as batch_op:
-            try:
-                batch_op.drop_constraint("accounts_pkey", type_="primary")
-            except Exception:
-                pass
-            batch_op.create_primary_key("accounts_pkey", ["account_id"])
-            try:
-                batch_op.drop_column("id")
-            except Exception:
-                pass
+        except Exception:
+            pass
 
     # 2) account_history.date -> Date (daily)
     if dialect == "postgresql":
@@ -74,36 +58,69 @@ def upgrade() -> None:
                 "date", type_=sa.Date(), existing_type=sa.DateTime(), nullable=False
             )
 
-    # 3) Create enums and alter columns
+    # 3) Create enums and alter columns with value normalization for Postgres
     if dialect == "postgresql":
         account_status.create(bind, checkfirst=True)
         link_type.create(bind, checkfirst=True)
         provider_type.create(bind, checkfirst=True)
 
-    with op.batch_alter_table("accounts") as batch_op:
-        batch_op.alter_column(
-            "status",
-            type_=account_status,
-            existing_type=sa.String(length=64),
-            existing_nullable=True,
-            server_default=sa.text("'active'"),
+        # Normalize existing string values to valid enum labels
+        op.execute("UPDATE accounts SET status = LOWER(status) WHERE status IS NOT NULL")
+        op.execute(
+            "UPDATE accounts SET status = 'active' WHERE status IS NULL OR status NOT IN ('active','inactive','closed','archived')"
         )
-        batch_op.alter_column(
-            "link_type",
-            type_=link_type,
-            existing_type=sa.String(length=64),
-            existing_nullable=True,
-            server_default=sa.text("'manual'"),
+        op.execute("UPDATE accounts SET link_type = LOWER(link_type) WHERE link_type IS NOT NULL")
+        op.execute(
+            "UPDATE accounts SET link_type = 'manual' WHERE link_type IS NULL OR link_type NOT IN ('manual','plaid','teller')"
+        )
+        op.execute("UPDATE transactions SET provider = LOWER(provider) WHERE provider IS NOT NULL")
+        op.execute(
+            "UPDATE transactions SET provider = 'manual' WHERE provider IS NULL OR provider NOT IN ('manual','plaid','teller')"
         )
 
-    with op.batch_alter_table("transactions") as batch_op:
-        batch_op.alter_column(
-            "provider",
-            type_=provider_type,
-            existing_type=sa.String(length=64),
-            existing_nullable=True,
-            server_default=sa.text("'manual'"),
+        # Now alter column types using explicit USING casts and set defaults
+        op.execute(
+            "ALTER TABLE accounts ALTER COLUMN status TYPE account_status USING status::account_status"
         )
+        op.execute(
+            "ALTER TABLE accounts ALTER COLUMN status SET DEFAULT 'active'::account_status"
+        )
+        op.execute(
+            "ALTER TABLE accounts ALTER COLUMN link_type TYPE link_type USING link_type::link_type"
+        )
+        op.execute(
+            "ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"
+        )
+        op.execute(
+            "ALTER TABLE transactions ALTER COLUMN provider TYPE provider_type USING provider::provider_type"
+        )
+        op.execute(
+            "ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"
+        )
+    else:
+        with op.batch_alter_table("accounts") as batch_op:
+            batch_op.alter_column(
+                "status",
+                type_=sa.String(length=64),
+                existing_type=sa.String(length=64),
+                existing_nullable=True,
+                server_default=sa.text("'active'"),
+            )
+            batch_op.alter_column(
+                "link_type",
+                type_=sa.String(length=64),
+                existing_type=sa.String(length=64),
+                existing_nullable=True,
+                server_default=sa.text("'manual'"),
+            )
+        with op.batch_alter_table("transactions") as batch_op:
+            batch_op.alter_column(
+                "provider",
+                type_=sa.String(length=64),
+                existing_type=sa.String(length=64),
+                existing_nullable=True,
+                server_default=sa.text("'manual'"),
+            )
 
     # 4) plaid_accounts: add normalized plaid_item_id FK
     with op.batch_alter_table("plaid_accounts") as batch_op:
@@ -123,20 +140,12 @@ def upgrade() -> None:
     op.create_index(
         "ix_transactions_account_date",
         "transactions",
-        (
-            ["account_id", sa.text("date DESC")]
-            if dialect == "postgresql"
-            else ["account_id", "date"]
-        ),
+        ["account_id", "date"],
     )
     op.create_index(
         "ix_transactions_user_date",
         "transactions",
-        (
-            ["user_id", sa.text("date DESC")]
-            if dialect == "postgresql"
-            else ["user_id", "date"]
-        ),
+        ["user_id", "date"],
     )
     op.create_index(
         "ix_transactions_category_date",
@@ -146,11 +155,7 @@ def upgrade() -> None:
     op.create_index(
         "ix_account_history_account_date",
         "account_history",
-        (
-            ["account_id", sa.text("date DESC")]
-            if dialect == "postgresql"
-            else ["account_id", "date"]
-        ),
+        ["account_id", "date"],
     )
 
 
