@@ -20,9 +20,6 @@
 - [`plaid_transfer.py`](#plaid-transfer-route)
 - [`product_transactions.py`](#product-transactions-route)
 - [`recurring.py`](#recurring-transactions-route)
-- [`teller.py`](#teller-integration-route)
-- [`teller_transactions.py`](#teller-transactions-route)
-- [`teller_webhook.py`](#teller-webhook-route)
 - [`transactions.py`](#transactions-route)
 
 ---

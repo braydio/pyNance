@@ -1,7 +1,5 @@
 """Application factory for the Flask backend."""
 
-import os
-
 from app.cli.sync import sync_accounts
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -43,9 +41,6 @@ def create_app():
     from app.routes.recurring import recurring
     from app.routes.rules import rules as rules_bp
     from app.routes.summary import summary
-    from app.routes.teller import link_teller
-    from app.routes.teller_transactions import teller_transactions
-    from app.routes.teller_webhook import disabled_webhooks, webhooks
     from app.routes.transactions import transactions
 
     app.register_blueprint(frontend, url_prefix="/")
@@ -68,8 +63,6 @@ def create_app():
     app.register_blueprint(plaid_investments, url_prefix="/api/plaid/investments")
     app.register_blueprint(investments, url_prefix="/api/investments")
     app.register_blueprint(planning, url_prefix="/api/planning")
-    app.register_blueprint(link_teller, url_prefix="/api/teller")
-    app.register_blueprint(teller_transactions, url_prefix="/api/teller/transactions")
     app.register_blueprint(institutions, url_prefix="/api/institutions")
     app.register_blueprint(summary, url_prefix="/api/summary")
 
@@ -78,12 +71,6 @@ def create_app():
 
         app.register_blueprint(arbit_dashboard, url_prefix="/api/arbit")
 
-    teller_webhook_secret = os.getenv("TELLER_WEBHOOK_SECRET")
-
-    if teller_webhook_secret:
-        app.register_blueprint(webhooks, url_prefix="/api/webhooks")
-    else:
-        app.register_blueprint(disabled_webhooks, url_prefix="/api/webhooks")
     app.cli.add_command(sync_accounts)
     # Dev CLI: reconcile local Items with Plaid live status
     from app.cli.reconcile_plaid_items import reconcile_plaid_items

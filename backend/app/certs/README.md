@@ -1,6 +1,7 @@
-# Teller Certificates
+# Teller Certificates (Legacy)
 
-This directory stores the TLS client credentials required to authenticate with the Teller API.
+> **Note:** The Teller integration has been retired. These instructions are kept for archival
+> purposes only; new deployments do not require Teller client certificates.
 
 ## Required files
 

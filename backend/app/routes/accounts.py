@@ -1,7 +1,6 @@
 """Account management and refresh routes."""
 
 import logging
-import os
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
@@ -163,11 +162,6 @@ def refresh_all_accounts():
         refreshed_counts: dict[str, int] = {}
         error_map: dict[tuple[str, str, str], dict] = {}
 
-        # Load Teller tokens once
-        from app.helpers.teller_helpers import load_tokens
-
-        teller_tokens = load_tokens()
-
         for account in accounts:
             if account.link_type == "Plaid":
                 access_token = None
@@ -274,34 +268,6 @@ def refresh_all_accounts():
 
                 if account_updated:
                     updated_accounts.append(account.name)
-                    refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
-
-            elif account.link_type == "Teller":
-                access_token = None
-                for token in teller_tokens:
-                    if token.get("user_id") == account.user_id:
-                        access_token = token.get("access_token")
-                        break
-                if not access_token and account.teller_account:
-                    access_token = account.teller_account.access_token
-                if not access_token:
-                    logger.warning(f"No Teller token for {account.account_id}")
-                    continue
-
-                logger.debug(f"Refreshing Teller account {account.account_id}")
-                updated = account_logic.refresh_data_for_teller_account(
-                    account,
-                    access_token,
-                TELLER_CERT_PATH,
-                TELLER_KEY_PATH,
-                TELLER_API_BASE_URL,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
-                if updated and account.teller_account:
-                    account.teller_account.last_refreshed = datetime.now(timezone.utc)
-                    updated_accounts.append(account.name)
-                    inst = account.institution_name or "Unknown"
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
             else:
@@ -468,32 +434,15 @@ def refresh_single_account(account_id):
         updated = plaid_updated
 
     elif account.link_type == "Teller":
-        access_token = None
-        from app.helpers.teller_helpers import load_tokens
-
-        tokens = load_tokens()
-        for t in tokens:
-            if t.get("user_id") == account.user_id:
-                access_token = t.get("access_token")
-                break
-        if not access_token and account.teller_account:
-            access_token = account.teller_account.access_token
-        if not access_token:
-            return (
-                jsonify({"status": "error", "message": "Missing Teller token"}),
-                400,
-            )
-        updated = account_logic.refresh_data_for_teller_account(
-            account,
-            access_token,
-            TELLER_CERT_PATH,
-            TELLER_KEY_PATH,
-            TELLER_API_BASE_URL,
-            start_date=start_date,
-            end_date=end_date,
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Teller integration has been removed.",
+                }
+            ),
+            410,
         )
-        if updated and account.teller_account:
-            account.teller_account.last_refreshed = datetime.now(timezone.utc)
     else:
         return (
             jsonify({"status": "error", "message": "Unsupported link type"}),
@@ -522,8 +471,6 @@ def get_accounts():
                 last_refreshed = None
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
-                elif a.teller_account and a.teller_account.last_refreshed:
-                    last_refreshed = a.teller_account.last_refreshed
                 normalized_balance = normalize_account_balance(a.balance, a.type)
                 balance_value = (
                     float(normalized_balance)
@@ -983,10 +930,3 @@ def transaction_history(account_id):
             jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}),
             500,
         )
-TELLER_CERT_PATH = FILES.get(
-    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
-)
-TELLER_KEY_PATH = FILES.get(
-    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
-)
-TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")

@@ -10,7 +10,7 @@ Core Tables
 - accounts (Projects/pyNance/backend/app/models/account_models.py:12)
   - Fields: integer id PK and string account_id unique, user_id, name, type, subtype, institution_name, institution_db_id FK to
     institutions, status, is_hidden, balance, link_type
-  - Relations: One-to-one PlaidAccount and TellerAccount, many Institution
+  - Relations: One-to-one PlaidAccount, many Institution
 - account_history (Projects/pyNance/backend/app/models/account_models.py:30)
   - Fields: account_id FK to accounts.account_id, user_id, date DateTime, balance, is_hidden
   - Unique: (account_id, date)
@@ -25,15 +25,13 @@ Institutions
 
 - institutions (Projects/pyNance/backend/app/models/institution_models.py:11)
   - Fields: name, provider, last_refreshed
-  - Has many: accounts, plaid_accounts, teller_accounts
+  - Has many: accounts, plaid_accounts
 - plaid_accounts (Projects/pyNance/backend/app/models/institution_models.py:26)
   - One‑to‑one with accounts.account_id, has Plaid-specific fields: access_token, item_id, product, plaid_institution_id,
     institution_db_id FK to institutions
 - plaid_items, plaid_webhook_logs (Projects/pyNance/backend/app/models/institution_models.py:49,68)
   - plaid_items holds user_id, item_id unique, access_token, product, is_active, last_error
   - Webhook log stores payloads
-- teller_accounts (Projects/pyNance/backend/app/models/institution_models.py:80)
-  - One‑to‑one with accounts.account_id, token/enrollment fields, institution_db_id FK
 
 Transactions & Categories
 

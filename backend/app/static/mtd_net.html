@@ -66,9 +66,7 @@
       const res = await fetch('/api/charts/daily_net');
       const { data } = await res.json();
 
-      const txRes = await fetch('/api/teller/transactions/get_transactions');
-      const txJson = await txRes.json();
-      transactions = txJson.data.transactions;
+      transactions = [];
 
       const now = new Date();
       const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

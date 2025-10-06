@@ -2,7 +2,6 @@ import importlib.util
 import os
 import sys
 import types
-from pathlib import Path
 
 import pytest
 from flask import Flask
@@ -21,12 +20,6 @@ config_stub.logger = types.SimpleNamespace(
     warning=lambda *a, **k: None,
     error=lambda *a, **k: None,
 )
-config_stub.FILES = {"TELLER_DOT_CERT": "cert", "TELLER_DOT_KEY": "key"}
-config_stub.DIRECTORIES = {
-    "CERTS_DIR": Path("/tmp"),
-    "DATA_DIR": Path("/tmp"),
-}
-config_stub.TELLER_API_BASE_URL = "https://example.com"
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
@@ -39,12 +32,9 @@ extensions_stub.db = types.SimpleNamespace(
 sys.modules["app.extensions"] = extensions_stub
 
 # Helpers stub
+# Helpers package stub
 helpers_pkg = types.ModuleType("app.helpers")
-teller_helpers_stub = types.ModuleType("app.helpers.teller_helpers")
-teller_helpers_stub.load_tokens = lambda: [{"user_id": "u1", "access_token": "tok"}]
-helpers_pkg.teller_helpers = teller_helpers_stub
 sys.modules["app.helpers"] = helpers_pkg
-sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
 
 # Utils stub
 utils_pkg = types.ModuleType("app.utils")
@@ -58,7 +48,6 @@ sys.modules["app.utils.finance_utils"] = finance_utils_stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: (True, None)
-account_logic_stub.refresh_data_for_teller_account = lambda *a, **k: True
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
@@ -79,11 +68,6 @@ class DummyAccount:
         self.plaid_account = (
             types.SimpleNamespace(access_token="tok", last_refreshed=None)
             if link_type == "Plaid"
-            else None
-        )
-        self.teller_account = (
-            types.SimpleNamespace(access_token="tok", last_refreshed=None)
-            if link_type == "Teller"
             else None
         )
 
@@ -119,7 +103,7 @@ spec.loader.exec_module(inst_module)
 
 @pytest.fixture
 def client():
-    inst1 = DummyInstitution(1, [DummyAccount("a1"), DummyAccount("a2", "Teller")])
+    inst1 = DummyInstitution(1, [DummyAccount("a1"), DummyAccount("a2")])
     inst2 = DummyInstitution(2, [DummyAccount("a3")])
     inst_module.Institution.query = InstQuery([inst1, inst2])
 

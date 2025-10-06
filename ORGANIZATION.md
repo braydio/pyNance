@@ -117,12 +117,11 @@ pyNance/
 - **Flask Configuration**: `FLASK_ENV`, `LOG_LEVEL`, `SQL_ECHO`
 - **Database**: `DATABASE_NAME`, `CLIENT_NAME`
 - **Plaid Integration**: `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, `PLAID_ENV`
-- **Teller Integration**: `TELLER_APP_ID`, `TELLER_WEBHOOK_SECRET`
 - **Vector DB/LLM Tools**: `CHROMA_*`, `QDRANT_*`, `LOCALAI_*`
 
 #### Frontend Environment Variables (`frontend/.env`)
 - **Vite Configuration**: `VITE_SESSION_MODE`, `VITE_APP_API_BASE_URL`
-- **Integration Settings**: `VITE_TELLER_APP_ID`, `VITE_PLAID_CLIENT_ID`
+- **Integration Settings**: `VITE_PLAID_CLIENT_ID`
 - **User Settings**: `VITE_USER_ID_PLAID`, `PHONE_NBR`
 
 ## Security Best Practices

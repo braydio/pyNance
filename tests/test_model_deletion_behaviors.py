@@ -33,7 +33,6 @@ from app.models import (  # noqa: E402
     RecurringTransaction,
     ScenarioAllocation,
     Security,
-    TellerAccount,
     Transaction,
 )
 
@@ -93,10 +92,6 @@ def test_institution_delete_cascades_account_tree(app_context):
                 access_token="token",
                 item_id="item-1",
                 product="transactions",
-            ),
-            TellerAccount(
-                account_id=account.account_id,
-                access_token="token",
             ),
         ]
     )
@@ -169,7 +164,6 @@ def test_institution_delete_cascades_account_tree(app_context):
     assert db.session.query(RecurringTransaction).count() == 0
     assert db.session.query(PlaidTransactionMeta).count() == 0
     assert db.session.query(PlaidAccount).count() == 0
-    assert db.session.query(TellerAccount).count() == 0
     assert db.session.query(InvestmentHolding).count() == 0
     assert db.session.query(InvestmentTransaction).count() == 0
     assert db.session.query(AccountGroupMembership).count() == 0

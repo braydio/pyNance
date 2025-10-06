@@ -8,7 +8,6 @@ from app.extensions import db
 from app.helpers.import_helpers import dispatch_import
 from app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
 from app.helpers.plaid_helpers import get_institution_name, get_item
-from app.helpers.teller_helpers import get_teller_accounts
 from app.models import Account
 from app.sql import account_logic
 from app.sql.manual_import_logic import upsert_imported_transactions
@@ -38,29 +37,14 @@ def auto_detect_and_upload():
     if not access_token or not user_id:
         return jsonify({"error": "Missing access_token or user_id"}), 400
 
-    provider = "unknown"
+    provider = "Plaid"
     institution_name = "Unknown"
 
     try:
-        # Try Plaid first
-        try:
-            item_info = get_item(access_token)
-            inst_id = item_info.get("institution_id")
-            institution_name = get_institution_name(inst_id)
-            accounts_data = get_plaid_accounts(access_token)
-            provider = "Plaid"
-        except Exception as plaid_error:
-            logger.debug(f"Plaid detection failed: {plaid_error}")
-            # Fallback to Teller
-            try:
-                accounts_data = get_teller_accounts(access_token)
-                provider = "Teller"
-            except Exception as teller_error:
-                logger.error(f"Both Plaid and Teller detection failed: {teller_error}")
-                return (
-                    jsonify({"error": "Token is not valid for Plaid or Teller."}),
-                    400,
-                )
+        item_info = get_item(access_token)
+        inst_id = item_info.get("institution_id")
+        institution_name = get_institution_name(inst_id)
+        accounts_data = get_plaid_accounts(access_token)
 
         accounts = (
             accounts_data

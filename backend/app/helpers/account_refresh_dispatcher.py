@@ -7,7 +7,6 @@ from app.models import Account, db
 from app.services import sync_service
 
 SYNC_INTERVALS = {
-    "teller": timedelta(hours=8),
     "plaid": timedelta(days=2),
 }
 
@@ -33,7 +32,7 @@ def is_due(last_synced, provider):
 
 def refresh_all_accounts():
     """
-    Refreshes all linked accounts by provider type (Teller or Plaid)
+    Refreshes all linked accounts by provider type (Plaid)
     if they are due for sync based on ``SYNC_INTERVALS``.
     Requires that the caller already created a Flask ``app_context``.
     """
@@ -46,10 +45,15 @@ def refresh_all_accounts():
     for acct in accounts:
         provider = acct.link_type.lower() if acct.link_type else "unknown"
 
-        if provider == "teller":
-            rel = acct.teller_account
-        elif provider == "plaid":
+        if provider == "plaid":
             rel = acct.plaid_account
+        elif provider == "teller":
+            logger.info(
+                "Skipping Teller account %s because the integration was retired.",
+                acct.id,
+            )
+            skipped += 1
+            continue
         else:
             logger.warning(f"⚠️ Unknown provider for account {acct.id}")
             continue
