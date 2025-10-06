@@ -7,11 +7,13 @@ This document outlines the organizational improvements implemented for the pyNan
 ## Key Issues Identified
 
 ### Security & Privacy Concerns
+
 - **Tracked .bashrc**: Contains environment variable templates but was tracked in version control, risking exposure of local developer configurations
 - **Missing .gitignore rules**: Gaps in protection against secrets, credentials, and local development files
 - **Lock file confusion**: Global `*.lock` ignore was preventing reproducible builds
 
 ### Organizational Issues
+
 - **Mixed configuration**: Environment variables scattered between .bashrc and various locations
 - **Untracked development tooling**: `mcp-sqlite-projects-server/` directory with unclear purpose
 - **Documentation gaps**: Missing clear setup instructions for new developers
@@ -19,6 +21,7 @@ This document outlines the organizational improvements implemented for the pyNan
 ## Actions Taken
 
 ### 1. Security Hardening
+
 - ✅ Converted `.bashrc` → `.bashrc.example` (template)
 - ✅ Created `backend/.env.example` with all backend configuration variables
 - ✅ Created `frontend/.env.example` with all frontend (Vite) configuration variables
@@ -32,11 +35,13 @@ This document outlines the organizational improvements implemented for the pyNan
   - OS-specific files
 
 ### 2. Build Reproducibility
+
 - ✅ Removed global `*.lock` ignore rule
 - ✅ Ensured `package-lock.json` is tracked for reproducible Node.js builds
 - ✅ Added specific ignores for cache directories while preserving lock files
 
 ### 3. Configuration Management
+
 - ✅ Centralized environment variable definitions in template files
 - ✅ Clear separation between backend and frontend configurations
 - ✅ Maintained backward compatibility with existing `example.env` files
@@ -71,19 +76,22 @@ pyNance/
 ## Developer Onboarding
 
 ### Initial Setup
+
 1. **Clone and enter the repository**
+
    ```bash
    git clone [repository-url]
    cd pyNance
    ```
 
 2. **Set up environment files**
+
    ```bash
    # Backend configuration
    cp backend/.env.example backend/.env
    # Edit backend/.env with your actual values
 
-   # Frontend configuration  
+   # Frontend configuration
    cp frontend/.env.example frontend/.env
    # Edit frontend/.env with your actual values
 
@@ -93,6 +101,7 @@ pyNance/
    ```
 
 3. **Set up Python environment**
+
    ```bash
    python -m venv .venv
    source .venv/bin/activate  # or .venv/Scripts/activate on Windows
@@ -100,6 +109,7 @@ pyNance/
    ```
 
 4. **Set up Node.js environment**
+
    ```bash
    cd frontend
    npm install
@@ -114,12 +124,14 @@ pyNance/
 ### Configuration Guide
 
 #### Backend Environment Variables (`backend/.env`)
+
 - **Flask Configuration**: `FLASK_ENV`, `LOG_LEVEL`, `SQL_ECHO`
 - **Database**: `DATABASE_NAME`, `CLIENT_NAME`
 - **Plaid Integration**: `PLAID_CLIENT_ID`, `PLAID_SECRET_KEY`, `PLAID_ENV`
 - **Vector DB/LLM Tools**: `CHROMA_*`, `QDRANT_*`, `LOCALAI_*`
 
 #### Frontend Environment Variables (`frontend/.env`)
+
 - **Vite Configuration**: `VITE_SESSION_MODE`, `VITE_APP_API_BASE_URL`
 - **Integration Settings**: `VITE_PLAID_CLIENT_ID`
 - **User Settings**: `VITE_USER_ID_PLAID`, `PHONE_NBR`
@@ -127,6 +139,7 @@ pyNance/
 ## Security Best Practices
 
 ### What NOT to Commit
+
 - ❌ Real API keys, secrets, or tokens
 - ❌ Local `.env` files with actual credentials
 - ❌ Database files (`.db`, `.sqlite3`)
@@ -135,6 +148,7 @@ pyNance/
 - ❌ Local development tools and their data
 
 ### What TO Commit
+
 - ✅ Template files (`.env.example`, `.bashrc.example`)
 - ✅ Lock files (`package-lock.json`, `poetry.lock`)
 - ✅ Documentation and guides
@@ -144,6 +158,7 @@ pyNance/
 ## Development Tools
 
 ### mcp-sqlite-projects-server
+
 - **Status**: Ignored as local development tooling
 - **Purpose**: SQLite project management server (based on directory contents)
 - **Setup**: This appears to be a local development tool. If needed:
@@ -154,6 +169,7 @@ pyNance/
 ### Recommended Additions
 
 #### Pre-commit Hooks (Future Enhancement)
+
 ```yaml
 # .pre-commit-config.yaml
 repos:
@@ -185,18 +201,21 @@ repos:
 ## Architecture Notes
 
 ### Backend (Flask)
+
 - Uses Flask application factory pattern
 - Configuration loaded via python-dotenv from `backend/.env`
 - Database migrations managed via Flask-Migrate
 - API routes organized by feature domain
 
 ### Frontend (Vue.js + Vite)
+
 - Vue 3 with Composition API
 - Vite for build tooling and development server
 - Environment variables prefixed with `VITE_`
 - Component-based architecture with reusable UI components
 
 ### Integration Points
+
 - **Plaid**: Banking data aggregation
 - **Teller**: Alternative banking API
 - **Vector Databases**: Chroma/Qdrant for AI/ML features
@@ -205,12 +224,14 @@ repos:
 ## Maintenance
 
 ### Regular Tasks
+
 - Review and update environment templates when new configuration is added
 - Audit `.gitignore` rules when adding new development tools
 - Update this documentation when project structure changes
 - Rotate API keys and secrets according to security policies
 
 ### Monitoring
+
 - Watch for accidentally committed secrets
 - Review large file additions to prevent binary data leaks
 - Ensure new team members follow onboarding procedures
@@ -218,12 +239,14 @@ repos:
 ## Future Improvements
 
 ### Short Term
+
 1. Add pre-commit hooks for automated quality checks
 2. Set up secret scanning in CI/CD pipeline
 3. Create developer-friendly Makefile or npm scripts
 4. Add container-based development environment
 
 ### Long Term
+
 1. Migrate to more structured configuration management (e.g., python-decouple)
 2. Implement proper secret management for production
 3. Add comprehensive API documentation

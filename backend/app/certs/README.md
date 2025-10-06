@@ -27,4 +27,3 @@ Ensure the `certs` directory is not committed to version control.
 ## Rotation policy
 
 Teller certificates have limited lifetimes. Generate and deploy a new pair regularly—at least every 90 days or as recommended by Teller. Replace the files here with the new versions and restart the backend.
-

@@ -27,9 +27,11 @@ ParentCategory = aliased(Category)
 TRANSACTIONS_RAW = FILES["LAST_TX_REFRESH"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
+
 def process_transaction_amount(amount):
     """Parse the transaction amount without adjusting signage."""
     return normalize_amount(amount)
+
 
 def normalize_balance(amount, account_type):
     """Normalize account balance sign based on account type."""
@@ -41,6 +43,7 @@ def normalize_balance(amount, account_type):
             ),
         }
     )
+
 
 def detect_internal_transfer(
     txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")
@@ -92,6 +95,7 @@ def detect_internal_transfer(
         best.is_internal = True
         best.internal_match_id = txn.transaction_id
 
+
 def get_accounts_from_db(include_hidden: bool = False):
     """Return serialized account rows from the database."""
     query = Account.query
@@ -114,6 +118,7 @@ def get_accounts_from_db(include_hidden: bool = False):
         )
     return accounts
 
+
 def save_plaid_account(account_id, item_id, access_token, product):
     """Insert or update a :class:`PlaidAccount` row."""
 
@@ -133,6 +138,7 @@ def save_plaid_account(account_id, item_id, access_token, product):
         db.session.add(plaid_acct)
     db.session.commit()
     return plaid_acct
+
 
 def upsert_accounts(user_id, account_list, provider, access_token=None):
     processed_ids = set()
@@ -272,6 +278,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
     db.session.commit()
     logger.info("Finished upserting accounts.")
 
+
 def get_paginated_transactions(
     page,
     page_size,
@@ -366,6 +373,7 @@ def get_paginated_transactions(
 
     return serialized, total
 
+
 def get_balance_at(account_id: str, target_date: pydate) -> Optional[float]:
     """Return the balance for ``account_id`` on ``target_date``.
 
@@ -387,6 +395,7 @@ def get_balance_at(account_id: str, target_date: pydate) -> Optional[float]:
         return None
     balance = getattr(row, "balance", row[0])
     return float(balance)
+
 
 def get_net_change(account_id: str, start_date: pydate, end_date: pydate) -> dict:
     """Compute net balance change between two dates.
@@ -416,6 +425,7 @@ def get_net_change(account_id: str, start_date: pydate, end_date: pydate) -> dic
         "net_change": end_balance - start_balance,
         "period": {"start": start_date.isoformat(), "end": end_date.isoformat()},
     }
+
 
 def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url):
     """
@@ -464,6 +474,7 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
         if category.display_name != display_name:
             category.display_name = display_name
     return category
+
 
 def refresh_data_for_plaid_account(
     access_token, account_id, start_date=None, end_date=None

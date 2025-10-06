@@ -12,6 +12,7 @@ from flask import Blueprint, jsonify, request
 
 institutions = Blueprint("institutions", __name__)
 
+
 @institutions.route("/", methods=["GET"])
 def list_institutions():
     """Return institutions with aggregated account info."""
@@ -91,4 +92,3 @@ def refresh_institution(institution_id: int):
         ),
         200,
     )
-
