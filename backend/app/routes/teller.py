@@ -1,21 +1,28 @@
-"""Routes for Teller account linking and data ingestion."""
+"""Endpoints for managing Teller link tokens and account refresh flows."""
 
 import json
+import os
 from datetime import datetime, timezone
 
 import requests
-from app.config import FILES, TELLER_APP_ID, logger
+from app.config import DIRECTORIES, FILES, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens, save_tokens
 from app.models import TellerAccount
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request, session
 
-# File paths and API endpoints
-TELLER_DOT_KEY = FILES["TELLER_DOT_KEY"]
-TELLER_DOT_CERT = FILES["TELLER_DOT_CERT"]
-TELLER_ACCOUNTS = FILES["TELLER_ACCOUNTS"]
-TELLER_API_BASE_URL = "https://api.teller.io"
+TELLER_DOT_KEY = FILES.get(
+    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
+)
+TELLER_DOT_CERT = FILES.get(
+    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
+)
+TELLER_ACCOUNTS = FILES.get(
+    "TELLER_ACCOUNTS", DIRECTORIES["DATA_DIR"] / "TellerDotAccounts.json"
+)
+TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")
+TELLER_APP_ID = os.getenv("TELLER_APP_ID")
 
 link_teller = Blueprint("link_teller", __name__)
 main_teller = Blueprint("main_teller", __name__)
@@ -42,6 +49,17 @@ def generate_link_token():
             return (
                 jsonify({"status": "error", "message": "user_id is required"}),
                 400,
+            )
+        if not TELLER_APP_ID:
+            logger.error("TELLER_APP_ID is not configured in the environment.")
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "TELLER_APP_ID is not configured.",
+                    }
+                ),
+                500,
             )
 
         url = f"{TELLER_API_BASE_URL}/link_tokens"

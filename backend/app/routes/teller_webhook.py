@@ -2,17 +2,27 @@
 import base64
 import hashlib
 import hmac
+"""Teller webhook handlers for processing balance and transaction events."""
+
 import json
+import os
 from datetime import datetime, timezone
 
-from app.config import FILES, logger
+from app.config import DIRECTORIES, FILES, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens
 from app.models import Account
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
 
-TELLER_WEBHOOK_SECRET = FILES.get("TELLER_WEBHOOK_SECRET")
+TELLER_WEBHOOK_SECRET = os.getenv("TELLER_WEBHOOK_SECRET")
+TELLER_DOT_CERT = FILES.get(
+    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
+)
+TELLER_DOT_KEY = FILES.get(
+    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
+)
+TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")
 
 webhooks = Blueprint("webhooks", __name__, url_prefix="/webhooks")
 disabled_webhooks = Blueprint("webhooks_disabled", __name__)
@@ -38,6 +48,9 @@ def verify_signature(request):
     signature = request.headers.get("Teller-Signature")
     if not signature:
         logger.warning("Missing Teller-Signature header.")
+        return False
+    if not TELLER_WEBHOOK_SECRET:
+        logger.warning("TELLER_WEBHOOK_SECRET is not configured; rejecting webhook.")
         return False
 
     computed = hmac.new(
@@ -86,9 +99,9 @@ def teller_webhook():
             updated = account_logic.refresh_data_for_teller_account(
                 account,
                 access_token,
-                FILES["TELLER_DOT_CERT"],
-                FILES["TELLER_DOT_KEY"],
-                FILES["TELLER_API_BASE_URL"],
+                TELLER_DOT_CERT,
+                TELLER_DOT_KEY,
+                TELLER_API_BASE_URL,
             )
             if updated:
                 account.last_refreshed = datetime.now(timezone.utc)

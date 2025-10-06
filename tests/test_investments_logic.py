@@ -7,6 +7,7 @@ import importlib.util
 import os
 import sys
 import types
+from pathlib import Path
 
 import pytest
 from flask import Flask
@@ -43,6 +44,10 @@ def setup_app(tmp_path):
     )
     config_stub.plaid_client = None
     config_stub.FILES = {}
+    config_stub.DIRECTORIES = {
+        "CERTS_DIR": Path(tmp_path),
+        "DATA_DIR": Path(tmp_path),
+    }
     sys.modules["app.config"] = config_stub
 
     extensions = load_module(

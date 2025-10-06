@@ -15,11 +15,6 @@ from .environment import (
     PLAID_SECRET,
     PLAID_WEBHOOK_SECRET,
     PRODUCTS,
-    TELLER_API_BASE_URL,
-    TELLER_APP_ID,
-    TELLER_CERTIFICATE,
-    TELLER_PRIVATE_KEY,
-    TELLER_WEBHOOK_SECRET,
     VARIABLE_ENV_ID,
     VARIABLE_ENV_TOKEN,
 )
@@ -38,11 +33,6 @@ __all__ = [
     "ENABLE_ARBIT_DASHBOARD",
     "ARBIT_EXPORTER_URL",
     "BACKEND_PUBLIC_URL",
-    "TELLER_API_BASE_URL",
-    "TELLER_APP_ID",
-    "TELLER_CERTIFICATE",
-    "TELLER_PRIVATE_KEY",
-    "TELLER_WEBHOOK_SECRET",
     "VARIABLE_ENV_TOKEN",
     "VARIABLE_ENV_ID",
     "PRODUCTS",
@@ -70,5 +60,5 @@ if DATABASE_NAME:
     logger.debug(f"Connected database: {DATABASE_NAME}")
 logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
 logger.debug(
-    f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nTeller: {TELLER_API_BASE_URL} \nArbit: {ARBIT_EXPORTER_URL}\n\n"
+    f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nArbit: {ARBIT_EXPORTER_URL}\n\n"
 )

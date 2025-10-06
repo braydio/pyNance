@@ -1,15 +1,24 @@
-"""Routes for managing Teller tokens, accounts, and transactions."""
+"""REST endpoints for Teller token management and transaction sync flows."""
 
 import json
+import os
 from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Iterable, List
 
-from app.config import FILES, TELLER_API_BASE_URL, logger
+from app.config import DIRECTORIES, FILES, logger
 from app.extensions import db
 from app.helpers.teller_helpers import load_tokens, save_tokens
 from app.models import Account, Transaction
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
+
+teller_cert_path = FILES.get(
+    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
+)
+teller_key_path = FILES.get(
+    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
+)
+TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")
 
 teller_transactions = Blueprint("teller_transactions", __name__)
 
@@ -42,8 +51,8 @@ def _refresh_teller_account(
     updated = account_logic.refresh_data_for_teller_account(
         account,
         access_token,
-        FILES["TELLER_DOT_CERT"],
-        FILES["TELLER_DOT_KEY"],
+        teller_cert_path,
+        teller_key_path,
         TELLER_API_BASE_URL,
     )
     if updated and touch_last_refreshed:

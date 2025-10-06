@@ -6,6 +6,7 @@ import sys
 import types
 from datetime import datetime, timezone
 from decimal import Decimal
+from pathlib import Path
 
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
@@ -24,6 +25,10 @@ config_stub.logger = types.SimpleNamespace(
 config_stub.FILES = {
     "LAST_TX_REFRESH": "last.json",
     "TRANSACTIONS_RAW_ENRICHED": "enriched.json",
+}
+config_stub.DIRECTORIES = {
+    "CERTS_DIR": Path("/tmp"),
+    "DATA_DIR": Path("/tmp"),
 }
 sys.modules["app.config"] = config_stub
 

@@ -1,14 +1,24 @@
 # File: app/helpers/teller_helpers.py
 
+"""Utility helpers for interacting with the Teller API and token storage."""
+
 import json
+import os
 
 import requests
-from app.config import FILES, TELLER_API_BASE_URL, logger
+from app.config import DIRECTORIES, FILES, logger
 from app.sql.forecast_logic import update_account_history
 
-TELLER_CERTIFICATE = FILES["TELLER_DOT_CERT"]
-TELLER_PRIVATE_KEY = FILES["TELLER_DOT_KEY"]
-TELLER_TOKENS = FILES["TELLER_TOKENS"]
+TELLER_CERTIFICATE = FILES.get(
+    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
+)
+TELLER_PRIVATE_KEY = FILES.get(
+    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
+)
+TELLER_TOKENS = FILES.get(
+    "TELLER_TOKENS", DIRECTORIES["DATA_DIR"] / "TellerDotTokens.json"
+)
+TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")
 
 
 def get_teller_accounts(access_token: str, user_id: str):
