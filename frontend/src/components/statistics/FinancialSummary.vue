@@ -42,77 +42,101 @@
     <Transition name="expand">
       <div v-if="isExtendedView" class="extended-stats">
         <div class="stats-grid">
-          <!-- Daily Averages -->
+          <!-- Averages (Daily + Moving) -->
           <div class="stat-group">
-            <h4 class="group-title">Daily Averages</h4>
+            <h4 class="group-title">Averages</h4>
+            <div class="subsection-title">Daily</div>
             <div class="stat-item">
-              <span class="stat-label">Avg Income:</span>
+              <span class="stat-label">Income:</span>
               <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Avg Expenses:</span>
+              <span class="stat-label">Expenses:</span>
               <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Avg Net:</span>
+              <span class="stat-label">Net:</span>
               <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyNet) }}</span>
             </div>
-          </div>
-
-          <!-- Moving Averages -->
-          <div class="stat-group">
-            <h4 class="group-title">Moving Averages</h4>
+            <div class="subsection-title">Moving Averages</div>
             <div class="stat-item">
-              <span class="stat-label">7-Day MA:</span>
+              <span class="stat-label">7-Day:</span>
               <span class="stat-value">{{ formatAmount(extendedMetrics.netMA7) }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">30-Day MA:</span>
+              <span class="stat-label">30-Day:</span>
               <span class="stat-value">{{ formatAmount(extendedMetrics.netMA30) }}</span>
             </div>
           </div>
 
           <!-- Trends & Volatility -->
           <div class="stat-group">
-            <h4 class="group-title">Trends</h4>
+            <h4 class="group-title">Trends <span class="group-subtitle-inline">{{ trendSummary }}</span></h4>
             <div class="stat-item">
-              <span class="stat-label">Net Trend:</span>
-              <span class="stat-value trend-indicator" :class="netTrendClass">
-                {{ netTrendLabel }} {{ formatSignedCurrency(extendedMetrics.netChange) }}
-              </span>
+              <span class="stat-label">Net:</span>
+              <span class="stat-value trend-indicator" :class="netTrendClass">{{
+                formatSignedCurrency(extendedMetrics.netChange)
+              }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Income Trend:</span>
-              <span class="stat-value trend-indicator" :class="incomeTrendClass">
-                {{ incomeTrendLabel }} {{ formatSignedCurrency(extendedMetrics.incomeChange) }}
-              </span>
+              <span class="stat-label">Income:</span>
+              <span class="stat-value trend-indicator" :class="incomeTrendClass">{{
+                formatSignedCurrency(extendedMetrics.incomeChange)
+              }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Expense Trend:</span>
-              <span class="stat-value trend-indicator" :class="expenseTrendClass">
-                {{ expenseTrendLabel }} {{ formatSignedCurrency(extendedMetrics.expenseChange) }}
-              </span>
+              <span class="stat-label">Expenses:</span>
+              <span class="stat-value trend-indicator" :class="expenseTrendClass">{{
+                formatSignedCurrency(extendedMetrics.expenseChange)
+              }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Volatility:</span>
-              <span class="stat-value">{{ volatilityLevel }}</span>
+              <span class="stat-label">Volatility (σ of daily net):</span>
+              <span class="stat-value">{{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})</span>
             </div>
           </div>
 
           <!-- Extremes & Outliers -->
           <div class="stat-group">
-            <h4 class="group-title">Outliers</h4>
+            <h4 class="group-title">Outliers <span class="group-subtitle-inline">Largest day amounts • 2σ anomalies</span></h4>
             <div class="stat-item">
-              <span class="stat-label">Top Earning Day:</span>
+              <span class="stat-label">Income: <span class="badge-note">largest</span></span>
               <span class="stat-value">{{ topEarningLabel }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Top Spending Day:</span>
+              <span class="stat-label">Expense: <span class="badge-note">largest</span></span>
               <span class="stat-value">{{ topSpendingLabel }}</span>
             </div>
             <div class="stat-item">
-              <span class="stat-label">Outlier Days (>|2σ|):</span>
+              <span class="stat-label">Anomalies (>|2σ|):</span>
               <span class="stat-value">{{ extendedMetrics.outlierDays.length }}</span>
+            </div>
+          </div>
+
+          <!-- Savings Metric -->
+          <div class="stat-group">
+            <h4 class="group-title">Savings</h4>
+            <div class="subsection-title">Counts</div>
+            <div class="stat-item">
+              <span class="stat-label">Positive Days:</span>
+              <span class="stat-value">{{ positiveDaysLabel }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Negative Days:</span>
+              <span class="stat-value">{{ negativeDaysLabel }}</span>
+            </div>
+            <div class="subsection-title">Averages</div>
+            <div class="stat-item">
+              <span class="stat-label">Savings Rate:</span>
+              <span class="stat-value">{{ savingsRateLabel }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Savings Amount:</span>
+              <span class="stat-value">{{ savingsAmountLabel }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Avg Savings (positive):</span>
+              <span class="stat-value">{{ avgPositiveSavingsLabel }}</span>
             </div>
           </div>
         </div>
@@ -278,9 +302,17 @@ const expenseTrendClass = computed(() => ({
   'trend-flat': extendedMetrics.value.expenseTrend === 0,
 }))
 
-const netTrendLabel = computed(() => trendLabel(extendedMetrics.value.netTrend))
-const incomeTrendLabel = computed(() => trendLabel(extendedMetrics.value.incomeTrend))
-const expenseTrendLabel = computed(() => trendLabel(extendedMetrics.value.expenseTrend))
+// Single-line trend summary subtitle
+const trendSummary = computed(() => {
+  function part(change, label) {
+    if (change > 0.01) return `Increasing ${label}`
+    if (change < -0.01) return `Decreasing ${label}`
+    return `Stable ${label}`
+  }
+  const income = part(extendedMetrics.value.incomeChange, 'Income')
+  const expenses = part(extendedMetrics.value.expenseChange, 'Expenses')
+  return `${income} • ${expenses}`
+})
 
 const volatilityLevel = computed(() => {
   const vol = extendedMetrics.value.volatility
@@ -331,6 +363,54 @@ function calculateVolatility(values) {
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / n
   return Math.sqrt(variance)
 }
+
+// Savings metrics
+const savingsRateLabel = computed(() => {
+  const data = extendedMetrics.value
+  // Use sums from arrays to avoid sign confusion
+  // incomeValues positive, expenseValues used as abs in extendedMetrics calculations
+  // Reconstruct sums from averages where possible
+  const days = Array.isArray(props.chartData) ? props.chartData.length : 0
+  if (!days) return 'N/A'
+  const totalIncome = data.avgDailyIncome * days
+  const totalExpensesAbs = Math.abs(data.avgDailyExpenses * days)
+  if (totalIncome <= 0) return 'N/A'
+  const rate = (totalIncome - totalExpensesAbs) / totalIncome
+  const pct = Math.round(rate * 1000) / 10
+  return `${pct}%`
+})
+
+const savingsAmountLabel = computed(() => {
+  if (!Array.isArray(props.chartData) || !props.chartData.length) return 'N/A'
+  const totalIncome = props.summary?.totalIncome ?? 0
+  const totalExpensesAbs = Math.abs(props.summary?.totalExpenses ?? 0)
+  return formatAmount(totalIncome - totalExpensesAbs)
+})
+
+const positiveDaysLabel = computed(() => {
+  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0)
+  const n = values.length
+  if (!n) return 'N/A'
+  const pos = values.filter((v) => v > 0).length
+  const pct = Math.round((pos / n) * 1000) / 10
+  return `${pct}% (${pos}/${n})`
+})
+
+const negativeDaysLabel = computed(() => {
+  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0)
+  const n = values.length
+  if (!n) return 'N/A'
+  const neg = values.filter((v) => v < 0).length
+  const pct = Math.round((neg / n) * 1000) / 10
+  return `${pct}% (${neg}/${n})`
+})
+
+const avgPositiveSavingsLabel = computed(() => {
+  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0).filter((v) => v > 0)
+  if (!values.length) return 'N/A'
+  const avg = values.reduce((a, b) => a + b, 0) / values.length
+  return formatAmount(avg)
+})
 
 // Watch for chart data changes to recalculate
 watch(
@@ -437,10 +517,30 @@ watch(
   letter-spacing: 0.5px;
 }
 
+.group-subtitle-inline {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  text-transform: none;
+  margin-left: 0.5rem;
+}
+
 .stat-group .stat-item {
   margin-bottom: 0.25rem;
   font-size: 0.85rem;
   justify-content: space-between;
+}
+
+.subsection-title {
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-top: 1px dashed var(--divider);
+  padding-top: 0.25rem;
 }
 
 .stat-group .stat-label {
@@ -449,6 +549,18 @@ watch(
 
 .stat-group .stat-value {
   color: var(--color-text-light);
+}
+
+.badge-note {
+  display: inline-block;
+  margin-left: 0.25rem;
+  padding: 0 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.2;
+  color: var(--color-text-muted);
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  text-transform: lowercase;
 }
 
 .trend-indicator {

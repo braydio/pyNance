@@ -324,7 +324,7 @@ async function renderChart() {
           borderWidth: 1,
         },
         legend: {
-          display: true,
+          display: false,
           labels: { color: getStyle('--color-text-muted') },
         },
       },
