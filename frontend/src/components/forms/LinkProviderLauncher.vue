@@ -7,8 +7,12 @@
     </p>
 
     <div class="flex gap-2">
-      <button class="btn btn-pill" :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
-        :disabled="selectedProducts.length === 0 || loading" @click="linkPlaid">
+      <button
+        class="btn btn-pill"
+        :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
+        :disabled="selectedProducts.length === 0 || loading"
+        @click="linkPlaid"
+      >
         {{ loading ? 'Linking…' : 'Link with Plaid' }}
       </button>
     </div>
