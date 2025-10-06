@@ -1,13 +1,13 @@
 """Account management and refresh routes."""
 
 import logging
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
 from app.config import logger
 from app.extensions import db
-from app.models import Account, RecurringTransaction, Transaction
+from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import (
     display_transaction_amount,
@@ -56,16 +56,94 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
         return None
 
 
+def _normalize_products(value) -> set[str]:
+    """Return Plaid product identifiers from a persisted value."""
+
+    if value is None:
+        return set()
+    if isinstance(value, str):
+        return {item.strip() for item in value.split(",") if item.strip()}
+    if isinstance(value, (set, list, tuple)):
+        return {str(item).strip() for item in value if str(item).strip()}
+    return {str(value).strip()}
+
+
+def _plaid_products_for_account(account: Account) -> set[str]:
+    """Return Plaid products enabled for the provided account."""
+
+    products = set()
+    plaid_rel = getattr(account, "plaid_account", None)
+    if not plaid_rel:
+        return products
+
+    products.update(_normalize_products(getattr(plaid_rel, "product", None)))
+
+    item_id = getattr(plaid_rel, "item_id", None)
+    if item_id:
+        items = PlaidItem.query.filter_by(item_id=item_id).all()
+        for item in items:
+            products.update(_normalize_products(getattr(item, "product", None)))
+
+    if not products:
+        products.add("transactions")
+    return products
+
+
+def _investment_date_range(start_date, end_date) -> tuple[str, str]:
+    """Return ISO formatted date range for investments refresh logic."""
+
+    def _coerce(value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str) and value:
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                try:
+                    return date.fromisoformat(value)
+                except ValueError:
+                    return None
+        return None
+
+    end_dt = _coerce(end_date)
+    start_dt = _coerce(start_date)
+
+    if not end_dt:
+        end_dt = datetime.now(timezone.utc).date()
+    if not start_dt:
+        start_dt = end_dt - timedelta(days=30)
+
+    return start_dt.isoformat(), end_dt.isoformat()
+
+
+def _refresh_plaid_investments(
+    account: Account, access_token: str, start_date=None, end_date=None
+) -> bool:
+    """Refresh Plaid investments data for an account."""
+
+    from app.helpers.plaid_helpers import get_investment_transactions
+    from app.sql import investments_logic
+
+    start_iso, end_iso = _investment_date_range(start_date, end_date)
+    summary = investments_logic.upsert_investments_from_plaid(
+        account.user_id, access_token
+    )
+    transactions = investments_logic.upsert_investment_transactions(
+        get_investment_transactions(access_token, start_iso, end_iso)
+    )
+
+    securities_count = int(summary.get("securities", 0) or 0)
+    holdings_count = int(summary.get("holdings", 0) or 0)
+    tx_count = int(transactions or 0)
+
+    return bool(securities_count or holdings_count or tx_count)
+
+
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
-    """Refresh all linked accounts.
-
-    Iterates through every account and refreshes data for the appropriate
-    provider. Returns a list of updated account names and a mapping of
-    ``institution_name`` to refresh count under ``refreshed_counts``. Any
-    failures are aggregated under ``errors`` with institution, account details,
-    and Plaid error information.
-    """
+    """Refresh all linked accounts for their enabled products."""
     try:
         from app.config import FILES, TELLER_API_BASE_URL
         from app.sql import account_logic
@@ -100,63 +178,101 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug(f"Refreshing Plaid account {account.account_id}")
-                updated, err = account_logic.refresh_data_for_plaid_account(
-                    access_token,
-                    account.account_id,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
                 inst = account.institution_name or "Unknown"
-                if err:
-                    key = (
-                        inst,
-                        err.get("plaid_error_code"),
-                        err.get("plaid_error_message"),
-                    )
-                    if key not in error_map:
-                        error_map[key] = {
-                            "institution_name": inst,
-                            "account_ids": [account.account_id],
-                            "account_names": [account.name],
-                            "plaid_error_code": err.get("plaid_error_code"),
-                            "plaid_error_message": err.get("plaid_error_message"),
-                        }
+                products = _plaid_products_for_account(account)
+                account_updated = False
 
-                        # Add remediation info for ITEM_LOGIN_REQUIRED
-                        if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                            error_map[key]["requires_reauth"] = True
-                            error_map[key]["update_link_token_endpoint"] = (
-                                "/api/plaid/transactions/generate_update_link_token"
-                            )
-                            error_map[key]["affected_account_ids"] = [
-                                account.account_id
-                            ]
-                    else:
-                        error_map[key]["account_ids"].append(account.account_id)
-                        error_map[key]["account_names"].append(account.name)
-
-                        # Update affected account IDs for ITEM_LOGIN_REQUIRED
-                        if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                            affected_ids = set(
-                                error_map[key].get("affected_account_ids", [])
-                            )
-                            affected_ids.add(account.account_id)
-                            error_map[key]["affected_account_ids"] = list(affected_ids)
-
-                    # Use warning level for ITEM_LOGIN_REQUIRED, error for others
-                    if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                        logger.warning(
-                            f"Plaid re-auth required: Institution: {inst}, Account: {account.name}, "
-                            f"Error: {err.get('plaid_error_message')}. User must re-auth via Link update mode. "
-                            f"Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                for product_name in products:
+                    if product_name == "transactions":
+                        updated, err = account_logic.refresh_data_for_plaid_account(
+                            access_token,
+                            account.account_id,
+                            start_date=start_date,
+                            end_date=end_date,
                         )
+                        if err:
+                            key = (
+                                inst,
+                                err.get("plaid_error_code"),
+                                err.get("plaid_error_message"),
+                            )
+                            if key not in error_map:
+                                error_map[key] = {
+                                    "institution_name": inst,
+                                    "account_ids": [account.account_id],
+                                    "account_names": [account.name],
+                                    "plaid_error_code": err.get("plaid_error_code"),
+                                    "plaid_error_message": err.get(
+                                        "plaid_error_message"
+                                    ),
+                                }
+
+                                if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                    error_map[key]["requires_reauth"] = True
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
+                                    error_map[key]["affected_account_ids"] = [
+                                        account.account_id
+                                    ]
+                            else:
+                                error_map[key]["account_ids"].append(account.account_id)
+                                error_map[key]["account_names"].append(account.name)
+
+                                if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                    affected_ids = set(
+                                        error_map[key].get("affected_account_ids", [])
+                                    )
+                                    affected_ids.add(account.account_id)
+                                    error_map[key]["affected_account_ids"] = list(
+                                        affected_ids
+                                    )
+
+                            if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                logger.warning(
+                                    f"Plaid re-auth required: Institution: {inst}, Account: {account.name}, "
+                                    f"Error: {err.get('plaid_error_message')}. User must re-auth via Link update mode. "
+                                    f"Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                                )
+                            else:
+                                error_logger.error(
+                                    f"Plaid error on refresh: Institution: {inst}, Accounts: {account.name}, "
+                                    f"Error Code: {err.get('plaid_error_code')}, Message: {err.get('plaid_error_message')}"
+                                )
+                        else:
+                            account_updated = account_updated or updated
+                            if updated and account.plaid_account:
+                                account.plaid_account.last_refreshed = datetime.now(
+                                    timezone.utc
+                                )
+                    elif product_name == "investments":
+                        try:
+                            investments_updated = _refresh_plaid_investments(
+                                account,
+                                access_token,
+                                start_date=start_date,
+                                end_date=end_date,
+                            )
+                            account_updated = account_updated or investments_updated
+                            if account.plaid_account:
+                                account.plaid_account.last_refreshed = datetime.now(
+                                    timezone.utc
+                                )
+                        except Exception as exc:
+                            error_logger.error(
+                                "Plaid investments refresh failed for account %s: %s",
+                                account.account_id,
+                                exc,
+                                exc_info=True,
+                            )
                     else:
-                        error_logger.error(
-                            f"Plaid error on refresh: Institution: {inst}, Accounts: {account.name}, "
-                            f"Error Code: {err.get('plaid_error_code')}, Message: {err.get('plaid_error_message')}"
+                        logger.info(
+                            "Skipping unsupported Plaid product %s for account %s",
+                            product_name,
+                            account.account_id,
                         )
-                elif updated and account.plaid_account:
-                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+
+                if account_updated:
                     updated_accounts.append(account.name)
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
@@ -239,7 +355,7 @@ def refresh_all_accounts():
 
 @accounts.route("/<account_id>/refresh", methods=["POST"])
 def refresh_single_account(account_id):
-    """Refresh a single account with an optional date range."""
+    """Refresh a single account for its enabled product set."""
     from app.config import FILES, TELLER_API_BASE_URL
     from app.sql import account_logic
 
@@ -260,53 +376,97 @@ def refresh_single_account(account_id):
                 jsonify({"status": "error", "message": "Missing Plaid token"}),
                 400,
             )
-        updated, err = account_logic.refresh_data_for_plaid_account(
-            token,
-            account_id,
-            start_date=start_date,
-            end_date=end_date,
-        )
+        products = _plaid_products_for_account(account)
+        plaid_updated = False
 
-        # Handle ITEM_LOGIN_REQUIRED error
-        if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-            logger.warning(
-                f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
-                f"User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
-            )
-            return (
-                jsonify(
-                    {
-                        "status": "success",
-                        "updated": False,
-                        "requires_reauth": True,
-                        "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
-                        "account_id": account.account_id,
-                        "error": {
-                            "code": err.get("plaid_error_code"),
-                            "message": err.get("plaid_error_message"),
-                        },
-                    }
-                ),
-                200,
-            )
-        elif err:
-            # Other Plaid errors
-            logger.error(
-                f"Plaid error on single account refresh {account.account_id}: {err}"
-            )
-            return (
-                jsonify(
-                    {
-                        "status": "error",
-                        "updated": False,
-                        "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
-                        "error": err,
-                    }
-                ),
-                502,
-            )
-        elif updated and account.plaid_account:
-            account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+        for product_name in products:
+            if product_name == "transactions":
+                updated_flag, err = account_logic.refresh_data_for_plaid_account(
+                    token,
+                    account_id,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+
+                if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                    logger.warning(
+                        f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
+                        "User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "status": "success",
+                                "updated": False,
+                                "requires_reauth": True,
+                                "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
+                                "account_id": account.account_id,
+                                "error": {
+                                    "code": err.get("plaid_error_code"),
+                                    "message": err.get("plaid_error_message"),
+                                },
+                            }
+                        ),
+                        200,
+                    )
+                if err:
+                    logger.error(
+                        "Plaid error on single account refresh %s: %s",
+                        account.account_id,
+                        err,
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "status": "error",
+                                "updated": False,
+                                "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
+                                "error": err,
+                            }
+                        ),
+                        502,
+                    )
+                plaid_updated = plaid_updated or updated_flag
+                if updated_flag and account.plaid_account:
+                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+            elif product_name == "investments":
+                try:
+                    investments_updated = _refresh_plaid_investments(
+                        account,
+                        token,
+                        start_date=start_date,
+                        end_date=end_date,
+                    )
+                    plaid_updated = plaid_updated or investments_updated
+                    if account.plaid_account:
+                        account.plaid_account.last_refreshed = datetime.now(
+                            timezone.utc
+                        )
+                except Exception as exc:
+                    logger.error(
+                        "Plaid investments refresh failed for account %s: %s",
+                        account.account_id,
+                        exc,
+                        exc_info=True,
+                    )
+                    return (
+                        jsonify(
+                            {
+                                "status": "error",
+                                "updated": False,
+                                "message": "Plaid investments refresh failed.",
+                            }
+                        ),
+                        502,
+                    )
+            else:
+                logger.info(
+                    "Skipping unsupported Plaid product %s for account %s",
+                    product_name,
+                    account.account_id,
+                )
+
+        updated = plaid_updated
 
     elif account.link_type == "Teller":
         access_token = None
