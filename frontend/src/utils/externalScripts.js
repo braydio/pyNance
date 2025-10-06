@@ -27,9 +27,8 @@ export function loadExternalScripts() {
   if (!loadPromise) {
     loadPromise = (async () => {
       await loadScript("https://cdn.plaid.com/link/v2/stable/link-initialize.js");
-      await loadScript("https://cdn.teller.io/connect/connect.js");
       scriptsLoaded = true;
-      console.log("External scripts loaded");
+      console.log("Plaid script loaded");
     })();
   }
   return loadPromise;

@@ -160,16 +160,13 @@
 
 <script>
 import api from '@/services/api'
-import accountLinkApi from '@/api/accounts_link'
 import AccountSparkline from '@/components/widgets/AccountSparkline.vue'
+import accountLinkApi from '@/api/accounts_link'
 
 export default {
   name: 'AccountsTable',
   components: { AccountSparkline },
   emits: ['refresh'],
-  props: {
-    provider: { type: String, default: 'teller' },
-  },
   data() {
     return {
       accounts: [],
@@ -252,7 +249,7 @@ export default {
     async deleteAccount(accountId) {
       if (!confirm('Are you sure you want to delete this account and all its transactions?')) return
       try {
-        const res = await accountLinkApi.deleteAccount(this.provider, accountId)
+        const res = await accountLinkApi.deleteAccount(accountId)
         if (res.status === 'success') {
           alert('Account deleted successfully.')
           this.fetchAccounts()
