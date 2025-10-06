@@ -27,20 +27,15 @@ config_stub.logger = types.SimpleNamespace(
 config_stub.FLASK_ENV = "test"
 config_stub.plaid_client = None
 config_stub.FILES = {
-    "TELLER_DOT_CERT": "cert.pem",
-    "TELLER_DOT_KEY": "key.pem",
     "LAST_TX_REFRESH": "tx.json",
     "PLAID_TOKENS": "tokens.json",
 }
 config_stub.DIRECTORIES = {
-    "CERTS_DIR": Path("/tmp"),
     "DATA_DIR": Path("/tmp"),
 }
-os.environ.setdefault("TELLER_API_BASE_URL", "https://example.com")
 sys.modules["app.config"] = config_stub
 
 env_stub = types.ModuleType("app.config.environment")
-env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
 
 extensions_stub = types.ModuleType("app.extensions")
@@ -69,14 +64,9 @@ models_stub.Transaction = type("Transaction", (), {})
 models_stub.AccountHistory = type("AccountHistory", (), {})
 sys.modules["app.models"] = models_stub
 
-teller_helpers_stub = types.ModuleType("app.helpers.teller_helpers")
-teller_helpers_stub.load_tokens = lambda: []
-sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
-
 sql_pkg = types.ModuleType("app.sql")
 sql_pkg.account_logic = types.SimpleNamespace(
     refresh_data_for_plaid_account=lambda *args, **kwargs: (False, None),
-    refresh_data_for_teller_account=lambda *args, **kwargs: False,
 )
 sql_pkg.investments_logic = types.SimpleNamespace(
     upsert_investments_from_plaid=lambda *args, **kwargs: {

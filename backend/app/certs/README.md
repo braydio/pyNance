@@ -1,6 +1,7 @@
-# Teller Certificates
+# Teller Certificates (Legacy)
 
-This directory stores the TLS client credentials required to authenticate with the Teller API.
+> **Note:** The Teller integration has been retired. These instructions are kept for archival
+> purposes only; new deployments do not require Teller client certificates.
 
 ## Required files
 
@@ -26,4 +27,3 @@ Ensure the `certs` directory is not committed to version control.
 ## Rotation policy
 
 Teller certificates have limited lifetimes. Generate and deploy a new pair regularly—at least every 90 days or as recommended by Teller. Replace the files here with the new versions and restart the backend.
-

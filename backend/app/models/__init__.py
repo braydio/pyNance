@@ -15,13 +15,7 @@ from .account_models import (
 )
 
 # Institutions & linked accounts
-from .institution_models import (
-    Institution,
-    PlaidAccount,
-    PlaidItem,
-    PlaidWebhookLog,
-    TellerAccount,
-)
+from .institution_models import Institution, PlaidAccount, PlaidItem, PlaidWebhookLog
 from .investment_models import InvestmentHolding, InvestmentTransaction, Security
 
 # Mixins
@@ -52,7 +46,6 @@ __all__ = [
     "PlaidAccount",
     "PlaidItem",
     "PlaidWebhookLog",
-    "TellerAccount",
     # Accounts
     "Account",
     "AccountGroup",

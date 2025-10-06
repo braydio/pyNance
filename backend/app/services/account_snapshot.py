@@ -221,12 +221,9 @@ def _serialize_account(account: Account) -> dict:
     normalized_balance = normalize_account_balance(account.balance, account.type)
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
-    teller_account = getattr(account, "teller_account", None)
 
     if getattr(plaid_account, "last_refreshed", None):
         last_refreshed = _datetime_to_iso(plaid_account.last_refreshed)
-    elif getattr(teller_account, "last_refreshed", None):
-        last_refreshed = _datetime_to_iso(teller_account.last_refreshed)
 
     return {
         "id": account.id,

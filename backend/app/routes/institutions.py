@@ -2,26 +2,15 @@
 
 from __future__ import annotations
 
-import os
 from datetime import datetime
 
-from app.config import DIRECTORIES, FILES
 from app.extensions import db
-from app.helpers.teller_helpers import load_tokens
 from app.models import Institution
 from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
 from flask import Blueprint, jsonify, request
 
 institutions = Blueprint("institutions", __name__)
-
-TELLER_DOT_CERT = FILES.get(
-    "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
-)
-TELLER_DOT_KEY = FILES.get(
-    "TELLER_DOT_KEY", DIRECTORIES["CERTS_DIR"] / "private_key.pem"
-)
-TELLER_API_BASE_URL = os.getenv("TELLER_API_BASE_URL", "https://api.teller.io")
 
 
 @institutions.route("/", methods=["GET"])
@@ -35,8 +24,6 @@ def list_institutions():
             refreshed = None
             if acc.plaid_account and acc.plaid_account.last_refreshed:
                 refreshed = acc.plaid_account.last_refreshed
-            elif acc.teller_account and acc.teller_account.last_refreshed:
-                refreshed = acc.teller_account.last_refreshed
             if refreshed and (last_refreshed is None or refreshed > last_refreshed):
                 last_refreshed = refreshed
             accounts.append(
@@ -71,8 +58,6 @@ def refresh_institution(institution_id: int):
 
     updated_accounts = []
     refreshed_counts: dict[str, int] = {}
-    tokens = load_tokens()
-
     for account in inst.accounts:
         updated = False
         if account.link_type == "Plaid":
@@ -88,28 +73,6 @@ def refresh_institution(institution_id: int):
             if updated and account.plaid_account:
                 # Use non-deprecated current time
                 account.plaid_account.last_refreshed = datetime.now()
-        elif account.link_type == "Teller":
-            access_token = None
-            for t in tokens:
-                if t.get("user_id") == account.user_id:
-                    access_token = t.get("access_token")
-                    break
-            if not access_token and account.teller_account:
-                access_token = account.teller_account.access_token
-            if not access_token:
-                continue
-            updated = account_logic.refresh_data_for_teller_account(
-                account,
-                access_token,
-                TELLER_DOT_CERT,
-                TELLER_DOT_KEY,
-                TELLER_API_BASE_URL,
-                start_date=start_date,
-                end_date=end_date,
-            )
-            if updated and account.teller_account:
-                # Use non-deprecated current time
-                account.teller_account.last_refreshed = datetime.now()
         if updated:
             updated_accounts.append(account.name)
             refreshed_counts[inst.name] = refreshed_counts.get(inst.name, 0) + 1
@@ -129,4 +92,3 @@ def refresh_institution(institution_id: int):
         ),
         200,
     )
-

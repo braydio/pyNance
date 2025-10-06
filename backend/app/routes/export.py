@@ -4,7 +4,7 @@ import csv
 from io import StringIO
 
 from app.extensions import db
-from app.models import Account, PlaidAccount, TellerAccount
+from app.models import Account, PlaidAccount
 from app.sql.export_logic import export_all_to_csv, export_csv_response
 from flask import Blueprint, Response, jsonify
 
@@ -46,16 +46,10 @@ def export_all_models():
 
 @export.route("/access_token_export", methods=["GET"])
 def export_accounts_csv():
-    """Export active account access tokens for Plaid and Teller."""
+    """Export active Plaid account access tokens."""
     plaid_tokens = (
         db.session.query(Account.user_id, PlaidAccount.access_token)
         .join(PlaidAccount, Account.account_id == PlaidAccount.account_id)
-        .filter(Account.is_hidden.is_(False))
-        .all()
-    )
-    teller_tokens = (
-        db.session.query(Account.user_id, TellerAccount.access_token)
-        .join(TellerAccount, Account.account_id == TellerAccount.account_id)
         .filter(Account.is_hidden.is_(False))
         .all()
     )
@@ -63,7 +57,7 @@ def export_accounts_csv():
     si = StringIO()
     writer = csv.writer(si)
     writer.writerow(["user_id", "access_token"])
-    writer.writerows(plaid_tokens + teller_tokens)
+    writer.writerows(plaid_tokens)
 
     return Response(
         si.getvalue(),

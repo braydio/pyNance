@@ -1,7 +1,6 @@
 import logging
 
 from app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
-from app.helpers.teller_helpers import get_teller_accounts
 from app.models import Account
 
 logger = logging.getLogger(__name__)
@@ -16,16 +15,16 @@ def sync_account(account: Account) -> None:
     user_id = account.user_id
 
     access_token = None
-    if provider == "teller":
-        if account.teller_account:
-            access_token = account.teller_account.access_token
-        else:
-            logger.warning(f"Missing TellerAccount relation for account {account.id}")
-    elif provider == "plaid":
+    if provider == "plaid":
         if account.plaid_account:
             access_token = account.plaid_account.access_token
         else:
             logger.warning(f"Missing PlaidAccount relation for account {account.id}")
+    elif provider == "teller":
+        logger.warning(
+            "Skipping Teller sync for account %s because the integration was retired.",
+            account.id,
+        )
 
     if not provider or not access_token or not user_id:
         logger.warning(
@@ -34,13 +33,7 @@ def sync_account(account: Account) -> None:
         return
 
     try:
-        if provider == "teller":
-            logger.info(
-                f"[SYNC] Teller sync start: account={account.id}, user={user_id}"
-            )
-            get_teller_accounts(access_token, user_id)
-
-        elif provider == "plaid":
+        if provider == "plaid":
             logger.info(
                 f"[SYNC] Plaid sync start: account={account.id}, user={user_id}"
             )
