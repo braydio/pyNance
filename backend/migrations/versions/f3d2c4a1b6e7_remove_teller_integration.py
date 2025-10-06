@@ -22,9 +22,7 @@ def upgrade() -> None:
         sa.text("UPDATE accounts SET link_type = 'manual' WHERE link_type = 'teller'")
     )
     op.execute(
-        sa.text(
-            "UPDATE transactions SET provider = 'manual' WHERE provider = 'teller'"
-        )
+        sa.text("UPDATE transactions SET provider = 'manual' WHERE provider = 'teller'")
     )
 
     # Remove Teller from the link_type enum used by accounts.
@@ -95,9 +93,7 @@ def downgrade() -> None:
 
     # Restore Teller enum variants for accounts.
     op.execute(sa.text("ALTER TYPE link_type RENAME TO link_type_old"))
-    link_type_old = sa.Enum(
-        "manual", "plaid", name="link_type_old", create_type=False
-    )
+    link_type_old = sa.Enum("manual", "plaid", name="link_type_old", create_type=False)
     link_type_new = sa.Enum("manual", "plaid", "teller", name="link_type")
     link_type_new.create(bind, checkfirst=False)
     op.alter_column(
@@ -124,4 +120,3 @@ def downgrade() -> None:
         postgresql_using="provider::text::provider_type",
     )
     op.execute(sa.text("DROP TYPE provider_type_old"))
-
