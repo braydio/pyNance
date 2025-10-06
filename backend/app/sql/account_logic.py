@@ -1,14 +1,11 @@
 """Database persistence and refresh helpers for account data."""
 
 import json
-import time
 from datetime import date as pydate
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from tempfile import NamedTemporaryFile
 from typing import Optional
 
-import requests
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
@@ -158,7 +155,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
             name = account.get("name") or "Unnamed Account"
             acc_type = str(account.get("type") or "Unknown")
 
-            # ✅ Corrected Plaid/Teller-safe balance parsing
+            # ✅ Corrected Plaid balance parsing
             balance_raw = (
                 account.get("balances", {}).get("current")
                 or account.get("balance", {}).get("current")

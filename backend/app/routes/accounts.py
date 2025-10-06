@@ -5,7 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
-from app.config import DIRECTORIES, FILES, logger
+from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.sql.forecast_logic import update_account_history
@@ -321,7 +321,7 @@ def refresh_all_accounts():
 
 @accounts.route("/<account_id>/refresh", methods=["POST"])
 def refresh_single_account(account_id):
-    """Refresh a single account for its enabled product set."""
+    """Refresh a single Plaid-linked account for its enabled product set."""
     from app.sql import account_logic
 
     data = request.get_json() or {}
@@ -334,120 +334,107 @@ def refresh_single_account(account_id):
 
     updated = False
 
-    if account.link_type == "Plaid":
-        token = getattr(account.plaid_account, "access_token", None)
-        if not token:
-            return (
-                jsonify({"status": "error", "message": "Missing Plaid token"}),
-                400,
-            )
-        products = _plaid_products_for_account(account)
-        plaid_updated = False
-
-        for product_name in products:
-            if product_name == "transactions":
-                updated_flag, err = account_logic.refresh_data_for_plaid_account(
-                    token,
-                    account_id,
-                    start_date=start_date,
-                    end_date=end_date,
-                )
-
-                if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                    logger.warning(
-                        f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
-                        "User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "status": "success",
-                                "updated": False,
-                                "requires_reauth": True,
-                                "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
-                                "account_id": account.account_id,
-                                "error": {
-                                    "code": err.get("plaid_error_code"),
-                                    "message": err.get("plaid_error_message"),
-                                },
-                            }
-                        ),
-                        200,
-                    )
-                if err:
-                    logger.error(
-                        "Plaid error on single account refresh %s: %s",
-                        account.account_id,
-                        err,
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "updated": False,
-                                "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
-                                "error": err,
-                            }
-                        ),
-                        502,
-                    )
-                plaid_updated = plaid_updated or updated_flag
-                if updated_flag and account.plaid_account:
-                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
-            elif product_name == "investments":
-                try:
-                    investments_updated = _refresh_plaid_investments(
-                        account,
-                        token,
-                        start_date=start_date,
-                        end_date=end_date,
-                    )
-                    plaid_updated = plaid_updated or investments_updated
-                    if account.plaid_account:
-                        account.plaid_account.last_refreshed = datetime.now(
-                            timezone.utc
-                        )
-                except Exception as exc:
-                    logger.error(
-                        "Plaid investments refresh failed for account %s: %s",
-                        account.account_id,
-                        exc,
-                        exc_info=True,
-                    )
-                    return (
-                        jsonify(
-                            {
-                                "status": "error",
-                                "updated": False,
-                                "message": "Plaid investments refresh failed.",
-                            }
-                        ),
-                        502,
-                    )
-            else:
-                logger.info(
-                    "Skipping unsupported Plaid product %s for account %s",
-                    product_name,
-                    account.account_id,
-                )
-
-        updated = plaid_updated
-
-    elif account.link_type == "Teller":
-        return (
-            jsonify(
-                {
-                    "status": "error",
-                    "message": "Teller integration has been removed.",
-                }
-            ),
-            410,
-        )
-    else:
+    if account.link_type != "Plaid":
         return (
             jsonify({"status": "error", "message": "Unsupported link type"}),
             400,
         )
+
+    token = getattr(account.plaid_account, "access_token", None)
+    if not token:
+        return (
+            jsonify({"status": "error", "message": "Missing Plaid token"}),
+            400,
+        )
+    products = _plaid_products_for_account(account)
+    plaid_updated = False
+
+    for product_name in products:
+        if product_name == "transactions":
+            updated_flag, err = account_logic.refresh_data_for_plaid_account(
+                token,
+                account_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+            if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                logger.warning(
+                    f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
+                    "User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                )
+                return (
+                    jsonify(
+                        {
+                            "status": "success",
+                            "updated": False,
+                            "requires_reauth": True,
+                            "update_link_token_endpoint": "/api/plaid/transactions/generate_update_link_token",
+                            "account_id": account.account_id,
+                            "error": {
+                                "code": err.get("plaid_error_code"),
+                                "message": err.get("plaid_error_message"),
+                            },
+                        }
+                    ),
+                    200,
+                )
+            if err:
+                logger.error(
+                    "Plaid error on single account refresh %s: %s",
+                    account.account_id,
+                    err,
+                )
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "updated": False,
+                            "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
+                            "error": err,
+                        }
+                    ),
+                    502,
+                )
+            plaid_updated = plaid_updated or updated_flag
+            if updated_flag and account.plaid_account:
+                account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+        elif product_name == "investments":
+            try:
+                investments_updated = _refresh_plaid_investments(
+                    account,
+                    token,
+                    start_date=start_date,
+                    end_date=end_date,
+                )
+                plaid_updated = plaid_updated or investments_updated
+                if account.plaid_account:
+                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+            except Exception as exc:
+                logger.error(
+                    "Plaid investments refresh failed for account %s: %s",
+                    account.account_id,
+                    exc,
+                    exc_info=True,
+                )
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "updated": False,
+                            "message": "Plaid investments refresh failed.",
+                        }
+                    ),
+                    502,
+                )
+        else:
+            logger.info(
+                "Skipping unsupported Plaid product %s for account %s",
+                product_name,
+                account.account_id,
+            )
+
+    updated = plaid_updated
 
     if updated:
         db.session.commit()

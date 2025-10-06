@@ -1,3 +1,5 @@
+"""Helpers for kicking off Plaid account sync operations."""
+
 import logging
 
 from app.helpers.plaid_helpers import get_accounts as get_plaid_accounts
@@ -7,40 +9,44 @@ logger = logging.getLogger(__name__)
 
 
 def sync_account(account: Account) -> None:
-    """
-    Sync a single account by determining its provider and invoking the appropriate helper.
-    Explicitly logs and forwards user_id and account_id to data capture functions.
-    """
-    provider = account.link_type.lower() if account.link_type else None
-    user_id = account.user_id
+    """Trigger a Plaid sync for the provided account.
 
-    access_token = None
-    if provider == "plaid":
-        if account.plaid_account:
-            access_token = account.plaid_account.access_token
-        else:
-            logger.warning(f"Missing PlaidAccount relation for account {account.id}")
-    elif provider == "teller":
+    Args:
+        account: The account instance whose Plaid data should be refreshed.
+
+    Accounts that are not Plaid-linked or are missing credentials are skipped
+    with a warning to keep the dispatcher resilient.
+    """
+
+    provider = account.link_type.lower() if account.link_type else None
+    if provider != "plaid":
         logger.warning(
-            "Skipping Teller sync for account %s because the integration was retired.",
+            "Skipping sync for unsupported provider '%s' on account %s",
+            provider,
             account.id,
         )
+        return
 
-    if not provider or not access_token or not user_id:
+    user_id = account.user_id
+    plaid_account = account.plaid_account
+    access_token = (
+        getattr(plaid_account, "access_token", None) if plaid_account else None
+    )
+
+    if not user_id or not access_token:
         logger.warning(
-            f"Missing sync data for account {account.id} | provider={provider}"
+            "Missing Plaid credentials for account %s | user_id=%s",
+            account.id,
+            user_id,
         )
         return
 
     try:
-        if provider == "plaid":
-            logger.info(
-                f"[SYNC] Plaid sync start: account={account.id}, user={user_id}"
-            )
-            get_plaid_accounts(access_token, user_id)
-
-        else:
-            logger.warning(f"Unknown provider '{provider}' for account {account.id}")
-
-    except Exception as e:
-        logger.error(f"Sync error for account {account.id} ({provider}): {e}")
+        logger.info(f"[SYNC] Plaid sync start: account={account.id}, user={user_id}")
+        get_plaid_accounts(access_token, user_id)
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error(
+            "Sync error for account %s (plaid): %s",
+            account.id,
+            exc,
+        )
