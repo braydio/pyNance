@@ -1,10 +1,11 @@
 """Fresh new tasty migration
 
 Revision ID: 0ee5338170fd
-Revises: 
+Revises:
 Create Date: 2025-04-24 18:19:52.847738
 
 """
+
 import sqlalchemy as sa
 from alembic import op
 
