@@ -31,10 +31,10 @@ def is_due(last_synced, provider):
 
 
 def refresh_all_accounts():
-    """
-    Refreshes all linked accounts by provider type (Plaid)
-    if they are due for sync based on ``SYNC_INTERVALS``.
-    Requires that the caller already created a Flask ``app_context``.
+    """Refresh Plaid-linked accounts that are due for sync.
+
+    The caller must ensure a Flask ``app_context`` is active so database updates
+    persist. Accounts that are not Plaid-linked are skipped with a warning.
     """
     logger.info("🔁 Starting account refresh dispatcher...")
 
@@ -47,15 +47,9 @@ def refresh_all_accounts():
 
         if provider == "plaid":
             rel = acct.plaid_account
-        elif provider == "teller":
-            logger.info(
-                "Skipping Teller account %s because the integration was retired.",
-                acct.id,
-            )
-            skipped += 1
-            continue
         else:
             logger.warning(f"⚠️ Unknown provider for account {acct.id}")
+            skipped += 1
             continue
 
         last_synced = getattr(rel, "last_refreshed", None)
