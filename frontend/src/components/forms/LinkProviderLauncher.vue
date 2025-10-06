@@ -1,16 +1,19 @@
 <template>
   <div class="section-container mt-4">
-    <h3 class="text-md font-medium mb-2">Link Provider</h3>
+    <h3 class="text-md font-medium mb-2">Link accounts with Plaid</h3>
+
+    <p class="text-sm text-neutral-400 mb-3">
+      Select at least one product to enable the Plaid Link flow.
+    </p>
 
     <div class="flex gap-2">
-      <button class="btn btn-pill" :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
-        :disabled="selectedProducts.length === 0 || loading" @click="linkPlaid">
-        {{ loading && activeProvider === 'plaid' ? 'Linking...' : 'Link with Plaid' }}
-      </button>
-
-      <button class="btn btn-pill" :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
-        :disabled="selectedProducts.length === 0 || loading" @click="linkTeller">
-        {{ loading && activeProvider === 'teller' ? 'Linking...' : 'Link with Teller.io' }}
+      <button
+        class="btn btn-pill"
+        :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
+        :disabled="selectedProducts.length === 0 || loading"
+        @click="linkPlaid"
+      >
+        {{ loading ? 'Linking…' : 'Link with Plaid' }}
       </button>
     </div>
   </div>
@@ -34,7 +37,6 @@ const props = defineProps({
 const emit = defineEmits(['refresh'])
 
 const loading = ref(false)
-const activeProvider = ref(null)
 
 async function ensurePlaidScript() {
   if (window.Plaid) return
@@ -52,12 +54,11 @@ async function ensurePlaidScript() {
 const linkPlaid = async () => {
   if (props.selectedProducts.length === 0) return
   loading.value = true
-  activeProvider.value = 'plaid'
 
   try {
     await ensurePlaidScript()
 
-    const { link_token } = await accountLinkApi.generateLinkToken('plaid', {
+    const { link_token } = await accountLinkApi.generateLinkToken({
       user_id: props.userId,
       products: props.selectedProducts,
     })
@@ -70,7 +71,7 @@ const linkPlaid = async () => {
     const handler = window.Plaid.create({
       token: link_token,
       onSuccess: async (public_token) => {
-        await accountLinkApi.exchangePublicToken('plaid', {
+        await accountLinkApi.exchangePublicToken({
           public_token,
           user_id: props.userId,
           products: props.selectedProducts,
@@ -87,35 +88,6 @@ const linkPlaid = async () => {
     console.error('Error linking Plaid:', e)
   } finally {
     loading.value = false
-    activeProvider.value = null
-  }
-}
-
-const linkTeller = async () => {
-  if (props.selectedProducts.length === 0) return
-  loading.value = true
-  activeProvider.value = 'teller'
-
-  try {
-    const connect = window.TellerConnect.setup({
-      applicationId: import.meta.env.VITE_TELLER_APP_ID,
-      environment: import.meta.env.VITE_TELLER_ENV || 'sandbox',
-      products: props.selectedProducts,
-      onSuccess: async (enrollment) => {
-        await accountLinkApi.exchangePublicToken('teller', {
-          public_token: enrollment.accessToken,
-          user_id: props.userId,
-        })
-        emit('refresh')
-      },
-    })
-
-    connect.open()
-  } catch (e) {
-    console.error('Error linking Teller:', e)
-  } finally {
-    loading.value = false
-    activeProvider.value = null
   }
 }
 </script>
