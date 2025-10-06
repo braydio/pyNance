@@ -30,7 +30,7 @@
 
 - **Services:**
 
-  - Any code that wraps a third-party API (Plaid, Teller, etc.) lives in `services/`
+  - Any code that wraps a third-party API (Plaid, etc.) lives in `services/`
   - Also for internal logic that crosses route boundaries (accounting, reconciliation, etc.)
 
 - **CLI:**

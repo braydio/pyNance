@@ -4,7 +4,7 @@
 
 - Full recursive access to file tree under `backend/app/`
 - File content previews (e.g., function definitions, import statements)
-- Knowledge of sync logic patterns (e.g., Plaid/Teller token flow, account history)
+- Knowledge of sync logic patterns (e.g., Plaid token flow, account history)
 - Locations of schema/model definitions
 
 ### Techniques Used

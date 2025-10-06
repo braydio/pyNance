@@ -11,7 +11,7 @@ This document provides comprehensive documentation for account management and tr
 
 ## Purpose
 
-Handles account lifecycle operations, primarily focused on financial institution linking, management, and metadata sync. Integrates with external APIs (Plaid, Teller) and internal services for data ingestion.
+Handles account lifecycle operations, primarily focused on financial institution linking, management, and metadata sync. Integrates with external APIs (Plaid) and internal services for data ingestion.
 
 ## Key Endpoints
 
@@ -23,7 +23,7 @@ Handles account lifecycle operations, primarily focused on financial institution
 ## Inputs & Outputs
 
 - **POST /accounts/link**
-  - **Input:** `{ public_token: str, provider: 'plaid' | 'teller' }`
+  - **Input:** `{ public_token: str, provider: 'plaid' }`
   - **Output:** `{ account_id: str, status: str }`
 
 - **GET /accounts**
@@ -36,7 +36,7 @@ Handles account lifecycle operations, primarily focused on financial institution
 
 ## Known Behaviors
 
-- Supports multi-provider account linkage
+- Supports Plaid account linkage
 - Triggers metadata sync jobs on link success
 
 ## Related Docs

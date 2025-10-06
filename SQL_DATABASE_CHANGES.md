@@ -54,7 +54,7 @@ Normalization & Redundancy
   FK. If multi‑user is a goal, add a users table with a surrogate key and
   migrate user_id to a proper FK (and indexes).
 - Provider access tokens at rest: PlaidAccount.access_token (backend/
-  app/models/institution_models.py:41) and Teller tokens are stored
+  app/models/institution_models.py:41) is stored
   as plaintext. Wrap with encryption at rest (KMS/Hashicorp/Vault) or
   application‑level envelope encryption; at minimum, restrict DB role access
   and audit.

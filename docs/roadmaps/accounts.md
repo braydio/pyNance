@@ -27,7 +27,7 @@
 ## Quality & coverage
 
 - Expand Cypress component/e2e specs under `frontend/src/views/__tests__/AccountsSummary.cy.js` (or add a dedicated history spec) to exercise chart rendering, range toggles, and empty states.
-- Keep backend contract tests fast—stub Plaid/Teller dependencies and reuse factories from `tests/fixtures/` where possible.
+- Keep backend contract tests fast—stub Plaid dependencies and reuse factories from `tests/fixtures/` where possible.
 - Ensure newly exposed metrics are asserted in monitoring smoke tests or documented manual verification steps.
 
 ## Documentation updates

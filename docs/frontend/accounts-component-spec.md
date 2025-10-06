@@ -42,7 +42,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 
 #### Tasks
 - Implement collapsible main section with smooth transitions
-- Create expandable subsections for Plaid and Teller refresh controls
+- Create an expandable subsection for Plaid refresh controls
 - Add visual indicators for section states (expanded/collapsed)
 - Implement proper ARIA attributes for accessibility
 
@@ -68,7 +68,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - Implement hover and focus states for all interactive elements
 
 #### Current Implementation
-- RefreshTellerControls and RefreshPlaidControls components handle styling
+- RefreshPlaidControls component handles styling
 - Uses CSS custom properties for theming
 - Button styling includes hover transitions
 
@@ -79,28 +79,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - Refresh buttons include proper hover/focus states
 - All interactive elements meet WCAG contrast requirements
 
-### 2.3 Teller-Specific Product Selection
-
-#### Tasks
-- Implement product scope selection for Teller integration
-- Add product validation before enabling link buttons
-- Create visual feedback for product selection state
-- Ensure product selection persists during session
-- Add error handling for invalid product combinations
-
-#### Current Implementation
-- PlaidProductScopeSelector exists but Teller-specific selection needs implementation
-- LinkProviderLauncher handles product validation
-- Product selection passed to linking handlers
-
-#### Acceptance Criteria
-- Teller product selection works independently from Plaid
-- Product validation prevents invalid selections
-- Visual feedback shows selection state
-- Error states are handled gracefully
-- Product selection state is maintained during user session
-
-### 2.4 Link Account Button Enablement Rules
+### 2.3 Link Account Button Enablement Rules
 
 #### Tasks
 - Implement button state management based on product selection
@@ -119,7 +98,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - Button state updates reactively based on selection changes
 - Error states are communicated clearly to users
 
-### 2.5 Refresh Subtitles Styling
+### 2.4 Refresh Subtitles Styling
 
 #### Tasks
 - Style section subtitles with appropriate typography
@@ -128,14 +107,14 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - Implement consistent styling across refresh sections
 
 #### Current Implementation
-- RefreshTellerControls component includes subtitle styling
+- RefreshPlaidControls component includes subtitle styling
 - Uses theme variables for colors
 
 #### Acceptance Criteria
 - Subtitles use consistent typography throughout section
 - Colors match theme specification
 - Spacing maintains visual hierarchy
-- Styling is consistent between Plaid and Teller sections
+- Styling is consistent across refresh sections
 
 ---
 
@@ -208,7 +187,6 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 ### Component Dependencies
 - `LinkAccount.vue` - Account linking interface
 - `RefreshPlaidControls.vue` - Plaid account refresh functionality
-- `RefreshTellerControls.vue` - Teller account refresh functionality
 - `TokenUpload.vue` - Manual token upload interface
 - `NetYearComparisonChart.vue` - Assets year comparison visualization
 - `AssetsBarTrended.vue` - Net assets trend visualization
@@ -285,7 +263,6 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - [ ] Enhance header typography and theming
 - [ ] Implement expandable/collapsible layouts
 - [ ] Style form controls and buttons
-- [ ] Add Teller-specific product selection
 
 ### Phase 3: Polish and Accessibility
 - [ ] Implement proper ARIA attributes

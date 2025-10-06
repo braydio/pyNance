@@ -77,7 +77,7 @@ Redundancies / Mixed Keys
 - Dual keys on accounts: integer id and string account_id; most FKs reference account_id (string)
   - This adds complexity; either: make account_id the PK or use integer PK everywhere
 - transactions has both category_id and category string (and Plaid PFC JSON). This risks drift between fields.
-- accounts.institution_name duplicates data that is available via institutions relation (and Plaid/Teller linkages)
+- accounts.institution_name duplicates data that is available via institutions relation (and Plaid linkages)
 - plaid_accounts stores access_token and item_id while plaid_items also stores an access_token/item_id at item scope
   - This is likely redundant; a plaid_accounts.plaid_item_id FK would avoid duplicating tokens
 - recurring_transactions stores both transaction_id and account_id

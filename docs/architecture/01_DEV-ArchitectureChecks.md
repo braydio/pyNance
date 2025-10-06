@@ -12,7 +12,7 @@
 #### 2. `/helpers/` Directory
 
 - `plaid_helpers.py`: Pulls accounts, transactions from Plaid; does not persist balances
-- `teller_helpers.py`: Fetches Teller account objects, returns JSON only; does not persist balances
+- `plaid_helpers.py`: Fetches Plaid account objects, returns JSON only; does not persist balances
 - `account_refresh_dispatcher.py`: Handles periodic sync, routes to provider-specific logic
 - `refresh_dispatcher.py`: Removed legacy dispatcher
 - `import_helpers.py`: Misc utilities, not relevant to forecast
@@ -20,13 +20,13 @@
 ### ⚠️ Issues & Observations
 
 1. **Balance Sync Not Persistent**
-   Neither `plaid_helpers` nor `teller_helpers` write balances into `AccountHistory`. This causes `forecast.py` to work off stale or incomplete data.
+   `plaid_helpers` does not write balances into `AccountHistory`. This causes `forecast.py` to work off stale or incomplete data.
 
 2. **Duplication Risk in `account_logic.py`**
    Some balance/transaction utilities in `account_logic.py` overlap with functions now centralized in `forecast_logic.py`. These should be consolidated.
 
 3. **Dispatcher Lacks `user_id` Threading**
-   `account_refresh_dispatcher.py` calls `get_teller_accounts()` without passing `user_id`, which prevents `update_account_history()` from executing correctly.
+   `account_refresh_dispatcher.py` must pass `user_id` when invoking provider helpers to ensure `update_account_history()` executes correctly.
 
 4. **Redundant Dispatcher**
    `refresh_dispatcher.py` previously duplicated `account_refresh_dispatcher.py` and has been removed.
@@ -41,11 +41,11 @@
   - `generate_forecast_line`
   - `calculate_deltas`
 
-#### 🔁 `plaid_helpers.py` and `teller_helpers.py`
+#### 🔁 `plaid_helpers.py`
 
 - Inject `update_account_history()` calls after balance fetch
 - Update method signatures to accept `user_id`
-- Example (Teller):
+- Example (Plaid):
 
 ```python
 accounts = response.json()
@@ -58,7 +58,7 @@ for acct in accounts:
 - Pass `user_id` to sync helpers:
 
 ```python
-sync_teller_account(account, user_id=account.user_id)
+sync_plaid_account(account, user_id=account.user_id)
 ```
 
 - Modify sync functions to accept and forward `user_id`
@@ -70,7 +70,7 @@ sync_teller_account(account, user_id=account.user_id)
 #### 🧪 Testing Required
 
 - Forecast endpoint returns daily labels and realistic forecast/actual/delta arrays
-- AccountHistory contains 3+ entries per week (Teller) or per provider policy
+- AccountHistory contains 3+ entries per week (Plaid) or per provider policy
 - Dispatcher runs on cron and syncs data without manual intervention
 
 ---

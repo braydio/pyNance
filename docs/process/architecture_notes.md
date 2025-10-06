@@ -16,7 +16,7 @@ Maintain clean architectural separation between routing, domain logic, and exter
 | Helpers | External API clients and small utilities   | `app/helpers/`  |
 This structure keeps concerns isolated and makes the codebase easier to test.
 ### Pending Cleanup
-- Move direct Plaid/Teller API calls out of `sql/account_logic.py`.
+- Move direct Plaid API calls out of `sql/account_logic.py`.
 - Expose `sync_plaid_transactions` at the helper layer.
 - Ensure SQL layer only operates on transformed data.
 - [] Update `sql/` layer to operate on transformed data only

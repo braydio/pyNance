@@ -48,11 +48,9 @@ Directory Tree Mapping
 │   ├── helpers
 │   │   ├── import_helpers.py
 │   │   ├── plaid_helpers.py
-│   │   ├── teller_helpers.py
 │   │   └── __pycache__
 │   │       ├── import_helpers.cpython-313.pyc
 │   │       ├── plaid_helpers.cpython-313.pyc
-│   │       └── teller_helpers.cpython-313.pyc
 │   ├── imports
 │   ├── __init__.py
 │   ├── logs
@@ -84,13 +82,8 @@ Directory Tree Mapping
 │   │   │   ├── plaid_investments.cpython-313.pyc
 │   │   │   ├── plaid_transactions.cpython-313.pyc
 │   │   │   ├── recurring.cpython-313.pyc
-│   │   │   ├── teller_transactions.cpython-313.pyc
-│   │   │   ├── teller_webhook.cpython-313.pyc
 │   │   │   └── transactions.cpython-313.pyc
 │   │   ├── recurring.py
-│   │   ├── teller.py
-│   │   ├── teller_transactions.py
-│   │   ├── teller_webhook.py
 │   │   └── transactions.py
 │   ├── run_api.py
 │   ├── sql
@@ -135,4 +128,3 @@ Directory Tree Mapping
 │   ├── fix_typos_backend.py
 │   ├── plaid_config.json
 │   ├── plaid_manual_upsert.py
-│   └── teller_imports.py

@@ -62,7 +62,6 @@ frontend/src/components/
 ├── widgets/             # Dashboard widgets and UI enhancements
 │   └── RefreshControls.vue
 │   └── RefreshPlaidControls.vue
-│   └── RefreshTellerControls.vue
 │   └── YoutubeEmbed.vue
 │   └── RecurringCalendar.vue
 │   └── Settings.vue

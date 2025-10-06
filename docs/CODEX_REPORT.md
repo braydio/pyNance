@@ -12,7 +12,7 @@ You can pick and choose subsections as needed; each section stands on its own.
 
     # pyNance Dashboard
 
-    **pyNance** is a personal finance dashboard integrating Plaid and Teller APIs to
+    **pyNance** is a personal finance dashboard integrating Plaid APIs to
 
 visualize and manage your financial data. It uses Flask for the backend and Vue.js for the
 frontend.
@@ -23,7 +23,7 @@ README.md (/home/braydenchaffee/Projects/pyNance/README.md)
 
     ## Features
 
-    - Link bank accounts via Plaid or Teller
+    - Link bank accounts via Plaid
     - Sync transactions and balances
     - Auto-categorize transactions using Plaid’s category tree
     - View net assets, account trends, and more
@@ -47,9 +47,9 @@ README.md (/home/braydenchaffee/Projects/pyNance/README.md)
 ## 2 Project Structure
 
     backend/app/
-    ├── config/          # Env, logging, paths, Plaid/Teller setup
+    ├── config/          # Env, logging, paths, Plaid setup
     ├── routes/          # Flask blueprints (API endpoints)
-    ├── helpers/         # SDK wrappers (plaid_helpers, teller_helpers)
+    ├── helpers/         # SDK wrappers (plaid_helpers)
     ├── sql/             # Business logic (account_logic, recurring_logic,
 
 forecast_logic,…)
@@ -315,7 +315,7 @@ There is also a `charts.py` module in the backend with other chart endpoints
 A broader, goal-based plan exists in frontend/Dev_Checklist.md. Key incomplete items:
 
     ## Goal 1: Ingest & Structure Data
-    - [x] Set up Plaid/Teller API integration.
+    - [x] Set up Plaid API integration.
     - [x] Fetch and normalize transaction data.
     - [x] Store transactions in `transactions` table.
     - [ ] Fetch and store account balance snapshots in `account_history`.
@@ -383,7 +383,7 @@ under docs/backend_routing_plan.md and RoutingRefactor/TxRoutes/….
 
     Frontend ➝ /transactions ➝ routes/transactions.py ➝ services/transactions.py ➝
 
-providers/plaid.py | teller.py
+providers/plaid.py
 
 docs/backend_routing_plan.md
 (/home/braydenchaffee/Projects/pyNance/docs/backend_routing_plan.md)
@@ -391,12 +391,12 @@ docs/backend_routing_plan.md
     ### Phase 1 – Bootstrapping
     - [x] Create new route file: `product_transactions.py`
     - [ ] Create `services/transactions.py`
-    - [ ] Populate with Plaid + Teller call routing
+    - [ ] Populate with Plaid call routing
     - [ ] Register route in `__init__.py`
 
     ### Phase 2 – Integration
     - [ ] Validate frontend can use `/transactions/sync`
-    - [ ] Migrate logic from `plaid_transactions.py` and `teller_transactions.py`
+    - [ ] Migrate logic from `plaid_transactions.py`
     - [ ] Apply shared middleware (auth, logging, validation)
 
     ### Phase 3 – Cleanup
@@ -418,7 +418,7 @@ Checklist to Complete Routing Refactor:
 ├────────────────────────┼─────────────────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────────┤
 │ Phase 1: Bootstrapping │ ✓ routes/product_transactions.py exists<br>– Create
-services/transactions.py<br>– Stub providers/plaid & teller<br>– Register in **init**.py │
+services/transactions.py<br>– Stub providers/plaid<br>– Register in **init**.py │
 ├────────────────────────┼─────────────────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────────┤
 │ Phase 2: Integration │ – Frontend swap to /transactions/sync<br>– Migrate logic from
@@ -426,7 +426,7 @@ old routes into providers/services<br>– Add logging/auth middleware │
 ├────────────────────────┼─────────────────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────────┤
 │ Phase 3: Cleanup │ – Deprecate / archive legacy plaid_transactions.py,
-teller_transactions.py<br>– Update routing docs<br>– Add tests │
+plaid_transactions.py<br>– Update routing docs<br>– Add tests │
 └────────────────────────┴─────────────────────────────────────────────────────────────────
 ─────────────────────────────────────────────────────────────────────────────┘
 
@@ -439,7 +439,7 @@ A personal‐log changelog for refining the “link account” UI in
 2025-05-17_pyNance_account_link_flow_refactor.md:
 
     # Tasklist
-    - [ ] Refactor `linkPlaid` and `linkTeller` flows to be triggered on-demand
+    - [ ] Refactor `linkPlaid` flows to be triggered on-demand
     - [ ] Move link token generation closer to button clicks instead of mount
     - [ ] No stale Plaid products – selected must exist for client instance
     - [ ] Humanized disabled controls when products are unselected
@@ -456,7 +456,7 @@ Checklist to Harden Link-Account UX:
  │
 ├────────────────────────────────────────┼─────────────────────────────────────────────────
 ────────────────┤
-│ Trigger link-token generation on click │ Refactor linkPlaid/linkTeller handlers (avoid
+│ Trigger link-token generation on click │ Refactor linkPlaid handlers (avoid
 on-mount logic) │
 ├────────────────────────────────────────┼─────────────────────────────────────────────────
 ────────────────┤
@@ -486,7 +486,7 @@ _ Enable **investment** syncing via Plaid `/investments` endpoints with product-
 routing.
 _ Fully implement **transaction import**, including PDF parsing.
 _ Deliver a **production-ready forecast engine**, with both API and UI hooked up.
-_ Migrate to **product-first routing** for transactions, simplifying provider logic. \* Polish the **account-link** UX flows for Plaid and Teller.
+_ Migrate to **product-first routing** for transactions, simplifying provider logic. \* Polish the **account-link** UX flows for Plaid.
 
 Feel free to tackle each module in isolation. All of the above items have existing
 scaffolding—either in code or in docs—so you can simply work down these checklists to

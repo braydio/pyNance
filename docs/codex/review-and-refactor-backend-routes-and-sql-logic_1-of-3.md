@@ -7,7 +7,6 @@
 1. Open `backend/app/sql/account_logic.py`. Cut out the following functions (include all their helper functions such as `fetch_url_with_backoff`):
 
    - `fetch_url_with_backoff`
-   - `refresh_data_for_teller_account`
    - `refresh_data_for_plaid_account`
    - `get_paginated_transactions`
 
@@ -16,14 +15,12 @@
 4. Update route modules that call these helpers to import from `app.sql.transactions_logic` instead:
 
    - `backend/app/routes/transactions.py`
-   - `backend/app/routes/teller_transactions.py`
-   - `backend/app/routes/teller_webhook.py`
    - `backend/app/routes/plaid_transactions.py`
    - `backend/app/routes/accounts.py`
    - `backend/app/routes/institutions.py`
 
 5. Update any docstrings and inline comments in these routes to mention `transactions_logic` instead of `account_logic`.
-6. Update tests that stub `account_logic` to instead stub `transactions_logic` (e.g., `tests/test_api_plaid_transactions.py`, `tests/test_api_teller_transactions.py`, `tests/test_api_teller_link.py`, `tests/test_api_institutions.py`).
+6. Update tests that stub `account_logic` to instead stub `transactions_logic` (e.g., `tests/test_api_plaid_transactions.py`, `tests/test_api_institutions.py`).
 7. Write a new documentation page in `docs/backend/app/sql/transactions_logic.md` describing the moved functions and update `docs/backend/app/sql/index.md` to reflect the module’s real contents
 
 ---
@@ -47,5 +44,5 @@
 ---
 
 1. Populate `docs/backend/app/sql/transactions_logic.md` with a short overview of the module, listing functions moved from `account_logic`.
-2. Ensure `docs/backend/app/sql/index.md` links to this file and describes which routes rely on it (transactions, teller_transactions, etc.).
+2. Ensure `docs/backend/app/sql/index.md` links to this file and describes which routes rely on it (transactions, related services, etc.).
 3. Mention in `docs/backend/app/routes/index.md` that transaction routes now use `transactions_logic` for DB operations.

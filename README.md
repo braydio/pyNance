@@ -1,10 +1,10 @@
 # pyNance
 
-pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a SQLite database. It connects to financial institutions through Plaid and Teller to aggregate accounts and transactions.
+pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a SQLite database. It connects to financial institutions through Plaid to aggregate accounts and transactions.
 
 ## Features
 
-- **Account aggregation and transactions** via Plaid and Teller integrations.
+- **Account aggregation and transactions** via Plaid integrations.
 - **Rule-based categorization** to organize spending.
 - **Balance forecasting** to project future account balances.
 - **Goal tracking** for budgeting.

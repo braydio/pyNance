@@ -18,7 +18,6 @@ We are decomposing the monolithic `services/api.js` file into logically grouped 
 - [ ] `updateTransaction`
 - [ ] `exchangePublicToken` _(move to `plaid.js`)_
 - [ ] `generateLinkToken` _(move to `plaid.js`)_
-- [ ] `saveTellerToken` _(move to `teller.js`)_
 
 ### 🔹 `api/charts.js`
 
@@ -74,13 +73,7 @@ We are decomposing the monolithic `services/api.js` file into logically grouped 
 - [ ] Add deprecation warning
 - [ ] Confirm deletion
 
-### 🔹 `api/teller.js`
-
-- [ ] MOVED: `saveTellerToken`
-- [ ] DEPRECATION BEGIN
-- [ ] Check external files for old imports
-- [ ] Add deprecation warning
-- [ ] Confirm deletion
+> **Note:** Legacy Teller API modules were removed during the Plaid-only migration.
 
 ---
 
@@ -102,7 +95,6 @@ frontend/src/api/
 ├── charts.js
 ├── plaid.js
 ├── recurring.js
-├── teller.js
 └── transactions.js
 ```
 

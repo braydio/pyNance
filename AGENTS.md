@@ -30,7 +30,7 @@ Use this guide to keep contributions consistent with the project's structure, to
 
 ## Commit & Pull Request Guidelines
 
-- Use Conventional Commits (e.g., `feat(sync): add teller webhook handler`) with focused scopes.
+- Use Conventional Commits (e.g., `feat(sync): add plaid webhook handler`) with focused scopes.
 - PRs should summarize impact, flag affected surfaces (backend/frontend/tests), link issues, and include relevant UI captures.
 - Run `pytest` and `pre-commit run --all-files` before requesting review; update `docs/` when behavior changes.
 

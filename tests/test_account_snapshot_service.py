@@ -48,7 +48,6 @@ def make_accounts():
             balance=balance,
             is_hidden=False,
             plaid_account=types.SimpleNamespace(last_refreshed=None),
-            teller_account=types.SimpleNamespace(last_refreshed=None),
         )
 
     return [account(1, "Checking", 150.0), account(2, "Savings", 90.0)]
@@ -115,7 +114,6 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
             balance=balance,
             is_hidden=False,
             plaid_account=types.SimpleNamespace(last_refreshed=None),
-            teller_account=types.SimpleNamespace(last_refreshed=None),
         )
 
     balances = [

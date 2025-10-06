@@ -71,9 +71,8 @@
        return SyncResult(updated=refreshed.updated, errors=refreshed.errors)
    ```
 
-3. Implement `backend/app/providers/teller.py` mirroring the Plaid adapter but delegating to Teller logic.
-4. Refactor `backend/app/services/transactions.py` to select adapters via `ProviderRegistry.for_account(account)` and to normalise responses.
-5. Update `backend/app/routes/product_transactions.py` to propagate adapter errors:
+3. Refactor `backend/app/services/transactions.py` to select adapters via `ProviderRegistry.for_account(account)` and to normalise responses.
+4. Update `backend/app/routes/product_transactions.py` to propagate adapter errors:
    ```python
    result = await transactions_service.sync_product(product=product, account_id=account_id, user=current_user)
    return JSONResponse(status_code=200, content=result.model_dump())
@@ -81,7 +80,7 @@
 
 ### Tests
 
-- Introduce `tests/services/test_transactions_service.py` covering Plaid and Teller success/error paths using fixtures with fake adapters.
+- Introduce `tests/services/test_transactions_service.py` covering Plaid success/error paths using fixtures with fake adapters.
 - Add route-level tests in `tests/routes/test_product_transactions.py` mocking the service layer.
 
 ### Documentation

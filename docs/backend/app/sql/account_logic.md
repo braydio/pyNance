@@ -33,7 +33,7 @@ Contains SQL-level helpers and routines related to the user account system. Prim
 ## Inputs
 
 - `account_id`, `user_id`
-- (optional) `external_account_ref`, e.g., from Plaid or Teller
+- (optional) `external_account_ref`, e.g., from Plaid
 
 ## Outputs
 

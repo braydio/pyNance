@@ -23,7 +23,7 @@ The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` t
 
 ForecastEngine and ForecastStatModel remain available for internal use, but rule-based orchestration is the default path.
 
-Account balances are updated via provider helpers (plaid_helpers.py, teller_helpers.py) to populate AccountHistory, forming the data source for forecasting.
+Account balances are updated via provider helpers (plaid_helpers.py) to populate AccountHistory, forming the data source for forecasting.
 
 Frontend
 
@@ -34,7 +34,7 @@ A mock page (ForecastMock.vue) demonstrates the feature using static data.
 useForecastData.ts is prepared to fetch /api/recurring-transactions and /api/account-history but these routes are not yet implemented.
 
 Required Backend Dependencies
-AccountHistory integration – Ensure provider sync functions call update_account_history() after fetching balances (already documented in backend/app/helpers/plaid_helpers.py and teller_helpers.py).
+AccountHistory integration – Ensure provider sync functions call update_account_history() after fetching balances (already documented in backend/app/helpers/plaid_helpers.py).
 
 Recurring detection pipeline – Implement recurring_bridge.py to persist detected recurring transactions as planned in backend/app/services/FORECAST_RECURRING_ROADMAP.md.
 
@@ -71,7 +71,7 @@ Expose new endpoint /api/recurring/... for listing and managing these rules.
 
 Balance History Sync
 
-Ensure every account sync (Plaid/Teller) updates AccountHistory through update_account_history() to provide historical data for actual line calculation.
+Ensure every Plaid account sync updates AccountHistory through update_account_history() to provide historical data for actual line calculation.
 
 Forecast Engine Integration
 

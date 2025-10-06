@@ -5,7 +5,7 @@
 - [🧩 Component Responsibilities](#🧩-component-responsibilities)
   - [`product_transactions.py`](#producttransactionspy)
   - [`services/transactions.py`](#servicestransactionspy)
-  - [`providers/plaid.py` & `providers/teller.py`](#providersplaidpy-providerstellerpy)
+  - [`providers/plaid.py`](#providersplaidpy)
 - [🚧 Execution Plan (Expanded)](#🚧-execution-plan-expanded)
   - [Phase 1 – Bootstrapping](#phase-1-bootstrapping)
   - [Phase 2 – Integration](#phase-2-integration)
@@ -19,7 +19,6 @@
 | `backend/app/routes/product_transactions.py` | Thin route layer, accepts `/transactions/sync` requests       |
 | `backend/app/services/transactions.py`       | Orchestration logic; receives request, dispatches to provider |
 | `backend/app/providers/plaid.py`             | Implementation for Plaid logic                                |
-| `backend/app/providers/teller.py`            | Implementation for Teller logic                               |
 | `__init__.py` (core)                         | Aggregates new route for API usage                            |
 
 ### Existing Files to Phase Out (non-destructive during migration)
@@ -27,7 +26,6 @@
 | File                     | Reason                                                |
 | ------------------------ | ----------------------------------------------------- |
 | `plaid_transactions.py`  | Redundant after routing abstraction                   |
-| `teller_transactions.py` | Same logic to be handled via service + provider layer |
 
 ---
 
@@ -45,10 +43,10 @@
 - May apply shared logic (caching, enrichment, error wrapping)
 - Dispatches to `providers/{provider}.py`
 
-### `providers/plaid.py` & `providers/teller.py`
+### `providers/plaid.py`
 
-- Contain raw API integration for sync
-- Return normalized data objects or error dictionaries
+- Contains raw API integration for sync
+- Returns normalized data objects or error dictionaries
 
 ---
 
@@ -64,9 +62,9 @@
 
   - 🔍 Not present in current `services/`; will be new
 
-- [ ] Stub methods in `providers/plaid.py`, `providers/teller.py`
+- [ ] Stub methods in `providers/plaid.py`
 
-  - 🔍 `plaid_transactions.py`, `teller_transactions.py` exist with inline logic
+  - 🔍 `plaid_transactions.py` exists with inline logic
   - 🔍 `providers/` folder does not currently exist, will need creation
 
 - [ ] Register router in `__init__.py`
@@ -79,7 +77,7 @@
 
   - 🔍 Frontend routes and clients unknown; requires simulation or frontend alignment
 
-- [ ] Migrate logic from `plaid_transactions.py` and `teller_transactions.py`
+- [ ] Migrate logic from `plaid_transactions.py`
 
   - 🔍 Logic includes full transaction sync flow and error handling
 
@@ -89,9 +87,9 @@
 
 ### Phase 3 – Cleanup
 
-- [ ] Mark `plaid_transactions.py`, `teller_transactions.py` as deprecated
+- [ ] Mark `plaid_transactions.py` as deprecated
 
-  - 🔍 Located in `backend/app/routes`; contain tightly-coupled logic
+  - 🔍 Located in `backend/app/routes`; contains tightly-coupled logic
 
 - [ ] Update `docs/backend_routing_plan.md`
 

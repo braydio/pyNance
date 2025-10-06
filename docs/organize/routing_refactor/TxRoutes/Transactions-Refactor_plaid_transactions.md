@@ -32,6 +32,6 @@ These functions contain logging and request validation scaffolding which may rem
 
 ## ⏭ Next Steps
 
-Proceed to evaluate the next exposed route: `teller_transactions.py`. After that, examine `__init__.py` and plan `services/transactions.py` and `providers/` creation.
+Proceed to evaluate the remaining transaction routes. After that, examine `__init__.py` and plan `services/transactions.py` and `providers/` creation.
 
 Task log will now be updated with the function-level exposure map for this component.

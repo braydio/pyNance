@@ -8,7 +8,7 @@
 
 - [ ] Introduce `app/routes/transactions.py`
 - [ ] Create service `app/services/transactions.py`
-- [ ] Move provider-specific logic to `plaid.py` and `teller.py`
+- [ ] Move provider-specific logic to `plaid.py`
 - [ ] Register new routes in `__init__.py`
 
 _Last updated: 2025-05-16 17:27_
