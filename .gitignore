@@ -19,14 +19,33 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.hypothesis/
+.benchmarks/
+.pyre/
+.pytype/
+.ipynb_checkpoints/
+.cache/
 .nox/
 .tox/
 .venv/
 venv/
 env/
+.venv*/
+ENV/
+env*/
+.python-version
+.pdm.toml
+.pdm-python
+.pdm-build/
+.pdm-venv/
+.vscode/.ropeproject/
 .coverage
+.coverage.*
 coverage.xml
 htmlcov/
+__pypackages__/
+*.pyd
+*.so
 
 # Node and frontend
 node_modules/
@@ -40,6 +59,8 @@ frontend/coverage/
 frontend/cypress/videos/
 frontend/cypress/screenshots/
 frontend/cypress/downloads/
+.turbo/
+.parcel-cache/
 npm-debug.log*
 yarn-error.log*
 
