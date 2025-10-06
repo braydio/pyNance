@@ -65,15 +65,21 @@ def upgrade() -> None:
         provider_type.create(bind, checkfirst=True)
 
         # Normalize existing string values to valid enum labels
-        op.execute("UPDATE accounts SET status = LOWER(status) WHERE status IS NOT NULL")
+        op.execute(
+            "UPDATE accounts SET status = LOWER(status) WHERE status IS NOT NULL"
+        )
         op.execute(
             "UPDATE accounts SET status = 'active' WHERE status IS NULL OR status NOT IN ('active','inactive','closed','archived')"
         )
-        op.execute("UPDATE accounts SET link_type = LOWER(link_type) WHERE link_type IS NOT NULL")
+        op.execute(
+            "UPDATE accounts SET link_type = LOWER(link_type) WHERE link_type IS NOT NULL"
+        )
         op.execute(
             "UPDATE accounts SET link_type = 'manual' WHERE link_type IS NULL OR link_type NOT IN ('manual','plaid','teller')"
         )
-        op.execute("UPDATE transactions SET provider = LOWER(provider) WHERE provider IS NOT NULL")
+        op.execute(
+            "UPDATE transactions SET provider = LOWER(provider) WHERE provider IS NOT NULL"
+        )
         op.execute(
             "UPDATE transactions SET provider = 'manual' WHERE provider IS NULL OR provider NOT IN ('manual','plaid','teller')"
         )
