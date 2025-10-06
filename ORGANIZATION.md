@@ -217,7 +217,6 @@ repos:
 ### Integration Points
 
 - **Plaid**: Banking data aggregation
-- **Teller**: Alternative banking API
 - **Vector Databases**: Chroma/Qdrant for AI/ML features
 - **Local AI**: LocalAI integration for language models
 

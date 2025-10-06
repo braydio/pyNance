@@ -21,7 +21,6 @@ Handles detection, configuration, and tracking of recurring transactions such as
 ## Inputs & Outputs
 
 - **GET /recurring**
-
   - **Output:**
     ```json
     [
@@ -36,7 +35,6 @@ Handles detection, configuration, and tracking of recurring transactions such as
     ```
 
 - **POST /recurring/confirm**
-
   - **Input:**
     ```json
     {
@@ -78,4 +76,4 @@ Handles detection, configuration, and tracking of recurring transactions such as
 
 ---
 
-Next: `teller.py`?
+Next: audit remaining provider routes.

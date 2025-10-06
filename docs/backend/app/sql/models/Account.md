@@ -5,14 +5,14 @@
 
 ## Purpose
 
-Represents a financial account belonging to a user. Each account can be linked to an external provider (Plaid, Teller, etc.) or be created manually. Used as a parent entity for transactions and balance data.
+Represents a financial account belonging to a user. Each account can be linked to an external provider (Plaid, etc.) or be created manually. Used as a parent entity for transactions and balance data.
 
 ## Fields
 
 - `id`: Primary key (UUID or autoincrement)
 - `user_id`: Owner of the account
 - `name`: Display name (e.g., "Chase Checking")
-- `provider`: Source system (`plaid`, `teller`, `manual`, etc.)
+- `provider`: Source system (`plaid`, `manual`, etc.)
 - `provider_account_id`: External reference ID
 - `institution_name`: Bank or provider name
 - `type`: Account type (`checking`, `savings`, `credit`, etc.)

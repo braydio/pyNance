@@ -93,10 +93,10 @@
 #### Link Account Section
 
 - Make menu an expandable/collapsible dropdown.
-- Style "Refresh Plaid/Teller" subtitles.
+- Style "Refresh Plaid" subtitles.
 - Style and theme: date pickers, account selectors, refresh buttons.
 - Improve section layout and aesthetic.
-- Implement Teller-specific product selection.
+- Implement Plaid product selection improvements.
 - Add 'Link Account' button:
   - Place near Product selection.
   - Only enabled when a product is selected.

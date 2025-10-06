@@ -12,7 +12,7 @@ Build a robust data ingestion pipeline for transactions and balances.
 
 ### 󰐥 Steps
 
-- [x] Set up Plaid/Teller API integration.
+- [x] Set up Plaid API integration.
 - [x] Fetch and normalize transaction data.
 - [x] Store transactions in `transactions` table.
 - [ ] Fetch and store account balance snapshots in `account_history`.
@@ -82,7 +82,7 @@ Identify repeating charges/income for use in forecasting.
 
   ```ts
   {
-    label, amount, frequency, start_date
+    ;(label, amount, frequency, start_date)
   }
   ```
 
@@ -100,7 +100,6 @@ Expose forecast and actuals data for frontend via REST API.
 ### 󰐥 Steps
 
 - [ ] Add endpoints in `routes/forecast.py`:
-
   - `GET /forecast`
   - `GET /actuals`
   - `GET /transactions`
@@ -120,7 +119,7 @@ Ship and maintain the feature in production.
 ### 󰐥 Steps
 
 - [ ] Test complete flow using mock/test data.
-- [x] Integrate with production Plaid/Teller credentials.
+- [x] Integrate with production Plaid credentials.
 - [ ] Deploy backend and frontend changes.
 - [ ] Monitor logs, set up alerting on sync failures.
 - [ ] Schedule periodic review of forecast accuracy.

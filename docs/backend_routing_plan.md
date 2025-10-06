@@ -18,7 +18,7 @@ This document outlines the proposed restructuring of backend route logic in the 
 ## 🔁 Proposed Flow
 
 ```
-Frontend ➝ /transactions ➝ routes/transactions.py ➝ services/transactions.py ➝ providers/plaid.py | teller.py
+Frontend ➝ /transactions ➝ routes/transactions.py ➝ services/transactions.py ➝ providers/plaid.py
 ```
 
 ### Breakdown
@@ -41,7 +41,6 @@ backend/app/
 │   └── transactions.py         # Shared business logic
 ├── providers/
 │   ├── plaid.py                # Plaid-specific API integration
-│   └── teller.py               # Teller-specific logic
 ```
 
 ---

@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Orchestrates synchronization jobs for pulling in external financial data from providers like Plaid, Teller, or CSV imports. Ensures consistent ingestion, deduplication, and transformation of external data sources.
+Orchestrates synchronization jobs for pulling in external financial data from providers like Plaid or CSV imports. Ensures consistent ingestion, deduplication, and transformation of external data sources.
 
 ## Key Responsibilities
 
@@ -15,12 +15,10 @@ Orchestrates synchronization jobs for pulling in external financial data from pr
 
 ## Primary Functions
 
-- `run_sync(user_id, source="plaid|teller|csv")`
-
+- `run_sync(user_id, source="plaid|csv")`
   - Main entrypoint to kick off sync routines by provider
 
 - `ingest_transactions(transactions, source)`
-
   - Converts external transaction format to internal schema
 
 - `deduplicate(entries)`
@@ -40,7 +38,7 @@ Orchestrates synchronization jobs for pulling in external financial data from pr
 
 ## Internal Dependencies
 
-- `plaid_transaction_service`, `teller_transaction_service`
+- `plaid_transaction_service`
 - `models.Transaction`, `models.Account`
 - Background jobs scheduler, webhook responder
 

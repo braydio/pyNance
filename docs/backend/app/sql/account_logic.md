@@ -20,11 +20,9 @@ Contains SQL-level helpers and routines related to the user account system. Prim
 ## Primary Functions
 
 - `get_account_by_id(account_id)`
-
   - Simple ID lookup using raw SQL or query builder
 
 - `get_accounts_for_user(user_id)`
-
   - Joins user context to account list, filters by active status
 
 - `verify_account_ownership(user_id, account_id)`
@@ -33,7 +31,7 @@ Contains SQL-level helpers and routines related to the user account system. Prim
 ## Inputs
 
 - `account_id`, `user_id`
-- (optional) `external_account_ref`, e.g., from Plaid or Teller
+- (optional) `external_account_ref`, e.g., from Plaid
 
 ## Outputs
 

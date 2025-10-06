@@ -19,11 +19,11 @@ The proposed API response format for /api/forecast is outlined in frontend/src/c
 Current State
 Backend
 
-The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` to assemble labels, forecast values, actuals, and metadata.  The orchestrator queries recurring transactions and account history via helpers in `sql/forecast_logic.py`.
+The backend exposes `/api/forecast`, which delegates to `ForecastOrchestrator` to assemble labels, forecast values, actuals, and metadata. The orchestrator queries recurring transactions and account history via helpers in `sql/forecast_logic.py`.
 
 ForecastEngine and ForecastStatModel remain available for internal use, but rule-based orchestration is the default path.
 
-Account balances are updated via provider helpers (plaid_helpers.py, teller_helpers.py) to populate AccountHistory, forming the data source for forecasting.
+Account balances are updated via provider helpers (plaid_helpers.py) to populate AccountHistory, forming the data source for forecasting.
 
 Frontend
 
@@ -34,7 +34,7 @@ A mock page (ForecastMock.vue) demonstrates the feature using static data.
 useForecastData.ts is prepared to fetch /api/recurring-transactions and /api/account-history but these routes are not yet implemented.
 
 Required Backend Dependencies
-AccountHistory integration – Ensure provider sync functions call update_account_history() after fetching balances (already documented in backend/app/helpers/plaid_helpers.py and teller_helpers.py).
+AccountHistory integration – Ensure provider sync functions call update_account_history() after fetching balances (already documented in backend/app/helpers/plaid_helpers.py).
 
 Recurring detection pipeline – Implement recurring_bridge.py to persist detected recurring transactions as planned in backend/app/services/FORECAST_RECURRING_ROADMAP.md.
 
@@ -44,14 +44,14 @@ Endpoint specification – `/api/forecast` accepts `view_type`, `manual_income`,
 
 Response Structure
 {
-  "labels": ["May 1", "May 2", "May 3", ...],
-  "forecast": [4200.0, 4320.0, 4350.0, ...],
-  "actuals": [4200.0, 4280.0, null, ...],
-  "metadata": {
-    "account_count": 3,
-    "recurring_count": 5,
-    "data_age_days": 0
-  }
+"labels": ["May 1", "May 2", "May 3", ...],
+"forecast": [4200.0, 4320.0, 4350.0, ...],
+"actuals": [4200.0, 4280.0, null, ...],
+"metadata": {
+"account_count": 3,
+"recurring_count": 5,
+"data_age_days": 0
+}
 }
 (Example from 02REF_API_Integration.md)
 
@@ -71,7 +71,7 @@ Expose new endpoint /api/recurring/... for listing and managing these rules.
 
 Balance History Sync
 
-Ensure every account sync (Plaid/Teller) updates AccountHistory through update_account_history() to provide historical data for actual line calculation.
+Ensure every Plaid account sync updates AccountHistory through update_account_history() to provide historical data for actual line calculation.
 
 Forecast Engine Integration
 

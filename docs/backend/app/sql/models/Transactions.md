@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Captures a single financial transaction made by a user. This can be a synced transaction from an external provider (Plaid, Teller) or a manual entry. All transaction analysis, budgeting, and forecasting originates from this data.
+Captures a single financial transaction made by a user. This can be a synced transaction from an external provider (Plaid) or a manual entry. All transaction analysis, budgeting, and forecasting originates from this data.
 
 ## Fields
 
@@ -20,7 +20,7 @@ Captures a single financial transaction made by a user. This can be a synced tra
 - `is_pending`: Boolean flag for provisional transactions
 - `is_recurring`: Boolean if linked to a recurring pattern
 - `provider_transaction_id`: External source ID
-- `source`: Enum (`plaid`, `teller`, `manual`, etc.)
+- `source`: Enum (`plaid`, `manual`, etc.)
 - `created_at`, `updated_at`: Audit timestamps
 
 ## Relationships

@@ -491,10 +491,10 @@ pytest tests/test_model_field_validation.py
 #### Link Account Section
 
 - [ ] Convert menu to expandable/collapsible dropdown
-- [ ] Style "Refresh Plaid/Teller" subtitles
+- [ ] Style "Refresh Plaid" subtitles
 - [ ] Theme date pickers, account selectors, and refresh buttons
 - [ ] Improve overall section layout and aesthetics
-- [ ] Implement Teller-specific product selection
+- [ ] Implement Plaid product selection improvements
 - [ ] Add 'Link Account' button near product selection
 - [ ] Enable button only when product is selected
 - [ ] Make entire section expandable/collapsible

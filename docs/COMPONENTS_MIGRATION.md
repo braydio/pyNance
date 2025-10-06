@@ -62,7 +62,6 @@ frontend/src/components/
 ├── widgets/             # Dashboard widgets and UI enhancements
 │   └── RefreshControls.vue
 │   └── RefreshPlaidControls.vue
-│   └── RefreshTellerControls.vue
 │   └── YoutubeEmbed.vue
 │   └── RecurringCalendar.vue
 │   └── Settings.vue
@@ -79,7 +78,6 @@ frontend/src/components/
 
 1. **Inventory** all components recursively
 2. Use naming + content inspection to determine:
-
    - Is it a UI primitive (goes to `base/`)?
    - Does it render a chart (goes to `charts/`)?
    - Is it a table with rows/data bindings (goes to `tables/`)?

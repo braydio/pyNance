@@ -5,7 +5,7 @@
 
 ## Purpose
 
-Provides a unified API surface for managing all transactions, including manually added, imported, and third-party (Plaid/Teller) data. Supports filtering, annotation, tagging, and CRUD operations.
+Provides a unified API surface for managing all transactions, including manually added, imported, and third-party (Plaid) data. Supports filtering, annotation, tagging, and CRUD operations.
 
 ## Key Endpoints
 

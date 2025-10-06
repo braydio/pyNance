@@ -8,13 +8,12 @@ This document serves as the authoritative reference for API routing conventions,
 
 ### 📁 `routes/` Directory Structure
 
-| Module File              | Responsibility                                          |
-| ------------------------ | ------------------------------------------------------- |
-| `transactions.py`        | Shared transaction operations (paginated views, search) |
-| `plaid_transactions.py`  | Plaid-specific account + transaction routes             |
-| `teller_transactions.py` | Teller-specific account + transaction routes            |
-| `goals.py`               | Manage user-defined financial goals                     |
-| `accounts.py`            | Account refresh, history, and transaction helpers       |
+| Module File             | Responsibility                                          |
+| ----------------------- | ------------------------------------------------------- |
+| `transactions.py`       | Shared transaction operations (paginated views, search) |
+| `plaid_transactions.py` | Plaid-specific account + transaction routes             |
+| `goals.py`              | Manage user-defined financial goals                     |
+| `accounts.py`           | Account refresh, history, and transaction helpers       |
 
 ## 🌐 API Endpoint Convention
 
@@ -155,12 +154,6 @@ POST   /api/plaid/transactions/refresh_accounts
 POST   /api/plaid/transactions/sync
 POST   /api/plaid/transactions/generate_update_link_token
 DELETE /api/plaid/transactions/delete_account
-POST   /api/teller/transactions/save_access_token
-GET    /api/teller/transactions/get_transactions
-POST   /api/teller/transactions/refresh_accounts
-POST   /api/teller/transactions/refresh_balances
-PUT    /api/teller/transactions/update
-DELETE /api/teller/transactions/delete_account
 ```
 
 **POST /api/plaid/transactions/refresh_accounts**
@@ -199,7 +192,7 @@ Generates a Plaid Link token in "update mode" for re-authenticating an account w
 **Rule:**
 
 - Generic paths: shared or abstracted logic
-- `/plaid/`, `/teller/`: must only contain that provider's logic
+- `/plaid/`: must only contain Plaid provider logic
 
 ---
 

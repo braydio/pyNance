@@ -11,7 +11,7 @@
 - [x] Mapped core files in `helpers/`, `sql/`, and `routes/`
 - [x] Parsed `account_refresh_dispatcher.py` — sync orchestration confirmed, `user_id` not threaded
 - [x] Parsed `plaid_helpers.py` — `AccountHistory` update confirmed, `user_id` inferred
-- [x] Parsed `teller_helpers.py` — sync parity validated, explicit `user_id` usage
+- [x] Parsed `plaid_helpers.py` — sync parity validated, explicit `user_id` usage
 - [x] Reviewed `refresh_dispatcher.py` — confirmed redundant and now removed
 - [x] Initiated user_id threading task group
 - [x] Created `sync_service.py` for unified sync interface
@@ -23,7 +23,7 @@
 
 **account_refresh_dispatcher.py**
 
-- Sync routing logic confirmed for Teller/Plaid
+- Sync routing logic confirmed for Plaid
 - `refresh_all_accounts()` is cron-friendly, calls per account
 - No explicit `user_id` threading — inferred via `Account`
 
@@ -33,7 +33,7 @@
 - `user_id` is inferred, not passed
 - Logging + context present, but not full test wrapping
 
-**teller_helpers.py**
+**plaid_helpers.py**
 
 - Syncs use `user_id` explicitly
 - Data is written to `AccountHistory` cleanly
