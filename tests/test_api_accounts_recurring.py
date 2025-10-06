@@ -25,6 +25,13 @@ config_stub.logger = types.SimpleNamespace(
 )
 config_stub.FLASK_ENV = "test"
 config_stub.plaid_client = None
+config_stub.FILES = {
+    "TELLER_DOT_CERT": "cert.pem",
+    "TELLER_DOT_KEY": "key.pem",
+    "LAST_TX_REFRESH": "tx.json",
+    "PLAID_TOKENS": "tokens.json",
+}
+config_stub.TELLER_API_BASE_URL = "https://example.com"
 sys.modules["app.config"] = config_stub
 
 env_stub = types.ModuleType("app.config.environment")
@@ -46,10 +53,38 @@ sys.modules["app.utils.finance_utils"] = finance_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
+models_stub.Account.account_id = type("_Col", (), {"in_": lambda self, values: None})()
+models_stub.PlaidAccount = type("PlaidAccount", (), {})
+models_stub.PlaidItem = type("PlaidItem", (), {})
+models_stub.PlaidItem.query = types.SimpleNamespace(
+    filter_by=lambda **_: types.SimpleNamespace(all=lambda: [])
+)
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
 models_stub.Transaction = type("Transaction", (), {})
 models_stub.AccountHistory = type("AccountHistory", (), {})
 sys.modules["app.models"] = models_stub
+
+teller_helpers_stub = types.ModuleType("app.helpers.teller_helpers")
+teller_helpers_stub.load_tokens = lambda: []
+sys.modules["app.helpers.teller_helpers"] = teller_helpers_stub
+
+sql_pkg = types.ModuleType("app.sql")
+sql_pkg.account_logic = types.SimpleNamespace(
+    refresh_data_for_plaid_account=lambda *args, **kwargs: (False, None),
+    refresh_data_for_teller_account=lambda *args, **kwargs: False,
+)
+sql_pkg.investments_logic = types.SimpleNamespace(
+    upsert_investments_from_plaid=lambda *args, **kwargs: {
+        "securities": 0,
+        "holdings": 0,
+    },
+    upsert_investment_transactions=lambda *args, **kwargs: 0,
+)
+sys.modules["app.sql"] = sql_pkg
+
+forecast_stub = types.ModuleType("app.sql.forecast_logic")
+forecast_stub.update_account_history = lambda *args, **kwargs: None
+sys.modules["app.sql.forecast_logic"] = forecast_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "accounts.py")
 spec = importlib.util.spec_from_file_location("app.routes.accounts", ROUTE_PATH)
@@ -88,3 +123,159 @@ def test_get_recurring_uses_display_amount(client, monkeypatch):
     data = resp.get_json()
     assert data["status"] == "success"
     assert data["reminders"][0]["amount"] == -10.0
+
+
+def test_refresh_single_account_investments_product(client, monkeypatch):
+    account = types.SimpleNamespace(
+        account_id="acct-invest",
+        account_id_int=1,
+        link_type="Plaid",
+        user_id="user-1",
+        name="Investing",
+        institution_name="MockBank",
+        plaid_account=types.SimpleNamespace(
+            access_token="token-123",
+            product="investments",
+            item_id="item-1",
+        ),
+    )
+
+    monkeypatch.setattr(
+        accounts_module.Account,
+        "query",
+        types.SimpleNamespace(
+            filter_by=lambda **_: types.SimpleNamespace(first=lambda: account)
+        ),
+        raising=False,
+    )
+
+    calls = {}
+
+    def fake_refresh(*_, **__):
+        raise AssertionError("Transactions refresh should not be invoked")
+
+    monkeypatch.setattr(
+        sql_pkg.account_logic,
+        "refresh_data_for_plaid_account",
+        fake_refresh,
+    )
+
+    def fake_investments(acct, token, start_date=None, end_date=None):
+        calls["account"] = acct
+        calls["token"] = token
+        calls["start"] = start_date
+        calls["end"] = end_date
+        return True
+
+    monkeypatch.setattr(
+        accounts_module,
+        "_refresh_plaid_investments",
+        fake_investments,
+    )
+
+    monkeypatch.setattr(
+        accounts_module.db,
+        "session",
+        types.SimpleNamespace(commit=lambda: None, rollback=lambda: None),
+        raising=False,
+    )
+
+    resp = client.post(
+        "/api/accounts/acct-invest/refresh",
+        json={"start_date": "2024-01-01", "end_date": "2024-01-31"},
+    )
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["updated"] is True
+    assert calls["account"] is account
+    assert calls["token"] == "token-123"
+    assert calls["start"] == "2024-01-01"
+    assert calls["end"] == "2024-01-31"
+
+
+def test_refresh_all_accounts_handles_investments_only(client, monkeypatch):
+    account = types.SimpleNamespace(
+        account_id="acct-invest",
+        link_type="Plaid",
+        user_id="user-1",
+        name="Investing",
+        institution_name="MockBank",
+        plaid_account=types.SimpleNamespace(
+            access_token="token-abc",
+            product="investments",
+            item_id="item-2",
+        ),
+    )
+
+    class QueryStub:
+        def __init__(self, records):
+            self._records = records
+
+        def filter(self, *_args, **_kwargs):
+            return QueryStub(self._records)
+
+        def filter_by(self, **_kwargs):
+            return QueryStub(self._records)
+
+        def all(self):
+            return list(self._records)
+
+    monkeypatch.setattr(
+        accounts_module.Account, "query", QueryStub([account]), raising=False
+    )
+
+    def fail_transactions(*_args, **_kwargs):
+        raise AssertionError("Transactions refresh should be skipped")
+
+    monkeypatch.setattr(
+        sql_pkg.account_logic,
+        "refresh_data_for_plaid_account",
+        fail_transactions,
+    )
+
+    investment_calls = {}
+
+    def fake_investments(acct, token, start_date=None, end_date=None):
+        investment_calls.setdefault("accounts", []).append(acct)
+        investment_calls.setdefault("token", token)
+        investment_calls.setdefault("start", start_date)
+        investment_calls.setdefault("end", end_date)
+        return True
+
+    monkeypatch.setattr(
+        accounts_module,
+        "_refresh_plaid_investments",
+        fake_investments,
+    )
+
+    monkeypatch.setattr(
+        accounts_module,
+        "load_tokens",
+        lambda: [],
+        raising=False,
+    )
+
+    monkeypatch.setattr(
+        accounts_module.db,
+        "session",
+        types.SimpleNamespace(commit=lambda: None, rollback=lambda: None),
+        raising=False,
+    )
+
+    resp = client.post(
+        "/api/accounts/refresh_accounts",
+        json={
+            "account_ids": ["acct-invest"],
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-31",
+        },
+    )
+    assert resp.status_code == 200, resp.get_json()
+    payload = resp.get_json()
+    assert payload["status"] == "success"
+    assert payload["updated_accounts"] == ["Investing"]
+    assert payload["refreshed_counts"] == {"MockBank": 1}
+    assert investment_calls.get("accounts") == [account]
+    assert investment_calls.get("token") == "token-abc"
+    assert investment_calls.get("start") == "2024-01-01"
+    assert investment_calls.get("end") == "2024-01-31"
