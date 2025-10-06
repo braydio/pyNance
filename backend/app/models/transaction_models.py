@@ -1,4 +1,4 @@
-"""Transaction-related models: Transaction, Category, RecurringTransaction, Rules, PlaidTransactionMeta."""
+"""Transaction models including categories, recurring schedules, and Plaid metadata."""
 
 from datetime import datetime, timezone
 from decimal import Decimal
@@ -37,7 +37,7 @@ class Category(db.Model):
         return self.primary_category
 
 
-ProviderEnum = db.Enum("manual", "plaid", "teller", name="provider_type")
+ProviderEnum = db.Enum("manual", "plaid", name="provider_type")
 
 
 class Transaction(db.Model):

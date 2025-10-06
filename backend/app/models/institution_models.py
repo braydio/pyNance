@@ -1,4 +1,4 @@
-"""Institution-related models: Institution, Plaid, Teller."""
+"""Institution models covering financial institutions and Plaid-linked records."""
 
 from datetime import datetime, timezone
 
@@ -20,9 +20,6 @@ class Institution(db.Model, TimestampMixin):
     )
     plaid_accounts = db.relationship(
         "PlaidAccount", back_populates="institution", cascade="all, delete"
-    )
-    teller_accounts = db.relationship(
-        "TellerAccount", back_populates="institution", cascade="all, delete"
     )
 
 
@@ -87,25 +84,3 @@ class PlaidWebhookLog(db.Model, TimestampMixin):
     item_id = db.Column(db.String(128))
     payload = db.Column(db.JSON, nullable=True)
     received_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
-
-
-class TellerAccount(db.Model, TimestampMixin):
-    __tablename__ = "teller_accounts"
-
-    id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(
-        db.String(64),
-        db.ForeignKey("accounts.account_id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    access_token = db.Column(db.String(256), nullable=False)
-    enrollment_id = db.Column(db.String(128), nullable=True)
-    teller_institution_id = db.Column(db.String(128), nullable=True)
-    provider = db.Column(db.String(64), default="Teller")
-    last_refreshed = db.Column(db.DateTime, nullable=True)
-    institution_db_id = db.Column(
-        db.Integer,
-        db.ForeignKey("institutions.id", ondelete="CASCADE"),
-        nullable=True,
-    )
-    institution = db.relationship("Institution", back_populates="teller_accounts")
