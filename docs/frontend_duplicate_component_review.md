@@ -17,6 +17,11 @@ RRefreshPlaidControls.vue | Plaid specific  | 最 Refactorer component?
 UploadCSV.vue vs UploadDownloadCSV.vue | Sizes match, function may overlap | 最 Merge into one
 ```
 
+## Updates
+
+- ✅ `DailyNetTransactionsModal.vue` and `CategoryTransactionsModal.vue` have been replaced by direct usages of
+  `TransactionModal.vue` in `Dashboard.vue`, eliminating the redundant wrapper components.
+
 Likely obsolete:
  - AccountsTableLite.vue (1-byte dommy file)
  - LinkAccountFullProducts.vue (empty)
