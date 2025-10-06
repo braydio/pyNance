@@ -10,8 +10,7 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
-from app.models import (Account, AccountHistory, Category, PlaidAccount,
-                        Transaction)
+from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
 from app.sql import transaction_rules_logic
 from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
