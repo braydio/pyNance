@@ -10,9 +10,10 @@ from sqlalchemy.ext.hybrid import hybrid_property
 
 from .mixins import TimestampMixin
 
-
 # Database enums
-AccountStatusEnum = db.Enum("active", "inactive", "closed", "archived", name="account_status")
+AccountStatusEnum = db.Enum(
+    "active", "inactive", "closed", "archived", name="account_status"
+)
 LinkTypeEnum = db.Enum("manual", "plaid", "teller", name="link_type")
 
 
