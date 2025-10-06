@@ -38,7 +38,8 @@ class PlaidAccount(db.Model, TimestampMixin):
         unique=True,
     )
     plaid_institution_id = db.Column(db.String(128), nullable=True)
-    access_token = db.Column(db.String(256), nullable=False)
+    # Deprecated: access_token and item_id duplicated from PlaidItem; prefer plaid_item_id
+    access_token = db.Column(db.String(256), nullable=True)
     item_id = db.Column(db.String(128), nullable=True)
     product = db.Column(db.String(64), nullable=True)
     institution_id = db.Column(db.String(128), nullable=True)
@@ -50,6 +51,13 @@ class PlaidAccount(db.Model, TimestampMixin):
         nullable=True,
     )
     institution = db.relationship("Institution", back_populates="plaid_accounts")
+    # Normalized linkage to the Plaid Item entity (token scope)
+    plaid_item_id = db.Column(
+        db.Integer,
+        db.ForeignKey("plaid_items.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     sync_cursor = db.Column(db.String(256), nullable=True)
     is_active = db.Column(db.Boolean, default=True, nullable=False)
     last_error = db.Column(db.Text, nullable=True)

@@ -11,15 +11,21 @@ from sqlalchemy.ext.hybrid import hybrid_property
 from .mixins import TimestampMixin
 
 
+# Database enums
+AccountStatusEnum = db.Enum("active", "inactive", "closed", "archived", name="account_status")
+LinkTypeEnum = db.Enum("manual", "plaid", "teller", name="link_type")
+
+
 class Account(db.Model, TimestampMixin):
     __tablename__ = "accounts"
 
-    id = db.Column(db.Integer, primary_key=True)
-    account_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    # Use business key as the primary key across the schema
+    account_id = db.Column(db.String(64), primary_key=True, nullable=False, index=True)
     user_id = db.Column(db.String(64), nullable=True)
     name = db.Column(db.String(128), nullable=False)
     type = db.Column(db.String(64), nullable=True)
     subtype = db.Column(db.String(64), nullable=True)
+    # Denormalized display value; prefer joining institutions.name where possible
     institution_name = db.Column(db.String(128), nullable=True)
     institution_db_id = db.Column(
         db.Integer,
@@ -27,10 +33,10 @@ class Account(db.Model, TimestampMixin):
         nullable=True,
         index=True,
     )
-    status = db.Column(db.String(64), default="active")
+    status = db.Column(AccountStatusEnum, nullable=False, server_default="active")
     is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
-    link_type = db.Column(db.String(64), default="manual")
+    link_type = db.Column(LinkTypeEnum, nullable=False, server_default="manual")
 
     plaid_account = db.relationship(
         "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"
@@ -55,7 +61,8 @@ class AccountHistory(db.Model, TimestampMixin):
         nullable=False,
     )
     user_id = db.Column(db.String(64), nullable=True, index=True)
-    date = db.Column(db.DateTime, nullable=False)
+    # Daily snapshots; store as a Date (UTC day)
+    date = db.Column(db.Date, nullable=False)
     balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     is_hidden = db.Column(db.Boolean, default=None)
 

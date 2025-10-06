@@ -37,6 +37,9 @@ class Category(db.Model):
         return self.primary_category
 
 
+ProviderEnum = db.Enum("manual", "plaid", "teller", name="provider_type")
+
+
 class Transaction(db.Model):
     __tablename__ = "transactions"
 
@@ -49,7 +52,7 @@ class Transaction(db.Model):
     amount = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     date = db.Column(db.DateTime(timezone=True), nullable=False)
     description = db.Column(db.String(256))
-    provider = db.Column(db.String(64), default="manual")
+    provider = db.Column(ProviderEnum, nullable=False, server_default="manual")
     merchant_name = db.Column(db.String(128), default="Unknown")
     merchant_type = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
