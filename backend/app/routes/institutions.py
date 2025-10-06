@@ -129,4 +129,3 @@ def refresh_institution(institution_id: int):
         ),
         200,
     )
-

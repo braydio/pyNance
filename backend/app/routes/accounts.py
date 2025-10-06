@@ -209,9 +209,9 @@ def refresh_all_accounts():
 
                                 if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key][
-                                        "update_link_token_endpoint"
-                                    ] = "/api/plaid/transactions/generate_update_link_token"
+                                    error_map[key]["update_link_token_endpoint"] = (
+                                        "/api/plaid/transactions/generate_update_link_token"
+                                    )
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -292,9 +292,9 @@ def refresh_all_accounts():
                 updated = account_logic.refresh_data_for_teller_account(
                     account,
                     access_token,
-                TELLER_CERT_PATH,
-                TELLER_KEY_PATH,
-                TELLER_API_BASE_URL,
+                    TELLER_CERT_PATH,
+                    TELLER_KEY_PATH,
+                    TELLER_API_BASE_URL,
                     start_date=start_date,
                     end_date=end_date,
                 )
@@ -983,6 +983,8 @@ def transaction_history(account_id):
             jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}),
             500,
         )
+
+
 TELLER_CERT_PATH = FILES.get(
     "TELLER_DOT_CERT", DIRECTORIES["CERTS_DIR"] / "certificate.pem"
 )

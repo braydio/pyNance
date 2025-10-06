@@ -8,7 +8,7 @@ This page summarizes the environment variables and certificate files required to
 - `TELLER_WEBHOOK_SECRET` – secret used to validate Teller webhook signatures. If not set, the webhook route is disabled.
 
 Set these variables in your runtime environment (for example via the shell or process manager).
-The backend modules read them directly using ``os.getenv`` when Teller endpoints are invoked.
+The backend modules read them directly using `os.getenv` when Teller endpoints are invoked.
 
 ## Certificate Placement
 

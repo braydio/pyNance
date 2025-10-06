@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import hmac
+
 """Teller webhook handlers for processing balance and transaction events."""
 
 import json
