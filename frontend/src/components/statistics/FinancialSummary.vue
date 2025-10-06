@@ -71,7 +71,9 @@
 
           <!-- Trends & Volatility -->
           <div class="stat-group">
-            <h4 class="group-title">Trends <span class="group-subtitle-inline">{{ trendSummary }}</span></h4>
+            <h4 class="group-title">
+              Trends <span class="group-subtitle-inline">{{ trendSummary }}</span>
+            </h4>
             <div class="stat-item">
               <span class="stat-label">Net:</span>
               <span class="stat-value trend-indicator" :class="netTrendClass">{{
@@ -92,13 +94,17 @@
             </div>
             <div class="stat-item">
               <span class="stat-label">Volatility (σ of daily net):</span>
-              <span class="stat-value">{{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})</span>
+              <span class="stat-value"
+                >{{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})</span
+              >
             </div>
           </div>
 
           <!-- Extremes & Outliers -->
           <div class="stat-group">
-            <h4 class="group-title">Outliers <span class="group-subtitle-inline">Largest day amounts • 2σ anomalies</span></h4>
+            <h4 class="group-title">
+              Outliers <span class="group-subtitle-inline">Largest day amounts • 2σ anomalies</span>
+            </h4>
             <div class="stat-item">
               <span class="stat-label">Income: <span class="badge-note">largest</span></span>
               <span class="stat-value">{{ topEarningLabel }}</span>
