@@ -5,9 +5,8 @@ Revises: 8f2b541c2d5a
 Create Date: 2025-10-06
 """
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "9d3f4c21a7b9"
@@ -16,7 +15,9 @@ branch_labels = None
 depends_on = None
 
 
-account_status = sa.Enum("active", "inactive", "closed", "archived", name="account_status")
+account_status = sa.Enum(
+    "active", "inactive", "closed", "archived", name="account_status"
+)
 link_type = sa.Enum("manual", "plaid", "teller", name="link_type")
 provider_type = sa.Enum("manual", "plaid", "teller", name="provider_type")
 
@@ -31,12 +32,17 @@ def upgrade() -> None:
         op.execute("ALTER TABLE accounts ADD PRIMARY KEY (account_id)")
         with op.batch_alter_table("accounts") as batch_op:
             # Drop integer id column if present
-            cols = [c["name"] for c in bind.engine.execute(sa.text(
-                """
+            cols = [
+                c["name"]
+                for c in bind.engine.execute(
+                    sa.text(
+                        """
                 SELECT column_name FROM information_schema.columns
                 WHERE table_name='accounts'
                 """
-            )).fetchall()]
+                    )
+                ).fetchall()
+            ]
             if "id" in cols:
                 batch_op.drop_column("id")
     else:
@@ -64,7 +70,9 @@ def upgrade() -> None:
         )
     else:
         with op.batch_alter_table("account_history") as batch_op:
-            batch_op.alter_column("date", type_=sa.Date(), existing_type=sa.DateTime(), nullable=False)
+            batch_op.alter_column(
+                "date", type_=sa.Date(), existing_type=sa.DateTime(), nullable=False
+            )
 
     # 3) Create enums and alter columns
     if dialect == "postgresql":
@@ -115,12 +123,20 @@ def upgrade() -> None:
     op.create_index(
         "ix_transactions_account_date",
         "transactions",
-        ["account_id", sa.text("date DESC")] if dialect == "postgresql" else ["account_id", "date"],
+        (
+            ["account_id", sa.text("date DESC")]
+            if dialect == "postgresql"
+            else ["account_id", "date"]
+        ),
     )
     op.create_index(
         "ix_transactions_user_date",
         "transactions",
-        ["user_id", sa.text("date DESC")] if dialect == "postgresql" else ["user_id", "date"],
+        (
+            ["user_id", sa.text("date DESC")]
+            if dialect == "postgresql"
+            else ["user_id", "date"]
+        ),
     )
     op.create_index(
         "ix_transactions_category_date",
@@ -130,7 +146,11 @@ def upgrade() -> None:
     op.create_index(
         "ix_account_history_account_date",
         "account_history",
-        ["account_id", sa.text("date DESC")] if dialect == "postgresql" else ["account_id", "date"],
+        (
+            ["account_id", sa.text("date DESC")]
+            if dialect == "postgresql"
+            else ["account_id", "date"]
+        ),
     )
 
 
@@ -157,7 +177,9 @@ def downgrade() -> None:
         except Exception:
             pass
         try:
-            batch_op.drop_constraint("plaid_accounts_plaid_item_id_fkey", type_="foreignkey")
+            batch_op.drop_constraint(
+                "plaid_accounts_plaid_item_id_fkey", type_="foreignkey"
+            )
         except Exception:
             pass
         try:
@@ -201,7 +223,9 @@ def downgrade() -> None:
         )
     else:
         with op.batch_alter_table("account_history") as batch_op:
-            batch_op.alter_column("date", type_=sa.DateTime(), existing_type=sa.Date(), nullable=False)
+            batch_op.alter_column(
+                "date", type_=sa.DateTime(), existing_type=sa.Date(), nullable=False
+            )
 
     # Restore accounts id column and PK if needed
     if dialect == "postgresql":
@@ -232,4 +256,3 @@ def downgrade() -> None:
             account_status.drop(bind, checkfirst=True)
         except Exception:
             pass
-
