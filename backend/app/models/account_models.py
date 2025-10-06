@@ -1,4 +1,4 @@
-"""Account models: Account, AccountHistory, FinancialGoal, and related tables."""
+"""Account domain models including link metadata, history snapshots, and goals."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from .mixins import TimestampMixin
 AccountStatusEnum = db.Enum(
     "active", "inactive", "closed", "archived", name="account_status"
 )
-LinkTypeEnum = db.Enum("manual", "plaid", "teller", name="link_type")
+LinkTypeEnum = db.Enum("manual", "plaid", name="link_type")
 
 
 class Account(db.Model, TimestampMixin):
@@ -41,9 +41,6 @@ class Account(db.Model, TimestampMixin):
 
     plaid_account = db.relationship(
         "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"
-    )
-    teller_account = db.relationship(
-        "TellerAccount", backref="account", uselist=False, cascade="all, delete-orphan"
     )
     institution = db.relationship("Institution", back_populates="accounts")
 

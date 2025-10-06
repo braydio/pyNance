@@ -45,7 +45,6 @@ Institution = models.Institution
 PlaidAccount = models.PlaidAccount
 PlaidItem = models.PlaidItem
 PlaidWebhookLog = models.PlaidWebhookLog
-TellerAccount = models.TellerAccount
 AccountHistory = models.AccountHistory
 RecurringTransaction = models.RecurringTransaction
 TransactionRule = models.TransactionRule
@@ -113,16 +112,6 @@ def seed_data() -> None:
         last_error=None,
     )
 
-    teller_account = TellerAccount(
-        account_id=credit.account_id,
-        access_token="teller-access-token",
-        enrollment_id="enroll_1",
-        teller_institution_id="teller_ins_1",
-        provider="Teller",
-        last_refreshed=datetime.now(),
-        institution=example_bank,
-    )
-
     plaid_item = PlaidItem(
         user_id="user_1",
         item_id="item_1",
@@ -169,7 +158,6 @@ def seed_data() -> None:
             checking,
             credit,
             plaid_account,
-            teller_account,
             plaid_item,
             webhook_log,
             income_cat,
