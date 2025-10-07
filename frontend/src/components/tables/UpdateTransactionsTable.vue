@@ -100,14 +100,14 @@
               <span v-else>{{ tx.description }}</span>
             </td>
             <td class="px-3 py-2">
-              <select v-if="editingIndex === index" v-model="editBuffer.category" class="input">
-                <option disabled value="">-- Select Category --</option>
-                <optgroup v-for="group in categoryTree" :label="group.name" :key="group.name">
-                  <option v-for="child in group.children" :key="child.id" :value="child.name">
-                    {{ child.name }}
-                  </option>
-                </optgroup>
-              </select>
+              <input
+                v-if="editingIndex === index"
+                v-model="editBuffer.category"
+                type="text"
+                list="category-suggestions"
+                class="input"
+                placeholder="Select or type category"
+              />
               <span v-else>{{ tx.category }}</span>
             </td>
             <td class="px-3 py-2">
@@ -164,13 +164,16 @@
         </div>
       </template>
     </Modal>
+    <datalist id="category-suggestions">
+      <option v-for="option in categorySuggestions" :key="option" :value="option" />
+    </datalist>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
+import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
 import Modal from '@/components/ui/Modal.vue'
@@ -204,8 +207,27 @@ const categoryTree = ref([])
 const sortKey = ref('date')
 const sortOrder = ref('asc')
 
+const categorySuggestions = computed(() => {
+  const seen = new Set()
+  const suggestions = []
+  categoryTree.value.forEach((group) => {
+    if (group.name && !seen.has(group.name)) {
+      suggestions.push(group.name)
+      seen.add(group.name)
+    }
+    group.children.forEach((child) => {
+      if (child.name && !seen.has(child.name)) {
+        suggestions.push(child.name)
+        seen.add(child.name)
+      }
+    })
+  })
+  return suggestions.sort((a, b) => a.localeCompare(b))
+})
+
 const subcategoryOptions = computed(() => {
-  const group = categoryTree.value.find((g) => g.name === selectedPrimaryCategory.value)
+  const selected = selectedPrimaryCategory.value?.toLowerCase()
+  const group = categoryTree.value.find((g) => g.name?.toLowerCase() === selected)
   return group ? group.children : []
 })
 
@@ -412,9 +434,23 @@ watch(selectedPrimaryCategory, () => {
 
 onMounted(async () => {
   try {
-    const res = await axios.get('/api/categories/tree')
-    if (res.data?.status === 'success') {
-      categoryTree.value = res.data.data
+    const res = await fetchCategoryTree()
+    if (res?.status === 'success') {
+      const tree = (res.data || []).map((group) => {
+        const children = (group.children || [])
+          .map((child) => ({
+            id: child.id,
+            name: child.label,
+            plaid_id: child.plaid_id || null,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name))
+        return {
+          id: group.id,
+          name: group.label,
+          children,
+        }
+      })
+      categoryTree.value = tree.sort((a, b) => a.name.localeCompare(b.name))
     }
   } catch (e) {
     console.error('Failed to load category tree:', e)
