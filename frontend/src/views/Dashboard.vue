@@ -203,14 +203,20 @@
         </transition>
       </div>
 
-      <DailyNetTransactionsModal
+      <TransactionModal
         :show="showDailyModal"
+        kind="date"
+        :show-date-column="false"
+        :hide-category-visuals="false"
         :subtitle="dailyModalSubtitle"
         :transactions="dailyModalTransactions"
         @close="showDailyModal = false"
       />
-      <CategoryTransactionsModal
+      <TransactionModal
         :show="showCategoryModal"
+        kind="category"
+        :show-date-column="true"
+        :hide-category-visuals="false"
         :subtitle="categoryModalSubtitle"
         :transactions="categoryModalTransactions"
         @close="showCategoryModal = false"
@@ -233,8 +239,7 @@ import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
-import DailyNetTransactionsModal from '@/components/modals/DailyNetTransactionsModal.vue'
-import CategoryTransactionsModal from '@/components/modals/CategoryTransactionsModal.vue'
+import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
