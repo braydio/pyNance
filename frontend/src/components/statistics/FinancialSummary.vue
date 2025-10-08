@@ -543,9 +543,7 @@ const negativeDaysLabel = computed(() => {
 })
 
 const avgPositiveSavingsLabel = computed(() => {
-  const values = filteredChartData.value
-    .map((d) => d.net?.parsedValue || 0)
-    .filter((v) => v > 0)
+  const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0).filter((v) => v > 0)
   if (!values.length) return 'N/A'
   const avg = values.reduce((a, b) => a + b, 0) / values.length
   return formatAmount(avg)
@@ -728,7 +726,9 @@ function clampDateString(value, min, max) {
   color: var(--color-accent-cyan);
   font-size: 0.75rem;
   font-weight: 600;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .detail-date-reset:hover {
