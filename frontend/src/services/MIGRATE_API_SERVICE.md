@@ -73,7 +73,6 @@ We are decomposing the monolithic `services/api.js` file into logically grouped 
 - [ ] Add deprecation warning
 - [ ] Confirm deletion
 
-
 ---
 
 ## 🧪 Test Checklist
