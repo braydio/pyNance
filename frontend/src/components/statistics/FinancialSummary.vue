@@ -26,21 +26,39 @@
     <div class="basic-stats">
       <div class="stat-item stat-income">
         <span class="stat-label">Income:</span>
-        <span class="stat-value">{{ formatAmount(summary.totalIncome) }}</span>
+        <span class="stat-value">{{ formatAmount(detailSummary.totalIncome) }}</span>
       </div>
       <div class="stat-item stat-expenses">
         <span class="stat-label">Expenses:</span>
-        <span class="stat-value">{{ formatAmount(summary.totalExpenses) }}</span>
+        <span class="stat-value">{{ formatAmount(detailSummary.totalExpenses) }}</span>
       </div>
       <div class="stat-item stat-net" :class="netPolarityClass">
         <span class="stat-label">Net Total:</span>
-        <span class="stat-value">{{ formatAmount(summary.totalNet) }}</span>
+        <span class="stat-value">{{ formatAmount(detailSummary.totalNet) }}</span>
       </div>
     </div>
 
     <!-- Extended Statistics (Conditional) -->
     <Transition name="expand">
       <div v-if="isExtendedView" class="extended-stats">
+        <div class="detail-date-controls">
+          <label class="detail-date-label" for="financial-snapshot-detail-date"
+            >View snapshot as of</label
+          >
+          <input
+            id="financial-snapshot-detail-date"
+            v-model="detailDate"
+            :max="maxDetailDate"
+            :min="minDetailDate"
+            type="date"
+            class="detail-date-input"
+          />
+          <button type="button" class="detail-date-reset" @click="resetDetailDate">
+            Reset to today
+          </button>
+          <p class="detail-date-helper">Showing activity through {{ viewingDateLabel }}</p>
+        </div>
+
         <div class="stats-grid">
           <!-- Averages (Daily + Moving) -->
           <div class="stat-group">
@@ -198,15 +216,128 @@ function toggleExtendedView() {
   isExtendedView.value = !isExtendedView.value
 }
 
+const TODAY = new Date()
+const TODAY_ISO = formatAsISODate(TODAY)
+
+const detailDate = ref(TODAY_ISO)
+const userAdjustedDate = ref(false)
+
+const chartDateBounds = computed(() => {
+  const data = Array.isArray(props.chartData) ? props.chartData : []
+  if (!data.length) {
+    return { min: '', max: '' }
+  }
+
+  const sortedDates = data
+    .map((entry) => entry?.date)
+    .filter((date) => Boolean(parseISODate(date)))
+    .sort()
+
+  return {
+    min: sortedDates[0] || '',
+    max: sortedDates[sortedDates.length - 1] || '',
+  }
+})
+
+const minDetailDate = computed(() => chartDateBounds.value.min)
+const maxDetailDate = computed(() => chartDateBounds.value.max || TODAY_ISO)
+
+watch(
+  chartDateBounds,
+  (bounds) => {
+    if (!bounds.max) {
+      detailDate.value = TODAY_ISO
+      return
+    }
+    const target = userAdjustedDate.value ? detailDate.value : TODAY_ISO
+    detailDate.value = clampDateString(target, bounds.min, bounds.max)
+  },
+  { immediate: true },
+)
+
+watch(detailDate, (value, oldValue) => {
+  if (value === oldValue) {
+    return
+  }
+  if (!value) {
+    detailDate.value = clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value)
+    return
+  }
+  userAdjustedDate.value = true
+})
+
+/**
+ * Reset the detail snapshot view back to today's date (bounded by data).
+ */
+function resetDetailDate() {
+  userAdjustedDate.value = false
+  detailDate.value = clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value)
+}
+
+const filteredChartData = computed(() => {
+  const data = Array.isArray(props.chartData) ? props.chartData : []
+  const cutoff = parseISODate(detailDate.value)
+  if (!cutoff) {
+    return data
+  }
+
+  return data.filter((entry) => {
+    const entryDate = parseISODate(entry?.date)
+    if (!entryDate) {
+      return false
+    }
+    return entryDate <= cutoff
+  })
+})
+
+const detailSummary = computed(() => {
+  const data = filteredChartData.value
+  if (!data.length) {
+    const hasRawData = Array.isArray(props.chartData) && props.chartData.length > 0
+    if (!hasRawData) {
+      return {
+        totalIncome: props.summary?.totalIncome ?? 0,
+        totalExpenses: props.summary?.totalExpenses ?? 0,
+        totalNet: props.summary?.totalNet ?? 0,
+      }
+    }
+    return { totalIncome: 0, totalExpenses: 0, totalNet: 0 }
+  }
+
+  const totals = data.reduce(
+    (acc, entry) => {
+      acc.totalIncome += entry?.income?.parsedValue || 0
+      acc.totalExpenses += entry?.expenses?.parsedValue || 0
+      acc.totalNet += entry?.net?.parsedValue || 0
+      return acc
+    },
+    { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+  )
+
+  return totals
+})
+
+const viewingDateLabel = computed(() => {
+  const cutoff = parseISODate(detailDate.value)
+  if (!cutoff) {
+    return 'today'
+  }
+  return cutoff.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+  })
+})
+
 // Basic computed properties
 const netPolarityClass = computed(() => ({
-  positive: props.summary.totalNet >= 0,
-  negative: props.summary.totalNet < 0,
+  positive: detailSummary.value.totalNet >= 0,
+  negative: detailSummary.value.totalNet < 0,
 }))
 
 // Extended statistics calculations
 const extendedMetrics = computed(() => {
-  const data = props.chartData
+  const data = filteredChartData.value
   if (!data.length) {
     return {
       avgDailyIncome: 0,
@@ -234,9 +365,9 @@ const extendedMetrics = computed(() => {
   const expenseValues = data.map((d) => Math.abs(d.expenses?.parsedValue || 0))
   const netValues = data.map((d) => d.net?.parsedValue || 0)
 
-  const avgDailyIncome = props.summary.totalIncome / days
-  const avgDailyExpenses = props.summary.totalExpenses / days
-  const avgDailyNet = props.summary.totalNet / days
+  const avgDailyIncome = detailSummary.value.totalIncome / days
+  const avgDailyExpenses = detailSummary.value.totalExpenses / days
+  const avgDailyNet = detailSummary.value.totalNet / days
 
   const netMA7 = calculateMovingAverage(netValues, 7)
   const netMA30 = calculateMovingAverage(netValues, 30)
@@ -376,7 +507,7 @@ const savingsRateLabel = computed(() => {
   // Use sums from arrays to avoid sign confusion
   // incomeValues positive, expenseValues used as abs in extendedMetrics calculations
   // Reconstruct sums from averages where possible
-  const days = Array.isArray(props.chartData) ? props.chartData.length : 0
+  const days = filteredChartData.value.length
   if (!days) return 'N/A'
   const totalIncome = data.avgDailyIncome * days
   const totalExpensesAbs = Math.abs(data.avgDailyExpenses * days)
@@ -387,14 +518,14 @@ const savingsRateLabel = computed(() => {
 })
 
 const savingsAmountLabel = computed(() => {
-  if (!Array.isArray(props.chartData) || !props.chartData.length) return 'N/A'
-  const totalIncome = props.summary?.totalIncome ?? 0
-  const totalExpensesAbs = Math.abs(props.summary?.totalExpenses ?? 0)
+  if (!filteredChartData.value.length) return 'N/A'
+  const totalIncome = detailSummary.value?.totalIncome ?? 0
+  const totalExpensesAbs = Math.abs(detailSummary.value?.totalExpenses ?? 0)
   return formatAmount(totalIncome - totalExpensesAbs)
 })
 
 const positiveDaysLabel = computed(() => {
-  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0)
+  const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0)
   const n = values.length
   if (!n) return 'N/A'
   const pos = values.filter((v) => v > 0).length
@@ -403,7 +534,7 @@ const positiveDaysLabel = computed(() => {
 })
 
 const negativeDaysLabel = computed(() => {
-  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0)
+  const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0)
   const n = values.length
   if (!n) return 'N/A'
   const neg = values.filter((v) => v < 0).length
@@ -412,7 +543,9 @@ const negativeDaysLabel = computed(() => {
 })
 
 const avgPositiveSavingsLabel = computed(() => {
-  const values = (props.chartData || []).map((d) => d.net?.parsedValue || 0).filter((v) => v > 0)
+  const values = filteredChartData.value
+    .map((d) => d.net?.parsedValue || 0)
+    .filter((v) => v > 0)
   if (!values.length) return 'N/A'
   const avg = values.reduce((a, b) => a + b, 0) / values.length
   return formatAmount(avg)
@@ -420,13 +553,71 @@ const avgPositiveSavingsLabel = computed(() => {
 
 // Watch for chart data changes to recalculate
 watch(
-  () => [props.chartData, props.zoomedOut],
+  [filteredChartData, () => props.zoomedOut],
   () => {
-    // Trigger reactivity by accessing computed
     extendedMetrics.value
   },
   { deep: true },
 )
+
+/**
+ * Convert a date string into a Date instance using local timezone.
+ *
+ * @param {string | Date | undefined | null} input - ISO-like date string or Date.
+ * @returns {Date | null} Parsed Date instance, or null if invalid.
+ */
+function parseISODate(input) {
+  if (input instanceof Date) {
+    return Number.isNaN(input.getTime()) ? null : input
+  }
+  if (!input) {
+    return null
+  }
+  const normalized = typeof input === 'string' ? `${input}T00:00:00` : input
+  const parsed = new Date(normalized)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+/**
+ * Format a Date instance as YYYY-MM-DD.
+ *
+ * @param {Date} date - Date to format.
+ * @returns {string} ISO formatted date string.
+ */
+function formatAsISODate(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return ''
+  }
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Clamp a date string so it falls within the specified range.
+ *
+ * @param {string} value - The target date string.
+ * @param {string} min - Lower bound date string.
+ * @param {string} max - Upper bound date string.
+ * @returns {string} A valid date string within the supplied bounds.
+ */
+function clampDateString(value, min, max) {
+  const parsedValue = parseISODate(value)
+  const parsedMin = parseISODate(min)
+  const parsedMax = parseISODate(max)
+
+  let result = parsedValue || parsedMax || parseISODate(TODAY_ISO) || new Date()
+
+  if (parsedMin && result < parsedMin) {
+    result = parsedMin
+  }
+  if (parsedMax && result > parsedMax) {
+    result = parsedMax
+  }
+
+  return formatAsISODate(result)
+}
 </script>
 
 <style scoped>
@@ -499,6 +690,55 @@ watch(
   margin-top: 1rem;
   padding-top: 1rem;
   border-top: 1px solid var(--divider);
+}
+
+.detail-date-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.detail-date-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+}
+
+.detail-date-input {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--divider);
+  background: var(--color-bg-sec);
+  color: var(--color-text-light);
+}
+
+.detail-date-input:focus {
+  outline: none;
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 0 0 2px rgba(0, 217, 255, 0.2);
+}
+
+.detail-date-reset {
+  padding: 0.35rem 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--color-accent-cyan);
+  background: transparent;
+  color: var(--color-accent-cyan);
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.detail-date-reset:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 217, 255, 0.25);
+}
+
+.detail-date-helper {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 
 .stats-grid {
