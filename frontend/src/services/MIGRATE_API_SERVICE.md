@@ -73,8 +73,6 @@ We are decomposing the monolithic `services/api.js` file into logically grouped 
 - [ ] Add deprecation warning
 - [ ] Confirm deletion
 
-> **Note:** Legacy Teller API modules were removed during the Plaid-only migration.
-
 ---
 
 ## 🧪 Test Checklist

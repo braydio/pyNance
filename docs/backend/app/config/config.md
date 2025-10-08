@@ -10,17 +10,15 @@ Houses all configuration logic used during application initialization. Includes 
 ## Files
 
 - `__init__.py`
-
   - Marks this directory as a Python package
 
 - `settings.py`
-
   - Main configuration loader
   - Reads from environment variables, `.env`, or config secrets
   - Defines:
     - `DATABASE_URL`
     - `PLAID_CLIENT_ID`, `PLAID_SECRET`
-    - `TELLER_TOKEN`, `JWT_SECRET`, `DEBUG`
+    - `JWT_SECRET`, `DEBUG`
     - Feature toggles, environment flags, Sentry keys
 
 - `env.py`
