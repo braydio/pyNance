@@ -76,7 +76,6 @@ declare module 'vue' {
     RecurringTransactionSection: typeof import('./components/recurring/RecurringTransactionSection.vue')['default']
     RefreshControls: typeof import('./components/widgets/RefreshControls.vue')['default']
     RefreshPlaidControls: typeof import('./components/widgets/RefreshPlaidControls.vue')['default']
-    RefreshTellerControls: typeof import('./components/widgets/RefreshTellerControls.vue')['default']
     RetryError: typeof import('./components/errors/RetryError.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']

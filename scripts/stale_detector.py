@@ -12,7 +12,6 @@ COMPONENTS_TO_CHECK = [
     "UploadDownloadCSV.vue",
     "RefreshControls.vue",
     "RefreshPlaidControls.vue",
-    "RefreshTellerControls.vue",
     "TransactionsTable.vue",
     "UpdateTransactionsTable.vue",
 ]

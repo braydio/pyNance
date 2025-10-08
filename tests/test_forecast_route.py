@@ -25,7 +25,6 @@ config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
 
 env_stub = types.ModuleType("app.config.environment")
-env_stub.TELLER_WEBHOOK_SECRET = "dummy"
 sys.modules["app.config.environment"] = env_stub
 
 extensions_stub = types.ModuleType("app.extensions")
