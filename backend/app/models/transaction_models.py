@@ -1,6 +1,6 @@
 """Transaction models including categories, recurring schedules, and Plaid metadata."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from decimal import Decimal
 
 from app.extensions import db
@@ -104,8 +104,8 @@ class RecurringTransaction(db.Model):
     notes = db.Column(db.String(256), nullable=True)
     updated_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(tz=timezone.utc),
-        onupdate=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.utcnow(),
+        onupdate=lambda: datetime.utcnow(),
     )
     next_instance_id = db.Column(db.String(64), nullable=True)
 

@@ -199,7 +199,8 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 "institution_name": institution_name,
                 "status": status,
                 "balance": balance,
-                "link_type": provider,
+                # Normalize provider/link type to lowercase to match DB enum values
+                "link_type": str(provider or "").lower() or "manual",
             }
 
             existing_account = Account.query.filter_by(account_id=account_id).first()
@@ -350,15 +351,22 @@ def get_paginated_transactions(
     # Unpack and serialize
     serialized = []
     for txn, acc, cat in results:
+        # Prefer stored txn.category; fall back to joined Category.display_name
+        category_label = txn.category
+        if not category_label and cat and getattr(cat, "display_name", None):
+            category_label = cat.display_name
+
         serialized.append(
             {
                 "transaction_id": txn.transaction_id,
                 "date": txn.date.isoformat() if txn.date else None,
                 "amount": display_transaction_amount(txn),
                 "description": txn.description or txn.merchant_name or "N/A",
-                "category": txn.category or "Uncategorized",
+                "category": category_label or "Uncategorized",
+                "category_id": getattr(cat, "id", None),
                 "category_icon_url": getattr(cat, "pfc_icon_url", None),
                 "merchant_name": txn.merchant_name or "Unknown",
+                "user_id": getattr(txn, "user_id", None) or getattr(acc, "user_id", None),
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",

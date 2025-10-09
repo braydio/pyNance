@@ -24,6 +24,12 @@
         reverse_proxy {$BACKEND_UPSTREAM}
     }
 
+    # Also proxy backend static assets (Flask's /static/*)
+    @backend_static path /static/*
+    handle @backend_static {
+        reverse_proxy {$BACKEND_UPSTREAM}
+    }
+
     # All other routes go to the frontend dev server
     handle {
         reverse_proxy {$FRONTEND_UPSTREAM}

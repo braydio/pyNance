@@ -60,7 +60,8 @@ def refresh_institution(institution_id: int):
     refreshed_counts: dict[str, int] = {}
     for account in inst.accounts:
         updated = False
-        if account.link_type == "Plaid":
+        # Accept both 'plaid' and 'Plaid' values
+        if str(getattr(account, "link_type", "")).lower() == "plaid":
             token = getattr(account.plaid_account, "access_token", None)
             if not token:
                 continue

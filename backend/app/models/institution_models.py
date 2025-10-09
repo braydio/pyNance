@@ -1,6 +1,6 @@
 """Institution models covering financial institutions and Plaid-linked records."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from app.extensions import db
 
@@ -83,4 +83,5 @@ class PlaidWebhookLog(db.Model, TimestampMixin):
     webhook_code = db.Column(db.String(64))
     item_id = db.Column(db.String(128))
     payload = db.Column(db.JSON, nullable=True)
-    received_at = db.Column(db.DateTime, default=datetime.now(tz=timezone.utc))
+    # Store naive UTC to match DB column (no timezone=True)
+    received_at = db.Column(db.DateTime, default=datetime.utcnow)

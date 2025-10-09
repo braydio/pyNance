@@ -229,12 +229,14 @@ def sync_account_transactions(account_id: str) -> Dict:
     # Persist final cursor for all accounts under this item
     for pa in item_plaid_accts:
         pa.sync_cursor = next_cursor
-        pa.last_refreshed = datetime.now(timezone.utc)
+        # Use naive timestamp to match DB
+        pa.last_refreshed = datetime.now()
     db.session.commit()
 
     # Legacy: Persist final cursor
     plaid_acct.sync_cursor = next_cursor
-    plaid_acct.last_refreshed = datetime.now(timezone.utc)
+    # Use naive timestamp to match DB
+    plaid_acct.last_refreshed = datetime.now()
     db.session.commit()
 
     logger.info(

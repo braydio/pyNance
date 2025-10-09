@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Accounts</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <style>
+      body { max-width: 1100px; margin: 2rem auto; }
+      table { font-size: 14px; }
+      td input { width: 100%; }
+      .controls { display:flex; gap:.5rem; align-items:center; }
+    </style>
+  </head>
+  <body>
+    <h2>Accounts</h2>
+    <article>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Institution</th><th>Type</th><th>Balance</th><th>Hidden</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </article>
+
+    <script>
+      let accounts = []
+
+      async function fetchAccounts(){
+        const res = await fetch('/api/accounts/get_accounts')
+        const json = await res.json()
+        if (json.status !== 'success') throw new Error(json.message || 'Failed to load accounts')
+        accounts = json.accounts || json.data || json.accounts || json.accounts
+        // Endpoint returns {status:'success', accounts: [...]}
+        accounts = json.accounts || json.data?.accounts || json.accounts || []
+      }
+
+      async function setHidden(account_id, hidden){
+        await fetch(`/api/accounts/${account_id}/hidden`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ hidden }) })
+      }
+
+      async function refreshAccount(account_id){
+        await fetch(`/api/accounts/${account_id}/refresh`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({}) })
+      }
+
+      function td(val){ return `<td>${val ?? ''}</td>` }
+
+      function render(){
+        const tbody = document.getElementById('tbody')
+        tbody.innerHTML = ''
+        accounts.forEach(acc => {
+          const tr = document.createElement('tr')
+          tr.innerHTML = `
+            ${td(acc.name)}
+            ${td(acc.institution_name || '')}
+            ${td([acc.type, acc.subtype].filter(Boolean).join(' / '))}
+            ${td(acc.balance != null ? `$${Number(acc.balance).toFixed(2)}` : '')}
+            <td><input type="checkbox" ${acc.is_hidden ? 'checked' : ''}></td>
+            <td>
+              <button class="refresh">Refresh</button>
+            </td>`
+          const chk = tr.querySelector('input[type="checkbox"]')
+          chk.addEventListener('change', async ()=>{
+            try { await setHidden(acc.account_id, chk.checked); acc.is_hidden = chk.checked } catch(e){ alert('Failed to update hidden flag') }
+          })
+          tr.querySelector('.refresh').addEventListener('click', async ()=>{
+            try { await refreshAccount(acc.account_id); alert('Refresh requested') } catch(e){ alert('Refresh failed') }
+          })
+          tbody.appendChild(tr)
+        })
+      }
+
+      async function load(){ await fetchAccounts(); render() }
+      load().catch(err => alert(err.message || err))
+    </script>
+  </body>
+  </html>
+

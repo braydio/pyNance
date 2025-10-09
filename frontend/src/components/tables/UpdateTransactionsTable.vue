@@ -115,6 +115,7 @@
                 v-if="editingIndex === index"
                 v-model="editBuffer.merchant_name"
                 type="text"
+                list="merchant-suggestions"
                 class="input"
               />
               <span v-else>{{ tx.merchant_name }}</span>
@@ -167,12 +168,15 @@
     <datalist id="category-suggestions">
       <option v-for="option in categorySuggestions" :key="option" :value="option" />
     </datalist>
+    <datalist id="merchant-suggestions">
+      <option v-for="name in merchantSuggestions" :key="name" :value="name" />
+    </datalist>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction } from '@/api/transactions'
+import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
@@ -204,6 +208,7 @@ const selectedCounterpart = ref([])
 const activeInternalTx = ref(null)
 
 const categoryTree = ref([])
+const merchantSuggestions = ref([])
 const sortKey = ref('date')
 const sortOrder = ref('asc')
 
@@ -283,12 +288,25 @@ async function saveEdit(tx) {
     editingIndex.value = null
     toast.success('Transaction updated')
 
-    if (payload.description) {
-      const confirmed = confirm(
-        `Always use description "${payload.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`,
-      )
-      if (confirmed) {
-        console.log('[RuleEngine] Create rule: if merchant is', tx.merchant_name)
+    // Offer to save a rule for future matches when key fields change
+    const changedField = ['category', 'merchant_name', 'merchant_type'].find((f) => f in payload)
+    if (changedField) {
+      const newValue = payload[changedField]
+      const promptText = `Always set ${changedField} to "${newValue}" for ${tx.description} in ${tx.account_name} at ${tx.institution_name}?`
+      if (confirm(promptText)) {
+        try {
+          await createTransactionRule({
+            user_id: tx.user_id || '',
+            field: changedField,
+            value: newValue,
+            description: tx.description,
+            account_id: tx.account_id,
+          })
+          toast.success('Rule saved')
+        } catch (e) {
+          console.error('Failed to save rule:', e)
+          toast.error('Failed to save rule')
+        }
       }
     }
   } catch (e) {
@@ -452,6 +470,8 @@ onMounted(async () => {
       })
       categoryTree.value = tree.sort((a, b) => a.name.localeCompare(b.name))
     }
+    // Fetch merchant suggestions for autocomplete
+    merchantSuggestions.value = await fetchMerchantSuggestions('')
   } catch (e) {
     console.error('Failed to load category tree:', e)
   }

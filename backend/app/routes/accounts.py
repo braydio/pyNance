@@ -141,6 +141,14 @@ def _refresh_plaid_investments(
     return bool(securities_count or holdings_count or tx_count)
 
 
+def _is_plaid_link_type(value) -> bool:
+    """Return True if the link_type value denotes Plaid (case-insensitive)."""
+    try:
+        return str(value or "").lower() == "plaid"
+    except Exception:
+        return False
+
+
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """Refresh all linked accounts for their enabled products."""
@@ -163,7 +171,7 @@ def refresh_all_accounts():
         error_map: dict[tuple[str, str, str], dict] = {}
 
         for account in accounts:
-            if account.link_type == "Plaid":
+            if _is_plaid_link_type(account.link_type):
                 access_token = None
                 if account.plaid_account:
                     access_token = account.plaid_account.access_token
@@ -236,9 +244,8 @@ def refresh_all_accounts():
                         else:
                             account_updated = account_updated or updated
                             if updated and account.plaid_account:
-                                account.plaid_account.last_refreshed = datetime.now(
-                                    timezone.utc
-                                )
+                                # Store naive timestamp to match column type
+                                account.plaid_account.last_refreshed = datetime.now()
                     elif product_name == "investments":
                         try:
                             investments_updated = _refresh_plaid_investments(
@@ -249,9 +256,8 @@ def refresh_all_accounts():
                             )
                             account_updated = account_updated or investments_updated
                             if account.plaid_account:
-                                account.plaid_account.last_refreshed = datetime.now(
-                                    timezone.utc
-                                )
+                                # Store naive timestamp to match column type
+                                account.plaid_account.last_refreshed = datetime.now()
                         except Exception as exc:
                             error_logger.error(
                                 "Plaid investments refresh failed for account %s: %s",
@@ -272,7 +278,7 @@ def refresh_all_accounts():
 
             else:
                 logger.info(
-                    f"Skipping account {account.account_id} with unknown link_type {account.link_type}"
+                    f"Skipping account {account.account_id} with non-Plaid link_type '{account.link_type}'"
                 )
 
         # Log aggregated error summary for operators
@@ -315,7 +321,7 @@ def refresh_all_accounts():
         )
 
     except Exception as ex:
-        logger.error("Error in refresh_accounts")
+        logger.error("Error in refresh_accounts: %s", ex, exc_info=True)
         return jsonify({"error": str(ex)}), 500
 
 
@@ -334,7 +340,7 @@ def refresh_single_account(account_id):
 
     updated = False
 
-    if account.link_type != "Plaid":
+    if str(getattr(account, "link_type", "")).lower() != "plaid":
         return (
             jsonify({"status": "error", "message": "Unsupported link type"}),
             400,
@@ -409,7 +415,8 @@ def refresh_single_account(account_id):
                 )
                 plaid_updated = plaid_updated or investments_updated
                 if account.plaid_account:
-                    account.plaid_account.last_refreshed = datetime.now(timezone.utc)
+                    # Store naive timestamp to match column type
+                    account.plaid_account.last_refreshed = datetime.now()
             except Exception as exc:
                 logger.error(
                     "Plaid investments refresh failed for account %s: %s",
@@ -470,7 +477,9 @@ def get_accounts():
 
                 data.append(
                     {
-                        "id": a.id,
+                        # Account model uses string business key `account_id` as PK
+                        # Maintain `id` field for frontend compatibility by mirroring `account_id`.
+                        "id": a.account_id,
                         "account_id": a.account_id,
                         "name": a.name,
                         "institution_name": a.institution_name,
@@ -484,8 +493,13 @@ def get_accounts():
                     }
                 )
             except Exception as item_err:
+                try:
+                    acct_identifier = getattr(a, "account_id", None)
+                except Exception:
+                    acct_identifier = None
                 logger.warning(
-                    f"Error serializing account ID {a.id}: {item_err}", exc_info=True
+                    f"Error serializing account: {acct_identifier} - {item_err}",
+                    exc_info=True,
                 )
         return jsonify({"status": "success", "accounts": data}), 200
     except Exception as e:

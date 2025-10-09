@@ -32,6 +32,8 @@ def upgrade() -> None:
     )
     link_type_new = sa.Enum("manual", "plaid", name="link_type")
     link_type_new.create(bind, checkfirst=False)
+    # Drop default to prevent cast errors when switching enum type
+    op.execute(sa.text("ALTER TABLE accounts ALTER COLUMN link_type DROP DEFAULT"))
     op.alter_column(
         "accounts",
         "link_type",
@@ -39,6 +41,7 @@ def upgrade() -> None:
         type_=link_type_new,
         postgresql_using="link_type::text::link_type",
     )
+    op.execute(sa.text("ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"))
     op.execute(sa.text("DROP TYPE link_type_old"))
 
     # Remove Teller from the provider_type enum used by transactions.
@@ -48,6 +51,8 @@ def upgrade() -> None:
     )
     provider_type_new = sa.Enum("manual", "plaid", name="provider_type")
     provider_type_new.create(bind, checkfirst=False)
+    # Drop default to prevent cast errors when switching enum type
+    op.execute(sa.text("ALTER TABLE transactions ALTER COLUMN provider DROP DEFAULT"))
     op.alter_column(
         "transactions",
         "provider",
@@ -55,6 +60,7 @@ def upgrade() -> None:
         type_=provider_type_new,
         postgresql_using="provider::text::provider_type",
     )
+    op.execute(sa.text("ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"))
     op.execute(sa.text("DROP TYPE provider_type_old"))
 
     # Finally drop the Teller account table entirely.

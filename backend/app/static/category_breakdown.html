@@ -1,61 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Category Breakdown</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+      body { max-width: 1100px; margin: 2rem auto; }
+      canvas { max-height: 400px; }
+    </style>
+  </head>
+  <body>
+    <h2>Category Breakdown (last 30 days)</h2>
+    <article>
+      <canvas id="catChart"></canvas>
+    </article>
+    <article>
+      <label>Start <input type="date" id="startDate" /></label>
+      <label>End <input type="date" id="endDate" /></label>
+      <button id="reload">Reload</button>
+    </article>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Category Breakdown</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { background: #282828; color: #ebdbb2; font-family: 'Fira Code', monospace; }
-    .chart-summary { background: rgba(44, 44, 44, 0.8); padding: 0.5rem; border-radius: 4px; color: #fabd2f; }
-    canvas { background: #3c3836; border-radius: 8px; padding: 1rem; }
-  </style>
-</head>
-<body>
-  <h3>Spending by Category</h3>
-  <div class="chart-summary" id="summary">Loading...</div>
-  <canvas id="categoryChart"></canvas>
+    <script>
+      async function fetchBreakdown(params = {}) {
+        const q = new URLSearchParams(params)
+        const res = await fetch(`/api/charts/category_breakdown?${q}`)
+        const json = await res.json()
+        if (json.status !== 'success') throw new Error(json.message || 'Error')
+        return json.data
+      }
 
-  <script>
-    async function renderCategoryChart() {
-      const res = await fetch('/api/charts/category_breakdown');
-      const { data } = await res.json();
+      function renderChart(ctx, rows) {
+        const labels = rows.map(r => r.category)
+        const amounts = rows.map(r => r.amount)
+        return new Chart(ctx, {
+          type: 'bar',
+          data: { labels, datasets: [{ label: 'Amount', data: amounts, backgroundColor: '#6366f1' }] },
+          options: { responsive:true, maintainAspectRatio:false }
+        })
+      }
 
-      const top10 = data.sort((a, b) => b.amount - a.amount).slice(0, 10);
-      const labels = top10.map(entry => entry.category || 'Uncategorized');
-      const amounts = top10.map(entry => Math.round(entry.amount));
-      const total = amounts.reduce((sum, val) => sum + val, 0);
+      async function load() {
+        const start = document.getElementById('startDate').value
+        const end = document.getElementById('endDate').value
+        const params = {}
+        if (start) params.start_date = start
+        if (end) params.end_date = end
+        const rows = await fetchBreakdown(params)
+        if (window._chart) window._chart.destroy()
+        window._chart = renderChart(document.getElementById('catChart').getContext('2d'), rows)
+      }
 
-      document.getElementById('summary').textContent = `Total Spending: $${total.toLocaleString()}`;
-
-      new Chart(document.getElementById('categoryChart').getContext('2d'), {
-        type: 'bar',
-        data: {
-          labels,
-          datasets: [{
-            label: 'Spending',
-            data: amounts,
-            backgroundColor: '#83a598',
-            borderRadius: 4
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: {
-            x: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }},
-            y: { ticks: { color: '#ebdbb2' }, grid: { color: '#504945' }}
-          },
-          plugins: {
-            tooltip: {
-              callbacks: { label: ctx => `${ctx.label}: $${ctx.raw.toLocaleString()}` }
-            }
-          }
-        }
-      });
-    }
-
-    renderCategoryChart();
-  </script>
-</body>
-</html>
+      document.getElementById('reload').addEventListener('click', load)
+      load().catch(err => alert(err.message || err))
+    </script>
+  </body>
+  </html>
 

@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daily Net Chart</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+      body { max-width: 1100px; margin: 2rem auto; }
+      canvas { max-height: 360px; }
+      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      .muted { color:#666 }
+    </style>
+  </head>
+  <body>
+    <h2>Daily Net (last 30 days)</h2>
+    <article>
+      <canvas id="netChart"></canvas>
+    </article>
+    <div class="grid">
+      <article>
+        <h4>Totals</h4>
+        <ul id="totals" class="muted"></ul>
+      </article>
+      <article>
+        <h4>Options</h4>
+        <label>Start <input type="date" id="startDate" /></label>
+        <label>End <input type="date" id="endDate" /></label>
+        <button id="reload">Reload</button>
+      </article>
+    </div>
+
+    <script>
+      async function fetchDailyNet(params = {}) {
+        const q = new URLSearchParams(params)
+        const res = await fetch(`/api/charts/daily_net?${q}`)
+        const json = await res.json()
+        if (json.status && json.status !== 'success') throw new Error(json.message || 'Error')
+        return json
+      }
+
+      function toSeries(data) {
+        const labels = data.map(d => d.date)
+        const income = data.map(d => Number(d.income?.source ?? 0))
+        const expenses = data.map(d => Number(d.expenses?.source ?? 0))
+        const net = data.map(d => Number(d.net?.source ?? 0))
+        return { labels, income, expenses, net }
+      }
+
+      function renderChart(ctx, series) {
+        return new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: series.labels,
+            datasets: [
+              { label: 'Income', data: series.income, borderColor: '#16a34a', fill:false },
+              { label: 'Expenses', data: series.expenses, borderColor: '#ef4444', fill:false },
+              { label: 'Net', data: series.net, borderColor: '#3b82f6', fill:false }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false }
+        })
+      }
+
+      function renderTotals(el, series) {
+        const sum = arr => arr.reduce((a,b)=>a + (Number(b)||0), 0)
+        el.innerHTML = `
+          <li><strong>Income:</strong> $${sum(series.income).toFixed(2)}</li>
+          <li><strong>Expenses:</strong> $${sum(series.expenses).toFixed(2)}</li>
+          <li><strong>Net:</strong> $${sum(series.net).toFixed(2)}</li>
+        `
+      }
+
+      async function load() {
+        const start = document.getElementById('startDate').value
+        const end = document.getElementById('endDate').value
+        const params = {}
+        if (start) params.start_date = start
+        if (end) params.end_date = end
+        const json = await fetchDailyNet(params)
+        const series = toSeries(json.data || json) // endpoint returns {status,data}
+        if (window._chart) window._chart.destroy()
+        window._chart = renderChart(document.getElementById('netChart').getContext('2d'), series)
+        renderTotals(document.getElementById('totals'), series)
+      }
+
+      document.getElementById('reload').addEventListener('click', load)
+      load().catch(err => alert(err.message || err))
+    </script>
+  </body>
+  </html>
+

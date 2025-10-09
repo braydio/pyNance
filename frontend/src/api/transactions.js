@@ -56,6 +56,24 @@ export const updateTransaction = async (transactionData) => {
   return response.data
 }
 
+/**
+ * Retrieve merchant name suggestions with optional substring filter.
+ */
+export const fetchMerchantSuggestions = async (q = '', limit = 50) => {
+  const response = await axios.get('/api/transactions/merchants', { params: { q, limit } })
+  return response.data?.status === 'success' ? response.data.data : []
+}
+
+/**
+ * Create a reusable transaction rule from a user edit.
+ *
+ * @param {Object} payload - { user_id, field, value, description, account_id }
+ */
+export const createTransactionRule = async (payload) => {
+  const response = await axios.post('/api/transactions/rules', payload)
+  return response.data
+}
+
 export const fetchRecentTransactions = async (accountId, limit = 10) => {
   const params = { recent: true, limit }
   const response = await axios.get(`/api/transactions/${accountId}/transactions`, { params })

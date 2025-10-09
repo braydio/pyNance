@@ -87,6 +87,11 @@ def run_migrations_online():
                 logger.info("No changes in schema detected.")
 
     conf_args = current_app.extensions["migrate"].configure_args
+    # Ensure sane autogenerate defaults to avoid noisy diffs
+    conf_args.setdefault("compare_type", True)
+    conf_args.setdefault("compare_server_default", False)
+    # Batch rendering mainly for SQLite; harmless on Postgres if passed
+    conf_args.setdefault("render_as_batch", False)
     if conf_args.get("process_revision_directives") is None:
         conf_args["process_revision_directives"] = process_revision_directives
 

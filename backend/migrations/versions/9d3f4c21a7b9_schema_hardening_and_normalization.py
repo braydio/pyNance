@@ -85,6 +85,11 @@ def upgrade() -> None:
         )
 
         # Now alter column types using explicit USING casts and set defaults
+        # Drop existing defaults first to avoid Postgres casting errors
+        op.execute("ALTER TABLE accounts ALTER COLUMN status DROP DEFAULT")
+        op.execute("ALTER TABLE accounts ALTER COLUMN link_type DROP DEFAULT")
+        op.execute("ALTER TABLE transactions ALTER COLUMN provider DROP DEFAULT")
+
         op.execute(
             "ALTER TABLE accounts ALTER COLUMN status TYPE account_status USING status::account_status"
         )

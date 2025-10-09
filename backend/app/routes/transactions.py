@@ -120,12 +120,33 @@ def update_transaction():
 
         db.session.commit()
 
+        # Optional: save as a reusable rule with richer scoping
         if data.get("save_as_rule"):
             from app.sql import transaction_rules_logic
 
-            criteria = {"merchant_name": txn.merchant_name}
-            action = {"category": txn.category, "category_id": txn.category_id}
-            transaction_rules_logic.create_rule(txn.user_id, criteria, action)
+            field = data.get("rule_field")  # e.g., "category" or "merchant_name"
+            value = data.get("rule_value")  # desired value to set
+            description = data.get("rule_description") or txn.description
+            account_scope = data.get("rule_account_id") or txn.account_id
+
+            match_criteria = {"account_id": account_scope}
+            if description:
+                # Exact-match description pattern
+                import re
+
+                escaped = re.escape(description)
+                match_criteria["description_pattern"] = f"^{escaped}$"
+
+            action = {}
+            if field == "category":
+                # Try to set both category and category_id coherently
+                action["category"] = value or txn.category
+                if txn.category_id:
+                    action["category_id"] = txn.category_id
+            elif field in ("merchant_name", "merchant_type"):
+                action[field] = value or getattr(txn, field)
+
+            transaction_rules_logic.create_rule(txn.user_id, match_criteria, action)
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logger.error(f"Error updating transaction: {e}", exc_info=True)
@@ -364,6 +385,76 @@ def get_account_transactions(account_id):
 
     except Exception as e:
         logger.error(f"Error in get_account_transactions: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/merchants", methods=["GET"])
+def merchant_suggestions():
+    """Return a list of merchant name suggestions.
+
+    Query params:
+    - q: optional substring filter (case-insensitive)
+    - limit: max number of results (default 50)
+    """
+    try:
+        q = (request.args.get("q") or "").strip()
+        limit = min(int(request.args.get("limit", 50)), 200)
+
+        query = db.session.query(
+            Transaction.merchant_name, func.count(Transaction.id).label("cnt")
+        ).group_by(Transaction.merchant_name)
+
+        if q:
+            query = query.filter(Transaction.merchant_name.ilike(f"%{q}%"))
+
+        rows = (
+            query.order_by(func.count(Transaction.id).desc(), Transaction.merchant_name.asc())
+            .limit(limit)
+            .all()
+        )
+        names = [name for name, _ in rows if name]
+        return jsonify({"status": "success", "data": names}), 200
+    except Exception as e:
+        logger.error(f"Error fetching merchant suggestions: {e}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/rules", methods=["POST"])
+def create_rule():
+    """Create a transaction rule from user edits.
+
+    Body: {
+      user_id, field, value, description, account_id
+    }
+    """
+    try:
+        payload = request.get_json() or {}
+        user_id = payload.get("user_id")
+        field = payload.get("field")
+        value = payload.get("value")
+        description = payload.get("description")
+        account_id = payload.get("account_id")
+        if not user_id or not field or (not value and value != ""):
+            return (
+                jsonify({"status": "error", "message": "Missing required fields"}),
+                400,
+            )
+
+        from app.sql import transaction_rules_logic
+
+        match = {}
+        if account_id:
+            match["account_id"] = account_id
+        if description:
+            import re
+
+            match["description_pattern"] = f"^{re.escape(description)}$"
+
+        action = {field: value}
+        rule = transaction_rules_logic.create_rule(user_id, match, action)
+        return jsonify({"status": "success", "rule_id": rule.id}), 201
+    except Exception as e:
+        logger.error(f"Error creating rule: {e}", exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

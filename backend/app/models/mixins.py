@@ -1,13 +1,14 @@
 """Shared mixins for SQLAlchemy models."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from app.extensions import db
 
 
 class TimestampMixin:
-    created_at = db.Column(db.DateTime, default=lambda: datetime.now(tz=timezone.utc))
+    # Use naive UTC timestamps to match DB columns (no timezone=True)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.utcnow())
     updated_at = db.Column(
         db.DateTime,
-        default=lambda: datetime.now(tz=timezone.utc),
-        onupdate=lambda: datetime.now(tz=timezone.utc),
+        default=lambda: datetime.utcnow(),
+        onupdate=lambda: datetime.utcnow(),
     )

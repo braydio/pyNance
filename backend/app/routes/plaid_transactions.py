@@ -168,7 +168,8 @@ def exchange_public_token_endpoint():
                 access_token=access_token,
                 item_id=item_id,
                 institution_id=institution_id,
-                last_refreshed=datetime.now(timezone.utc),
+                # Store naive timestamp to match column type
+                last_refreshed=datetime.now(),
             )
             db.session.add(new_plaid_account)
 
@@ -444,7 +445,8 @@ def sync_transactions_endpoint():
                 200,
             )
 
-        timestamp = datetime.now(timezone.utc)
+        # Store naive timestamp to match column type
+        timestamp = datetime.now()
         plaid_account.last_refreshed = timestamp
         if plaid_account.account:
             plaid_account.account.updated_at = timestamp

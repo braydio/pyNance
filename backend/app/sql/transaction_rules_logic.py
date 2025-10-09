@@ -36,6 +36,9 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
     for rule in rules:
         crit = rule.match_criteria or {}
         match = True
+        # Optional exact account scope
+        if "account_id" in crit and crit["account_id"] != transaction.get("account_id"):
+            match = False
         if "merchant_name" in crit and crit["merchant_name"] != transaction.get(
             "merchant_name"
         ):
@@ -64,8 +67,15 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
         if not match:
             continue
         for key, value in (rule.action or {}).items():
-            if key == "category_id":
-                category = Category.query.get(value)
+            if key in ("category_id", "category"):
+                # Accept either category_id or category display name
+                category = None
+                if key == "category_id" and value is not None:
+                    category = Category.query.get(value)
+                elif key == "category" and value:
+                    category = (
+                        Category.query.filter(Category.display_name == value).first()
+                    )
                 if category:
                     transaction["category_id"] = category.id
                     transaction["category"] = category.display_name
