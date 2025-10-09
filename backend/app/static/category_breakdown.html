@@ -4,11 +4,19 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Category Breakdown</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
-      body { max-width: 1100px; margin: 2rem auto; }
-      canvas { max-height: 400px; }
+      body {
+        max-width: 1100px;
+        margin: 2rem auto;
+      }
+      canvas {
+        max-height: 400px;
+      }
     </style>
   </head>
   <body>
@@ -24,37 +32,44 @@
 
     <script>
       async function fetchBreakdown(params = {}) {
-        const q = new URLSearchParams(params)
-        const res = await fetch(`/api/charts/category_breakdown?${q}`)
-        const json = await res.json()
-        if (json.status !== 'success') throw new Error(json.message || 'Error')
-        return json.data
+        const q = new URLSearchParams(params);
+        const res = await fetch(`/api/charts/category_breakdown?${q}`);
+        const json = await res.json();
+        if (json.status !== "success") throw new Error(json.message || "Error");
+        return json.data;
       }
 
       function renderChart(ctx, rows) {
-        const labels = rows.map(r => r.category)
-        const amounts = rows.map(r => r.amount)
+        const labels = rows.map((r) => r.category);
+        const amounts = rows.map((r) => r.amount);
         return new Chart(ctx, {
-          type: 'bar',
-          data: { labels, datasets: [{ label: 'Amount', data: amounts, backgroundColor: '#6366f1' }] },
-          options: { responsive:true, maintainAspectRatio:false }
-        })
+          type: "bar",
+          data: {
+            labels,
+            datasets: [
+              { label: "Amount", data: amounts, backgroundColor: "#6366f1" },
+            ],
+          },
+          options: { responsive: true, maintainAspectRatio: false },
+        });
       }
 
       async function load() {
-        const start = document.getElementById('startDate').value
-        const end = document.getElementById('endDate').value
-        const params = {}
-        if (start) params.start_date = start
-        if (end) params.end_date = end
-        const rows = await fetchBreakdown(params)
-        if (window._chart) window._chart.destroy()
-        window._chart = renderChart(document.getElementById('catChart').getContext('2d'), rows)
+        const start = document.getElementById("startDate").value;
+        const end = document.getElementById("endDate").value;
+        const params = {};
+        if (start) params.start_date = start;
+        if (end) params.end_date = end;
+        const rows = await fetchBreakdown(params);
+        if (window._chart) window._chart.destroy();
+        window._chart = renderChart(
+          document.getElementById("catChart").getContext("2d"),
+          rows,
+        );
       }
 
-      document.getElementById('reload').addEventListener('click', load)
-      load().catch(err => alert(err.message || err))
+      document.getElementById("reload").addEventListener("click", load);
+      load().catch((err) => alert(err.message || err));
     </script>
   </body>
-  </html>
-
+</html>

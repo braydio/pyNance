@@ -366,7 +366,8 @@ def get_paginated_transactions(
                 "category_id": getattr(cat, "id", None),
                 "category_icon_url": getattr(cat, "pfc_icon_url", None),
                 "merchant_name": txn.merchant_name or "Unknown",
-                "user_id": getattr(txn, "user_id", None) or getattr(acc, "user_id", None),
+                "user_id": getattr(txn, "user_id", None)
+                or getattr(acc, "user_id", None),
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",

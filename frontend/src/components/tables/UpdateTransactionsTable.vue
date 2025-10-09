@@ -176,7 +176,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
+import {
+  updateTransaction,
+  fetchMerchantSuggestions,
+  createTransactionRule,
+} from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 

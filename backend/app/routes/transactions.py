@@ -408,7 +408,9 @@ def merchant_suggestions():
             query = query.filter(Transaction.merchant_name.ilike(f"%{q}%"))
 
         rows = (
-            query.order_by(func.count(Transaction.id).desc(), Transaction.merchant_name.asc())
+            query.order_by(
+                func.count(Transaction.id).desc(), Transaction.merchant_name.asc()
+            )
             .limit(limit)
             .all()
         )
