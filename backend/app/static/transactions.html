@@ -4,12 +4,26 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Transactions</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
     <style>
-      body { max-width: 1200px; margin: 2rem auto; }
-      table { font-size: 14px; }
-      td input { width: 100%; }
-      .controls { display:flex; gap:.5rem; align-items:center; }
+      body {
+        max-width: 1200px;
+        margin: 2rem auto;
+      }
+      table {
+        font-size: 14px;
+      }
+      td input {
+        width: 100%;
+      }
+      .controls {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+      }
     </style>
   </head>
   <body>
@@ -17,7 +31,8 @@
     <section class="controls">
       <label>Start <input type="date" id="startDate" /></label>
       <label>End <input type="date" id="endDate" /></label>
-      <label>Type
+      <label
+        >Type
         <select id="txType">
           <option value="">All</option>
           <option value="credit">Income</option>
@@ -30,7 +45,14 @@
       <table>
         <thead>
           <tr>
-            <th>Date</th><th>Amount</th><th>Description</th><th>Category</th><th>Merchant</th><th>Account</th><th>Institution</th><th>Actions</th>
+            <th>Date</th>
+            <th>Amount</th>
+            <th>Description</th>
+            <th>Category</th>
+            <th>Merchant</th>
+            <th>Account</th>
+            <th>Institution</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="tbody"></tbody>
@@ -43,75 +65,108 @@
     </article>
 
     <script>
-      let page = 1, pageSize = 15, total = 0
-      let rows = []
+      let page = 1,
+        pageSize = 15,
+        total = 0;
+      let rows = [];
 
       async function fetchPage() {
-        const params = new URLSearchParams({ page, page_size: pageSize })
-        const s = document.getElementById('startDate').value
-        const e = document.getElementById('endDate').value
-        const t = document.getElementById('txType').value
-        if (s) params.set('start_date', s)
-        if (e) params.set('end_date', e)
-        if (t) params.set('tx_type', t)
-        const res = await fetch(`/api/transactions/get_transactions?${params}`)
-        const json = await res.json()
-        if (json.status !== 'success') throw new Error(json.message || 'Error loading')
-        rows = json.data.transactions
-        total = json.data.total || 0
+        const params = new URLSearchParams({ page, page_size: pageSize });
+        const s = document.getElementById("startDate").value;
+        const e = document.getElementById("endDate").value;
+        const t = document.getElementById("txType").value;
+        if (s) params.set("start_date", s);
+        if (e) params.set("end_date", e);
+        if (t) params.set("tx_type", t);
+        const res = await fetch(`/api/transactions/get_transactions?${params}`);
+        const json = await res.json();
+        if (json.status !== "success")
+          throw new Error(json.message || "Error loading");
+        rows = json.data.transactions;
+        total = json.data.total || 0;
       }
 
-      function td(val) { return `<td>${val ?? ''}</td>` }
-      function input(val, type='text') { return `<input type="${type}" value="${val ?? ''}">` }
+      function td(val) {
+        return `<td>${val ?? ""}</td>`;
+      }
+      function input(val, type = "text") {
+        return `<input type="${type}" value="${val ?? ""}">`;
+      }
 
       async function save(tr, tx) {
-        const cells = tr.querySelectorAll('td')
-        const payload = { transaction_id: tx.transaction_id }
-        const [date, amount, desc, category, merchant] = Array.from(tr.querySelectorAll('input')).map(i=>i.value)
-        if (date !== (tx.date||'').slice(0,10)) payload.date = date
-        if (merchant !== tx.merchant_name) payload.merchant_name = merchant
-        if (category !== (tx.category||'')) payload.category = category
-        const amtNum = parseFloat(amount)
-        if (!Number.isNaN(amtNum) && amtNum !== Number(tx.amount)) payload.amount = amtNum
-        const res = await fetch('/api/transactions/update', {
-          method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)
-        })
-        if (!res.ok) throw new Error('Failed to save')
+        const cells = tr.querySelectorAll("td");
+        const payload = { transaction_id: tx.transaction_id };
+        const [date, amount, desc, category, merchant] = Array.from(
+          tr.querySelectorAll("input"),
+        ).map((i) => i.value);
+        if (date !== (tx.date || "").slice(0, 10)) payload.date = date;
+        if (merchant !== tx.merchant_name) payload.merchant_name = merchant;
+        if (category !== (tx.category || "")) payload.category = category;
+        const amtNum = parseFloat(amount);
+        if (!Number.isNaN(amtNum) && amtNum !== Number(tx.amount))
+          payload.amount = amtNum;
+        const res = await fetch("/api/transactions/update", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Failed to save");
       }
 
       function render() {
-        const tbody = document.getElementById('tbody')
-        tbody.innerHTML = ''
-        rows.forEach(tx => {
-          const tr = document.createElement('tr')
+        const tbody = document.getElementById("tbody");
+        tbody.innerHTML = "";
+        rows.forEach((tx) => {
+          const tr = document.createElement("tr");
           tr.innerHTML = `
-            ${td(input((tx.date||'').slice(0,10),'date'))}
-            ${td(input(tx.amount,'number'))}
+            ${td(input((tx.date || "").slice(0, 10), "date"))}
+            ${td(input(tx.amount, "number"))}
             ${td(input(tx.description))}
             ${td(input(tx.category))}
             ${td(input(tx.merchant_name))}
-            ${td(tx.account_name || '')}
-            ${td(tx.institution_name || '')}
-            <td><button class="save">Save</button></td>`
-          const btn = tr.querySelector('.save')
-          btn.addEventListener('click', async ()=>{
-            btn.setAttribute('disabled','disabled')
-            try { await save(tr, tx); btn.textContent = 'Saved' } catch(e){ alert(e.message||e) } finally { btn.removeAttribute('disabled') }
-          })
-          tbody.appendChild(tr)
-        })
-        const maxPage = Math.max(1, Math.ceil(total / pageSize))
-        document.getElementById('pageInfo').textContent = `Page ${page} / ${maxPage} (total ${total})`
-        document.getElementById('prev').disabled = page<=1
-        document.getElementById('next').disabled = page>=maxPage
+            ${td(tx.account_name || "")}
+            ${td(tx.institution_name || "")}
+            <td><button class="save">Save</button></td>`;
+          const btn = tr.querySelector(".save");
+          btn.addEventListener("click", async () => {
+            btn.setAttribute("disabled", "disabled");
+            try {
+              await save(tr, tx);
+              btn.textContent = "Saved";
+            } catch (e) {
+              alert(e.message || e);
+            } finally {
+              btn.removeAttribute("disabled");
+            }
+          });
+          tbody.appendChild(tr);
+        });
+        const maxPage = Math.max(1, Math.ceil(total / pageSize));
+        document.getElementById("pageInfo").textContent =
+          `Page ${page} / ${maxPage} (total ${total})`;
+        document.getElementById("prev").disabled = page <= 1;
+        document.getElementById("next").disabled = page >= maxPage;
       }
 
-      async function load() { await fetchPage(); render() }
-      document.getElementById('prev').onclick = ()=>{ if (page>1){ page--; load() } }
-      document.getElementById('next').onclick = ()=>{ page++; load() }
-      document.getElementById('reload').onclick = ()=>{ page=1; load() }
-      load().catch(err=> alert(err.message||err))
+      async function load() {
+        await fetchPage();
+        render();
+      }
+      document.getElementById("prev").onclick = () => {
+        if (page > 1) {
+          page--;
+          load();
+        }
+      };
+      document.getElementById("next").onclick = () => {
+        page++;
+        load();
+      };
+      document.getElementById("reload").onclick = () => {
+        page = 1;
+        load();
+      };
+      load().catch((err) => alert(err.message || err));
     </script>
   </body>
-  </html>
-
+</html>
