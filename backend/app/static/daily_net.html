@@ -5,13 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Daily Net Chart</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+    />
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
     <style>
-      body { max-width: 1100px; margin: 2rem auto; }
-      canvas { max-height: 360px; }
-      .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-      .muted { color:#666 }
+      body {
+        max-width: 1100px;
+        margin: 2rem auto;
+      }
+      canvas {
+        max-height: 360px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+      }
+      .muted {
+        color: #666;
+      }
     </style>
   </head>
   <body>
@@ -38,79 +52,99 @@
 
     <script>
       async function fetchDailyNet(params = {}) {
-        const q = new URLSearchParams(params)
-        const res = await fetch(`/api/charts/daily_net?${q}`)
-        const json = await res.json()
-        if (json.status && json.status !== 'success') throw new Error(json.message || 'Error')
-        return json
+        const q = new URLSearchParams(params);
+        const res = await fetch(`/api/charts/daily_net?${q}`);
+        const json = await res.json();
+        if (json.status && json.status !== "success")
+          throw new Error(json.message || "Error");
+        return json;
       }
 
       function toSeries(data) {
-        const labels = data.map(d => d.date)
-        const income = data.map(d => Number(d.income?.source ?? 0))
-        const expenses = data.map(d => Number(d.expenses?.source ?? 0))
-        const net = data.map(d => Number(d.net?.source ?? 0))
-        return { labels, income, expenses, net }
+        const labels = data.map((d) => d.date);
+        const income = data.map((d) => Number(d.income?.source ?? 0));
+        const expenses = data.map((d) => Number(d.expenses?.source ?? 0));
+        const net = data.map((d) => Number(d.net?.source ?? 0));
+        return { labels, income, expenses, net };
       }
 
       function renderChart(ctx, series) {
         return new Chart(ctx, {
-          type: 'line',
+          type: "line",
           data: {
             labels: series.labels,
             datasets: [
-              { label: 'Income', data: series.income, borderColor: '#16a34a', fill:false },
-              { label: 'Expenses', data: series.expenses, borderColor: '#ef4444', fill:false },
-              { label: 'Net', data: series.net, borderColor: '#3b82f6', fill:false }
-            ]
+              {
+                label: "Income",
+                data: series.income,
+                borderColor: "#16a34a",
+                fill: false,
+              },
+              {
+                label: "Expenses",
+                data: series.expenses,
+                borderColor: "#ef4444",
+                fill: false,
+              },
+              {
+                label: "Net",
+                data: series.net,
+                borderColor: "#3b82f6",
+                fill: false,
+              },
+            ],
           },
-          options: { responsive: true, maintainAspectRatio: false }
-        })
+          options: { responsive: true, maintainAspectRatio: false },
+        });
       }
 
       function renderTotals(el, series) {
-        const sum = arr => arr.reduce((a,b)=>a + (Number(b)||0), 0)
+        const sum = (arr) => arr.reduce((a, b) => a + (Number(b) || 0), 0);
         el.innerHTML = `
           <li><strong>Income:</strong> $${sum(series.income).toFixed(2)}</li>
           <li><strong>Expenses:</strong> $${sum(series.expenses).toFixed(2)}</li>
           <li><strong>Net:</strong> $${sum(series.net).toFixed(2)}</li>
-        `
+        `;
       }
 
       async function fetchCashFlow(params = {}) {
-        const q = new URLSearchParams(params)
-        const res = await fetch(`/api/charts/cash_flow?${q}`)
-        const json = await res.json()
-        if (json.status && json.status !== 'success') throw new Error(json.message || 'Error')
-        return json
+        const q = new URLSearchParams(params);
+        const res = await fetch(`/api/charts/cash_flow?${q}`);
+        const json = await res.json();
+        if (json.status && json.status !== "success")
+          throw new Error(json.message || "Error");
+        return json;
       }
 
       function renderDetails(el, cashFlow) {
-        const meta = cashFlow.metadata || {}
+        const meta = cashFlow.metadata || {};
         el.innerHTML = `
-          <li><strong>Total Income:</strong> $${Number(meta.total_income||0).toFixed(2)}</li>
-          <li><strong>Total Expenses:</strong> $${Number(meta.total_expenses||0).toFixed(2)}</li>
-          <li><strong>Transactions:</strong> ${Number(meta.total_transactions||0)}</li>
-        `
+          <li><strong>Total Income:</strong> $${Number(meta.total_income || 0).toFixed(2)}</li>
+          <li><strong>Total Expenses:</strong> $${Number(meta.total_expenses || 0).toFixed(2)}</li>
+          <li><strong>Transactions:</strong> ${Number(meta.total_transactions || 0)}</li>
+        `;
       }
 
       async function load() {
-        const start = document.getElementById('startDate').value
-        const end = document.getElementById('endDate').value
-        const params = {}
-        if (start) params.start_date = start
-        if (end) params.end_date = end
-        const json = await fetchDailyNet(params)
-        const series = toSeries(json.data || json) // endpoint returns {status,data}
-        const cf = await fetchCashFlow(params)
-        if (window._chart) window._chart.destroy()
-        window._chart = renderChart(document.getElementById('netChart').getContext('2d'), series)
-        renderTotals(document.getElementById('totals'), series)
-        renderDetails(document.getElementById('details'), cf)
+        const start = document.getElementById("startDate").value;
+        const end = document.getElementById("endDate").value;
+        const params = {};
+        if (start) params.start_date = start;
+        if (end) params.end_date = end;
+        const json = await fetchDailyNet(params);
+        const series = toSeries(json.data || json); // endpoint returns {status,data}
+        const cf = await fetchCashFlow(params);
+        if (window._chart) window._chart.destroy();
+        window._chart = renderChart(
+          document.getElementById("netChart").getContext("2d"),
+          series,
+        );
+        renderTotals(document.getElementById("totals"), series);
+        renderDetails(document.getElementById("details"), cf);
       }
 
-      document.getElementById('reload').addEventListener('click', load)
-      load().catch(err => alert(err.message || err))
+      document.getElementById("reload").addEventListener("click", load);
+      load().catch((err) => alert(err.message || err));
     </script>
   </body>
-  </html>
+</html>
