@@ -535,11 +535,15 @@ def refresh_data_for_plaid_account(
             start_date=start_date_obj,
             end_date=end_date_obj,
         )
-        # Apply user-defined rules before upserting
-        transactions = [
-            transaction_rules_logic.apply_rules(account.user_id, dict(tx))
-            for tx in transactions
-        ]
+        # Apply user-defined rules before upserting, with robust normalization
+        normalized = []
+        for tx in transactions:
+            tx = dict(tx)
+            # Some Plaid sandboxes can return category=None; normalize to list
+            if tx.get("category") is None:
+                tx["category"] = []
+            normalized.append(transaction_rules_logic.apply_rules(account.user_id, tx))
+        transactions = normalized
         logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
 
         # Only process transactions for this specific account
@@ -584,6 +588,8 @@ def refresh_data_for_plaid_account(
 
             # Legacy Plaid category
             category_path = txn.get("category", [])
+            if not isinstance(category_path, (list, tuple)):
+                category_path = []
             primary = category_path[0] if len(category_path) > 0 else "Unknown"
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 

@@ -25,12 +25,16 @@
         <ul id="totals" class="muted"></ul>
       </article>
       <article>
-        <h4>Options</h4>
-        <label>Start <input type="date" id="startDate" /></label>
-        <label>End <input type="date" id="endDate" /></label>
-        <button id="reload">Reload</button>
+        <h4>Financial Details</h4>
+        <ul id="details" class="muted"></ul>
       </article>
     </div>
+    <article>
+      <h4>Options</h4>
+      <label>Start <input type="date" id="startDate" /></label>
+      <label>End <input type="date" id="endDate" /></label>
+      <button id="reload">Reload</button>
+    </article>
 
     <script>
       async function fetchDailyNet(params = {}) {
@@ -73,6 +77,23 @@
         `
       }
 
+      async function fetchCashFlow(params = {}) {
+        const q = new URLSearchParams(params)
+        const res = await fetch(`/api/charts/cash_flow?${q}`)
+        const json = await res.json()
+        if (json.status && json.status !== 'success') throw new Error(json.message || 'Error')
+        return json
+      }
+
+      function renderDetails(el, cashFlow) {
+        const meta = cashFlow.metadata || {}
+        el.innerHTML = `
+          <li><strong>Total Income:</strong> $${Number(meta.total_income||0).toFixed(2)}</li>
+          <li><strong>Total Expenses:</strong> $${Number(meta.total_expenses||0).toFixed(2)}</li>
+          <li><strong>Transactions:</strong> ${Number(meta.total_transactions||0)}</li>
+        `
+      }
+
       async function load() {
         const start = document.getElementById('startDate').value
         const end = document.getElementById('endDate').value
@@ -81,9 +102,11 @@
         if (end) params.end_date = end
         const json = await fetchDailyNet(params)
         const series = toSeries(json.data || json) // endpoint returns {status,data}
+        const cf = await fetchCashFlow(params)
         if (window._chart) window._chart.destroy()
         window._chart = renderChart(document.getElementById('netChart').getContext('2d'), series)
         renderTotals(document.getElementById('totals'), series)
+        renderDetails(document.getElementById('details'), cf)
       }
 
       document.getElementById('reload').addEventListener('click', load)
@@ -91,4 +114,3 @@
     </script>
   </body>
   </html>
-

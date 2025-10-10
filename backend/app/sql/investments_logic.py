@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
+from datetime import date, datetime
+from decimal import Decimal
 
 from app.extensions import db
 from app.models import (
@@ -44,6 +46,23 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
     secs = data.get("securities", []) or []
     holds = data.get("holdings", []) or []
 
+    def _json_safe(obj: Any) -> Any:
+        """Recursively convert Plaid SDK objects to JSON-safe primitives.
+
+        - datetime/date -> ISO string
+        - Decimal -> float
+        - lists/dicts -> mapped recursively
+        """
+        if isinstance(obj, (datetime, date)):
+            return obj.isoformat()
+        if isinstance(obj, Decimal):
+            return float(obj)
+        if isinstance(obj, dict):
+            return {k: _json_safe(v) for k, v in obj.items()}
+        if isinstance(obj, list):
+            return [_json_safe(v) for v in obj]
+        return obj
+
     sec_upserts = 0
     for s in secs:
         # Map Plaid security fields sensibly
@@ -59,23 +78,44 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
             institution_price_as_of=s.get("institution_price_as_of"),
             market_identifier_code=s.get("market_identifier_code"),
             iso_currency_code=s.get("iso_currency_code"),
-            raw=s,
+            raw=_json_safe(s),
         )
         db.session.merge(security)
         sec_upserts += 1
 
     holding_upserts = 0
-    for h in holds:
-        holding = InvestmentHolding(
-            account_id=h.get("account_id"),
-            security_id=h.get("security_id"),
-            quantity=h.get("quantity"),
-            cost_basis=h.get("cost_basis"),
-            institution_value=h.get("institution_value"),
-            as_of=h.get("institution_price_as_of"),
-            raw=h,
+    # Prefetch existing holdings for involved accounts to avoid duplicate inserts within this batch
+    account_ids = list({h.get("account_id") for h in holds if h.get("account_id")})
+    existing_rows = []
+    if account_ids:
+        existing_rows = (
+            InvestmentHolding.query.filter(InvestmentHolding.account_id.in_(account_ids)).all()
         )
-        db.session.merge(holding)
+    existing_map: Dict[tuple[str, str], InvestmentHolding] = {
+        (row.account_id, row.security_id): row for row in existing_rows if row.security_id
+    }
+
+    for h in holds:
+        acct_id = h.get("account_id")
+        sec_id = h.get("security_id")
+        if not acct_id or not sec_id:
+            continue
+        key = (acct_id, sec_id)
+        obj = existing_map.get(key)
+        if obj is None:
+            obj = InvestmentHolding(
+                account_id=acct_id,
+                security_id=sec_id,
+            )
+            db.session.add(obj)
+            existing_map[key] = obj  # prevent duplicate add within the same session
+
+        # Update fields
+        obj.quantity = h.get("quantity")
+        obj.cost_basis = h.get("cost_basis")
+        obj.institution_value = h.get("institution_value")
+        obj.as_of = h.get("institution_price_as_of")
+        obj.raw = _json_safe(h)
         holding_upserts += 1
 
     db.session.commit()
@@ -106,7 +146,7 @@ def upsert_investment_transactions(items: List[dict]) -> int:
             name=t.get("name"),
             fees=t.get("fees"),
             iso_currency_code=t.get("iso_currency_code"),
-            raw=t,
+            raw=_json_safe(t),
         )
         db.session.merge(tx)
         count += 1
