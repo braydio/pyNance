@@ -259,6 +259,11 @@ def refresh_all_accounts():
                                 # Store naive timestamp to match column type
                                 account.plaid_account.last_refreshed = datetime.now()
                         except Exception as exc:
+                            # Ensure the session is usable for the rest of the loop
+                            try:
+                                db.session.rollback()
+                            except Exception:
+                                pass
                             error_logger.error(
                                 "Plaid investments refresh failed for account %s: %s",
                                 account.account_id,
