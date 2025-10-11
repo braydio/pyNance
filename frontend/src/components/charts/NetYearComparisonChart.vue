@@ -85,9 +85,7 @@ function normalisePoint(point) {
     // ``net_assets`` is the legacy backend key – ensure we expose a ``netWorth``
     // property so the chart toggles render as expected regardless of payload
     // shape.
-    netWorth: Number(
-      point.netWorth ?? point.net_assets ?? point.net ?? point.net_worth ?? 0,
-    ),
+    netWorth: Number(point.netWorth ?? point.net_assets ?? point.net ?? point.net_worth ?? 0),
   }
 }
 

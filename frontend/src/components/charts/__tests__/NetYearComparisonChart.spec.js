@@ -60,9 +60,7 @@ describe('NetYearComparisonChart', () => {
     const wrapper = mount(NetYearComparisonChart)
     await flushPromises()
 
-    const netWorthButton = wrapper
-      .findAll('button')
-      .find((button) => button.text() === 'Net Worth')
+    const netWorthButton = wrapper.findAll('button').find((button) => button.text() === 'Net Worth')
     expect(netWorthButton).toBeTruthy()
 
     await netWorthButton.trigger('click')
