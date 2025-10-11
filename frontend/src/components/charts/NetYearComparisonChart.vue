@@ -68,6 +68,29 @@ const chartTypes = [
   { label: 'Net Worth', value: 'netWorth' },
 ]
 
+function formatCurrency(val) {
+  const num = Number(val || 0)
+  return num < 0 ? `($${Math.abs(num).toLocaleString()})` : `$${num.toLocaleString()}`
+}
+
+function normalisePoint(point) {
+  if (!point || !point.date) return null
+
+  const [dateOnly] = point.date.split('T')
+
+  return {
+    date: dateOnly,
+    assets: Number(point.assets ?? 0),
+    liabilities: Number(point.liabilities ?? 0),
+    // ``net_assets`` is the legacy backend key – ensure we expose a ``netWorth``
+    // property so the chart toggles render as expected regardless of payload
+    // shape.
+    netWorth: Number(
+      point.netWorth ?? point.net_assets ?? point.net ?? point.net_worth ?? 0,
+    ),
+  }
+}
+
 function parseByType(year, key) {
   const result = new Array(12).fill(null)
   chartData.value.forEach((d) => {
@@ -77,15 +100,11 @@ function parseByType(year, key) {
   return result
 }
 
-function formatCurrency(val) {
-  const num = Number(val || 0)
-  return num < 0 ? `($${Math.abs(num).toLocaleString()})` : `$${num.toLocaleString()}`
-}
-
 async function fetchData() {
   try {
     const data = await api.fetchNetAssets()
-    chartData.value = Array.isArray(data?.data) ? data.data : []
+    const rawPoints = Array.isArray(data?.data) ? data.data : []
+    chartData.value = rawPoints.map((point) => normalisePoint(point)).filter(Boolean)
     await nextTick()
     buildChart()
   } catch (e) {
