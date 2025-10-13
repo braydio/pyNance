@@ -767,7 +767,9 @@ def get_account_history(account_id):
         txs = [{"date": row[0], "amount": float(row[1])} for row in tx_rows]
 
         # Ensure numeric types are consistent (compute_balance_history expects floats)
-        balances = compute_balance_history(float(account.balance), txs, start_date, end_date)
+        balances = compute_balance_history(
+            float(account.balance), txs, start_date, end_date
+        )
 
         return (
             jsonify(
