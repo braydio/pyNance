@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
 from datetime import date, datetime
 from decimal import Decimal
+from typing import Any, Dict, List, Tuple
 
 from app.extensions import db
 from app.models import (
@@ -88,11 +88,13 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
     account_ids = list({h.get("account_id") for h in holds if h.get("account_id")})
     existing_rows = []
     if account_ids:
-        existing_rows = (
-            InvestmentHolding.query.filter(InvestmentHolding.account_id.in_(account_ids)).all()
-        )
+        existing_rows = InvestmentHolding.query.filter(
+            InvestmentHolding.account_id.in_(account_ids)
+        ).all()
     existing_map: Dict[tuple[str, str], InvestmentHolding] = {
-        (row.account_id, row.security_id): row for row in existing_rows if row.security_id
+        (row.account_id, row.security_id): row
+        for row in existing_rows
+        if row.security_id
     }
 
     for h in holds:
