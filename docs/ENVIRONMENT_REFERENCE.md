@@ -91,4 +91,3 @@ to run on `http://localhost:5000` unless proxied. If you use a custom backend po
 
 - Never commit secrets. Keep `.env` files local only.
 - Rotate keys if exposed and consider read‑only users for local databases.
-
