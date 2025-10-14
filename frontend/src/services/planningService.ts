@@ -158,3 +158,17 @@ export async function updateAllocation(
 export async function deleteAllocation(scenarioId: string, allocationId: string): Promise<void> {
   await apiClient.delete(`/planning/scenarios/${scenarioId}/allocations/${allocationId}`)
 }
+
+/**
+ * Replace the full allocation list for a scenario.
+ */
+export async function replaceScenarioAllocations(
+  scenarioId: string,
+  allocations: Allocation[],
+): Promise<Allocation[]> {
+  const response = await apiClient.put<Allocation[]>(
+    `/planning/scenarios/${scenarioId}/allocations`,
+    allocations,
+  )
+  return response.data
+}

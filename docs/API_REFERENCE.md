@@ -31,6 +31,51 @@ GET    /api/goals
 POST   /api/goals
 ```
 
+## 🧭 Planning & Allocation Endpoints
+
+```text
+GET    /api/planning/bills
+POST   /api/planning/bills
+PUT    /api/planning/bills/<bill_id>
+DELETE /api/planning/bills/<bill_id>
+GET    /api/planning/allocations
+PUT    /api/planning/allocations
+GET    /api/planning/scenarios/<scenario_id>/allocations
+PUT    /api/planning/scenarios/<scenario_id>/allocations
+```
+
+**PUT /api/planning/scenarios/<scenario_id>/allocations**
+
+Replaces the full allocation array for a planning scenario. When the frontend operates in API mode, `usePlanning.persistScenarioAllocations` issues this request after applying an optimistic update.
+
+**Request body**
+
+```json
+[
+  {
+    "id": "alloc-uuid",
+    "target": "savings:emergency",
+    "kind": "percent",
+    "value": 40
+  }
+]
+```
+
+**Response body**
+
+```json
+[
+  {
+    "id": "alloc-uuid",
+    "target": "savings:emergency",
+    "kind": "percent",
+    "value": 40
+  }
+]
+```
+
+Clients should treat the response as the canonical allocation list—merge it back into local state to capture server-side adjustments or generated identifiers.
+
 **GET /api/institutions**
 
 Returns a list of institutions with their linked accounts and the most recent refresh timestamp.
