@@ -5,8 +5,15 @@ import type { PlanningState, Scenario } from "@/types/planning";
 export const selectActiveScenario = (s: PlanningState): Scenario | undefined =>
   s.scenarios.find(x => x.id === s.activeScenarioId);
 
-export const selectTotalBillsCents = (s: PlanningState): number =>
-  s.bills.reduce((a, b) => a + (b.amountCents || 0), 0);
+export const selectTotalBillsCents = (s: PlanningState, scenarioId?: string): number => {
+  const targetScenario = scenarioId ?? s.activeScenarioId;
+  return s.bills.reduce((total, bill) => {
+    if (targetScenario && bill.scenarioId && bill.scenarioId !== targetScenario) {
+      return total;
+    }
+    return total + (bill.amountCents || 0);
+  }, 0);
+};
 
 export const selectAllocatedCents = (sc?: Scenario): number => {
   if (!sc) return 0;

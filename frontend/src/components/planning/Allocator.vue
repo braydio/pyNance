@@ -1,121 +1,191 @@
 <template>
-  <div>
-    <div v-for="category in categories" :key="category" class="mb-4">
-      <label class="block mb-1">{{ category }}</label>
-      <input
-        type="range"
-        min="0"
-        :max="maxFor(category)"
-        :value="allocations[category]"
-        @input="(e) => updateAllocation(category, Number(e.target.value))"
-        class="w-full"
-      />
-      <span class="text-sm">{{ allocations[category] }}%</span>
+  <section class="space-y-6">
+    <header class="space-y-1">
+      <h3 class="text-lg font-semibold">Allocation targets</h3>
+      <p class="text-sm text-muted">
+        Distribute the planning balance across savings and goals. Keep the total under 100% to stay on budget.
+      </p>
+    </header>
+
+    <div v-if="!categories.length" class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted">
+      Add allocation categories to begin distributing this scenario's balance.
     </div>
-    <p>Total: {{ total }}%</p>
-    <p v-if="error" class="text-error">{{ error }}</p>
-  </div>
+
+    <div v-else class="space-y-5">
+      <div v-for="category in categories" :key="category" class="space-y-2">
+        <div class="flex items-center justify-between text-sm">
+          <span class="font-medium">{{ formatCategory(category) }}</span>
+          <span class="text-muted">{{ allocations[category] ?? 0 }}%</span>
+        </div>
+        <input
+          :aria-label="`Allocation for ${formatCategory(category)}`"
+          :max="100"
+          :min="0"
+          :value="allocations[category] ?? 0"
+          class="allocator-slider"
+          step="1"
+          type="range"
+          @input="onSliderInput(category, $event)"
+        />
+        <div class="flex items-center justify-between text-xs text-muted">
+          <span>{{ formatCurrencyAmount(allocations[category] ?? 0) }}</span>
+          <span>{{ 100 - (allocations[category] ?? 0) }}% unallocated</span>
+        </div>
+      </div>
+    </div>
+
+    <footer class="allocation-summary" :class="{ 'is-invalid': !isValid }">
+      <div>
+        <strong>{{ totalPercent }}%</strong>
+        of the balance allocated
+        <span class="text-muted">({{ totalCurrencyLabel }})</span>
+      </div>
+      <div>
+        <span :class="remainingClass">{{ remainingCopy }}</span>
+      </div>
+    </footer>
+
+    <p v-if="!isValid" class="text-sm text-error">
+      Allocation exceeds 100%. Lower one or more sliders to continue.
+    </p>
+  </section>
 </template>
 
-<script setup>
-/**
- * Allocator component.
- *
- * Provides range inputs for assigning percentage allocations to categories
- * and validates that the total does not exceed 100%.
- *
- * v-model:
- * - `modelValue` - object mapping category names to percentage allocations.
- *
- * Props:
- * - `categories` - array of category names to allocate for.
- *
- * Emits:
- * - `update:modelValue` - emitted whenever allocations change.
- * - `change` - provides allocation details and validation info.
- */
-import { reactive, computed, watch } from 'vue'
+<script setup lang="ts">
+import { computed, reactive, watch } from 'vue'
+import { formatCurrency } from '@/utils/currency'
+import { clampAllocations, sanitizePercent } from '@/utils/planning'
 
-/** Component props. */
-const props = defineProps({
-  categories: { type: Array, required: true },
-  modelValue: { type: Object, default: () => ({}) },
-})
+const props = withDefaults(
+  defineProps<{
+    categories: string[]
+    modelValue: Record<string, number>
+    currencyCode?: string
+    availableCents?: number
+  }>(),
+  {
+    categories: () => [],
+    modelValue: () => ({}),
+    currencyCode: 'USD',
+    availableCents: 0,
+  },
+)
 
-/**
- * Emit events to propagate allocation changes to parent components.
- *
- * - `update:modelValue` supports `v-model` usage.
- * - `change` emits detailed allocation info and validation state.
- */
-const emit = defineEmits(['update:modelValue', 'change'])
+const emit = defineEmits<{
+  (e: 'update:modelValue', value: Record<string, number>): void
+  (e: 'change', payload: {
+    allocations: Record<string, number>
+    totalPercent: number
+    remainingPercent: number
+    totalCents: number
+    isValid: boolean
+  }): void
+}>()
 
-/**
- * Internal reactive copy of allocations to track slider changes.
- * Keys correspond to category names and values are percentages.
- */
-const allocations = reactive({ ...props.modelValue })
+const allocations = reactive<Record<string, number>>({})
 
-// Ensure all provided categories exist in the allocation map.
-props.categories.forEach((cat) => {
-  if (allocations[cat] === undefined) allocations[cat] = 0
-})
+watch(
+  () => props.categories,
+  (categories) => {
+    const known = new Set(categories)
+    Object.keys(allocations).forEach((key) => {
+      if (!known.has(key)) delete allocations[key]
+    })
+    categories.forEach((category) => {
+      if (allocations[category] == null) allocations[category] = props.modelValue[category] ?? 0
+    })
+  },
+  { immediate: true },
+)
 
-/** Sync local state when parent modelValue changes. */
 watch(
   () => props.modelValue,
-  (val) => {
-    Object.keys(allocations).forEach((k) => delete allocations[k])
-    Object.assign(allocations, val)
+  (model) => {
+    Object.entries(model).forEach(([key, value]) => {
+      allocations[key] = sanitizePercent(value)
+    })
   },
-  { deep: true },
+  { deep: true, immediate: true },
 )
 
-/**
- * Watch local allocations and sync with parent via v-model while
- * also emitting a `change` event containing the totals.
- */
 watch(
   allocations,
-  (val) => {
-    const payload = { ...val }
-    emit('update:modelValue', payload)
-    emit('change', { allocations: payload, total: total.value, valid: total.value <= 100 })
+  (value) => {
+    const snapshot = { ...value }
+    emit('update:modelValue', snapshot)
+    emit('change', {
+      allocations: snapshot,
+      totalPercent: totalPercent.value,
+      remainingPercent: remainingPercent.value,
+      totalCents: totalAllocatedCents.value,
+      isValid: isValid.value,
+    })
   },
   { deep: true },
 )
 
-/** Total allocation percentage across all categories. */
-const total = computed(() =>
-  Object.values(allocations).reduce((sum, val) => sum + Number(val || 0), 0),
+const totalPercent = computed(() =>
+  Object.values(allocations).reduce((sum, amount) => sum + sanitizePercent(amount), 0),
 )
 
-/** Error message shown when total exceeds 100%. */
-const error = computed(() => (total.value > 100 ? 'Total allocation cannot exceed 100%.' : ''))
+const totalAllocatedCents = computed(() => Math.round((props.availableCents * totalPercent.value) / 100))
+const remainingPercent = computed(() => Math.max(0, 100 - totalPercent.value))
+const isValid = computed(() => totalPercent.value <= 100)
+const remainingCopy = computed(() => `${remainingPercent.value}% remaining`)
+const remainingClass = computed(() => (isValid.value ? 'text-success' : 'text-error'))
+const totalCurrencyLabel = computed(() => formatCurrency(totalAllocatedCents.value / 100, props.currencyCode))
 
-/**
- * Update allocation for a specific category.
- *
- * @param {string} category - Category name being updated.
- * @param {number} value - New allocation percentage.
- * @returns {void}
- */
-function updateAllocation(category, value) {
-  allocations[category] = value
+function onSliderInput(category: string, event: Event) {
+  const target = event.target as HTMLInputElement
+  const value = Number.parseFloat(target.value)
+  const { next } = clampAllocations(allocations, category, value)
+  Object.entries(next).forEach(([key, amount]) => {
+    allocations[key] = amount
+  })
 }
 
-/**
- * Determine the maximum slider value for a category so that the
- * grand total never exceeds 100%.
- *
- * @param {string} category - Name of the category being adjusted.
- * @returns {number} The maximum allowed percentage for the slider.
- */
-function maxFor(category) {
-  return 100 - (total.value - Number(allocations[category] || 0))
+function formatCategory(category: string) {
+  return category.replace(/[:_]/g, ' › ')
+}
+
+function formatCurrencyAmount(percent: number) {
+  const cents = Math.round((props.availableCents * sanitizePercent(percent)) / 100)
+  return formatCurrency(cents / 100, props.currencyCode)
 }
 </script>
 
 <style scoped>
-/* Basic styling placeholder for Allocator */
+.text-muted {
+  color: var(--color-muted, #64748b);
+}
+
+.text-error {
+  color: #b91c1c;
+}
+
+.text-success {
+  color: #047857;
+}
+
+.border-muted {
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+.allocator-slider {
+  width: 100%;
+}
+
+.allocation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  background-color: rgba(15, 118, 110, 0.04);
+}
+
+.allocation-summary.is-invalid {
+  background-color: rgba(239, 68, 68, 0.08);
+}
 </style>

@@ -2,7 +2,7 @@
 
 ## Snapshot
 
-- The Planning view (`frontend/src/views/Planning.vue`) is routed and wired to a local persistence layer through `frontend/src/services/planningService.ts` and the `usePlanning` composable.
+- The Planning view (`frontend/src/views/Planning.vue`) is routed and wired to a persistence layer through `frontend/src/services/planningService.ts` and the `usePlanning` composable. The singleton now supports versioned local storage (v4) and an API mode toggle for optimistic sync.
 - Flask routes live in `backend/app/routes/planning.py`, delegating to the in-memory service in `backend/app/services/planning_service.py`.
 - Scenario-level API tests exist in `tests/test_api_planning.py`, exercising bill creation, allocation caps, and retrieval through a FastAPI harness that mirrors the Flask contract.
 
@@ -10,38 +10,26 @@
 
 ### Frontend
 
-1. **Component build-out**
-   - **`frontend/src/components/planning/BillForm.vue`**
-     - **Props:** accept an optional `bill?: Bill` to edit existing entries, a `currencyCode: string` sourced from the active scenario/account, and an optional `mode: 'create' | 'edit'` flag for button labels.
-     - **Emits:** surface `update:bill` as the user types (so parents can persist a draft), `save` with a normalized payload (`amountCents` not decimals) once validation passes, and `cancel` when the modal closes.
-     - **Shared helpers:** reuse `formatCurrency`/`convertCurrency` from `frontend/src/utils/currency.ts` plus a shared mapper that converts between the persisted `Bill` shape and editable form state.
-     - **Remaining TODO:** replace the temporary reactive form + inline error strings with typed validation, migrate away from the JSON preview, and thread saved bills back through `usePlanning`/`updatePlanning` rather than leaving state patching to callers.
-   - **`frontend/src/components/planning/BillList.vue`**
-     - **Props:** receive `bills: Bill[]`, `currencyCode: string`, and an optional `selectedBillId` to highlight the active row.
-     - **Emits:** fire `select` when a row is chosen, `edit` with the full bill payload, and `delete` with the identifier for removal confirmation.
-     - **Shared helpers:** switch from the placeholder `@/utils/format` helper to `formatCurrency` for amount columns and reuse any shared empty-state renderer once it lands.
-     - **Remaining TODO:** wire list actions to the planning service methods (optimistic updates will come later), replace inline `dueDate` fallbacks with a dedicated formatter, and remove the temporary styling stub.
-   - **`frontend/src/components/planning/Allocator.vue`**
-     - **Props:** take `categories: string[]`, a `modelValue: Record<string, number>` for `v-model`, and the `currencyCode: string` needed to format fixed allocation previews.
-     - **Emits:** continue emitting `update:modelValue` for reactivity plus a richer `change` payload containing totals and validation booleans so parents can gate saves.
-     - **Shared helpers:** centralize percentage math in a shared helper (e.g., `clampAllocations`) and rely on `formatCurrency` when displaying total allocated cash alongside the percent bars.
-     - **Remaining TODO:** replace the inline `maxFor` computation with the shared helper once extracted and ensure errors flow back through a consistent toast/banner system instead of the placeholder paragraph.
-   - **`frontend/src/components/planning/PlanningSummary.vue`**
-     - **Props:** accept optional overrides for `scenarioId` and `currencyCode` so the summary can be reused in account dashboards while defaulting to the active scenario.
-     - **Emits:** expose a `refresh` event hook (even if unused initially) to let parents force recomputation when cross-view data changes.
-     - **Shared helpers:** continue using `usePlanning` alongside `selectActiveScenario`, `selectTotalBillsCents`, and `selectRemainingCents`, but route final strings through `formatCurrency` instead of the legacy formatter.
-     - **Remaining TODO:** swap the hard-coded headings for design-system typography and replace the inline computed formatting with a shared selector once totals move server-side.
-2. **Planning view composition**
-   - Mount the four planning components within `frontend/src/views/Planning.vue`, sourcing state via `usePlanning()` and the selectors in `frontend/src/selectors/planning.ts` (e.g., hydrate `BillList` with `state.bills` filtered by the active scenario and feed `Allocator` with `selectActiveScenario(state)?.allocations`).
-   - On mount, derive the active scenario/currency from planning state, load existing bills through `planningService.ts`, and pass a `currencyCode` prop to each child so they can delegate to `formatCurrency`/`convertCurrency` consistently.
-   - Handle emitted events locally: call the planning service helpers on `save`/`delete`, update the reactive store via `updatePlanning`, and feed allocation changes back through selectors so `PlanningSummary` stays in sync.
-   - Replace the JSON `<pre>` scaffold with the composed layout, leaving TODO comments where API wiring or optimistic updates are still pending so the remaining placeholder logic is obvious to implementers.
+**Status:** M1 (frontend foundation) delivered. The Planning view now renders the composed experience with persistent local state and documented contracts for backend integration.
+
+- ✅ **`BillForm.vue`** now exposes `bill`, `currencyCode`, `mode`, and `visible` props, validates input with typed helpers from `frontend/src/utils/planning.ts`, and emits normalized `amountCents` payloads while broadcasting `update:bill` for draft persistence.
+- ✅ **`BillList.vue`** renders formatted due dates and currency amounts via `formatCurrency`, highlights a selected bill, and surfaces `select`/`edit`/`delete` events that bubble up to the view.
+- ✅ **`Allocator.vue`** drives percent distribution with the shared `clampAllocations` helper, emits structured change metadata (`totalPercent`, `totalCents`, `isValid`), and previews currency totals using the active scenario balance.
+- ✅ **`PlanningSummary.vue`** consumes planning selectors to display bill totals, allocation summaries, and remaining cash with localized currency formatting while exposing a `refresh` hook.
+- ✅ **`Planning.vue`** composes the four components, filters bills by the active scenario, persists changes through `usePlanning`, and seeds a default scenario when none exist. Local drafts, deletion confirmations, and allocation updates are all routed through the shared utilities so the upcoming API work can reuse the same surfaces.
+
+**Next steps**
+
+- ✅ Threaded API mode into `usePlanning` so the new components can swap between local storage and network persistence via `persistBill`, `removeBill`, and `persistScenarioAllocations`.
+- Replace the optimistic `window.confirm` delete flow with a design-system modal once the shared dialog lands.
+- Layer toast messaging for allocation validation and bill saves when the notification bus is introduced.
+- Extend Cypress coverage to exercise the composed view; current unit suites validate selectors and component contracts, but end-to-end smoke coverage remains open.
 3. **Data synchronisation**
-   - **Service contract:** Lean on the existing `planningService.ts` methods—`fetchBills`, `createBill`, `updateBill`, `deleteBill`, and the allocation helpers (`fetchAllocations`, `createAllocation`, `updateAllocation`, `deleteAllocation`)—as the single interface to `/api/planning/*` endpoints. Keep their Axios signatures stable so they can be mocked under unit tests.
-   - **Composable orchestration:** Introduce async action helpers inside `usePlanning.ts` (e.g., `loadBills`, `persistBill`, `persistAllocationChange`) that call the service functions above. These helpers should mutate the reactive store exclusively through `updatePlanning` (or narrow mutations like `setActiveScenarioId`) so components never touch `state` directly.
-   - **Feature flagging & modes:** Gate API usage behind a `planningMode` toggle (derived from `state.devMode`, a dedicated feature flag, or `import.meta.env.VITE_PLANNING_MODE`). When the toggle is `local`, the actions bypass network calls and fall back to `loadPlanning`/`savePlanning`; when `api`, they invoke the Axios helpers and sync the response payloads into the store.
-   - **Optimistic flow:** When `api` mode is active, the composable actions should apply optimistic mutations to `state.bills`/`state.scenarios` via `updatePlanning`, stash the previous snapshot, and then call `createBill`/`updateBill`/`deleteBill` (and their allocation counterparts). On failure, roll back using the snapshot and surface the error to the caller; on success, merge the server response (e.g., persisted IDs, timestamps) back into the reactive arrays.
-   - **State syncing & error propagation:** After every successful response, normalise the returned bill/allocation and overwrite the optimistic entry so selectors (like `selectActiveScenario`) see the canonical data. Bubble failures to the invoking components—`BillForm`, `BillList`, `Allocator`, etc.—either by rethrowing the caught error or returning a structured `{ error }` object so the UI can render toasts/banners consistently.
+   - **Service contract:** Lean on the existing `planningService.ts` methods—`fetchBills`, `createBill`, `updateBill`, `deleteBill`, and the allocation helpers (`fetchAllocations`, `createAllocation`, `updateAllocation`, `deleteAllocation`, plus the new `replaceScenarioAllocations`)—as the single interface to `/api/planning/*` endpoints. Keep their Axios signatures stable so they can be mocked under unit tests.
+   - ✅ **Composable orchestration:** Async helpers inside `usePlanning.ts` (`ensureScenarioForAccount`, `persistBill`, `removeBill`, `persistScenarioAllocations`) now call the service layer and mutate the store exclusively through `updatePlanning`.
+   - ✅ **Feature flagging & modes:** `PlanningState.mode` toggles between `'local'` and `'api'`, enabling API-driven flows without breaking local persistence.
+   - ✅ **Optimistic flow:** API mode applies optimistic mutations, snapshots prior state, and rolls back on failure while merging canonical responses when successful.
+   - ✅ **State syncing & error propagation:** Bill and allocation helpers normalise server payloads, replace optimistic entries, and rethrow errors so the UI can surface toast messaging in future polish passes.
 4. **Validation & UX polish**
    - Enforce total allocation ≤ 100% with inline feedback, and surface predicted bill indicators.
    - Provide empty states and error toasts consistent with the design system.

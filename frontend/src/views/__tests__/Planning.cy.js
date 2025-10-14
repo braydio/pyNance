@@ -11,7 +11,7 @@ import {
 // Generate a baseline planning state
 function makeState() {
   return {
-    version: 1,
+    version: 3,
     devMode: false,
     bills: [],
     scenarios: [],
@@ -29,6 +29,7 @@ describe('planning selectors', () => {
       name: 'Rent',
       amountCents: 50000,
       dueDate: '2024-01-01',
+      frequency: 'monthly',
       origin: 'manual',
       accountId: '',
     }
@@ -56,6 +57,7 @@ describe('planning selectors', () => {
         { id: 'a2', target: 'goal:vacation', kind: 'percent', value: 10 },
       ],
       accountId: '',
+      currencyCode: 'USD',
     }
 
     const allocated = selectAllocatedCents(scenario)
@@ -73,6 +75,7 @@ describe('planning selectors', () => {
         name: 'Rent',
         amountCents: 50000,
         dueDate: '2024-01-01',
+        frequency: 'monthly',
         origin: 'manual',
         accountId: '',
       },
@@ -81,6 +84,7 @@ describe('planning selectors', () => {
         name: 'Utilities',
         amountCents: 10000,
         dueDate: '2024-01-05',
+        frequency: 'monthly',
         origin: 'manual',
         accountId: '',
       },
@@ -93,6 +97,7 @@ describe('planning selectors', () => {
         planningBalanceCents: 100000,
         allocations: [{ id: 'a1', target: 'savings:emergency', kind: 'fixed', value: 20000 }],
         accountId: '',
+        currencyCode: 'USD',
       },
     ]
 
