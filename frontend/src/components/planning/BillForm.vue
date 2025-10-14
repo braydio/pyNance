@@ -1,10 +1,5 @@
 <template>
-  <form
-    v-if="visible"
-    class="space-y-6"
-    data-testid="bill-form"
-    @submit.prevent="handleSubmit"
-  >
+  <form v-if="visible" class="space-y-6" data-testid="bill-form" @submit.prevent="handleSubmit">
     <div class="grid gap-4 sm:grid-cols-2">
       <div class="space-y-1 sm:col-span-2">
         <label for="bill-name" class="label">Bill name</label>
@@ -183,7 +178,9 @@ const centsPreview = computed(() => {
   return `${cents.toLocaleString()}¢`
 })
 
-const currencySymbol = computed(() => formatCurrency(0, props.currencyCode).replace(/[0\d.,\s]/g, '') || '$')
+const currencySymbol = computed(
+  () => formatCurrency(0, props.currencyCode).replace(/[0\d.,\s]/g, '') || '$',
+)
 
 let resetting = false
 
@@ -204,7 +201,7 @@ watch(
   () => {
     emitDraft()
     if (resetting) return
-    (Object.keys(touched) as EditableField[]).forEach((field) => {
+    ;(Object.keys(touched) as EditableField[]).forEach((field) => {
       if (touched[field]) {
         validateField(field)
       }
@@ -218,7 +215,7 @@ function emitDraft() {
 }
 
 function resetValidation() {
-  (Object.keys(errors) as EditableField[]).forEach((field) => {
+  ;(Object.keys(errors) as EditableField[]).forEach((field) => {
     errors[field] = ''
     touched[field] = false
   })
@@ -254,7 +251,7 @@ function validateField(field: EditableField) {
 }
 
 function validateAll(): boolean {
-  (Object.keys(touched) as EditableField[]).forEach((field) => {
+  ;(Object.keys(touched) as EditableField[]).forEach((field) => {
     touched[field] = true
     validateField(field)
   })

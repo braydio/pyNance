@@ -55,6 +55,14 @@ describe('planning utils', () => {
   })
 
   it('throws when normalising invalid amounts', () => {
-    expect(() => normaliseBillForm({ ...billToFormState(), amount: '-1', name: '', dueDate: '', frequency: '' })).toThrow()
+    expect(() =>
+      normaliseBillForm({
+        ...billToFormState(),
+        amount: '-1',
+        name: '',
+        dueDate: '',
+        frequency: '',
+      }),
+    ).toThrow()
   })
 })

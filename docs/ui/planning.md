@@ -22,12 +22,12 @@ The view persists state through `usePlanning`, which stores a `PlanningState` re
 
 ### `BillForm.vue`
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `bill` | `Bill \| null` | Optional existing bill to edit. When `null` the form starts blank. |
-| `currencyCode` | `string` | ISO currency code used for previews (default `USD`). |
-| `mode` | `'create' \| 'edit'` | Controls submit labelling and reset behaviour (default `create`). |
-| `visible` | `boolean` | Toggles the form/empty-state panel. |
+| Prop           | Type                 | Description                                                        |
+| -------------- | -------------------- | ------------------------------------------------------------------ |
+| `bill`         | `Bill \| null`       | Optional existing bill to edit. When `null` the form starts blank. |
+| `currencyCode` | `string`             | ISO currency code used for previews (default `USD`).               |
+| `mode`         | `'create' \| 'edit'` | Controls submit labelling and reset behaviour (default `create`).  |
+| `visible`      | `boolean`            | Toggles the form/empty-state panel.                                |
 
 **Emits**
 
@@ -42,11 +42,11 @@ The view persists state through `usePlanning`, which stores a `PlanningState` re
 
 ### `BillList.vue`
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `bills` | `Bill[]` | Scenario-filtered bills to display. |
-| `currencyCode` | `string` | Currency for amount formatting (default `USD`). |
-| `selectedBillId` | `string \| null` | Highlights the active list item. |
+| Prop             | Type             | Description                                     |
+| ---------------- | ---------------- | ----------------------------------------------- |
+| `bills`          | `Bill[]`         | Scenario-filtered bills to display.             |
+| `currencyCode`   | `string`         | Currency for amount formatting (default `USD`). |
+| `selectedBillId` | `string \| null` | Highlights the active list item.                |
 
 **Emits**
 
@@ -58,12 +58,12 @@ The component uses native date formatting and the shared currency helper. Bills 
 
 ### `Allocator.vue`
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `categories` | `string[]` | Ordered allocation targets (e.g., `['savings:emergency']`). |
-| `modelValue` | `Record<string, number>` | Percentages per category for `v-model`. |
-| `currencyCode` | `string` | Currency for preview text (default `USD`). |
-| `availableCents` | `number` | Scenario planning balance in cents (default `0`). |
+| Prop             | Type                     | Description                                                 |
+| ---------------- | ------------------------ | ----------------------------------------------------------- |
+| `categories`     | `string[]`               | Ordered allocation targets (e.g., `['savings:emergency']`). |
+| `modelValue`     | `Record<string, number>` | Percentages per category for `v-model`.                     |
+| `currencyCode`   | `string`                 | Currency for preview text (default `USD`).                  |
+| `availableCents` | `number`                 | Scenario planning balance in cents (default `0`).           |
 
 **Emits**
 
@@ -74,9 +74,9 @@ Sliders clamp values so the total never exceeds 100%, leveraging `clampAllocatio
 
 ### `PlanningSummary.vue`
 
-| Prop | Type | Description |
-| --- | --- | --- |
-| `scenarioId` | `string \| undefined` | Override the active scenario (defaults to `usePlanning().state`). |
+| Prop           | Type                  | Description                                                               |
+| -------------- | --------------------- | ------------------------------------------------------------------------- |
+| `scenarioId`   | `string \| undefined` | Override the active scenario (defaults to `usePlanning().state`).         |
 | `currencyCode` | `string \| undefined` | Optional currency override; falls back to the scenario currency or `USD`. |
 
 **Emits**

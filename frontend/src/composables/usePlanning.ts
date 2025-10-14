@@ -26,7 +26,7 @@ const defaultState: PlanningState = {
   scenarios: [],
   activeScenarioId: '',
   activeScenarioIdByAccount: {},
-  lastSavedAt: new Date().toISOString()
+  lastSavedAt: new Date().toISOString(),
 }
 
 /**
@@ -114,7 +114,7 @@ watch(
     state.lastSavedAt = new Date().toISOString()
     savePlanning(state)
   },
-  { deep: true }
+  { deep: true },
 )
 
 /**
@@ -177,9 +177,7 @@ export function ensureScenarioForAccount(
   accountId = '',
   options: { currencyCode?: string; name?: string } = {},
 ): Scenario {
-  const mappedId = accountId
-    ? state.activeScenarioIdByAccount[accountId]
-    : state.activeScenarioId
+  const mappedId = accountId ? state.activeScenarioIdByAccount[accountId] : state.activeScenarioId
   let scenario = mappedId
     ? state.scenarios.find((candidate) => candidate.id === mappedId)
     : undefined
@@ -348,14 +346,14 @@ export function resetPlanningState(nextState?: Partial<PlanningState>) {
  * Get bills for a specific account
  */
 export function getBillsByAccount(accountId: string) {
-  return state.bills.filter(bill => bill.accountId === accountId)
+  return state.bills.filter((bill) => bill.accountId === accountId)
 }
 
 /**
  * Get scenarios for a specific account
  */
 export function getScenariosByAccount(accountId: string) {
-  return state.scenarios.filter(scenario => scenario.accountId === accountId)
+  return state.scenarios.filter((scenario) => scenario.accountId === accountId)
 }
 
 /**
@@ -383,8 +381,8 @@ export function setActiveScenarioId(accountId: string, scenarioId: string) {
  */
 export function getActiveScenario(accountId: string) {
   const activeScenarioId = getActiveScenarioId(accountId)
-  return state.scenarios.find(scenario => 
-    scenario.id === activeScenarioId && scenario.accountId === accountId
+  return state.scenarios.find(
+    (scenario) => scenario.id === activeScenarioId && scenario.accountId === accountId,
   )
 }
 
@@ -392,6 +390,6 @@ export function getActiveScenario(accountId: string) {
  * Get allocations for a specific scenario
  */
 export function getAllocationsByScenario(scenarioId: string) {
-  const scenario = state.scenarios.find(s => s.id === scenarioId)
+  const scenario = state.scenarios.find((s) => s.id === scenarioId)
   return scenario?.allocations || []
 }

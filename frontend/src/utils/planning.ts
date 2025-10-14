@@ -8,12 +8,7 @@
  * planning schema with UI-friendly drafts.
  */
 
-import type {
-  Allocation,
-  Bill,
-  BillFrequency,
-  BillOrigin,
-} from '@/types/planning'
+import type { Allocation, Bill, BillFrequency, BillOrigin } from '@/types/planning'
 
 /**
  * Reactive draft shape used by {@link BillForm}.
@@ -150,9 +145,7 @@ export function clampAllocations(
 /**
  * Build a mutable mapping of percent allocations for use with the allocator UI.
  */
-export function allocationsToPercentMap(
-  allocations: Allocation[],
-): Record<string, number> {
+export function allocationsToPercentMap(allocations: Allocation[]): Record<string, number> {
   return allocations
     .filter((allocation) => allocation.kind === 'percent')
     .reduce<Record<string, number>>((acc, allocation) => {

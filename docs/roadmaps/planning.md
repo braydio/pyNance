@@ -24,6 +24,7 @@
 - Replace the optimistic `window.confirm` delete flow with a design-system modal once the shared dialog lands.
 - Layer toast messaging for allocation validation and bill saves when the notification bus is introduced.
 - Extend Cypress coverage to exercise the composed view; current unit suites validate selectors and component contracts, but end-to-end smoke coverage remains open.
+
 3. **Data synchronisation**
    - **Service contract:** Lean on the existing `planningService.ts` methods—`fetchBills`, `createBill`, `updateBill`, `deleteBill`, and the allocation helpers (`fetchAllocations`, `createAllocation`, `updateAllocation`, `deleteAllocation`, plus the new `replaceScenarioAllocations`)—as the single interface to `/api/planning/*` endpoints. Keep their Axios signatures stable so they can be mocked under unit tests.
    - ✅ **Composable orchestration:** Async helpers inside `usePlanning.ts` (`ensureScenarioForAccount`, `persistBill`, `removeBill`, `persistScenarioAllocations`) now call the service layer and mutate the store exclusively through `updatePlanning`.

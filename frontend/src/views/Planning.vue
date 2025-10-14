@@ -284,13 +284,10 @@ async function handleAllocationChange({ allocations }: { allocations: Record<str
   const scenario = activeScenario.value ?? ensureScenario()
   if (!scenario) return
 
-  const updatedAllocations = mergePercentAllocations(
-    scenario.allocations,
-    allocations,
-    () =>
-      typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
-        ? crypto.randomUUID()
-        : `alloc-${Date.now()}`,
+  const updatedAllocations = mergePercentAllocations(scenario.allocations, allocations, () =>
+    typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `alloc-${Date.now()}`,
   )
 
   try {

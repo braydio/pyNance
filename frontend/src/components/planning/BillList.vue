@@ -8,22 +8,23 @@
       <slot name="actions" />
     </header>
 
-    <div v-if="sortedBills.length === 0" class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted">
+    <div
+      v-if="sortedBills.length === 0"
+      class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted"
+    >
       No bills yet. Add one to begin planning this scenario.
     </div>
 
     <ul v-else class="rounded border border-subtle">
-      <li
-        v-for="bill in sortedBills"
-        :key="bill.id"
-        :class="billRowClass(bill)"
-      >
-        <button class="flex flex-1 flex-col gap-1 text-left" type="button" @click="handleSelect(bill)">
+      <li v-for="bill in sortedBills" :key="bill.id" :class="billRowClass(bill)">
+        <button
+          class="flex flex-1 flex-col gap-1 text-left"
+          type="button"
+          @click="handleSelect(bill)"
+        >
           <span class="flex items-center gap-2 font-medium">
             {{ bill.name }}
-            <span v-if="bill.origin === 'predicted'" class="predicted-badge">
-              Predicted
-            </span>
+            <span v-if="bill.origin === 'predicted'" class="predicted-badge"> Predicted </span>
           </span>
           <span class="text-sm text-muted">
             {{ formatDueDate(bill.dueDate) }} • {{ bill.frequencyLabel }}

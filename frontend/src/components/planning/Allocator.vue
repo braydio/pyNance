@@ -3,11 +3,15 @@
     <header class="space-y-1">
       <h3 class="text-lg font-semibold">Allocation targets</h3>
       <p class="text-sm text-muted">
-        Distribute the planning balance across savings and goals. Keep the total under 100% to stay on budget.
+        Distribute the planning balance across savings and goals. Keep the total under 100% to stay
+        on budget.
       </p>
     </header>
 
-    <div v-if="!categories.length" class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted">
+    <div
+      v-if="!categories.length"
+      class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted"
+    >
       Add allocation categories to begin distributing this scenario's balance.
     </div>
 
@@ -73,13 +77,16 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: Record<string, number>): void
-  (e: 'change', payload: {
-    allocations: Record<string, number>
-    totalPercent: number
-    remainingPercent: number
-    totalCents: number
-    isValid: boolean
-  }): void
+  (
+    e: 'change',
+    payload: {
+      allocations: Record<string, number>
+      totalPercent: number
+      remainingPercent: number
+      totalCents: number
+      isValid: boolean
+    },
+  ): void
 }>()
 
 const allocations = reactive<Record<string, number>>({})
@@ -128,12 +135,16 @@ const totalPercent = computed(() =>
   Object.values(allocations).reduce((sum, amount) => sum + sanitizePercent(amount), 0),
 )
 
-const totalAllocatedCents = computed(() => Math.round((props.availableCents * totalPercent.value) / 100))
+const totalAllocatedCents = computed(() =>
+  Math.round((props.availableCents * totalPercent.value) / 100),
+)
 const remainingPercent = computed(() => Math.max(0, 100 - totalPercent.value))
 const isValid = computed(() => totalPercent.value <= 100)
 const remainingCopy = computed(() => `${remainingPercent.value}% remaining`)
 const remainingClass = computed(() => (isValid.value ? 'text-success' : 'text-error'))
-const totalCurrencyLabel = computed(() => formatCurrency(totalAllocatedCents.value / 100, props.currencyCode))
+const totalCurrencyLabel = computed(() =>
+  formatCurrency(totalAllocatedCents.value / 100, props.currencyCode),
+)
 
 function onSliderInput(category: string, event: Event) {
   const target = event.target as HTMLInputElement

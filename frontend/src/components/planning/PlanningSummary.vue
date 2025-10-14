@@ -66,16 +66,16 @@ const activeScenario = computed(() => {
   return selectActiveScenario(state)
 })
 
-const scenarioCurrency = computed(() => props.currencyCode ?? activeScenario.value?.currencyCode ?? 'USD')
+const scenarioCurrency = computed(
+  () => props.currencyCode ?? activeScenario.value?.currencyCode ?? 'USD',
+)
 
 const totalBillsCents = computed(() => selectTotalBillsCents(state, activeScenario.value?.id))
 const allocatedCents = computed(() => selectAllocatedCents(activeScenario.value ?? undefined))
 const remainingCents = computed(() =>
   activeScenario.value ? selectRemainingCents(activeScenario.value) : 0,
 )
-const planningBalanceCents = computed(
-  () => activeScenario.value?.planningBalanceCents ?? 0,
-)
+const planningBalanceCents = computed(() => activeScenario.value?.planningBalanceCents ?? 0)
 
 const totalBillsFormatted = computed(() =>
   formatCurrency(totalBillsCents.value / 100, scenarioCurrency.value),
