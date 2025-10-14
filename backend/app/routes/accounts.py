@@ -764,10 +764,11 @@ def get_account_history(account_id):
             .all()
         )
 
-        txs = [{"date": row[0], "amount": float(row[1])} for row in tx_rows]
+        # Keep Decimal amounts for precise currency math in services
+        txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
 
-        # Ensure numeric types are consistent (compute_balance_history expects floats)
-        balances = compute_balance_history(float(account.balance), txs, start_date, end_date)
+        # Use Decimal end-to-end for currency-safe math
+        balances = compute_balance_history(account.balance, txs, start_date, end_date)
 
         return (
             jsonify(

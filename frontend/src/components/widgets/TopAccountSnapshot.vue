@@ -373,6 +373,26 @@ watch(
 
 const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 
+// Ensure a sensible default: select the first group when none is active
+watch(
+  groups,
+  (list) => {
+    if (!activeGroupId.value && Array.isArray(list) && list.length > 0) {
+      setActiveGroup(list[0].id)
+    }
+    // If the active group was removed, select the first available one
+    if (
+      activeGroupId.value &&
+      Array.isArray(list) &&
+      list.length > 0 &&
+      !list.some((g) => g.id === activeGroupId.value)
+    ) {
+      setActiveGroup(list[0].id)
+    }
+  },
+  { immediate: true, deep: true },
+)
+
 watch(
   () => activeGroup.value?.accounts,
   (val) => {
@@ -478,6 +498,11 @@ const emit = defineEmits(['update:isEditingGroups'])
 function toggleEditGroups() {
   isEditingGroups.value = !isEditingGroups.value
   emit('update:isEditingGroups', isEditingGroups.value)
+  // Clean up transient UI when toggling mode
+  if (!isEditingGroups.value) {
+    editingGroupId.value = null
+    showAccountSelector.value = false
+  }
   showGroupMenu.value = false
 }
 
@@ -487,6 +512,8 @@ function finishEditingSession() {
   persistAccountOrder()
   isEditingGroups.value = false
   emit('update:isEditingGroups', false)
+  editingGroupId.value = null
+  showAccountSelector.value = false
   showGroupMenu.value = false
 }
 

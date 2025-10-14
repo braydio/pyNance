@@ -8,12 +8,13 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, timedelta
+from decimal import Decimal, ROUND_HALF_UP
 from typing import Iterable, List, Dict
 
 
 def compute_balance_history(
-    starting_balance: float,
-    transactions: Iterable[Dict[str, float]],
+    starting_balance: Decimal,
+    transactions: Iterable[Dict[str, Decimal]],
     start_date: date,
     end_date: date,
 ) -> List[Dict[str, float]]:
@@ -32,16 +33,23 @@ def compute_balance_history(
         by ascending date covering every day in the range.
     """
     # Aggregate transaction deltas by date for quick lookup.
-    deltas = defaultdict(float)
+    # Use Decimal throughout to avoid floating point inaccuracies.
+    deltas: Dict[date, Decimal] = defaultdict(Decimal)
     for tx in transactions:
-        deltas[tx["date"]] += tx["amount"]
+        amount = tx["amount"]
+        if not isinstance(amount, Decimal):
+            # Coerce floats/ints/strings to Decimal safely
+            amount = Decimal(str(amount))
+        deltas[tx["date"]] += amount
 
     results: List[Dict[str, float]] = []
-    balance = starting_balance
+    balance: Decimal = starting_balance
     current = end_date
     while current >= start_date:
-        results.append({"date": current.isoformat(), "balance": round(balance, 2)})
-        balance -= deltas.get(current, 0.0)
+        # Quantize to 2 decimal places for currency, then serialize as float
+        quantized = balance.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+        results.append({"date": current.isoformat(), "balance": float(quantized)})
+        balance -= deltas.get(current, Decimal("0"))
         current -= timedelta(days=1)
 
     results.reverse()
