@@ -114,10 +114,13 @@
       </template>
 
       <template #Accounts>
-        <Card class="p-6">
-          <h2 class="text-xl font-semibold mb-4">Accounts</h2>
-          <AccountsTable @refresh="refreshCharts" />
-        </Card>
+        <section class="space-y-6">
+          <LinkedAccountsSection />
+          <Card class="p-6">
+            <h2 class="text-xl font-semibold mb-4">Accounts</h2>
+            <AccountsTable @refresh="refreshCharts" />
+          </Card>
+        </section>
       </template>
     </TabbedPageLayout>
     <template #footer>
@@ -156,6 +159,7 @@ import AppFooter from '@/components/layout/AppFooter.vue'
 
 // Business Components
 import AccountsTable from '@/components/tables/AccountsTable.vue'
+import LinkedAccountsSection from '@/components/accounts/LinkedAccountsSection.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 
 // Chart Components

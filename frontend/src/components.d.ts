@@ -58,6 +58,7 @@ declare module 'vue' {
     InternalTransferScanner: typeof import('./components/transactions/InternalTransferScanner.vue')['default']
     LinkAccount: typeof import('./components/forms/LinkAccount.vue')['default']
     LinkAccountFullProducts: typeof import('./components/forms/LinkAccountFullProducts.vue')['default']
+    LinkedAccountsSection: typeof import('./components/accounts/LinkedAccountsSection.vue')['default']
     LinkProviderLauncher: typeof import('./components/forms/LinkProviderLauncher.vue')['default']
     MasterTxidTable: typeof import('./components/tables/MasterTxidTable.vue')['default']
     MatchingTransactionUpload: typeof import('./components/unused/MatchingTransactionUpload.vue')['default']
