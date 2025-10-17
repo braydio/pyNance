@@ -16,11 +16,18 @@ vi.mock('@/api/accounts', () => ({
   fetchRecentTransactions: vi.fn().mockResolvedValue({ data: { transactions: [] } }),
 }))
 
+vi.mock('@/stores/useAccountPreferences', () => ({
+  useAccountPreferences: () => ({
+    getSelectedRange: vi.fn().mockReturnValue('30d'),
+    setSelectedRange: vi.fn(),
+  }),
+}))
+
 describe('Accounts.vue', () => {
   it('matches snapshot', () => {
     const wrapper = shallowMount(Accounts, {
       global: {
-        stubs: ['TabbedPageLayout', 'AccountActionsSidebar'],
+        stubs: ['TabbedPageLayout', 'AccountActionsSidebar', 'LinkedAccountsSection'],
       },
     })
     expect(wrapper.html()).toMatchSnapshot()
