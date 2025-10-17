@@ -32,7 +32,9 @@ describe('LinkedAccountsSection', () => {
     const wrapper = mountComponent()
 
     await wrapper.find('[data-testid="promo-category-amex-blue-cash"]').setValue('custom')
-    await wrapper.find('[data-testid="promo-custom-category-amex-blue-cash"]').setValue('Dining Out')
+    await wrapper
+      .find('[data-testid="promo-custom-category-amex-blue-cash"]')
+      .setValue('Dining Out')
     await wrapper.find('[data-testid="promo-rate-amex-blue-cash"]').setValue('4.5')
 
     await wrapper.find('[data-testid="promo-form-amex-blue-cash"]').trigger('submit.prevent')

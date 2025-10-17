@@ -37,7 +37,9 @@
               <div>
                 <h4 class="text-base font-semibold">{{ institution.name }}</h4>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">
-                  {{ institution.accounts.length }} account{{ institution.accounts.length === 1 ? '' : 's' }}
+                  {{ institution.accounts.length }} account{{
+                    institution.accounts.length === 1 ? '' : 's'
+                  }}
                 </p>
               </div>
             </div>
@@ -52,8 +54,13 @@
                 <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div class="space-y-1">
                     <p class="text-base font-medium">{{ account.name }}</p>
-                    <p v-if="account.mask" class="text-sm text-muted-foreground">Account •••• {{ account.mask }}</p>
-                    <p v-if="account.subtype" class="text-xs uppercase tracking-wide text-muted-foreground">
+                    <p v-if="account.mask" class="text-sm text-muted-foreground">
+                      Account •••• {{ account.mask }}
+                    </p>
+                    <p
+                      v-if="account.subtype"
+                      class="text-xs uppercase tracking-wide text-muted-foreground"
+                    >
                       {{ account.subtype }}
                     </p>
                   </div>
@@ -68,7 +75,9 @@
                       <p class="font-semibold">{{ formatBalance(account.balance) }}</p>
                     </div>
                     <div v-if="account.limit !== undefined">
-                      <p class="text-xs uppercase tracking-wide text-muted-foreground">Credit Limit</p>
+                      <p class="text-xs uppercase tracking-wide text-muted-foreground">
+                        Credit Limit
+                      </p>
                       <p class="font-semibold">{{ formatBalance(account.limit) }}</p>
                     </div>
                     <div v-if="account.status">
@@ -79,7 +88,9 @@
                 </div>
 
                 <details class="mt-4 space-y-3" open>
-                  <summary class="cursor-pointer text-sm font-semibold">Rewards & Promotions</summary>
+                  <summary class="cursor-pointer text-sm font-semibold">
+                    Rewards & Promotions
+                  </summary>
 
                   <ul class="space-y-2" :data-testid="`promo-list-${account.id}`">
                     <li
@@ -110,7 +121,11 @@
                           class="select select-sm"
                           :data-testid="`promo-category-${account.id}`"
                         >
-                          <option v-for="option in promotionCategories" :key="option.value" :value="option.value">
+                          <option
+                            v-for="option in promotionCategories"
+                            :key="option.value"
+                            :value="option.value"
+                          >
                             {{ option.label }}
                           </option>
                         </select>
