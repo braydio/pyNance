@@ -83,41 +83,55 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
         db.session.merge(security)
         sec_upserts += 1
 
-    holding_upserts = 0
-    # Prefetch existing holdings for involved accounts to avoid duplicate inserts within this batch
-    account_ids = list({h.get("account_id") for h in holds if h.get("account_id")})
-    existing_rows = []
-    if account_ids:
-        existing_rows = InvestmentHolding.query.filter(
-            InvestmentHolding.account_id.in_(account_ids)
-        ).all()
-    existing_map: Dict[tuple[str, str], InvestmentHolding] = {
-        (row.account_id, row.security_id): row
-        for row in existing_rows
-        if row.security_id
-    }
+    # Conflict-safe upsert for holdings to avoid unique violations on
+    # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
+    from sqlalchemy.dialects.postgresql import insert
+    from datetime import date, datetime
 
+    def _as_date(value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str) and value:
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                try:
+                    return date.fromisoformat(value)
+                except ValueError:
+                    return None
+        return None
+
+    holding_upserts = 0
+    table = InvestmentHolding.__table__
     for h in holds:
         acct_id = h.get("account_id")
         sec_id = h.get("security_id")
         if not acct_id or not sec_id:
             continue
-        key = (acct_id, sec_id)
-        obj = existing_map.get(key)
-        if obj is None:
-            obj = InvestmentHolding(
-                account_id=acct_id,
-                security_id=sec_id,
-            )
-            db.session.add(obj)
-            existing_map[key] = obj  # prevent duplicate add within the same session
-
-        # Update fields
-        obj.quantity = h.get("quantity")
-        obj.cost_basis = h.get("cost_basis")
-        obj.institution_value = h.get("institution_value")
-        obj.as_of = h.get("institution_price_as_of")
-        obj.raw = _json_safe(h)
+        values = {
+            "account_id": acct_id,
+            "security_id": sec_id,
+            "quantity": h.get("quantity"),
+            "cost_basis": h.get("cost_basis"),
+            "institution_value": h.get("institution_value"),
+            # In holdings payloads, the date is often named institution_price_as_of
+            "as_of": _as_date(h.get("institution_price_as_of") or h.get("as_of")),
+            "raw": _json_safe(h),
+        }
+        stmt = insert(table).values(values)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=[table.c.account_id, table.c.security_id],
+            set_={
+                "quantity": stmt.excluded.quantity,
+                "cost_basis": stmt.excluded.cost_basis,
+                "institution_value": stmt.excluded.institution_value,
+                "as_of": stmt.excluded.as_of,
+                "raw": stmt.excluded.raw,
+            },
+        )
+        db.session.execute(stmt)
         holding_upserts += 1
 
     db.session.commit()

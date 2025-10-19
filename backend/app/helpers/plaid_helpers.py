@@ -268,12 +268,34 @@ def get_investments(access_token: str):
         raise
 
 
-def get_investment_transactions(access_token: str, start_date: str, end_date: str):
+def get_investment_transactions(access_token: str, start_date, end_date):
     """Return investment transactions between start_date and end_date.
+
+    Accepts ``start_date``/``end_date`` as ``datetime.date``, ``datetime.datetime``,
+    or ISO ``YYYY-MM-DD`` strings and coerces them to dates required by Plaid's
+    typed request model.
 
     Paginates using options.count/options.offset similar to transactions.
     """
+    from datetime import date, datetime
+
+    def _coerce_to_date(value):
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str) and value:
+            # Try strict format first, then ISO
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError:
+                return date.fromisoformat(value)
+        return datetime.utcnow().date()
+
     try:
+        start_dt = _coerce_to_date(start_date)
+        end_dt = _coerce_to_date(end_date)
+
         all_txs = []
         offset = 0
         count = 500
@@ -283,8 +305,8 @@ def get_investment_transactions(access_token: str, start_date: str, end_date: st
             )
             req = InvestmentsTransactionsGetRequest(
                 access_token=access_token,
-                start_date=start_date,
-                end_date=end_date,
+                start_date=start_dt,
+                end_date=end_dt,
                 options=options,
             )
             resp = plaid_client.investments_transactions_get(req)
