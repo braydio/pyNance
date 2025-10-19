@@ -124,6 +124,7 @@ backend/dev/*
 !backend/migrations/env.py
 !backend/migrations/script.py.mako
 backend/migrations/versions/__pycache__/*
+backend/migrations/__pycache__/*
 
 # Miscellaneous
 *.egg-info/
