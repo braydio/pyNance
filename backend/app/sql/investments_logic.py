@@ -85,8 +85,9 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
 
     # Conflict-safe upsert for holdings to avoid unique violations on
     # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
-    from sqlalchemy.dialects.postgresql import insert
     from datetime import date, datetime
+
+    from sqlalchemy.dialects.postgresql import insert
 
     def _as_date(value):
         if isinstance(value, datetime):
