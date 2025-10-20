@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List
 
 from app.extensions import db
 from app.models import (
@@ -14,6 +14,25 @@ from app.models import (
     PlaidAccount,
     Security,
 )
+
+
+def _json_safe(obj: Any) -> Any:
+    """Recursively convert Plaid SDK objects to JSON-safe primitives.
+
+    - datetime/date -> ISO string
+    - Decimal -> float
+    - lists/dicts -> mapped recursively
+    """
+
+    if isinstance(obj, (datetime, date)):
+        return obj.isoformat()
+    if isinstance(obj, Decimal):
+        return float(obj)
+    if isinstance(obj, dict):
+        return {k: _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_json_safe(v) for v in obj]
+    return obj
 
 
 def get_investment_accounts() -> List[Dict[str, object]]:
@@ -46,23 +65,6 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
     secs = data.get("securities", []) or []
     holds = data.get("holdings", []) or []
 
-    def _json_safe(obj: Any) -> Any:
-        """Recursively convert Plaid SDK objects to JSON-safe primitives.
-
-        - datetime/date -> ISO string
-        - Decimal -> float
-        - lists/dicts -> mapped recursively
-        """
-        if isinstance(obj, (datetime, date)):
-            return obj.isoformat()
-        if isinstance(obj, Decimal):
-            return float(obj)
-        if isinstance(obj, dict):
-            return {k: _json_safe(v) for k, v in obj.items()}
-        if isinstance(obj, list):
-            return [_json_safe(v) for v in obj]
-        return obj
-
     sec_upserts = 0
     for s in secs:
         # Map Plaid security fields sensibly
@@ -86,7 +88,6 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
     # Conflict-safe upsert for holdings to avoid unique violations on
     # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
     from sqlalchemy.dialects.postgresql import insert
-    from datetime import date, datetime
 
     def _as_date(value):
         if isinstance(value, datetime):

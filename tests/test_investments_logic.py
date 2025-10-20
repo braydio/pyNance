@@ -1,4 +1,4 @@
-"""Tests for investment account logic (skipped: requires full backend)."""
+"""Tests for investment account logic."""
 
 # pylint: skip-file
 # mypy: ignore-errors
@@ -7,12 +7,12 @@ import importlib.util
 import os
 import sys
 import types
+from datetime import date, datetime
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
 from flask import Flask
-
-pytestmark = pytest.mark.skip(reason="requires full application context")
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
@@ -57,21 +57,29 @@ def setup_app(tmp_path):
     return app, extensions
 
 
+@pytest.fixture(scope="module")
+def app_modules(tmp_path_factory):
+    tmp_dir = tmp_path_factory.mktemp("investments_logic")
+    app, extensions = setup_app(tmp_dir)
+    models = load_module(
+        "app.models",
+        os.path.join(BASE_BACKEND, "app", "models", "__init__.py"),
+    )
+    logic = load_module(
+        "app.sql.investments_logic",
+        os.path.join(BASE_BACKEND, "app", "sql", "investments_logic.py"),
+    )
+    return app, extensions, models, logic
+
+
 @pytest.fixture()
-def db_ctx(tmp_path):
-    app, extensions = setup_app(tmp_path)
+def db_ctx(app_modules):
+    app, extensions, models, logic = app_modules
     with app.app_context():
-        models = load_module(
-            "app.models",
-            os.path.join(BASE_BACKEND, "app", "models", "__init__.py"),
-        )
-        logic = load_module(
-            "app.sql.investments_logic",
-            os.path.join(BASE_BACKEND, "app", "sql", "investments_logic.py"),
-        )
+        extensions.db.drop_all()
         extensions.db.create_all()
         yield extensions.db, models, logic
-        extensions.db.drop_all()
+        extensions.db.session.remove()
 
 
 def test_get_investment_accounts(db_ctx):
@@ -97,3 +105,36 @@ def test_get_investment_accounts(db_ctx):
     accounts = logic.get_investment_accounts()
     assert len(accounts) == 1
     assert accounts[0]["account_id"] == "acct1"
+
+
+def test_upsert_investment_transactions_persists_json(db_ctx):
+    db, models, logic = db_ctx
+
+    payload = {
+        "investment_transaction_id": "tx-raw",
+        "account_id": "acct-raw",
+        "security_id": "sec-raw",
+        "date": date(2024, 1, 1),
+        "amount": Decimal("10.50"),
+        "price": Decimal("1.05"),
+        "quantity": Decimal("10"),
+        "subtype": "buy",
+        "type": "buy",
+        "name": "Sample",
+        "fees": Decimal("0.10"),
+        "iso_currency_code": "USD",
+        "nested": {
+            "posted_at": datetime(2024, 1, 1, 12, 30),
+            "legs": [Decimal("5.25"), {"when": date(2024, 1, 2)}],
+        },
+    }
+
+    processed = logic.upsert_investment_transactions([payload])
+
+    assert processed == 1
+    stored = db.session.get(models.InvestmentTransaction, "tx-raw")
+    assert stored is not None
+    assert stored.raw["amount"] == pytest.approx(10.5)
+    assert stored.raw["nested"]["posted_at"] == datetime(2024, 1, 1, 12, 30).isoformat()
+    assert stored.raw["nested"]["legs"][0] == pytest.approx(5.25)
+    assert stored.raw["nested"]["legs"][1]["when"] == date(2024, 1, 2).isoformat()
