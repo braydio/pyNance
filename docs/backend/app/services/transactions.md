@@ -9,60 +9,43 @@
 
 ## Purpose
 
-Provides core logic for managing user transactions. Supports listing, filtering, inserting, editing, and tagging financial records. Serves as the business logic layer beneath `/transactions` API endpoints.
+Provide a thin orchestration layer that delegates transaction synchronisation to
+provider-specific adapters (currently Plaid). The service is intentionally
+minimal while broader CRUD features live directly in the route layer.
 
 ## Key Responsibilities
 
-- Abstract access to transaction models
-- Apply user-scope filters and ownership logic
-- Normalize imported transactions into internal schema
-- Maintain data consistency across manual and synced entries
+- Accept provider hints from HTTP routes or background jobs.
+- Dispatch to the appropriate provider module to perform syncs.
+- Bubble unsupported providers as actionable errors for callers.
 
 ## Primary Functions
 
-- `get_transactions(user_id, filters)`
-
-  - Returns a filtered list of transactions for the user
-
-- `create_transaction(user_id, data)`
-
-  - Inserts a new user-defined transaction (manual or imported)
-
-- `update_transaction(transaction_id, updates)`
-
-  - Modifies editable fields like category, description
-
-- `delete_transaction(transaction_id)`
-  - Removes a user-created transaction
+- `sync_transactions(provider: str, account_id: str)`
+  - Routes the sync request to `app.providers.plaid.sync_transactions` when the
+    provider is `"plaid"`.
+  - Raises `ValueError` for unsupported providers so routes can surface a clear
+    4xx response.
 
 ## Inputs
 
-- Filter criteria: `date_range`, `account`, `merchant`, `tags`, `source`
-- `user_id` from session context
-- New or updated transaction data
+- `provider` identifier (e.g. `"plaid"`).
+- `account_id` referencing the upstream account to synchronise.
 
 ## Outputs
 
-- `Transaction` objects
-- Validation errors or success messages
-- Derived metadata for UI (e.g., summaries)
+- Whatever payload the provider adapter returns (typically status flags and
+  change counts).
+- Exceptions when the provider string is not recognised.
 
 ## Internal Dependencies
 
-- `models.Transaction`
-- `utils.transaction_filters`, `utils.transaction_normalizer`
-- Tag parser, category reclassifier
-
-## Known Behaviors
-
-- Auto-tags certain descriptions (e.g., "Uber" → Travel)
-- Prevents edits to externally-synced records unless flagged editable
-- Emits signals/hooks for budget & summary recomputation
+- `app.providers.plaid.sync_transactions`
 
 ## Related Docs
 
-- [`docs/models/Transaction.md`](../../models/Transaction.md)
-- [`docs/dataflow/transaction_lifecycle.md`](../../dataflow/transaction_lifecycle.md)
+- [`docs/backend/app/routes/plaid_transactions.md`](../routes/plaid_transactions.md)
+- [`docs/roadmaps/transactions.md`](../../roadmaps/transactions.md)
 ```
 
 ---
