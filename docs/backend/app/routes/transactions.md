@@ -22,7 +22,7 @@ full CRUD creation/deletion.
 Update a single transaction's editable attributes.
 
 - **Request body** (JSON):
-  - `transaction_id` *(required)* – identifier of the record to update.
+  - `transaction_id` _(required)_ – identifier of the record to update.
   - Optional mutation fields: `amount`, `date`, `description`, `category`,
     `merchant_name`, `merchant_type`, `is_internal`.
   - Internal-transfer helpers:
@@ -72,13 +72,13 @@ records.
 Return paginated transactions across the user's accounts.
 
 - **Query parameters:**
-  - `page` *(default 1)*, `page_size` *(default 15)*.
+  - `page` _(default 1)_, `page_size` _(default 15)_.
   - `start_date`, `end_date` (`YYYY-MM-DD`, inclusive).
   - `category` – optional category filter.
   - `account_ids` – comma-separated account identifiers.
   - `tx_type` (or legacy alias `type`) – filter credits or debits.
 - **Response:** `200` with `{ "status": "success", "data": { "transactions":
-  [...], "total": <int> } }`.
+[...], "total": <int> } }`.
 
 #### `GET /api/transactions/<account_id>/transactions`
 
@@ -87,7 +87,7 @@ Fetch transactions for a specific account with the same pagination schema.
 - **Query parameters:**
   - `page`, `page_size`, `start_date`, `end_date`, `category` (as above).
   - `recent=true` bypasses date filters and caps the result using `limit`
-    *(default 10)*.
+    _(default 10)_.
 - **Response:** `200` with the same payload shape as the collection endpoint.
 
 #### `GET /api/transactions/merchants`
