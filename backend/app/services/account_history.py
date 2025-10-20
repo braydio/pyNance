@@ -4,12 +4,13 @@ This module exposes helper functions to reconstruct historical daily
 balances for an account given its current balance and a sequence of
 transactions. It is used by the `/api/accounts/<id>/history` endpoint.
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, timedelta
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Iterable, List, Dict
+from decimal import ROUND_HALF_UP, Decimal
+from typing import Dict, Iterable, List
 
 
 def compute_balance_history(
