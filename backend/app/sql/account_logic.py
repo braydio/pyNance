@@ -24,6 +24,9 @@ ParentCategory = aliased(Category)
 TRANSACTIONS_RAW = FILES["LAST_TX_REFRESH"]
 TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
+# Valid account status values stored in the database enum.
+ALLOWED_ACCOUNT_STATUSES = {"active", "inactive", "closed", "archived"}
+
 
 def process_transaction_amount(amount):
     """Parse the transaction amount without adjusting signage."""
@@ -40,6 +43,17 @@ def normalize_balance(amount, account_type):
             ),
         }
     )
+
+
+def normalize_account_status(status: Optional[str]) -> str:
+    """Return an account status compatible with the database enum."""
+
+    if isinstance(status, str):
+        candidate = status.strip().lower()
+        if candidate in ALLOWED_ACCOUNT_STATUSES:
+            return candidate
+
+    return "active"
 
 
 def detect_internal_transfer(
@@ -166,7 +180,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
             logger.debug(f"[UPSERT] Balance parsed for {account_id}: {balance}")
 
             subtype = str(account.get("subtype") or "Unknown").capitalize()
-            status = account.get("status") or "Unknown"
+            status = normalize_account_status(account.get("status"))
             institution_name = (
                 (account.get("institution") or {}).get("name")
                 or account.get("institution_name")
