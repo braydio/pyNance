@@ -642,7 +642,7 @@ def refresh_data_for_plaid_account(
                     existing_txn.category = category.display_name
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
-                    existing_txn.provider = "Plaid"
+                    existing_txn.provider = "plaid"
                     existing_txn.personal_finance_category = pfc_obj or None
                     existing_txn.personal_finance_category_icon_url = pfc_icon_url
                     logger.info(
@@ -667,7 +667,7 @@ def refresh_data_for_plaid_account(
                     category=category.display_name,
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
-                    provider="Plaid",
+                    provider="plaid",
                     personal_finance_category=pfc_obj or None,
                     personal_finance_category_icon_url=pfc_icon_url,
                 )

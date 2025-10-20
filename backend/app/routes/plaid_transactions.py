@@ -1,7 +1,7 @@
 # file: app/routes/plaid_transactions.py
 """Endpoints for Plaid account linking and transaction sync."""
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger, plaid_client
@@ -183,7 +183,7 @@ def exchange_public_token_endpoint():
 
         logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
         account_logic.upsert_accounts(
-            user_id, accounts, provider="Plaid", access_token=access_token
+            user_id, accounts, provider="plaid", access_token=access_token
         )
         logger.info(f"Upserted {len(accounts)} accounts for user {user_id}")
 

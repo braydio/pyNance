@@ -7,7 +7,7 @@ removed transactions inside a single DB transaction and persists the cursor.
 from __future__ import annotations
 
 from datetime import date, datetime, timezone
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -16,7 +16,6 @@ from app.sql import transaction_rules_logic
 from app.sql.account_logic import (
     detect_internal_transfer,
     get_or_create_category,
-    normalize_balance,
 )
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 
@@ -96,7 +95,7 @@ def _upsert_transaction(
             existing.category = category.display_name
             existing.merchant_name = merchant_name
             existing.merchant_type = merchant_type
-            existing.provider = "Plaid"
+            existing.provider = "plaid"
             existing.personal_finance_category = pfc or None
             existing.personal_finance_category_icon_url = pfc_icon
         # Always refresh Plaid metadata (keeps aux fields current)
@@ -115,7 +114,7 @@ def _upsert_transaction(
             category=category.display_name,
             merchant_name=merchant_name,
             merchant_type=merchant_type,
-            provider="Plaid",
+            provider="plaid",
             user_id=account.user_id,
             personal_finance_category=pfc or None,
             personal_finance_category_icon_url=pfc_icon,

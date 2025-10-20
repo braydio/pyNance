@@ -138,11 +138,11 @@ def manual_up_plaid():
                     "access_token": access_token,
                     "enrollment_id": "",
                     "links": {},
-                    "provider": "Plaid",
+                    "provider": "plaid",
                 }
             )
 
-        account_logic.upsert_accounts(user_id, transformed, provider="Plaid")
+        account_logic.upsert_accounts(user_id, transformed, provider="plaid")
         logger.info(
             f"[manual_up] Uploaded {len(transformed)} accounts for {user_id} using Plaid"
         )
