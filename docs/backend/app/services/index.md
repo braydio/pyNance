@@ -4,89 +4,34 @@
 
 ## Index of Service Modules
 
-### Forecasting
+### Accounts & History
+- [`account_history.py`](account_history.md): Reverse-map daily balances from transaction deltas.
+- [`balance_history.py`](balance_history.md): Persist and retrieve normalized balance histories from the database.
+- [`enhanced_account_history.py`](enhanced_account_history.md): Cache-aware wrapper that orchestrates history recomputation and storage.
+- [`account_snapshot.py`](account_snapshot.md): Manage preferred snapshot selections for dashboard widgets.
+- [`account_groups.py`](account_groups.md): CRUD and ordering logic for customizable dashboard account groups.
 
-- [`forecast_balance.py`](#forecast-balance-service): Daily cashflow and forward balance projections.
-- [`forecast_engine.py`](#forecast-engine-service): Core system for predictive modeling and spending estimation.
-- [`forecast_orchestrator.py`](#forecast-orchestrator-service): High-level integration and coordination of forecasting components.
-- [`forecast_stat_model.py`](#forecast-statistical-model-service): Statistical regressions for category forecasting.
+### Forecasting
+- [`forecast_balance.py`](forecast_balance.md): Daily cashflow and forward balance projections.
+- [`forecast_engine.py`](forecast_engine.md): Core system for predictive modeling and spending estimation.
+- [`forecast_orchestrator.py`](forecast_orchestrator.md): High-level integration and coordination of forecasting components.
+- [`forecast_stat_model.py`](forecast_stat_model.md): Statistical regressions for category forecasting.
 
 ### Recurring Transactions
-
-- [`recurring_bridge.py`](#recurring-bridge-service): Synchronization layer between new transactions and recurrence tracking.
-- [`recurring_detection.py`](#recurring-detection-service): Pattern mining to infer recurring flows.
+- [`recurring_bridge.py`](recurring_bridge.md): Synchronization layer between new transactions and recurrence tracking.
+- [`recurring_detection.py`](recurring_detection.md): Pattern mining to infer recurring flows.
 
 ### Synchronization & Storage
-
-- [`sync_service.py`](#sync-service): Orchestrates transaction ingestion from APIs or files.
-- [`transactions.py`](#transactions-service): Core logic for interacting with transaction data.
+- [`plaid_sync.py`](plaid_sync.md): Plaid `/transactions/sync` integration and reconciliation logic.
+- [`sync_service.py`](sync_service.md): Orchestrates transaction ingestion from APIs or files.
+- [`transactions.py`](transactions.md): Core logic for interacting with transaction data.
 
 ### Arbitrage
+- [`arbit_metrics.py`](arbit_metrics.md): Retrieves metrics from the Arbit exporter.
 
-- [`arbit_metrics.py`](#arbit-metrics-service): Retrieves metrics from the Arbit exporter.
-
----
-
-## 📘 `transactions.py`
-
-```markdown
-# Transactions Service
-
-## Purpose
-
-Provides core logic for managing user transactions. Supports listing, filtering, inserting, editing, and tagging financial records. Serves as the business logic layer beneath `/transactions` API endpoints.
-
-## Key Responsibilities
-
-- Abstract access to transaction models
-- Apply user-scope filters and ownership logic
-- Normalize imported transactions into internal schema
-- Maintain data consistency across manual and synced entries
-
-## Primary Functions
-
-- `get_transactions(user_id, filters)`
-  - Returns a filtered list of transactions for the user
-
-- `create_transaction(user_id, data)`
-  - Inserts a new user-defined transaction (manual or imported)
-
-- `update_transaction(transaction_id, updates)`
-  - Modifies editable fields like category, description
-
-- `delete_transaction(transaction_id)`
-  - Removes a user-created transaction
-
-## Inputs
-
-- Filter criteria: `date_range`, `account`, `merchant`, `tags`, `source`
-- `user_id` from session context
-- New or updated transaction data
-
-## Outputs
-
-- `Transaction` objects
-- Validation errors or success messages
-- Derived metadata for UI (e.g., summaries)
-
-## Internal Dependencies
-
-- `models.Transaction`
-- `utils.transaction_filters`, `utils.transaction_normalizer`
-- Tag parser, category reclassifier
-
-## Known Behaviors
-
-- Auto-tags certain descriptions (e.g., "Uber" → Travel)
-- Prevents edits to externally-synced records unless flagged editable
-- Emits signals/hooks for budget & summary recomputation
-
-## Related Docs
-
-- [`docs/models/Transaction.md`](../../models/Transaction.md)
-- [`docs/dataflow/transaction_lifecycle.md`](../../dataflow/transaction_lifecycle.md)
-```
+### Planning
+- [`planning_service.py`](planning_service.md): In-memory prototype for bills and allocation planning workflows.
 
 ---
 
-All service files now documented. Ready for `sql/` layer next?
+Consult the linked documents above for detailed responsibilities, function summaries, and integration notes for each service module.
