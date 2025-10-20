@@ -150,7 +150,9 @@ class QueryStub:
     def first(self) -> Optional[object]:
         return self._items[0] if self._items else None
 
-    def delete(self, synchronize_session: bool = False) -> int:  # noqa: ARG002 - parity with SQLAlchemy
+    def delete(
+        self, synchronize_session: bool = False
+    ) -> int:  # noqa: ARG002 - parity with SQLAlchemy
         if not self._pending_delete_ids:
             return 0
         if self._deleted_log is not None:
@@ -218,12 +220,14 @@ class FakePlaidAccount:
 
 
 class FakeTransaction:
-    """Placeholder transaction used for removal tests."""
+    """Placeholder transaction capturing assigned attributes for assertions."""
 
     transaction_id = ColumnDescriptor("_transaction_id", "transaction_id")
 
-    def __init__(self, transaction_id: str = "") -> None:
+    def __init__(self, transaction_id: str = "", **kwargs: object) -> None:
         self._transaction_id = transaction_id
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
 
 class FakePlaidItem:
@@ -331,7 +335,7 @@ transactions_sync_stub = types.ModuleType("plaid.model.transactions_sync_request
 
 
 class DummyTransactionsSyncRequest:
-    def __init__(self, access_token: str, cursor: Optional[str]) -> None:
+    def __init__(self, access_token: str, cursor: Optional[str] = None) -> None:
         self.access_token = access_token
         self.cursor = cursor
 
@@ -524,3 +528,90 @@ def test_sync_persists_cursor_and_handles_removed_transactions() -> None:
     assert plaid_account_main.last_refreshed is not None
     assert plaid_account_secondary.last_refreshed is not None
     assert fake_client.calls and fake_client.calls[0].cursor == "CUR-EXIST"
+
+
+def test_sync_sets_provider_lowercase() -> None:
+    """Ensure transactions synced from Plaid persist with a lowercase provider."""
+
+    session = FakeSession()
+    extensions_stub.db.session = session
+    plaid_sync_module.db.session = session
+
+    fake_logger = FakeLogger()
+    config_stub.logger = fake_logger
+    plaid_sync_module.logger = fake_logger
+
+    account = FakeAccount("acct-1", "user-1")
+    plaid_sync_module.Account.query = QueryStub([account])
+
+    plaid_account = FakePlaidAccount("acct-1", "item-1", "tok-1")
+    plaid_sync_module.PlaidAccount.query = QueryStub([plaid_account])
+
+    existing_txn = FakeTransaction(
+        transaction_id="txn-existing",
+        amount=42.0,
+        date=datetime(2024, 1, 1, tzinfo=timezone.utc),
+        description="Original purchase",
+        pending=False,
+        category_id=99,
+        category="Legacy",
+        merchant_name="Old Merchant",
+        merchant_type="POS",
+        provider="Plaid",
+        personal_finance_category={"primary": "OLD"},
+        personal_finance_category_icon_url="https://icon/old.png",
+    )
+    existing_txn.account_id = account.account_id
+
+    plaid_sync_module.Transaction.query = QueryStub([existing_txn])
+
+    added_tx = {
+        "transaction_id": "txn-new",
+        "account_id": account.account_id,
+        "amount": 12.34,
+        "date": "2024-02-01",
+        "name": "Coffee Shop",
+        "pending": False,
+        "personal_finance_category": {"primary": "FOOD_AND_DRINK"},
+        "personal_finance_category_icon_url": "https://icon/new.png",
+    }
+
+    modified_tx = {
+        "transaction_id": existing_txn.transaction_id,
+        "account_id": account.account_id,
+        "amount": 100.0,
+        "date": "2024-02-02",
+        "name": "Updated Purchase",
+        "pending": True,
+        "personal_finance_category": {"primary": "GENERAL_MERCHANDISE"},
+        "personal_finance_category_icon_url": "https://icon/update.png",
+    }
+
+    responses = [
+        {
+            "added": [added_tx],
+            "modified": [modified_tx],
+            "removed": [],
+            "next_cursor": "CUR-LOWER",
+            "has_more": False,
+        }
+    ]
+    plaid_sync_module.plaid_client = FakePlaidClient(responses)
+
+    result = plaid_sync_module.sync_account_transactions(account.account_id)
+
+    assert result["added"] == 1
+    assert result["modified"] == 1
+
+    assert session.added, "Expected new transaction to be persisted"
+    new_txn = next(
+        (
+            obj
+            for obj in session.added
+            if getattr(obj, "transaction_id", "") == "txn-new"
+        ),
+        None,
+    )
+    assert new_txn is not None
+    assert getattr(new_txn, "provider", None) == "plaid"
+    assert existing_txn.provider == "plaid"

@@ -98,7 +98,7 @@ class DummyAccount:
         self._user_id = user_id
         self.name = name
         self.balance = 0.0
-        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
+        self.updated_at = datetime(2000, 1, 1)
         self.plaid_account = DummyPlaidAcct(f"t-{account_id}", account=self)
 
 
@@ -274,7 +274,7 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
         "result": {"updated": True, "error": None},
     }
     assert plaid_account.last_refreshed is not None
-    assert account.updated_at > datetime(2000, 1, 1, tzinfo=timezone.utc)
+    assert account.updated_at > datetime(2000, 1, 1)
     assert account.balance == 25.0
     assert history == [(account.account_id, 25.0)]
     assert history_entry.balance == 25.0

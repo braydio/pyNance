@@ -58,7 +58,7 @@ def app_context():
 def test_institution_delete_cascades_account_tree(app_context):
     """Deleting an institution removes dependent accounts and related records."""
 
-    institution = Institution(name="Cascade Bank", provider="Plaid")
+    institution = Institution(name="Cascade Bank", provider="plaid")
     db.session.add(institution)
     db.session.commit()
 

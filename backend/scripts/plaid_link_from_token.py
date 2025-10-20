@@ -128,7 +128,7 @@ def sync_from_token(user_id: str, access_token: str) -> int:
     for acct in accounts:
         acct["institution_name"] = institution_name
     account_mod.upsert_accounts(
-        user_id, accounts, provider="Plaid", access_token=access_token
+        user_id, accounts, provider="plaid", access_token=access_token
     )
 
     inserted = 0

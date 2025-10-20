@@ -50,7 +50,7 @@ def exchange_public_token_investments():
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
         accounts = get_accounts(access_token, user_id)
-        upsert_accounts(user_id, accounts, provider="Plaid", access_token=access_token)
+        upsert_accounts(user_id, accounts, provider="plaid", access_token=access_token)
         for acct in accounts:
             acct_id = acct.get("account_id")
             if acct_id:
@@ -172,9 +172,9 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 logger.error(
                     f"Failed to refresh investments for item {pa.item_id}: {inner}"
