@@ -5,38 +5,44 @@
 
 ## Purpose
 
-Records incoming webhook payloads received from Plaid. Acts as an audit trail for external sync events, error tracking, and developer debugging.
+Captures every inbound webhook delivered by Plaid so operators can audit sync
+activity, replay payloads during incident response, and diagnose processing
+failures.
 
 ## Fields
 
-- `id`: Primary key (UUID)
-- `event_type`: String — type of webhook (e.g., `TRANSACTIONS_REMOVED`, `SYNC_UPDATES_AVAILABLE`)
-- `payload`: JSON blob of the full webhook body
-- `status`: Enum or string (`received`, `processed`, `error`)
-- `error_message`: Optional — populated if webhook failed processing
-- `account_id`: FK to linked `Account`, if resolvable
-- `user_id`: Optional FK — inferred from account linkage
-- `created_at`: Timestamp of receipt
-- `processed_at`: Nullable timestamp of processing
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | Integer (PK) | Auto-incrementing identifier. |
+| `event_type` | String(128) | Convenience label built from `webhook_type:webhook_code`. |
+| `webhook_type` | String(64) | Plaid webhook type (e.g., `TRANSACTIONS`). |
+| `webhook_code` | String(64) | Plaid webhook code (e.g., `SYNC_UPDATES_AVAILABLE`). |
+| `item_id` | String(128) | Plaid item identifier used to locate linked accounts. |
+| `payload` | JSON | Raw request body stored for debugging and reprocessing. |
+| `received_at` | DateTime | Naive UTC timestamp captured on receipt. |
+| `created_at` | DateTime | Timestamp from `TimestampMixin`; set automatically. |
+| `updated_at` | DateTime | Timestamp from `TimestampMixin`; refreshed on updates. |
 
 ## Relationships
 
-- Linked to `Account`, optionally to `User`
+- None. The table is an append-only log without foreign keys.
 
 ## Behaviors
 
-- All webhooks stored before processing
-- Failed payloads retained for manual retry/debug
-- Noise-level webhooks may be throttled or collapsed
+- The Plaid webhook route logs every accepted payload via
+  [`plaid_webhook.handle_plaid_webhook`](../../../../../backend/app/routes/plaid_webhook.py)
+  before dispatching sync work, guaranteeing an audit trail even when downstream
+  processing fails.
+- Timestamps are stored without timezone awareness to mirror database defaults,
+  matching the behavior enforced by `TimestampMixin`.
 
 ## Related Logic
 
-- `plaid.py` route handler
-- `sync_service.py`
-- Error logging and retry queues
+- [`institution_models.py`](../../../../../backend/app/models/institution_models.py)
+- [`plaid_webhook.py`](../../../../../backend/app/routes/plaid_webhook.py)
 
 ## Related Docs
 
-- [`docs/sync/plaid_webhooks.md`](../../docs/sync/plaid_webhooks.md)
-- [`docs/dev/debugging_sync_issues.md`](../../docs/dev/debugging_sync_issues.md)
+- [`plaid_webhook.md`](../../routes/plaid_webhook.md)
+- [`plaid_sync.md`](../../services/plaid_sync.md)
 ```

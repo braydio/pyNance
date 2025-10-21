@@ -5,44 +5,63 @@
 
 ## Purpose
 
-Captures a single financial transaction made by a user. This can be a synced transaction from an external provider (Plaid) or a manual entry. All transaction analysis, budgeting, and forecasting originates from this data.
+Stores individual cash-flow events for a user account. Rows originate from Plaid
+syncs or manual entries and power downstream balance calculations, budgeting, and
+forecasting features.
 
 ## Fields
 
-- `id`: Primary key (UUID)
-- `user_id`: Foreign key to the owning user
-- `account_id`: Foreign key to `Account`
-- `date`: Transaction date
-- `amount`: Float (positive = inflow, negative = outflow)
-- `description`: Merchant or label
-- `category_id`: Optional FK to `Category`
-- `tags`: Array of custom user tags
-- `is_pending`: Boolean flag for provisional transactions
-- `is_recurring`: Boolean if linked to a recurring pattern
-- `provider_transaction_id`: External source ID
-- `source`: Enum (`plaid`, `manual`, etc.)
-- `created_at`, `updated_at`: Audit timestamps
+| Column | Type | Notes |
+| --- | --- | --- |
+| `id` | Integer (PK) | Auto-incrementing identifier used internally. |
+| `transaction_id` | String(64), unique, indexed | Primary business key from Plaid or manual import; enforced unique constraint. |
+| `user_id` | String(64), indexed, nullable | Owning user identifier for multi-tenant filtering. |
+| `account_id` | String(64) FK | References `Account.account_id`; cascades on account deletion. |
+| `amount` | Numeric(18, 2) | Stored as `Decimal`; preserves provider sign for inflow/outflow logic. |
+| `date` | DateTime(timezone=True) | Timestamp of when the transaction occurred. |
+| `description` | String(256) | Raw provider description or user-supplied label. |
+| `provider` | Enum[`manual`, `plaid`] | Normalized via validator; defaults to `manual`. |
+| `merchant_name` | String(128) | Resolved merchant display name (defaults to `"Unknown"`). |
+| `merchant_type` | String(64) | Provider merchant type/category (defaults to `"Unknown"`). |
+| `user_modified` | Boolean | Flagged when a human edits the transaction. |
+| `user_modified_fields` | Text | Comma-separated/JSON list of manually edited attributes. |
+| `updated_by_rule` | Boolean | Indicates a `TransactionRule` mutation applied during sync. |
+| `category_id` | Integer FK, nullable | Optional FK to `Category.id`; nullified on category deletion. |
+| `category` | String(128) | Denormalized category label maintained beside `category_id`. |
+| `personal_finance_category` | JSON | Raw Plaid personal finance category payload. |
+| `personal_finance_category_icon_url` | String | Icon URL associated with Plaid personal finance category. |
+| `pending` | Boolean | True while Plaid reports the entry as unsettled. |
+| `is_internal` | Boolean, indexed | Marks internal transfers for reporting exclusions. |
+| `internal_match_id` | String(64), nullable | Stores counterpart `transaction_id` when `is_internal` is set. |
 
 ## Relationships
 
-- Belongs to `Account`
-- Optionally linked to `RecurringTransaction`
-- Categorized via `Category` or tag sets
+- `plaid_meta`: One-to-one with `PlaidTransactionMeta` (cascade delete-orphan) for
+detailed Plaid metadata.
+- `recurrence_rule`: Backref from `RecurringTransaction` when this row seeds a recurring
+pattern.
 
 ## Behaviors
 
-- Immutable once verified unless explicitly editable
-- Amounts stored in absolute form, but signed by inflow/outflow
-- Auto-categorization is run on creation and update
+- Plaid transaction syncs upsert the `plaid_meta` relationship via
+  [`refresh_or_insert_plaid_metadata`](../../../../../backend/app/sql/refresh_metadata.py),
+  ensuring Plaid metadata stays aligned with the base row.
+- Internal transfer detection in
+  [`account_logic.detect_internal_transfer`](../../../../../backend/app/sql/account_logic.py)
+  flags matching debits/credits, toggling `is_internal` and wiring
+  `internal_match_id` pairs to prevent double-counting balances.
+- The provider validator keeps `provider` constrained to `manual`/`plaid`, defaulting
+  to `manual` when unknown values arrive.
 
 ## Related Logic
 
-- [`transactions_logic.py`](../../backend/app/sql/transactions_logic.py)
-- [`category_logic.py`](../../backend/app/sql/category_logic.py)
-- [`recurring_bridge.py`](../../backend/app/services/recurring_bridge.py)
+- [`transaction_models.py`](../../../../../backend/app/models/transaction_models.py)
+- [`transactions_logic.md`](../transactions_logic.md)
+- [`recurring_logic.md`](../recurring_logic.md)
 
 ## Related Docs
 
-- [`docs/dataflow/transaction_lifecycle.md`](../../docs/dataflow/transaction_lifecycle.md)
-- [`docs/sql/TransactionQueryPatterns.md`](../../docs/sql/TransactionQueryPatterns.md)
+- [`transactions.md`](../../services/transactions.md)
+- [`enhanced_account_history.md`](../../services/enhanced_account_history.md)
+- [`sync_service.md`](../../services/sync_service.md)
 ```
