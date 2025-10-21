@@ -81,7 +81,7 @@ Return paginated transactions across the user's linked accounts.
   - `account_ids` — comma-separated account identifiers.
   - `tx_type` (or legacy alias `type`) — filter to `credit` or `debit`.
 - **Response**: `200` with `{ "status": "success", "data": { "transactions":
-  [...], "total": <int> } }`.
+[...], "total": <int> } }`.
 
 #### `GET /api/transactions/<account_id>/transactions`
 
@@ -92,7 +92,7 @@ Fetch transactions for a specific account with the same pagination schema.
   - `recent=true` bypasses date filters and caps the response using `limit`
     (default `10`).
 - **Response**: `200` with `{ "status": "success", "data": { "transactions":
-  [...], "total": <int> } }`.
+[...], "total": <int> } }`.
 
 #### `GET /api/transactions/merchants`
 
@@ -106,7 +106,7 @@ Provide merchant name suggestions for autocomplete experiences.
 ### Workflow integrations
 
 - **User-authored rules**: Clients can surface the `save_as_rule` controls in
-the update workflow so that recurring corrections become automated.
+  the update workflow so that recurring corrections become automated.
   Rules inherit the transaction's account by default and may capture an exact
   description match for precision updates.
 - **Internal transfer reconciliation**: Consumers should call
