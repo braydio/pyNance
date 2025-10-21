@@ -145,6 +145,7 @@ Pre-commit runs automatically on commit and includes:
 - `mypy` - Static type checking
 - `pylint` - Python linting
 - `bandit` - Security analysis
+- `scripts/check_docs.py` - Documentation coverage guard for backend/frontend changes
 - Model field validation tests
 
 **Validation Steps:**
@@ -326,6 +327,22 @@ cd frontend && npm run lint && npm run format -- --check
 ```
 
 ### Documentation Maintenance
+
+Run the documentation coverage guard before pushing to make sure any modified
+backend Python or frontend Vue files have matching entries in the docs tree.
+
+```bash
+# Check staged backend/frontend files for docs
+python scripts/check_docs.py --staged
+
+# Compare your branch to main (or another ref)
+python scripts/check_docs.py --changed-since origin/main
+
+# Shell wrapper with the same behavior (legacy entry point)
+backend/scripts/watch_pynance_docs.sh --staged
+```
+
+After writing new docs, refresh the shared index so navigation stays in sync.
 
 ```bash
 # Update documentation index after doc changes

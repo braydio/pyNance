@@ -1,13 +1,23 @@
 #!/bin/bash
 
-SCRIPT="scripts/lint_routes.py"
-echo "[LINTER] Running route linter..."
+ROUTE_LINTER="scripts/lint_routes.py"
+DOC_CHECKER="scripts/check_docs.py"
 
-python3 "$SCRIPT"
+echo "[LINTER] Running route linter..."
+python3 "$ROUTE_LINTER"
 STATUS=$?
 
 if [ $STATUS -ne 0 ]; then
   echo "[LINTER] API route violations detected. Please fix before committing."
+  exit 1
+fi
+
+echo "[DOCS] Verifying documentation coverage..."
+python3 "$DOC_CHECKER" --staged
+STATUS=$?
+
+if [ $STATUS -ne 0 ]; then
+  echo "[DOCS] Missing documentation detected. Review the output above."
   exit 1
 fi
 
