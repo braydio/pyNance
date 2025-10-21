@@ -3,6 +3,7 @@
 ## Snapshot
 
 - The Planning view (`frontend/src/views/Planning.vue`) is routed and wired to a persistence layer through `frontend/src/services/planningService.ts` and the `usePlanning` composable. The singleton now supports versioned local storage (v4) and an API mode toggle for optimistic sync.
+- Frontend layout and interaction details live in [docs/frontend/planning-view.md](../frontend/planning-view.md) so UI changes stay aligned with planning contracts.
 - Flask routes live in `backend/app/routes/planning.py`, delegating to the in-memory service in `backend/app/services/planning_service.py`.
 - Scenario-level API tests exist in `tests/test_api_planning.py`, exercising bill creation, allocation caps, and retrieval through a FastAPI harness that mirrors the Flask contract.
 
