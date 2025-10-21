@@ -1,22 +1,32 @@
 #!/bin/bash
 
-# === Config ===
-WATCH_PATH="./app"
-REPO_NAME="pyNance"
-TARGET_WINDOW="Arch Linux Assistant - pyNance Status - qutebrowser"
+set -euo pipefail
 
-# === Watch ===
-find "$WATCH_PATH" -type f -name "*.py" | entr -n sh -c '
-  FILE_CHANGED="$0"
-  echo "Change detected in: $FILE_CHANGED"
+# Shell wrapper to keep backward compatibility with historical workflows.
+# Runs the repository-wide documentation coverage check. Defaults to the staged
+# diff so the command can be used as a drop-in validation step in local scripts
+# or CI jobs.
 
-  # Run documentation goal
-  python cli.py --mode goal --goal document_undocumented_files --args "{\"repo_name\": \"'$REPO_NAME'\"}"
+if command -v git >/dev/null 2>&1; then
+  REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || true)
+else
+  REPO_ROOT=""
+fi
 
-  # Extract filename for human-readable message
-  FILENAME=$(basename "$FILE_CHANGED")
-  MESSAGE=\"🔄 Docs refreshed for $FILENAME\"
+if [ -z "${REPO_ROOT}" ]; then
+  SCRIPT_DIR=$(cd -- "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)
+  REPO_ROOT=$(cd "$SCRIPT_DIR/../.." && pwd)
+fi
 
-  # Send update to qute window
-  ./scripts/notify_qute.sh "'"$TARGET_WINDOW"'" "$MESSAGE"
-'
+CHECK_SCRIPT="$REPO_ROOT/scripts/check_docs.py"
+
+if [ ! -f "$CHECK_SCRIPT" ]; then
+  echo "[DOCS] Unable to locate $CHECK_SCRIPT" >&2
+  exit 1
+fi
+
+if [ $# -eq 0 ]; then
+  set -- --staged
+fi
+
+python3 "$CHECK_SCRIPT" "$@"
