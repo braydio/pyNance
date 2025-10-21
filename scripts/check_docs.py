@@ -171,9 +171,9 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {
                     "file": result.file_path.as_posix(),
                     "category": result.category,
-                    "documentation": result.doc_path.as_posix()
-                    if result.doc_path
-                    else None,
+                    "documentation": (
+                        result.doc_path.as_posix() if result.doc_path else None
+                    ),
                     "message": result.message,
                 }
                 for result in results
