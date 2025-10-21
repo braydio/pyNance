@@ -5,9 +5,9 @@ registered at `/api/summary`.
 
 ## Endpoint
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/api/summary/financial` | Computes income, expenses, net totals, trend, volatility, and outlier dates for the requested range. |
+| Method | Path                     | Description                                                                                          |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `GET`  | `/api/summary/financial` | Computes income, expenses, net totals, trend, volatility, and outlier dates for the requested range. |
 
 ## Query Parameters
 

@@ -14,9 +14,9 @@ controls. Registered at `/api/institutions`.
 
 ## Endpoints
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/api/institutions/` | Lists institutions with aggregated account details (balance, type, last refreshed timestamp). |
+| Method | Path                                         | Description                                                                                                                                                              |
+| ------ | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/institutions/`                         | Lists institutions with aggregated account details (balance, type, last refreshed timestamp).                                                                            |
 | `POST` | `/api/institutions/<institution_id>/refresh` | Iterates the institution's accounts, refreshing Plaid-linked accounts via `refresh_data_for_plaid_account`. Optional JSON body supports `start_date`/`end_date` filters. |
 
 ## Behaviour Notes

@@ -14,11 +14,11 @@ at `/api/investments`.
 
 ## Endpoints
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/api/investments/accounts` | Returns Plaid-linked investment accounts using `investments_logic.get_investment_accounts`. |
-| `GET` | `/api/investments/holdings` | Joins holdings with security metadata and returns enriched rows (quantity, cost basis, latest price). |
-| `GET` | `/api/investments/transactions` | Provides paginated investment transactions filtered by optional account, security, type, subtype, start/end dates. |
+| Method | Path                            | Description                                                                                                        |
+| ------ | ------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `GET`  | `/api/investments/accounts`     | Returns Plaid-linked investment accounts using `investments_logic.get_investment_accounts`.                        |
+| `GET`  | `/api/investments/holdings`     | Joins holdings with security metadata and returns enriched rows (quantity, cost basis, latest price).              |
+| `GET`  | `/api/investments/transactions` | Provides paginated investment transactions filtered by optional account, security, type, subtype, start/end dates. |
 
 ## Pagination & Filtering
 

@@ -12,10 +12,10 @@ Administrative utilities for managing Plaid webhook URLs. Mounted at
 
 ## Endpoints
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `POST` | `/api/plaid/webhook/update` | Accepts `item_id` or `account_id` plus optional `webhook_url`. Resolves the Plaid item, builds an `ItemWebhookUpdateRequest`, and calls `plaid_client.item_webhook_update`. |
-| `POST` | `/api/plaid/webhook/update_all` | Bulk-updates the webhook URL for every known Plaid item. Returns arrays of updated item IDs and any errors encountered. |
+| Method | Path                            | Description                                                                                                                                                                 |
+| ------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `POST` | `/api/plaid/webhook/update`     | Accepts `item_id` or `account_id` plus optional `webhook_url`. Resolves the Plaid item, builds an `ItemWebhookUpdateRequest`, and calls `plaid_client.item_webhook_update`. |
+| `POST` | `/api/plaid/webhook/update_all` | Bulk-updates the webhook URL for every known Plaid item. Returns arrays of updated item IDs and any errors encountered.                                                     |
 
 ## Behaviour Notes
 

@@ -13,14 +13,14 @@ under `/api/planning` and proxies almost all persistence logic to
 
 ## Endpoints
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/api/planning/bills` | Returns the list of stored bill definitions. |
-| `POST` | `/api/planning/bills` | Accepts a JSON body and forwards it to `create_bill`; returns the created bill with a 201 status. |
-| `PUT` | `/api/planning/bills/<bill_id>` | Updates the referenced bill by delegating to `update_bill`. |
-| `DELETE` | `/api/planning/bills/<bill_id>` | Removes the bill and returns `{ "status": "deleted" }`. |
-| `GET` | `/api/planning/allocations` | Retrieves allocation targets for planned budgets. |
-| `PUT` | `/api/planning/allocations` | Replaces the allocation collection using `update_allocations`. |
+| Method   | Path                            | Description                                                                                       |
+| -------- | ------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/planning/bills`           | Returns the list of stored bill definitions.                                                      |
+| `POST`   | `/api/planning/bills`           | Accepts a JSON body and forwards it to `create_bill`; returns the created bill with a 201 status. |
+| `PUT`    | `/api/planning/bills/<bill_id>` | Updates the referenced bill by delegating to `update_bill`.                                       |
+| `DELETE` | `/api/planning/bills/<bill_id>` | Removes the bill and returns `{ "status": "deleted" }`.                                           |
+| `GET`    | `/api/planning/allocations`     | Retrieves allocation targets for planned budgets.                                                 |
+| `PUT`    | `/api/planning/allocations`     | Replaces the allocation collection using `update_allocations`.                                    |
 
 ## Notes
 

@@ -11,12 +11,12 @@ at `/api/rules`.
 
 ## Endpoints
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/api/rules/` | Requires `user_id` query parameter; returns active rules produced by `transaction_rules_logic.get_applicable_rules`. |
-| `POST` | `/api/rules/` | Creates a rule by delegating to `transaction_rules_logic.create_rule`. Expects JSON with `user_id`, `match_criteria`, and `action`. |
-| `PATCH` | `/api/rules/<rule_id>` | Updates mutable fields (`match_criteria`, `action`, `is_active`) on the referenced rule. |
-| `DELETE` | `/api/rules/<rule_id>` | Permanently deletes the rule. |
+| Method   | Path                   | Description                                                                                                                         |
+| -------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `GET`    | `/api/rules/`          | Requires `user_id` query parameter; returns active rules produced by `transaction_rules_logic.get_applicable_rules`.                |
+| `POST`   | `/api/rules/`          | Creates a rule by delegating to `transaction_rules_logic.create_rule`. Expects JSON with `user_id`, `match_criteria`, and `action`. |
+| `PATCH`  | `/api/rules/<rule_id>` | Updates mutable fields (`match_criteria`, `action`, `is_active`) on the referenced rule.                                            |
+| `DELETE` | `/api/rules/<rule_id>` | Permanently deletes the rule.                                                                                                       |
 
 ## Validation & Errors
 

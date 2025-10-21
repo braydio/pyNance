@@ -12,9 +12,9 @@ route resolves to `/fidelity/investments`.
 
 ## Endpoint
 
-| Method | Path | Description |
-| ------ | ---- | ----------- |
-| `GET` | `/fidelity/investments` | Instantiates `FidelityService` and returns the JSON representation of investment accounts. |
+| Method | Path                    | Description                                                                                |
+| ------ | ----------------------- | ------------------------------------------------------------------------------------------ |
+| `GET`  | `/fidelity/investments` | Instantiates `FidelityService` and returns the JSON representation of investment accounts. |
 
 ## Notes
 
