@@ -1,3 +1,5 @@
+"""Tests for the CSV export logic using stubbed dependencies."""
+
 import contextlib
 import importlib.util
 import io
@@ -89,11 +91,31 @@ def test_export_all_to_csv_streams(tmp_path):
     files = {}
 
     class DummyFile(io.StringIO):
+        """StringIO subclass that tracks context manager usage."""
+
         def __enter__(self):
+            """Return the file handle for use within the context manager.
+
+            Returns:
+                DummyFile: The active file handle.
+            """
+
             return self
 
         def __exit__(self, exc_type, exc_val, exc_tb):
-            pass
+            """Close the buffer and suppress no exceptions.
+
+            Args:
+                exc_type: The exception type, if any.
+                exc_val: The exception instance.
+                exc_tb: The traceback associated with the exception.
+
+            Returns:
+                bool: ``False`` to indicate any exception should propagate.
+            """
+
+            self.close()
+            return False
 
     def fake_open(filename, mode="r", newline=""):
         f = DummyFile()

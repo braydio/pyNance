@@ -1,3 +1,5 @@
+"""Tests for import helper utilities with stubbed dependencies."""
+
 import importlib.util
 import os
 import sys
@@ -9,17 +11,66 @@ config_stub = types.ModuleType("app.config")
 
 
 class DummyLogger:
-    def debug(self, *a, **k):
-        pass
+    """Collect log messages emitted during tests.
 
-    def info(self, *a, **k):
-        pass
+    Attributes:
+        messages: Sequence of captured log entries for assertion.
+    """
 
-    def warning(self, *a, **k):
-        pass
+    def __init__(self):
+        """Initialise an in-memory store for log messages."""
+        self.messages = []
 
-    def error(self, *a, **k):
-        pass
+    def _record(self, level, *args, **kwargs):
+        """Save a log record for later assertions.
+
+        Args:
+            level: The string level for the log (for example, ``"info"``).
+            *args: Positional arguments that were provided to the logger call.
+            **kwargs: Keyword arguments that accompanied the logger call.
+        """
+
+        self.messages.append((level, args, kwargs))
+
+    def debug(self, *args, **kwargs):
+        """Capture debug level log messages without side effects.
+
+        Args:
+            *args: Positional arguments that were provided to ``logger.debug``.
+            **kwargs: Keyword arguments that accompanied the call.
+        """
+
+        self._record("debug", *args, **kwargs)
+
+    def info(self, *args, **kwargs):
+        """Capture info level log messages without side effects.
+
+        Args:
+            *args: Positional arguments that were provided to ``logger.info``.
+            **kwargs: Keyword arguments that accompanied the call.
+        """
+
+        self._record("info", *args, **kwargs)
+
+    def warning(self, *args, **kwargs):
+        """Capture warning level log messages without side effects.
+
+        Args:
+            *args: Positional arguments that were provided to ``logger.warning``.
+            **kwargs: Keyword arguments that accompanied the call.
+        """
+
+        self._record("warning", *args, **kwargs)
+
+    def error(self, *args, **kwargs):
+        """Capture error level log messages without side effects.
+
+        Args:
+            *args: Positional arguments that were provided to ``logger.error``.
+            **kwargs: Keyword arguments that accompanied the call.
+        """
+
+        self._record("error", *args, **kwargs)
 
 
 config_stub.logger = DummyLogger()
