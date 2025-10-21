@@ -254,9 +254,7 @@ const defaultDetailDate = computed(() =>
   clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value),
 )
 
-const shouldShowResetButton = computed(
-  () => detailDate.value !== defaultDetailDate.value,
-)
+const shouldShowResetButton = computed(() => detailDate.value !== defaultDetailDate.value)
 
 watch(
   chartDateBounds,
