@@ -21,6 +21,7 @@ This document serves as the authoritative reference for API routing conventions,
 
 ```
 GET    /api/transactions/get_transactions
+PUT    /api/transactions/update
 POST   /api/transactions/scan-internal
 GET    /api/accounts/get_accounts
 POST   /api/accounts/refresh_accounts
@@ -162,6 +163,23 @@ Returns a paginated list of transactions for the specified account. The `<accoun
   }
 }
 ```
+
+**PUT /api/transactions/update**
+
+Updates persisted transaction metadata and flags without altering provider identifiers.
+
+**Request Body**
+
+- `transaction_id` (string, required) — target transaction identifier.
+- Optional editable fields: `amount`, `date`, `description`, `category`, `merchant_name`, `merchant_type`, `is_internal`.
+- Internal transfer helpers: `counterpart_transaction_id` to link pairs and `flag_counterpart` to mirror internal flags to the counterpart.
+- Rule authoring controls (optional): set `save_as_rule: true` plus `rule_field`, `rule_value`, optional `rule_description`, and `rule_account_id` to persist a reusable categorisation rule.
+
+**Responses**
+
+- `200` with `{ "status": "success" }` on success.
+- `400` for validation errors (missing ID, invalid amount/date), `404` when the transaction does not exist, `500` on unexpected failures.
+- Legacy compatibility route `/api/transactions/user_modify/update` retains the same contract for older clients.
 
 **POST /api/transactions/scan-internal**
 

@@ -34,7 +34,7 @@ When a rule updates a transaction, the record is marked with `updated_by_rule=tr
 - `PATCH /rules/<id>` – Modify rule parameters or enable/disable it.
 - `DELETE /rules/<id>` – Remove a rule entirely.
 
-These endpoints complement the existing `/transactions/update` flow.
+These endpoints complement the existing `/api/transactions/update` flow.
 
 ## Migration
 
