@@ -1,10 +1,5 @@
 <template>
-  <form
-    v-if="visible"
-    class="bill-form"
-    data-testid="bill-form"
-    @submit.prevent="handleSubmit"
-  >
+  <form v-if="visible" class="bill-form" data-testid="bill-form" @submit.prevent="handleSubmit">
     <section class="form-section" aria-labelledby="bill-details-heading">
       <header class="section-header">
         <span class="section-eyebrow">{{ sectionEyebrow }}</span>
@@ -383,7 +378,9 @@ function handleCancel() {
   color: var(--text-primary);
   font-size: 0.95rem;
   padding: 0.75rem 0.9rem;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .form-control:focus {
