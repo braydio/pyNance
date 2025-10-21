@@ -1,102 +1,117 @@
 <template>
-  <form v-if="visible" class="space-y-6" data-testid="bill-form" @submit.prevent="handleSubmit">
-    <div class="grid gap-4 sm:grid-cols-2">
-      <div class="space-y-1 sm:col-span-2">
-        <label for="bill-name" class="label">Bill name</label>
-        <input
-          id="bill-name"
-          v-model="form.name"
-          type="text"
-          class="input w-full"
-          name="name"
-          autocomplete="off"
-          @blur="markTouched('name')"
-        />
-        <p v-if="errors.name" class="text-sm text-error">{{ errors.name }}</p>
-      </div>
+  <form
+    v-if="visible"
+    class="bill-form"
+    data-testid="bill-form"
+    @submit.prevent="handleSubmit"
+  >
+    <section class="form-section" aria-labelledby="bill-details-heading">
+      <header class="section-header">
+        <span class="section-eyebrow">{{ sectionEyebrow }}</span>
+        <h4 id="bill-details-heading" class="section-title">{{ sectionTitle }}</h4>
+        <p class="section-description">
+          {{ helperCopy }}
+        </p>
+      </header>
 
-      <div class="space-y-1 sm:col-span-2">
-        <label for="bill-amount" class="label">Amount</label>
-        <div class="relative">
-          <span class="pointer-events-none absolute inset-y-0 left-3 flex items-center text-muted">
-            {{ currencySymbol }}
-          </span>
+      <div class="section-grid">
+        <div class="form-field form-field--full">
+          <label for="bill-name" class="field-label">Bill name</label>
           <input
-            id="bill-amount"
-            v-model="form.amount"
+            id="bill-name"
+            v-model="form.name"
             type="text"
-            inputmode="decimal"
-            class="input w-full pl-8"
-            name="amount"
+            class="form-control"
+            name="name"
             autocomplete="off"
-            @blur="markTouched('amount')"
+            @blur="markTouched('name')"
           />
+          <p v-if="errors.name" class="error-message">{{ errors.name }}</p>
         </div>
-        <div class="flex items-center justify-between text-sm text-muted">
-          <span>Formatted: {{ amountPreview }}</span>
-          <span v-if="form.amount">{{ centsPreview }}</span>
+
+        <div class="form-field form-field--full">
+          <label for="bill-amount" class="field-label">Amount</label>
+          <div class="input-with-prefix">
+            <span class="currency-prefix">
+              {{ currencySymbol }}
+            </span>
+            <input
+              id="bill-amount"
+              v-model="form.amount"
+              type="text"
+              inputmode="decimal"
+              class="form-control has-prefix"
+              name="amount"
+              autocomplete="off"
+              @blur="markTouched('amount')"
+            />
+          </div>
+          <div class="field-meta">
+            <span>Formatted: {{ amountPreview }}</span>
+            <span v-if="form.amount">{{ centsPreview }}</span>
+          </div>
+          <p v-if="errors.amount" class="error-message">{{ errors.amount }}</p>
         </div>
-        <p v-if="errors.amount" class="text-sm text-error">{{ errors.amount }}</p>
-      </div>
 
-      <div class="space-y-1">
-        <label for="bill-due-date" class="label">Due date</label>
-        <input
-          id="bill-due-date"
-          v-model="form.dueDate"
-          type="date"
-          class="input w-full"
-          name="dueDate"
-          @blur="markTouched('dueDate')"
-        />
-        <p v-if="errors.dueDate" class="text-sm text-error">{{ errors.dueDate }}</p>
-      </div>
+        <div class="form-field">
+          <label for="bill-due-date" class="field-label">Due date</label>
+          <input
+            id="bill-due-date"
+            v-model="form.dueDate"
+            type="date"
+            class="form-control"
+            name="dueDate"
+            @blur="markTouched('dueDate')"
+          />
+          <p v-if="errors.dueDate" class="error-message">{{ errors.dueDate }}</p>
+        </div>
 
-      <div class="space-y-1">
-        <label for="bill-frequency" class="label">Frequency</label>
-        <select
-          id="bill-frequency"
-          v-model="form.frequency"
-          class="select w-full"
-          name="frequency"
-          @blur="markTouched('frequency')"
-        >
-          <option disabled value="">Select frequency</option>
-          <option v-for="option in frequencyOptions" :key="option.value" :value="option.value">
-            {{ option.label }}
-          </option>
-        </select>
-        <p v-if="errors.frequency" class="text-sm text-error">{{ errors.frequency }}</p>
-      </div>
+        <div class="form-field">
+          <label for="bill-frequency" class="field-label">Frequency</label>
+          <select
+            id="bill-frequency"
+            v-model="form.frequency"
+            class="form-control"
+            name="frequency"
+            @blur="markTouched('frequency')"
+          >
+            <option disabled value="">Select frequency</option>
+            <option v-for="option in frequencyOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
+            </option>
+          </select>
+          <p v-if="errors.frequency" class="error-message">{{ errors.frequency }}</p>
+        </div>
 
-      <div class="space-y-1 sm:col-span-2">
-        <label for="bill-category" class="label">Category</label>
-        <input
-          id="bill-category"
-          v-model="form.category"
-          type="text"
-          class="input w-full"
-          name="category"
-          autocomplete="off"
-          @blur="markTouched('category')"
-        />
-        <p v-if="errors.category" class="text-sm text-error">{{ errors.category }}</p>
+        <div class="form-field form-field--full">
+          <label for="bill-category" class="field-label">Category</label>
+          <input
+            id="bill-category"
+            v-model="form.category"
+            type="text"
+            class="form-control"
+            name="category"
+            autocomplete="off"
+            @blur="markTouched('category')"
+          />
+          <p v-if="errors.category" class="error-message">{{ errors.category }}</p>
+        </div>
       </div>
-    </div>
+    </section>
 
-    <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <p class="text-sm text-muted">
-        {{ helperCopy }}
+    <footer class="form-actions">
+      <p class="action-copy">
+        {{ actionCopy }}
       </p>
-      <div class="flex gap-2 sm:justify-end">
+      <div class="button-group">
         <UiButton variant="outline" type="button" @click="handleCancel">Cancel</UiButton>
         <UiButton :disabled="!isValid" type="submit" variant="primary">
           {{ submitLabel }}
         </UiButton>
       </div>
-    </div>
+    </footer>
   </form>
-  <div v-else class="rounded border border-dashed border-muted p-6 text-center text-sm text-muted">
+  <div v-else class="form-placeholder">
     Select a bill to edit or choose "Create bill" to start planning.
   </div>
 </template>
@@ -164,6 +179,15 @@ const helperCopy = computed(() =>
   props.mode === 'edit'
     ? 'Update the bill details and save when you are ready.'
     : 'Fill in the form to plan an upcoming expense.',
+)
+const sectionEyebrow = computed(() => (props.mode === 'edit' ? 'Editing bill' : 'New planned bill'))
+const sectionTitle = computed(() =>
+  props.mode === 'edit' ? 'Update bill details' : 'Bill details',
+)
+const actionCopy = computed(() =>
+  props.mode === 'edit'
+    ? 'Save your updates or cancel to restore the previous information.'
+    : 'Add the bill to your plan when you are happy with the details.',
 )
 
 const amountValue = computed(() => parseCurrencyInput(form.amount))
@@ -282,3 +306,170 @@ function handleCancel() {
   resetting = false
 }
 </script>
+
+<style scoped>
+@reference "../../assets/css/main.css";
+
+.bill-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1.75rem;
+  border-radius: 1rem;
+  border: 1px solid var(--divider);
+  background: linear-gradient(145deg, rgba(41, 57, 79, 0.82), rgba(25, 35, 48, 0.9));
+  box-shadow: 0 20px 40px -28px rgba(13, 23, 42, 0.9);
+  backdrop-filter: blur(6px);
+}
+
+.section-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.section-eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.section-description {
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+  line-height: 1.6;
+  max-width: 38rem;
+}
+
+.section-grid {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-field--full {
+  grid-column: 1 / -1;
+}
+
+.field-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.form-control {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid var(--divider);
+  background-color: var(--input-bg);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  padding: 0.75rem 0.9rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-control:focus {
+  outline: none;
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 0 0 3px rgba(99, 205, 207, 0.18);
+}
+
+.input-with-prefix {
+  position: relative;
+}
+
+.currency-prefix {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 0.85rem;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.form-control.has-prefix {
+  padding-left: 2.4rem;
+}
+
+.field-meta {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.error-message {
+  font-size: 0.85rem;
+  color: var(--color-error);
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border-radius: 0.9rem;
+  border: 1px solid rgba(99, 205, 207, 0.18);
+  background: rgba(113, 156, 214, 0.12);
+}
+
+.action-copy {
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: flex-start;
+}
+
+.form-placeholder {
+  border-radius: 1rem;
+  border: 1px dashed var(--divider);
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  background: rgba(41, 57, 79, 0.4);
+}
+
+@media (min-width: 640px) {
+  .section-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .button-group {
+    justify-content: flex-end;
+  }
+}
+</style>
