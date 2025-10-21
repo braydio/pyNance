@@ -57,15 +57,12 @@ Implements SQL-backed routines for managing transaction records. Handles inserts
 ## Primary Functions
 
 - `get_user_transactions(user_id, filters)`
-
   - Applies WHERE clauses on account, date, category, etc.
 
 - `insert_transaction(user_id, data)`
-
   - Commits a new transaction row with relational validation
 
 - `bulk_update_categories(transaction_ids, category_id)`
-
   - Updates category for multiple transactions at once
 
 - `delete_transaction(transaction_id)`
