@@ -37,7 +37,7 @@ def auto_detect_and_upload():
     if not access_token or not user_id:
         return jsonify({"error": "Missing access_token or user_id"}), 400
 
-    provider = "Plaid"
+    provider = "plaid"
     institution_name = "Unknown"
 
     try:

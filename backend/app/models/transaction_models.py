@@ -4,6 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from app.extensions import db
+from sqlalchemy.orm import validates
 
 from .mixins import TimestampMixin
 
@@ -81,6 +82,18 @@ class Transaction(db.Model):
         )
 
     __table_args__ = (db.UniqueConstraint("transaction_id"),)
+
+    @validates("provider")
+    def _validate_provider(self, key, value):
+        """Normalize provider to match enum values and provide a safe default.
+
+        Ensures values are lowercase and restricted to the declared enum set.
+        Fallback to "manual" for unknown values.
+        """
+        if value is None:
+            return "manual"
+        v = str(value).lower()
+        return v if v in ("manual", "plaid") else "manual"
 
 
 class RecurringTransaction(db.Model):

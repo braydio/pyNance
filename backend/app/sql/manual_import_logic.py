@@ -25,6 +25,8 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
         else:
             parsed_date = datetime.now(timezone.utc)
 
+        # Normalize provider to enum-compatible value
+        provider_val = str(tx.get("provider", "manual") or "manual").lower()
         txn = Transaction(
             transaction_id=tx.get("transaction_id"),
             account_id=account_id,
@@ -35,7 +37,7 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
             category=tx.get("category"),
             category_id=tx.get("category_id"),
             merchant_name=tx.get("merchant_name"),
-            provider=tx.get("provider", "manual"),
+            provider=provider_val,
             pending=False,
             updated_by_rule=tx.get("updated_by_rule", False),
         )

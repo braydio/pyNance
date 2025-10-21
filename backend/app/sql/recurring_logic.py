@@ -74,7 +74,7 @@ def upsert_recurring(
             account_id=account_id,
             date=datetime.now(timezone.utc),
             description=description,
-            provider="detected",
+            provider="manual",
         )
         db.session.add(tx)
         db.session.flush()
