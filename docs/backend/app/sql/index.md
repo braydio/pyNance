@@ -6,23 +6,36 @@
 
 ### 🧮 Transaction & Account Operations
 
-- [`account_logic.py`](../../backend/app/sql/account_logic.py): SQL-level account resolution and user validation.
-- [`transactions_logic.py`](../../backend/app/sql/transactions_logic.py): Filtering, batch updates, and transaction persistence.
-- [`category_logic.py`](../../backend/app/sql/category_logic.py): Category inference, overrides, and bulk reclassification.
-- [`transaction_rules_logic.py`](../../backend/app/sql/transaction_rules_logic.md): Apply user-defined transaction rules during sync.
+- [`account_logic.py`](../../../../backend/app/sql/account_logic.py): SQL-level account resolution and user validation.
+- [`transactions_logic.py`](../../../../backend/app/sql/transactions_logic.py): Filtering, batch updates, and transaction persistence.
+- [`category_logic.py`](../../../../backend/app/sql/category_logic.py): Category inference, overrides, and bulk reclassification.
+- [`transaction_rules_logic.py`](../../../../backend/app/sql/transaction_rules_logic.py): Apply user-defined transaction rules during sync.
+- [`refresh_metadata.py`](../../../../backend/app/sql/refresh_metadata.py): Upsert Plaid transaction metadata and sanitize payloads.
 
 ### 🔁 Recurring Logic
 
-- [`recurring_logic.py`](../../backend/app/sql/recurring_logic.py): Match, link, and schedule recurring transaction sequences.
+- [`recurring_logic.py`](../../../../backend/app/sql/recurring_logic.py): Match, link, and schedule recurring transaction sequences.
 
 ### 📈 Forecasting
 
-- [`forecast_logic.py`](../../backend/app/sql/forecast_logic.py): Time-series generation for predictive engines.
+- [`forecast_logic.py`](../../../../backend/app/sql/forecast_logic.py): Time-series generation for predictive engines.
+
+### 💼 Investment Data
+
+- [`investments_logic.py`](../../../../backend/app/sql/investments_logic.py): Sync Plaid securities, holdings, and investment transactions.
 
 ### 📥 Import/Export
 
-- [`manual_import_logic.py`](../../backend/app/sql/manual_import_logic.py): CSV parsing and ingestion of user-uploaded transaction data.
-- [`export_logic.py`](../../backend/app/sql/export_logic.py): Structured export of balances and transactions.
+- [`manual_import_logic.py`](../../../../backend/app/sql/manual_import_logic.py): CSV parsing and ingestion of user-uploaded transaction data.
+- [`export_logic.py`](../../../../backend/app/sql/export_logic.py): Structured export of balances and transactions.
+
+### 🗓️ Planning Workflows
+
+- [`planning_logic.py`](../../../../backend/app/sql/planning_logic.py): Manage planning scenarios, bills, and allocation validations.
+
+### 🧰 SQL Utilities
+
+- [`dialect_utils.py`](../../../../backend/app/sql/dialect_utils.py): Provide dialect-aware INSERT helpers for SQLite and PostgreSQL.
 
 ---
 
@@ -83,8 +96,8 @@ Implements SQL-backed routines for managing transaction records. Handles inserts
 
 ## Related Docs
 
-- [`docs/dataflow/transaction_lifecycle.md`](../../dataflow/transaction_lifecycle.md)
-- [`docs/frontend/pages/TransactionsPage.md`](../../frontend/pages/TransactionsPage.md)
+- [`Services: transactions`](../services/transactions.md)
+- [`Routes: plaid_transactions`](../routes/plaid_transactions.md)
 ```
 
 ---
