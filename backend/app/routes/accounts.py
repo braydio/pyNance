@@ -704,7 +704,9 @@ def get_account_history(account_id):
     A ``range`` query parameter like ``7d`` or ``30d`` limits how many
     days are returned when explicit ``start_date`` and ``end_date``
     parameters are not provided. Both the external ``account_id`` and
-    internal numeric ``id`` are accepted in the path segment.
+    internal numeric ``id`` are accepted in the path segment. The
+    response exposes the normalized ``balances`` array and a ``history``
+    alias for legacy consumers.
     """
     from datetime import timedelta
 
@@ -770,16 +772,14 @@ def get_account_history(account_id):
         # Use Decimal end-to-end for currency-safe math
         balances = compute_balance_history(account.balance, txs, start_date, end_date)
 
-        return (
-            jsonify(
-                {
-                    "accountId": account.account_id,
-                    "asOfDate": end_date.isoformat(),
-                    "balances": balances,
-                }
-            ),
-            200,
-        )
+        response_payload = {
+            "accountId": account.account_id,
+            "asOfDate": end_date.isoformat(),
+            "balances": balances,
+        }
+        response_payload["history"] = response_payload["balances"]
+
+        return jsonify(response_payload), 200
     except Exception as e:
         logger.error(f"Error in get_account_history: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

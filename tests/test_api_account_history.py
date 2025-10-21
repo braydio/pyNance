@@ -70,6 +70,7 @@ models_stub.Transaction = type(
     {"date": _Col("date"), "amount": _Col("amount"), "account_id": _Col("account_id")},
 )
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
+models_stub.PlaidItem = type("PlaidItem", (), {})
 models_stub.AccountHistory = type("AccountHistory", (), {})
 sys.modules["app.models"] = models_stub
 
@@ -153,6 +154,7 @@ def test_history_accepts_numeric_id(client):
     data = resp.get_json()
     assert data["accountId"] == "acc1"
     assert data["balances"][0]["balance"] == 100.0
+    assert data["history"] == data["balances"]
 
 
 def test_history_accepts_account_id(client):
@@ -231,7 +233,18 @@ def test_history_empty_results(client, monkeypatch):
         "/api/accounts/acc1/history?start_date=2024-01-01&end_date=2024-01-05"
     )
     assert resp.status_code == 200
-    assert resp.get_json()["balances"] == []
+    payload = resp.get_json()
+    assert payload["balances"] == []
+    assert payload["history"] == []
+
+
+def test_history_includes_legacy_alias(client):
+    resp = client.get("/api/accounts/acc1/history")
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert "balances" in payload
+    assert "history" in payload
+    assert payload["history"] == payload["balances"]
 
 
 def _patch_account_logic(monkeypatch, delta):
