@@ -4,10 +4,13 @@ import { rangeToDates } from '@/api/accounts'
 
 const TestComponent = defineComponent({
   props: { id: String, range: String },
-  template: '<ul><li v-for="pt in history" :key="pt.date">{{ pt.balance }}</li></ul>',
+  template: '<ul><li v-for="pt in balances" :key="pt.date">{{ pt.balance }}</li></ul>',
   setup(props) {
-    const { history } = useAccountHistory(toRef(props, 'id'), toRef(props, 'range'))
-    return { history }
+    const { history, balances } = useAccountHistory(
+      toRef(props, 'id'),
+      toRef(props, 'range'),
+    )
+    return { history, balances }
   },
 })
 
@@ -18,7 +21,7 @@ describe('useAccountHistory', () => {
       statusCode: 200,
       body: {
         status: 'success',
-        history: [
+        balances: [
           { date: '2024-01-01', balance: 100 },
           { date: '2024-01-02', balance: 110 },
         ],
@@ -33,7 +36,7 @@ describe('useAccountHistory', () => {
   it('memoizes history per account and range', () => {
     cy.intercept('GET', '/api/accounts/123/history*', {
       statusCode: 200,
-      body: { history: [] },
+      body: { balances: [] },
     }).as('getHistory')
 
     cy.mount(TestComponent, { props: { id: '123', range: '30d' } })
@@ -57,7 +60,7 @@ describe('useAccountHistory', () => {
 
     cy.intercept('GET', '/api/accounts/123/history*', {
       statusCode: 200,
-      body: { history: [] },
+      body: { balances: [] },
     }).as('getHistory')
 
     cy.mount(RangeComponent, { props: { id: '123' } })
@@ -98,9 +101,12 @@ describe('useAccountHistory', () => {
 
     cy.intercept('GET', '/api/accounts/123/history*', (req) => {
       if (req.url.includes('start_date')) {
-        req.reply({ statusCode: 200, body: { history: [{ date: '2024-02-02', balance: 200 }] } })
+        req.reply({
+          statusCode: 200,
+          body: { balances: [{ date: '2024-02-02', balance: 200 }] },
+        })
       } else {
-        req.reply({ statusCode: 200, body: { history: [] } })
+        req.reply({ statusCode: 200, body: { balances: [] } })
       }
     }).as('getHistory')
 
