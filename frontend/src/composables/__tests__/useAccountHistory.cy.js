@@ -6,10 +6,7 @@ const TestComponent = defineComponent({
   props: { id: String, range: String },
   template: '<ul><li v-for="pt in balances" :key="pt.date">{{ pt.balance }}</li></ul>',
   setup(props) {
-    const { history, balances } = useAccountHistory(
-      toRef(props, 'id'),
-      toRef(props, 'range'),
-    )
+    const { history, balances } = useAccountHistory(toRef(props, 'id'), toRef(props, 'range'))
     return { history, balances }
   },
 })
