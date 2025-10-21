@@ -90,6 +90,10 @@
 - [ ] **Style chart title appropriately** - Consistent with design system
   - **Acceptance criteria:** Title follows typography scale, proper spacing, theme colors
 
+### Financial Summary Panel [FS]
+- [x] **Show reset control only when detail date differs from default** - Prevent redundant action buttons when the snapshot already reflects the latest date.
+  - **Acceptance criteria:** `frontend/src/components/statistics/FinancialSummary.vue` renders the "Reset to today" button only after the user selects a custom snapshot date; companion unit coverage lives in `frontend/src/components/statistics/__tests__/FinancialSummary.spec.js`.
+
 ### Transactions Table [TT]
 - [ ] **Fix data rendering issues** - Ensure all transactions display correctly
   - **Acceptance criteria:** All transaction data loads and displays, no rendering errors

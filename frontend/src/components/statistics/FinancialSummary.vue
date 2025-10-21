@@ -53,7 +53,12 @@
             type="date"
             class="detail-date-input"
           />
-          <button type="button" class="detail-date-reset" @click="resetDetailDate">
+          <button
+            v-if="shouldShowResetButton"
+            type="button"
+            class="detail-date-reset"
+            @click="resetDetailDate"
+          >
             Reset to today
           </button>
           <p class="detail-date-helper">Showing activity through {{ viewingDateLabel }}</p>
@@ -242,6 +247,17 @@ const chartDateBounds = computed(() => {
 const minDetailDate = computed(() => chartDateBounds.value.min)
 const maxDetailDate = computed(() => chartDateBounds.value.max || TODAY_ISO)
 
+/**
+ * Compute the default detail date (today clamped within available bounds).
+ */
+const defaultDetailDate = computed(() =>
+  clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value),
+)
+
+const shouldShowResetButton = computed(
+  () => detailDate.value !== defaultDetailDate.value,
+)
+
 watch(
   chartDateBounds,
   (bounds) => {
@@ -249,7 +265,7 @@ watch(
       detailDate.value = TODAY_ISO
       return
     }
-    const target = userAdjustedDate.value ? detailDate.value : TODAY_ISO
+    const target = userAdjustedDate.value ? detailDate.value : defaultDetailDate.value
     detailDate.value = clampDateString(target, bounds.min, bounds.max)
   },
   { immediate: true },
@@ -260,10 +276,10 @@ watch(detailDate, (value, oldValue) => {
     return
   }
   if (!value) {
-    detailDate.value = clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value)
+    detailDate.value = defaultDetailDate.value
     return
   }
-  userAdjustedDate.value = true
+  userAdjustedDate.value = value !== defaultDetailDate.value
 })
 
 /**
@@ -271,7 +287,7 @@ watch(detailDate, (value, oldValue) => {
  */
 function resetDetailDate() {
   userAdjustedDate.value = false
-  detailDate.value = clampDateString(TODAY_ISO, minDetailDate.value, maxDetailDate.value)
+  detailDate.value = defaultDetailDate.value
 }
 
 const filteredChartData = computed(() => {
