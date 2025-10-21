@@ -16,20 +16,24 @@ The Planning route (`frontend/src/views/Planning.vue`) composes bill management 
 ## Primary Components
 
 ### BillList
+
 - **Inputs** – Receives the filtered `billsForScenario`, the active currency code, and the `selectedBillId` for row highlighting.
 - **Slot actions** – The `actions` slot hosts the inline "Add bill" shortcut.
 - **Events** – Emits `select`, `edit`, and `delete` events that bubble to the view handlers for selection, form population, and deletion.
 
 ### BillForm
+
 - **Mode awareness** – `mode` toggles between `'create'` and `'edit'`, driven by the internal `editingBill` ref.
 - **Draft propagation** – Emits `update:bill` so the view can stash draft state per scenario before persistence.
 - **Persistence hooks** – `save` is routed through `handleSaveBill`, which delegates to `persistBill` and reconciles optimistic updates; `cancel` hides the form without mutating existing data.
 
 ### PlanningSummary
+
 - **Scenario scope** – Receives the resolved `scenarioId` and `currencyCode` from the active scenario computed.
 - **Refresh contract** – Emits `refresh` when downstream panels need a data refresh. The view maps this to `ensureScenario()` so remote updates stay in sync.
 
 ### Allocator
+
 - **Two-way binding** – Uses `v-model="allocationModel"` to keep the UI slider/grid in sync with scenario allocations. The model is prefilled from `allocationsToPercentMap` when the active scenario changes.
 - **Change events** – Emits `change` with `{ allocations }`, which the view maps through `mergePercentAllocations` before handing off to `persistScenarioAllocations` for optimistic persistence.
 
