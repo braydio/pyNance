@@ -11,17 +11,17 @@ failures.
 
 ## Fields
 
-| Column | Type | Notes |
-| --- | --- | --- |
-| `id` | Integer (PK) | Auto-incrementing identifier. |
-| `event_type` | String(128) | Convenience label built from `webhook_type:webhook_code`. |
-| `webhook_type` | String(64) | Plaid webhook type (e.g., `TRANSACTIONS`). |
-| `webhook_code` | String(64) | Plaid webhook code (e.g., `SYNC_UPDATES_AVAILABLE`). |
-| `item_id` | String(128) | Plaid item identifier used to locate linked accounts. |
-| `payload` | JSON | Raw request body stored for debugging and reprocessing. |
-| `received_at` | DateTime | Naive UTC timestamp captured on receipt. |
-| `created_at` | DateTime | Timestamp from `TimestampMixin`; set automatically. |
-| `updated_at` | DateTime | Timestamp from `TimestampMixin`; refreshed on updates. |
+| Column         | Type         | Notes                                                     |
+| -------------- | ------------ | --------------------------------------------------------- |
+| `id`           | Integer (PK) | Auto-incrementing identifier.                             |
+| `event_type`   | String(128)  | Convenience label built from `webhook_type:webhook_code`. |
+| `webhook_type` | String(64)   | Plaid webhook type (e.g., `TRANSACTIONS`).                |
+| `webhook_code` | String(64)   | Plaid webhook code (e.g., `SYNC_UPDATES_AVAILABLE`).      |
+| `item_id`      | String(128)  | Plaid item identifier used to locate linked accounts.     |
+| `payload`      | JSON         | Raw request body stored for debugging and reprocessing.   |
+| `received_at`  | DateTime     | Naive UTC timestamp captured on receipt.                  |
+| `created_at`   | DateTime     | Timestamp from `TimestampMixin`; set automatically.       |
+| `updated_at`   | DateTime     | Timestamp from `TimestampMixin`; refreshed on updates.    |
 
 ## Relationships
 
