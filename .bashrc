@@ -1,11 +1,12 @@
 # pyNance development environment variables
 # Copy this template to your home directory to persist settings.
 
-# --- Python & Flask ---
-export FLASK_ENV="production"
+# --- Flask backend ---
+export FLASK_ENV="development"
 export LOG_LEVEL="INFO"
 export SQL_ECHO="false"
-export DATABASE_NAME="developing_dash.db"
+# PostgreSQL DSN required by the Flask API
+export SQLALCHEMY_DATABASE_URI="postgresql+psycopg://pynance:change-me@localhost:5432/pynance"
 export CLIENT_NAME="pyNance-Dash"
 
 # --- Plaid configuration ---
@@ -14,22 +15,21 @@ export PLAID_SECRET_KEY=""
 export PLAID_SECRET=""
 export PLAID_ENV="sandbox"
 export PRODUCTS="transactions"
+export PLAID_WEBHOOK_SECRET=""
+export BACKEND_PUBLIC_URL=""
 
-# --- Teller configuration ---
-export TELLER_APP_ID=""
-export TELLER_WEBHOOK_SECRET=""
-
-# --- Miscellaneous tokens ---
+# --- Feature flags & integrations ---
+export ENABLE_ARBIT_DASHBOARD="false"
+export ARBIT_EXPORTER_URL="http://localhost:8000"
 export VARIABLE_ENV_TOKEN=""
 export VARIABLE_ENV_ID=""
 
 # --- Frontend (Vite) configuration ---
 export VITE_SESSION_MODE="development"
 export VITE_APP_API_BASE_URL="http://localhost:5000/api"
-export VITE_TELLER_APP_ID=""
-export VITE_TELLER_ENV="sandbox"
+export VITE_PLANNING_MODE="local"
 export VITE_PLAID_CLIENT_ID=""
-export VITE_USER_ID_PLAID=""
+export VITE_USER_ID_PLAID="pyNance Developer"
 export PHONE_NBR="+10000000000"
 
 # --- Vector DB / LLM tooling ---
