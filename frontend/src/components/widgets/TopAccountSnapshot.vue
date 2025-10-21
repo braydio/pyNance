@@ -101,7 +101,7 @@
           @click="toggleGroupMenu"
           aria-label="Select account group"
         >
-          {{ activeGroup ? activeGroup.name : 'Select group' }} ▾
+          {{ effectiveGroup ? effectiveGroup.name : 'Select group' }} ▾
         </button>
         <Transition name="slide-down">
           <ul v-if="showGroupMenu" class="bs-group-menu">
@@ -137,7 +137,7 @@
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
-      v-if="activeGroup"
+      v-if="effectiveGroup"
       v-model="groupAccounts"
       item-key="id"
       handle=".bs-drag-handle"
@@ -260,14 +260,14 @@
       </template>
     </Draggable>
 
-    <div v-if="activeGroup && !groupAccounts.length" class="bs-empty">No accounts to display</div>
+    <div v-if="effectiveGroup && !groupAccounts.length" class="bs-empty">No accounts to display</div>
   </div>
 </template>
 
 <!-- liabilities section removed -->
 
 <script setup>
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import Draggable from 'vuedraggable'
 import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -371,30 +371,34 @@ watch(
   },
 )
 
-const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
+// Currently active/persisted group from store
+const activeGroup = computed(
+  () => groups.value.find((g) => g.id === activeGroupId.value) || null,
+)
+// Fallback to the first available group until an active one is set
+const effectiveGroup = computed(() => activeGroup.value || groups.value[0] || null)
 
 // Ensure a sensible default: select the first group when none is active
 watch(
   groups,
   (list) => {
-    if (!activeGroupId.value && Array.isArray(list) && list.length > 0) {
+    if (!Array.isArray(list) || list.length === 0) return
+    // If no active group yet, initialize to the first available one
+    if (!activeGroupId.value) {
       setActiveGroup(list[0].id)
+      return
     }
     // If the active group was removed, select the first available one
-    if (
-      activeGroupId.value &&
-      Array.isArray(list) &&
-      list.length > 0 &&
-      !list.some((g) => g.id === activeGroupId.value)
-    ) {
+    if (!list.some((g) => g.id === activeGroupId.value)) {
       setActiveGroup(list[0].id)
     }
   },
   { immediate: true, deep: true },
 )
 
+// Keep local draggable list in sync with the effective group accounts
 watch(
-  () => activeGroup.value?.accounts,
+  () => effectiveGroup.value?.accounts,
   (val) => {
     if (syncingToActive) return
     syncingFromActive = true
@@ -419,7 +423,16 @@ watch(
   { deep: true },
 )
 
-const groupAccent = computed(() => activeGroup.value?.accent || 'var(--color-accent-cyan)')
+const groupAccent = computed(
+  () => effectiveGroup.value?.accent || 'var(--color-accent-cyan)',
+)
+
+// As an extra safeguard, ensure a default selection on mount
+onMounted(() => {
+  if (!activeGroupId.value && groups.value.length > 0) {
+    setActiveGroup(groups.value[0].id)
+  }
+})
 
 const visibleGroupIndex = ref(0)
 const visibleGroups = computed(() =>
