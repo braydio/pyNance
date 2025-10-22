@@ -225,11 +225,15 @@
                   :key="tx.transaction_id || tx.id"
                   class="bs-tx-row"
                 >
-                  <span class="bs-tx-date">{{ formatShortDate(tx.date || tx.transaction_date || '') }}</span>
+                  <span class="bs-tx-date">{{
+                    formatShortDate(tx.date || tx.transaction_date || '')
+                  }}</span>
                   <span class="bs-tx-name">{{
                     tx.merchant_name || tx.name || tx.description
                   }}</span>
-                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{ format(tx.amount) }}</span>
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{
+                    format(tx.amount)
+                  }}</span>
                 </li>
                 <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
@@ -275,7 +279,9 @@
       </template>
     </Draggable>
 
-    <div v-if="effectiveGroup && !groupAccounts.length" class="bs-empty">No accounts to display</div>
+    <div v-if="effectiveGroup && !groupAccounts.length" class="bs-empty">
+      No accounts to display
+    </div>
   </div>
 </template>
 
@@ -388,9 +394,7 @@ watch(
 )
 
 // Currently active/persisted group from store
-const activeGroup = computed(
-  () => groups.value.find((g) => g.id === activeGroupId.value) || null,
-)
+const activeGroup = computed(() => groups.value.find((g) => g.id === activeGroupId.value) || null)
 // Fallback to the first available group until an active one is set
 const effectiveGroup = computed(() => activeGroup.value || groups.value[0] || null)
 
@@ -439,9 +443,7 @@ watch(
   { deep: true },
 )
 
-const groupAccent = computed(
-  () => effectiveGroup.value?.accent || 'var(--color-accent-cyan)',
-)
+const groupAccent = computed(() => effectiveGroup.value?.accent || 'var(--color-accent-cyan)')
 
 // As an extra safeguard, ensure a default selection on mount
 onMounted(() => {
