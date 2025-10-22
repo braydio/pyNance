@@ -95,7 +95,7 @@
       </div>
 
       <!-- Group Dropdown -->
-      <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
+      <div ref="dropdownRef" class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button
           class="bs-group-btn gradient-toggle-btn"
           @click="toggleGroupMenu"
@@ -106,17 +106,32 @@
         <Transition name="slide-down">
           <ul v-if="showGroupMenu" class="bs-group-menu">
             <li v-for="g in groups" :key="g.id">
-              <button
-                class="bs-group-item"
-                :class="{ 'bs-group-item-active': g.id === activeGroupId }"
-                @click="selectGroup(g.id)"
-              >
-                <Check v-if="g.id === activeGroupId" class="bs-group-check" />
-                {{ g.name || '(unnamed)' }}
-              </button>
+              <template v-if="isEditingGroups">
+                <input
+                  v-model="g.name"
+                  class="bs-group-input"
+                  maxlength="30"
+                  @blur="finishEdit(g)"
+                  @keyup.enter="finishEdit(g)"
+                />
+              </template>
+              <template v-else>
+                <button
+                  class="bs-group-item"
+                  :class="{ 'bs-group-item-active': g.id === activeGroupId }"
+                  @click="selectGroup(g.id)"
+                >
+                  <Check v-if="g.id === activeGroupId" class="bs-group-check" />
+                  {{ g.name || '(unnamed)' }}
+                </button>
+              </template>
             </li>
             <li>
-              <button class="bs-group-item" @click="toggleEditGroups">
+              <button
+                class="bs-group-item bs-group-action gradient-toggle-btn"
+                @click="toggleEditGroups"
+                aria-label="Toggle edit groups"
+              >
                 {{ isEditingGroups ? 'Done' : 'Edit' }}
               </button>
             </li>
@@ -210,11 +225,11 @@
                   :key="tx.transaction_id || tx.id"
                   class="bs-tx-row"
                 >
-                  <span class="bs-tx-date">{{ tx.date || tx.transaction_date || '' }}</span>
+                  <span class="bs-tx-date">{{ formatShortDate(tx.date || tx.transaction_date || '') }}</span>
                   <span class="bs-tx-name">{{
                     tx.merchant_name || tx.name || tx.description
                   }}</span>
-                  <span class="bs-tx-amount">{{ format(tx.amount) }}</span>
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{ format(tx.amount) }}</span>
                 </li>
                 <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
@@ -360,6 +375,7 @@ function toggleDetails(accountId, event) {
 }
 
 const showGroupMenu = ref(false)
+const dropdownRef = ref(null)
 const editingGroupId = ref(null)
 // Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
@@ -433,6 +449,37 @@ onMounted(() => {
     setActiveGroup(groups.value[0].id)
   }
 })
+
+// Close group dropdown when clicking outside of it
+function onDocumentClick(e) {
+  if (!showGroupMenu.value) return
+  const root = dropdownRef.value
+  if (root && !root.contains(e.target)) {
+    showGroupMenu.value = false
+  }
+}
+
+function onDocumentKeydown(e) {
+  if (!showGroupMenu.value) return
+  if (e.key === 'Escape' || e.key === 'Esc') {
+    showGroupMenu.value = false
+  }
+}
+
+watch(
+  showGroupMenu,
+  (open) => {
+    if (typeof document === 'undefined') return
+    if (open) {
+      document.addEventListener('click', onDocumentClick, true)
+      document.addEventListener('keydown', onDocumentKeydown, true)
+    } else {
+      document.removeEventListener('click', onDocumentClick, true)
+      document.removeEventListener('keydown', onDocumentKeydown, true)
+    }
+  },
+  { immediate: true },
+)
 
 const visibleGroupIndex = ref(0)
 const visibleGroups = computed(() =>
@@ -640,6 +687,29 @@ function initials(name) {
     .slice(0, 2)
 }
 
+function formatShortDate(s) {
+  if (!s) return ''
+  // Accept common ISO formats and fallback to raw if invalid
+  const d = new Date(s)
+  if (Number.isNaN(d.getTime())) return s
+  try {
+    return new Intl.DateTimeFormat('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: '2-digit',
+    }).format(d)
+  } catch {
+    return s
+  }
+}
+
+function amountClass(val) {
+  const num = Number(val) || 0
+  if (num < 0) return 'bs-amt-neg'
+  if (num > 0) return 'bs-amt-pos'
+  return ''
+}
+
 defineExpose({
   accounts: allAccounts,
   allAccounts,
@@ -683,7 +753,9 @@ defineExpose({
 .bs-details-row {
   grid-column: 1 / -1;
   background: var(--color-bg-dark);
-  padding: 0.5rem 1rem;
+  padding: 0.65rem 1rem;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 0 0.6rem 0.6rem;
 }
 
 .bs-details-content {
@@ -722,6 +794,13 @@ defineExpose({
   flex: 0 0 auto;
   width: 7ch;
   text-align: right;
+}
+
+.bs-amt-pos {
+  color: var(--color-accent-cyan);
+}
+.bs-amt-neg {
+  color: var(--color-accent-red);
 }
 
 .bs-tx-empty {
@@ -965,11 +1044,41 @@ defineExpose({
   background: var(--color-bg-sec);
   border: 1px solid var(--accent);
   border-radius: 0.5rem;
-  z-index: 10;
+  /* Ensure the dropdown sits above draggable rows */
+  z-index: 1000;
   display: flex;
   flex-direction: column;
   min-width: 8rem;
   padding: 0.2rem 0;
+}
+
+/* Establish a positioning context for the absolute menu */
+.bs-group-dropdown {
+  position: relative;
+}
+
+/* Inline group input when editing from dropdown */
+.bs-group-input {
+  width: 100%;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--accent);
+  background: var(--color-bg-dark);
+  color: var(--color-text-light);
+  font-size: 0.9rem;
+}
+
+/* Action button in dropdown (Edit/Done) */
+.bs-group-action {
+  font-weight: 700;
+  justify-content: center;
+  border-top: 1px solid var(--accent);
+}
+
+/* Selected group styling */
+.bs-group-item-active {
+  background: var(--accent);
+  color: var(--color-bg-dark);
 }
 
 .bs-group-item {
@@ -992,11 +1101,14 @@ defineExpose({
 
 .bs-group-item-active {
   font-weight: 600;
+  background: var(--color-bg-dark);
+  border-left: 3px solid var(--accent);
 }
 
 .bs-group-check {
   width: 0.9rem;
   height: 0.9rem;
+  color: var(--accent);
 }
 
 .bs-tab-add {
