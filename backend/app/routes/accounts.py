@@ -676,7 +676,7 @@ def account_net_changes(account_id):
 
     try:
         from app.sql import account_logic
-        from sqlalchemy import func, case
+        from sqlalchemy import case, func
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -694,7 +694,9 @@ def account_net_changes(account_id):
 
         # Compute income/expense breakdown from transactions in the range
         # Use external account_id consistently
-        income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0))
+        income_sum = func.sum(
+            case((Transaction.amount > 0, Transaction.amount), else_=0)
+        )
         expense_sum = func.sum(
             case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
         )
@@ -713,7 +715,11 @@ def account_net_changes(account_id):
 
         payload = {
             "status": "success",
-            "data": {"income": round(income, 2), "expense": round(expense, 2), "net": net},
+            "data": {
+                "income": round(income, 2),
+                "expense": round(expense, 2),
+                "net": net,
+            },
             # Backward-compat legacy fields
             "account_id": legacy.get("account_id", account_id),
             "net_change": legacy.get("net_change", net),
