@@ -3,6 +3,7 @@
 ## High-Level Issues and UX/UI Pain Points
 
 ### Layout and Visual Hierarchy
+
 - [ ] **Fix cluttered/overdense layout** - Cards, widgets, and table sections are packed with minimal spacing
   - **Acceptance criteria:** Minimum 1rem spacing between major sections, clear visual separation between cards
 - [ ] **Add insufficient whitespace/padding** - Card "frames" have insufficient visual separation
@@ -11,18 +12,21 @@
   - **Acceptance criteria:** Primary data elements use larger font sizes, strong color contrast, consistent information density
 
 ### Responsiveness and Breakpoints
+
 - [ ] **Implement clear grid breakpoints** - No clear column stacking for charts and tables
   - **Acceptance criteria:** Responsive grid system works on mobile (320px+), tablet (768px+), desktop (1024px+)
 - [ ] **Fix responsive scaling issues** - Some classes (e.g., max-w-5xl) may limit scaling on different screens
   - **Acceptance criteria:** Dashboard adapts fluidly across all viewport sizes, no horizontal scrolling on mobile
 
 ### Navigation and Call-to-Actions
+
 - [ ] **Add prominent call-to-action buttons** - Only clear CTA is "zoom in/out" on chart
   - **Acceptance criteria:** "Add Transaction", "Export Data", "Customize View" buttons prominently displayed
 - [ ] **Improve navigation clarity** - No quick links to other features
   - **Acceptance criteria:** Quick navigation menu accessible, clear visual hierarchy for action items
 
 ### Accessibility Gaps
+
 - [ ] **Implement ARIA roles and attributes** - Missing ARIA roles, alt text, or tab orders for interactive elements
   - **Acceptance criteria:** All interactive elements have proper ARIA labels, screen reader compatible
 - [ ] **Add keyboard navigation support** - No keyboard navigation for interactive elements
@@ -31,12 +35,14 @@
   - **Acceptance criteria:** Color contrast ratio ≥4.5:1, supplementary visual indicators beyond color
 
 ### Search and Filter UX
+
 - [ ] **Improve search/filter visibility** - Search bar and sort order visually buried below charts
   - **Acceptance criteria:** Search controls prominently placed, clear visual hierarchy
 - [ ] **Enhanced feedback mechanisms** - "No results found" not visually highlighted
   - **Acceptance criteria:** Clear feedback for empty states, loading states, and error conditions
 
 ### Component Consistency
+
 - [ ] **Standardize component titles** - Lacks consistent and prominent section headers
   - **Acceptance criteria:** Uniform heading styles, descriptive section labels, consistent typography scale
 - [ ] **Fix inconsistent button styles** - Inconsistent sizing and style between widgets
@@ -45,12 +51,14 @@
 ## Components and Tasks
 
 ### Title and Greeting Section [TAS]
+
 - [ ] **Update typography to match design standards** - Apply consistent font sizing and theming
   - **Acceptance criteria:** Typography follows established scale, proper font weights applied
 - [ ] **Implement multi-line layout with varying font sizes** - Improve visual hierarchy
   - **Acceptance criteria:** Multi-line text flows properly on all screen sizes, appropriate line heights
 
 ### Account Snapshot Widget [AS]
+
 - [ ] **Apply themed styling to section title** - Emphasize module distinction
   - **Acceptance criteria:** Section headers clearly distinguish different dashboard modules
 - [ ] **Style Configure button to match UI theme** - Consistent with overall design system
@@ -65,6 +73,7 @@
   - **Acceptance criteria:** All relevant account data displayed, formatted consistently with accounting standards
 
 ### Daily Net Income Chart [DNC]
+
 - [ ] **Increase axis label font size for readability** - Improve chart accessibility
   - **Acceptance criteria:** Axis labels readable at 12px minimum, clear visual hierarchy
 - [ ] **Remove redundant legend** - Green/red color coding is self-explanatory
@@ -75,6 +84,7 @@
   - **Acceptance criteria:** Loading skeleton displays, error states show retry options
 
 ### Spending by Category Chart [CBC]
+
 - [ ] **Implement category-tree style filtering** - Support General and Detailed Subcategory selection without duplication
   - **Acceptance criteria:** Hierarchical category selection, no duplicate transaction counting
 - [ ] **Add 'Select All' option for categories** - Bulk selection functionality
@@ -90,7 +100,13 @@
 - [ ] **Style chart title appropriately** - Consistent with design system
   - **Acceptance criteria:** Title follows typography scale, proper spacing, theme colors
 
+### Financial Summary Panel [FS]
+
+- [x] **Show reset control only when detail date differs from default** - Prevent redundant action buttons when the snapshot already reflects the latest date.
+  - **Acceptance criteria:** `frontend/src/components/statistics/FinancialSummary.vue` renders the "Reset to today" button only after the user selects a custom snapshot date; companion unit coverage lives in `frontend/src/components/statistics/__tests__/FinancialSummary.spec.js`.
+
 ### Transactions Table [TT]
+
 - [ ] **Fix data rendering issues** - Ensure all transactions display correctly
   - **Acceptance criteria:** All transaction data loads and displays, no rendering errors
 - [ ] **Align styling with AccountsTable** - Maintain design consistency
@@ -103,6 +119,7 @@
   - **Acceptance criteria:** Error states show retry options, clear error messaging for users
 
 ### Accounts Table [AT]
+
 - [ ] **Apply accounting format to balances** - Dollar sign, 2 decimals, parentheses for negatives
   - **Acceptance criteria:** All monetary values follow standard accounting format ($X,XXX.XX)
 - [ ] **Use red color for negative/liability values** - Visual indicators for account status
@@ -121,24 +138,28 @@
 ## Global Dashboard TODOs
 
 ### Critical Functionality Fixes
+
 - [ ] **Repair non-functional components** - Ensure all dashboard widgets work correctly
   - **Acceptance criteria:** Every dashboard component loads data and displays without errors
 - [ ] **Fix data loading race conditions** - Resolve component initialization issues
   - **Acceptance criteria:** Components load data in correct order, no dependency conflicts
 
 ### UI/UX Refactoring
+
 - [ ] **Refactor for consistent UI/UX** - Establish unified design patterns
   - **Acceptance criteria:** All components follow same design system, consistent spacing and typography
 - [ ] **Establish design system consistency** - Unified visual language
   - **Acceptance criteria:** Color usage, spacing, and typography consistent across all components
 
 ### Data Management
+
 - [ ] **Audit data display logic per component** - Ensure accurate data representation
   - **Acceptance criteria:** All displayed values are mathematically correct, consistent formatting
 - [ ] **Implement proper data validation** - Prevent display of invalid data
   - **Acceptance criteria:** Invalid data handled gracefully, clear error messages for users
 
 ### Account Lifecycle Management
+
 - [ ] **Handle account deactivation properly** - Graceful handling of disabled accounts
   - **Acceptance criteria:** Deactivated accounts clearly marked, excluded from calculations where appropriate
 - [ ] **Handle account deletions** - Clean removal from all dashboard components
@@ -147,6 +168,7 @@
   - **Acceptance criteria:** Plaid connections severed when accounts deleted, API cleanup completed
 
 ### Performance and Reliability
+
 - [ ] **Implement component state synchronization** - Ensure consistent data across widgets
   - **Acceptance criteria:** Changes in one component reflect immediately in related components
 - [ ] **Add comprehensive error handling** - Consistent error management
@@ -155,6 +177,7 @@
 ## Acceptance Criteria Summary
 
 ### Keyboard Navigation Requirements
+
 - [ ] All interactive elements accessible via Tab key
 - [ ] Enter/Space keys activate buttons and links
 - [ ] Arrow keys navigate within complex components (dropdowns, tables)
@@ -162,6 +185,7 @@
 - [ ] Focus indicators clearly visible on all interactive elements
 
 ### ARIA Attributes Requirements
+
 - [ ] All buttons have aria-label or aria-labelledby
 - [ ] Tables use proper table markup with th/td elements
 - [ ] Charts have aria-label describing the data
@@ -169,11 +193,13 @@
 - [ ] Form controls have associated labels
 
 ### Sticky Headers Verification at Breakpoints
+
 - [ ] Desktop (≥1024px): Table headers stick during vertical scroll
 - [ ] Tablet (768-1023px): Headers remain visible, no horizontal scroll
 - [ ] Mobile (320-767px): Headers adapt to smaller screen, stack appropriately
 
 ### Component Integration Testing
+
 - [ ] Account selection in snapshot reflects in related charts
 - [ ] Date range changes affect all time-based components
 - [ ] Category filters apply consistently across all visualizations
@@ -182,17 +208,20 @@
 ## Deliverables
 
 ### Single Unified Section
+
 - ✅ All Dashboard-related tasks consolidated into [COMPONENT_DASHBOARD] section
 - ✅ Tasks grouped logically by component and functionality
 - ✅ Component tags reference established legend ([TAS], [AS], [DNC], [CBC], [TT], [AT])
 
 ### Deduplication Verification
+
 - ✅ Every Dashboard item from source files appears exactly once
 - ✅ No duplicate tasks between components
 - ✅ Cross-references maintained where tasks affect multiple components
 - ✅ Source file mapping preserved in task descriptions
 
 ### Actionable Task Structure
+
 - ✅ All tasks written as actionable checkbox items
 - ✅ Acceptance criteria defined for measurable outcomes
 - ✅ Component relationships clearly documented

@@ -76,4 +76,40 @@ describe('FinancialSummary trends', () => {
 
     expect(wrapper.find('.detail-date-helper').text()).toMatch(/2024/)
   })
+
+  it('only renders the reset button when using a custom detail date', async () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 600, totalExpenses: 300, totalNet: 300 },
+        chartData: [
+          {
+            date: '2024-01-01',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -50 },
+            net: { parsedValue: 50 },
+          },
+          {
+            date: '2024-01-02',
+            income: { parsedValue: 200 },
+            expenses: { parsedValue: -100 },
+            net: { parsedValue: 100 },
+          },
+        ],
+      },
+    })
+
+    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    expect(wrapper.find('.detail-date-reset').exists()).toBe(false)
+
+    const dateInput = wrapper.get('#financial-snapshot-detail-date')
+    await dateInput.setValue('2024-01-01')
+    await nextTick()
+
+    expect(wrapper.find('.detail-date-reset').exists()).toBe(true)
+
+    await wrapper.find('.detail-date-reset').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('.detail-date-reset').exists()).toBe(false)
+  })
 })
