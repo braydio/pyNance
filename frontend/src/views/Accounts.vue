@@ -54,11 +54,7 @@
           <Card class="p-6 space-y-4">
             <div class="flex justify-between items-center">
               <h2 class="text-xl font-semibold">Balance History</h2>
-              <select
-                v-model="selectedRange"
-                class="input"
-                data-testid="history-range-select"
-              >
+              <select v-model="selectedRange" class="input" data-testid="history-range-select">
                 <option v-for="range in ranges" :key="range" :value="range">
                   {{ range }}
                 </option>
