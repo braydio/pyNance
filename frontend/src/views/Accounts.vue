@@ -56,7 +56,7 @@
               <h2 class="text-xl font-semibold">Balance History</h2>
               <select
                 v-model="selectedRange"
-                class="select select-sm"
+                class="input"
                 data-testid="history-range-select"
               >
                 <option v-for="range in ranges" :key="range" :value="range">

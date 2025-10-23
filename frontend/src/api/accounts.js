@@ -8,7 +8,12 @@ import axios from 'axios'
 
 export const fetchNetChanges = async (accountId, params = {}) => {
   const response = await axios.get(`/api/accounts/${accountId}/net_changes`, { params })
-  return response.data
+  const data = response.data || {}
+  // Normalize into { status, data: { income, expense, net } }
+  if (data.status === 'success' && data.data) return data
+  // Legacy shape fallback: { account_id, net_change, period }
+  const legacyNet = typeof data.net_change === 'number' ? data.net_change : 0
+  return { status: 'success', data: { income: 0, expense: 0, net: legacyNet } }
 }
 
 export const fetchRecentTransactions = async (accountId, limit = 10) => {

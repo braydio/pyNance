@@ -122,6 +122,32 @@ returned.
   "asOfDate": "YYYY-MM-DD",
   "balances": [{ "date": "YYYY-MM-DD", "balance": 1523.21 }]
 }
+
+**GET /api/accounts/<account_id>/net_changes**
+
+Returns income, expense, and net balance change for the specified account over a date range.
+
+Query Parameters
+
+- `start_date` – ISO `YYYY-MM-DD` start date (required)
+- `end_date` – ISO `YYYY-MM-DD` end date (required)
+
+Response Body
+
+```json
+{
+  "status": "success",
+  "data": { "income": 1250.0, "expense": 980.5, "net": 269.5 },
+  "account_id": "uuid",
+  "net_change": 269.5,
+  "period": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }
+}
+```
+
+Notes:
+
+- `income` and `expense` are magnitudes; `net = income - expense`.
+- Legacy fields (`account_id`, `net_change`, `period`) are preserved for backward compatibility.
 ```
 
 **GET /api/accounts/<account_id>/transaction_history**

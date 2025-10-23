@@ -665,16 +665,18 @@ def match_account_by_fields():
 
 @accounts.route("/<account_id>/net_changes", methods=["GET"])
 def account_net_changes(account_id):
-    """Return net balance change for an account between two dates.
+    """Return net balance change and breakdown for an account.
 
-    The endpoint expects ``start_date`` and ``end_date`` query parameters
-    in ``YYYY-MM-DD`` format and computes the difference between the
-    account's ending and starting balances using :class:`AccountHistory`
-    records.
+    Query expects ``start_date`` and ``end_date`` (YYYY-MM-DD). Response includes
+    income, expense, and net values for the period in a standard
+    ``{"status": "success", "data": {...}}`` envelope for frontend use. For
+    backward compatibility, legacy top-level keys (``account_id``,
+    ``net_change``, ``period``) are also included.
     """
 
     try:
         from app.sql import account_logic
+        from sqlalchemy import func, case
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -687,8 +689,40 @@ def account_net_changes(account_id):
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-        data = account_logic.get_net_change(account_id, start_date, end_date)
-        return jsonify(data), 200
+        # Legacy net change value based on AccountHistory snapshots
+        legacy = account_logic.get_net_change(account_id, start_date, end_date)
+
+        # Compute income/expense breakdown from transactions in the range
+        # Use external account_id consistently
+        income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0))
+        expense_sum = func.sum(
+            case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
+        )
+
+        q = (
+            db.session.query(income_sum.label("income"), expense_sum.label("expenses"))
+            .filter(Transaction.account_id == account_id)
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+        )
+        row = q.first()
+        income = float(getattr(row, "income", 0) or 0)
+        expense = float(getattr(row, "expenses", 0) or 0)
+        # Net as income - expense (expense is positive magnitude)
+        net = round(income - expense, 2)
+
+        payload = {
+            "status": "success",
+            "data": {"income": round(income, 2), "expense": round(expense, 2), "net": net},
+            # Backward-compat legacy fields
+            "account_id": legacy.get("account_id", account_id),
+            "net_change": legacy.get("net_change", net),
+            "period": legacy.get(
+                "period", {"start": start_date.isoformat(), "end": end_date.isoformat()}
+            ),
+        }
+
+        return jsonify(payload), 200
     except Exception as e:
         logger.error(f"Error in account_net_changes: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500

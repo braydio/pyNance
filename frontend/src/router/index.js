@@ -26,7 +26,7 @@ const routes = [
   { path: '/charts/cashflow', name: 'DailyNetChart', component: DailyNetChart },
   { path: '/charts/category', name: 'CategoryChart', component: CategoryBreakdownChart },
   {
-    path: '/charts/assets/year-comporison',
+    path: '/charts/assets/year-comparison',
     name: 'NetYearComparisonChart',
     component: NetYearComparisonChart,
   },
