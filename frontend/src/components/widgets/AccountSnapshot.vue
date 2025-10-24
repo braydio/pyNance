@@ -210,7 +210,13 @@
                 <li
                   v-for="tx in recentTxs[account.account_id]"
                   :key="tx.id || tx.transaction_id"
-                  class="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800/60"
+                  class="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800"
+                  role="button"
+                  tabindex="0"
+                  data-testid="account-snapshot-transaction"
+                  @click="handleTransactionClick(tx, account.account_id)"
+                  @keydown.enter.prevent="handleTransactionClick(tx, account.account_id)"
+                  @keydown.space.prevent="handleTransactionClick(tx, account.account_id)"
                 >
                   <div class="flex-1 truncate">
                     <p class="truncate font-medium text-gray-700 dark:text-gray-200">
@@ -235,12 +241,14 @@
 
 <script setup>
 import { ref, computed, reactive } from 'vue'
+import { useRouter } from 'vue-router'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
 import { fetchRecentTransactions } from '@/api/transactions'
 
 const selectionCandidate = ref('')
 const openAccountId = ref(null)
 const recentTxs = reactive({})
+const router = useRouter()
 
 const {
   selectedAccounts,
@@ -372,6 +380,33 @@ function toggleDetails(accountId) {
       .catch(() => {
         recentTxs[accountId] = []
       })
+  }
+}
+
+/**
+ * Navigate to the Transactions table mirroring the modal drill-down.
+ *
+ * @param {Record<string, unknown>} tx - Transaction selected within the widget.
+ * @param {string} fallbackAccountId - Account identifier to apply when the
+ *   transaction payload omits it.
+ */
+function handleTransactionClick(tx, fallbackAccountId) {
+  const txid = tx?.transaction_id ?? tx?.id
+  const accountId = tx?.account_id ?? tx?.accountId ?? fallbackAccountId
+  const query = {}
+
+  if (txid !== undefined && txid !== null && txid !== '') {
+    query.promote = String(txid)
+  }
+
+  if (accountId !== undefined && accountId !== null && accountId !== '') {
+    query.account_id = String(accountId)
+  }
+
+  if (Object.keys(query).length) {
+    router.push({ name: 'Transactions', query })
+  } else {
+    router.push({ name: 'Transactions' })
   }
 }
 </script>
