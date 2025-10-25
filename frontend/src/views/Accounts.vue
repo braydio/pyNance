@@ -8,13 +8,28 @@
       sidebar-width="w-72 md:w-80"
     >
       <template #header>
-        <PageHeader :icon="Wallet">
-          <template #title>Accounts</template>
-          <template #subtitle>Link and refresh your accounts</template>
-          <template #actions>
-            <UiButton variant="primary" @click="navigateToPlanning">Plan Account</UiButton>
-          </template>
-        </PageHeader>
+        <section class="accounts-hero space-y-6">
+          <PageHeader
+            :icon="Wallet"
+            class="accounts-hero__card shadow-2xl"
+          >
+            <template #title>Accounts</template>
+            <template #subtitle>Link, refresh, and plan your institutions in one place.</template>
+            <template #actions>
+              <UiButton
+                variant="primary"
+                pill
+                class="accounts-hero__cta"
+                @click="navigateToPlanning"
+              >
+                Plan Account
+              </UiButton>
+            </template>
+          </PageHeader>
+          <div class="accounts-hero__divider">
+            <span class="accounts-hero__divider-glow" />
+          </div>
+        </section>
       </template>
 
       <template #sidebar>
@@ -22,47 +37,72 @@
       </template>
 
       <template #Summary>
-        <section class="space-y-6">
-          <Card class="p-6">
-            <h2 class="text-xl font-semibold mb-4">Net Change Summary</h2>
+        <section class="space-y-8">
+          <Card
+            class="space-y-6 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-xl"
+          >
+            <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
+                  Net Change Summary
+                </h2>
+                <p class="text-sm text-muted">
+                  Performance for the selected date range across your linked accounts.
+                </p>
+              </div>
+              <UiButton
+                variant="outline"
+                class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+                @click="loadData"
+              >
+                Refresh Overview
+              </UiButton>
+            </header>
+
             <SkeletonCard v-if="loadingSummary" />
             <RetryError
               v-else-if="summaryError"
               message="Failed to load summary"
               @retry="loadData"
             />
-            <div v-else class="flex justify-around">
-              <div>
-                Income:
-                <span class="font-bold text-accent-green">{{
-                  formatAmount(netSummary.income)
-                }}</span>
-              </div>
-              <div>
-                Expense:
-                <span class="font-bold text-accent-red">{{
-                  formatAmount(netSummary.expense)
-                }}</span>
-              </div>
-              <div>
-                Net:
-                <span class="font-bold text-accent-yellow">{{ formatAmount(netSummary.net) }}</span>
-              </div>
+            <div v-else class="grid gap-4 md:grid-cols-3" data-testid="net-summary-cards">
+              <article
+                v-for="stat in netSummaryStats"
+                :key="stat.key"
+                class="rounded-xl border bg-gradient-to-br p-4 shadow-inner transition hover:shadow-lg"
+                :class="stat.containerClass"
+              >
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {{ stat.label }}
+                </p>
+                <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">{{ stat.value }}</p>
+                <p v-if="stat.helper" class="mt-2 text-xs text-muted">{{ stat.helper }}</p>
+              </article>
             </div>
           </Card>
 
-          <Card class="p-6 space-y-4">
-            <div class="flex justify-between items-center">
-              <h2 class="text-xl font-semibold">Balance History</h2>
-              <select
-                v-model="selectedRange"
-                class="input"
-                data-testid="history-range-select"
-              >
-                <option v-for="range in ranges" :key="range" :value="range">
-                  {{ range }}
-                </option>
-              </select>
+          <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
+                  Balance History
+                </h2>
+                <p class="text-sm text-muted">
+                  Track balances across your preferred reporting window.
+                </p>
+              </div>
+              <label class="flex items-center gap-3 text-sm text-muted">
+                <span>Range</span>
+                <select
+                  v-model="selectedRange"
+                  class="input w-32"
+                  data-testid="history-range-select"
+                >
+                  <option v-for="range in ranges" :key="range" :value="range">
+                    {{ range }}
+                  </option>
+                </select>
+              </label>
             </div>
             <SkeletonCard v-if="loadingHistory" />
             <RetryError
@@ -81,8 +121,24 @@
       </template>
 
       <template #Transactions>
-        <Card class="p-6 space-y-4">
-          <h2 class="text-xl font-semibold">Recent Transactions</h2>
+        <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
+                Recent Transactions
+              </h2>
+              <p class="text-sm text-muted">
+                Latest activity from accounts linked to your profile.
+              </p>
+            </div>
+            <UiButton
+              variant="outline"
+              class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+              @click="loadData"
+            >
+              Refresh List
+            </UiButton>
+          </div>
           <SkeletonCard v-if="loadingTransactions" />
           <RetryError
             v-else-if="transactionsError"
@@ -94,19 +150,28 @@
       </template>
 
       <template #Charts>
-        <section class="space-y-4">
-          <h2 class="text-xl font-semibold">Account Analysis</h2>
-          <div class="flex flex-col gap-6">
-            <Card class="p-6">
-              <h3 class="text-lg font-medium mb-4">Year Comparison</h3>
+        <section class="space-y-8">
+          <header class="space-y-2">
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">Account Analysis</h2>
+            <p class="text-sm text-muted">
+              Visualize account health, year-over-year change, and asset distribution.
+            </p>
+          </header>
+          <div class="grid gap-6 lg:grid-cols-3">
+            <Card
+              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-lg"
+            >
+              <h3 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Year Comparison</h3>
               <NetYearComparisonChart />
             </Card>
-            <Card class="p-6">
-              <h3 class="text-lg font-medium mb-4">Assets Trend</h3>
+            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+              <h3 class="text-lg font-semibold text-[var(--color-accent-yellow)]">Assets Trend</h3>
               <AssetsBarTrended />
             </Card>
-            <Card class="p-6">
-              <h3 class="text-lg font-medium mb-4">Account Balance Distribution</h3>
+            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+              <h3 class="text-lg font-semibold text-[var(--color-accent-green)]">
+                Account Balance Distribution
+              </h3>
               <AccountsReorderChart ref="reorderChart" />
             </Card>
           </div>
@@ -114,10 +179,15 @@
       </template>
 
       <template #Accounts>
-        <section class="space-y-6">
+        <section class="space-y-8">
           <LinkedAccountsSection />
-          <Card class="p-6">
-            <h2 class="text-xl font-semibold mb-4">Accounts</h2>
+          <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Accounts</h2>
+              <p class="text-sm text-muted">
+                Manage visibility, details, and refresh status for each institution.
+              </p>
+            </div>
             <AccountsTable @refresh="refreshCharts" />
           </Card>
         </section>
@@ -131,7 +201,7 @@
 
 <script setup>
 // Dependencies and 3rd party
-import { ref, onMounted, watch } from 'vue'
+import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { Wallet } from 'lucide-vue-next'
@@ -189,6 +259,36 @@ const accountHistory = ref([])
 const selectedRange = ref(accountPrefs.getSelectedRange(accountId.value))
 accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
 const ranges = ['7d', '30d', '90d', '365d']
+
+const netSummaryStats = computed(() => [
+  {
+    key: 'income',
+    label: 'Income',
+    value: formatAmount(netSummary.value.income),
+    containerClass:
+      'from-[rgba(129,178,154,0.18)] via-[rgba(99,205,207,0.04)] to-[rgba(99,205,207,0.02)] border-[rgba(129,178,154,0.45)]',
+    valueClass: 'text-[var(--color-accent-green)]',
+    helper: 'Total deposits recorded',
+  },
+  {
+    key: 'expense',
+    label: 'Expense',
+    value: formatAmount(netSummary.value.expense),
+    containerClass:
+      'from-[rgba(201,79,109,0.2)] via-[rgba(214,122,210,0.06)] to-[rgba(201,79,109,0.04)] border-[rgba(201,79,109,0.45)]',
+    valueClass: 'text-[var(--color-accent-red)]',
+    helper: 'Total spending captured',
+  },
+  {
+    key: 'net',
+    label: 'Net Change',
+    value: formatAmount(netSummary.value.net),
+    containerClass:
+      'from-[rgba(219,192,116,0.2)] via-[rgba(99,205,207,0.04)] to-[rgba(219,192,116,0.04)] border-[rgba(219,192,116,0.45)]',
+    valueClass: 'text-[var(--color-accent-yellow)]',
+    helper: 'Overall change (income − expense)',
+  },
+])
 
 // Loading/Error States
 const loadingSummary = ref(false)
@@ -305,3 +405,120 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.accounts-hero {
+  position: relative;
+}
+
+.accounts-hero__card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 2px solid var(--color-accent-cyan);
+  padding: clamp(1.75rem, 3vw, 2.5rem);
+  background: linear-gradient(
+      135deg,
+      rgba(99, 205, 207, 0.18) 0%,
+      rgba(113, 156, 214, 0.08) 42%,
+      rgba(214, 122, 210, 0.12) 100%
+    ),
+    var(--color-bg-sec);
+}
+
+.accounts-hero__card::before,
+.accounts-hero__card::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.accounts-hero__card::before {
+  inset: -30% auto auto -20%;
+  width: 60%;
+  height: 140%;
+  background: radial-gradient(
+    65% 65% at 50% 50%,
+    rgba(99, 205, 207, 0.45) 0%,
+    rgba(99, 205, 207, 0) 100%
+  );
+  filter: blur(0.5rem);
+}
+
+.accounts-hero__card::after {
+  inset: auto -25% -55% auto;
+  width: 55%;
+  height: 120%;
+  background: radial-gradient(
+    65% 65% at 50% 50%,
+    rgba(214, 122, 210, 0.4) 0%,
+    rgba(214, 122, 210, 0) 100%
+  );
+  filter: blur(0.5rem);
+}
+
+.accounts-hero__card :deep(.flex) {
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.accounts-hero__card :deep(h1) {
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.accounts-hero__card :deep(p) {
+  font-size: 0.95rem;
+}
+
+.accounts-hero__cta {
+  padding-inline: clamp(1.5rem, 3.5vw, 2.5rem);
+  padding-block: 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 999px;
+  box-shadow: 0 14px 34px rgba(99, 205, 207, 0.35);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.accounts-hero__cta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px rgba(99, 205, 207, 0.45);
+}
+
+.accounts-hero__divider {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgba(99, 205, 207, 0.18) 0%,
+    rgba(113, 156, 214, 0.25) 55%,
+    rgba(214, 122, 210, 0.22) 100%
+  );
+  border: 1px solid rgba(99, 205, 207, 0.35);
+}
+
+.accounts-hero__divider-glow {
+  position: absolute;
+  inset: -60% -20% -60% -20%;
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    rgba(99, 205, 207, 0.45) 0%,
+    rgba(214, 122, 210, 0.32) 35%,
+    rgba(25, 32, 56, 0) 100%
+  );
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .accounts-hero__card {
+    padding-inline: 1.5rem;
+  }
+
+  .accounts-hero__card :deep(.flex) {
+    align-items: flex-start;
+  }
+}
+</style>
