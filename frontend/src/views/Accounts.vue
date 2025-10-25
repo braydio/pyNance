@@ -75,7 +75,9 @@
             </div>
           </Card>
 
-          <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+          <Card
+            class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
@@ -115,7 +117,9 @@
       </template>
 
       <template #Transactions>
-        <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+        <Card
+          class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+        >
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
@@ -146,7 +150,9 @@
       <template #Charts>
         <section class="space-y-8">
           <header class="space-y-2">
-            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">Account Analysis</h2>
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
+              Account Analysis
+            </h2>
             <p class="text-sm text-muted">
               Visualize account health, year-over-year change, and asset distribution.
             </p>
@@ -158,11 +164,15 @@
               <h3 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Year Comparison</h3>
               <NetYearComparisonChart />
             </Card>
-            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+            <Card
+              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+            >
               <h3 class="text-lg font-semibold text-[var(--color-accent-yellow)]">Assets Trend</h3>
               <AssetsBarTrended />
             </Card>
-            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+            <Card
+              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+            >
               <h3 class="text-lg font-semibold text-[var(--color-accent-green)]">
                 Account Balance Distribution
               </h3>
@@ -175,7 +185,9 @@
       <template #Accounts>
         <section class="space-y-8">
           <LinkedAccountsSection />
-          <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+          <Card
+            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          >
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Accounts</h2>
               <p class="text-sm text-muted">
