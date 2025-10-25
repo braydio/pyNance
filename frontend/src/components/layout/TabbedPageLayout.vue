@@ -70,7 +70,8 @@ const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
   padding: 0.75rem 1rem;
   border-radius: 999px;
   border: 1px solid rgba(113, 156, 214, 0.35);
-  background: linear-gradient(
+  background:
+    linear-gradient(
       135deg,
       rgba(99, 205, 207, 0.08) 0%,
       rgba(113, 156, 214, 0.12) 50%,
@@ -94,7 +95,10 @@ const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
   letter-spacing: 0.02em;
   padding: 0.55rem 1.35rem;
   border-radius: 999px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease,
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease,
     border-color 0.2s ease;
 }
 

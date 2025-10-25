@@ -7,10 +7,12 @@ Use `BasePageLayout` and `PageHeader` to keep view structure and spacing consist
 Wrap each top-level view with `BasePageLayout` to apply flex column layout and spacing utilities.
 
 ### Props
+
 - `padding` – Tailwind padding class or `false` to remove padding. Defaults to `p-6`.
 - `gap` – Tailwind gap utility class. Defaults to `gap-6`.
 
 ### Example: custom padding
+
 ```vue
 <BasePageLayout padding="p-2" gap="gap-4">
   <!-- view content -->
@@ -22,6 +24,7 @@ Wrap each top-level view with `BasePageLayout` to apply flex column layout and s
 Standard header used within `BasePageLayout`. Centers the title/subtitle stack and supports an optional icon prop with right-aligned `actions` slot.
 
 ### Example: icon and subtitle
+
 ```vue
 <BasePageLayout>
   <PageHeader :icon="SettingsIcon">

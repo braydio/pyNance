@@ -9,10 +9,7 @@
     >
       <template #header>
         <section class="accounts-hero space-y-6">
-          <PageHeader
-            :icon="Wallet"
-            class="accounts-hero__card shadow-2xl"
-          >
+          <PageHeader :icon="Wallet" class="accounts-hero__card shadow-2xl">
             <template #title>Accounts</template>
             <template #subtitle>Link, refresh, and plan your institutions in one place.</template>
             <template #actions>
@@ -81,7 +78,9 @@
             </div>
           </Card>
 
-          <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+          <Card
+            class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          >
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
@@ -121,7 +120,9 @@
       </template>
 
       <template #Transactions>
-        <Card class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+        <Card
+          class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+        >
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
@@ -152,7 +153,9 @@
       <template #Charts>
         <section class="space-y-8">
           <header class="space-y-2">
-            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">Account Analysis</h2>
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
+              Account Analysis
+            </h2>
             <p class="text-sm text-muted">
               Visualize account health, year-over-year change, and asset distribution.
             </p>
@@ -164,11 +167,15 @@
               <h3 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Year Comparison</h3>
               <NetYearComparisonChart />
             </Card>
-            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+            <Card
+              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+            >
               <h3 class="text-lg font-semibold text-[var(--color-accent-yellow)]">Assets Trend</h3>
               <AssetsBarTrended />
             </Card>
-            <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg">
+            <Card
+              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+            >
               <h3 class="text-lg font-semibold text-[var(--color-accent-green)]">
                 Account Balance Distribution
               </h3>
@@ -181,7 +188,9 @@
       <template #Accounts>
         <section class="space-y-8">
           <LinkedAccountsSection />
-          <Card class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl">
+          <Card
+            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          >
             <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Accounts</h2>
               <p class="text-sm text-muted">
@@ -417,7 +426,8 @@ watch(
   border-radius: 1.75rem;
   border: 2px solid var(--color-accent-cyan);
   padding: clamp(1.75rem, 3vw, 2.5rem);
-  background: linear-gradient(
+  background:
+    linear-gradient(
       135deg,
       rgba(99, 205, 207, 0.18) 0%,
       rgba(113, 156, 214, 0.08) 42%,
@@ -478,7 +488,9 @@ watch(
   font-size: 0.95rem;
   border-radius: 999px;
   box-shadow: 0 14px 34px rgba(99, 205, 207, 0.35);
-  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .accounts-hero__cta:hover {
