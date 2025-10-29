@@ -411,3 +411,123 @@ watch(
   },
 )
 </script>
+
+<style scoped>
+.accounts-hero {
+  position: relative;
+}
+
+.accounts-hero__card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.75rem;
+  border: 2px solid var(--color-accent-cyan);
+  padding: clamp(1.75rem, 3vw, 2.5rem);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(99, 205, 207, 0.18) 0%,
+      rgba(113, 156, 214, 0.08) 42%,
+      rgba(214, 122, 210, 0.12) 100%
+    ),
+    var(--color-bg-sec);
+}
+
+.accounts-hero__card::before,
+.accounts-hero__card::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.accounts-hero__card::before {
+  inset: -30% auto auto -20%;
+  width: 60%;
+  height: 140%;
+  background: radial-gradient(
+    65% 65% at 50% 50%,
+    rgba(99, 205, 207, 0.45) 0%,
+    rgba(99, 205, 207, 0) 100%
+  );
+  filter: blur(0.5rem);
+}
+
+.accounts-hero__card::after {
+  inset: auto -25% -55% auto;
+  width: 55%;
+  height: 120%;
+  background: radial-gradient(
+    65% 65% at 50% 50%,
+    rgba(214, 122, 210, 0.4) 0%,
+    rgba(214, 122, 210, 0) 100%
+  );
+  filter: blur(0.5rem);
+}
+
+.accounts-hero__card :deep(.flex) {
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.accounts-hero__card :deep(h1) {
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.accounts-hero__card :deep(p) {
+  font-size: 0.95rem;
+}
+
+.accounts-hero__cta {
+  padding-inline: clamp(1.5rem, 3.5vw, 2.5rem);
+  padding-block: 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 999px;
+  box-shadow: 0 14px 34px rgba(99, 205, 207, 0.35);
+  transition:
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+.accounts-hero__cta:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 18px 36px rgba(99, 205, 207, 0.45);
+}
+
+.accounts-hero__divider {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgba(99, 205, 207, 0.18) 0%,
+    rgba(113, 156, 214, 0.25) 55%,
+    rgba(214, 122, 210, 0.22) 100%
+  );
+  border: 1px solid rgba(99, 205, 207, 0.35);
+}
+
+.accounts-hero__divider-glow {
+  position: absolute;
+  inset: -60% -20% -60% -20%;
+  background: radial-gradient(
+    60% 60% at 50% 50%,
+    rgba(99, 205, 207, 0.45) 0%,
+    rgba(214, 122, 210, 0.32) 35%,
+    rgba(25, 32, 56, 0) 100%
+  );
+  opacity: 0.8;
+}
+
+@media (max-width: 640px) {
+  .accounts-hero__card {
+    padding-inline: 1.5rem;
+  }
+
+  .accounts-hero__card :deep(.flex) {
+    align-items: flex-start;
+  }
+}
+</style>
