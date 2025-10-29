@@ -225,11 +225,15 @@
                   :key="tx.transaction_id || tx.id"
                   class="bs-tx-row"
                 >
-                  <span class="bs-tx-date">{{ formatShortDate(tx.date || tx.transaction_date || '') }}</span>
+                  <span class="bs-tx-date">{{
+                    formatShortDate(tx.date || tx.transaction_date || '')
+                  }}</span>
                   <span class="bs-tx-name">{{
                     tx.merchant_name || tx.name || tx.description
                   }}</span>
-                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{ format(tx.amount) }}</span>
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{
+                    format(tx.amount)
+                  }}</span>
                 </li>
                 <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
