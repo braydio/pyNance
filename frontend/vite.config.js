@@ -2,7 +2,6 @@ import { fileURLToPath, URL } from 'node:url'
 import process from 'node:process'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
-import vueDevTools from 'vite-plugin-vue-devtools'
 import visualizer from 'rollup-plugin-visualizer'
 import Components from 'unplugin-vue-components/vite'
 import AutoImport from 'unplugin-auto-import/vite'
@@ -42,13 +41,32 @@ async function maybePWA() {
   }
 }
 
+// Lazily and optionally load Vue Devtools plugin to avoid Node localStorage issues
+async function maybeVueDevtools() {
+  const enableDevtools = process.env.ENABLE_VUE_DEVTOOLS === '1'
+  if (!enableDevtools) {
+    return null
+  }
+  try {
+    const devtoolsPkg = 'vite-plugin' + '-vue-devtools'
+    // @ts-ignore - avoid static analysis/bundling
+    const mod = await import(/* @vite-ignore */ devtoolsPkg)
+    const devtools = mod.default || mod
+    return devtools()
+  } catch (_err) {
+    console.warn('[vite] vite-plugin-vue-devtools not available; continuing without devtools')
+    return null
+  }
+}
+
 export default defineConfig(async () => {
   const pwa = await maybePWA()
+  const devtools = await maybeVueDevtools()
 
   return {
     plugins: [
       vue(),
-      vueDevTools(),
+      ...(devtools ? [devtools] : []),
       tailwindcss(),
       Inspect(),
       Components({

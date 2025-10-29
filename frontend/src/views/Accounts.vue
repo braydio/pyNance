@@ -8,25 +8,22 @@
       sidebar-width="w-72 md:w-80"
     >
       <template #header>
-        <section class="accounts-hero space-y-6">
-          <PageHeader :icon="Wallet" class="accounts-hero__card shadow-2xl">
-            <template #title>Accounts</template>
-            <template #subtitle>Link, refresh, and plan your institutions in one place.</template>
-            <template #actions>
-              <UiButton
-                variant="primary"
-                pill
-                class="accounts-hero__cta"
-                @click="navigateToPlanning"
-              >
-                Plan Account
-              </UiButton>
-            </template>
-          </PageHeader>
-          <div class="accounts-hero__divider">
-            <span class="accounts-hero__divider-glow" />
-          </div>
-        </section>
+        <PageHeader :icon="Wallet">
+          <template #title>Accounts</template>
+          <template #subtitle>Link and refresh your accounts</template>
+          <template #actions>
+            <UiButton
+              variant="primary"
+              class="shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
+              @click="navigateToPlanning"
+            >
+              Plan Account
+            </UiButton>
+          </template>
+        </PageHeader>
+        <div
+          class="mt-6 h-1 w-full rounded-full bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)]"
+        />
       </template>
 
       <template #sidebar>
