@@ -322,7 +322,13 @@
               <div class="bs-name">{{ account.name }}</div>
               <div class="bs-mask">
                 <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
-                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+                <span
+                  v-else
+                  class="bs-no-mask-icon"
+                  role="img"
+                  aria-label="Account number unavailable"
+                  >∗</span
+                >
               </div>
             </div>
             <div class="bs-sparkline">
@@ -340,9 +346,15 @@
                   :key="tx.transaction_id || tx.id"
                   class="bs-tx-row"
                 >
-                  <span class="bs-tx-date">{{ formatShortDate(tx.date || tx.transaction_date || '') }}</span>
-                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
-                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{ format(tx.amount) }}</span>
+                  <span class="bs-tx-date">{{
+                    formatShortDate(tx.date || tx.transaction_date || '')
+                  }}</span>
+                  <span class="bs-tx-name">{{
+                    tx.merchant_name || tx.name || tx.description
+                  }}</span>
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{
+                    format(tx.amount)
+                  }}</span>
                 </li>
                 <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
@@ -1188,7 +1200,9 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  transition: background-color 0.2s ease, color 0.2s ease;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
 }
 
 .bs-group-item:hover,
