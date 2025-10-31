@@ -47,9 +47,7 @@ def save_as_csv(institutions, path="plaid_institutions.csv"):
                     inst.get("url", ""),
                 ]
             )
-    logger.info(
-        "Saved %d institutions to %s", len(institutions), path
-    )
+    logger.info("Saved %d institutions to %s", len(institutions), path)
 
 
 if __name__ == "__main__":
