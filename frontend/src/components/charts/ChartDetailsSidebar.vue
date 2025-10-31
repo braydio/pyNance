@@ -157,8 +157,13 @@ const headerId = `${contentId}-header`
  */
 const chartEntries = computed(() =>
   Array.isArray(props.chartData)
-    ? props.chartData.filter((item) =>
-        item && typeof item === 'object' && 'income' in item && 'expenses' in item && 'net' in item,
+    ? props.chartData.filter(
+        (item) =>
+          item &&
+          typeof item === 'object' &&
+          'income' in item &&
+          'expenses' in item &&
+          'net' in item,
       )
     : [],
 )
