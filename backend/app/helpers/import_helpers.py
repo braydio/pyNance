@@ -18,13 +18,13 @@ def _resolve_import_path(filepath: str | Path) -> Path:
 def dispatch_import(filepath: str, filetype: str = "transactions"):
     """Dispatch an import task based on file type and format."""
     path = _resolve_import_path(filepath)
-    logger.debug(f"[IMPORT] Dispatching file: {path} as type: {filetype}")
+    logger.debug("[IMPORT] Dispatching file: %s as type: %s", path, filetype)
 
     if str(path).endswith(".csv"):
         return import_transactions_from_csv(path)
     if str(path).endswith(".pdf"):
         return import_transactions_from_pdf(path)
-    logger.error(f"[IMPORT] Unsupported file format: {path}")
+    logger.error("[IMPORT] Unsupported file format: %s", path)
     raise ValueError(f"Unsupported file format: {path}")
 
 
@@ -32,13 +32,13 @@ def import_transactions_from_csv(filepath: str | Path):
     """Parse a CSV export from a credit card provider like Synchrony."""
     imported = []
     path = _resolve_import_path(filepath)
-    logger.debug(f"[CSV IMPORT] Starting CSV import from: {path}")
+    logger.debug("[CSV IMPORT] Starting CSV import from: %s", path)
 
     try:
         with path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
             for row in reader:
-                logger.debug(f"[CSV IMPORT] Row: {row}")
+                logger.debug("[CSV IMPORT] Row: %s", row)
                 amount = float(row["Amount"])
                 imported.append(
                     {
@@ -54,19 +54,20 @@ def import_transactions_from_csv(filepath: str | Path):
                     }
                 )
         logger.info(
-            f"[CSV IMPORT] Successfully imported {len(imported)} transactions from CSV."
+            "[CSV IMPORT] Successfully imported %d transactions from CSV.",
+            len(imported),
         )
         return {"status": "success", "count": len(imported), "data": imported}
     except Exception as e:
         tb = traceback.format_exc()
-        logger.error(f"[CSV IMPORT ERROR] Failed to import CSV: {e}\n{tb}")
+        logger.error("[CSV IMPORT ERROR] Failed to import CSV: %s\n%s", e, tb)
         return {"status": "error", "error": str(e), "traceback": tb}
 
 
 def import_transactions_from_pdf(filepath: str | Path):
     """Parse a Synchrony PDF statement into transaction dicts."""
     path = _resolve_import_path(filepath)
-    logger.debug(f"[PDF IMPORT] Starting PDF import from: {path}")
+    logger.debug("[PDF IMPORT] Starting PDF import from: %s", path)
 
     imported = []
     try:
@@ -99,10 +100,11 @@ def import_transactions_from_pdf(filepath: str | Path):
             )
 
         logger.info(
-            f"[PDF IMPORT] Successfully imported {len(imported)} transactions from PDF."
+            "[PDF IMPORT] Successfully imported %d transactions from PDF.",
+            len(imported),
         )
         return {"status": "success", "count": len(imported), "data": imported}
     except Exception as e:  # pragma: no cover - log then return error
         tb = traceback.format_exc()
-        logger.error(f"[PDF IMPORT ERROR] Failed to import PDF: {e}\n{tb}")
+        logger.error("[PDF IMPORT ERROR] Failed to import PDF: %s\n%s", e, tb)
         return {"status": "error", "error": str(e), "traceback": tb}

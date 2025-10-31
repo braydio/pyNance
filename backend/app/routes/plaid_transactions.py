@@ -61,7 +61,9 @@ def generate_link_token_endpoint():
     products = data.get("products", ["transactions"])
     try:
         logger.debug(
-            f"Request to generate link token with user_id={user_id}, products={products}"
+            "Request to generate link token with user_id=%s, products=%s",
+            user_id,
+            products,
         )
         token = generate_link_token(products=products, user_id=user_id)
         if not token:
@@ -72,10 +74,10 @@ def generate_link_token_endpoint():
                 ),
                 500,
             )
-        logger.info(f"Generated link token for user_id={user_id}")
+        logger.info("Generated link token for user_id=%s", user_id)
         return jsonify({"status": "success", "link_token": token}), 200
     except Exception as e:
-        logger.error(f"Error generating link token: {e}", exc_info=True)
+        logger.error("Error generating link token: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -90,11 +92,13 @@ def exchange_public_token_endpoint():
         return jsonify({"error": "user_id is required"}), 400
 
     logger.debug(
-        f"user_id resolved from {'frontend' if frontend_user_id else 'env'}: {user_id}"
+        "user_id resolved from %s: %s",
+        "frontend" if frontend_user_id else "env",
+        user_id,
     )
 
     public_token = data.get("public_token")
-    logger.debug(f"Received token exchange request for user_id={user_id}")
+    logger.debug("Received token exchange request for user_id=%s", user_id)
 
     if not user_id or not public_token:
         logger.warning("Missing user_id or public_token in request")
@@ -102,7 +106,7 @@ def exchange_public_token_endpoint():
 
     try:
         exchange_resp = exchange_public_token(public_token)
-        logger.debug(f"Exchange response: {exchange_resp}")
+        logger.debug("Exchange response: %s", exchange_resp)
         if not exchange_resp:
             logger.warning("Exchange returned no response")
             return jsonify({"error": "Token exchange failed"}), 500
@@ -110,7 +114,9 @@ def exchange_public_token_endpoint():
         access_token = exchange_resp.get("access_token")
         item_id = exchange_resp.get("item_id")
         logger.info(
-            f"Token exchange successful. Access Token: {access_token}, Item ID: {item_id}"
+            "Token exchange successful. Access Token: %s, Item ID: %s",
+            access_token,
+            item_id,
         )
 
         if not access_token or not item_id:
@@ -120,10 +126,12 @@ def exchange_public_token_endpoint():
         item_info = get_item(access_token)
         institution_id = item_info.get("institution_id", "Unknown")
         institution_name = get_institution_name(institution_id)
-        logger.debug(f"Institution ID: {institution_id}, Name: {institution_name}")
+        logger.debug(
+            "Institution ID: %s, Name: %s", institution_id, institution_name
+        )
 
         accounts = get_accounts(access_token, user_id)
-        logger.debug(f"Retrieved {len(accounts)} accounts from Plaid")
+        logger.debug("Retrieved %d accounts from Plaid", len(accounts))
 
         # --- Persist 1 row per Item in secure table ---
         try:
@@ -147,10 +155,12 @@ def exchange_public_token_endpoint():
                     )
                 )
             logger.debug(
-                f"Upserted PlaidItem for item_id={item_id} (product={product})"
+                "Upserted PlaidItem for item_id=%s (product=%s)",
+                item_id,
+                product,
             )
         except Exception as e:
-            logger.error(f"Failed to upsert PlaidItem: {e}")
+            logger.error("Failed to upsert PlaidItem: %s", e)
 
         # --- PATCH: Persist PlaidAccount entries ---
         for acct in accounts:
@@ -160,7 +170,9 @@ def exchange_public_token_endpoint():
 
             exists = PlaidAccount.query.filter_by(account_id=account_id).first()
             if exists:
-                logger.debug(f"PlaidAccount already exists for {account_id}")
+                logger.debug(
+                    "PlaidAccount already exists for %s", account_id
+                )
                 continue
 
             new_plaid_account = PlaidAccount(
@@ -176,16 +188,20 @@ def exchange_public_token_endpoint():
         for acct in accounts:
             acct["institution_name"] = institution_name
             logger.debug(
-                f"Injected institution name into {len(accounts)} accounts: {institution_name}"
+                "Injected institution name into %d accounts: %s",
+                len(accounts),
+                institution_name,
             )
 
         db.session.commit()
 
-        logger.debug(f"[CHECK] Calling upsert_accounts() with user_id={user_id}")
+        logger.debug("[CHECK] Calling upsert_accounts() with user_id=%s", user_id)
         account_logic.upsert_accounts(
             user_id, accounts, provider="plaid", access_token=access_token
         )
-        logger.info(f"Upserted {len(accounts)} accounts for user {user_id}")
+        logger.info(
+            "Upserted %d accounts for user %s", len(accounts), user_id
+        )
 
         return (
             jsonify(
@@ -199,7 +215,7 @@ def exchange_public_token_endpoint():
         )
 
     except Exception as e:
-        logger.error(f"Error exchanging public token: {e}", exc_info=True)
+        logger.error("Error exchanging public token: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -209,7 +225,7 @@ def delete_plaid_account():
     try:
         data = request.json
         account_id = data.get("account_id")
-        logger.debug(f"Received request to delete account_id={account_id}")
+        logger.debug("Received request to delete account_id=%s", account_id)
 
         if not account_id:
             logger.warning("No account_id provided in request")
@@ -220,11 +236,13 @@ def delete_plaid_account():
             try:
                 remove_item(plaid_acct.access_token)
             except Exception as ex:
-                logger.warning(f"Failed to remove Plaid item: {ex}")
+                logger.warning("Failed to remove Plaid item: %s", ex)
 
         Account.query.filter_by(account_id=account_id).delete()
         db.session.commit()
-        logger.info(f"Deleted Plaid account {account_id} and associated records")
+        logger.info(
+            "Deleted Plaid account %s and associated records", account_id
+        )
 
         return (
             jsonify(
@@ -233,7 +251,7 @@ def delete_plaid_account():
             200,
         )
     except Exception as e:
-        logger.error(f"Error deleting Plaid account: {e}", exc_info=True)
+        logger.error("Error deleting Plaid account: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -275,13 +293,15 @@ def refresh_accounts_endpoint():
                     )  # ✅ return readable name
             else:
                 logger.warning(
-                    f"Missing access token for account {acct.account_id} (user {user_id})"
+                    "Missing access token for account %s (user %s)",
+                    acct.account_id,
+                    user_id,
                 )
 
         return jsonify({"status": "success", "updated_accounts": refreshed}), 200
 
     except Exception as e:
-        logger.error(f"Error refreshing accounts: {e}", exc_info=True)
+        logger.error("Error refreshing accounts: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -306,12 +326,16 @@ def generate_update_link_token():
         # Resolve account robustly (handles both numeric IDs and external account_ids)
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(f"Account {account_id} not found for update link token")
+            logger.warning(
+                "Account %s not found for update link token", account_id
+            )
             return jsonify({"status": "error", "message": "Account not found"}), 404
 
         # Check if account has Plaid integration
         if not account.plaid_account or not account.plaid_account.access_token:
-            logger.warning(f"Account {account.account_id} missing Plaid access token")
+            logger.warning(
+                "Account %s missing Plaid access token", account.account_id
+            )
             return (
                 jsonify(
                     {
@@ -324,7 +348,9 @@ def generate_update_link_token():
 
         access_token = account.plaid_account.access_token
         logger.info(
-            f"Generating update link token for account {account.account_id} (user {account.user_id})"
+            "Generating update link token for account %s (user %s)",
+            account.account_id,
+            account.user_id,
         )
 
         # Create Link token in update mode
@@ -340,7 +366,8 @@ def generate_update_link_token():
         response = plaid_client.link_token_create(req)
 
         logger.info(
-            f"Successfully generated update link token for account {account.account_id}"
+            "Successfully generated update link token for account %s",
+            account.account_id,
         )
         return (
             jsonify(
@@ -357,13 +384,13 @@ def generate_update_link_token():
         )
 
     except Exception as e:
-        logger.error(f"Error generating update link token: {e}", exc_info=True)
+        logger.error("Error generating update link token: %s", e, exc_info=True)
 
         # Check if it's a Plaid API error
         if hasattr(e, "body"):
             try:
                 error_body = e.body
-                logger.error(f"Plaid API error details: {error_body}")
+                logger.error("Plaid API error details: %s", error_body)
                 return (
                     jsonify(
                         {
@@ -472,5 +499,5 @@ def sync_transactions_endpoint():
             200,
         )
     except Exception as e:
-        logger.error(f"Error during Plaid sync: {e}", exc_info=True)
+        logger.error("Error during Plaid sync: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500

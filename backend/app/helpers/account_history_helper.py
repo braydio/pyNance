@@ -28,4 +28,4 @@ def update_account_history():
     db.session.bulk_save_objects(records)
     db.session.commit()
 
-    logger.info(f"✅ AccountHistory updated with {len(records)} records.")
+    logger.info("✅ AccountHistory updated with %d records.", len(records))

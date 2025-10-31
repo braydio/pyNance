@@ -75,11 +75,14 @@ def update_account_history(account_id, user_id, balance, is_hidden=None):
                 )
 
         db.session.commit()
-        logger.debug(f"AccountHistory upserted for {account_id} on {today}")
+        logger.debug("AccountHistory upserted for %s on %s", account_id, today)
     except Exception as e:
         db.session.rollback()
         logger.error(
-            f"Failed to update AccountHistory for {account_id}: {e}", exc_info=True
+            "Failed to update AccountHistory for %s: %s",
+            account_id,
+            e,
+            exc_info=True,
         )
 
 

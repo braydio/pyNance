@@ -109,5 +109,5 @@ def refresh_plaid_categories():
         return jsonify({"status": "success", "message": "Categories refreshed"})
 
     except Exception as e:
-        logger.error(f"❌ Failed to refresh Plaid categories: {e}", exc_info=True)
+        logger.error("❌ Failed to refresh Plaid categories: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500

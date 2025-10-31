@@ -75,9 +75,9 @@ def export_all_to_csv(chunk_size: int = CHUNK_SIZE) -> None:
                     count += 1
 
             if count:
-                logger.info(f"Exported {count} rows to {filename}")
+                logger.info("Exported %d rows to %s", count, filename)
             else:
-                logger.info(f"No data for {model.__name__}")
+                logger.info("No data for %s", model.__name__)
 
 
 def run_export() -> None:

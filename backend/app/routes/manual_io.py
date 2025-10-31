@@ -73,7 +73,10 @@ def auto_detect_and_upload():
 
         account_logic.upsert_accounts(user_id, formatted, provider=provider)
         logger.info(
-            f"[manual_up] Uploaded {len(formatted)} accounts for {user_id} using {provider}"
+            "[manual_up] Uploaded %d accounts for %s using %s",
+            len(formatted),
+            user_id,
+            provider,
         )
         return (
             jsonify(
@@ -88,7 +91,7 @@ def auto_detect_and_upload():
         )
 
     except Exception as e:
-        logger.error(f"[manual_up] Upload error: {e}", exc_info=True)
+        logger.error("[manual_up] Upload error: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -120,7 +123,9 @@ def manual_up_plaid():
             json.dump(safe_json(accounts_data), f, indent=2)
 
         logger.info(
-            f"[manual_up_plaid] Retrieved {len(accounts_list)} accounts for user {user_id}"
+            "[manual_up_plaid] Retrieved %d accounts for user %s",
+            len(accounts_list),
+            user_id,
         )
 
         transformed = []
@@ -144,7 +149,9 @@ def manual_up_plaid():
 
         account_logic.upsert_accounts(user_id, transformed, provider="plaid")
         logger.info(
-            f"[manual_up] Uploaded {len(transformed)} accounts for {user_id} using Plaid"
+            "[manual_up] Uploaded %d accounts for %s using Plaid",
+            len(transformed),
+            user_id,
         )
 
         return (
@@ -159,7 +166,7 @@ def manual_up_plaid():
         )
 
     except Exception as e:
-        logger.error(f"[manual_up_plaid] Error: {e}", exc_info=True)
+        logger.error("[manual_up_plaid] Error: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -171,7 +178,7 @@ def import_selected_file():
         return jsonify({"error": "Missing file name."}), 400
 
     filepath = os.path.join(IMPORT_DIR, filename)
-    logger.info(f"[IMPORT] Attempting to load file from: {filepath}")
+    logger.info("[IMPORT] Attempting to load file from: %s", filepath)
 
     if not os.path.exists(filepath):
         return jsonify({"error": "File does not exist."}), 404
@@ -204,15 +211,15 @@ def import_selected_file():
 @manual_up.route("/files", methods=["GET"])
 def list_import_files():
     try:
-        logger.info(f"[IMPORT FILES] Scanning: {IMPORT_DIR}")
+        logger.info("[IMPORT FILES] Scanning: %s", IMPORT_DIR)
         files = [
             f
             for f in os.listdir(IMPORT_DIR)
             if f.endswith((".csv", ".pdf"))
             and os.path.isfile(os.path.join(IMPORT_DIR, f))
         ]
-        logger.info(f"[IMPORT FILES] Found: {files}")
+        logger.info("[IMPORT FILES] Found: %s", files)
         return jsonify(sorted(files))
     except Exception as e:
-        logger.error(f"[IMPORT FILES ERROR] {e}", exc_info=True)
+        logger.error("[IMPORT FILES ERROR] %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500

@@ -86,7 +86,8 @@ def setup_logger():
         root_logger.addHandler(console_handler)
 
         root_logger.info(
-            f"Logging initialized. LOG_LEVEL={LOG_LEVEL} (RotatingFileHandler, 10MB x5)"
+            "Logging initialized. LOG_LEVEL=%s (RotatingFileHandler, 10MB x5)",
+            LOG_LEVEL,
         )
 
     return logging.getLogger()

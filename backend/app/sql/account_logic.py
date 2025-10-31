@@ -154,14 +154,14 @@ def save_plaid_account(account_id, item_id, access_token, product):
 def upsert_accounts(user_id, account_list, provider, access_token=None):
     processed_ids = set()
     count = 0
-    logger.debug(f"[CHECK] upsert_accounts received user_id={user_id}")
+    logger.debug("[CHECK] upsert_accounts received user_id=%s", user_id)
 
     for account in account_list:
         try:
             account_id = account.get("account_id") or account.get("id")
             if not account_id or account_id in processed_ids:
                 logger.warning(
-                    f"Skipping invalid or duplicate account id: {account_id}"
+                    "Skipping invalid or duplicate account id: %s", account_id
                 )
                 continue
             processed_ids.add(account_id)
@@ -177,7 +177,9 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 or 0
             )
             balance = normalize_balance(balance_raw, acc_type)
-            logger.debug(f"[UPSERT] Balance parsed for {account_id}: {balance}")
+            logger.debug(
+                "[UPSERT] Balance parsed for %s: %s", account_id, balance
+            )
 
             subtype = str(account.get("subtype") or "Unknown").capitalize()
             status = normalize_account_status(account.get("status"))
@@ -201,7 +203,9 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                             break
                 except Exception as e:
                     logger.warning(
-                        f"Failed to refresh institution for {account_id}: {e}"
+                        "Failed to refresh institution for %s: %s",
+                        account_id,
+                        e,
                     )
             now = datetime.now(timezone.utc)
             filtered_account = {
@@ -219,7 +223,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
 
             existing_account = Account.query.filter_by(account_id=account_id).first()
             if existing_account:
-                logger.debug(f"Updating account {account_id}")
+                logger.debug("Updating account %s", account_id)
                 for key, value in filtered_account.items():
                     # Only update institution_name if it was Unknown
                     if (
@@ -231,7 +235,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 existing_account.updated_at = now
 
             else:
-                logger.debug(f"Creating new account {account_id}")
+                logger.debug("Creating new account %s", account_id)
                 new_account = Account(**filtered_account)
                 db.session.add(new_account)
 
@@ -285,7 +289,12 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 logger.debug("Committed batch of 100 accounts.")
 
         except Exception as e:
-            logger.error(f"Failed to upsert account {account_id}: {e}", exc_info=True)
+            logger.error(
+                "Failed to upsert account %s: %s",
+                account_id,
+                e,
+                exc_info=True,
+            )
 
     db.session.commit()
     logger.info("Finished upserting accounts.")
@@ -523,7 +532,9 @@ def refresh_data_for_plaid_account(
     try:
         account = Account.query.filter_by(account_id=account_id).first()
         if not account:
-            logger.warning(f"[DB Lookup] No account found for account_id={account_id}")
+            logger.warning(
+                "[DB Lookup] No account found for account_id=%s", account_id
+            )
             return False
 
         # Refresh balance
@@ -539,7 +550,9 @@ def refresh_data_for_plaid_account(
                 account.balance = normalize_balance(raw_balance, account.type)
                 account.updated_at = datetime.now(timezone.utc)
                 logger.debug(
-                    f"[REFRESH] Updated balance for {account_id}: {account.balance}"
+                    "[REFRESH] Updated balance for %s: %s",
+                    account_id,
+                    account.balance,
                 )
                 break
 
@@ -559,14 +572,19 @@ def refresh_data_for_plaid_account(
                 tx["category"] = []
             normalized.append(transaction_rules_logic.apply_rules(account.user_id, tx))
         transactions = normalized
-        logger.info(f"Fetched {len(transactions)} transactions from Plaid.")
+        logger.info(
+            "Fetched %d transactions from Plaid.",
+            len(transactions),
+        )
 
         # Only process transactions for this specific account
         transactions = [
             txn for txn in transactions if txn.get("account_id") == account_id
         ]
         logger.info(
-            f"Processing {len(transactions)} transactions for account {account_id}."
+            "Processing %d transactions for account %s.",
+            len(transactions),
+            account_id,
         )
 
         plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
@@ -575,7 +593,8 @@ def refresh_data_for_plaid_account(
             txn_id = txn.get("transaction_id")
             if not txn_id:
                 logger.warning(
-                    f"Transaction missing 'transaction_id'; skipping. Account: {account_label}"
+                    "Transaction missing 'transaction_id'; skipping. Account: %s",
+                    account_label,
                 )
                 continue
 
@@ -588,7 +607,7 @@ def refresh_data_for_plaid_account(
                         parsed_date, datetime.min.time(), tzinfo=timezone.utc
                     )
                 except ValueError:
-                    logger.warning(f"Invalid date format for txn {txn_id}; skipping.")
+                    logger.warning("Invalid date format for txn %s; skipping.", txn_id)
                     continue
             elif isinstance(txn_date, pydate) and not isinstance(txn_date, datetime):
                 txn_date = datetime.combine(
@@ -646,7 +665,9 @@ def refresh_data_for_plaid_account(
                     existing_txn.personal_finance_category = pfc_obj or None
                     existing_txn.personal_finance_category_icon_url = pfc_icon_url
                     logger.info(
-                        f"Updated transaction {txn_id} for account {account_label}"
+                        "Updated transaction %s for account %s",
+                        txn_id,
+                        account_label,
                     )
                     updated = True
                 # -- Update Plaid metadata on every refresh (even if not updating Transaction) --
@@ -673,7 +694,9 @@ def refresh_data_for_plaid_account(
                 )
                 db.session.add(new_txn)
                 logger.info(
-                    f"➕ Inserted new transaction {txn_id} for account {account_label}"
+                    "➕ Inserted new transaction %s for account %s",
+                    txn_id,
+                    account_label,
                 )
                 updated = True
                 if plaid_account_obj:
@@ -695,7 +718,11 @@ def refresh_data_for_plaid_account(
         institution = getattr(account, "institution_name", "Unknown")
         account_name = getattr(account, "name", account_id)
         logger.error(
-            f"Plaid error refreshing transactions for {institution} / {account_name}: {plaid_error_code} - {plaid_error_message}",
+            "Plaid error refreshing transactions for %s / %s: %s - %s",
+            institution,
+            account_name,
+            plaid_error_code,
+            plaid_error_message,
             exc_info=True,
         )
         db.session.rollback()
@@ -706,7 +733,9 @@ def refresh_data_for_plaid_account(
 
     except Exception as e:
         logger.error(
-            f"Error refreshing transactions for account {account_id}: {e}",
+            "Error refreshing transactions for account %s: %s",
+            account_id,
+            e,
             exc_info=True,
         )
         db.session.rollback()

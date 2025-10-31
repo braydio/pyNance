@@ -149,7 +149,7 @@ def update_transaction():
             transaction_rules_logic.create_rule(txn.user_id, match_criteria, action)
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        logger.error(f"Error updating transaction: {e}", exc_info=True)
+        logger.error("Error updating transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -202,7 +202,7 @@ def scan_internal_transfers():
 
         return jsonify({"status": "success", "pairs": pairs}), 200
     except Exception as e:
-        logger.error(f"Error scanning internal transfers: {e}", exc_info=True)
+        logger.error("Error scanning internal transfers: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -264,7 +264,7 @@ def user_modified_update_transaction():
         db.session.commit()
         return jsonify({"status": "success"}), 200
     except Exception as e:
-        logger.error(f"Error updating transaction: {e}", exc_info=True)
+        logger.error("Error updating transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -321,7 +321,7 @@ def get_transactions_paginated():
         )
 
     except Exception as e:
-        logger.error(f"Error in get_transactions_paginated: {e}", exc_info=True)
+        logger.error("Error in get_transactions_paginated: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -342,7 +342,9 @@ def get_account_transactions(account_id):
             datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
         )
         logger.debug(
-            f"Changed date string {start_date_str} to datetime object: {start_date}"
+            "Changed date string %s to datetime object: %s",
+            start_date_str,
+            start_date,
         )
 
         end_date = _ensure_utc(
@@ -355,7 +357,9 @@ def get_account_transactions(account_id):
             else None
         )
         logger.debug(
-            f"Changed date string {end_date_str} to datetime object: {end_date}"
+            "Changed date string %s to datetime object: %s",
+            end_date_str,
+            end_date,
         )
         # Ignore date filters when fetching recent transactions
         if recent:
@@ -384,7 +388,7 @@ def get_account_transactions(account_id):
         )
 
     except Exception as e:
-        logger.error(f"Error in get_account_transactions: {e}", exc_info=True)
+        logger.error("Error in get_account_transactions: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -408,14 +412,16 @@ def merchant_suggestions():
             query = query.filter(Transaction.merchant_name.ilike(f"%{q}%"))
 
         rows = (
-            query.order_by(func.count(Transaction.id).desc(), Transaction.merchant_name.asc())
+            query.order_by(
+                func.count(Transaction.id).desc(), Transaction.merchant_name.asc()
+            )
             .limit(limit)
             .all()
         )
         names = [name for name, _ in rows if name]
         return jsonify({"status": "success", "data": names}), 200
     except Exception as e:
-        logger.error(f"Error fetching merchant suggestions: {e}", exc_info=True)
+        logger.error("Error fetching merchant suggestions: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -454,7 +460,7 @@ def create_rule():
         rule = transaction_rules_logic.create_rule(user_id, match, action)
         return jsonify({"status": "success", "rule_id": rule.id}), 201
     except Exception as e:
-        logger.error(f"Error creating rule: {e}", exc_info=True)
+        logger.error("Error creating rule: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

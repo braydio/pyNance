@@ -176,10 +176,12 @@ def refresh_all_accounts():
                 if account.plaid_account:
                     access_token = account.plaid_account.access_token
                 if not access_token:
-                    logger.warning(f"No Plaid token for {account.account_id}")
+                    logger.warning("No Plaid token for %s", account.account_id)
                     continue
 
-                logger.debug(f"Refreshing Plaid account {account.account_id}")
+                logger.debug(
+                    "Refreshing Plaid account %s", account.account_id
+                )
                 inst = account.institution_name or "Unknown"
                 products = _plaid_products_for_account(account)
                 account_updated = False
@@ -211,9 +213,9 @@ def refresh_all_accounts():
 
                                 if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key]["update_link_token_endpoint"] = (
-                                        "/api/plaid/transactions/generate_update_link_token"
-                                    )
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -232,14 +234,20 @@ def refresh_all_accounts():
 
                             if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                 logger.warning(
-                                    f"Plaid re-auth required: Institution: {inst}, Account: {account.name}, "
-                                    f"Error: {err.get('plaid_error_message')}. User must re-auth via Link update mode. "
-                                    f"Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                                    "Plaid re-auth required: Institution: %s, Account: %s, Error: %s. "
+                                    "User must re-auth via Link update mode. Call POST "
+                                    "/api/plaid/transactions/generate_update_link_token with account_id.",
+                                    inst,
+                                    account.name,
+                                    err.get("plaid_error_message"),
                                 )
                             else:
                                 error_logger.error(
-                                    f"Plaid error on refresh: Institution: {inst}, Accounts: {account.name}, "
-                                    f"Error Code: {err.get('plaid_error_code')}, Message: {err.get('plaid_error_message')}"
+                                    "Plaid error on refresh: Institution: %s, Accounts: %s, Error Code: %s, Message: %s",
+                                    inst,
+                                    account.name,
+                                    err.get("plaid_error_code"),
+                                    err.get("plaid_error_message"),
                                 )
                         else:
                             account_updated = account_updated or updated
@@ -283,7 +291,9 @@ def refresh_all_accounts():
 
             else:
                 logger.info(
-                    f"Skipping account {account.account_id} with non-Plaid link_type '{account.link_type}'"
+                    "Skipping account %s with non-Plaid link_type '%s'",
+                    account.account_id,
+                    account.link_type,
                 )
 
         # Log aggregated error summary for operators
@@ -306,8 +316,14 @@ def refresh_all_accounts():
                     remediation = " | Remediation: User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
 
                 logger.info(
-                    f"[{log_level}] {institution}: {error_code} - {error_message} | "
-                    f"Affected accounts: {affected_count} ({account_names}){remediation}"
+                    "[%s] %s: %s - %s | Affected accounts: %d (%s)%s",
+                    log_level,
+                    institution,
+                    error_code,
+                    error_message,
+                    affected_count,
+                    account_names,
+                    remediation,
                 )
             logger.info("=== End Error Summary ===")
 
@@ -371,8 +387,10 @@ def refresh_single_account(account_id):
 
             if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                 logger.warning(
-                    f"Plaid re-auth required for account {account.account_id}: {err.get('plaid_error_message')}. "
-                    "User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                    "Plaid re-auth required for account %s: %s. User must re-auth via Link update mode. "
+                    "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",
+                    account.account_id,
+                    err.get("plaid_error_message"),
                 )
                 return (
                     jsonify(
@@ -477,7 +495,10 @@ def get_accounts():
                     else None
                 )
                 logger.info(
-                    f"Normalized original balance of {a.balance} to {normalized_balance} because account type {a.type}"
+                    "Normalized original balance of %s to %s because account type %s",
+                    a.balance,
+                    normalized_balance,
+                    a.type,
                 )
 
                 data.append(
@@ -503,7 +524,9 @@ def get_accounts():
                 except Exception:
                     acct_identifier = None
                 logger.warning(
-                    f"Error serializing account: {acct_identifier} - {item_err}",
+                    "Error serializing account: %s - %s",
+                    acct_identifier,
+                    item_err,
                     exc_info=True,
                 )
         return jsonify({"status": "success", "accounts": data}), 200
@@ -676,7 +699,7 @@ def account_net_changes(account_id):
 
     try:
         from app.sql import account_logic
-        from sqlalchemy import func, case
+        from sqlalchemy import case, func
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -694,7 +717,9 @@ def account_net_changes(account_id):
 
         # Compute income/expense breakdown from transactions in the range
         # Use external account_id consistently
-        income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0))
+        income_sum = func.sum(
+            case((Transaction.amount > 0, Transaction.amount), else_=0)
+        )
         expense_sum = func.sum(
             case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
         )
@@ -713,7 +738,11 @@ def account_net_changes(account_id):
 
         payload = {
             "status": "success",
-            "data": {"income": round(income, 2), "expense": round(expense, 2), "net": net},
+            "data": {
+                "income": round(income, 2),
+                "expense": round(expense, 2),
+                "net": net,
+            },
             # Backward-compat legacy fields
             "account_id": legacy.get("account_id", account_id),
             "net_change": legacy.get("net_change", net),
@@ -724,7 +753,7 @@ def account_net_changes(account_id):
 
         return jsonify(payload), 200
     except Exception as e:
-        logger.error(f"Error in account_net_changes: {e}", exc_info=True)
+        logger.error("Error in account_net_changes: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -788,7 +817,9 @@ def get_account_history(account_id):
         # Use the robust account resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(f"Account history request for unknown account: {account_id}")
+            logger.warning(
+                "Account history request for unknown account: %s", account_id
+            )
             return jsonify({"error": "Account not found"}), 404
 
         tx_rows = (
@@ -815,7 +846,7 @@ def get_account_history(account_id):
 
         return jsonify(response_payload), 200
     except Exception as e:
-        logger.error(f"Error in get_account_history: {e}", exc_info=True)
+        logger.error("Error in get_account_history: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -840,7 +871,7 @@ def transaction_history(account_id):
         account = resolve_account_by_any_id(account_id)
         if not account:
             logger.warning(
-                f"Transaction history request for unknown account: {account_id}"
+                "Transaction history request for unknown account: %s", account_id
             )
             return jsonify({"status": "error", "message": "Account not found"}), 404
 
@@ -943,7 +974,11 @@ def transaction_history(account_id):
         next_offset = offset + limit if has_more else None
 
         logger.info(
-            f"Retrieved {len(transaction_data)} transactions for account {account.account_id} (offset: {offset}, total: {total_count})"
+            "Retrieved %d transactions for account %s (offset: %d, total: %d)",
+            len(transaction_data),
+            account.account_id,
+            offset,
+            total_count,
         )
 
         return (
@@ -966,7 +1001,10 @@ def transaction_history(account_id):
 
     except Exception as e:
         logger.error(
-            f"Error in transaction_history for account {account_id}: {e}", exc_info=True
+            "Error in transaction_history for account %s: %s",
+            account_id,
+            e,
+            exc_info=True,
         )
         return (
             jsonify({"status": "error", "message": f"Internal server error: {str(e)}"}),

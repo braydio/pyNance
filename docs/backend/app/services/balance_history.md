@@ -22,3 +22,7 @@
 
 - Internal queries filter out transactions flagged as internal transfers through the `Transaction.is_internal` column, ensuring true cash movement.
 - Consumers should invoke `update_account_balance_history` before reading when they need fresh coverage.
+- Background jobs in
+  [`tasks/balance_history_tasks.py`](../../../../backend/app/tasks/balance_history_tasks.py)
+  orchestrate the periodic calls to `update_account_balance_history` and the
+  bulk `update_all_accounts_balance_history` helper.

@@ -48,7 +48,7 @@ def refresh_all_accounts():
         if provider == "plaid":
             rel = acct.plaid_account
         else:
-            logger.warning(f"⚠️ Unknown provider for account {acct.id}")
+            logger.warning("⚠️ Unknown provider for account %s", acct.id)
             skipped += 1
             continue
 
@@ -60,7 +60,10 @@ def refresh_all_accounts():
 
         try:
             logger.info(
-                f"🔄 Syncing {provider} account {acct.id} for user {acct.user_id}"
+                "🔄 Syncing %s account %s for user %s",
+                provider,
+                acct.id,
+                acct.user_id,
             )
             sync_service.sync_account(acct)
             if rel:
@@ -68,12 +71,20 @@ def refresh_all_accounts():
             db.session.commit()
             updated += 1
             logger.info(
-                f"✅ Synced {provider} account {acct.id} for user {acct.user_id}"
+                "✅ Synced %s account %s for user %s",
+                provider,
+                acct.id,
+                acct.user_id,
             )
 
         except Exception as e:
             logger.error(
-                f"❌ Sync failed for account {acct.id}: {str(e)}", exc_info=True
+                "❌ Sync failed for account %s: %s",
+                acct.id,
+                str(e),
+                exc_info=True,
             )
 
-    logger.info(f"🔚 Account refresh complete: {updated} updated, {skipped} skipped.")
+    logger.info(
+        "🔚 Account refresh complete: %d updated, %d skipped.", updated, skipped
+    )

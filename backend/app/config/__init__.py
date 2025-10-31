@@ -50,15 +50,19 @@ env_check = PLAID_ENV.upper()
 logger = setup_logger()
 
 if plaid_client:
-    logger.debug(f"Plaid client initialized for {env_check} environment.")
+    logger.debug(
+        "Plaid client initialized for %s environment.", env_check
+    )
 
-logger.debug(f"Running in {FLASK_ENV} environment.")
-logger.debug(f"Loaded config from {__name__}")
-logger.debug(f"Initialized main database as {DATABASE_NAME}")
-logger.debug(f"SQLAlchemy Database URI: {SQLALCHEMY_DATABASE_URI}")
+logger.debug("Running in %s environment.", FLASK_ENV)
+logger.debug("Loaded config from %s", __name__)
+logger.debug("Initialized main database as %s", DATABASE_NAME)
+logger.debug("SQLAlchemy Database URI: %s", SQLALCHEMY_DATABASE_URI)
 if DATABASE_NAME:
-    logger.debug(f"Connected database: {DATABASE_NAME}")
-logger.debug(f"Starting dashboard in Plaid {PLAID_ENV} Environment.")
+    logger.debug("Connected database: %s", DATABASE_NAME)
+logger.debug("Starting dashboard in Plaid %s Environment.", PLAID_ENV)
 logger.debug(
-    f"Base URLs: \n\nPlaid: {PLAID_BASE_URL} \nArbit: {ARBIT_EXPORTER_URL}\n\n"
+    "Base URLs: \n\nPlaid: %s \nArbit: %s\n\n",
+    PLAID_BASE_URL,
+    ARBIT_EXPORTER_URL,
 )

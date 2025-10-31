@@ -75,15 +75,17 @@ def update_item_webhook():
             )
 
         req = ItemWebhookUpdateRequest(item_id=item_id, webhook=webhook_url)
-        resp = plaid_client.item_webhook_update(req)
-        logger.info(f"Updated Plaid webhook for item {item_id} -> {webhook_url}")
+        plaid_client.item_webhook_update(req)
+        logger.info(
+            "Updated Plaid webhook for item %s -> %s", item_id, webhook_url
+        )
         return (
             jsonify({"status": "success", "item_id": item_id, "webhook": webhook_url}),
             200,
         )
 
     except Exception as e:
-        logger.error(f"Failed to update Plaid webhook: {e}", exc_info=True)
+        logger.error("Failed to update Plaid webhook: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -130,7 +132,9 @@ def update_all_items_webhook():
                 plaid_client.item_webhook_update(req)
                 updated.append(item_id)
             except Exception as e:  # noqa: BLE001
-                logger.error(f"Failed to update webhook for item {item_id}: {e}")
+                logger.error(
+                    "Failed to update webhook for item %s: %s", item_id, e
+                )
                 errors.append({"item_id": item_id, "error": str(e)})
         return (
             jsonify(
@@ -144,5 +148,5 @@ def update_all_items_webhook():
             200,
         )
     except Exception as e:
-        logger.error(f"Failed bulk webhook update: {e}", exc_info=True)
+        logger.error("Failed bulk webhook update: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
