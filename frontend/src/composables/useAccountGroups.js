@@ -14,6 +14,7 @@ import api from '@/services/api'
 const DEFAULT_GROUP_NAME = 'Group'
 const DEFAULT_ACCENT = 'var(--color-accent-cyan)'
 const MAX_ACCOUNTS_PER_GROUP = 5
+const STORAGE_BASE_KEY = 'pynance.account-groups'
 
 function generateId() {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -89,6 +90,38 @@ export function useAccountGroups(options = {}) {
   const loading = ref(false)
   const error = ref(null)
   const scope = options.userId ? String(options.userId) : ''
+  const offlineMode = ref(false)
+
+  const storageKey = scope ? `${STORAGE_BASE_KEY}.${scope}` : STORAGE_BASE_KEY
+
+  const readFromStorage = () => {
+    if (typeof localStorage === 'undefined') return null
+    try {
+      const raw = localStorage.getItem(storageKey)
+      if (!raw) return null
+      const parsed = JSON.parse(raw)
+      if (!parsed || typeof parsed !== 'object') return null
+      const storedGroups = Array.isArray(parsed.groups) ? parsed.groups.map(normalizeGroup) : []
+      const storedActive = parsed.activeGroupId ? String(parsed.activeGroupId) : null
+      return { groups: storedGroups, activeGroupId: storedActive }
+    } catch (err) {
+      console.warn('Failed to read account groups from storage:', err)
+      return null
+    }
+  }
+
+  const persistToStorage = () => {
+    if (typeof localStorage === 'undefined') return
+    try {
+      const payload = {
+        groups: cloneGroups(groups.value),
+        activeGroupId: activeGroupId.value,
+      }
+      localStorage.setItem(storageKey, JSON.stringify(payload))
+    } catch (err) {
+      console.warn('Failed to persist account groups to storage:', err)
+    }
+  }
 
   const scopedPayload = (payload = {}) => ({
     ...(payload || {}),
@@ -105,6 +138,8 @@ export function useAccountGroups(options = {}) {
     } else if (!activeGroupId.value && groups.value.length) {
       activeGroupId.value = groups.value[0].id
     }
+    offlineMode.value = false
+    persistToStorage()
   }
 
   const syncFromGroupResponse = (result) => {
@@ -122,10 +157,36 @@ export function useAccountGroups(options = {}) {
     }
   }
 
+  const hydrateFromStorage = () => {
+    const stored = readFromStorage()
+    if (!stored || !stored.groups?.length) return false
+    groups.value = stored.groups
+    activeGroupId.value = stored.activeGroupId || stored.groups[0]?.id || null
+    return true
+  }
+
+  const ensureFallbackGroup = () => {
+    if (groups.value.length) return
+    const fallback = normalizeGroup({ id: generateId() })
+    groups.value = [fallback]
+    activeGroupId.value = fallback.id
+  }
+
   const handleError = (err, rollback) => {
     error.value = err
     if (typeof console !== 'undefined') {
       console.error('Account group request failed:', err)
+    }
+    const isNetworkIssue = !err || !err.response
+    if (isNetworkIssue) {
+      offlineMode.value = true
+      if (!groups.value.length) {
+        if (!hydrateFromStorage()) {
+          ensureFallbackGroup()
+        }
+      }
+      persistToStorage()
+      return
     }
     if (typeof rollback === 'function') {
       rollback()
@@ -140,9 +201,9 @@ export function useAccountGroups(options = {}) {
     } catch (err) {
       handleError(err)
       if (!groups.value.length) {
-        const fallback = normalizeGroup({ id: generateId() })
-        groups.value = [fallback]
-        activeGroupId.value = fallback.id
+        if (!hydrateFromStorage()) {
+          ensureFallbackGroup()
+        }
       }
     } finally {
       loading.value = false
@@ -161,22 +222,30 @@ export function useAccountGroups(options = {}) {
     }
     groups.value = [...groups.value, optimistic]
     activeGroupId.value = id
+    persistToStorage()
+
+    if (offlineMode.value) {
+      persistToStorage()
+      return id
+    }
 
     api
       .createAccountGroup(scopedPayload({ id, name, accent }))
-      .then((response) => syncFromGroupResponse(response))
+      .then((response) => {
+        syncFromGroupResponse(response)
+        persistToStorage()
+      })
       .catch((err) => {
         handleError(err, () => {
           groups.value = groups.value.filter((group) => group.id !== id)
           if (!groups.value.length) {
-            const fallback = normalizeGroup({ id: generateId() })
-            groups.value = [fallback]
-            activeGroupId.value = fallback.id
+            ensureFallbackGroup()
           } else if (previousActive) {
             activeGroupId.value = previousActive
           } else {
             activeGroupId.value = groups.value[0]?.id || null
           }
+          persistToStorage()
         })
       })
 
@@ -193,13 +262,21 @@ export function useAccountGroups(options = {}) {
     if (Object.prototype.hasOwnProperty.call(updates, 'accent')) {
       group.accent = updates.accent || DEFAULT_ACCENT
     }
+    persistToStorage()
+
+    if (offlineMode.value) return
+
     api
       .updateAccountGroup(groupId, scopedPayload(updates))
-      .then((response) => syncFromGroupResponse(response))
+      .then((response) => {
+        syncFromGroupResponse(response)
+        persistToStorage()
+      })
       .catch((err) => {
         handleError(err, () => {
           group.name = previous.name
           group.accent = previous.accent
+          persistToStorage()
         })
       })
   }
@@ -209,20 +286,25 @@ export function useAccountGroups(options = {}) {
     const previousActive = activeGroupId.value
     groups.value = groups.value.filter((group) => group.id !== groupId)
     if (!groups.value.length) {
-      const fallback = normalizeGroup({ id: generateId() })
-      groups.value = [fallback]
-      activeGroupId.value = fallback.id
+      ensureFallbackGroup()
     } else if (!groups.value.some((group) => group.id === activeGroupId.value)) {
       activeGroupId.value = groups.value[0].id
     }
+    persistToStorage()
+
+    if (offlineMode.value) return
 
     api
       .deleteAccountGroup(groupId, scopedPayload())
-      .then((response) => syncFromListResponse(response))
+      .then((response) => {
+        syncFromListResponse(response)
+        persistToStorage()
+      })
       .catch((err) => {
         handleError(err, () => {
           groups.value = previousGroups
           activeGroupId.value = previousActive
+          persistToStorage()
         })
       })
   }
@@ -238,13 +320,20 @@ export function useAccountGroups(options = {}) {
       .filter(Boolean)
     if (ordered.length !== groups.value.length) return
     groups.value = ordered.map((group, index) => ({ ...group, position: index }))
+    persistToStorage()
+
+    if (offlineMode.value) return
 
     api
       .reorderAccountGroups(scopedPayload({ group_ids: targetOrder }))
-      .then((response) => syncFromListResponse(response))
+      .then((response) => {
+        syncFromListResponse(response)
+        persistToStorage()
+      })
       .catch((err) => {
         handleError(err, () => {
           groups.value = previous
+          persistToStorage()
         })
       })
   }
@@ -253,12 +342,20 @@ export function useAccountGroups(options = {}) {
     if (!groupId || !groups.value.some((group) => group.id === groupId)) return
     const previous = activeGroupId.value
     activeGroupId.value = groupId
+    persistToStorage()
+
+    if (offlineMode.value) return
+
     api
       .setActiveAccountGroup(scopedPayload({ group_id: groupId }))
-      .then((response) => syncFromListResponse(response))
+      .then((response) => {
+        syncFromListResponse(response)
+        persistToStorage()
+      })
       .catch((err) => {
         handleError(err, () => {
           activeGroupId.value = previous
+          persistToStorage()
         })
       })
   }
@@ -273,14 +370,22 @@ export function useAccountGroups(options = {}) {
 
     const previous = group.accounts.slice()
     group.accounts.push(normalized)
-    api
-      .addAccountToGroup(groupId, scopedPayload({ account_id: normalized.account_id }))
-      .then((response) => syncFromGroupResponse(response))
-      .catch((err) => {
-        handleError(err, () => {
-          group.accounts.splice(0, group.accounts.length, ...previous)
+    persistToStorage()
+
+    if (!offlineMode.value) {
+      api
+        .addAccountToGroup(groupId, scopedPayload({ account_id: normalized.account_id }))
+        .then((response) => {
+          syncFromGroupResponse(response)
+          persistToStorage()
         })
-      })
+        .catch((err) => {
+          handleError(err, () => {
+            group.accounts.splice(0, group.accounts.length, ...previous)
+            persistToStorage()
+          })
+        })
+    }
     return true
   }
 
@@ -292,14 +397,22 @@ export function useAccountGroups(options = {}) {
     if (index === -1) return false
     const previous = group.accounts.slice()
     group.accounts.splice(index, 1)
-    api
-      .removeAccountFromGroup(groupId, resolvedId, scopedPayload())
-      .then((response) => syncFromGroupResponse(response))
-      .catch((err) => {
-        handleError(err, () => {
-          group.accounts.splice(0, group.accounts.length, ...previous)
+    persistToStorage()
+
+    if (!offlineMode.value) {
+      api
+        .removeAccountFromGroup(groupId, resolvedId, scopedPayload())
+        .then((response) => {
+          syncFromGroupResponse(response)
+          persistToStorage()
         })
-      })
+        .catch((err) => {
+          handleError(err, () => {
+            group.accounts.splice(0, group.accounts.length, ...previous)
+            persistToStorage()
+          })
+        })
+    }
     return true
   }
 
@@ -309,17 +422,25 @@ export function useAccountGroups(options = {}) {
     const normalized = normalizeAccounts(accounts)
     const previous = group.accounts.slice()
     group.accounts.splice(0, group.accounts.length, ...normalized)
-    api
-      .reorderGroupAccounts(
-        groupId,
-        scopedPayload({ account_ids: normalized.map((acct) => acct.account_id) }),
-      )
-      .then((response) => syncFromGroupResponse(response))
-      .catch((err) => {
-        handleError(err, () => {
-          group.accounts.splice(0, group.accounts.length, ...previous)
+    persistToStorage()
+
+    if (!offlineMode.value) {
+      api
+        .reorderGroupAccounts(
+          groupId,
+          scopedPayload({ account_ids: normalized.map((acct) => acct.account_id) }),
+        )
+        .then((response) => {
+          syncFromGroupResponse(response)
+          persistToStorage()
         })
-      })
+        .catch((err) => {
+          handleError(err, () => {
+            group.accounts.splice(0, group.accounts.length, ...previous)
+            persistToStorage()
+          })
+        })
+    }
   }
 
   fetchGroups()
@@ -329,6 +450,7 @@ export function useAccountGroups(options = {}) {
     activeGroupId,
     loading,
     error,
+    offlineMode,
     fetchGroups,
     createGroup,
     updateGroup,

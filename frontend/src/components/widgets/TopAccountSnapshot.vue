@@ -97,7 +97,7 @@
       <!-- Group Dropdown -->
       <div ref="dropdownRef" class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button
-          class="bs-group-btn gradient-toggle-btn"
+          :class="groupDropdownClasses"
           @click="toggleGroupMenu"
           aria-label="Select account group"
         >
@@ -118,7 +118,11 @@
               <template v-else>
                 <button
                   class="bs-group-item"
-                  :class="{ 'bs-group-item-active': g.id === activeGroupId }"
+                  :class="{
+                    'bs-group-item-active': g.id === activeGroupId,
+                    'is-active': g.id === activeGroupId,
+                  }"
+                  :aria-pressed="g.id === activeGroupId"
                   @click="selectGroup(g.id)"
                 >
                   <Check v-if="g.id === activeGroupId" class="bs-group-check" />
@@ -126,13 +130,13 @@
                 </button>
               </template>
             </li>
-            <li>
+            <li v-if="!isEditingGroups">
               <button
                 class="bs-group-item bs-group-action gradient-toggle-btn"
                 @click="toggleEditGroups"
-                aria-label="Toggle edit groups"
+                aria-label="Edit account groups"
               >
-                {{ isEditingGroups ? 'Done' : 'Edit' }}
+                Edit
               </button>
             </li>
           </ul>
@@ -152,7 +156,7 @@
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
-      v-if="effectiveGroup"
+      v-if="effectiveGroup && (isEditingGroups || hasConfiguredAccounts)"
       v-model="groupAccounts"
       item-key="id"
       handle=".bs-drag-handle"
@@ -279,9 +283,77 @@
       </template>
     </Draggable>
 
-    <div v-if="effectiveGroup && !groupAccounts.length" class="bs-empty">
-      No accounts to display
+    <div v-else-if="fallbackAccounts.length" class="bs-fallback">
+      <p class="bs-fallback-note">
+        {{
+          offlineMode
+            ? 'Showing your top accounts while local changes sync back online.'
+            : 'No accounts configured yet — displaying your highest balances by default.'
+        }}
+      </p>
+      <ul class="bs-list bs-list--static">
+        <li
+          v-for="account in fallbackAccounts"
+          :key="accountId(account)"
+          class="bs-account-container"
+        >
+          <div
+            class="bs-row bs-row--static"
+            :style="{ '--accent': accentColor(account) }"
+            @click="toggleDetails(accountId(account), $event)"
+            role="button"
+            tabindex="0"
+            @keydown.enter.prevent="toggleDetails(accountId(account), $event)"
+            @keydown.space.prevent="toggleDetails(accountId(account), $event)"
+          >
+            <div class="bs-static-spacer" aria-hidden="true"></div>
+            <div class="bs-stripe"></div>
+            <div class="bs-logo-container">
+              <img
+                v-if="account.institution_icon_url"
+                :src="account.institution_icon_url"
+                alt="Bank logo"
+                class="bs-logo"
+                loading="lazy"
+              />
+              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
+            </div>
+            <div class="bs-details">
+              <div class="bs-name">{{ account.name }}</div>
+              <div class="bs-mask">
+                <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
+                <span v-else class="bs-no-mask-icon" role="img" aria-label="Account number unavailable">∗</span>
+              </div>
+            </div>
+            <div class="bs-sparkline">
+              <AccountSparkline :account-id="accountId(account)" />
+            </div>
+            <div class="bs-amount-section">
+              <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+            </div>
+          </div>
+          <div v-if="openAccountId === accountId(account)" class="bs-details-row">
+            <div class="bs-details-content">
+              <ul class="bs-details-list">
+                <li
+                  v-for="tx in recentTxs[accountId(account)]"
+                  :key="tx.transaction_id || tx.id"
+                  class="bs-tx-row"
+                >
+                  <span class="bs-tx-date">{{ formatShortDate(tx.date || tx.transaction_date || '') }}</span>
+                  <span class="bs-tx-name">{{ tx.merchant_name || tx.name || tx.description }}</span>
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{ format(tx.amount) }}</span>
+                </li>
+                <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
+                  No recent transactions
+                </li>
+              </ul>
+            </div>
+          </div>
+        </li>
+      </ul>
     </div>
+    <div v-else class="bs-empty">No accounts to display</div>
   </div>
 </template>
 
@@ -346,6 +418,7 @@ const {
   addAccountToGroup,
   removeAccountFromGroup,
   syncGroupAccounts,
+  offlineMode,
 } = useAccountGroups()
 
 // Details dropdown state
@@ -386,6 +459,11 @@ const editingGroupId = ref(null)
 // Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
 const isEditingGroups = ref(props.isEditingGroups)
+const groupDropdownClasses = computed(() => ({
+  'bs-group-btn': true,
+  'gradient-toggle-btn': true,
+  'is-active': showGroupMenu.value || isEditingGroups.value,
+}))
 watch(
   () => props.isEditingGroups,
   (val) => {
@@ -557,26 +635,42 @@ function persistGroupOrder() {
 }
 
 const emit = defineEmits(['update:isEditingGroups'])
-function toggleEditGroups() {
-  isEditingGroups.value = !isEditingGroups.value
-  emit('update:isEditingGroups', isEditingGroups.value)
-  // Clean up transient UI when toggling mode
-  if (!isEditingGroups.value) {
-    editingGroupId.value = null
-    showAccountSelector.value = false
+
+/**
+ * Reset transient editing UI state including focused group/tab inputs
+ * and any pending account selector choices.
+ */
+function resetEditingUi() {
+  editingGroupId.value = null
+  showAccountSelector.value = false
+  selectedAccountId.value = ''
+}
+
+function toggleEditGroups(force) {
+  const nextState = typeof force === 'boolean' ? force : !isEditingGroups.value
+  if (!nextState) {
+    resetEditingUi()
+  }
+  if (isEditingGroups.value !== nextState) {
+    isEditingGroups.value = nextState
+    emit('update:isEditingGroups', nextState)
   }
   showGroupMenu.value = false
 }
 
-function finishEditingSession() {
-  if (!isEditingGroups.value) return
+function finishEditingSession(event) {
+  if (event?.preventDefault) {
+    event.preventDefault()
+  }
+  if (!isEditingGroups.value) {
+    showGroupMenu.value = false
+    event?.currentTarget?.blur?.()
+    return
+  }
   persistGroupOrder()
   persistAccountOrder()
-  isEditingGroups.value = false
-  emit('update:isEditingGroups', false)
-  editingGroupId.value = null
-  showAccountSelector.value = false
-  showGroupMenu.value = false
+  toggleEditGroups(false)
+  event?.currentTarget?.blur?.()
 }
 
 /** Enable editing for a group tab */
@@ -618,6 +712,13 @@ const availableAccounts = computed(() => {
       return aLabel.localeCompare(bLabel)
     })
 })
+/** Default preview accounts rendered when the user has not yet configured a group. */
+const fallbackAccounts = computed(() => {
+  if (groupAccounts.value.length) return []
+  const normalized = normalizeAccounts(allAccounts.value)
+  return normalized.slice(0, MAX_ACCOUNTS_PER_GROUP)
+})
+const hasConfiguredAccounts = computed(() => groupAccounts.value.length > 0)
 const showAccountSelector = ref(false)
 const selectedAccountId = ref('')
 
@@ -1077,12 +1178,6 @@ defineExpose({
   border-top: 1px solid var(--accent);
 }
 
-/* Selected group styling */
-.bs-group-item-active {
-  background: var(--accent);
-  color: var(--color-bg-dark);
-}
-
 .bs-group-item {
   padding: 0.4rem 0.8rem;
   background: transparent;
@@ -1093,18 +1188,25 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 0.4rem;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .bs-group-item:hover,
-.bs-group-item:focus-visible {
+.bs-group-item:focus-visible,
+.bs-group-item.is-active,
+.bs-group-item-active {
   background: var(--accent);
   color: var(--color-bg-dark);
 }
 
+.bs-group-item.is-active,
 .bs-group-item-active {
   font-weight: 600;
-  background: var(--color-bg-dark);
-  border-left: 3px solid var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.bs-group-item:active {
+  transform: translateY(1px);
 }
 
 .bs-group-check {
@@ -1146,6 +1248,14 @@ defineExpose({
   list-style: none;
 }
 
+.bs-list--static {
+  pointer-events: none;
+}
+
+.bs-list--static .bs-row--static {
+  pointer-events: auto;
+}
+
 .bs-row {
   display: grid;
   grid-template-columns: auto auto 1fr auto auto;
@@ -1163,6 +1273,15 @@ defineExpose({
   overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.bs-row--static {
+  cursor: pointer;
+}
+
+.bs-static-spacer {
+  width: 1rem;
+  height: 1rem;
 }
 
 .bs-row:hover {
@@ -1335,6 +1454,19 @@ defineExpose({
   padding: 1.2rem 0 0.7rem 0;
   text-align: center;
   font-size: 1.01rem;
+}
+
+.bs-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.bs-fallback-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  text-align: left;
 }
 
 .bs-summary-row {
