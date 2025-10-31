@@ -71,6 +71,8 @@
   - **Acceptance criteria:** No custom CSS, all styling uses Tailwind classes, theme variables applied
 - [ ] **Display comprehensive account information** - Show account name, type, balance, etc.
   - **Acceptance criteria:** All relevant account data displayed, formatted consistently with accounting standards
+- [x] **Show default accounts when no group is configured** - Prevent the snapshot widget from rendering empty states on first load or while offline.
+  - **Acceptance criteria:** `frontend/src/components/widgets/TopAccountSnapshot.vue` renders a fallback list sourced from the top accounts composable, honours offline persistence from `useAccountGroups`, and keeps editing flows intact.
 
 ### Daily Net Income Chart [DNC]
 
@@ -82,6 +84,8 @@
   - **Acceptance criteria:** Chart maintains aspect ratio and readability across all breakpoints
 - [ ] **Add loading and error states** - Proper data state management
   - **Acceptance criteria:** Loading skeleton displays, error states show retry options
+- [x] **Expose aggregate stats inside chart details** - Provide immediate context for the toggle controls.
+  - **Acceptance criteria:** `frontend/src/components/charts/ChartDetailsSidebar.vue` displays computed daily averages and 7/30-day trendlines fed by the active `DailyNetChart` data and the `Dashboard` summary props.
 
 ### Spending by Category Chart [CBC]
 
