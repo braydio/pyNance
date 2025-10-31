@@ -36,19 +36,22 @@ PLAID_TOKENS = FILES["PLAID_TOKENS"]
 def load_plaid_tokens():
     """Load Plaid tokens from the designated JSON file."""
     try:
-        logger.debug(f"Loading Plaid tokens from {PLAID_TOKENS}")
+        logger.debug("Loading Plaid tokens from %s", PLAID_TOKENS)
         with open(PLAID_TOKENS, "r") as f:
             tokens = json.load(f)
-        logger.debug(f"Loaded Plaid tokens: {tokens}")
+        logger.debug("Loaded Plaid tokens: %s", tokens)
         return tokens
     except FileNotFoundError:
         logger.warning(
-            f"Tokens file not found at {PLAID_TOKENS}, returning empty list."
+            "Tokens file not found at %s, returning empty list.",
+            PLAID_TOKENS,
         )
         return []
     except json.JSONDecodeError as e:
         logger.error(
-            f"Error decoding tokens file at {PLAID_TOKENS}: {e}",
+            "Error decoding tokens file at %s: %s",
+            PLAID_TOKENS,
+            e,
             exc_info=True,
         )
         return []
@@ -57,25 +60,30 @@ def load_plaid_tokens():
 def save_plaid_tokens(tokens):
     """Save Plaid tokens to the designated JSON file."""
     try:
-        logger.debug(f"Saving Plaid tokens to {PLAID_TOKENS}: {tokens}")
+        logger.debug("Saving Plaid tokens to %s: %s", PLAID_TOKENS, tokens)
         with open(PLAID_TOKENS, "w") as f:
             json.dump(tokens, f, indent=4)
         logger.debug("Plaid tokens saved successfully.")
     except Exception as e:
-        logger.error(f"Error saving tokens to {PLAID_TOKENS}: {e}", exc_info=True)
+        logger.error(
+            "Error saving tokens to %s: %s",
+            PLAID_TOKENS,
+            e,
+            exc_info=True,
+        )
 
 
 def save_transactions_json(transactions):
     try:
         with open(LAST_TRANSACTIONS, "w") as f:
             json.dump(transactions, f, indent=4, default=str)
-        logger.debug(f"Saved transactions to {LAST_TRANSACTIONS}.")
+        logger.debug("Saved transactions to %s.", LAST_TRANSACTIONS)
     except Exception as e:
-        logger.error(f"Failed to save transactions: {e}", exc_info=True)
+        logger.error("Failed to save transactions: %s", e, exc_info=True)
 
 
 def get_accounts(access_token: str, user_id: str):
-    logger.debug(f"Fetching accounts for token {access_token[:4]}...")
+    logger.debug("Fetching accounts for token %s...", access_token[:4])
 
     if not user_id:
         logger.error("Missing user_id in get_accounts() — aborting.")
@@ -91,7 +99,7 @@ def get_accounts(access_token: str, user_id: str):
                 logger.warning(
                     "[WARN] Missing user_id while syncing account_id=%s", acct
                 )
-            logger.debug(f"Passing along user id {user_id} from plaid_helpers")
+            logger.debug("Passing along user id %s from plaid_helpers", user_id)
             account_id = acct.account_id
             balance = acct.balances.available or acct.balances.current
             if account_id and balance is not None:
@@ -101,11 +109,15 @@ def get_accounts(access_token: str, user_id: str):
                     balance=balance,
                 )
 
-        logger.info(f"Synced {len(accounts)} Plaid accounts for user {user_id}.")
+        logger.info(
+            "Synced %d Plaid accounts for user %s.",
+            len(accounts),
+            user_id,
+        )
         return accounts
 
     except Exception as e:
-        logger.error(f"Error syncing accounts: {e}", exc_info=True)
+        logger.error("Error syncing accounts: %s", e, exc_info=True)
         raise
 
 
@@ -115,14 +127,18 @@ def get_item(access_token: str):
         response = plaid_client.item_get(plaid_request)
         return response.item
     except Exception as e:
-        logger.error(f"Error getting item: {e}", exc_info=True)
+        logger.error("Error getting item: %s", e, exc_info=True)
         raise
 
 
 def generate_link_token(user_id: str, products=None):
     if products is None:
         products = ["transactions"]
-    logger.debug(f"Generating link token with user_id={user_id}, products={products}")
+    logger.debug(
+        "Generating link token with user_id=%s, products=%s",
+        user_id,
+        products,
+    )
 
     try:
         product_enums = [Products(p) for p in products]
@@ -147,12 +163,12 @@ def generate_link_token(user_id: str, products=None):
         return response.link_token
 
     except Exception as e:
-        logger.error(f"Error generating link token: {e}", exc_info=True)
+        logger.error("Error generating link token: %s", e, exc_info=True)
         raise
 
 
 def exchange_public_token(public_token: str):
-    logger.debug(f"Exchanging public token: {public_token}")
+    logger.debug("Exchanging public token: %s", public_token)
 
     try:
         plaid_request = ItemPublicTokenExchangeRequest(public_token=public_token)
@@ -161,11 +177,11 @@ def exchange_public_token(public_token: str):
         access_token = response.access_token
         item_id = response.item_id
 
-        logger.info(f"Successfully exchanged token. Item ID: {item_id}")
+        logger.info("Successfully exchanged token. Item ID: %s", item_id)
         return {"access_token": access_token, "item_id": item_id}
 
     except Exception as e:
-        logger.error(f"Error exchanging public token: {e}", exc_info=True)
+        logger.error("Error exchanging public token: %s", e, exc_info=True)
         raise
 
 
@@ -175,7 +191,7 @@ def remove_item(access_token: str) -> None:
         plaid_request = ItemRemoveRequest(access_token=access_token)
         plaid_client.item_remove(plaid_request)
     except Exception as e:
-        logger.error(f"Error removing Plaid item: {e}", exc_info=True)
+        logger.error("Error removing Plaid item: %s", e, exc_info=True)
         raise
 
 
@@ -187,7 +203,11 @@ def get_institution_name(institution_id: str):
         response = plaid_client.institutions_get_by_id(plaid_request)
         return response.institution.name
     except Exception as e:
-        logger.warning(f"Failed to fetch institution name for {institution_id}: {e}")
+        logger.warning(
+            "Failed to fetch institution name for %s: %s",
+            institution_id,
+            e,
+        )
         return institution_id  # fallback
 
 
@@ -233,7 +253,7 @@ def get_transactions(access_token: str, start_date: str, end_date: str):
         save_transactions_json(all_transactions)
         return all_transactions
     except Exception as e:
-        logger.error(f"Error fetching transactions: {e}", exc_info=True)
+        logger.error("Error fetching transactions: %s", e, exc_info=True)
         raise
 
 
@@ -264,7 +284,7 @@ def get_investments(access_token: str):
         response = plaid_client.investments_holdings_get(plaid_request)
         return response.to_dict()
     except Exception as e:
-        logger.error(f"Error fetching investments: {e}", exc_info=True)
+        logger.error("Error fetching investments: %s", e, exc_info=True)
         raise
 
 
@@ -319,5 +339,5 @@ def get_investment_transactions(access_token: str, start_date, end_date):
             offset += len(batch)
         return all_txs
     except Exception as e:
-        logger.error(f"Error fetching investment transactions: {e}", exc_info=True)
+        logger.error("Error fetching investment transactions: %s", e, exc_info=True)
         raise

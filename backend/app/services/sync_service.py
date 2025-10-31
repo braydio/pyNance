@@ -42,7 +42,11 @@ def sync_account(account: Account) -> None:
         return
 
     try:
-        logger.info(f"[SYNC] Plaid sync start: account={account.id}, user={user_id}")
+        logger.info(
+            "[SYNC] Plaid sync start: account=%s, user=%s",
+            account.id,
+            user_id,
+        )
         get_plaid_accounts(access_token, user_id)
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.error(

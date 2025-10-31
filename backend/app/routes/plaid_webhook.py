@@ -175,7 +175,7 @@ def handle_plaid_webhook():
         db.session.commit()
     except Exception as e:
         db.session.rollback()
-        logger.warning(f"Failed to store Plaid webhook log: {e}")
+        logger.warning("Failed to store Plaid webhook log: %s", e)
 
     # Banking transactions delta webhook
     if webhook_type == "TRANSACTIONS" and webhook_code in (
@@ -256,7 +256,7 @@ def handle_plaid_webhook():
                         commit_err,
                     )
             except Exception as e:
-                logger.error(f"Sync failed for account {pa.account_id}: {e}")
+                logger.error("Sync failed for account %s: %s", pa.account_id, e)
                 db.session.rollback()
                 failure_count += 1
                 webhook_metrics.increment("failure", webhook_code)
@@ -297,7 +297,9 @@ def handle_plaid_webhook():
                 triggered.append({"account_id": pa.account_id, "investment_txs": count})
             except Exception as e:
                 logger.error(
-                    f"Investments tx refresh failed for account {pa.account_id}: {e}"
+                    "Investments tx refresh failed for account %s: %s",
+                    pa.account_id,
+                    e,
                 )
         return jsonify({"status": "ok", "triggered": triggered}), 200
 
@@ -319,7 +321,9 @@ def handle_plaid_webhook():
                 triggered.append({"account_id": pa.account_id, **sums})
             except Exception as e:
                 logger.error(
-                    f"Investments holdings refresh failed for account {pa.account_id}: {e}"
+                    "Investments holdings refresh failed for account %s: %s",
+                    pa.account_id,
+                    e,
                 )
         return jsonify({"status": "ok", "triggered": triggered}), 200
 

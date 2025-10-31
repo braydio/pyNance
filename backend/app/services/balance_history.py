@@ -50,7 +50,10 @@ def calculate_daily_balances(
     """Calculate daily balances by working backwards from current balance."""
 
     logger.info(
-        f"Calculating balances for {account_id} from {start_date} to {end_date}"
+        "Calculating balances for %s from %s to %s",
+        account_id,
+        start_date,
+        end_date,
     )
 
     tx_rows = (
@@ -83,7 +86,9 @@ def calculate_daily_balances(
         current_date -= timedelta(days=1)
 
     balance_records.reverse()
-    logger.info(f"Calculated {len(balance_records)} daily balance records")
+    logger.info(
+        "Calculated %d daily balance records", len(balance_records)
+    )
     return balance_records
 
 
@@ -92,7 +97,9 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
 
     account = resolve_account_by_any_id(account_id)
     if not account:
-        logger.warning(f"Balance history: account {account_id} not found (skipping)")
+        logger.warning(
+            "Balance history: account %s not found (skipping)", account_id
+        )
         return 0
 
     if not balance_records:
@@ -138,13 +145,17 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
         db.session.commit()
         total_processed = stored_count + updated_count
         logger.info(
-            f"Processed {total_processed} balance history records for {account_id} ({stored_count} new, {updated_count} updated)"
+            "Processed %d balance history records for %s (%d new, %d updated)",
+            total_processed,
+            account_id,
+            stored_count,
+            updated_count,
         )
         return total_processed
 
     except Exception as e:
         db.session.rollback()
-        logger.error(f"Failed to store balance history: {e}")
+        logger.error("Failed to store balance history: %s", e)
         return 0
 
 
@@ -157,7 +168,7 @@ def update_account_balance_history(
         account = resolve_account_by_any_id(account_id)
         if not account:
             logger.warning(
-                f"Balance history: account {account_id} not found (skipping)"
+                "Balance history: account %s not found (skipping)", account_id
             )
             return False
 
@@ -176,7 +187,9 @@ def update_account_balance_history(
                     latest_date = latest_date.date()
                 days_old = (datetime.now().date() - latest_date).days
                 if days_old <= 1:
-                    logger.info(f"Balance history for {lookup_key} is up to date")
+                    logger.info(
+                        "Balance history for %s is up to date", lookup_key
+                    )
                     return True
 
         end_date = datetime.now(timezone.utc).date()
@@ -185,10 +198,17 @@ def update_account_balance_history(
         current_balance = normalize_account_balance(account.balance, account.type)
 
         logger.info(
-            f"Updating balance history for {account.name} ({account.id}/{account.account_id}) from {start_date} to {end_date}"
+            "Updating balance history for %s (%s/%s) from %s to %s",
+            account.name,
+            account.id,
+            account.account_id,
+            start_date,
+            end_date,
         )
         logger.info(
-            f"Current balance: {account.balance} -> normalized: {current_balance}"
+            "Current balance: %s -> normalized: %s",
+            account.balance,
+            current_balance,
         )
 
         balance_records = calculate_daily_balances(
@@ -196,20 +216,22 @@ def update_account_balance_history(
         )
 
         if not balance_records:
-            logger.warning(f"No balance records calculated for {account_id}")
+            logger.warning("No balance records calculated for %s", account_id)
             return False
 
         stored_count = store_balance_history(account_id, balance_records)
 
         if stored_count > 0:
-            logger.info(f"Successfully updated balance history for {account_id}")
+            logger.info(
+                "Successfully updated balance history for %s", account_id
+            )
             return True
-        logger.error(f"Failed to store balance history for {account_id}")
+        logger.error("Failed to store balance history for %s", account_id)
         return False
 
     except Exception as e:
         logger.error(
-            f"Error updating balance history for {account_id}: {e}", exc_info=True
+            "Error updating balance history for %s: %s", account_id, e, exc_info=True
         )
         return False
 
@@ -219,7 +241,9 @@ def get_balance_history_from_db(account_id: str, days: int = 30) -> List[Dict]:
 
     account = resolve_account_by_any_id(account_id)
     if not account:
-        logger.warning(f"Balance history: account {account_id} not found for retrieval")
+        logger.warning(
+            "Balance history: account %s not found for retrieval", account_id
+        )
         return []
 
     lookup_key = account.account_id

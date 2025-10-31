@@ -154,9 +154,9 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
                     f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}"
                 )
             except Exception as e:
-                logger.error(f"Sync failed for item {pa.item_id}: {e}")
+                logger.error("Sync failed for item %s: %s", pa.item_id, e)
                 click.echo(f"ERR {pa.item_id}: {e}")
         click.echo(f"Completed. Items={len(seen)} updated_accounts={updates}")
     except Exception as e:
-        logger.error(f"sync-plaid-tx error: {e}")
+        logger.error("sync-plaid-tx error: %s", e)
         click.echo(str(e))

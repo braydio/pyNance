@@ -242,7 +242,7 @@ def get_cash_flow():
         )
 
     except Exception as e:
-        logger.error(f"Error in cash flow: {e}", exc_info=True)
+        logger.error("Error in cash flow: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -335,7 +335,9 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     else:
         end_date = datetime.now().date()
 
-    logger.info(f"[daily_net] start_date={start_date}, end_date={end_date}")
+    logger.info(
+        "[daily_net] start_date=%s, end_date=%s", start_date, end_date
+    )
 
     transactions = (
         db.session.query(Transaction)
@@ -347,7 +349,10 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         .all()
     )
 
-    logger.info(f"[daily_net] Transaction count in date range: {len(transactions)}")
+    logger.info(
+        "[daily_net] Transaction count in date range: %d",
+        len(transactions),
+    )
 
     day_map: Dict[str, Dict[str, Any]] = defaultdict(
         lambda: {
@@ -399,7 +404,7 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
             }
         )
 
-    logger.info(f"[daily_net] Returning {len(data)} day buckets")
+    logger.info("[daily_net] Returning %d day buckets", len(data))
     # Return a consistent payload for frontend consumption
     return jsonify({"status": "success", "data": data}), 200
 
@@ -486,7 +491,7 @@ def forecast_route():
             200,
         )
     except Exception as e:
-        logger.error(f"Error generating forecast: {e}", exc_info=True)
+        logger.error("Error generating forecast: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

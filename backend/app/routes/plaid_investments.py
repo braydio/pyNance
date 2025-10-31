@@ -28,7 +28,7 @@ def generate_link_token_investments():
         token = generate_link_token(user_id, products=["investments"])
         return jsonify({"status": "success", "link_token": token}), 200
     except Exception as e:
-        logger.error(f"Error generating investments link token: {e}", exc_info=True)
+        logger.error("Error generating investments link token: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -76,7 +76,7 @@ def exchange_public_token_investments():
                 )
             db.session.commit()
         except Exception as e:
-            logger.error(f"Failed to upsert PlaidItem for investments: {e}")
+            logger.error("Failed to upsert PlaidItem for investments: %s", e)
         # Save initial investments data (if you have specific logic, call it here)
         # e.g., account_logic.save_investments_data(user_id, access_token)
         return (
@@ -89,7 +89,9 @@ def exchange_public_token_investments():
             200,
         )
     except Exception as e:
-        logger.error(f"Error exchanging investments public token: {e}", exc_info=True)
+        logger.error(
+            "Error exchanging investments public token: %s", e, exc_info=True
+        )
         return jsonify({"error": str(e)}), 500
 
 
@@ -135,7 +137,7 @@ def refresh_investments_endpoint():
             200,
         )
     except Exception as e:
-        logger.error(f"Error refreshing investments: {e}", exc_info=True)
+        logger.error("Error refreshing investments: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -172,12 +174,14 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 logger.error(
-                    f"Failed to refresh investments for item {pa.item_id}: {inner}"
+                    "Failed to refresh investments for item %s: %s",
+                    pa.item_id,
+                    inner,
                 )
                 continue
 
@@ -192,5 +196,5 @@ def refresh_all_investments():
             200,
         )
     except Exception as e:
-        logger.error(f"Error in refresh_all_investments: {e}", exc_info=True)
+        logger.error("Error in refresh_all_investments: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500

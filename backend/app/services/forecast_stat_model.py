@@ -28,5 +28,5 @@ class ForecastEngine:
         self.fit(train)
         preds = self.forecast(steps)
         mse = mean_squared_error(test, preds)
-        logger.info(f"ARIMA Evaluation MSE: {mse}")
+        logger.info("ARIMA Evaluation MSE: %s", mse)
         return mse

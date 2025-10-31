@@ -58,7 +58,7 @@ def update_recurring_tx(account_id):
                 else date.today() + timedelta(days=30)
             )
         except Exception as e:
-            logger.warning(f"Invalid date format for 'next_due_date': {e}")
+            logger.warning("Invalid date format for 'next_due_date': %s", e)
             next_due_date = date.today() + timedelta(days=30)
 
         existing = RecurringTransaction.query.filter_by(
@@ -88,7 +88,7 @@ def update_recurring_tx(account_id):
         )
 
     except Exception as e:
-        logger.error(f"Error saving recurring transaction: {e}", exc_info=True)
+        logger.error("Error saving recurring transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -129,7 +129,7 @@ def delete_recurring_tx(account_id):
         return jsonify({"status": "success", "message": "Recurring rule deleted."}), 200
 
     except Exception as e:
-        logger.error(f"Failed to delete recurring transaction: {e}", exc_info=True)
+        logger.error("Failed to delete recurring transaction: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 
@@ -166,7 +166,10 @@ def scan_account_for_recurring(account_id):
         return get_structured_recurring(account_id)
     except Exception as e:
         logger.error(
-            f"Error scanning account {account_id} for recurring: {e}", exc_info=True
+            "Error scanning account %s for recurring: %s",
+            account_id,
+            e,
+            exc_info=True,
         )
         return jsonify({"status": "error", "message": str(e)}), 500
 
@@ -245,6 +248,8 @@ def get_structured_recurring(account_id):
 
     except Exception as e:
         logger.error(
-            f"Error fetching structured recurring transactions: {e}", exc_info=True
+            "Error fetching structured recurring transactions: %s",
+            e,
+            exc_info=True,
         )
         return jsonify({"status": "error", "message": str(e)}), 500

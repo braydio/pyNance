@@ -13,10 +13,7 @@ from app.config import logger, plaid_client
 from app.extensions import db
 from app.models import Account, Category, PlaidAccount, Transaction
 from app.sql import transaction_rules_logic
-from app.sql.account_logic import (
-    detect_internal_transfer,
-    get_or_create_category,
-)
+from app.sql.account_logic import detect_internal_transfer, get_or_create_category
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 
 try:
@@ -38,7 +35,10 @@ def _parse_txn_date(val) -> datetime:
         return datetime.combine(d, datetime.min.time(), tzinfo=timezone.utc)
     except Exception:
         # Fallback to now to avoid crashing sync; log upstream parse issues
-        logger.warning(f"[SYNC] Unexpected date format: {val!r}; defaulting to now()")
+        logger.warning(
+            "[SYNC] Unexpected date format: %r; defaulting to now()",
+            val,
+        )
         return datetime.now(timezone.utc)
 
 
@@ -216,7 +216,7 @@ def sync_account_transactions(account_id: str) -> Dict:
             db.session.commit()
         except Exception as e:
             db.session.rollback()
-            logger.error(f"[SYNC] Failed applying batch for {account_id}: {e}")
+            logger.error("[SYNC] Failed applying batch for %s: %s", account_id, e)
             raise
 
         total_added += len(added)
@@ -239,7 +239,11 @@ def sync_account_transactions(account_id: str) -> Dict:
     db.session.commit()
 
     logger.info(
-        f"[SYNC] account={account_id} added={total_added} modified={total_modified} removed={total_removed}"
+        "[SYNC] account=%s added=%d modified=%d removed=%d",
+        account_id,
+        total_added,
+        total_modified,
+        total_removed,
     )
     return {
         "account_id": account_id,
