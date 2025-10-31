@@ -56,9 +56,7 @@ def update_single_account_balance_history(account_id: str):
     Returns:
         bool: True if successful, False otherwise
     """
-    logger.info(
-        "Starting background task: update balance history for %s", account_id
-    )
+    logger.info("Starting background task: update balance history for %s", account_id)
 
     try:
         from app.services.balance_history import update_account_balance_history
@@ -66,9 +64,7 @@ def update_single_account_balance_history(account_id: str):
         success = update_account_balance_history(account_id, days=90, force_update=True)
 
         if success:
-            logger.info(
-                "Successfully updated balance history for %s", account_id
-            )
+            logger.info("Successfully updated balance history for %s", account_id)
         else:
             logger.warning("Failed to update balance history for %s", account_id)
 

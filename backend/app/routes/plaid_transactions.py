@@ -126,9 +126,7 @@ def exchange_public_token_endpoint():
         item_info = get_item(access_token)
         institution_id = item_info.get("institution_id", "Unknown")
         institution_name = get_institution_name(institution_id)
-        logger.debug(
-            "Institution ID: %s, Name: %s", institution_id, institution_name
-        )
+        logger.debug("Institution ID: %s, Name: %s", institution_id, institution_name)
 
         accounts = get_accounts(access_token, user_id)
         logger.debug("Retrieved %d accounts from Plaid", len(accounts))
@@ -170,9 +168,7 @@ def exchange_public_token_endpoint():
 
             exists = PlaidAccount.query.filter_by(account_id=account_id).first()
             if exists:
-                logger.debug(
-                    "PlaidAccount already exists for %s", account_id
-                )
+                logger.debug("PlaidAccount already exists for %s", account_id)
                 continue
 
             new_plaid_account = PlaidAccount(
@@ -199,9 +195,7 @@ def exchange_public_token_endpoint():
         account_logic.upsert_accounts(
             user_id, accounts, provider="plaid", access_token=access_token
         )
-        logger.info(
-            "Upserted %d accounts for user %s", len(accounts), user_id
-        )
+        logger.info("Upserted %d accounts for user %s", len(accounts), user_id)
 
         return (
             jsonify(
@@ -240,9 +234,7 @@ def delete_plaid_account():
 
         Account.query.filter_by(account_id=account_id).delete()
         db.session.commit()
-        logger.info(
-            "Deleted Plaid account %s and associated records", account_id
-        )
+        logger.info("Deleted Plaid account %s and associated records", account_id)
 
         return (
             jsonify(
@@ -326,16 +318,12 @@ def generate_update_link_token():
         # Resolve account robustly (handles both numeric IDs and external account_ids)
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(
-                "Account %s not found for update link token", account_id
-            )
+            logger.warning("Account %s not found for update link token", account_id)
             return jsonify({"status": "error", "message": "Account not found"}), 404
 
         # Check if account has Plaid integration
         if not account.plaid_account or not account.plaid_account.access_token:
-            logger.warning(
-                "Account %s missing Plaid access token", account.account_id
-            )
+            logger.warning("Account %s missing Plaid access token", account.account_id)
             return (
                 jsonify(
                     {

@@ -179,9 +179,7 @@ def refresh_all_accounts():
                     logger.warning("No Plaid token for %s", account.account_id)
                     continue
 
-                logger.debug(
-                    "Refreshing Plaid account %s", account.account_id
-                )
+                logger.debug("Refreshing Plaid account %s", account.account_id)
                 inst = account.institution_name or "Unknown"
                 products = _plaid_products_for_account(account)
                 account_updated = False
@@ -213,9 +211,9 @@ def refresh_all_accounts():
 
                                 if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key][
-                                        "update_link_token_endpoint"
-                                    ] = "/api/plaid/transactions/generate_update_link_token"
+                                    error_map[key]["update_link_token_endpoint"] = (
+                                        "/api/plaid/transactions/generate_update_link_token"
+                                    )
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]

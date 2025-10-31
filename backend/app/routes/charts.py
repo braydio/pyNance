@@ -335,9 +335,7 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     else:
         end_date = datetime.now().date()
 
-    logger.info(
-        "[daily_net] start_date=%s, end_date=%s", start_date, end_date
-    )
+    logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
 
     transactions = (
         db.session.query(Transaction)

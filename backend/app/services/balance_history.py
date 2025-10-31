@@ -86,9 +86,7 @@ def calculate_daily_balances(
         current_date -= timedelta(days=1)
 
     balance_records.reverse()
-    logger.info(
-        "Calculated %d daily balance records", len(balance_records)
-    )
+    logger.info("Calculated %d daily balance records", len(balance_records))
     return balance_records
 
 
@@ -97,9 +95,7 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
 
     account = resolve_account_by_any_id(account_id)
     if not account:
-        logger.warning(
-            "Balance history: account %s not found (skipping)", account_id
-        )
+        logger.warning("Balance history: account %s not found (skipping)", account_id)
         return 0
 
     if not balance_records:
@@ -187,9 +183,7 @@ def update_account_balance_history(
                     latest_date = latest_date.date()
                 days_old = (datetime.now().date() - latest_date).days
                 if days_old <= 1:
-                    logger.info(
-                        "Balance history for %s is up to date", lookup_key
-                    )
+                    logger.info("Balance history for %s is up to date", lookup_key)
                     return True
 
         end_date = datetime.now(timezone.utc).date()
@@ -222,9 +216,7 @@ def update_account_balance_history(
         stored_count = store_balance_history(account_id, balance_records)
 
         if stored_count > 0:
-            logger.info(
-                "Successfully updated balance history for %s", account_id
-            )
+            logger.info("Successfully updated balance history for %s", account_id)
             return True
         logger.error("Failed to store balance history for %s", account_id)
         return False

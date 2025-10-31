@@ -177,9 +177,7 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 or 0
             )
             balance = normalize_balance(balance_raw, acc_type)
-            logger.debug(
-                "[UPSERT] Balance parsed for %s: %s", account_id, balance
-            )
+            logger.debug("[UPSERT] Balance parsed for %s: %s", account_id, balance)
 
             subtype = str(account.get("subtype") or "Unknown").capitalize()
             status = normalize_account_status(account.get("status"))
@@ -532,9 +530,7 @@ def refresh_data_for_plaid_account(
     try:
         account = Account.query.filter_by(account_id=account_id).first()
         if not account:
-            logger.warning(
-                "[DB Lookup] No account found for account_id=%s", account_id
-            )
+            logger.warning("[DB Lookup] No account found for account_id=%s", account_id)
             return False
 
         # Refresh balance
