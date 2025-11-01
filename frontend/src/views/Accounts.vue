@@ -182,7 +182,7 @@
         </section>
       </template>
 
-      <template #Accounts>
+      <template #AccountDetails>
         <section class="space-y-8">
           <LinkedAccountsSection />
           <Card
@@ -252,8 +252,13 @@ const accountId = ref(route.params.accountId || 'acc1')
 const accountPrefs = useAccountPreferences()
 
 // Tabs
-const tabs = ['Summary', 'Transactions', 'Charts', 'Accounts']
-const activeTab = ref('Summary')
+const tabs = [
+  { label: 'Account Details', slot: 'AccountDetails' },
+  'Summary',
+  'Transactions',
+  'Charts',
+]
+const activeTab = ref('AccountDetails')
 
 // Refs
 const reorderChart = ref(null)
