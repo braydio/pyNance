@@ -63,8 +63,8 @@ const normalizedTabs = computed(() =>
       : {
           label: tab.label ?? tab.slot ?? '',
           slot: tab.slot ?? tab.label ?? '',
-        }
-  )
+        },
+  ),
 )
 
 const activeTab = computed({
