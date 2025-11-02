@@ -50,9 +50,7 @@ env_check = PLAID_ENV.upper()
 logger = setup_logger()
 
 if plaid_client:
-    logger.debug(
-        "Plaid client initialized for %s environment.", env_check
-    )
+    logger.debug("Plaid client initialized for %s environment.", env_check)
 
 logger.debug("Running in %s environment.", FLASK_ENV)
 logger.debug("Loaded config from %s", __name__)

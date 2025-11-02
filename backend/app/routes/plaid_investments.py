@@ -89,9 +89,7 @@ def exchange_public_token_investments():
             200,
         )
     except Exception as e:
-        logger.error(
-            "Error exchanging investments public token: %s", e, exc_info=True
-        )
+        logger.error("Error exchanging investments public token: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -174,9 +172,9 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total[
-                    "investment_transactions"
-                ] += investments_logic.upsert_investment_transactions(txs)
+                total["investment_transactions"] += (
+                    investments_logic.upsert_investment_transactions(txs)
+                )
             except Exception as inner:
                 logger.error(
                     "Failed to refresh investments for item %s: %s",
