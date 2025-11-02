@@ -5,14 +5,14 @@
       <div class="flex-1">
         <nav class="tabbed-nav" data-testid="tabbed-nav">
           <ul class="tabbed-nav__list">
-            <li v-for="tab in tabs" :key="tab">
+            <li v-for="tab in normalizedTabs" :key="tab.slot">
               <UiButton
-                :variant="activeTab === tab ? 'primary' : 'outline'"
+                :variant="activeTab === tab.slot ? 'primary' : 'outline'"
                 :pill="true"
                 class="tabbed-nav__button"
-                @click="selectTab(tab)"
+                @click="selectTab(tab.slot)"
               >
-                {{ tab }}
+                {{ tab.label }}
               </UiButton>
             </li>
           </ul>
@@ -34,7 +34,7 @@
  * Tab navigation buttons use the shared UiButton component for consistent theming.
  *
  * Props:
- * - tabs: array of tab labels displayed in navigation
+ * - tabs: array of tab labels or objects ({ label, slot }) displayed in navigation
  * - modelValue: currently active tab (used with v-model)
  */
 import { computed } from 'vue'
@@ -42,7 +42,7 @@ import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import UiButton from '@/components/ui/Button.vue'
 
 const props = defineProps({
-  /** Array of tab labels */
+  /** Array of tab labels or objects ({ label, slot }) */
   tabs: { type: Array, default: () => [] },
   /** Currently selected tab */
   modelValue: { type: String, default: '' },
@@ -52,13 +52,28 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 
+/**
+ * Normalize any provided tab definitions into a shared object shape so the
+ * layout can support both simple string labels and explicit slot mappings.
+ */
+const normalizedTabs = computed(() =>
+  props.tabs.map((tab) =>
+    typeof tab === 'string'
+      ? { label: tab, slot: tab }
+      : {
+          label: tab.label ?? tab.slot ?? '',
+          slot: tab.slot ?? tab.label ?? '',
+        },
+  ),
+)
+
 const activeTab = computed({
-  get: () => props.modelValue || props.tabs[0],
+  get: () => props.modelValue || normalizedTabs.value[0]?.slot || '',
   set: (val) => emit('update:modelValue', val),
 })
 
-function selectTab(tab) {
-  activeTab.value = tab
+function selectTab(tabSlot) {
+  activeTab.value = tabSlot
 }
 
 const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
