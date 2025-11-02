@@ -15,14 +15,15 @@ const sampleAccounts = [
 // Mock useTopAccounts to mimic a generic account fetch
 vi.mock('@/composables/useTopAccounts', () => {
   const fetchAccounts = vi.fn()
-  const allVisibleAccounts = ref([
+  const accounts = ref([
     { id: 'acc-1', name: 'Account 1', adjusted_balance: 1 },
     { id: 'acc-2', name: 'Account 2', adjusted_balance: 2 },
   ])
+  const allVisibleAccounts = ref(accounts.value)
   return {
     useTopAccounts: () => {
       fetchAccounts()
-      return { fetchAccounts, allVisibleAccounts }
+      return { fetchAccounts, accounts, allVisibleAccounts }
     },
   }
 })
@@ -195,6 +196,28 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.vm.$.exposed.isEditingGroups.value).toBe(false)
     const updates = wrapper.emitted()['update:isEditingGroups'] || []
     expect(updates.at(-1)).toEqual([false])
+  })
+
+  it('shows a visual editing indicator with highlighted inputs when edit mode is active', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const root = wrapper.get('.bank-statement-list')
+    expect(root.classes()).toContain('bs-editing')
+
+    const banner = wrapper.find('.bs-editing-banner')
+    expect(banner.exists()).toBe(true)
+    expect(banner.text()).toContain('Editing mode enabled')
+
+    const inlineInputs = wrapper.findAll('input.bs-tab-input')
+    expect(inlineInputs.length).toBeGreaterThan(0)
+    inlineInputs.forEach((input) => {
+      expect(input.element.classList.contains('bs-tab-input')).toBe(true)
+    })
   })
 
   it('truncates group names longer than 30 characters with ellipsis', async () => {
