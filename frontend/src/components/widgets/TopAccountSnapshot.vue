@@ -7,7 +7,28 @@
 
 <!-- TopAccountSnapshot.vue -->
 <template>
-  <div class="bank-statement-list bs-collapsible w-full h-full">
+  <div
+    class="bank-statement-list bs-collapsible w-full h-full"
+    :class="{ 'bs-editing': isEditingGroups }"
+    :style="{ '--accent': groupAccent }"
+  >
+    <Transition name="fade-in">
+      <div
+        v-if="isEditingGroups"
+        class="bs-editing-banner"
+        :style="{ '--accent': groupAccent }"
+        role="status"
+        aria-live="polite"
+      >
+        <span class="i-carbon-edit bs-editing-icon" aria-hidden="true"></span>
+        <div class="bs-editing-copy">
+          <p class="bs-editing-title">Editing mode enabled</p>
+          <p class="bs-editing-subtitle">
+            Drag to reorder, rename groups inline, and use the icons to remove accounts.
+          </p>
+        </div>
+      </div>
+    </Transition>
     <!-- Group Tabs -->
     <div class="bs-toggle-row">
       <div class="bs-tabs-scroll">
@@ -911,6 +932,150 @@ defineExpose({
   background: transparent;
   box-shadow: none;
   border: none;
+}
+
+.bs-editing {
+  box-sizing: border-box;
+  position: relative;
+  border-radius: 1.3rem;
+  padding: clamp(0.75rem, 1vw + 0.5rem, 1.2rem);
+  background: linear-gradient(135deg, rgba(12, 23, 52, 0.92), rgba(12, 23, 52, 0.78));
+  box-shadow:
+    0 24px 48px rgba(12, 23, 52, 0.28),
+    0 0 0 2px var(--accent, var(--color-accent-cyan));
+  transition: box-shadow 0.25s ease;
+}
+
+.bs-editing:hover {
+  box-shadow:
+    0 30px 60px rgba(12, 23, 52, 0.32),
+    0 0 0 2px var(--accent, var(--color-accent-cyan));
+}
+
+.bs-editing-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.1rem;
+  border-radius: 0.9rem;
+  border: 1.6px dashed var(--accent, var(--color-accent-cyan));
+  color: var(--accent, var(--color-accent-cyan));
+  background: linear-gradient(120deg, rgba(12, 23, 52, 0.92), rgba(12, 23, 52, 0.72));
+  box-shadow: 0 18px 36px rgba(12, 23, 52, 0.32);
+  overflow: hidden;
+}
+
+.bs-editing-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, var(--accent, var(--color-accent-cyan)) 0%, transparent 70%);
+  opacity: 0.18;
+  pointer-events: none;
+}
+
+.bs-editing-icon {
+  font-size: 1.6rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 4px 10px rgba(12, 23, 52, 0.4));
+}
+
+.bs-editing-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--color-text-light);
+}
+
+.bs-editing-title {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-size: 0.9rem;
+}
+
+.bs-editing-subtitle {
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0.85;
+  max-width: 32rem;
+}
+
+.bs-editing .bs-tab {
+  border-style: dashed;
+  border-color: var(--accent, var(--color-accent-cyan));
+  background: rgba(12, 23, 52, 0.82);
+  color: var(--accent, var(--color-accent-cyan));
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 12px 26px rgba(12, 23, 52, 0.35);
+}
+
+.dark .bs-editing .bs-tab {
+  background: rgba(12, 23, 52, 0.55);
+}
+
+.bs-editing .bs-tab-add {
+  font-weight: 700;
+}
+
+.bs-editing .bs-tab-input {
+  background: transparent;
+  color: var(--accent, var(--color-accent-cyan));
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.bs-editing .bs-tab-input::placeholder {
+  color: var(--accent, var(--color-accent-cyan));
+  opacity: 0.55;
+}
+
+.bs-editing .bs-tab-input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent, var(--color-accent-cyan));
+  border-radius: 0.6rem;
+}
+
+.bs-editing .bs-tab-handle,
+.bs-editing .bs-tab-delete {
+  color: var(--accent, var(--color-accent-cyan));
+}
+
+.bs-editing .bs-tab-delete:hover,
+.bs-editing .bs-tab-delete:focus-visible {
+  color: var(--color-accent-red);
+}
+
+.bs-editing .bs-group-input {
+  background: rgba(12, 23, 52, 0.85);
+  border: 1.6px dashed var(--accent, var(--color-accent-cyan));
+  color: var(--accent, var(--color-accent-cyan));
+  box-shadow: 0 12px 26px rgba(12, 23, 52, 0.35);
+}
+
+.bs-editing .bs-group-item-active {
+  background: rgba(12, 23, 52, 0.85);
+  border-left: 3px solid var(--accent, var(--color-accent-cyan));
+}
+
+.bs-editing .bs-account-delete {
+  color: var(--accent, var(--color-accent-cyan));
+}
+
+.bs-editing .bs-row {
+  border-style: dashed;
+  box-shadow:
+    0 8px 24px rgba(12, 23, 52, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.bs-editing .bs-add-placeholder {
+  border-style: dashed;
+  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-toggle-row {
