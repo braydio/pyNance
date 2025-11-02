@@ -660,8 +660,9 @@ function finishEditingSession() {
   showGroupMenu.value = false
 }
 
-/** Enable editing for a group tab */
+/** Enable editing for a group tab when editing mode is active */
 function startEdit(id) {
+  if (!isEditingGroups.value) return
   editingGroupId.value = id
 }
 
@@ -670,6 +671,10 @@ function startEdit(id) {
  * Truncates names longer than MAX_GROUP_NAME_LENGTH characters (including ellipsis).
  */
 function finishEdit(group) {
+  if (!group) return
+  if (!isEditingGroups.value && editingGroupId.value !== group.id) {
+    return
+  }
   editingGroupId.value = null
   if (!group.name) {
     editingGroupId.value = group.id
