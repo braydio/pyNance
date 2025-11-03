@@ -422,7 +422,8 @@ function onLinked() {
   min-height: 100vh;
 }
 .section-nav {
-  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 55%),
+  background:
+    radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 55%),
     radial-gradient(circle at bottom right, rgba(225, 29, 72, 0.12), transparent 60%),
     var(--themed-bg);
   border: 1px solid var(--divider);
@@ -442,7 +443,9 @@ function onLinked() {
   letter-spacing: 0.01em;
   padding-inline: 1.15rem;
   padding-block: 0.6rem;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 .section-nav__button:hover {
   transform: translateY(-1px);
