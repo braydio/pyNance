@@ -1,9 +1,30 @@
 <!-- Investments.vue - Skeleton layout for the future Investments dashboard. -->
 <template>
   <BasePageLayout class="investments-view" gap="gap-8">
-    <h1 class="text-2xl font-bold">Investments</h1>
+    <PageHeader :icon="TrendingUp">
+      <template #title>Investments</template>
+      <template #subtitle>Monitor performance across your linked investment accounts</template>
+    </PageHeader>
 
-    <section>
+    <Card class="section-nav" aria-label="Investments page navigation">
+      <nav class="section-nav__buttons">
+        <button
+          v-for="item in sectionNavItems"
+          :key="item.key"
+          type="button"
+          :aria-controls="item.target"
+          :class="[
+            'section-nav__button gradient-toggle-btn',
+            { 'is-active': activeSection === item.key },
+          ]"
+          @click="scrollToSection(item.key)"
+        >
+          {{ item.label }}
+        </button>
+      </nav>
+    </Card>
+
+    <section ref="overviewSection" id="portfolio-overview">
       <h2 class="text-xl font-semibold mb-2">Portfolio Overview</h2>
       <div class="link-box">
         <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
@@ -38,7 +59,7 @@
       </div>
     </section>
 
-    <section>
+    <section ref="holdingsSection" id="holdings">
       <h2 class="text-xl font-semibold mb-2">Holdings</h2>
       <div class="filters">
         <label>
@@ -96,14 +117,14 @@
       </div>
     </section>
 
-    <section>
+    <section ref="performanceSection" id="performance">
       <h2 class="text-xl font-semibold mb-2">Performance</h2>
       <div class="perf-grid">
         <PortfolioAllocationChart :allocations="allocationByType" />
       </div>
     </section>
 
-    <section>
+    <section ref="transactionsSection" id="investment-transactions">
       <h2 class="text-xl font-semibold mb-2">Recent Investment Transactions</h2>
       <div class="filters">
         <label>
@@ -159,7 +180,9 @@
 
 <script setup>
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
-import { ref, onMounted, computed } from 'vue'
+import Card from '@/components/ui/Card.vue'
+import PageHeader from '@/components/ui/PageHeader.vue'
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import {
   fetchHoldings,
   refreshInvestmentsAll,
@@ -168,6 +191,7 @@ import {
 } from '@/api/investments'
 import PortfolioAllocationChart from '@/components/charts/PortfolioAllocationChart.vue'
 import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
+import { TrendingUp } from 'lucide-vue-next'
 
 // Core state
 const holdings = ref([])
@@ -179,6 +203,50 @@ const startDefault = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().
 const startDate = ref(startDefault)
 const endDate = ref(today)
 const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
+
+const sectionNavItems = [
+  { key: 'overview', label: 'Portfolio Overview', target: 'portfolio-overview' },
+  { key: 'holdings', label: 'Holdings', target: 'holdings' },
+  { key: 'performance', label: 'Performance', target: 'performance' },
+  { key: 'transactions', label: 'Transactions', target: 'investment-transactions' },
+]
+const activeSection = ref(sectionNavItems[0].key)
+const overviewSection = ref(null)
+const holdingsSection = ref(null)
+const performanceSection = ref(null)
+const transactionsSection = ref(null)
+const sectionRefs = {
+  overview: overviewSection,
+  holdings: holdingsSection,
+  performance: performanceSection,
+  transactions: transactionsSection,
+}
+
+function scrollToSection(key) {
+  activeSection.value = key
+  const section = sectionRefs[key]?.value
+  if (section) {
+    section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+}
+
+function handleScroll() {
+  const anchor = 120
+  let currentKey = sectionNavItems[0]?.key
+  for (const item of sectionNavItems) {
+    const section = sectionRefs[item.key]?.value
+    if (!section) continue
+    const rect = section.getBoundingClientRect()
+    if (rect.top - anchor <= 0) {
+      currentKey = item.key
+    } else {
+      break
+    }
+  }
+  if (currentKey) {
+    activeSection.value = currentKey
+  }
+}
 
 // Accounts and filters
 const accounts = ref([])
@@ -307,8 +375,14 @@ async function loadTransactions(page = 1) {
 }
 
 onMounted(async () => {
+  window.addEventListener('scroll', handleScroll, { passive: true })
   await Promise.all([load(), loadAccounts()])
   await loadTransactions(1)
+  handleScroll()
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('scroll', handleScroll)
 })
 
 // Refresh
@@ -346,6 +420,40 @@ function onLinked() {
   background-color: var(--page-bg);
   color: var(--theme-fg);
   min-height: 100vh;
+}
+.section-nav {
+  background: radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 55%),
+    radial-gradient(circle at bottom right, rgba(225, 29, 72, 0.12), transparent 60%),
+    var(--themed-bg);
+  border: 1px solid var(--divider);
+  border-radius: 1.25rem;
+  padding: 1rem 1.25rem;
+  box-shadow: 0 12px 30px -16px rgba(15, 118, 110, 0.45);
+}
+.section-nav__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.section-nav__button {
+  border-radius: 9999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding-inline: 1.15rem;
+  padding-block: 0.6rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.section-nav__button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -18px rgba(6, 182, 212, 0.85);
+}
+.section-nav__button.is-active {
+  box-shadow: 0 10px 24px -12px rgba(88, 28, 135, 0.55);
+}
+.section-nav__button:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
 }
 .overview-grid {
   display: grid;
