@@ -632,4 +632,67 @@ describe('TopAccountSnapshot', () => {
     expect(row.find('.bs-toggle-icon').classes()).not.toContain('bs-expanded')
     expect(focusSpy).toHaveBeenCalledTimes(3)
   })
+
+  it('updates the active group and closes the menu when selecting from the dropdown', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'credit', name: 'Credit', accounts: [] },
+          { id: 'depository', name: 'Depository', accounts: [] },
+        ],
+        activeGroupId: 'credit',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const toggle = wrapper.find('.bs-group-btn')
+    await toggle.trigger('click')
+    await nextTick()
+
+    const option = wrapper
+      .findAll('.bs-group-item')
+      .find((btn) => btn.text().trim() === 'Depository')
+    expect(option).toBeTruthy()
+
+    await option.trigger('click')
+    await nextTick()
+
+    expect(wrapper.vm.activeGroupId).toBe('depository')
+    expect(wrapper.find('.bs-group-menu').exists()).toBe(false)
+  })
+
+  it('closes the group dropdown when clicking outside the menu', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'credit', name: 'Credit', accounts: [] },
+          { id: 'depository', name: 'Depository', accounts: [] },
+        ],
+        activeGroupId: 'credit',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const toggle = wrapper.find('.bs-group-btn')
+    await toggle.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.bs-group-menu').exists()).toBe(true)
+
+    document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+
+    expect(wrapper.find('.bs-group-menu').exists()).toBe(false)
+  })
 })
