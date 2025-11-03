@@ -116,8 +116,10 @@
       </div>
 
       <!-- Group Dropdown -->
-      <div ref="dropdownRef" class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
+      <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button
+          ref="groupMenuButtonRef"
+          type="button"
           :class="groupDropdownClasses"
           @click="toggleGroupMenu"
           aria-label="Select account group"
@@ -125,7 +127,7 @@
           {{ effectiveGroup ? effectiveGroup.name : 'Select group' }} ▾
         </button>
         <Transition name="slide-down">
-          <ul v-if="showGroupMenu" class="bs-group-menu">
+          <ul v-if="showGroupMenu" ref="groupMenuRef" class="bs-group-menu">
             <li v-for="g in groups" :key="g.id">
               <template v-if="isEditingGroups">
                 <input
@@ -138,6 +140,7 @@
               </template>
               <template v-else>
                 <button
+                  type="button"
                   class="bs-group-item"
                   :class="{
                     'bs-group-item-active': g.id === activeGroupId,
@@ -153,6 +156,7 @@
             </li>
             <li v-if="!isEditingGroups">
               <button
+                type="button"
                 class="bs-group-item bs-group-action gradient-toggle-btn"
                 @click="toggleEditGroups"
                 aria-label="Edit account groups"
@@ -487,7 +491,8 @@ function toggleDetails(accountId, event) {
 }
 
 const showGroupMenu = ref(false)
-const dropdownRef = ref(null)
+const groupMenuRef = ref(null)
+const groupMenuButtonRef = ref(null)
 const editingGroupId = ref(null)
 // Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
@@ -564,10 +569,20 @@ onMounted(() => {
 })
 
 // Close group dropdown when clicking outside of it
+function containsTarget(el, target) {
+  if (!el || !target) return false
+  if (typeof Node !== 'undefined' && !(target instanceof Node)) {
+    return false
+  }
+  return typeof el.contains === 'function' && el.contains(target)
+}
+
 function onDocumentClick(e) {
   if (!showGroupMenu.value) return
-  const root = dropdownRef.value
-  if (root && !root.contains(e.target)) {
+  const target = e?.target ?? null
+  const insideButton = containsTarget(groupMenuButtonRef.value, target)
+  const insideMenu = containsTarget(groupMenuRef.value, target)
+  if (!insideButton && !insideMenu) {
     showGroupMenu.value = false
   }
 }
@@ -576,6 +591,7 @@ function onDocumentKeydown(e) {
   if (!showGroupMenu.value) return
   if (e.key === 'Escape' || e.key === 'Esc') {
     showGroupMenu.value = false
+    groupMenuButtonRef.value?.focus?.()
   }
 }
 
@@ -659,8 +675,11 @@ function toggleGroupMenu() {
 }
 
 function selectGroup(id) {
-  setActiveGroup(id)
+  if (id) {
+    setActiveGroup(id)
+  }
   showGroupMenu.value = false
+  groupMenuButtonRef.value?.focus?.()
 }
 
 function persistGroupOrder() {
