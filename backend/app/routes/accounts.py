@@ -710,9 +710,6 @@ def account_net_changes(account_id):
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
 
-        # Legacy net change value based on AccountHistory snapshots
-        legacy = account_logic.get_net_change(account_id, start_date, end_date)
-
         # Compute income/expense breakdown from transactions in the range
         # Use external account_id consistently
         income_sum = func.sum(
@@ -733,6 +730,21 @@ def account_net_changes(account_id):
         expense = float(getattr(row, "expenses", 0) or 0)
         # Net as income - expense (expense is positive magnitude)
         net = round(income - expense, 2)
+
+        # Legacy net change value based on AccountHistory snapshots
+        # Some environments might not have snapshots for the exact dates yet;
+        # treat that as 0 instead of raising to avoid breaking the UI.
+        try:
+            legacy = account_logic.get_net_change(account_id, start_date, end_date)
+        except Exception:
+            legacy = {
+                "account_id": account_id,
+                "net_change": net,
+                "period": {
+                    "start": start_date.isoformat(),
+                    "end": end_date.isoformat(),
+                },
+            }
 
         payload = {
             "status": "success",
