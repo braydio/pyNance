@@ -22,7 +22,9 @@
           />
         </svg>
       </span>
-      <span class="sr-only">{{ isOpen ? 'Collapse overlay options' : 'Expand overlay options' }}</span>
+      <span class="sr-only">{{
+        isOpen ? 'Collapse overlay options' : 'Expand overlay options'
+      }}</span>
     </button>
     <div
       v-show="isOpen"
