@@ -48,8 +48,6 @@
             v-model:show30-day="show30Day"
             v-model:show-avg-income="showAvgIncome"
             v-model:show-avg-expenses="showAvgExpenses"
-            :summary="netSummary"
-            :chart-data="chartData"
           />
           <div class="flex items-center justify-center mb-4">
             <h2 class="daily-net-chart-title">
