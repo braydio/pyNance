@@ -1,6 +1,6 @@
 # pyNance
 
-pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a SQLite database. It connects to financial institutions through Plaid to aggregate accounts and transactions.
+pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a PostgreSQL database managed through SQLAlchemy and Alembic. It connects to financial institutions through Plaid to aggregate accounts and transactions.
 
 ## Features
 
@@ -52,6 +52,15 @@ New JSON columns are used for raw payload storage. After pulling changes:
 flask --app backend.run db migrate -m "add raw JSON cols for Plaid meta + investments"
 flask --app backend.run db upgrade
 ```
+
+## Prerequisites
+
+- **PostgreSQL 13+** – the backend requires a running PostgreSQL database. Set
+  `SQLALCHEMY_DATABASE_URI` in `backend/.env` to a valid DSN (for example,
+  `postgresql+psycopg://pynance:change-me@localhost:5432/pynance`). The app
+  will fail fast if this variable is missing or invalid.
+- **Python 3.12+ and Node 20+** – `scripts/setup.sh` bootstraps both
+  environments and installs dependencies.
 
 ## Installation
 

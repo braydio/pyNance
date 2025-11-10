@@ -1,7 +1,7 @@
 Overview
 
 - ORM: Flask‑SQLAlchemy with Alembic migrations
-- DB: Postgres target (SQLite supported in scripts)
+- DB: PostgreSQL (required for the running application)
 - Monetary types: NUMERIC(18,2) (good), timestamps mixed Date/DateTime with/without tz
 - Keys: Several tables use business keys (e.g., accounts.account_id string) as the main FK across the schema rather than the integer PK
 
