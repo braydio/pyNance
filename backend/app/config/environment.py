@@ -6,9 +6,9 @@ This module reads `.env` files using `python-dotenv` and exposes constants that
 other packages import for configuration."""
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
-from pathlib import Path
 
 # Load environment from both repo root and backend/.env, with backend taking precedence.
 # This ensures local backend settings (like SQLALCHEMY_DATABASE_URI) are picked up

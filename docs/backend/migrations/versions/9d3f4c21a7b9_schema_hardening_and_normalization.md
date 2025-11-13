@@ -9,4 +9,3 @@ Revision `9d3f4c21a7b9` merges prior heads and tightens core schema:
 - Creates practical indexes for common queries.
 
 Source: `backend/migrations/versions/9d3f4c21a7b9_schema_hardening_and_normalization.py`.
-

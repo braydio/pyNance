@@ -13,4 +13,3 @@ Highlights:
 - Includes conditional handling for optional tables (e.g., `teller_accounts`).
 
 Downgrade restores the previous constraints without explicit `ondelete` behavior.
-

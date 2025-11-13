@@ -37,14 +37,78 @@ def upgrade() -> None:
     if pk_cols and [c.lower() for c in pk_cols] != ["account_id"]:
         # Drop dependent FKs that reference accounts PK to allow PK modification
         fk_specs = [
-            ("account_group_memberships", "account_group_memberships_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("account_history", "account_history_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("financial_goals", "financial_goals_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("plaid_accounts", "plaid_accounts_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("transactions", "transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("recurring_transactions", "recurring_transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("investment_holdings", "investment_holdings_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
-            ("investment_transactions", "investment_transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            (
+                "account_group_memberships",
+                "account_group_memberships_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "account_history",
+                "account_history_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "financial_goals",
+                "financial_goals_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "plaid_accounts",
+                "plaid_accounts_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "transactions",
+                "transactions_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "recurring_transactions",
+                "recurring_transactions_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "investment_holdings",
+                "investment_holdings_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
+            (
+                "investment_transactions",
+                "investment_transactions_account_id_fkey",
+                {
+                    "columns": ["account_id"],
+                    "refcols": ["account_id"],
+                    "ondelete": "CASCADE",
+                },
+            ),
         ]
 
         # Drop FKs

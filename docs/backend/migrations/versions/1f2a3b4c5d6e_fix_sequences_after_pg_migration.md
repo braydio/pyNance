@@ -13,4 +13,3 @@ Key points:
 - No-op on downgrade.
 
 Why: without bumping sequences after importing data, inserts can fail with `psycopg.errors.UniqueViolation` on primary keys.
-

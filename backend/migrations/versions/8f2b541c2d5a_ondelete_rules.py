@@ -62,7 +62,9 @@ def upgrade() -> None:
         )
 
     bind = op.get_bind()
-    teller_exists = bind.execute(text("SELECT to_regclass('public.teller_accounts')")).scalar()
+    teller_exists = bind.execute(
+        text("SELECT to_regclass('public.teller_accounts')")
+    ).scalar()
     if teller_exists:
         with op.batch_alter_table("teller_accounts") as batch_op:
             batch_op.drop_constraint(
@@ -310,7 +312,9 @@ def downgrade() -> None:
         )
 
     bind = op.get_bind()
-    teller_exists = bind.execute(text("SELECT to_regclass('public.teller_accounts')")).scalar()
+    teller_exists = bind.execute(
+        text("SELECT to_regclass('public.teller_accounts')")
+    ).scalar()
     if teller_exists:
         with op.batch_alter_table("teller_accounts") as batch_op:
             batch_op.drop_constraint(

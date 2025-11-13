@@ -46,7 +46,11 @@ def upgrade() -> None:
         type_=link_type_new,
         postgresql_using="link_type::text::link_type",
     )
-    op.execute(sa.text("ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"))
+    op.execute(
+        sa.text(
+            "ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"
+        )
+    )
     op.execute(sa.text("DROP TYPE link_type_old"))
 
     # Remove Teller from the provider_type enum used by transactions.
@@ -65,7 +69,11 @@ def upgrade() -> None:
         type_=provider_type_new,
         postgresql_using="provider::text::provider_type",
     )
-    op.execute(sa.text("ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"))
+    op.execute(
+        sa.text(
+            "ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"
+        )
+    )
     op.execute(sa.text("DROP TYPE provider_type_old"))
 
     # Finally drop the Teller account table entirely.
