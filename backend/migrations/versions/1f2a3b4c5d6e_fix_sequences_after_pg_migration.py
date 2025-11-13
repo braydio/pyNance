@@ -16,14 +16,42 @@ depends_on = None
 
 
 def _reset_sequence(table: str, pk: str = "id") -> None:
-    # Use pg_get_serial_sequence to resolve the sequence name and set it to max(pk)
+    """Align the underlying sequence/identity for ``table.pk`` with the max(pk).
+
+    Handles both legacy SERIAL-backed columns and modern IDENTITY columns.
+    If no owned sequence exists (e.g., not an autoincrement integer), this is a no-op.
+    """
     op.execute(
         f"""
-        SELECT setval(
-            pg_get_serial_sequence('{table}', '{pk}'),
-            COALESCE((SELECT MAX({pk}) FROM {table}), 0),
-            TRUE
-        );
+        DO $$
+        DECLARE
+            seq_name text;
+            max_id bigint;
+        BEGIN
+            -- Locate any sequence owned by table.column via catalog joins (works for SERIAL and IDENTITY)
+            SELECT format('%I.%I', nsp.nspname, seq.relname)
+            INTO seq_name
+            FROM pg_class AS seq
+            JOIN pg_namespace AS nsp ON nsp.oid = seq.relnamespace
+            JOIN pg_depend AS dep ON dep.objid = seq.oid AND dep.deptype IN ('a','i')
+            JOIN pg_class AS tbl ON tbl.oid = dep.refobjid
+            JOIN pg_attribute AS att ON att.attrelid = tbl.oid AND att.attnum = dep.refobjsubid
+            WHERE seq.relkind = 'S'
+              AND tbl.relname = '{table}'
+              AND att.attname = '{pk}'
+            LIMIT 1;
+
+            IF seq_name IS NOT NULL THEN
+                EXECUTE format('SELECT COALESCE(MAX(%I), 0) FROM %I', '{pk}', '{table}') INTO max_id;
+                IF max_id < 1 THEN
+                    -- Initialize empty/new sequences so nextval() returns 1
+                    EXECUTE format('SELECT setval(%L, 1, FALSE)', seq_name);
+                ELSE
+                    EXECUTE format('SELECT setval(%L, %s, TRUE)', seq_name, max_id);
+                END IF;
+            END IF;
+        END
+        $$;
         """
     )
 
