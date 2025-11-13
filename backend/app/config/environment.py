@@ -8,8 +8,18 @@ other packages import for configuration."""
 import os
 
 from dotenv import load_dotenv
+from pathlib import Path
 
-load_dotenv()
+# Load environment from both repo root and backend/.env, with backend taking precedence.
+# This ensures local backend settings (like SQLALCHEMY_DATABASE_URI) are picked up
+# even when the app is launched from the repository root.
+here = Path(__file__).resolve()
+root_dir = here.parents[3]
+backend_dir = here.parents[2]
+
+# Load root .env first (if present), then backend/.env to override where needed.
+load_dotenv(root_dir / ".env")
+load_dotenv(backend_dir / ".env")
 
 # Dev Environment Check
 FLASK_ENV = os.getenv("FLASK_ENV", "production")

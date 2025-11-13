@@ -18,11 +18,16 @@ def upgrade() -> None:
     bind = op.get_bind()
 
     # Drop Teller-specific data before tightening enum constraints.
+    # Compare via ::text to avoid invalid enum literal errors and assign enum values
     op.execute(
-        sa.text("UPDATE accounts SET link_type = 'manual' WHERE link_type = 'teller'")
+        sa.text(
+            "UPDATE accounts SET link_type = 'manual'::link_type WHERE link_type::text = 'teller'"
+        )
     )
     op.execute(
-        sa.text("UPDATE transactions SET provider = 'manual' WHERE provider = 'teller'")
+        sa.text(
+            "UPDATE transactions SET provider = 'manual'::provider_type WHERE provider::text = 'teller'"
+        )
     )
 
     # Remove Teller from the link_type enum used by accounts.
@@ -64,7 +69,8 @@ def upgrade() -> None:
     op.execute(sa.text("DROP TYPE provider_type_old"))
 
     # Finally drop the Teller account table entirely.
-    op.drop_table("teller_accounts")
+    # Drop Teller table if present
+    op.execute(sa.text("DROP TABLE IF EXISTS teller_accounts CASCADE"))
 
 
 def downgrade() -> None:

@@ -19,8 +19,9 @@ depends_on = None
 account_status = sa.Enum(
     "active", "inactive", "closed", "archived", name="account_status"
 )
-link_type = sa.Enum("manual", "plaid", "teller", name="link_type")
-provider_type = sa.Enum("manual", "plaid", "teller", name="provider_type")
+# Remove legacy Teller variant from enum definitions; we only support Plaid/manual.
+link_type = sa.Enum("manual", "plaid", name="link_type")
+provider_type = sa.Enum("manual", "plaid", name="provider_type")
 
 
 def upgrade() -> None:
@@ -28,19 +29,66 @@ def upgrade() -> None:
     dialect = bind.dialect.name
     inspector = sa.inspect(bind)
 
-    # 1) accounts: switch primary key to account_id and drop surrogate id
-    with op.batch_alter_table("accounts") as batch_op:
-        try:
-            batch_op.drop_constraint("accounts_pkey", type_="primary")
-        except Exception:
-            pass
-        batch_op.create_primary_key("accounts_pkey", ["account_id"])
-        try:
-            cols = [c["name"] for c in inspector.get_columns("accounts")]
-            if "id" in cols:
-                batch_op.drop_column("id")
-        except Exception:
-            pass
+    # 1) accounts: ensure PK is on account_id, but only perform swap if needed
+    pk = inspector.get_pk_constraint("accounts") or {}
+    pk_cols = [c for c in (pk.get("constrained_columns") or [])]
+    cols = [c["name"] for c in inspector.get_columns("accounts")]
+
+    if pk_cols and [c.lower() for c in pk_cols] != ["account_id"]:
+        # Drop dependent FKs that reference accounts PK to allow PK modification
+        fk_specs = [
+            ("account_group_memberships", "account_group_memberships_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("account_history", "account_history_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("financial_goals", "financial_goals_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("plaid_accounts", "plaid_accounts_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("transactions", "transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("recurring_transactions", "recurring_transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("investment_holdings", "investment_holdings_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+            ("investment_transactions", "investment_transactions_account_id_fkey", {"columns": ["account_id"], "refcols": ["account_id"], "ondelete": "CASCADE"}),
+        ]
+
+        # Drop FKs
+        for table, fk_name, _ in fk_specs:
+            try:
+                with op.batch_alter_table(table) as batch_op:
+                    batch_op.drop_constraint(fk_name, type_="foreignkey")
+            except Exception:
+                pass
+
+        # Swap PK to account_id and drop legacy id column if present
+        with op.batch_alter_table("accounts") as batch_op:
+            try:
+                batch_op.drop_constraint("accounts_pkey", type_="primary")
+            except Exception:
+                pass
+            batch_op.create_primary_key("accounts_pkey", ["account_id"])
+            try:
+                if "id" in cols:
+                    batch_op.drop_column("id")
+            except Exception:
+                pass
+
+        # Recreate FKs to reference accounts.account_id
+        for table, fk_name, spec in fk_specs:
+            try:
+                with op.batch_alter_table(table) as batch_op:
+                    batch_op.create_foreign_key(
+                        fk_name,
+                        "accounts",
+                        spec["columns"],
+                        spec["refcols"],
+                        ondelete=spec.get("ondelete"),
+                    )
+            except Exception:
+                pass
+    else:
+        # Already using account_id as PK; only ensure no stray legacy id column remains
+        if "id" in cols:
+            with op.batch_alter_table("accounts") as batch_op:
+                try:
+                    batch_op.drop_column("id")
+                except Exception:
+                    pass
 
     # 2) account_history.date -> Date (daily)
     if dialect == "postgresql":
@@ -64,24 +112,26 @@ def upgrade() -> None:
         link_type.create(bind, checkfirst=True)
         provider_type.create(bind, checkfirst=True)
 
-        # Normalize existing string values to valid enum labels
+        # Normalize existing values to valid labels using text casts only
+        # Avoid casting to enum until after values are sanitized to prevent enum label errors
+        # If column is already enum, cast back to enum on write to avoid type mismatch
         op.execute(
-            "UPDATE accounts SET status = LOWER(status) WHERE status IS NOT NULL"
+            "UPDATE accounts SET status = LOWER(status::text)::account_status WHERE status IS NOT NULL"
         )
         op.execute(
-            "UPDATE accounts SET status = 'active' WHERE status IS NULL OR status NOT IN ('active','inactive','closed','archived')"
+            "UPDATE accounts SET status = 'active'::account_status WHERE status IS NULL OR status::text NOT IN ('active','inactive','closed','archived')"
         )
         op.execute(
-            "UPDATE accounts SET link_type = LOWER(link_type) WHERE link_type IS NOT NULL"
+            "UPDATE accounts SET link_type = LOWER(link_type::text)::link_type WHERE link_type IS NOT NULL"
         )
         op.execute(
-            "UPDATE accounts SET link_type = 'manual' WHERE link_type IS NULL OR link_type NOT IN ('manual','plaid','teller')"
+            "UPDATE accounts SET link_type = 'manual'::link_type WHERE link_type IS NULL OR link_type::text NOT IN ('manual','plaid')"
         )
         op.execute(
-            "UPDATE transactions SET provider = LOWER(provider) WHERE provider IS NOT NULL"
+            "UPDATE transactions SET provider = LOWER(provider::text)::provider_type WHERE provider IS NOT NULL"
         )
         op.execute(
-            "UPDATE transactions SET provider = 'manual' WHERE provider IS NULL OR provider NOT IN ('manual','plaid','teller')"
+            "UPDATE transactions SET provider = 'manual'::provider_type WHERE provider IS NULL OR provider::text NOT IN ('manual','plaid')"
         )
 
         # Now alter column types using explicit USING casts and set defaults
@@ -133,19 +183,27 @@ def upgrade() -> None:
                 server_default=sa.text("'manual'"),
             )
 
-    # 4) plaid_accounts: add normalized plaid_item_id FK
-    with op.batch_alter_table("plaid_accounts") as batch_op:
-        batch_op.add_column(sa.Column("plaid_item_id", sa.Integer(), nullable=True))
-        batch_op.create_foreign_key(
-            "plaid_accounts_plaid_item_id_fkey",
-            "plaid_items",
-            ["plaid_item_id"],
-            ["id"],
-            ondelete="CASCADE",
-        )
-        batch_op.create_index(
-            "ix_plaid_accounts_plaid_item_id", ["plaid_item_id"], unique=False
-        )
+    # 4) plaid_accounts: add normalized plaid_item_id FK (idempotent)
+    existing_pa_cols = [c["name"] for c in inspector.get_columns("plaid_accounts")]
+    if "plaid_item_id" not in existing_pa_cols:
+        with op.batch_alter_table("plaid_accounts") as batch_op:
+            batch_op.add_column(sa.Column("plaid_item_id", sa.Integer(), nullable=True))
+            try:
+                batch_op.create_foreign_key(
+                    "plaid_accounts_plaid_item_id_fkey",
+                    "plaid_items",
+                    ["plaid_item_id"],
+                    ["id"],
+                    ondelete="CASCADE",
+                )
+            except Exception:
+                pass
+            try:
+                batch_op.create_index(
+                    "ix_plaid_accounts_plaid_item_id", ["plaid_item_id"], unique=False
+                )
+            except Exception:
+                pass
 
     # 5) Indexes for common query patterns
     op.create_index(
