@@ -1,5 +1,6 @@
 ## 📘 `import_plaid_accounts.py`
-```markdown
+
+````markdown
 # Import PlaidAccount Rows from CSV
 
 Imports or updates rows in the `plaid_accounts` table from a CSV export,
@@ -32,8 +33,11 @@ From the `backend/` directory:
 ```bash
 flask import-plaid-accounts --csv-path app/data/PlaidAccounts.csv
 ```
+````
 
 Rows are upserted by `account_id`. Any row whose `account_id` does not exist
 in `accounts` is skipped to preserve referential integrity.
+
 ```
 
+```

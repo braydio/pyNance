@@ -1,5 +1,6 @@
 ## 📘 `backfill_plaid_history.py`
-```markdown
+
+````markdown
 # Backfill Plaid Transaction History
 
 CLI helper for pulling long-range transaction history from Plaid into the
@@ -17,6 +18,7 @@ Invoke via Flask's CLI from the `backend/` directory (with `FLASK_APP=run.py`):
   ```bash
   flask backfill-plaid-history --account <ACCOUNT_ID> --start 2018-01-01
   ```
+````
 
 - Backfill all accounts for a given Plaid Item:
 
@@ -33,5 +35,7 @@ Invoke via Flask's CLI from the `backend/` directory (with `FLASK_APP=run.py`):
 `--end` defaults to today when omitted. All calls reuse the same filtering
 rules as the normal refresh pipeline (hidden accounts and internal transfers
 are excluded).
+
 ```
 
+```

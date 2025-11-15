@@ -25,7 +25,6 @@ from typing import Iterable, List
 
 import requests
 
-
 DEFAULT_SQLITE = Path("app/data/backup_dashboard_database.db")
 DEFAULT_BASE_URL = "http://localhost:5000"
 
@@ -155,4 +154,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
