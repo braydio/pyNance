@@ -1,5 +1,6 @@
 ## 📘 `delete_plaid_from_backup.py`
-```markdown
+
+````markdown
 # Delete Plaid Accounts from Backup Snapshot
 
 Utility script for cleaning up Plaid-linked accounts based on a legacy SQLite
@@ -18,9 +19,10 @@ reconciling a fresh PostgreSQL database with the Plaid environment.
    ```http
    DELETE /api/plaid/transactions/delete_account
    ```
+````
 
-   which revokes the Plaid item and deletes the linked account and related
-   records in PostgreSQL.
+which revokes the Plaid item and deletes the linked account and related
+records in PostgreSQL.
 
 By default the script runs in **dry-run** mode and only prints which accounts
 would be deleted.
@@ -41,5 +43,7 @@ python scripts/delete_plaid_from_backup.py --execute --base-url http://localhost
 
 Use caution: with `--execute` this will permanently delete accounts and their
 associated data via the API.
+
 ```
 
+```

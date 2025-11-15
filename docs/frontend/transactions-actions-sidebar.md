@@ -1,4 +1,5 @@
 ## 📘 `TransactionsActionsSidebar.vue`
+
 ```markdown
 # TransactionsActionsSidebar Component
 
@@ -29,4 +30,3 @@ Used by the `Transactions.vue` view as a sidebar or top control surface for
 transaction management. The parent typically binds `v-model` to its own
 `searchQuery` ref and listens for `open-scanner` to toggle the scanner panel.
 ```
-

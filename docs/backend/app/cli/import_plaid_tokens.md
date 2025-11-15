@@ -1,5 +1,6 @@
 ## 📘 `import_plaid_tokens.py`
-```markdown
+
+````markdown
 # Import Plaid Tokens from CSV
 
 Imports `account_id,access_token,item_id` triples into both `plaid_items` and
@@ -26,11 +27,14 @@ flask import-plaid-tokens
 # or with an explicit path
 flask import-plaid-tokens --csv-path app/data/PlaidAccessTokens.csv
 ```
+````
 
 The command:
 
 - Upserts a `PlaidItem` per `item_id` with the given `access_token`.
 - Upserts a `PlaidAccount` per `account_id` pointing at the same `item_id`
   and token.
+
 ```
 
+```

@@ -87,9 +87,7 @@ def import_plaid_tokens(csv_path: Path) -> None:
                 created_items += 1
 
             # Upsert PlaidAccount keyed by account_id
-            plaid_account = PlaidAccount.query.filter_by(
-                account_id=account_id
-            ).first()
+            plaid_account = PlaidAccount.query.filter_by(account_id=account_id).first()
             if plaid_account:
                 plaid_account.access_token = access_token
                 plaid_account.item_id = item_id
@@ -114,4 +112,3 @@ def import_plaid_tokens(csv_path: Path) -> None:
     click.echo(f"  PlaidAccount updated:{updated_accounts}")
     click.echo(f"  Rows without account:{skipped_missing_account}")
     click.echo(f"  Rows invalid/missing:{skipped_invalid_row}")
-

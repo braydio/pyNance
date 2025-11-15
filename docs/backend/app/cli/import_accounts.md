@@ -1,5 +1,6 @@
 ## 📘 `import_accounts.py`
-```markdown
+
+````markdown
 # Import Accounts from CSV
 
 Imports or updates rows in the `accounts` table from a dashboard CSV export.
@@ -32,8 +33,11 @@ From the `backend/` directory:
 ```bash
 flask import-accounts --csv-path app/data/Accounts.csv
 ```
+````
 
 Rows are upserted by `account_id`. Status values are normalized to the account
 status enum and link types are coerced to `manual` or `plaid`.
+
 ```
 
+```
