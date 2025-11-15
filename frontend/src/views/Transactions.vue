@@ -58,7 +58,15 @@
     <Card class="p-6 space-y-4">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
       <transition name="fade-in-up" mode="out-in">
+        <SkeletonCard v-if="isLoading" key="loading" />
+        <RetryError
+          v-else-if="error"
+          key="error"
+          :message="errorMessage"
+          @retry="fetchTransactions"
+        />
         <UpdateTransactionsTable
+          v-else
           :key="currentPage"
           :transactions="filteredTransactions"
           :sort-key="sortKey"
@@ -74,7 +82,15 @@
       <Card class="p-6 space-y-4">
         <h2 class="text-2xl font-bold">Recent Transactions</h2>
         <transition name="fade-in-up" mode="out-in">
+          <SkeletonCard v-if="isLoading" key="loading-activity" />
+          <RetryError
+            v-else-if="error"
+            key="error-activity"
+            :message="errorMessage"
+            @retry="fetchTransactions"
+          />
           <UpdateTransactionsTable
+            v-else
             :key="currentPage"
             :transactions="filteredTransactions"
             :sort-key="sortKey"
@@ -85,7 +101,7 @@
         </transition>
       </Card>
       <div
-        v-if="!searchQuery"
+        v-if="!searchQuery && !error"
         id="pagination-controls"
         class="flex items-center justify-center gap-4 mt-4"
       >
@@ -125,7 +141,6 @@ import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
-import AccountActionsSidebar from '@/components/transactions/AccountActionsSidebar.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
@@ -135,13 +150,14 @@ import InternalTransferScanner from '@/components/transactions/InternalTransferS
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountFilter from '@/components/AccountFilter.vue'
 import TypeSelector from '@/components/TypeSelector.vue'
+import SkeletonCard from '@/components/ui/SkeletonCard.vue'
+import RetryError from '@/components/errors/RetryError.vue'
 
 export default {
   name: 'TransactionsView',
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
-    AccountActionsSidebar,
     PageHeader,
     UiButton,
     Card,
@@ -150,6 +166,8 @@ export default {
     DateRangeSelector,
     AccountFilter,
     TypeSelector,
+    SkeletonCard,
+    RetryError,
   },
   setup() {
     const route = useRoute()
@@ -226,7 +244,19 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      isLoading,
+      error,
+      fetchTransactions,
     } = useTransactions(initialPageSize, promotedTransactionId, filters)
+
+    /**
+     * Provide a stable, human-readable message for retryable errors.
+     *
+     * @returns {string}
+     */
+    const errorMessage = computed(
+      () => error.value?.message || 'Unable to load transactions. Please try again.',
+    )
 
     const recurringFormRef = ref(null)
     const tabs = ['Activity', 'Recurring', 'Scanner']
@@ -266,6 +296,10 @@ export default {
       endDate,
       accountFilter,
       txType,
+      isLoading,
+      error,
+      fetchTransactions,
+      errorMessage,
     }
   },
 }
