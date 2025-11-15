@@ -141,6 +141,7 @@ import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
+import TransactionsActionsSidebar from '@/components/transactions/TransactionsActionsSidebar.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
@@ -158,6 +159,7 @@ export default {
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
+    TransactionsActionsSidebar,
     PageHeader,
     UiButton,
     Card,

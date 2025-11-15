@@ -337,12 +337,13 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
 
     logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
 
-    # Align filtering with transactions listing: exclude hidden accounts and
-    # internal transfers so tooltip counts match the modal results.
+    # Align filtering with transactions listing: exclude hidden accounts
+    # (is_hidden == False) and internal transfers so tooltip counts match
+    # the transactions modal and tables.
     transactions = (
         db.session.query(Transaction)
         .join(Account, Transaction.account_id == Account.account_id)
-        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(Account.is_hidden.is_(False))
         .filter(Transaction.date >= start_date)
         .filter(Transaction.date <= end_date)
         .filter(
