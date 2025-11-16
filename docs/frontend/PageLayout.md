@@ -45,6 +45,13 @@ Refer to [PageHeader docs](PageHeader.md) for prop and slot details.
 
 `TabbedPageLayout` extends `BasePageLayout` with a responsive navigation rail and optional sidebar slot. Use it for views that require grouped content such as "Summary/Transactions/Charts" on the Accounts page.
 
+### Props
+
+- `tabs` – ordered list of labels or `{ label, slot }` objects rendered in the tab strip.
+- `v-model` – binds the active slot key.
+- `sidebar-width` – Tailwind width utilities for the optional sidebar column.
+- `padding` / `gap` – forwarded to `BasePageLayout` for outer spacing control.
+
 ### Usage tips
 
 - Provide an ordered array of tab labels through the `tabs` prop and pair it with `v-model` to react to tab changes.

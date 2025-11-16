@@ -1,5 +1,5 @@
 <template>
-  <BasePageLayout>
+  <BasePageLayout :padding="paddingClass" :gap="gapClass">
     <slot name="header" />
     <div class="flex gap-8">
       <div class="flex-1">
@@ -48,6 +48,10 @@ const props = defineProps({
   modelValue: { type: String, default: '' },
   /** Optional width utility class for sidebar (e.g. 'w-72 md:w-80') */
   sidebarWidth: { type: String, default: 'w-64' },
+  /** Tailwind padding utility forwarded to BasePageLayout */
+  padding: { type: [String, Boolean], default: undefined },
+  /** Tailwind gap utility forwarded to BasePageLayout */
+  gap: { type: String, default: undefined },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -77,6 +81,8 @@ function selectTab(tabSlot) {
 }
 
 const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
+const paddingClass = computed(() => props.padding ?? true)
+const gapClass = computed(() => props.gap ?? 'gap-6')
 </script>
 
 <style scoped>

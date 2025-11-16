@@ -28,3 +28,12 @@ This document standardizes formatting and styling rules for recent transactions 
 
 - Location: `frontend/src/components/widgets/TopAccountSnapshot.vue`
 - Helpers: `formatShortDate`, `format`, `amountClass`.
+
+## Transactions Actions Sidebar
+
+- Location: `frontend/src/components/transactions/AccountActionsSidebar.vue`.
+- Provides the transactions view sidebar with import, search, date range, account, and type filters.
+- Emits `update:search`, `update:startDate`, `update:endDate`, `update:accountId`, and `update:txType` so views can bind to
+  existing reactive refs from `useTransactions`.
+- Includes an `open-scanner` event hooked to the internal transfer scanner tab; avoid wiring long-running processes inside the
+  sidebar to keep interactions snappy.

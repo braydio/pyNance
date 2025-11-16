@@ -5,6 +5,7 @@
     :tabs="tabs"
     v-model="activeTab"
     padding="px-4 sm:px-6 lg:px-8 py-8"
+    sidebar-width="w-72 xl:w-80"
   >
     <!-- Header -->
     <template #header>
@@ -13,89 +14,39 @@
         <template #subtitle>View and manage your transactions</template>
       </PageHeader>
     </template>
-    <!-- Internal Transfer Scanner (moved to top) -->
-    <Card class="p-6 rounded-2xl">
-      <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Internal Transfer Scanner</h2>
-        <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
-          {{ showScanner ? 'Hide' : 'Show' }}
-        </button>
-      </div>
-      <div class="mt-4" v-if="showScanner">
-        <InternalTransferScanner />
-      </div>
-    </Card>
-
-    <!-- Top Controls -->
-    <Card v-if="showControls" id="top-controls" class="p-6">
-      <div class="grid gap-4 md:grid-cols-2">
-        <ImportFileSelector />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search transactions..."
-          class="input w-full"
-        />
-      </div>
-    </Card>
-
-    <!-- Filter Controls -->
-    <Card class="p-6">
-      <div class="flex flex-wrap items-center gap-4">
-        <DateRangeSelector
-          :start-date="startDate"
-          :end-date="endDate"
-          disable-zoom
-          @update:startDate="startDate = $event"
-          @update:endDate="endDate = $event"
-        />
-        <AccountFilter v-model="accountFilter" />
-        <TypeSelector v-model="txType" />
-      </div>
-    </Card>
-
-    <!-- Main Table -->
-    <Card class="p-6 space-y-4">
-      <h2 class="text-2xl font-bold">Recent Transactions</h2>
-      <transition name="fade-in-up" mode="out-in">
-        <UpdateTransactionsTable
-          :key="currentPage"
-          :transactions="filteredTransactions"
-          :sort-key="sortKey"
-          :sort-order="sortOrder"
-          @sort="setSort"
-          @editRecurringFromTransaction="prefillRecurringFromTransaction"
-        />
-      </transition>
-    </Card>
-
     <!-- Activity Tab -->
     <template #Activity>
-      <Card class="p-6 space-y-4">
-        <h2 class="text-2xl font-bold">Recent Transactions</h2>
-        <transition name="fade-in-up" mode="out-in">
-          <UpdateTransactionsTable
-            :key="currentPage"
-            :transactions="filteredTransactions"
-            :sort-key="sortKey"
-            :sort-order="sortOrder"
-            @sort="setSort"
-            @editRecurringFromTransaction="prefillRecurringFromTransaction"
-          />
-        </transition>
-      </Card>
-      <div
-        v-if="!searchQuery"
-        id="pagination-controls"
-        class="flex items-center justify-center gap-4 mt-4"
-      >
-        <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1"
-          >Prev</UiButton
+      <div class="space-y-4" data-testid="transactions-activity-panel">
+        <Card class="p-6 space-y-4">
+          <div class="flex items-center justify-between gap-4">
+            <h2 class="text-2xl font-bold">Recent Transactions</h2>
+          </div>
+          <transition name="fade-in-up" mode="out-in">
+            <UpdateTransactionsTable
+              :key="currentPage"
+              :transactions="filteredTransactions"
+              :sort-key="sortKey"
+              :sort-order="sortOrder"
+              @sort="setSort"
+              @editRecurringFromTransaction="prefillRecurringFromTransaction"
+            />
+          </transition>
+        </Card>
+
+        <div
+          v-if="!searchQuery"
+          id="pagination-controls"
+          class="flex items-center justify-center gap-4"
+          data-testid="transactions-pagination"
         >
-        <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages"
-          >Next</UiButton
-        >
+          <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1"
+            >Prev</UiButton
+          >
+          <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
+          <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages"
+            >Next</UiButton
+          >
+        </div>
       </div>
     </template>
 
@@ -109,9 +60,20 @@
 
     <!-- Scanner Tab -->
     <template #Scanner>
-      <Card class="p-6">
+      <Card class="p-6" data-testid="scanner-panel">
         <InternalTransferScanner />
       </Card>
+    </template>
+
+    <template #sidebar>
+      <AccountActionsSidebar
+        v-model:search="searchQuery"
+        v-model:start-date="startDate"
+        v-model:end-date="endDate"
+        v-model:account-id="accountFilter"
+        v-model:tx-type="txType"
+        @open-scanner="openScannerTab"
+      />
     </template>
   </TabbedPageLayout>
 </template>
@@ -132,24 +94,18 @@ import Card from '@/components/ui/Card.vue'
 import { CreditCard } from 'lucide-vue-next'
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
-import DateRangeSelector from '@/components/DateRangeSelector.vue'
-import AccountFilter from '@/components/AccountFilter.vue'
-import TypeSelector from '@/components/TypeSelector.vue'
 
 export default {
   name: 'TransactionsView',
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
-    AccountActionsSidebar,
     PageHeader,
     UiButton,
     Card,
     TabbedPageLayout,
     InternalTransferScanner,
-    DateRangeSelector,
-    AccountFilter,
-    TypeSelector,
+    AccountActionsSidebar,
   },
   setup() {
     const route = useRoute()
@@ -248,6 +204,10 @@ export default {
       }
     })
 
+    function openScannerTab() {
+      activeTab.value = 'Scanner'
+    }
+
     return {
       tabs,
       activeTab,
@@ -266,6 +226,7 @@ export default {
       endDate,
       accountFilter,
       txType,
+      openScannerTab,
     }
   },
 }
