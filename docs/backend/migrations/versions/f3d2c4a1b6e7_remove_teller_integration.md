@@ -20,4 +20,3 @@ Notes:
 
 - Comparisons are done via `::text` and assignments cast back to the enum type to avoid Postgres invalid-literal errors.
 - This migration is a follow-up to `9d3f4c21a7b9` which introduced the enums and broader schema hardening.
-
