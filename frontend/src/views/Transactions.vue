@@ -93,9 +93,7 @@
           >Prev</UiButton
         >
         <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <UiButton variant="primary" @click="changePage(1)" :disabled="!hasNextPage"
-          >Next</UiButton
-        >
+        <UiButton variant="primary" @click="changePage(1)" :disabled="!hasNextPage">Next</UiButton>
       </div>
     </template>
 
