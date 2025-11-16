@@ -93,7 +93,7 @@
           >Prev</UiButton
         >
         <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <UiButton variant="primary" @click="changePage(1)" :disabled="currentPage >= totalPages"
+        <UiButton variant="primary" @click="changePage(1)" :disabled="!hasNextPage"
           >Next</UiButton
         >
       </div>
@@ -125,7 +125,6 @@ import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
-import AccountActionsSidebar from '@/components/transactions/AccountActionsSidebar.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
@@ -141,7 +140,6 @@ export default {
   components: {
     UpdateTransactionsTable,
     RecurringTransactionSection,
-    AccountActionsSidebar,
     PageHeader,
     UiButton,
     Card,
@@ -177,6 +175,8 @@ export default {
     const txType = ref('')
     const initialPromoteId = coerceQueryValue(route.query?.promote || route.query?.promote_txid)
     const promotedTransactionId = ref(initialPromoteId)
+    const showScanner = ref(false)
+    const showControls = ref(true)
 
     /**
      * Keep the provided ref synchronized with vue-router query parameters.
@@ -207,6 +207,9 @@ export default {
 
     syncQueryParam(accountFilter, ['account_id'])
     syncQueryParam(promotedTransactionId, ['promote', 'promote_txid'])
+    syncQueryParam(startDate, ['start_date'])
+    syncQueryParam(endDate, ['end_date'])
+    syncQueryParam(txType, ['tx_type', 'type'])
 
     const filters = computed(() => {
       const f = {}
@@ -226,11 +229,19 @@ export default {
       sortKey,
       sortOrder,
       setSort,
+      hasNextPage,
     } = useTransactions(initialPageSize, promotedTransactionId, filters)
 
     const recurringFormRef = ref(null)
     const tabs = ['Activity', 'Recurring', 'Scanner']
     const activeTab = ref('Activity')
+
+    /**
+     * Toggle the visibility of the internal transfer scanner widget.
+     */
+    function toggleScanner() {
+      showScanner.value = !showScanner.value
+    }
 
     function prefillRecurringFromTransaction(tx) {
       if (recurringFormRef.value) {
@@ -266,6 +277,10 @@ export default {
       endDate,
       accountFilter,
       txType,
+      showScanner,
+      toggleScanner,
+      showControls,
+      hasNextPage,
     }
   },
 }

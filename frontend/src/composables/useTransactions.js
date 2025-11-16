@@ -10,6 +10,21 @@ import { ref, computed, onMounted, watch } from 'vue'
 import Fuse from 'fuse.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
+/**
+ * Centralised pagination helper for transaction tables.
+ *
+ * The composable keeps the currently active page in sync with API responses and
+ * deduplicates server calls by caching the most recent response for each page
+ * while a filter set is active. When filters change the cache is cleared and
+ * the table resets back to page ``1`` so the UI always reflects the newly
+ * selected date range, account or transaction type.
+ *
+ * @param {number} pageSize - Number of rows to request from the API.
+ * @param {import('vue').Ref<string | null>} promoteIdRef - Optional transaction
+ *   id to prioritise in the client-side sort.
+ * @param {import('vue').Ref<Record<string, unknown>>} filtersRef - Reactive
+ *   collection of API filter parameters.
+ */
 export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef = ref({})) {
   const transactions = ref([])
   const searchQuery = ref('')
@@ -17,8 +32,13 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
   const sortOrder = ref(1)
   const currentPage = ref(1)
   const totalPages = ref(1)
+  const totalCount = ref(0)
   const isLoading = ref(false)
   const error = ref(null)
+
+  /** @type {Map<number, Array>} */
+  let pageCache = new Map()
+  let lastTotal = 0
 
   /**
    * Fetch a page of transactions from the API.
@@ -27,30 +47,45 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
    * object directly. This helper normalizes both shapes so the table renders
    * even when the backend does not include a status key.
    */
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
+    const cached = pageCache.get(page)
+    if (!force && cached) {
+      isLoading.value = false
+      error.value = null
+      transactions.value = cached
+      totalPages.value = Math.max(1, Math.ceil((lastTotal || cached.length) / pageSize))
+      return
+    }
+
     isLoading.value = true
     error.value = null
     try {
       const res = await fetchTransactionsApi({
-        page: currentPage.value,
+        page,
         page_size: pageSize,
         ...(filtersRef.value || {}),
       })
 
-      // No need to check for 'data' property
       if (!res || typeof res !== 'object' || !('transactions' in res)) {
         console.error('Unexpected response shape:', res)
         error.value = new Error('Received an unexpected response from the server.')
+        transactions.value = []
+        totalPages.value = 1
+        totalCount.value = 0
+        pageCache.clear()
         return
       }
 
-      // normalize category fields for sorting/searching
-      transactions.value = (res.transactions || []).map((tx) => ({
+      const normalised = (res.transactions || []).map((tx) => ({
         ...tx,
         category: formatCategory(tx),
       }))
-      const total = res.total != null ? res.total : 0
-      totalPages.value = Math.max(1, Math.ceil(total / pageSize))
+
+      lastTotal = res.total != null ? res.total : normalised.length
+      totalCount.value = lastTotal
+      totalPages.value = Math.max(1, Math.ceil(lastTotal / pageSize))
+      transactions.value = normalised
+      pageCache.set(page, normalised)
     } catch (err) {
       console.error('Error fetching transactions:', err)
       error.value = err
@@ -59,9 +94,17 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
     }
   }
 
+  const setPage = (page) => {
+    const clamped = Math.max(1, Math.min(page, totalPages.value || 1))
+    if (clamped !== currentPage.value) {
+      currentPage.value = clamped
+    } else {
+      fetchTransactions(clamped, { force: true })
+    }
+  }
+
   const changePage = (delta) => {
-    currentPage.value = Math.max(1, Math.min(currentPage.value + delta, totalPages.value))
-    fetchTransactions()
+    setPage(currentPage.value + delta)
   }
 
   const setSort = (key) => {
@@ -139,13 +182,30 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
     return p || d || ''
   }
 
-  onMounted(fetchTransactions)
+  onMounted(() => {
+    fetchTransactions(1, { force: true })
+  })
+
+  watch(
+    () => currentPage.value,
+    (page, previous) => {
+      if (page === previous) return
+      fetchTransactions(page)
+    },
+  )
 
   watch(
     filtersRef,
     () => {
-      currentPage.value = 1
-      fetchTransactions()
+      pageCache = new Map()
+      lastTotal = 0
+      totalPages.value = 1
+      totalCount.value = 0
+      if (currentPage.value !== 1) {
+        currentPage.value = 1
+      } else {
+        fetchTransactions(1, { force: true })
+      }
     },
     { deep: true },
   )
@@ -157,11 +217,14 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
     sortOrder,
     currentPage,
     totalPages,
+    totalCount,
     fetchTransactions,
     isLoading,
     error,
     changePage,
+    setPage,
     setSort,
     filteredTransactions,
+    hasNextPage: computed(() => currentPage.value < totalPages.value),
   }
 }
