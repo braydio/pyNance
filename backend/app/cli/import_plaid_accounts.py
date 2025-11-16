@@ -56,9 +56,7 @@ def import_plaid_accounts(csv_path: Path) -> None:
                 skipped_missing_account += 1
                 continue
 
-            plaid_account = PlaidAccount.query.filter_by(
-                account_id=account_id
-            ).first()
+            plaid_account = PlaidAccount.query.filter_by(account_id=account_id).first()
             if plaid_account:
                 updated += 1
             else:
@@ -66,18 +64,14 @@ def import_plaid_accounts(csv_path: Path) -> None:
                 db.session.add(plaid_account)
                 created += 1
 
-            plaid_account.access_token = (
-                (row.get("access_token") or "").strip() or None
-            )
+            plaid_account.access_token = (row.get("access_token") or "").strip() or None
             plaid_account.item_id = (row.get("item_id") or "").strip() or None
             plaid_account.product = (row.get("product") or "").strip() or None
             plaid_account.institution_id = (
-                (row.get("institution_id") or "").strip() or None
-            )
+                row.get("institution_id") or ""
+            ).strip() or None
             plaid_account.webhook = (row.get("webhook") or "").strip() or None
-            plaid_account.sync_cursor = (
-                (row.get("sync_cursor") or "").strip() or None
-            )
+            plaid_account.sync_cursor = (row.get("sync_cursor") or "").strip() or None
             plaid_account.last_error = (row.get("last_error") or "").strip() or None
 
             raw_plaid_inst = (row.get("plaid_institution_id") or "").strip()
@@ -129,4 +123,3 @@ def import_plaid_accounts(csv_path: Path) -> None:
     click.echo(f"  Updated: {updated}")
     click.echo(f"  Skipped (missing Account): {skipped_missing_account}")
     click.echo(f"  Skipped (invalid/missing id): {skipped_invalid}")
-

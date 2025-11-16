@@ -65,8 +65,8 @@ def import_accounts(csv_path: Path) -> None:
             account.type = (row.get("type") or "").strip() or None
             account.subtype = (row.get("subtype") or "").strip() or None
             account.institution_name = (
-                (row.get("institution_name") or "").strip() or None
-            )
+                row.get("institution_name") or ""
+            ).strip() or None
 
             raw_status = (row.get("status") or "").strip()
             account.status = normalize_account_status(raw_status)
@@ -117,4 +117,3 @@ def import_accounts(csv_path: Path) -> None:
     click.echo(f"  Created: {created}")
     click.echo(f"  Updated: {updated}")
     click.echo(f"  Skipped (invalid/missing id): {skipped_invalid}")
-

@@ -53,7 +53,10 @@ def _parse_date(label: str, value: str | None) -> date | None:
 )
 @with_appcontext
 def backfill_plaid_history(
-    item_id: str | None, account_id: str | None, start_date: str | None, end_date: str | None
+    item_id: str | None,
+    account_id: str | None,
+    start_date: str | None,
+    end_date: str | None,
 ) -> None:
     """Backfill Plaid transactions over a custom date range."""
     start = _parse_date("start", start_date)
@@ -85,9 +88,7 @@ def backfill_plaid_history(
                 pa.access_token, pa.account_id, start_date=start, end_date=end
             )
             if error:
-                logger.error(
-                    "Backfill failed for account %s: %s", pa.account_id, error
-                )
+                logger.error("Backfill failed for account %s: %s", pa.account_id, error)
                 message = (
                     error.get("plaid_error_message")
                     if isinstance(error, dict)
@@ -136,9 +137,7 @@ def backfill_plaid_history(
                     )
                     click.echo(f"ERR {item_id}/{pa.account_id}: {message}")
                 else:
-                    click.echo(
-                        f"OK {item_id}/{pa.account_id}: updated={bool(updated)}"
-                    )
+                    click.echo(f"OK {item_id}/{pa.account_id}: updated={bool(updated)}")
             return
 
         # Default: backfill all distinct Plaid items
@@ -189,9 +188,10 @@ def backfill_plaid_history(
                 f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}"
             )
 
-        click.echo(f"Completed backfill. Items={len(seen_items)} updated_accounts={updates}")
+        click.echo(
+            f"Completed backfill. Items={len(seen_items)} updated_accounts={updates}"
+        )
 
     except Exception as e:  # pragma: no cover - defensive
         logger.error("backfill-plaid-history error: %s", e, exc_info=True)
         click.echo(str(e))
-
