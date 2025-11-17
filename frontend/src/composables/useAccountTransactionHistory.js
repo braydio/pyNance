@@ -63,14 +63,13 @@ function aggregateTransactions(transactions) {
       toDateKey(tx.authorized_date)
     if (!date) continue
 
-    const amount =
-      toNumber(tx.net_amount ?? tx.amount ?? tx.value ?? tx.net ?? tx.total)
+    const amount = toNumber(tx.net_amount ?? tx.amount ?? tx.value ?? tx.net ?? tx.total)
     const count =
       typeof tx.transaction_count === 'number'
         ? tx.transaction_count
         : Array.isArray(tx.transactions)
-        ? tx.transactions.length
-        : 1
+          ? tx.transactions.length
+          : 1
 
     const summary = byDate.get(date) || { net_amount: 0, transaction_count: 0 }
     summary.net_amount += amount
@@ -104,11 +103,7 @@ function normalizeTransactionHistoryPayload(payload) {
     return []
   }
 
-  const historyCandidates = [
-    payload.history,
-    payload?.data?.history,
-    payload?.data?.data?.history,
-  ]
+  const historyCandidates = [payload.history, payload?.data?.history, payload?.data?.data?.history]
 
   for (const candidate of historyCandidates) {
     if (Array.isArray(candidate) && candidate.length) {

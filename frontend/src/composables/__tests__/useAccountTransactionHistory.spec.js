@@ -5,8 +5,7 @@ import { useAccountTransactionHistory } from '../useAccountTransactionHistory.js
 let fetchAccountTransactionHistory
 
 vi.mock('@/api/accounts', () => ({
-  fetchAccountTransactionHistory: (...args) =>
-    fetchAccountTransactionHistory(...args),
+  fetchAccountTransactionHistory: (...args) => fetchAccountTransactionHistory(...args),
 }))
 
 describe('useAccountTransactionHistory', () => {

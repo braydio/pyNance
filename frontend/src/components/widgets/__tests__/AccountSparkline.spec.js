@@ -14,8 +14,7 @@ vi.mock('@/composables/useAccountHistory', () => ({
 }))
 
 vi.mock('@/composables/useAccountTransactionHistory', () => ({
-  useAccountTransactionHistory: (...args) =>
-    useAccountTransactionHistoryMock(...args),
+  useAccountTransactionHistory: (...args) => useAccountTransactionHistoryMock(...args),
 }))
 
 describe('AccountSparkline', () => {
