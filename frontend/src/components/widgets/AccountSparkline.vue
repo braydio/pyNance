@@ -73,35 +73,70 @@ const ariaLabel = computed(() => `Recent ${dataType.value} history for account $
 
 const noDataLabel = computed(() => `No ${dataType.value} history available`)
 
-// Current data based on selected type
-const currentData = computed(() =>
-  dataType.value === 'balance' ? balanceHistory.value : transactionHistory.value,
-)
+function resolveNumericValue(entry, fields) {
+  if (!entry || typeof entry !== 'object') {
+    return 0
+  }
 
-// Generate sparkline points
-const points = computed(() => {
-  const data = currentData.value
-  if (!data.length) return ''
+  for (const field of fields) {
+    const value = entry[field]
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseFloat(value)
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+  }
 
-  let values
-  if (dataType.value === 'balance') {
-    values = data.map((d) => d.balance)
-  } else {
-    // For transactions, use net amounts or transaction counts
-    values = data.map((d) => d.net_amount || d.transaction_count || 0)
+  return 0
+}
+
+function toPoints(values) {
+  if (!Array.isArray(values) || !values.length) {
+    return ''
   }
 
   const max = Math.max(...values)
   const min = Math.min(...values)
-  const range = max - min || 1
+  const valueRange = max - min || 1
+  const denominator = values.length > 1 ? values.length - 1 : 1
 
-  return data
-    .map((d, idx) => {
-      const x = (idx / (data.length - 1)) * 100
-      const y = 100 - ((values[idx] - min) / range) * 100
+  return values
+    .map((value, idx) => {
+      const x = (idx / denominator) * 100
+      const y = 100 - ((value - min) / valueRange) * 100
       return `${x},${y}`
     })
     .join(' ')
+}
+
+const balanceValues = computed(() =>
+  Array.isArray(balanceHistory.value)
+    ? balanceHistory.value.map((entry) =>
+        resolveNumericValue(entry, ['balance', 'amount', 'value', 'net']),
+      )
+    : [],
+)
+
+const transactionValues = computed(() =>
+  Array.isArray(transactionHistory?.value)
+    ? transactionHistory.value.map((entry) =>
+        resolveNumericValue(entry, ['net_amount', 'amount', 'value', 'net']),
+      )
+    : [],
+)
+
+const balancePoints = computed(() => toPoints(balanceValues.value))
+const transactionPoints = computed(() => toPoints(transactionValues.value))
+
+const points = computed(() => {
+  if (dataType.value === 'transactions') {
+    return transactionPoints.value || balancePoints.value
+  }
+  return balancePoints.value
 })
 </script>
 
