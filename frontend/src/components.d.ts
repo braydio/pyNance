@@ -90,6 +90,7 @@ declare module 'vue' {
     TopAccountsChart: typeof import('./components/charts/TopAccountsChart.vue')['default']
     TopAccountSnapshot: typeof import('./components/widgets/TopAccountSnapshot.vue')['default']
     TransactionModal: typeof import('./components/modals/TransactionModal.vue')['default']
+    TransactionsActionsSidebar: typeof import('./components/transactions/TransactionsActionsSidebar.vue')['default']
     TransactionsTable: typeof import('./components/tables/TransactionsTable.vue')['default']
     TypeSelector: typeof import('./components/TypeSelector.vue')['default']
     UpdateTransactionsTable: typeof import('./components/tables/UpdateTransactionsTable.vue')['default']

@@ -17,7 +17,7 @@
 
 <script setup>
 /**
- * AccountActionsSidebar (transactions variant)
+ * TransactionsActionsSidebar
  * Sidebar providing file import, search filter and scanner access for
  * the Transactions view.
  *

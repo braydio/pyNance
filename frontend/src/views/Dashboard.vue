@@ -396,9 +396,16 @@ async function loadCategoryGroups() {
   }
 }
 
-// Handle clicks on the DailyNetChart bars and open a modal for that date.
 async function onNetBarClick(label) {
-  const result = await fetchTransactions({ start_date: label, end_date: label })
+  // Fetch *all* transactions for the clicked date so the modal matches the
+  // counts and amounts shown in the DailyNetChart. Use a large page_size to
+  // avoid pagination truncation for high-activity days.
+  const result = await fetchTransactions({
+    start_date: label,
+    end_date: label,
+    page: 1,
+    page_size: 1000,
+  })
   dailyModalTransactions.value = result.transactions || []
   dailyModalSubtitle.value = label
   showDailyModal.value = true
