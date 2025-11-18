@@ -36,14 +36,17 @@ describe('Transactions View', () => {
 
     // Date range filter
     cy.get('input[type="date"]').first().type('2024-01-01')
-    cy.wait('@getTx').its('request.query').should('include', {
-      start_date: '2024-01-01',
+    cy.wait('@getTx').should(({ request }) => {
+      expect(request.query).to.include({ start_date: '2024-01-01' })
+      expect(request.query).to.not.have.property('end_date')
     })
 
     cy.get('input[type="date"]').eq(1).type('2024-01-31')
-    cy.wait('@getTx').its('request.query').should('include', {
-      start_date: '2024-01-01',
-      end_date: '2024-01-31',
+    cy.wait('@getTx').should(({ request }) => {
+      expect(request.query).to.include({
+        start_date: '2024-01-01',
+        end_date: '2024-01-31',
+      })
     })
 
     // Account filter
