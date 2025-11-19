@@ -7,20 +7,22 @@
     </p>
 
     <div class="flex gap-2">
-      <button
-        class="btn btn-pill"
+      <UiButton
+        variant="primary"
+        pill
         :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
         :disabled="selectedProducts.length === 0 || loading"
         @click="linkPlaid"
       >
         {{ loading ? 'Linking…' : 'Link with Plaid' }}
-      </button>
+      </UiButton>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import UiButton from '@/components/ui/Button.vue'
 import accountLinkApi from '@/api/accounts_link'
 
 const props = defineProps({
