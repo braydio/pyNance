@@ -19,15 +19,32 @@ describe('Transactions View', () => {
     cy.contains('Scan').should('not.exist')
   })
 
-  it('applies filters to API calls', () => {
+  it('applies filters to API calls and resets pagination', () => {
     cy.intercept('GET', '/api/accounts/get_accounts', {
       status: 'success',
       accounts: [{ account_id: 'a1', name: 'Checking' }],
     })
-    cy.intercept('GET', '/api/transactions/get_transactions*', {
-      status: 'success',
-      data: { transactions: [], total: 0 },
-    }).as('getTx')
+    cy.intercept('GET', '/api/transactions/get_transactions*', (req) => {
+      const page = Number(req.query.page || 1)
+      req.alias = 'getTx'
+      req.reply({
+        status: 'success',
+        data: {
+          transactions: Array.from({ length: 10 }, (_, index) => ({
+            transaction_id: `tx-${page}-${index}`,
+            date: '2024-01-01',
+            amount: 12.34,
+            description: `Transaction ${page}-${index}`,
+            category: 'General',
+            merchant_name: 'Merchant',
+            account_name: 'Checking',
+            institution_name: 'Bank',
+            subtype: 'checking',
+          })),
+          total: 25,
+        },
+      })
+    })
 
     cy.visit('/transactions')
     cy.wait('@getTx')
@@ -50,6 +67,17 @@ describe('Transactions View', () => {
     cy.get('[data-testid="type-select"]').select('credit')
     cy.wait('@getTx').its('request.query').should('include', {
       tx_type: 'credit',
+    })
+
+    // Move to next page to ensure pagination is wired
+    cy.contains('#pagination-controls button', 'Next').click()
+    cy.wait('@getTx').its('request.query').should('include', { page: '2' })
+
+    // Changing filters should reset the pagination back to page 1
+    cy.get('[data-testid="type-select"]').select('debit')
+    cy.wait('@getTx').its('request.query').should('include', {
+      tx_type: 'debit',
+      page: '1',
     })
   })
 })

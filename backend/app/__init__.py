@@ -72,10 +72,31 @@ def create_app():
         app.register_blueprint(arbit_dashboard, url_prefix="/api/arbit")
 
     app.cli.add_command(sync_accounts)
+    # Dev CLI: seed demo data into a fresh database
+    from app.cli.seed_dev import seed_dev
+
+    app.cli.add_command(seed_dev)
     # Dev CLI: reconcile local Items with Plaid live status
     from app.cli.reconcile_plaid_items import reconcile_plaid_items
 
     app.cli.add_command(reconcile_plaid_items)
+
+    # Utility CLI: import historic Account and PlaidAccount data from CSV
+    from app.cli.import_accounts import import_accounts
+    from app.cli.import_plaid_accounts import import_plaid_accounts
+
+    app.cli.add_command(import_accounts)
+    app.cli.add_command(import_plaid_accounts)
+
+    # Utility CLI: import historic Plaid access tokens from CSV
+    from app.cli.import_plaid_tokens import import_plaid_tokens
+
+    app.cli.add_command(import_plaid_tokens)
+
+    # Utility CLI: backfill Plaid transaction history over a custom range
+    from app.cli.backfill_plaid_history import backfill_plaid_history
+
+    app.cli.add_command(backfill_plaid_history)
 
     # Dev CLI: run Plaid transactions/sync
     try:
