@@ -1,11 +1,11 @@
 <template>
-  <div class="link-account">
-    <h2>Refresh Plaid</h2>
-    <div class="button-group">
-      <input type="date" v-model="startDate" class="date-picker" />
-      <input type="date" v-model="endDate" class="date-picker" />
+  <Card class="space-y-4">
+    <h2 class="text-lg font-semibold text-center">Refresh Plaid</h2>
+    <div class="flex flex-wrap gap-3">
+      <input type="date" v-model="startDate" class="input" />
+      <input type="date" v-model="endDate" class="input" />
       <div class="account-select" v-click-outside="closeDropdown">
-        <button type="button" @click="toggleDropdown">Select Accounts</button>
+        <UiButton type="button" variant="outline" @click="toggleDropdown">Select Accounts</UiButton>
         <div v-if="dropdownOpen" class="dropdown-menu">
           <label v-for="acct in accounts" :key="acct.account_id">
             <input type="checkbox" :value="acct.account_id" v-model="selectedAccounts" />
@@ -13,20 +13,21 @@
           </label>
         </div>
       </div>
-      <button @click="handlePlaidRefresh" :disabled="isRefreshing">
+      <UiButton type="button" variant="primary" @click="handlePlaidRefresh" :disabled="isRefreshing">
         <span v-if="isRefreshing">Refreshing Plaid Accounts…</span>
         <span v-else>Refresh Plaid Accounts</span>
-      </button>
+      </UiButton>
     </div>
-    <button
+    <UiButton
       v-if="summaryText"
-      class="summary-banner"
-      :class="{ error: hasErrors }"
+      class="w-full justify-between"
+      :variant="hasErrors ? 'alert' : 'primary'"
+      type="button"
       @click="detailsOpen = !detailsOpen"
     >
       {{ summaryText }}
-      <span class="expand-indicator">{{ detailsOpen ? 'Hide' : 'Show' }} details</span>
-    </button>
+      <span class="text-sm font-medium opacity-80">{{ detailsOpen ? 'Hide' : 'Show' }} details</span>
+    </UiButton>
 
     <div v-if="detailsOpen && refreshResult" class="details-panel">
       <div v-for="inst in institutionOrder" :key="inst" class="institution-block">
@@ -94,13 +95,19 @@
         </ul>
       </div>
     </div>
-  </div>
+  </Card>
 </template>
 
 <script>
+import Card from '@/components/ui/Card.vue'
+import UiButton from '@/components/ui/Button.vue'
 import api from '@/services/api'
 export default {
   name: 'RefreshPlaidControls',
+  components: {
+    Card,
+    UiButton,
+  },
   data() {
     const today = new Date().toISOString().slice(0, 10)
     const monthAgo = new Date()
@@ -299,48 +306,8 @@ export default {
   text-align: center;
 }
 
-.button-group {
-  display: flex;
-  justify-content: center;
-  gap: 0.5rem;
-  /* Allow controls to wrap within narrow sidebars */
-  flex-wrap: wrap;
-}
-
-.button-group button {
-  background-color: var(--themed-bg);
-  color: var(--color-text-light);
-  border: 1px solid var(--color-border-secondary);
-  border-radius: 3px;
-  font-weight: bold;
-  padding: 0.5rem 1rem;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.button-group button:hover {
-  background-color: var(--color-accent-cyan);
-  color: var(--themed-bg);
-}
-
-.date-picker {
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  background-color: var(--themed-bg);
-  border: 1px solid var(--divider);
-  color: var(--color-text-light);
-}
-
 .account-select {
   position: relative;
-}
-
-.account-select button {
-  padding: 0.3rem 0.6rem;
-  border-radius: 4px;
-  background-color: var(--themed-bg);
-  border: 1px solid var(--divider);
-  color: var(--color-text-light);
 }
 
 .dropdown-menu {
@@ -368,28 +335,6 @@ export default {
 }
 .error-badge {
   background-color: var(--color-error, #e74c3c);
-}
-
-.summary-banner {
-  margin-top: 1rem;
-  width: 100%;
-  text-align: left;
-  background: var(--color-accent-cyan, #06b6d4);
-  color: #fff;
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-}
-.summary-banner.error {
-  background: var(--color-error, #e74c3c);
-}
-.expand-indicator {
-  font-weight: 500;
-  opacity: 0.9;
 }
 
 .details-panel {
