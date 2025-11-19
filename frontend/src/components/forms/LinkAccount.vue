@@ -1,21 +1,26 @@
 <template>
-  <div class="card glass w-full max-w-2xl">
-    <button class="btn btn-pill btn-outline" @click="showLinkOptions = !showLinkOptions">
+  <Card class="w-full max-w-2xl">
+    <UiButton variant="primary" pill @click="showLinkOptions = !showLinkOptions">
       {{ showLinkOptions ? 'Hide' : 'Link Account' }}
-    </button>
+    </UiButton>
 
     <transition name="slide-vertical">
-      <div v-if="showLinkOptions" class="mt-4 mt-2 space-y-4">
+      <div v-if="showLinkOptions" class="mt-4 space-y-4">
         <PlaidProductScopeSelector v-model="selectedProducts" />
-        <LinkProviderLauncher :selected-products="selectedProducts" :user-id="userID"
-          @refresh="$emit('refreshAccount')" />
+        <LinkProviderLauncher
+          :selected-products="selectedProducts"
+          :user-id="userID"
+          @refresh="$emit('refreshAccount')"
+        />
       </div>
     </transition>
-  </div>
+  </Card>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import Card from '@/components/ui/Card.vue'
+import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
 import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
 
