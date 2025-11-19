@@ -1,54 +1,88 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
+import { ref } from 'vue'
 import AccountSparkline from '../AccountSparkline.vue'
 
-let balanceHistoryRef
-let transactionHistoryRef
-let useAccountHistoryMock
-let useAccountTransactionHistoryMock
+const balanceHistory = ref([
+  { balance: 100 },
+  { balance: 150 },
+  { balance: 90 },
+])
+
+const transactionHistory = ref([
+  { net_amount: 20 },
+  { net_amount: -10 },
+  { net_amount: 35 },
+])
 
 vi.mock('@/composables/useAccountHistory', () => ({
-  useAccountHistory: (...args) => useAccountHistoryMock(...args),
+  useAccountHistory: () => ({
+    history: balanceHistory,
+    balances: balanceHistory,
+    loading: ref(false),
+    loadHistory: vi.fn(),
+  }),
 }))
 
 vi.mock('@/composables/useAccountTransactionHistory', () => ({
-  useAccountTransactionHistory: (...args) => useAccountTransactionHistoryMock(...args),
+  useAccountTransactionHistory: () => ({
+    history: transactionHistory,
+    loading: ref(false),
+    fetchHistory: vi.fn(),
+  }),
 }))
 
-describe('AccountSparkline', () => {
+describe('AccountSparkline accessibility', () => {
   beforeEach(() => {
-    balanceHistoryRef = ref([
-      { date: '2024-01-01', balance: 100 },
-      { date: '2024-01-02', balance: 120 },
-      { date: '2024-01-03', balance: 110 },
-    ])
-    transactionHistoryRef = ref([
-      { date: '2024-01-01', net_amount: -30, transaction_count: 2 },
-      { date: '2024-01-02', net_amount: 15, transaction_count: 1 },
-      { date: '2024-01-03', net_amount: 45, transaction_count: 3 },
-    ])
-
-    useAccountHistoryMock = vi.fn(() => ({ history: balanceHistoryRef }))
-    useAccountTransactionHistoryMock = vi.fn(() => ({
-      history: transactionHistoryRef,
-    }))
+    balanceHistory.value = [
+      { balance: 100 },
+      { balance: 150 },
+      { balance: 90 },
+    ]
+    transactionHistory.value = [
+      { net_amount: 20 },
+      { net_amount: -10 },
+      { net_amount: 35 },
+    ]
   })
 
-  it('renders points for balance and transaction data', async () => {
+  it('renders toggle button with descriptive content for the indicator', () => {
     const wrapper = mount(AccountSparkline, {
-      props: { accountId: 'acct-123' },
+      props: {
+        accountId: 'acct-123',
+      },
     })
 
-    const balancePoints = wrapper.get('polyline').attributes('points')
-    expect(balancePoints).toBeTruthy()
+    const toggle = wrapper.get('button.sparkline-container')
+    expect(toggle.attributes('aria-pressed')).toBe('false')
+    expect(toggle.text()).toContain('Balance history sparkline selected. Activate to view transactions.')
 
-    await wrapper.get('.sparkline-container').trigger('click')
-    await nextTick()
+    const indicatorHint = wrapper.get('.sparkline-indicator .sr-only')
+    expect(indicatorHint.text()).toBe('Indicator letter B represents balance history.')
+  })
 
-    const transactionPoints = wrapper.get('polyline').attributes('points')
-    expect(transactionPoints).toBeTruthy()
-    expect(transactionPoints).not.toEqual(balancePoints)
+  it('supports keyboard and pointer activation while updating aria-pressed state', async () => {
+    const wrapper = mount(AccountSparkline, {
+      props: {
+        accountId: 'acct-456',
+      },
+    })
+
+    const toggle = wrapper.get('button.sparkline-container')
+
+    await toggle.trigger('keydown.enter')
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('.sparkline-indicator .sr-only').text()).toBe(
+      'Indicator letter T represents transaction history.',
+    )
+
+    toggle.element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }))
+    await wrapper.vm.$nextTick()
+    expect(toggle.attributes('aria-pressed')).toBe('true')
+
+    toggle.element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
+    await wrapper.vm.$nextTick()
+    expect(toggle.attributes('aria-pressed')).toBe('false')
   })
 })

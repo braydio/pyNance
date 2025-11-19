@@ -4,7 +4,16 @@
   Supports toggle between balance history and transaction activity.
 -->
 <template>
-  <div class="sparkline-container" @click="toggleDataType" :title="toggleTitle">
+  <button
+    type="button"
+    class="sparkline-container"
+    @click="toggleDataType"
+    @keydown.enter.prevent="toggleDataType"
+    @keydown.space.prevent="toggleDataType"
+    :title="toggleTitle"
+    :aria-pressed="(dataType === 'transactions').toString()"
+  >
+    <span class="sr-only">{{ toggleDescription }}</span>
     <svg
       v-if="points"
       viewBox="0 0 100 100"
@@ -15,8 +24,11 @@
       <polyline :points="points" :class="sparklineClass" />
     </svg>
     <span v-else class="bs-sparkline-placeholder" role="img" :aria-label="noDataLabel"></span>
-    <div class="sparkline-indicator" :class="indicatorClass">{{ dataTypeIndicator }}</div>
-  </div>
+    <div class="sparkline-indicator" :class="indicatorClass">
+      <span aria-hidden="true">{{ dataTypeIndicator }}</span>
+      <span class="sr-only">{{ indicatorDescription }}</span>
+    </div>
+  </button>
 </template>
 
 <script setup>
@@ -48,13 +60,29 @@ try {
 }
 
 // Toggle between data types
-function toggleDataType() {
+function toggleDataType(event) {
+  if (event?.type === 'click' && event.detail === 0) {
+    return
+  }
+
   dataType.value = dataType.value === 'balance' ? 'transactions' : 'balance'
 }
 
 // Computed properties for UI
 const toggleTitle = computed(
-  () => `Click to toggle to ${dataType.value === 'balance' ? 'transaction' : 'balance'} view`,
+  () => `Switch to ${dataType.value === 'balance' ? 'transaction' : 'balance'} view`,
+)
+
+const toggleDescription = computed(() =>
+  dataType.value === 'balance'
+    ? 'Balance history sparkline selected. Activate to view transactions.'
+    : 'Transaction history sparkline selected. Activate to view balances.',
+)
+
+const indicatorDescription = computed(() =>
+  dataType.value === 'balance'
+    ? 'Indicator letter B represents balance history.'
+    : 'Indicator letter T represents transaction history.',
 )
 
 const dataTypeIndicator = computed(() => (dataType.value === 'balance' ? 'B' : 'T'))
@@ -147,10 +175,21 @@ const points = computed(() => {
   height: 20px;
   cursor: pointer;
   transition: all 0.2s ease;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
 }
 
 .sparkline-container:hover {
   transform: scale(1.05);
+}
+
+.sparkline-container:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 40%, transparent);
+  border-radius: 4px;
 }
 
 .bs-sparkline {

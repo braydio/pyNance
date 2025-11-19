@@ -53,29 +53,49 @@ flask --app backend.run db migrate -m "add raw JSON cols for Plaid meta + invest
 flask --app backend.run db upgrade
 ```
 
-## Prerequisites
+## Quickstart (from a fresh clone)
 
-- **PostgreSQL 13+** – the backend requires a running PostgreSQL database. Set
-  `SQLALCHEMY_DATABASE_URI` in `backend/.env` to a valid DSN (for example,
-  `postgresql+psycopg://pynance:change-me@localhost:5432/pynance`). The app
-  will fail fast if this variable is missing or invalid.
-- **Python 3.12+ and Node 20+** – `scripts/setup.sh` bootstraps both
-  environments and installs dependencies.
+### 1. Prerequisites
 
-## Installation
+- **Docker + Docker Compose** – used to run a local PostgreSQL instance.
+- **Python 3.12+ and Node 20+** – required for the backend and frontend.
+
+### 2. Bootstrap the backend (DB + migrations)
+
+From the `backend/` directory:
 
 ```bash
-./scripts/setup.sh
+cd backend
+bash scripts/setup.sh
 ```
 
-This script creates a virtual environment, installs backend and frontend dependencies, and copies `backend/example.env` to `backend/.env`.
+This will:
 
-## Running locally
+- Copy `backend/example.env` to `backend/.env` if it does not exist.
+- Start a local PostgreSQL container (`db` service in `backend/docker-compose.yml`).
+- Wait for the database to be ready.
+- Run `flask db upgrade` to apply all migrations.
 
-1. Start the backend:
+To reset and reseed the dev database later:
+
+```bash
+cd backend
+bash scripts/reset_db.sh
+```
+
+To add a small set of demo data to an existing dev database:
+
+```bash
+cd backend
+bash scripts/seed_dev.sh
+```
+
+### 3. Run the app locally
+
+1. Start the backend API:
    ```bash
    cd backend
-   flask --app app run
+   python run.py
    ```
 2. Start the frontend:
    ```bash
