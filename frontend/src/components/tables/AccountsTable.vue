@@ -138,11 +138,7 @@
                 <button class="btn btn-sm" @click="toggleHidden(account)">
                   {{ account.is_hidden ? 'Unhide' : 'Hide' }}
                 </button>
-                <button
-                  v-if="showDeleteButtons"
-                  class="btn btn-sm"
-                  @click="deleteAccount(account.account_id)"
-                >
+                <button v-if="showDeleteButtons" class="btn btn-sm" @click="promptDelete(account)">
                   Delete
                 </button>
               </div>
@@ -155,18 +151,55 @@
       No accounts found.
     </div>
     <div v-else-if="loading" class="p-6 text-blue-200">Loading accounts...</div>
+
+    <Modal v-if="showDeleteModal" size="md" @close="closeDeleteModal">
+      <template #title> Delete account? </template>
+      <template #body>
+        <p class="text-blue-100">
+          This will remove
+          <span class="font-semibold">{{ accountPendingDeleteLabel }}</span>
+          and all associated transactions. This action cannot be undone.
+        </p>
+        <div class="mt-6 flex justify-end gap-2">
+          <button
+            class="btn btn-outline btn-sm"
+            type="button"
+            :disabled="isDeleting"
+            data-testid="delete-modal-cancel"
+            @click="closeDeleteModal"
+          >
+            Cancel
+          </button>
+          <button
+            class="btn btn-error btn-sm"
+            type="button"
+            :disabled="isDeleting"
+            data-testid="delete-modal-confirm"
+            @click="confirmDelete"
+          >
+            {{ isDeleting ? 'Deleting…' : 'Delete' }}
+          </button>
+        </div>
+      </template>
+    </Modal>
   </div>
 </template>
 
 <script>
 import api from '@/services/api'
 import AccountSparkline from '@/components/widgets/AccountSparkline.vue'
+import Modal from '@/components/ui/Modal.vue'
 import accountLinkApi from '@/api/accounts_link'
+import { useToast } from 'vue-toastification'
 
 export default {
   name: 'AccountsTable',
-  components: { AccountSparkline },
+  components: { AccountSparkline, Modal },
   emits: ['refresh'],
+  setup() {
+    const toast = useToast()
+    return { toast }
+  },
   data() {
     return {
       accounts: [],
@@ -180,6 +213,9 @@ export default {
       typeFilters: [],
       showHidden: false,
       controlsVisible: false,
+      showDeleteModal: false,
+      accountPendingDelete: null,
+      isDeleting: false,
     }
   },
   computed: {
@@ -224,6 +260,13 @@ export default {
       })
       return sorted
     },
+    accountPendingDeleteLabel() {
+      if (!this.accountPendingDelete) {
+        return 'this account'
+      }
+      const { name, institution_name: institutionName } = this.accountPendingDelete
+      return name || institutionName || 'this account'
+    },
   },
   methods: {
     toggleTypeFilter() {
@@ -246,26 +289,64 @@ export default {
         this.$emit('refresh')
       }
     },
-    async deleteAccount(accountId) {
-      if (!confirm('Are you sure you want to delete this account and all its transactions?')) return
+    /**
+     * Open the delete confirmation modal for the selected account.
+     * @param {object} account - The account slated for deletion.
+     */
+    promptDelete(account) {
+      this.accountPendingDelete = account
+      this.showDeleteModal = true
+    },
+    /**
+     * Reset modal state when the user cancels deletion.
+     */
+    closeDeleteModal() {
+      this.showDeleteModal = false
+      this.accountPendingDelete = null
+    },
+    /**
+     * Execute the delete API request and surface toast feedback.
+     */
+    async confirmDelete() {
+      if (!this.accountPendingDelete || this.isDeleting) {
+        return
+      }
+
+      this.isDeleting = true
       try {
-        const res = await accountLinkApi.deleteAccount(accountId)
-        if (res.status === 'success') {
-          alert('Account deleted successfully.')
-          this.fetchAccounts()
+        const response = await accountLinkApi.deleteAccount(this.accountPendingDelete.account_id)
+
+        if (response.status === 'success') {
+          this.toast.success('Account deleted successfully.')
+          this.closeDeleteModal()
+          await this.fetchAccounts()
         } else {
-          alert('Error deleting account: ' + res.message)
+          const errorMessage = response.message
+            ? `Error deleting account: ${response.message}`
+            : 'Error deleting account.'
+          this.toast.error(errorMessage)
         }
-      } catch (err) {
-        alert('Error: ' + err.message)
+      } catch (error) {
+        const message = error?.message ? `Error: ${error.message}` : 'Error deleting account.'
+        this.toast.error(message)
+      } finally {
+        this.isDeleting = false
+        if (!this.showDeleteModal) {
+          this.accountPendingDelete = null
+        }
       }
     },
+    /**
+     * Toggle the hidden flag for the provided account and refresh data.
+     * @param {object} account - The account whose visibility should change.
+     */
     async toggleHidden(account) {
       try {
         await api.setAccountHidden(account.account_id, !account.is_hidden)
         this.fetchAccounts()
       } catch (err) {
-        alert('Error: ' + err.message)
+        const message = err?.message ? `Error: ${err.message}` : 'Error updating account.'
+        this.toast.error(message)
       }
     },
     formatBalance(balance) {
