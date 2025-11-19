@@ -41,10 +41,7 @@
         </button>
 
         <span v-if="hasTrailingGap" class="gap">…</span>
-        <button
-          v-if="hasTrailingGap"
-          class="pagination-chip"
-          @click="goToPage(totalPages)">
+        <button v-if="hasTrailingGap" class="pagination-chip" @click="goToPage(totalPages)">
           {{ totalPages }}
         </button>
       </div>
@@ -131,7 +128,8 @@ export default {
     },
     hasTrailingGap() {
       return (
-        this.visiblePages.length && this.visiblePages[this.visiblePages.length - 1] < this.totalPages
+        this.visiblePages.length &&
+        this.visiblePages[this.visiblePages.length - 1] < this.totalPages
       )
     },
     rangeLabel() {
