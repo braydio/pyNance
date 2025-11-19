@@ -13,7 +13,12 @@
           </label>
         </div>
       </div>
-      <UiButton type="button" variant="primary" @click="handlePlaidRefresh" :disabled="isRefreshing">
+      <UiButton
+        type="button"
+        variant="primary"
+        @click="handlePlaidRefresh"
+        :disabled="isRefreshing"
+      >
         <span v-if="isRefreshing">Refreshing Plaid Accounts…</span>
         <span v-else>Refresh Plaid Accounts</span>
       </UiButton>
@@ -26,7 +31,9 @@
       @click="detailsOpen = !detailsOpen"
     >
       {{ summaryText }}
-      <span class="text-sm font-medium opacity-80">{{ detailsOpen ? 'Hide' : 'Show' }} details</span>
+      <span class="text-sm font-medium opacity-80"
+        >{{ detailsOpen ? 'Hide' : 'Show' }} details</span
+      >
     </UiButton>
 
     <div v-if="detailsOpen && refreshResult" class="details-panel">
