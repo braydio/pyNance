@@ -138,11 +138,7 @@
                 <button class="btn btn-sm" @click="toggleHidden(account)">
                   {{ account.is_hidden ? 'Unhide' : 'Hide' }}
                 </button>
-                <button
-                  v-if="showDeleteButtons"
-                  class="btn btn-sm"
-                  @click="promptDelete(account)"
-                >
+                <button v-if="showDeleteButtons" class="btn btn-sm" @click="promptDelete(account)">
                   Delete
                 </button>
               </div>
@@ -157,9 +153,7 @@
     <div v-else-if="loading" class="p-6 text-blue-200">Loading accounts...</div>
 
     <Modal v-if="showDeleteModal" size="md" @close="closeDeleteModal">
-      <template #title>
-        Delete account?
-      </template>
+      <template #title> Delete account? </template>
       <template #body>
         <p class="text-blue-100">
           This will remove
@@ -320,9 +314,7 @@ export default {
 
       this.isDeleting = true
       try {
-        const response = await accountLinkApi.deleteAccount(
-          this.accountPendingDelete.account_id,
-        )
+        const response = await accountLinkApi.deleteAccount(this.accountPendingDelete.account_id)
 
         if (response.status === 'success') {
           this.toast.success('Account deleted successfully.')
