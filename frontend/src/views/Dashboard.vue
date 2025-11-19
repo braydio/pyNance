@@ -196,7 +196,9 @@
               <PaginationControls
                 :current-page="currentPage"
                 :total-pages="totalPages"
-                @change-page="changePage"
+                :page-size="pageSize"
+                :total-items="totalCount"
+                @change-page="setPage"
               />
             </div>
           </div>
@@ -252,16 +254,19 @@ import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
 
 // Transactions and user
+const pageSize = 15
 const {
   searchQuery,
   currentPage,
   totalPages,
+  totalCount,
   filteredTransactions,
   sortKey,
   sortOrder,
   setSort,
+  setPage,
   changePage,
-} = useTransactions(15)
+} = useTransactions(pageSize)
 // Daily Net modal state
 const showDailyModal = ref(false)
 const dailyModalTransactions = ref([])
