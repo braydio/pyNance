@@ -32,9 +32,7 @@
 
       <template #Summary>
         <section class="space-y-8">
-          <Card
-            class="space-y-6 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-xl"
-          >
+          <Card class="summary-card space-y-6 rounded-2xl border p-6 shadow-xl">
             <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
@@ -63,7 +61,7 @@
               <article
                 v-for="stat in netSummaryStats"
                 :key="stat.key"
-                class="rounded-xl border bg-gradient-to-br p-4 shadow-inner transition hover:shadow-lg"
+                class="summary-card__stat rounded-xl border p-4 shadow-inner transition hover:shadow-lg"
                 :class="stat.containerClass"
               >
                 <p class="text-xs font-semibold uppercase tracking-wide text-muted">
@@ -258,7 +256,7 @@ const tabs = [
   'Transactions',
   'Charts',
 ]
-const activeTab = ref('AccountDetails')
+const activeTab = ref('Summary')
 
 // Refs
 const reorderChart = ref(null)
@@ -276,8 +274,7 @@ const netSummaryStats = computed(() => [
     key: 'income',
     label: 'Income',
     value: formatAmount(netSummary.value.income),
-    containerClass:
-      'from-[rgba(129,178,154,0.18)] via-[rgba(99,205,207,0.04)] to-[rgba(99,205,207,0.02)] border-[rgba(129,178,154,0.45)]',
+    containerClass: 'summary-card--income',
     valueClass: 'text-[var(--color-accent-green)]',
     helper: 'Total deposits recorded',
   },
@@ -285,8 +282,7 @@ const netSummaryStats = computed(() => [
     key: 'expense',
     label: 'Expense',
     value: formatAmount(netSummary.value.expense),
-    containerClass:
-      'from-[rgba(201,79,109,0.2)] via-[rgba(214,122,210,0.06)] to-[rgba(201,79,109,0.04)] border-[rgba(201,79,109,0.45)]',
+    containerClass: 'summary-card--expense',
     valueClass: 'text-[var(--color-accent-red)]',
     helper: 'Total spending captured',
   },
@@ -294,8 +290,7 @@ const netSummaryStats = computed(() => [
     key: 'net',
     label: 'Net Change',
     value: formatAmount(netSummary.value.net),
-    containerClass:
-      'from-[rgba(219,192,116,0.2)] via-[rgba(99,205,207,0.04)] to-[rgba(219,192,116,0.04)] border-[rgba(219,192,116,0.45)]',
+    containerClass: 'summary-card--net',
     valueClass: 'text-[var(--color-accent-yellow)]',
     helper: 'Overall change (income − expense)',
   },
@@ -418,6 +413,33 @@ watch(
 </script>
 
 <style scoped>
+.summary-card {
+  background: var(--accounts-summary-card-bg);
+  border-color: var(--accounts-summary-card-border);
+  backdrop-filter: blur(8px);
+}
+
+.summary-card__stat {
+  background: var(--accounts-summary-stat-bg);
+  border-color: var(--accounts-summary-stat-border);
+  backdrop-filter: blur(10px);
+}
+
+.summary-card--income {
+  background: var(--summary-card-income-bg);
+  border-color: var(--summary-card-income-border);
+}
+
+.summary-card--expense {
+  background: var(--summary-card-expense-bg);
+  border-color: var(--summary-card-expense-border);
+}
+
+.summary-card--net {
+  background: var(--summary-card-net-bg);
+  border-color: var(--summary-card-net-border);
+}
+
 .accounts-hero {
   position: relative;
 }

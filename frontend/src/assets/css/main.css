@@ -8,10 +8,50 @@
 
 /* Base styles */
 @layer base {
+  :root {
+    --accounts-summary-card-bg: linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-accent-cyan) 18%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent-purple) 14%, transparent) 48%,
+      color-mix(in srgb, var(--color-accent-magenta) 12%, transparent) 100%
+    );
+    --accounts-summary-card-border: color-mix(
+      in srgb,
+      var(--color-accent-purple) 32%,
+      var(--divider)
+    );
+    --accounts-summary-stat-bg: color-mix(in srgb, var(--color-bg-secondary) 72%, transparent);
+    --accounts-summary-stat-border: color-mix(in srgb, var(--divider) 65%, transparent);
+    --summary-card-income-bg: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-accent-green) 32%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent-cyan) 18%, transparent) 100%
+    );
+    --summary-card-income-border: color-mix(in srgb, var(--color-accent-green) 38%, var(--divider));
+    --summary-card-expense-bg: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-accent-red) 34%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent-magenta) 18%, transparent) 100%
+    );
+    --summary-card-expense-border: color-mix(in srgb, var(--color-accent-red) 42%, var(--divider));
+    --summary-card-net-bg: linear-gradient(
+      145deg,
+      color-mix(in srgb, var(--color-accent-yellow) 34%, transparent) 0%,
+      color-mix(in srgb, var(--color-accent-cyan) 16%, transparent) 100%
+    );
+    --summary-card-net-border: color-mix(in srgb, var(--color-accent-yellow) 40%, var(--divider));
+  }
+
   body {
     @apply font-sans;
     background-color: var(--color-bg-dark);
     color: var(--color-text-light);
+  }
+}
+
+@layer utilities {
+  .text-muted {
+    color: var(--color-text-muted);
   }
 }
 
