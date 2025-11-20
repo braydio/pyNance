@@ -15,7 +15,11 @@
       color-mix(in srgb, var(--color-accent-purple) 14%, transparent) 48%,
       color-mix(in srgb, var(--color-accent-magenta) 12%, transparent) 100%
     );
-    --accounts-summary-card-border: color-mix(in srgb, var(--color-accent-purple) 32%, var(--divider));
+    --accounts-summary-card-border: color-mix(
+      in srgb,
+      var(--color-accent-purple) 32%,
+      var(--divider)
+    );
     --accounts-summary-stat-bg: color-mix(in srgb, var(--color-bg-secondary) 72%, transparent);
     --accounts-summary-stat-border: color-mix(in srgb, var(--divider) 65%, transparent);
     --summary-card-income-bg: linear-gradient(
