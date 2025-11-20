@@ -20,11 +20,13 @@ flask debug-plaid-history --account <ACCOUNT_ID> --window-days 120 --output /tmp
 ```
 
 Key options:
+
 - `--start` / `--end`: constrain the date range (defaults: 2015-01-01 through today).
 - `--window-days`: adjusts window size to avoid vendor-side truncation (default 180).
 - `--output`: writes the deduplicated payload plus window metadata to JSON for inspection.
 
 The command reports:
+
 - Raw vs unique transaction counts and how many windows were used.
 - The earliest and latest dates Plaid returned (helps validate history coverage).
 - How many duplicate `transaction_id` rows were dropped and how many lacked IDs.
