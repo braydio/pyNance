@@ -153,9 +153,7 @@ class QueryStub:
     def first(self) -> Optional[object]:
         return self._items[0] if self._items else None
 
-    def delete(
-        self, synchronize_session: bool = False
-    ) -> int:  # noqa: ARG002 - parity with SQLAlchemy
+    def delete(self, synchronize_session: bool = False) -> int:  # noqa: ARG002 - parity with SQLAlchemy
         if not self._pending_delete_ids:
             return 0
         if self._deleted_log is not None:
@@ -375,7 +373,9 @@ plaid_sync_spec.loader.exec_module(plaid_sync_module)
 _restore_modules()
 
 
-def _build_signature(payload: dict[str, object], timestamp: str = "1234567890") -> tuple[str, dict[str, str]]:
+def _build_signature(
+    payload: dict[str, object], timestamp: str = "1234567890"
+) -> tuple[str, dict[str, str]]:
     """Return the serialized body and Plaid signature header for a payload."""
 
     body = json.dumps(payload)
@@ -422,7 +422,9 @@ def test_webhook_accepts_valid_signature() -> None:
     assert resp.get_json() == {"status": "ignored"}
     assert session.commits == 1
     assert plaid_webhook_module.webhook_metrics.count("failure", "SIGNATURE") == 0
-    assert not any("Rejecting Plaid webhook" in msg for msg in fake_logger.records["warning"])
+    assert not any(
+        "Rejecting Plaid webhook" in msg for msg in fake_logger.records["warning"]
+    )
 
 
 def test_webhook_rejects_missing_signature() -> None:
@@ -488,8 +490,7 @@ def test_webhook_rejects_tampered_payload() -> None:
     assert session.commits == 0
     assert plaid_webhook_module.webhook_metrics.count("failure", "SIGNATURE") == 1
     assert any(
-        "invalid Plaid-Signature" in msg
-        for msg in fake_logger.records["warning"]
+        "invalid Plaid-Signature" in msg for msg in fake_logger.records["warning"]
     )
 
 

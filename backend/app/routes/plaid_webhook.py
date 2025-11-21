@@ -153,7 +153,9 @@ def handle_plaid_webhook():
     if not is_valid:
         webhook_metrics.increment("failure", "SIGNATURE")
         logger.warning("Plaid webhook rejected due to %s signature.", reason)
-        status_code = 401 if reason in {"missing", "malformed", "missing_components"} else 403
+        status_code = (
+            401 if reason in {"missing", "malformed", "missing_components"} else 403
+        )
         return jsonify({"status": "unauthorized"}), status_code
 
     payload = request.get_json(silent=True) or {}
