@@ -196,7 +196,7 @@
                 {{ formatAccounting(account.balance) }}
               </span>
               <span
-                class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+                class="inline-flex items-center gap-1 rounded-full text-xs font-medium"
                 :class="upcomingPillClass(netUpcoming(account))"
               >
                 <span class="i-carbon-calendar text-sm" aria-hidden="true"></span>
@@ -448,19 +448,49 @@ function upcomingClass(val) {
 }
 
 function upcomingPillClass(val) {
+  // Pill palettes: emerald for positive (success), rose for negative (risk), blue for neutral/info.
+  const palette = {
+    positive: [
+      'bg-emerald-50',
+      'text-emerald-800',
+      'ring-1',
+      'ring-emerald-200',
+      'dark:bg-emerald-900/60',
+      'dark:text-emerald-200',
+      'dark:ring-emerald-700/60',
+    ],
+    negative: [
+      'bg-rose-50',
+      'text-rose-800',
+      'ring-1',
+      'ring-rose-200',
+      'dark:bg-rose-900/60',
+      'dark:text-rose-200',
+      'dark:ring-rose-700/60',
+    ],
+    neutral: [
+      'bg-blue-50',
+      'text-blue-800',
+      'ring-1',
+      'ring-blue-200',
+      'dark:bg-blue-900/60',
+      'dark:text-blue-100',
+      'dark:ring-blue-700/60',
+    ],
+  }
+
   const base = [
     'faded-upcoming',
     'font-mono',
     'transition-colors',
-    'bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-300',
+    'px-2.5',
+    'py-1',
+    'leading-tight',
   ]
   const num = parseFloat(val || 0)
-  if (num > 0) {
-    base.push('bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300')
-  } else if (num < 0) {
-    base.push('bg-red-100 text-red-600 dark:bg-red-400/20 dark:text-red-300')
-  }
-  return base
+  if (num > 0) return [...base, ...palette.positive]
+  if (num < 0) return [...base, ...palette.negative]
+  return [...base, ...palette.neutral]
 }
 
 const totalBalance = computed(() =>
