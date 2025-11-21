@@ -42,5 +42,11 @@ exports[`ArbitDashboard.vue > matches snapshot 1`] = `
       <div data-v-db7eac05="" data-test="arbit-trades-stub"></div>
     </div>
   </section>
+  <section data-v-db7eac05="" data-testid="rsassistant-logs" class="grid grid-cols-1">
+    <div data-v-db7eac05="" class="pass-through h-full p-6 space-y-4">
+      <h2 data-v-db7eac05="" class="section-title">RSAssistant Logs</h2>
+      <div data-v-db7eac05="" data-test="arbit-logs-stub"></div>
+    </div>
+  </section>
 </div>"
 `;

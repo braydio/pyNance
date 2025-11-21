@@ -37,6 +37,13 @@
         <ArbitTrades />
       </Card>
     </section>
+
+    <section data-testid="rsassistant-logs" class="grid grid-cols-1">
+      <Card class="h-full p-6 space-y-4">
+        <h2 class="section-title">RSAssistant Logs</h2>
+        <ArbitLogs />
+      </Card>
+    </section>
   </BasePageLayout>
 </template>
 
@@ -50,6 +57,7 @@ import ArbitAlerts from '@/components/ArbitAlerts.vue'
 import ArbitControls from '@/components/ArbitControls.vue'
 import ArbitMetrics from '@/components/ArbitMetrics.vue'
 import ArbitOpportunities from '@/components/ArbitOpportunities.vue'
+import ArbitLogs from '@/components/ArbitLogs.vue'
 import ArbitStatus from '@/components/ArbitStatus.vue'
 import ArbitTrades from '@/components/ArbitTrades.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'

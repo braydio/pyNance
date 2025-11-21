@@ -20,4 +20,5 @@
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI
+- [Arbit Dashboard UI](../frontend/arbit_dashboard.md) – component layout and live log feed
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting

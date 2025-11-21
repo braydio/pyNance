@@ -3,8 +3,12 @@
 from __future__ import annotations
 
 import json
+from collections import deque
+from datetime import datetime
+from pathlib import Path
 from queue import SimpleQueue
 
+from app.config.constants import RS_ASSISTANT_LOG_FILE
 from app.services import arbit_cli, arbit_metrics
 from flask import Blueprint, current_app, jsonify, request
 
@@ -24,6 +28,36 @@ def _parse_threshold_fee(data: dict) -> tuple[float, float] | None:
     if threshold <= 0 or fee < 0:
         return None
     return threshold, fee
+
+
+def _tail_log_file(path: Path, limit: int) -> list[str]:
+    """Return the newest ``limit`` entries from a plain-text log file."""
+
+    if not path.exists():
+        return []
+
+    with path.open("r", encoding="utf-8") as handle:
+        return [line.rstrip("\n") for line in deque(handle, maxlen=limit)]
+
+
+@arbit_dashboard.route("/logs", methods=["GET"])
+def get_rsassistant_logs():
+    """Return a bounded set of RSAssistant log lines for the live feed."""
+
+    try:
+        limit = int(request.args.get("limit", 50))
+    except (TypeError, ValueError):
+        limit = 50
+
+    limit = max(1, min(limit, 500))
+    lines = _tail_log_file(RS_ASSISTANT_LOG_FILE, limit)
+    last_updated = None
+    if RS_ASSISTANT_LOG_FILE.exists():
+        last_updated = datetime.fromtimestamp(
+            RS_ASSISTANT_LOG_FILE.stat().st_mtime
+        ).isoformat()
+
+    return jsonify({"lines": lines, "last_updated": last_updated, "limit": limit}), 200
 
 
 @arbit_dashboard.route("/status", methods=["GET"])
