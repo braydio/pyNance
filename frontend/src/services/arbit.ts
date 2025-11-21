@@ -73,3 +73,17 @@ export async function postArbitAlert(threshold: number) {
   const response = await apiClient.post('/arbit/alerts', { threshold })
   return response.data
 }
+
+export type ArbitLogResponse = {
+  lines: string[]
+  last_updated?: string | null
+  limit: number
+}
+
+/**
+ * Retrieve the latest RSAssistant log lines for the live dashboard feed.
+ */
+export async function fetchArbitLogs(limit = 50): Promise<ArbitLogResponse> {
+  const response = await apiClient.get('/arbit/logs', { params: { limit } })
+  return response.data
+}

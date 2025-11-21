@@ -3,7 +3,6 @@
 from app.config import logger
 from app.services import account_groups as account_group_service
 from app.services.account_snapshot import (
-    DEFAULT_USER_SCOPE,
     build_snapshot_payload,
     update_snapshot_selection,
 )
@@ -15,7 +14,7 @@ dashboard = Blueprint("dashboard", __name__)
 @dashboard.route("/account_snapshot", methods=["GET"])
 def get_account_snapshot():
     """Return stored snapshot preferences and hydrated account data."""
-    user_id = request.args.get("user_id") or DEFAULT_USER_SCOPE
+    user_id = request.args.get("user_id")
     try:
         data = build_snapshot_payload(user_id=user_id)
         return jsonify({"status": "success", "data": data}), 200
@@ -30,9 +29,7 @@ def get_account_snapshot():
 def update_account_snapshot():
     """Persist a new snapshot selection."""
     payload = request.get_json(silent=True) or {}
-    user_id = (
-        payload.get("user_id") or request.args.get("user_id") or DEFAULT_USER_SCOPE
-    )
+    user_id = payload.get("user_id") or request.args.get("user_id")
     selected_ids = payload.get("selected_account_ids")
 
     if selected_ids is None:

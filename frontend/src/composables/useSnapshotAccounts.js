@@ -2,6 +2,11 @@
 /**
  * Manage selected accounts for the dashboard snapshot view.
  * Fetches persisted selections, account data, and upcoming recurring reminders.
+ * Supports staged workflows when autoPersist is false, allowing callers to control when
+ * persistence occurs via the exposed persistSelection function.
+ *
+ * @param {number} fallbackMaxSelection - Default maximum selection when metadata is absent.
+ * @param {boolean} autoPersist - Whether selection changes should be persisted automatically.
  */
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
@@ -9,7 +14,7 @@ import axios from 'axios'
 
 const REMINDER_PATH = (id) => `/api/recurring/${id}/recurring`
 
-export function useSnapshotAccounts(fallbackMaxSelection = 10) {
+export function useSnapshotAccounts(fallbackMaxSelection = 10, autoPersist = true) {
   const accounts = ref([])
   const selectedIds = ref([])
   const reminders = ref({})
@@ -157,14 +162,30 @@ export function useSnapshotAccounts(fallbackMaxSelection = 10) {
       return
     }
 
-    persistSelection(limited)
-      .catch(() => {})
-      .finally(() => {
-        fetchReminders()
-      })
+    if (autoPersist) {
+      persistSelection(limited)
+        .catch(() => {})
+        .finally(() => {
+          fetchReminders()
+        })
+    }
   }
 
-  watch(selectedIds, handleSelectionChange, { deep: false })
+  if (autoPersist) {
+    watch(selectedIds, handleSelectionChange, { deep: false })
+  } else {
+    watch(
+      selectedIds,
+      (ids) => {
+        if (!initialized.value) return
+        const limited = ids.slice(0, maxSelection.value)
+        if (!areIdsEqual(ids, limited)) {
+          selectedIds.value = limited
+        }
+      },
+      { deep: false },
+    )
+  }
 
   onMounted(async () => {
     await loadSnapshot()
@@ -209,6 +230,7 @@ export function useSnapshotAccounts(fallbackMaxSelection = 10) {
     addAccount,
     removeAccount,
     setSelection,
+    persistSelection,
     refreshSnapshot: loadSnapshot,
     refreshReminders: fetchReminders,
   }
