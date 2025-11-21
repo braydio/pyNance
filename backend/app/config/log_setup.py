@@ -89,9 +89,18 @@ def setup_logger():
         )
         console_handler.setFormatter(color_fmt)
 
-        root_logger.setLevel(log_level)
+        # honour the configured LOG_LEVEL for the root logger, defaulting to INFO
+        root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
         root_logger.addHandler(file_handler)
         root_logger.addHandler(console_handler)
+
+        # suppress noisy HTTP request logs from Werkzeug/Flask
+        werkzeug_logger = logging.getLogger("werkzeug")
+        werkzeug_logger.setLevel(logging.WARNING)
+
+        # reduce verbosity from common HTTP client libraries
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("botocore").setLevel(logging.ERROR)
 
         root_logger.info(
             "Logging initialized. LOG_LEVEL=%s (RotatingFileHandler, 10MB x5)",

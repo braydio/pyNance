@@ -106,7 +106,7 @@ def exchange_public_token_endpoint():
 
     try:
         exchange_resp = exchange_public_token(public_token)
-        logger.debug("Exchange response: %s", exchange_resp)
+        logger.debug("Exchange response item_id=%s", exchange_resp.get("item_id"))
         if not exchange_resp:
             logger.warning("Exchange returned no response")
             return jsonify({"error": "Token exchange failed"}), 500
