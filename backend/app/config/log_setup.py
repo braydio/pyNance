@@ -45,6 +45,7 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 class ColorFormatter(logging.Formatter):
     """Colorize log levels for console readability."""
+
     COLORS = {
         logging.DEBUG: "\033[94m",  # Blue
         logging.INFO: "\033[92m",  # Green
