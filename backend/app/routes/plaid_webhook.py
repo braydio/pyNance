@@ -85,21 +85,23 @@ webhook_metrics = WebhookMetrics()
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
 
 
-def _verify_plaid_signature(req: Request) -> bool:
+def _verify_plaid_signature(req: Request) -> tuple[bool, str | None]:
     """Validate the Plaid webhook signature using the shared secret.
 
     Args:
         req: Incoming Flask request containing the webhook payload.
 
     Returns:
-        bool: ``True`` when the `Plaid-Signature` header matches the computed
-        signature; otherwise ``False``.
+        tuple[bool, str | None]: Whether the signature is valid and a reason code when
+        invalid. Reason codes include ``"missing"`` for absent headers,
+        ``"malformed"`` for unparseable headers, ``"missing_components"`` for missing
+        timestamp/signature parts, and ``"invalid"`` for mismatched signatures.
     """
 
     signature_header = req.headers.get("Plaid-Signature")
     if not signature_header:
-        logger.warning("Plaid webhook missing Plaid-Signature header.")
-        return False
+        logger.warning("Rejecting Plaid webhook: missing Plaid-Signature header.")
+        return False, "missing"
 
     components = {}
     try:
@@ -109,17 +111,20 @@ def _verify_plaid_signature(req: Request) -> bool:
             key, value = (section.strip() for section in part.split("=", 1))
             components[key] = value
     except (IndexError, ValueError):
-        logger.warning("Malformed Plaid-Signature header: %s", signature_header)
-        return False
+        logger.warning(
+            "Rejecting Plaid webhook: malformed Plaid-Signature header: %s",
+            signature_header,
+        )
+        return False, "malformed"
 
     timestamp = components.get("t")
     provided_signature = components.get("v1")
 
     if not timestamp or not provided_signature:
         logger.warning(
-            "Plaid webhook signature header missing timestamp or signature component."
+            "Rejecting Plaid webhook: Plaid-Signature missing timestamp or signature component."
         )
-        return False
+        return False, "missing_components"
 
     raw_body = req.get_data(as_text=True) or ""
     payload = f"{timestamp}.{raw_body}".encode("utf-8")
@@ -131,9 +136,9 @@ def _verify_plaid_signature(req: Request) -> bool:
     is_valid = hmac.compare_digest(computed_signature, provided_signature)
 
     if not is_valid:
-        logger.warning("Invalid Plaid webhook signature.")
+        logger.warning("Rejecting Plaid webhook: invalid Plaid-Signature.")
 
-    return is_valid
+    return is_valid, None if is_valid else "invalid"
 
 
 @plaid_webhooks.route("/plaid", methods=["POST"])
@@ -143,6 +148,15 @@ def handle_plaid_webhook():
     The handler also logs each inbound event to help operators confirm that
     Plaid delivered transaction sync notifications to the API.
     """
+
+    is_valid, reason = _verify_plaid_signature(request)
+    if not is_valid:
+        webhook_metrics.increment("failure", "SIGNATURE")
+        logger.warning("Plaid webhook rejected due to %s signature.", reason)
+        status_code = (
+            401 if reason in {"missing", "malformed", "missing_components"} else 403
+        )
+        return jsonify({"status": "unauthorized"}), status_code
 
     payload = request.get_json(silent=True) or {}
     webhook_type = payload.get("webhook_type")
