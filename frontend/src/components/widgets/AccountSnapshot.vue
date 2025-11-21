@@ -475,7 +475,14 @@ function upcomingPillClass(val) {
     ],
   }
 
-  const base = ['faded-upcoming', 'font-mono', 'transition-colors', 'px-2.5', 'py-1', 'leading-tight']
+  const base = [
+    'faded-upcoming',
+    'font-mono',
+    'transition-colors',
+    'px-2.5',
+    'py-1',
+    'leading-tight',
+  ]
   const num = parseFloat(val || 0)
   if (num > 0) return [...base, ...palette.positive]
   if (num < 0) return [...base, ...palette.negative]
