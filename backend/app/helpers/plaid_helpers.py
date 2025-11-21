@@ -116,7 +116,8 @@ def get_accounts(access_token: str, user_id: str):
             account_id = getattr(acct, "account_id", None)
             if not user_id:
                 logger.warning(
-                    "Missing user_id while syncing account_id=%s", account_id or "<unknown>"
+                    "Missing user_id while syncing account_id=%s",
+                    account_id or "<unknown>",
                 )
             balance = acct.balances.available or acct.balances.current
             if account_id and balance is not None:
