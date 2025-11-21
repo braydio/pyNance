@@ -5,8 +5,6 @@ import os
 import sys
 import types
 
-import pytest
-
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
 sys.modules.pop("app", None)
@@ -86,7 +84,9 @@ def setup_session(monkeypatch):
 
 def test_build_snapshot_payload_creates_preference(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
+    monkeypatch.setattr(
+        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
+    )
     monkeypatch.setattr(
         snapshot_service, "AccountSnapshotPreference", make_preference(None)
     )
@@ -132,7 +132,9 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
     ]
     accounts = [account(idx + 1, value) for idx, value in enumerate(balances)]
 
-    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
+    monkeypatch.setattr(
+        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
+    )
     monkeypatch.setattr(
         snapshot_service, "AccountSnapshotPreference", make_preference(None)
     )
@@ -161,7 +163,9 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
 
 def test_build_snapshot_payload_sanitizes_selection(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
+    monkeypatch.setattr(
+        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
+    )
 
     existing = types.SimpleNamespace(
         id=5,
@@ -185,7 +189,9 @@ def test_build_snapshot_payload_sanitizes_selection(monkeypatch):
 
 def test_update_snapshot_selection_filters_invalid(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda: accounts)
+    monkeypatch.setattr(
+        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
+    )
 
     existing = types.SimpleNamespace(
         id=7,
@@ -207,3 +213,22 @@ def test_update_snapshot_selection_filters_invalid(monkeypatch):
     assert existing.selected_account_ids == ["acc-1", "acc-2"]
     assert not added
     assert commits
+
+
+def test_visible_accounts_scope_is_forwarded(monkeypatch):
+    accounts = make_accounts()
+    scopes: list[str | None] = []
+
+    def _stub_visible_accounts(scope=None):
+        scopes.append(scope)
+        return accounts
+
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", _stub_visible_accounts)
+    monkeypatch.setattr(
+        snapshot_service, "AccountSnapshotPreference", make_preference(None)
+    )
+    setup_session(monkeypatch)
+
+    snapshot_service.build_snapshot_payload()
+
+    assert scopes == [snapshot_service.DEFAULT_USER_SCOPE]

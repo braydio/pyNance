@@ -15,9 +15,19 @@ DEFAULT_USER_SCOPE = "default"
 
 
 def build_snapshot_payload(user_id: str | None = None) -> dict:
-    """Return persisted snapshot selection and associated account data."""
+    """Return persisted snapshot selection and associated account data.
+
+    Args:
+        user_id: Optional user identifier used to scope visible accounts and
+            preferences. Falls back to ``DEFAULT_USER_SCOPE`` when omitted.
+
+    Returns:
+        dict: Snapshot payload containing selected and available accounts for the
+        resolved user scope.
+    """
+
     scope = user_id or DEFAULT_USER_SCOPE
-    accounts = _visible_accounts()
+    accounts = _visible_accounts(scope)
     preference = _ensure_preference(scope, accounts)
     normalized = _normalize_ids(preference.selected_account_ids)
     valid_ids, discarded = _filter_valid_ids(normalized, accounts)
@@ -32,9 +42,21 @@ def build_snapshot_payload(user_id: str | None = None) -> dict:
 def update_snapshot_selection(
     selected_account_ids: Iterable[str], user_id: str | None = None
 ) -> dict:
-    """Persist a new snapshot selection and return the refreshed payload."""
+    """Persist a new snapshot selection and return the refreshed payload.
+
+    Args:
+        selected_account_ids: Iterable of account identifiers to persist for the
+            user.
+        user_id: Optional user identifier used to scope visible accounts and
+            preferences. Falls back to ``DEFAULT_USER_SCOPE`` when omitted.
+
+    Returns:
+        dict: Snapshot payload containing the persisted selection and available
+        accounts for the resolved user scope.
+    """
+
     scope = user_id or DEFAULT_USER_SCOPE
-    accounts = _visible_accounts()
+    accounts = _visible_accounts(scope)
     preference = _ensure_preference(scope, accounts)
 
     normalized = _normalize_ids(selected_account_ids)
@@ -53,9 +75,24 @@ def update_snapshot_selection(
 # ---------------------------------------------------------------------------
 
 
-def _visible_accounts() -> List[Account]:
+def _visible_accounts(user_id: str | None = None) -> List[Account]:
+    """Return visible accounts for a specific user scope.
+
+    Args:
+        user_id: Optional user identifier to filter accounts. Defaults to
+            ``DEFAULT_USER_SCOPE`` when omitted.
+
+    Returns:
+        list[Account]: All non-hidden accounts associated with the resolved user
+        scope ordered by institution then account name.
+    """
+
+    scope = user_id or DEFAULT_USER_SCOPE
     return (
-        Account.query.filter(Account.is_hidden.is_(False))
+        Account.query.filter(
+            Account.user_id == scope,
+            Account.is_hidden.is_(False),
+        )
         .order_by(Account.institution_name.asc(), Account.name.asc())
         .all()
     )
@@ -222,11 +259,13 @@ def _serialize_account(account: Account) -> dict:
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
 
+    account_pk = getattr(account, "id", None) or account.account_id
+
     if getattr(plaid_account, "last_refreshed", None):
         last_refreshed = _datetime_to_iso(plaid_account.last_refreshed)
 
     return {
-        "id": account.id,
+        "id": account_pk,
         "account_id": account.account_id,
         "name": account.name,
         "institution_name": account.institution_name,

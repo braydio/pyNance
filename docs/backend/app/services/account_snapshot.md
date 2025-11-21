@@ -23,4 +23,5 @@
 ## Usage Notes
 
 - Snapshot scope defaults to the shared `"default"` user scope but can be overridden per user.
+- Visible and selected accounts are always filtered by the caller's `user_id`, preventing preferences from leaking accounts from other users.
 - Invalid or stale account IDs are automatically pruned and recorded in the payload metadata.
