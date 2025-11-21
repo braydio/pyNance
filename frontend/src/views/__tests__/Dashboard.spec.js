@@ -18,10 +18,12 @@ vi.mock('@/composables/useTransactions.js', () => ({
     searchQuery: ref(''),
     currentPage: ref(1),
     totalPages: ref(1),
+    totalCount: ref(0),
     filteredTransactions: ref([]),
     sortKey: ref(null),
     sortOrder: ref(1),
     setSort: vi.fn(),
+    setPage: vi.fn(),
     changePage: vi.fn(),
   }),
 }))

@@ -100,17 +100,15 @@
           />
         </transition>
       </Card>
-      <div
+      <PaginationControls
         v-if="!searchQuery && !error"
         id="pagination-controls"
-        class="flex items-center justify-center gap-4 mt-4"
-      >
-        <UiButton variant="outline" @click="changePage(-1)" :disabled="currentPage === 1"
-          >Prev</UiButton
-        >
-        <span class="text-muted">Page {{ currentPage }} of {{ totalPages }}</span>
-        <UiButton variant="primary" @click="changePage(1)" :disabled="!hasNextPage">Next</UiButton>
-      </div>
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :page-size="initialPageSize"
+        :total-items="totalCount"
+        @change-page="setPage"
+      />
     </template>
 
     <!-- Recurring Tab -->
@@ -150,6 +148,7 @@ import AccountFilter from '@/components/AccountFilter.vue'
 import TypeSelector from '@/components/TypeSelector.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import RetryError from '@/components/errors/RetryError.vue'
+import PaginationControls from '@/components/tables/PaginationControls.vue'
 
 export default {
   name: 'TransactionsView',
@@ -166,6 +165,7 @@ export default {
     TypeSelector,
     SkeletonCard,
     RetryError,
+    PaginationControls,
   },
   setup() {
     const route = useRoute()
@@ -242,12 +242,12 @@ export default {
       searchQuery,
       currentPage,
       totalPages,
+      totalCount,
       filteredTransactions,
-      changePage,
       sortKey,
       sortOrder,
       setSort,
-      hasNextPage,
+      setPage,
     } = useTransactions(initialPageSize, promotedTransactionId, filters)
 
     /**
@@ -292,11 +292,13 @@ export default {
       searchQuery,
       currentPage,
       totalPages,
+      totalCount,
+      initialPageSize,
       filteredTransactions,
-      changePage,
       sortKey,
       sortOrder,
       setSort,
+      setPage,
       recurringFormRef,
       prefillRecurringFromTransaction,
       CreditCard,
@@ -307,7 +309,6 @@ export default {
       showScanner,
       toggleScanner,
       showControls,
-      hasNextPage,
     }
   },
 }

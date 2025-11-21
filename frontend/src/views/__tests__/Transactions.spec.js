@@ -23,12 +23,14 @@ describe('Transactions.vue', () => {
     const searchQuery = ref('')
     const currentPage = ref(1)
     const totalPages = ref(1)
+    const totalCount = ref(0)
     const filteredTransactions = ref([])
     const sortKey = ref(null)
     const sortOrder = ref(1)
     const isLoadingRef = ref(isLoading)
     const errorRef = ref(error)
     const changePage = vi.fn()
+    const setPage = vi.fn()
     const setSort = vi.fn()
     const fetchTransactions = vi.fn()
 
@@ -36,8 +38,10 @@ describe('Transactions.vue', () => {
       searchQuery,
       currentPage,
       totalPages,
+      totalCount,
       filteredTransactions,
       changePage,
+      setPage,
       sortKey,
       sortOrder,
       setSort,
@@ -72,6 +76,7 @@ describe('Transactions.vue', () => {
             template:
               '<div data-testid="retry-error"><button data-testid="retry-button" @click="$emit(\'retry\')">Retry</button></div>',
           },
+          PaginationControls: true,
         },
       },
     })

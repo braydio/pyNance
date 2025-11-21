@@ -130,25 +130,14 @@
         </tbody>
       </table>
     </div>
-    <div class="flex items-center justify-center gap-4 mt-4" v-if="totalPages > 1">
-      <button
-        class="btn btn-outline"
-        @click="prevPage"
-        :disabled="page === 1"
-        data-test="prev-page"
-      >
-        Prev
-      </button>
-      <span class="text-neutral-400">Page {{ page }} of {{ totalPages }}</span>
-      <button
-        class="btn btn-outline"
-        @click="nextPage"
-        :disabled="page >= totalPages"
-        data-test="next-page"
-      >
-        Next
-      </button>
-    </div>
+    <PaginationControls
+      v-if="totalPages > 1"
+      :current-page="page"
+      :total-pages="totalPages"
+      :page-size="pageSize"
+      :total-items="total"
+      @change-page="setPage"
+    />
   </div>
 </template>
 
@@ -156,6 +145,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import DateRangeSelector from '../DateRangeSelector.vue'
+import PaginationControls from './PaginationControls.vue'
 import { fetchTransactions } from '@/api/transactions'
 import { formatAmount as formatCurrency } from '@/utils/format'
 
@@ -168,7 +158,7 @@ import { formatAmount as formatCurrency } from '@/utils/format'
  */
 export default {
   name: 'TransactionsTable',
-  components: { DateRangeSelector },
+  components: { DateRangeSelector, PaginationControls },
   setup() {
     const transactionsChart = ref(null)
     const transactions = ref([])
@@ -272,16 +262,22 @@ export default {
       })
     }
 
+    function setPage(target) {
+      const clamped = Math.max(1, Math.min(target, totalPages.value || 1))
+      if (clamped !== page.value) {
+        page.value = clamped
+      }
+      load()
+    }
+
     function nextPage() {
       if (page.value < totalPages.value) {
-        page.value += 1
-        load()
+        setPage(page.value + 1)
       }
     }
     function prevPage() {
       if (page.value > 1) {
-        page.value -= 1
-        load()
+        setPage(page.value - 1)
       }
     }
 
@@ -343,11 +339,13 @@ export default {
       startDate,
       endDate,
       page,
+      total,
       totalPages,
       formatDate,
       formatAmount,
       formatDescription,
       formatCategory,
+      setPage,
       nextPage,
       prevPage,
     }
