@@ -2,9 +2,10 @@
 
 """Expose configuration constants and logger setup across the app.
 
-The module emits a concise INFO-level summary on import while deferring verbose
+The module emits a single INFO-level summary on import while deferring verbose
 environment details to DEBUG logs so deployments can tune visibility via
-``LOG_LEVEL`` without exposing sensitive configuration values.
+``LOG_LEVEL`` without exposing sensitive configuration values such as full
+database URIs or secrets.
 """
 
 import logging
@@ -52,26 +53,26 @@ __all__ = [
     "logger",
 ]
 
-env_check = PLAID_ENV.upper()
-
 logger = setup_logger()
 
 logger.info(
-    "Configuration loaded for %s (Plaid env=%s, dashboard_enabled=%s)",
+    "Configuration loaded (env=%s, plaid_env=%s, dashboard_enabled=%s, log_level=%s)",
     FLASK_ENV,
     PLAID_ENV,
     ENABLE_ARBIT_DASHBOARD,
+    logging.getLevelName(logger.level),
 )
 
 if logger.isEnabledFor(logging.DEBUG):
-    if plaid_client:
-        logger.debug("Plaid client initialized for %s environment.", env_check)
-    logger.debug("Running in %s environment.", FLASK_ENV)
-    logger.debug("Loaded config from %s", __name__)
-    logger.debug("Initialized main database as %s", DATABASE_NAME)
-    if DATABASE_NAME:
-        logger.debug("Connected database: %s", DATABASE_NAME)
-    logger.debug("Starting dashboard in Plaid %s environment.", PLAID_ENV)
-    logger.debug("Base URLs: Plaid=%s, Arbit=%s", PLAID_BASE_URL, ARBIT_EXPORTER_URL)
-    logger.debug("Configured directories: %s", DIRECTORIES)
-    logger.debug("Enabled products: %s", PRODUCTS)
+    debug_context = {
+        "plaid_client_initialized": bool(plaid_client),
+        "flask_env": FLASK_ENV,
+        "plaid_env": PLAID_ENV,
+        "database_name": DATABASE_NAME,
+        "dashboard_enabled": ENABLE_ARBIT_DASHBOARD,
+        "plaid_base_url": PLAID_BASE_URL,
+        "arbit_exporter_url": ARBIT_EXPORTER_URL,
+        "directories": DIRECTORIES,
+        "products": PRODUCTS,
+    }
+    logger.debug("Configuration context: %s", debug_context)
