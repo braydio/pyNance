@@ -95,8 +95,10 @@ def create_app():
 
     # Utility CLI: backfill Plaid transaction history over a custom range
     from app.cli.backfill_plaid_history import backfill_plaid_history
+    from app.cli.debug_plaid_history import debug_plaid_history
 
     app.cli.add_command(backfill_plaid_history)
+    app.cli.add_command(debug_plaid_history)
 
     # Dev CLI: run Plaid transactions/sync
     try:
