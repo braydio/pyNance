@@ -1,6 +1,8 @@
 <!--
   AccountSnapshot.vue
-  Enhanced dashboard snapshot with persisted selections and richer drilldowns.
+  Enhanced dashboard snapshot with persisted selections, staged edits, and richer drilldowns.
+  Editing is opt-in: click Edit, adjust the staged selection (up to maxSelection), then Save to
+  persist or Cancel to revert to the last saved snapshot.
 -->
 <template>
   <div class="bg-bg-secondary rounded-3xl p-6 shadow-card w-full max-w-3xl">
@@ -29,16 +31,46 @@
           <span class="i-carbon-renew text-sm" aria-hidden="true"></span>
           <span>{{ isLoading ? 'Refreshing…' : 'Refresh' }}</span>
         </button>
+        <button
+          v-if="!isEditing"
+          type="button"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          @click="startEditing"
+          :disabled="isLoading || isSaving"
+        >
+          <span class="i-carbon-edit text-sm" aria-hidden="true"></span>
+          <span>Edit</span>
+        </button>
+        <button
+          v-else
+          type="button"
+          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200"
+          @click="saveEditing"
+          :disabled="isSaving || !hasStagedChanges"
+        >
+          <span class="i-carbon-save text-sm" aria-hidden="true"></span>
+          <span>{{ isSaving ? 'Saving…' : 'Save' }}</span>
+        </button>
+        <button
+          v-if="isEditing"
+          type="button"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          @click="cancelEditing"
+          :disabled="isSaving"
+        >
+          <span class="i-carbon-close text-sm" aria-hidden="true"></span>
+          <span>Cancel</span>
+        </button>
         <div class="relative">
           <select
             v-model="selectionCandidate"
-            :disabled="isSaving || !availableAccounts.length"
+            :disabled="isSaving || !stagedAvailableAccounts.length || !isEditing"
             @change="handleAddAccount"
             class="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
           >
             <option value="">Add account…</option>
             <option
-              v-for="account in availableAccounts"
+              v-for="account in stagedAvailableAccounts"
               :key="account.account_id"
               :value="account.account_id"
             >
@@ -81,7 +113,11 @@
         </div>
       </dl>
       <p class="mt-3 text-xs text-gray-400">
-        Selected {{ selectedIds.length }} / {{ maxSelection }} accounts
+        {{ isEditing ? 'Staged' : 'Selected' }} {{ stagedSelection.length }} /
+        {{ maxSelection }} accounts
+      </p>
+      <p v-if="isEditing" class="text-[11px] text-amber-600">
+        Changes are staged until you click Save.
       </p>
     </section>
 
@@ -89,7 +125,7 @@
       <h4 class="text-xs uppercase tracking-wide text-gray-400">Snapshot selection</h4>
       <div class="mt-2 flex flex-wrap gap-2">
         <span
-          v-for="account in selectedAccounts"
+          v-for="account in stagedAccounts"
           :key="account.account_id"
           class="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs text-primary dark:border-primary/60"
         >
@@ -97,12 +133,13 @@
           <span class="max-w-[140px] truncate">{{ account.name }}</span>
           <button
             type="button"
-            class="i-carbon-close text-xs text-primary/80 transition hover:text-primary"
+            class="i-carbon-close text-xs text-primary/80 transition hover:text-primary disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="!isEditing || isSaving"
             @click="handleRemoveAccount(account.account_id)"
             :aria-label="`Remove ${account.name} from snapshot`"
           ></button>
         </span>
-        <p v-if="!selectedAccounts.length && !isLoading" class="text-sm text-gray-400">
+        <p v-if="!stagedAccounts.length && !isLoading" class="text-sm text-gray-400">
           Choose accounts to populate the snapshot preview.
         </p>
       </div>
@@ -117,14 +154,14 @@
         ></div>
       </div>
       <div
-        v-else-if="!selectedAccounts.length"
+        v-else-if="!stagedAccounts.length"
         class="rounded-2xl border border-dashed border-gray-300 bg-white/40 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400"
       >
         No accounts selected yet. Use the control above to build your snapshot.
       </div>
       <div v-else class="space-y-4">
         <article
-          v-for="account in selectedAccounts"
+          v-for="account in stagedAccounts"
           :key="account.account_id"
           class="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-primary/40 dark:border-gray-800 dark:bg-gray-900"
         >
@@ -240,7 +277,7 @@
 </template>
 
 <script setup>
-import { ref, computed, reactive } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
 import { fetchRecentTransactions } from '@/api/transactions'
@@ -248,29 +285,66 @@ import { fetchRecentTransactions } from '@/api/transactions'
 const selectionCandidate = ref('')
 const openAccountId = ref(null)
 const recentTxs = reactive({})
+const isEditing = ref(false)
+const stagedSelection = ref([])
 const router = useRouter()
 
 const {
-  selectedAccounts,
+  accounts,
   selectedIds,
   reminders,
   metadata,
   maxSelection,
-  availableAccounts,
   isLoading,
   isSaving,
   remindersLoading,
   error,
-  addAccount,
-  removeAccount,
   refreshSnapshot,
   refreshReminders,
-} = useSnapshotAccounts()
+  persistSelection,
+} = useSnapshotAccounts(10, false)
+
+const stagedAccounts = computed(() =>
+  stagedSelection.value
+    .map((id) => accounts.value.find((account) => account.account_id === id))
+    .filter(Boolean),
+)
+
+const stagedAvailableAccounts = computed(() =>
+  accounts.value.filter((account) => !stagedSelection.value.includes(account.account_id)),
+)
+
+const hasStagedChanges = computed(() => !areIdsEqual(stagedSelection.value, selectedIds.value))
+
+watch(
+  selectedIds,
+  (ids) => {
+    if (!isEditing.value) {
+      stagedSelection.value = (ids || []).slice(0, maxSelection.value)
+    }
+  },
+  { immediate: true },
+)
+
+watch(
+  stagedSelection,
+  (ids) => {
+    if (openAccountId.value && !ids.includes(openAccountId.value)) {
+      openAccountId.value = null
+    }
+  },
+  { deep: false },
+)
 
 const errorMessage = computed(() => {
   if (!error.value) return ''
   return error.value.message || String(error.value)
 })
+
+function areIdsEqual(a = [], b = []) {
+  if (a.length !== b.length) return false
+  return a.every((val, idx) => val === b[idx])
+}
 
 function accountOptionLabel(account) {
   if (!account) return ''
@@ -279,13 +353,54 @@ function accountOptionLabel(account) {
 }
 
 function handleAddAccount() {
-  if (!selectionCandidate.value) return
-  addAccount(selectionCandidate.value)
+  if (!selectionCandidate.value || !isEditing.value) return
+  const candidate = selectionCandidate.value
   selectionCandidate.value = ''
+  if (stagedSelection.value.includes(candidate)) return
+
+  const limit = maxSelection.value
+  if (stagedSelection.value.length >= limit) {
+    const next = stagedSelection.value.slice(1)
+    stagedSelection.value = [...next, candidate]
+  } else {
+    stagedSelection.value = [...stagedSelection.value, candidate]
+  }
 }
 
 function handleRemoveAccount(accountId) {
-  removeAccount(accountId)
+  if (!isEditing.value) return
+  stagedSelection.value = stagedSelection.value.filter((id) => id !== accountId)
+  if (openAccountId.value === accountId) {
+    openAccountId.value = null
+  }
+}
+
+function startEditing() {
+  stagedSelection.value = selectedIds.value.slice(0, maxSelection.value)
+  isEditing.value = true
+}
+
+function cancelEditing() {
+  stagedSelection.value = selectedIds.value.slice(0, maxSelection.value)
+  selectionCandidate.value = ''
+  isEditing.value = false
+}
+
+async function saveEditing() {
+  if (!hasStagedChanges.value) {
+    isEditing.value = false
+    return
+  }
+
+  try {
+    await persistSelection(stagedSelection.value)
+    if (stagedSelection.value.length) {
+      refreshReminders()
+    }
+    isEditing.value = false
+  } catch (err) {
+    console.error('Failed to save snapshot selection', err)
+  }
 }
 
 async function handleRefresh() {
@@ -340,11 +455,11 @@ function upcomingPillClass(val) {
 }
 
 const totalBalance = computed(() =>
-  selectedAccounts.value.reduce((sum, account) => sum + parseFloat(account.balance || 0), 0),
+  stagedAccounts.value.reduce((sum, account) => sum + parseFloat(account.balance || 0), 0),
 )
 
 const totalUpcoming = computed(() =>
-  selectedAccounts.value.reduce((sum, account) => sum + netUpcoming(account), 0),
+  stagedAccounts.value.reduce((sum, account) => sum + netUpcoming(account), 0),
 )
 
 function netUpcoming(account) {
