@@ -62,6 +62,12 @@ candidates.
 
 Placeholder returning an empty list for completed trade history.
 
+### `GET /api/arbit/logs`
+
+Returns the newest RSAssistant log entries for the dashboard feed. Responses
+include the requested `limit`, the ordered `lines`, and the `last_updated`
+timestamp sourced from the log file's modification time.
+
 ### `POST /api/arbit/start`
 
 Launches the CLI worker with the supplied configuration. The request **must**

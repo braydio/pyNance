@@ -46,3 +46,7 @@ TELEMETRY = {"enabled": True, "track_modifications": False}
 # The TUI script should write JSON snapshots to this file for consumption
 # by the web API.
 ARBITRAGE_FILE = DIRECTORIES["LOGS_DIR"] / "rs_arbitrage.json"
+
+# Primary log file written by the RSAssistant process. The Arbit dashboard
+# exposes a lightweight endpoint to read recent entries for the live feed.
+RS_ASSISTANT_LOG_FILE = DIRECTORIES["LOGS_DIR"] / "rsassistant.log"
