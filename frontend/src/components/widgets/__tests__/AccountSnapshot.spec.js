@@ -19,7 +19,7 @@ vi.mock('@/api/transactions', () => ({
 
 vi.mock('@/composables/useSnapshotAccounts.js', () => ({
   useSnapshotAccounts: () => {
-    const selectedAccounts = ref([
+    const accounts = ref([
       {
         account_id: 'acct-1',
         name: 'Everyday Checking',
@@ -31,27 +31,24 @@ vi.mock('@/composables/useSnapshotAccounts.js', () => ({
     const reminders = ref([])
     const metadata = ref({ discarded_ids: [] })
     const maxSelection = computed(() => 5)
-    const availableAccounts = ref([])
     const isLoading = ref(false)
     const isSaving = ref(false)
     const remindersLoading = ref(false)
     const error = ref(null)
 
     return {
-      selectedAccounts,
+      accounts,
       selectedIds,
       reminders,
       metadata,
       maxSelection,
-      availableAccounts,
       isLoading,
       isSaving,
       remindersLoading,
       error,
-      addAccount: vi.fn(),
-      removeAccount: vi.fn(),
       refreshSnapshot: vi.fn().mockResolvedValue(),
       refreshReminders: vi.fn(),
+      persistSelection: vi.fn().mockResolvedValue(),
     }
   },
 }))

@@ -9,6 +9,8 @@ from datetime import datetime
 import pytest
 from flask import Flask
 
+os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite://")
+
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 if BASE_BACKEND not in sys.path:
     sys.path.insert(0, BASE_BACKEND)
@@ -20,15 +22,13 @@ for module in [
     "app.models",
     "app.services",
     "app.services.account_snapshot",
+    "app.utils.finance_utils",
 ]:
     sys.modules.pop(module, None)
 
 from app.extensions import db
 from app.models import Account, AccountSnapshotPreference
-from app.services.account_snapshot import (
-    MAX_SNAPSHOT_SELECTION,
-    build_snapshot_payload,
-)
+from app.services.account_snapshot import MAX_SNAPSHOT_SELECTION, build_snapshot_payload
 
 
 @pytest.fixture()
@@ -55,11 +55,12 @@ def _make_account(
     institution: str,
     account_type: str = "depository",
     subtype: str = "checking",
+    user_id: str = "integration-user",
 ) -> Account:
     """Create an :class:`Account` instance for integration testing."""
     return Account(
         account_id=account_id,
-        user_id="integration-user",
+        user_id=user_id,
         name=name,
         type=account_type,
         subtype=subtype,
@@ -163,3 +164,58 @@ def test_build_snapshot_payload_creates_preference_sqlite(sqlite_app):
         assert {acc["account_id"] for acc in payload["available_accounts"]} == {
             acct.account_id for acct in asset_accounts + liability_accounts
         }
+
+
+def test_build_snapshot_payload_filters_by_user(sqlite_app):
+    """Accounts from other users should never appear in the payload."""
+
+    with sqlite_app.app_context():
+        primary_accounts = [
+            _make_account(
+                "primary-1", "Primary Checking", 4200.0, "Bank A", user_id="user-a"
+            ),
+            _make_account(
+                "primary-2", "Primary Savings", 3100.0, "Bank A", user_id="user-a"
+            ),
+        ]
+        other_accounts = [
+            _make_account(
+                "other-1",
+                "Other Checking",
+                8700.0,
+                "Bank B",
+                user_id="other-user",
+            ),
+            _make_account(
+                "other-2",
+                "Other Loan",
+                -2600.0,
+                "Bank C",
+                account_type="loan",
+                subtype="personal",
+                user_id="other-user",
+            ),
+        ]
+
+        db.session.add_all(primary_accounts + other_accounts)
+        db.session.commit()
+
+        payload = build_snapshot_payload(user_id="user-a")
+
+        assert {acc["account_id"] for acc in payload["available_accounts"]} == {
+            acct.account_id for acct in primary_accounts
+        }
+        assert all(
+            account["account_id"] in {acct.account_id for acct in primary_accounts}
+            for account in payload["selected_accounts"]
+        )
+
+        preference = AccountSnapshotPreference.query.filter_by(user_id="user-a").first()
+        assert preference is not None
+        assert set(preference.selected_account_ids).issubset(
+            {acct.account_id for acct in primary_accounts}
+        )
+        assert (
+            AccountSnapshotPreference.query.filter_by(user_id="other-user").first()
+            is None
+        )

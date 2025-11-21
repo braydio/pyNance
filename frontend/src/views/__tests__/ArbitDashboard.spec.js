@@ -27,6 +27,7 @@ describe('ArbitDashboard.vue', () => {
           ArbitAlerts: createStub('arbit-alerts-stub'),
           ArbitOpportunities: createStub('arbit-opportunities-stub'),
           ArbitTrades: createStub('arbit-trades-stub'),
+          ArbitLogs: createStub('arbit-logs-stub'),
         },
       },
     })
@@ -37,10 +38,12 @@ describe('ArbitDashboard.vue', () => {
     const statusSection = wrapper.find('[data-testid="status-controls"]')
     const metricsSection = wrapper.find('[data-testid="metrics-alerts"]')
     const tradesSection = wrapper.find('[data-testid="opportunities-trades"]')
+    const logsSection = wrapper.find('[data-testid="rsassistant-logs"]')
 
     expect(statusSection.exists()).toBe(true)
     expect(metricsSection.exists()).toBe(true)
     expect(tradesSection.exists()).toBe(true)
+    expect(logsSection.exists()).toBe(true)
 
     expect(statusSection.find('[data-test="arbit-status-stub"]').exists()).toBe(true)
     expect(statusSection.find('[data-test="arbit-controls-stub"]').exists()).toBe(true)
@@ -48,6 +51,7 @@ describe('ArbitDashboard.vue', () => {
     expect(metricsSection.find('[data-test="arbit-alerts-stub"]').exists()).toBe(true)
     expect(tradesSection.find('[data-test="arbit-opportunities-stub"]').exists()).toBe(true)
     expect(tradesSection.find('[data-test="arbit-trades-stub"]').exists()).toBe(true)
+    expect(logsSection.find('[data-test="arbit-logs-stub"]').exists()).toBe(true)
   })
 
   it('matches snapshot', () => {

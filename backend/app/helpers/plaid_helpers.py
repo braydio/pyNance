@@ -1,14 +1,14 @@
-"""Helper utilities for interacting with the Plaid API."""
+"""Helper utilities for interacting with the Plaid API.
+
+Logging is routed through the module logger and avoids emitting sensitive token
+material. Messages are reserved for notable lifecycle events and failures to
+keep logs concise.
+"""
 
 import json
+import logging
 
-from app.config import (
-    BACKEND_PUBLIC_URL,
-    FILES,
-    PLAID_CLIENT_NAME,
-    logger,
-    plaid_client,
-)
+from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, plaid_client
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
@@ -33,6 +33,7 @@ from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
+logger = logging.getLogger(__name__)
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
 
@@ -40,10 +41,10 @@ PLAID_TOKENS = FILES["PLAID_TOKENS"]
 def load_plaid_tokens():
     """Load Plaid tokens from the designated JSON file."""
     try:
-        logger.debug("Loading Plaid tokens from %s", PLAID_TOKENS)
+        logger.info("Loading Plaid tokens from %s", PLAID_TOKENS)
         with open(PLAID_TOKENS, "r") as f:
             tokens = json.load(f)
-        logger.debug("Loaded Plaid tokens: %s", tokens)
+        logger.info("Loaded %d Plaid token(s) from %s", len(tokens), PLAID_TOKENS)
         return tokens
     except FileNotFoundError:
         logger.warning(
@@ -64,10 +65,10 @@ def load_plaid_tokens():
 def save_plaid_tokens(tokens):
     """Save Plaid tokens to the designated JSON file."""
     try:
-        logger.debug("Saving Plaid tokens to %s: %s", PLAID_TOKENS, tokens)
+        logger.info("Saving %d Plaid token(s) to %s", len(tokens), PLAID_TOKENS)
         with open(PLAID_TOKENS, "w") as f:
             json.dump(tokens, f, indent=4)
-        logger.debug("Plaid tokens saved successfully.")
+        logger.info("Plaid tokens saved successfully to %s", PLAID_TOKENS)
     except Exception as e:
         logger.error(
             "Error saving tokens to %s: %s",
@@ -81,13 +82,24 @@ def save_transactions_json(transactions):
     try:
         with open(LAST_TRANSACTIONS, "w") as f:
             json.dump(transactions, f, indent=4, default=str)
-        logger.debug("Saved transactions to %s.", LAST_TRANSACTIONS)
+        try:
+            total = len(transactions)
+        except TypeError:
+            total = None
+        if total is not None:
+            logger.info(
+                "Saved %d transaction(s) to %s.",
+                total,
+                LAST_TRANSACTIONS,
+            )
+        else:
+            logger.info("Saved transactions to %s.", LAST_TRANSACTIONS)
     except Exception as e:
         logger.error("Failed to save transactions: %s", e, exc_info=True)
 
 
 def get_accounts(access_token: str, user_id: str):
-    logger.debug("Fetching accounts for token %s...", access_token[:4])
+    logger.info("Fetching Plaid accounts for user %s", user_id or "<missing>")
 
     if not user_id:
         logger.error("Missing user_id in get_accounts() — aborting.")
@@ -103,7 +115,6 @@ def get_accounts(access_token: str, user_id: str):
                 logger.warning(
                     "[WARN] Missing user_id while syncing account_id=%s", acct
                 )
-            logger.debug("Passing along user id %s from plaid_helpers", user_id)
             account_id = acct.account_id
             balance = acct.balances.available or acct.balances.current
             if account_id and balance is not None:
@@ -138,11 +149,7 @@ def get_item(access_token: str):
 def generate_link_token(user_id: str, products=None):
     if products is None:
         products = ["transactions"]
-    logger.debug(
-        "Generating link token with user_id=%s, products=%s",
-        user_id,
-        products,
-    )
+    logger.info("Generating link token for user %s", user_id)
 
     try:
         product_enums = [Products(p) for p in products]
@@ -172,7 +179,7 @@ def generate_link_token(user_id: str, products=None):
 
 
 def exchange_public_token(public_token: str):
-    logger.debug("Exchanging public token: %s", public_token)
+    logger.info("Exchanging public token for access token")
 
     try:
         plaid_request = ItemPublicTokenExchangeRequest(public_token=public_token)

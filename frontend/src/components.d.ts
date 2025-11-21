@@ -21,6 +21,7 @@ declare module 'vue' {
     AppLayout: typeof import('./components/layout/AppLayout.vue')['default']
     ArbitAlerts: typeof import('./components/ArbitAlerts.vue')['default']
     ArbitControls: typeof import('./components/ArbitControls.vue')['default']
+    ArbitLogs: typeof import('./components/ArbitLogs.vue')['default']
     ArbitMetrics: typeof import('./components/ArbitMetrics.vue')['default']
     ArbitOpportunities: typeof import('./components/ArbitOpportunities.vue')['default']
     ArbitStatus: typeof import('./components/ArbitStatus.vue')['default']

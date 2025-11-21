@@ -1,6 +1,9 @@
 """Tests for Plaid webhook processing and sync instrumentation."""
 
+import hashlib
+import hmac
 import importlib.util
+import json
 import os
 import sys
 import types
@@ -370,11 +373,125 @@ plaid_sync_spec.loader.exec_module(plaid_sync_module)
 _restore_modules()
 
 
+def _build_signature(
+    payload: dict[str, object], timestamp: str = "1234567890"
+) -> tuple[str, dict[str, str]]:
+    """Return the serialized body and Plaid signature header for a payload."""
+
+    body = json.dumps(payload)
+    signature = hmac.new(
+        config_stub.PLAID_WEBHOOK_SECRET.encode("utf-8"),
+        msg=f"{timestamp}.{body}".encode("utf-8"),
+        digestmod=hashlib.sha256,
+    ).hexdigest()
+    header = {"Plaid-Signature": f"t={timestamp},v1={signature}"}
+    return body, header
+
+
 @pytest.fixture(autouse=True)
 def reset_metrics() -> None:
     """Reset webhook metrics between tests."""
 
     plaid_webhook_module.webhook_metrics.reset()
+
+
+def test_webhook_accepts_valid_signature() -> None:
+    """A valid signature should allow webhook processing to continue."""
+
+    session = FakeSession()
+    extensions_stub.db.session = session
+    plaid_webhook_module.db.session = session
+    plaid_webhook_module.PlaidWebhookLog = FakePlaidWebhookLog
+
+    fake_logger = FakeLogger()
+    config_stub.logger = fake_logger
+    plaid_webhook_module.logger = fake_logger
+
+    app = Flask(__name__)
+    app.register_blueprint(plaid_webhook_module.plaid_webhooks)
+
+    payload = {"webhook_type": "PING", "webhook_code": "TEST"}
+    body, headers = _build_signature(payload)
+
+    with app.test_client() as client:
+        resp = client.post(
+            "/plaid", data=body, headers=headers, content_type="application/json"
+        )
+
+    assert resp.status_code == 200
+    assert resp.get_json() == {"status": "ignored"}
+    assert session.commits == 1
+    assert plaid_webhook_module.webhook_metrics.count("failure", "SIGNATURE") == 0
+    assert not any(
+        "Rejecting Plaid webhook" in msg for msg in fake_logger.records["warning"]
+    )
+
+
+def test_webhook_rejects_missing_signature() -> None:
+    """Webhook calls without signatures are rejected with a 401."""
+
+    session = FakeSession()
+    extensions_stub.db.session = session
+    plaid_webhook_module.db.session = session
+    plaid_webhook_module.PlaidWebhookLog = FakePlaidWebhookLog
+
+    fake_logger = FakeLogger()
+    config_stub.logger = fake_logger
+    plaid_webhook_module.logger = fake_logger
+
+    app = Flask(__name__)
+    app.register_blueprint(plaid_webhook_module.plaid_webhooks)
+
+    payload = {"webhook_type": "PING", "webhook_code": "TEST"}
+    body = json.dumps(payload)
+
+    with app.test_client() as client:
+        resp = client.post("/plaid", data=body, content_type="application/json")
+
+    assert resp.status_code == 401
+    assert resp.get_json() == {"status": "unauthorized"}
+    assert session.commits == 0
+    assert plaid_webhook_module.webhook_metrics.count("failure", "SIGNATURE") == 1
+    assert any(
+        "missing Plaid-Signature header" in msg
+        for msg in fake_logger.records["warning"]
+    )
+
+
+def test_webhook_rejects_tampered_payload() -> None:
+    """Webhook calls with mismatched signatures are rejected with a 403."""
+
+    session = FakeSession()
+    extensions_stub.db.session = session
+    plaid_webhook_module.db.session = session
+    plaid_webhook_module.PlaidWebhookLog = FakePlaidWebhookLog
+
+    fake_logger = FakeLogger()
+    config_stub.logger = fake_logger
+    plaid_webhook_module.logger = fake_logger
+
+    app = Flask(__name__)
+    app.register_blueprint(plaid_webhook_module.plaid_webhooks)
+
+    payload = {"webhook_type": "PING", "webhook_code": "TEST"}
+    body, headers = _build_signature(payload)
+    tampered_body = json.dumps({**payload, "item_id": "different"})
+
+    with app.test_client() as client:
+        resp = client.post(
+            "/plaid",
+            data=tampered_body,
+            headers=headers,
+            content_type="application/json",
+        )
+
+    assert resp.status_code == 403
+    assert resp.get_json() == {"status": "unauthorized"}
+    assert session.commits == 0
+    assert plaid_webhook_module.webhook_metrics.count("failure", "SIGNATURE") == 1
+    assert any(
+        "invalid Plaid-Signature" in msg for msg in fake_logger.records["warning"]
+    )
 
 
 def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -429,14 +546,19 @@ def test_sync_updates_available_triggers_sync(monkeypatch: pytest.MonkeyPatch) -
     app = Flask(__name__)
     app.register_blueprint(plaid_webhook_module.plaid_webhooks)
 
+    payload = {
+        "webhook_type": "TRANSACTIONS",
+        "webhook_code": "SYNC_UPDATES_AVAILABLE",
+        "item_id": "item-1",
+    }
+    body, headers = _build_signature(payload)
+
     with app.test_client() as client:
         resp = client.post(
             "/plaid",
-            json={
-                "webhook_type": "TRANSACTIONS",
-                "webhook_code": "SYNC_UPDATES_AVAILABLE",
-                "item_id": "item-1",
-            },
+            data=body,
+            headers=headers,
+            content_type="application/json",
         )
 
     assert resp.status_code == 200
