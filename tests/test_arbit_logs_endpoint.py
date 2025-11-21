@@ -20,9 +20,12 @@ SPEC = importlib.util.spec_from_file_location(
 # Stub the ``app`` package so the route module can import without full app setup.
 stub_app = types.ModuleType("app")
 stub_services = types.ModuleType("app.services")
-stub_services.arbit_cli = types.SimpleNamespace(start=None, stop=None, update_config=None)
+stub_services.arbit_cli = types.SimpleNamespace(
+    start=None, stop=None, update_config=None
+)
 stub_services.arbit_metrics = types.SimpleNamespace(
-    get_metrics=lambda: {}, check_profit_alert=lambda threshold: {"alert": False, "threshold": threshold}
+    get_metrics=lambda: {},
+    check_profit_alert=lambda threshold: {"alert": False, "threshold": threshold},
 )
 stub_config = types.ModuleType("app.config")
 stub_constants = types.ModuleType("app.config.constants")

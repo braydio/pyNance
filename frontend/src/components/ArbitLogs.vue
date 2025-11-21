@@ -152,7 +152,9 @@ onUnmounted(() => {
   font-family: var(--font-sans);
   font-size: 0.95rem;
   letter-spacing: -0.01em;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .log-line:hover {
