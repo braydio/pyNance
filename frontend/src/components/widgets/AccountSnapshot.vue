@@ -24,9 +24,10 @@
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <button
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="handleRefresh"
           :disabled="isLoading || isSaving"
+          aria-label="Refresh account snapshot"
         >
           <span class="i-carbon-renew text-sm" aria-hidden="true"></span>
           <span>{{ isLoading ? 'Refreshing…' : 'Refresh' }}</span>
@@ -34,9 +35,10 @@
         <button
           v-if="!isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="startEditing"
           :disabled="isLoading || isSaving"
+          aria-label="Edit snapshot selection"
         >
           <span class="i-carbon-edit text-sm" aria-hidden="true"></span>
           <span>Edit</span>
@@ -44,9 +46,10 @@
         <button
           v-else
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200"
+          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200 dark:focus-visible:ring-offset-gray-900"
           @click="saveEditing"
           :disabled="isSaving || !hasStagedChanges"
+          :aria-label="isSaving ? 'Saving snapshot' : 'Save snapshot selection'"
         >
           <span class="i-carbon-save text-sm" aria-hidden="true"></span>
           <span>{{ isSaving ? 'Saving…' : 'Save' }}</span>
@@ -54,9 +57,10 @@
         <button
           v-if="isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="cancelEditing"
           :disabled="isSaving"
+          aria-label="Cancel snapshot edits"
         >
           <span class="i-carbon-close text-sm" aria-hidden="true"></span>
           <span>Cancel</span>
@@ -167,10 +171,13 @@
         >
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-4 text-left"
+            class="flex w-full items-center justify-between gap-4 rounded-xl text-left transition focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] dark:focus-visible:ring-offset-gray-900"
             @click="toggleDetails(account.account_id)"
             @keydown.enter.prevent="toggleDetails(account.account_id)"
             @keydown.space.prevent="toggleDetails(account.account_id)"
+            :aria-pressed="openAccountId === account.account_id"
+            :aria-expanded="openAccountId === account.account_id"
+            :aria-label="`Toggle details for ${account.name}`"
           >
             <div class="flex flex-col gap-1">
               <span class="text-sm font-semibold text-blue-950 dark:text-blue-100">{{
@@ -247,13 +254,14 @@
                 <li
                   v-for="tx in recentTxs[account.account_id]"
                   :key="tx.id || tx.transaction_id"
-                  class="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 dark:bg-gray-800/60 dark:hover:bg-gray-800"
+                  class="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:ring-2 focus-visible:ring-primary/30 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   data-testid="account-snapshot-transaction"
                   @click="handleTransactionClick(tx, account.account_id)"
                   @keydown.enter.prevent="handleTransactionClick(tx, account.account_id)"
                   @keydown.space.prevent="handleTransactionClick(tx, account.account_id)"
+                  :aria-label="`View transaction ${tx.name || tx.merchant_name || tx.description || 'details'}`"
                 >
                   <div class="flex-1 truncate">
                     <p class="truncate font-medium text-gray-700 dark:text-gray-200">
