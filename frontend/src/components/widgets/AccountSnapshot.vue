@@ -113,7 +113,8 @@
         </div>
       </dl>
       <p class="mt-3 text-xs text-gray-400">
-        {{ isEditing ? 'Staged' : 'Selected' }} {{ stagedSelection.length }} / {{ maxSelection }} accounts
+        {{ isEditing ? 'Staged' : 'Selected' }} {{ stagedSelection.length }} /
+        {{ maxSelection }} accounts
       </p>
       <p v-if="isEditing" class="text-[11px] text-amber-600">
         Changes are staged until you click Save.
@@ -313,9 +314,7 @@ const stagedAvailableAccounts = computed(() =>
   accounts.value.filter((account) => !stagedSelection.value.includes(account.account_id)),
 )
 
-const hasStagedChanges = computed(
-  () => !areIdsEqual(stagedSelection.value, selectedIds.value),
-)
+const hasStagedChanges = computed(() => !areIdsEqual(stagedSelection.value, selectedIds.value))
 
 watch(
   selectedIds,
