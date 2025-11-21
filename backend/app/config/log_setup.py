@@ -1,4 +1,11 @@
-"""Logging configuration utilities and helpers used across the backend."""
+"""Logging configuration utilities and helpers used across the backend.
+
+The module respects the ``LOG_LEVEL`` environment variable (defaulting to
+``INFO``) for both the root logger and the attached console/file handlers. The
+console handler uses ANSI color codes for readability, while the file handler
+rotates at 10MB with five backups to preserve recent history without unbounded
+growth.
+"""
 
 import logging
 import os
@@ -53,6 +60,7 @@ class ColorFormatter(logging.Formatter):
 
 
 def setup_logger():
+    log_level = getattr(logging, LOG_LEVEL, logging.INFO)
     root_logger = logging.getLogger()
     if not root_logger.hasHandlers():
         APP_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
@@ -65,11 +73,11 @@ def setup_logger():
             encoding="utf-8",
         )
         # Respect configured LOG_LEVEL for file logging (default INFO)
-        file_handler.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+        file_handler.setLevel(log_level)
 
         # Console handler with colors
         console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+        console_handler.setLevel(log_level)
         color_fmt = ColorFormatter(
             "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
         )
@@ -81,7 +89,7 @@ def setup_logger():
         )
         console_handler.setFormatter(color_fmt)
 
-        root_logger.setLevel(logging.DEBUG)
+        root_logger.setLevel(log_level)
         root_logger.addHandler(file_handler)
         root_logger.addHandler(console_handler)
 

@@ -1,6 +1,13 @@
 # backend/app/config/__init__.py
 
-"""Expose configuration constants and logger setup across the app."""
+"""Expose configuration constants and logger setup across the app.
+
+The module emits a concise INFO-level summary on import while deferring verbose
+environment details to DEBUG logs so deployments can tune visibility via
+``LOG_LEVEL`` without exposing sensitive configuration values.
+"""
+
+import logging
 
 from .constants import DATABASE_NAME, FILES, SQLALCHEMY_DATABASE_URI
 from .environment import (
@@ -49,18 +56,22 @@ env_check = PLAID_ENV.upper()
 
 logger = setup_logger()
 
-if plaid_client:
-    logger.debug("Plaid client initialized for %s environment.", env_check)
-
-logger.debug("Running in %s environment.", FLASK_ENV)
-logger.debug("Loaded config from %s", __name__)
-logger.debug("Initialized main database as %s", DATABASE_NAME)
-logger.debug("SQLAlchemy Database URI: %s", SQLALCHEMY_DATABASE_URI)
-if DATABASE_NAME:
-    logger.debug("Connected database: %s", DATABASE_NAME)
-logger.debug("Starting dashboard in Plaid %s Environment.", PLAID_ENV)
-logger.debug(
-    "Base URLs: \n\nPlaid: %s \nArbit: %s\n\n",
-    PLAID_BASE_URL,
-    ARBIT_EXPORTER_URL,
+logger.info(
+    "Configuration loaded for %s (Plaid env=%s, dashboard_enabled=%s)",
+    FLASK_ENV,
+    PLAID_ENV,
+    ENABLE_ARBIT_DASHBOARD,
 )
+
+if logger.isEnabledFor(logging.DEBUG):
+    if plaid_client:
+        logger.debug("Plaid client initialized for %s environment.", env_check)
+    logger.debug("Running in %s environment.", FLASK_ENV)
+    logger.debug("Loaded config from %s", __name__)
+    logger.debug("Initialized main database as %s", DATABASE_NAME)
+    if DATABASE_NAME:
+        logger.debug("Connected database: %s", DATABASE_NAME)
+    logger.debug("Starting dashboard in Plaid %s environment.", PLAID_ENV)
+    logger.debug("Base URLs: Plaid=%s, Arbit=%s", PLAID_BASE_URL, ARBIT_EXPORTER_URL)
+    logger.debug("Configured directories: %s", DIRECTORIES)
+    logger.debug("Enabled products: %s", PRODUCTS)
