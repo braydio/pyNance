@@ -41,7 +41,6 @@ PLAID_TOKENS = FILES["PLAID_TOKENS"]
 def load_plaid_tokens():
     """Load Plaid tokens from the designated JSON file."""
     try:
-        logger.info("Loading Plaid tokens from %s", PLAID_TOKENS)
         with open(PLAID_TOKENS, "r") as f:
             tokens = json.load(f)
         logger.info("Loaded %d Plaid token(s) from %s", len(tokens), PLAID_TOKENS)
@@ -65,10 +64,9 @@ def load_plaid_tokens():
 def save_plaid_tokens(tokens):
     """Save Plaid tokens to the designated JSON file."""
     try:
-        logger.info("Saving %d Plaid token(s) to %s", len(tokens), PLAID_TOKENS)
         with open(PLAID_TOKENS, "w") as f:
             json.dump(tokens, f, indent=4)
-        logger.info("Plaid tokens saved successfully to %s", PLAID_TOKENS)
+        logger.info("Saved %d Plaid token(s) to %s", len(tokens), PLAID_TOKENS)
     except Exception as e:
         logger.error(
             "Error saving tokens to %s: %s",
@@ -79,6 +77,8 @@ def save_plaid_tokens(tokens):
 
 
 def save_transactions_json(transactions):
+    """Persist transaction data to disk without logging sensitive payloads."""
+
     try:
         with open(LAST_TRANSACTIONS, "w") as f:
             json.dump(transactions, f, indent=4, default=str)
@@ -99,7 +99,9 @@ def save_transactions_json(transactions):
 
 
 def get_accounts(access_token: str, user_id: str):
-    logger.info("Fetching Plaid accounts for user %s", user_id or "<missing>")
+    """Fetch accounts for ``user_id`` and update local history without leaking tokens."""
+
+    logger.info("Syncing Plaid accounts for user %s", user_id or "<missing>")
 
     if not user_id:
         logger.error("Missing user_id in get_accounts() — aborting.")
@@ -111,11 +113,12 @@ def get_accounts(access_token: str, user_id: str):
         accounts = response.accounts
 
         for acct in accounts:
+            account_id = getattr(acct, "account_id", None)
             if not user_id:
                 logger.warning(
-                    "[WARN] Missing user_id while syncing account_id=%s", acct
+                    "Missing user_id while syncing account_id=%s",
+                    account_id or "<unknown>",
                 )
-            account_id = acct.account_id
             balance = acct.balances.available or acct.balances.current
             if account_id and balance is not None:
                 update_account_history(
@@ -125,7 +128,7 @@ def get_accounts(access_token: str, user_id: str):
                 )
 
         logger.info(
-            "Synced %d Plaid accounts for user %s.",
+            "Synced %d Plaid account(s) for user %s.",
             len(accounts),
             user_id,
         )
@@ -137,6 +140,10 @@ def get_accounts(access_token: str, user_id: str):
 
 
 def get_item(access_token: str):
+    """Return Plaid item metadata for the provided access token."""
+
+    logger.info("Fetching Plaid item metadata")
+
     try:
         plaid_request = ItemGetRequest(access_token=access_token)
         response = plaid_client.item_get(plaid_request)
@@ -147,9 +154,15 @@ def get_item(access_token: str):
 
 
 def generate_link_token(user_id: str, products=None):
+    """Create a Plaid link token for the supplied user without logging sensitive data."""
+
     if products is None:
         products = ["transactions"]
-    logger.info("Generating link token for user %s", user_id)
+    logger.info(
+        "Generating link token for user %s with %d product(s)",
+        user_id,
+        len(products),
+    )
 
     try:
         product_enums = [Products(p) for p in products]
@@ -179,7 +192,9 @@ def generate_link_token(user_id: str, products=None):
 
 
 def exchange_public_token(public_token: str):
-    logger.info("Exchanging public token for access token")
+    """Exchange a public token for an access token without logging sensitive payloads."""
+
+    logger.info("Exchanging Plaid public token for access token")
 
     try:
         plaid_request = ItemPublicTokenExchangeRequest(public_token=public_token)
@@ -198,9 +213,13 @@ def exchange_public_token(public_token: str):
 
 def remove_item(access_token: str) -> None:
     """Remove a Plaid item associated with ``access_token``."""
+
+    logger.info("Requesting Plaid item removal")
+
     try:
         plaid_request = ItemRemoveRequest(access_token=access_token)
         plaid_client.item_remove(plaid_request)
+        logger.info("Plaid item removal completed")
     except Exception as e:
         logger.error("Error removing Plaid item: %s", e, exc_info=True)
         raise
@@ -238,6 +257,8 @@ def get_transactions(access_token: str, start_date: str, end_date: str):
     ``total_transactions`` are retrieved.
     """
 
+    logger.info("Fetching transactions between %s and %s", start_date, end_date)
+
     try:
         all_transactions = []
         offset = 0
@@ -262,6 +283,11 @@ def get_transactions(access_token: str, start_date: str, end_date: str):
             offset += len(batch)
 
         save_transactions_json(all_transactions)
+        logger.info(
+            "Fetched %d transaction(s) across %d request(s)",
+            len(all_transactions),
+            (offset // count) + 1,
+        )
         return all_transactions
     except Exception as e:
         logger.error("Error fetching transactions: %s", e, exc_info=True)
