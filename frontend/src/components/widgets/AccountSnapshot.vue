@@ -28,6 +28,7 @@
           aria-label="Refresh account snapshot"
           @click="handleRefresh"
           :disabled="isLoading || isSaving"
+          aria-label="Refresh account snapshot"
         >
           <span class="i-carbon-renew text-sm" aria-hidden="true"></span>
           <span>{{ isLoading ? 'Refreshing…' : 'Refresh' }}</span>
@@ -35,9 +36,10 @@
         <button
           v-if="!isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="startEditing"
           :disabled="isLoading || isSaving"
+          aria-label="Edit snapshot selection"
         >
           <span class="i-carbon-edit text-sm" aria-hidden="true"></span>
           <span>Edit</span>
@@ -45,9 +47,10 @@
         <button
           v-else
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200"
+          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200 dark:focus-visible:ring-offset-gray-900"
           @click="saveEditing"
           :disabled="isSaving || !hasStagedChanges"
+          :aria-label="isSaving ? 'Saving snapshot' : 'Save snapshot selection'"
         >
           <span class="i-carbon-save text-sm" aria-hidden="true"></span>
           <span>{{ isSaving ? 'Saving…' : 'Save' }}</span>
@@ -55,9 +58,10 @@
         <button
           v-if="isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="cancelEditing"
           :disabled="isSaving"
+          aria-label="Cancel snapshot edits"
         >
           <span class="i-carbon-close text-sm" aria-hidden="true"></span>
           <span>Cancel</span>
@@ -192,7 +196,7 @@
                 {{ formatAccounting(account.balance) }}
               </span>
               <span
-                class="inline-flex items-center gap-1 rounded-full px-2 py-1 text-xs font-medium"
+                class="inline-flex items-center gap-1 rounded-full text-xs font-medium"
                 :class="upcomingPillClass(netUpcoming(account))"
               >
                 <span class="i-carbon-calendar text-sm" aria-hidden="true"></span>
@@ -444,19 +448,49 @@ function upcomingClass(val) {
 }
 
 function upcomingPillClass(val) {
+  // Pill palettes: emerald for positive (success), rose for negative (risk), blue for neutral/info.
+  const palette = {
+    positive: [
+      'bg-emerald-50',
+      'text-emerald-800',
+      'ring-1',
+      'ring-emerald-200',
+      'dark:bg-emerald-900/60',
+      'dark:text-emerald-200',
+      'dark:ring-emerald-700/60',
+    ],
+    negative: [
+      'bg-rose-50',
+      'text-rose-800',
+      'ring-1',
+      'ring-rose-200',
+      'dark:bg-rose-900/60',
+      'dark:text-rose-200',
+      'dark:ring-rose-700/60',
+    ],
+    neutral: [
+      'bg-blue-50',
+      'text-blue-800',
+      'ring-1',
+      'ring-blue-200',
+      'dark:bg-blue-900/60',
+      'dark:text-blue-100',
+      'dark:ring-blue-700/60',
+    ],
+  }
+
   const base = [
     'faded-upcoming',
     'font-mono',
     'transition-colors',
-    'bg-gray-100 text-gray-600 dark:bg-gray-800/80 dark:text-gray-300',
+    'px-2.5',
+    'py-1',
+    'leading-tight',
   ]
   const num = parseFloat(val || 0)
-  if (num > 0) {
-    base.push('bg-green-100 text-green-700 dark:bg-green-400/20 dark:text-green-300')
-  } else if (num < 0) {
-    base.push('bg-red-100 text-red-600 dark:bg-red-400/20 dark:text-red-300')
-  }
-  return base
+  if (num > 0) return [...base, ...palette.positive]
+  if (num < 0) return [...base, ...palette.negative]
+  return [...base, ...palette.neutral]
 }
 
 const totalBalance = computed(() =>

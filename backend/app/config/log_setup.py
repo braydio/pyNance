@@ -109,6 +109,10 @@ def setup_logger():
                 "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
             )
         )
+        console_handler.setFormatter(color_fmt)
+
+        # honour the configured LOG_LEVEL for the root logger, defaulting to INFO
+        root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
         root_logger.addHandler(file_handler)
         handlers_added = True
 
@@ -125,7 +129,14 @@ def setup_logger():
         if is_app_file_handler(handler) or is_console_handler(handler):
             handler.setLevel(log_level)
 
-    if handlers_added:
+        # suppress noisy HTTP request logs from Werkzeug/Flask
+        werkzeug_logger = logging.getLogger("werkzeug")
+        werkzeug_logger.setLevel(logging.WARNING)
+
+        # reduce verbosity from common HTTP client libraries
+        logging.getLogger("urllib3").setLevel(logging.WARNING)
+        logging.getLogger("botocore").setLevel(logging.ERROR)
+
         root_logger.info(
             "Logging initialized. LOG_LEVEL=%s (RotatingFileHandler, 10MB x%d)",
             LOG_LEVEL,

@@ -29,8 +29,8 @@ def normalize_account_balance(balance, account_type):
         "liability",
     ]:
         norm_balance = (-amount).quantize(TWOPLACES)
-        logger.info(
-            "Account type %s - balance normalized to %s",
+        logger.debug(
+            "Normalized balance: type=%s value=%s",
             account_type,
             norm_balance,
         )
@@ -46,13 +46,13 @@ def normalize_transaction_amount(amount, account_type):
 
     if account_type in ["credit card", "credit", "loan", "liability"]:
         adjusted = (-amt).quantize(TWOPLACES)
-        logger.info(
+        logger.debug(
             "Normalized transaction amount for credit account to %s",
             adjusted,
         )
         return adjusted
 
-    logger.info(
+    logger.debug(
         "Preserving transaction amount %s for account type %s",
         amt,
         account_type,

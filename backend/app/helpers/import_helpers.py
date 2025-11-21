@@ -37,8 +37,10 @@ def import_transactions_from_csv(filepath: str | Path):
     try:
         with path.open(newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)
-            for row in reader:
-                logger.debug("[CSV IMPORT] Row: %s", row)
+            total_rows = 0
+            for i, row in enumerate(reader):
+                if i < 5:
+                    logger.debug("[CSV IMPORT] Row %d: %s", i + 1, row)
                 amount = float(row["Amount"])
                 imported.append(
                     {
@@ -53,9 +55,10 @@ def import_transactions_from_csv(filepath: str | Path):
                         "currency": "USD",
                     }
                 )
+                total_rows += 1
         logger.info(
-            "[CSV IMPORT] Successfully imported %d transactions from CSV.",
-            len(imported),
+            "[CSV IMPORT] Processed %d transactions from CSV.",
+            total_rows,
         )
         return {"status": "success", "count": len(imported), "data": imported}
     except Exception as e:
@@ -87,6 +90,14 @@ def import_transactions_from_pdf(filepath: str | Path):
                 continue
             date_str, desc, amt_str = match.groups()
             amount = float(amt_str.replace(",", ""))
+            if len(imported) < 5:
+                logger.debug(
+                    "[PDF IMPORT] Parsed line %d: date=%s desc=%s amount=%s",
+                    idx + 1,
+                    date_str,
+                    desc.strip(),
+                    amount,
+                )
             imported.append(
                 {
                     "transaction_id": f"{date_str}-{idx}",
@@ -100,7 +111,7 @@ def import_transactions_from_pdf(filepath: str | Path):
             )
 
         logger.info(
-            "[PDF IMPORT] Successfully imported %d transactions from PDF.",
+            "[PDF IMPORT] Processed %d transactions from PDF.",
             len(imported),
         )
         return {"status": "success", "count": len(imported), "data": imported}
