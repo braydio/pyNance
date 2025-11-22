@@ -1,5 +1,5 @@
 """Application factory for the Flask backend."""
-
+import sys
 from app.cli.sync import sync_accounts
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -111,9 +111,42 @@ def create_app():
     if plaid_client:
         logger.info("Plaid client initialized.")
 
-    # Optional: always log routes
+    # Clean, grouped, colorized route logging
     with app.app_context():
-        routes = " \n ".join(str(rule) for rule in app.url_map.iter_rules())
-        logger.info("🔍 Registered Routes:\n%s", routes)
+
+        # 🎯 only GET routes (skip static, HEAD, OPTIONS)
+        unique_routes = sorted({
+            rule.rule
+            for rule in app.url_map.iter_rules()
+            if "GET" in rule.methods
+            and not rule.rule.startswith("/static")
+            and not rule.rule.startswith("/favicon")
+        })
+
+        # 📦 group by first path segment
+        grouped = {}
+        for route in unique_routes:
+            parts = route.split("/")
+            group = "/" + parts[1] if len(parts) > 1 else "/"
+            grouped.setdefault(group, []).append(route)
+
+        # 🎨 ANSI colors (console only)
+        CYAN = "\033[96m"
+        RESET = "\033[0m"
+
+        lines = ["\n🔍 Registered Routes:"]
+        for group in sorted(grouped):
+
+            # color group header only in console
+            colored_group = f"{CYAN}{group}{RESET}" if sys.stdout.isatty() else group
+            lines.append(colored_group)
+
+            for route in grouped[group]:
+                if route != group:
+                    lines.append(f"    {route}")
+
+        logger.info("\n".join(lines))
+
+
 
     return app
