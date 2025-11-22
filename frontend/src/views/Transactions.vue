@@ -27,35 +27,75 @@
     </Card>
 
     <!-- Top Controls -->
-    <Card v-if="showControls" id="top-controls" class="p-6">
-      <div class="grid gap-4 md:grid-cols-2">
-        <ImportFileSelector />
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="Search transactions..."
-          class="input w-full"
-        />
+    <Card
+      v-if="showControls"
+      id="top-controls"
+      class="p-6 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-white/80 via-white to-[var(--color-bg-sec)] shadow-sm space-y-4"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
+        <div class="space-y-1">
+          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Controls</p>
+          <h3 class="text-lg font-semibold text-gray-900">Import &amp; quick search</h3>
+          <p class="text-sm text-gray-600">Upload transactions and instantly narrow the view.</p>
+        </div>
+        <span class="px-3 py-1 text-xs font-semibold text-gray-600 bg-[var(--hover)-light] border border-[var(--border)] rounded-full">
+          Transactions
+        </span>
+      </div>
+      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)]">
+        <div class="rounded-xl border border-dashed border-[var(--border)] bg-white/80 p-4 shadow-inner">
+          <ImportFileSelector />
+        </div>
+        <div class="relative rounded-xl border border-dashed border-[var(--border)] bg-white/80 shadow-inner">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <Search class="w-4 h-4" />
+          </span>
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Search transactions..."
+            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)]"
+          />
+        </div>
       </div>
     </Card>
 
     <!-- Filter Controls -->
-    <Card class="p-6">
-      <div class="flex flex-wrap items-center gap-4">
-        <DateRangeSelector
-          :start-date="startDate"
-          :end-date="endDate"
-          disable-zoom
-          @update:startDate="startDate = $event"
-          @update:endDate="endDate = $event"
-        />
-        <AccountFilter v-model="accountFilter" />
-        <TypeSelector v-model="txType" />
+    <Card
+      class="p-6 rounded-2xl border border-[var(--border)] bg-white/90 shadow-sm space-y-4"
+    >
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Filters</p>
+          <h3 class="text-lg font-semibold text-gray-900">Refine the transaction view</h3>
+          <p class="text-sm text-gray-600">Adjust time range, account, and transaction type.</p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-gray-500">
+          <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)]"></span>
+          Live updates
+        </div>
+      </div>
+      <div class="grid w-full gap-3 md:grid-cols-3">
+        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+          <DateRangeSelector
+            :start-date="startDate"
+            :end-date="endDate"
+            disable-zoom
+            @update:startDate="startDate = $event"
+            @update:endDate="endDate = $event"
+          />
+        </div>
+        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+          <AccountFilter v-model="accountFilter" />
+        </div>
+        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+          <TypeSelector v-model="txType" />
+        </div>
       </div>
     </Card>
 
     <!-- Main Table -->
-    <Card class="p-6 space-y-4">
+    <Card class="p-6 space-y-4 rounded-2xl border border-[var(--border)] shadow-sm">
       <h2 class="text-2xl font-bold">Recent Transactions</h2>
       <transition name="fade-in-up" mode="out-in">
         <SkeletonCard v-if="isLoading" key="loading" />
@@ -79,7 +119,7 @@
 
     <!-- Activity Tab -->
     <template #Activity>
-      <Card class="p-6 space-y-4">
+      <Card class="p-6 space-y-4 rounded-2xl border border-[var(--border)] shadow-sm">
         <h2 class="text-2xl font-bold">Recent Transactions</h2>
         <transition name="fade-in-up" mode="out-in">
           <SkeletonCard v-if="isLoading" key="loading-activity" />
@@ -140,7 +180,7 @@ import RecurringTransactionSection from '@/components/recurring/RecurringTransac
 import PageHeader from '@/components/ui/PageHeader.vue'
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
-import { CreditCard } from 'lucide-vue-next'
+import { CreditCard, Search } from 'lucide-vue-next'
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
 import InternalTransferScanner from '@/components/transactions/InternalTransferScanner.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
@@ -166,6 +206,7 @@ export default {
     SkeletonCard,
     RetryError,
     PaginationControls,
+    Search,
   },
   setup() {
     const route = useRoute()
