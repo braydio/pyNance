@@ -1,4 +1,3 @@
-
 """Logging configuration utilities and helpers used across the backend.
 
 The module respects the ``LOG_LEVEL`` environment variable (defaulting to
@@ -147,4 +146,3 @@ def setup_logger():
     )
 
     return root_logger
-
