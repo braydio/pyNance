@@ -1,9 +1,10 @@
+
 """Logging configuration utilities and helpers used across the backend.
 
 The module respects the ``LOG_LEVEL`` environment variable (defaulting to
 ``INFO``) for the root logger and both console/file handlers. The console
-handler uses ANSI color codes for readability, while the file handler rotates
-at 10MB with five backups to preserve recent history without unbounded growth.
+handler uses ANSI color codes, while the file handler rotates at 10MB with
+five backups.
 """
 
 import logging
@@ -23,7 +24,9 @@ sql_formatter = logging.Formatter(
     "[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s"
 )
 
-# --- Clean SQLAlchemy logging with rotation ---
+# ---------------------------------------------------------------------------
+#   SQLAlchemy Logging (Rotating, quiet by default)
+# ---------------------------------------------------------------------------
 sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
 sqlalchemy_logger.setLevel(logging.WARNING)
 
@@ -33,71 +36,68 @@ sql_file_handler = RotatingFileHandler(
 sql_file_handler.setFormatter(sql_formatter)
 sqlalchemy_logger.addHandler(sql_file_handler)
 
-# Optional: also show SQL in console for dev
 if os.getenv("SQL_ECHO", "false").lower() == "true":
     sql_console_handler = logging.StreamHandler(sys.stdout)
     sql_console_handler.setFormatter(sql_formatter)
     sqlalchemy_logger.addHandler(sql_console_handler)
 
-# --- App logging setup ---
+# ---------------------------------------------------------------------------
+#   App Logging
+# ---------------------------------------------------------------------------
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
 
 class ColorFormatter(logging.Formatter):
-    """Colorize log levels for console readability."""
-
     COLORS = {
-        logging.DEBUG: "\033[94m",  # Blue
-        logging.INFO: "\033[92m",  # Green
-        logging.WARNING: "\033[93m",  # Yellow
-        logging.ERROR: "\033[91m",  # Red
-        logging.CRITICAL: "\033[95m",  # Magenta
+        logging.DEBUG: "\033[94m",
+        logging.INFO: "\033[92m",
+        logging.WARNING: "\033[93m",
+        logging.ERROR: "\033[91m",
+        logging.CRITICAL: "\033[95m",
     }
     RESET = "\033[0m"
 
     def format(self, record):
         color = self.COLORS.get(record.levelno, "")
-        message = super().format(record)
-        return f"{color}{message}{self.RESET}"
+        return f"{color}{super().format(record)}{self.RESET}"
 
 
 def setup_logger():
-    """Configure the root logger and ensure handlers honor ``LOG_LEVEL``.
-
-    The function applies the configured log level to the root logger and keeps
-    the rotating file handler plus the colored console handler in sync with
-    that level. Handlers are created if missing and reuse existing instances to
-    avoid duplication.
+    """
+    Configure root logger with:
+      - single rotating file handler
+      - single colored console handler
+      - honoring LOG_LEVEL
+      - suppressing noisy libs (werkzeug, urllib3, botocore)
     """
     log_level = getattr(logging, LOG_LEVEL, logging.INFO)
     root_logger = logging.getLogger()
     root_logger.setLevel(log_level)
 
-    def is_app_file_handler(handler: logging.Handler) -> bool:
+    # Helper predicates
+    def is_app_file_handler(h):
         return (
-            isinstance(handler, RotatingFileHandler)
-            and Path(getattr(handler, "baseFilename", "")) == APP_LOG_FILE
+            isinstance(h, RotatingFileHandler)
+            and Path(getattr(h, "baseFilename", "")) == APP_LOG_FILE
         )
 
-    def is_console_handler(handler: logging.Handler) -> bool:
-        return isinstance(handler, logging.StreamHandler) and getattr(
-            handler, "stream", None
-        ) in (sys.stdout, sys.stderr)
+    def is_console_handler(h):
+        return isinstance(h, logging.StreamHandler) and getattr(h, "stream", None) in (
+            sys.stdout,
+            sys.stderr,
+        )
 
-    file_handler_exists = any(
-        is_app_file_handler(handler) for handler in root_logger.handlers
-    )
-    console_handler_exists = any(
-        is_console_handler(handler)
-        for handler in root_logger.handlers
-        if not isinstance(handler, logging.PlaceHolder)
-    )
+    existing_file = any(is_app_file_handler(h) for h in root_logger.handlers)
+    existing_console = any(is_console_handler(h) for h in root_logger.handlers)
 
-    handlers_added = False
-    if not file_handler_exists or not console_handler_exists:
+    # Create log directory if needed
+    if not existing_file or not existing_console:
         APP_LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
-    if not file_handler_exists:
+    # ----------------------------
+    # File Handler
+    # ----------------------------
+    if not existing_file:
         file_handler = RotatingFileHandler(
             APP_LOG_FILE,
             maxBytes=MAX_LOG_SIZE,
@@ -109,38 +109,42 @@ def setup_logger():
                 "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
             )
         )
-        console_handler.setFormatter(color_fmt)
-
-        # honour the configured LOG_LEVEL for the root logger, defaulting to INFO
-        root_logger.setLevel(getattr(logging, LOG_LEVEL, logging.INFO))
+        file_handler.setLevel(log_level)
         root_logger.addHandler(file_handler)
-        handlers_added = True
 
-    if not console_handler_exists:
+    # ----------------------------
+    # Console Handler
+    # ----------------------------
+    if not existing_console:
         console_handler = logging.StreamHandler(sys.stdout)
-        color_fmt = ColorFormatter(
-            "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+        console_handler.setFormatter(
+            ColorFormatter(
+                "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+            )
         )
-        console_handler.setFormatter(color_fmt)
+        console_handler.setLevel(log_level)
         root_logger.addHandler(console_handler)
-        handlers_added = True
 
+    # ----------------------------
+    # Normalize handler levels
+    # ----------------------------
     for handler in root_logger.handlers:
         if is_app_file_handler(handler) or is_console_handler(handler):
             handler.setLevel(log_level)
 
-        # suppress noisy HTTP request logs from Werkzeug/Flask
-        werkzeug_logger = logging.getLogger("werkzeug")
-        werkzeug_logger.setLevel(logging.WARNING)
+    # ----------------------------
+    # Silence noisy libs once
+    # ----------------------------
+    logging.getLogger("werkzeug").setLevel(logging.WARNING)
+    logging.getLogger("urllib3").setLevel(logging.WARNING)
+    logging.getLogger("botocore").setLevel(logging.ERROR)
 
-        # reduce verbosity from common HTTP client libraries
-        logging.getLogger("urllib3").setLevel(logging.WARNING)
-        logging.getLogger("botocore").setLevel(logging.ERROR)
-
-        root_logger.info(
-            "Logging initialized. LOG_LEVEL=%s (RotatingFileHandler, 10MB x%d)",
-            LOG_LEVEL,
-            BACKUP_COUNT,
-        )
+    # Only log once after full setup
+    root_logger.info(
+        "Logging initialized. LOG_LEVEL=%s (RotatingFileHandler, 10MB x%d)",
+        LOG_LEVEL,
+        BACKUP_COUNT,
+    )
 
     return root_logger
+
