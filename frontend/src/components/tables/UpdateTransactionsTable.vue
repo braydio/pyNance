@@ -18,109 +18,111 @@
     </div>
 
     <!-- Transactions Table -->
-    <table class="min-w-full divide-y mt-4">
-      <thead class="text-sm font-semibold uppercase">
-        <tr>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('date')">
-            Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('amount')">
-            Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('description')">
-            Description
-            <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('category')">
-            Category
-            <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('merchant_name')">
-            Merchant
-            <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('account_name')">
-            Account Name
-            <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('institution_name')">
-            Institution
-            <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2 cursor-pointer" @click="sortBy('subtype')">
-            Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
-          </th>
-          <th class="px-3 py-2">Actions</th>
-        </tr>
-      </thead>
+    <div class="rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
+      <div class="max-h-[640px] min-h-[520px] overflow-auto bg-white/80">
+        <table class="min-w-full divide-y mt-4">
+          <thead class="text-sm font-semibold uppercase bg-[var(--color-bg-sec)] sticky top-0 z-10">
+            <tr>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('date')">
+                Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('amount')">
+                Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('description')">
+                Description
+                <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('category')">
+                Category
+                <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('merchant_name')">
+                Merchant
+                <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('account_name')">
+                Account Name
+                <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('institution_name')">
+                Institution
+                <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3 cursor-pointer" @click="sortBy('subtype')">
+                Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+              </th>
+              <th class="px-3 py-3">Actions</th>
+            </tr>
+          </thead>
 
-      <tbody>
-        <tr
-          v-for="(tx, index) in displayTransactions"
-          :key="tx.transaction_id"
-          :class="[
-            'text-sm',
-            tx._placeholder
-              ? ''
-              : editingIndex === index
-                ? 'bg-[var(--color-bg-sec)]'
-                : 'hover:bg-[var(--hover)-light]',
-          ]"
-        >
-          <template v-if="tx._placeholder">
-            <td v-for="n in 9" :key="n" class="px-3 py-2">&nbsp;</td>
-          </template>
-          <template v-else>
-            <td class="px-3 py-2">
-              <input
-                v-if="editingIndex === index"
-                v-model="editBuffer.date"
-                type="date"
-                class="input"
-              />
-              <span v-else>{{ formatDate(tx.date) }}</span>
-            </td>
-            <td class="px-3 py-2">
-              <input
-                v-if="editingIndex === index"
-                v-model.number="editBuffer.amount"
-                type="number"
-                step="0.01"
-                class="input"
-              />
-              <span v-else>{{ formatAmount(tx.amount) }}</span>
-            </td>
-            <td class="px-3 py-2">
-              <input
-                v-if="editingIndex === index"
-                v-model="editBuffer.description"
-                type="text"
-                class="input"
-              />
-              <span v-else>{{ tx.description }}</span>
-            </td>
-            <td class="px-3 py-2">
-              <input
-                v-if="editingIndex === index"
-                v-model="editBuffer.category"
-                type="text"
-                list="category-suggestions"
-                class="input"
-                placeholder="Select or type category"
-              />
-              <span v-else>{{ tx.category }}</span>
-            </td>
-            <td class="px-3 py-2">
-              <input
-                v-if="editingIndex === index"
-                v-model="editBuffer.merchant_name"
-                type="text"
-                list="merchant-suggestions"
-                class="input"
-              />
-              <span v-else>{{ tx.merchant_name }}</span>
-            </td>
-            <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
+          <tbody>
+            <tr
+              v-for="(tx, index) in displayTransactions"
+              :key="tx.transaction_id"
+              :class="[
+                'text-sm align-middle h-12 transition-colors',
+                tx._placeholder
+                  ? 'bg-white'
+                  : editingIndex === index
+                    ? 'bg-[var(--color-bg-sec)]'
+                    : 'hover:bg-[var(--hover)-light]',
+              ]"
+            >
+              <template v-if="tx._placeholder">
+                <td v-for="n in 9" :key="n" class="px-3 py-2">&nbsp;</td>
+              </template>
+              <template v-else>
+                <td class="px-3 py-2">
+                  <input
+                    v-if="editingIndex === index"
+                    v-model="editBuffer.date"
+                    type="date"
+                    class="input"
+                  />
+                  <span v-else>{{ formatDate(tx.date) }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <input
+                    v-if="editingIndex === index"
+                    v-model.number="editBuffer.amount"
+                    type="number"
+                    step="0.01"
+                    class="input"
+                  />
+                  <span v-else>{{ formatAmount(tx.amount) }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <input
+                    v-if="editingIndex === index"
+                    v-model="editBuffer.description"
+                    type="text"
+                    class="input"
+                  />
+                  <span v-else>{{ tx.description }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <input
+                    v-if="editingIndex === index"
+                    v-model="editBuffer.category"
+                    type="text"
+                    list="category-suggestions"
+                    class="input"
+                    placeholder="Select or type category"
+                  />
+                  <span v-else>{{ tx.category }}</span>
+                </td>
+                <td class="px-3 py-2">
+                  <input
+                    v-if="editingIndex === index"
+                    v-model="editBuffer.merchant_name"
+                    type="text"
+                    list="merchant-suggestions"
+                    class="input"
+                  />
+                  <span v-else>{{ tx.merchant_name }}</span>
+                </td>
+                <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
             <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
             <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
             <td class="px-3 py-2 space-x-1">
@@ -137,9 +139,11 @@
               </template>
             </td>
           </template>
-        </tr>
-      </tbody>
-    </table>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
 
     <!-- Empty State -->
     <div
@@ -185,7 +189,14 @@ import FuzzyDropdown from '@/components/ui/FuzzyDropdown.vue'
 import { formatAmount } from '@/utils/format'
 const toast = useToast()
 const emit = defineEmits(['editRecurringFromTransaction'])
-const props = defineProps({ transactions: Array })
+const props = defineProps({
+  transactions: {
+    type: Array,
+    default: () => [],
+  },
+})
+
+const MIN_ROW_COUNT = 12
 
 // Fields that may be edited by the user. All other transaction properties are locked.
 const EDITABLE_FIELDS = ['date', 'amount', 'description', 'category', 'merchant_name']
@@ -235,6 +246,9 @@ const subcategoryOptions = computed(() => {
   const group = categoryTree.value.find((g) => g.name?.toLowerCase() === selected)
   return group ? group.children : []
 })
+
+// Maintain a steady table height even when searches return few results.
+const baseRowCount = computed(() => Math.max(MIN_ROW_COUNT, props.transactions.length))
 
 function startEdit(index, tx) {
   editingIndex.value = index
@@ -438,8 +452,9 @@ const displayTransactions = computed(() => {
     return (sortOrder.value === 'asc' ? 1 : -1) * (aNum > bNum ? 1 : aNum < bNum ? -1 : 0)
   })
   // pad to preserve table height
-  const padded = txs.slice(0, props.transactions.length)
-  while (padded.length < props.transactions.length) {
+  const padded = txs.slice(0, txs.length)
+  const targetLength = Math.max(baseRowCount.value, txs.length)
+  while (padded.length < targetLength) {
     padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
   }
   return padded
