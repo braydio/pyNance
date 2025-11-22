@@ -568,30 +568,29 @@ def refresh_data_for_plaid_account(
                 tx["category"] = []
             normalized.append(transaction_rules_logic.apply_rules(account.user_id, tx))
         transactions = normalized
-        logger.info(
-            "Fetched %d transactions from Plaid.",
-            len(transactions),
-        )
+
+        fetched_count = len(transactions)
 
         # Only process transactions for this specific account
         transactions = [
             txn for txn in transactions if txn.get("account_id") == account_id
         ]
-        logger.info(
-            "Processing %d transactions for account %s.",
-            len(transactions),
-            account_id,
-        )
 
         plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
+
+        totals = {
+            "processed": 0,
+            "inserted": 0,
+            "updated": 0,
+            "unchanged": 0,
+            "skipped_missing_id": 0,
+            "skipped_invalid_date": 0,
+        }
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")
             if not txn_id:
-                logger.warning(
-                    "Transaction missing 'transaction_id'; skipping. Account: %s",
-                    account_label,
-                )
+                totals["skipped_missing_id"] += 1
                 continue
 
             txn_date = txn.get("date")
@@ -603,7 +602,7 @@ def refresh_data_for_plaid_account(
                         parsed_date, datetime.min.time(), tzinfo=timezone.utc
                     )
                 except ValueError:
-                    logger.warning("Invalid date format for txn %s; skipping.", txn_id)
+                    totals["skipped_invalid_date"] += 1
                     continue
             elif isinstance(txn_date, pydate) and not isinstance(txn_date, datetime):
                 txn_date = datetime.combine(
@@ -638,6 +637,8 @@ def refresh_data_for_plaid_account(
 
             existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
 
+            totals["processed"] += 1
+
             if existing_txn:
                 needs_update = (
                     existing_txn.amount != txn_amount
@@ -660,12 +661,10 @@ def refresh_data_for_plaid_account(
                     existing_txn.provider = "plaid"
                     existing_txn.personal_finance_category = pfc_obj or None
                     existing_txn.personal_finance_category_icon_url = pfc_icon_url
-                    logger.info(
-                        "Updated transaction %s for account %s",
-                        txn_id,
-                        account_label,
-                    )
+                    totals["updated"] += 1
                     updated = True
+                else:
+                    totals["unchanged"] += 1
                 # -- Update Plaid metadata on every refresh (even if not updating Transaction) --
                 if plaid_account_obj:
                     refresh_or_insert_plaid_metadata(
@@ -689,11 +688,7 @@ def refresh_data_for_plaid_account(
                     personal_finance_category_icon_url=pfc_icon_url,
                 )
                 db.session.add(new_txn)
-                logger.info(
-                    "➕ Inserted new transaction %s for account %s",
-                    txn_id,
-                    account_label,
-                )
+                totals["inserted"] += 1
                 updated = True
                 if plaid_account_obj:
                     refresh_or_insert_plaid_metadata(
@@ -702,6 +697,21 @@ def refresh_data_for_plaid_account(
                 detect_internal_transfer(new_txn)
 
         db.session.commit()
+        logger.info(
+            (
+                "[REFRESH] Account %s | fetched=%d | processed=%d | "
+                "inserted=%d | updated=%d | unchanged=%d | "
+                "skipped_missing_id=%d | skipped_invalid_date=%d"
+            ),
+            account_label,
+            fetched_count,
+            totals["processed"],
+            totals["inserted"],
+            totals["updated"],
+            totals["unchanged"],
+            totals["skipped_missing_id"],
+            totals["skipped_invalid_date"],
+        )
         return updated, None
 
     except ApiException as e:

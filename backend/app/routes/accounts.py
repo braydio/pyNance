@@ -160,7 +160,12 @@ def refresh_all_accounts():
         start_date = data.get("start_date")
         end_date = data.get("end_date")
 
-        logger.debug("Starting refresh of all linked accounts.")
+        logger.info(
+            "[REFRESH][bulk] starting | account_ids=%s | start=%s | end=%s",
+            account_ids if account_ids else "all",
+            start_date,
+            end_date,
+        )
 
         query = Account.query
         if account_ids:
@@ -169,6 +174,8 @@ def refresh_all_accounts():
         updated_accounts = []
         refreshed_counts: dict[str, int] = {}
         error_map: dict[tuple[str, str, str], dict] = {}
+        skipped_non_plaid = 0
+        missing_tokens = 0
 
         for account in accounts:
             if _is_plaid_link_type(account.link_type):
@@ -176,6 +183,7 @@ def refresh_all_accounts():
                 if account.plaid_account:
                     access_token = account.plaid_account.access_token
                 if not access_token:
+                    missing_tokens += 1
                     logger.warning("No Plaid token for %s", account.account_id)
                     continue
 
@@ -288,15 +296,11 @@ def refresh_all_accounts():
                     refreshed_counts[inst] = refreshed_counts.get(inst, 0) + 1
 
             else:
-                logger.info(
-                    "Skipping account %s with non-Plaid link_type '%s'",
-                    account.account_id,
-                    account.link_type,
-                )
+                skipped_non_plaid += 1
 
         # Log aggregated error summary for operators
         if error_map:
-            logger.info("=== Account Refresh Error Summary ===")
+            error_lines = []
             for key, error_info in error_map.items():
                 institution, error_code, error_message = key
                 affected_count = len(error_info["account_ids"])
@@ -306,26 +310,35 @@ def refresh_all_accounts():
                 if len(error_info["account_names"]) > 3:
                     account_names += f" and {len(error_info['account_names']) - 3} more"
 
-                log_level = (
-                    "WARNING" if error_code == "ITEM_LOGIN_REQUIRED" else "ERROR"
-                )
                 remediation = ""
                 if error_code == "ITEM_LOGIN_REQUIRED":
-                    remediation = " | Remediation: User must re-auth via Link update mode. Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                    remediation = (
+                        " | Remediation: User must re-auth via Link update mode. "
+                        "Call POST /api/plaid/transactions/generate_update_link_token with account_id."
+                    )
 
-                logger.info(
-                    "[%s] %s: %s - %s | Affected accounts: %d (%s)%s",
-                    log_level,
-                    institution,
-                    error_code,
-                    error_message,
-                    affected_count,
-                    account_names,
-                    remediation,
+                error_lines.append(
+                    (
+                        f"{institution}: {error_code} - {error_message} "
+                        f"affected={affected_count} ({account_names}){remediation}"
+                    )
                 )
-            logger.info("=== End Error Summary ===")
+
+            logger.info("[REFRESH][bulk] error summary | %s", " | ".join(error_lines))
 
         db.session.commit()
+        logger.info(
+            (
+                "[REFRESH][bulk] completed | total=%d | updated=%d | "
+                "institutions=%d | missing_tokens=%d | non_plaid_skipped=%d | errors=%d"
+            ),
+            len(accounts),
+            len(updated_accounts),
+            len(refreshed_counts),
+            missing_tokens,
+            skipped_non_plaid,
+            len(error_map),
+        )
         return (
             jsonify(
                 {
@@ -356,6 +369,13 @@ def refresh_single_account(account_id):
     account = Account.query.filter_by(account_id=account_id).first()
     if not account:
         return jsonify({"status": "error", "message": "Account not found"}), 404
+
+    logger.info(
+        "[REFRESH][single] starting | account_id=%s | start=%s | end=%s",
+        account_id,
+        start_date,
+        end_date,
+    )
 
     updated = False
 
@@ -468,6 +488,13 @@ def refresh_single_account(account_id):
         db.session.commit()
     else:
         db.session.rollback()
+
+    logger.info(
+        "[REFRESH][single] completed | account_id=%s | updated=%s | products=%s",
+        account_id,
+        updated,
+        sorted(products),
+    )
 
     return jsonify({"status": "success", "updated": updated}), 200
 

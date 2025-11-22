@@ -36,7 +36,7 @@ def refresh_all_accounts():
     The caller must ensure a Flask ``app_context`` is active so database updates
     persist. Accounts that are not Plaid-linked are skipped with a warning.
     """
-    logger.info("🔁 Starting account refresh dispatcher...")
+    logger.info("[DISPATCH] starting account refresh dispatcher")
 
     accounts = Account.query.all()
     updated = 0
@@ -48,7 +48,11 @@ def refresh_all_accounts():
         if provider == "plaid":
             rel = acct.plaid_account
         else:
-            logger.warning("⚠️ Unknown provider for account %s", acct.id)
+            logger.warning(
+                "[DISPATCH] skipping account %s due to unknown provider '%s'",
+                acct.id,
+                provider,
+            )
             skipped += 1
             continue
 
@@ -60,7 +64,7 @@ def refresh_all_accounts():
 
         try:
             logger.info(
-                "🔄 Syncing %s account %s for user %s",
+                "[DISPATCH] syncing provider=%s account=%s user=%s",
                 provider,
                 acct.id,
                 acct.user_id,
@@ -71,7 +75,7 @@ def refresh_all_accounts():
             db.session.commit()
             updated += 1
             logger.info(
-                "✅ Synced %s account %s for user %s",
+                "[DISPATCH] sync complete provider=%s account=%s user=%s",
                 provider,
                 acct.id,
                 acct.user_id,
@@ -79,12 +83,14 @@ def refresh_all_accounts():
 
         except Exception as e:
             logger.error(
-                "❌ Sync failed for account %s: %s",
+                "[DISPATCH] sync failed for account %s: %s",
                 acct.id,
-                str(e),
+                e,
                 exc_info=True,
             )
 
     logger.info(
-        "🔚 Account refresh complete: %d updated, %d skipped.", updated, skipped
+        "[DISPATCH] account refresh complete | updated=%d | skipped=%d",
+        updated,
+        skipped,
     )
