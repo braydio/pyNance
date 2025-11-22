@@ -32,21 +32,29 @@
       id="top-controls"
       class="p-6 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-white/80 via-white to-[var(--color-bg-sec)] shadow-sm space-y-4"
     >
-      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
+      <div
+        class="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4"
+      >
         <div class="space-y-1">
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Controls</p>
           <h3 class="text-lg font-semibold text-gray-900">Import &amp; quick search</h3>
           <p class="text-sm text-gray-600">Upload transactions and instantly narrow the view.</p>
         </div>
-        <span class="px-3 py-1 text-xs font-semibold text-gray-600 bg-[var(--hover)-light] border border-[var(--border)] rounded-full">
+        <span
+          class="px-3 py-1 text-xs font-semibold text-gray-600 bg-[var(--hover)-light] border border-[var(--border)] rounded-full"
+        >
           Transactions
         </span>
       </div>
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)]">
-        <div class="rounded-xl border border-dashed border-[var(--border)] bg-white/80 p-4 shadow-inner">
+        <div
+          class="rounded-xl border border-dashed border-[var(--border)] bg-white/80 p-4 shadow-inner"
+        >
           <ImportFileSelector />
         </div>
-        <div class="relative rounded-xl border border-dashed border-[var(--border)] bg-white/80 shadow-inner">
+        <div
+          class="relative rounded-xl border border-dashed border-[var(--border)] bg-white/80 shadow-inner"
+        >
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
             <Search class="w-4 h-4" />
           </span>
@@ -61,9 +69,7 @@
     </Card>
 
     <!-- Filter Controls -->
-    <Card
-      class="p-6 rounded-2xl border border-[var(--border)] bg-white/90 shadow-sm space-y-4"
-    >
+    <Card class="p-6 rounded-2xl border border-[var(--border)] bg-white/90 shadow-sm space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Filters</p>

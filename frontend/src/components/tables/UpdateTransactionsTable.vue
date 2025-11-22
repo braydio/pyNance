@@ -27,7 +27,8 @@
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('amount')">
-                Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Amount
+                <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('description')">
                 Description
@@ -39,7 +40,9 @@
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('merchant_name')">
                 Merchant
-                <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'merchant_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('account_name')">
                 Account Name
@@ -47,10 +50,13 @@
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('institution_name')">
                 Institution
-                <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'institution_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="px-3 py-3 cursor-pointer" @click="sortBy('subtype')">
-                Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Subtype
+                <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-3 py-3">Actions</th>
             </tr>
@@ -123,22 +129,22 @@
                   <span v-else>{{ tx.merchant_name }}</span>
                 </td>
                 <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
-            <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
-            <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
-            <td class="px-3 py-2 space-x-1">
-              <template v-if="editingIndex === index">
-                <button class="btn-sm" @click="saveEdit(tx)">Save</button>
-                <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
+                <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
+                <td class="px-3 py-2 space-x-1">
+                  <template v-if="editingIndex === index">
+                    <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                    <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                  </template>
+                  <template v-else>
+                    <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+                    <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
+                    <button class="btn-sm" @click="toggleInternal(tx)">
+                      {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
+                    </button>
+                  </template>
+                </td>
               </template>
-              <template v-else>
-                <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-                <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
-                <button class="btn-sm" @click="toggleInternal(tx)">
-                  {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
-                </button>
-              </template>
-            </td>
-          </template>
             </tr>
           </tbody>
         </table>
@@ -180,7 +186,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
+import {
+  updateTransaction,
+  fetchMerchantSuggestions,
+  createTransactionRule,
+} from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
