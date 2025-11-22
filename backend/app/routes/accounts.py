@@ -1,8 +1,6 @@
 """Account management and refresh routes."""
 
-import logging
 from datetime import date, datetime, timedelta, timezone
-from pathlib import Path
 from typing import Optional
 
 from app.config import logger
@@ -17,15 +15,6 @@ from flask import Blueprint, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
-
-
-error_logger = logging.getLogger("pyNanceError")
-if not error_logger.handlers:
-    log_file = Path(__file__).resolve().parents[1] / "logs" / "account_sync_error.log"
-    log_file.parent.mkdir(parents=True, exist_ok=True)
-    handler = logging.FileHandler(log_file)
-    error_logger.addHandler(handler)
-error_logger.setLevel(logging.ERROR)
 
 
 def resolve_account_by_any_id(identifier) -> Optional[Account]:
@@ -248,8 +237,8 @@ def refresh_all_accounts():
                                     err.get("plaid_error_message"),
                                 )
                             else:
-                                error_logger.error(
-                                    "Plaid error on refresh: Institution: %s, Accounts: %s, Error Code: %s, Message: %s",
+                                logger.error(
+                                    "Plaid refresh error | institution=%s | account=%s | code=%s | message=%s",
                                     inst,
                                     account.name,
                                     err.get("plaid_error_code"),
@@ -278,7 +267,7 @@ def refresh_all_accounts():
                                 db.session.rollback()
                             except Exception:
                                 pass
-                            error_logger.error(
+                            logger.error(
                                 "Plaid investments refresh failed for account %s: %s",
                                 account.account_id,
                                 exc,
