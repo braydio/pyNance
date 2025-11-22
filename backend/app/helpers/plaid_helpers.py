@@ -6,9 +6,13 @@ keep logs concise.
 """
 
 import json
-import logging
-
-from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, plaid_client
+from app.config import (
+    BACKEND_PUBLIC_URL,
+    FILES,
+    PLAID_CLIENT_NAME,
+    logger,
+    plaid_client,
+)
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
@@ -32,8 +36,6 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
-
-logger = logging.getLogger(__name__)
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
 
