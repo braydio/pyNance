@@ -6,6 +6,7 @@ keep logs concise.
 """
 
 import json
+
 from app.config import (
     BACKEND_PUBLIC_URL,
     FILES,
@@ -36,6 +37,7 @@ from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUse
 from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
+
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
 
