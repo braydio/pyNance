@@ -53,66 +53,45 @@ flask --app backend.run db migrate -m "add raw JSON cols for Plaid meta + invest
 flask --app backend.run db upgrade
 ```
 
-## Quickstart (from a fresh clone)
+## Quickstart (Flask + PostgreSQL)
 
-### 1. Prerequisites
+1. **Install prerequisites:** [Docker + Docker Compose](https://docs.docker.com/compose/), [Python 3.12+](https://docs.python.org/3/), and [Node 20+](https://nodejs.org/en/docs/).
+2. **Configure the backend:**
 
-- **Docker + Docker Compose** – used to run a local PostgreSQL instance.
-- **Python 3.12+ and Node 20+** – required for the backend and frontend.
-
-### 2. Bootstrap the backend (DB + migrations)
-
-From the `backend/` directory:
-
-```bash
-cd backend
-bash scripts/setup.sh
-```
-
-This will:
-
-- Copy `backend/example.env` to `backend/.env` if it does not exist.
-- Start a local PostgreSQL container (`db` service in `backend/docker-compose.yml`).
-- Wait for the database to be ready.
-- Run `flask db upgrade` to apply all migrations.
-
-To reset and reseed the dev database later:
-
-```bash
-cd backend
-bash scripts/reset_db.sh
-```
-
-To add a small set of demo data to an existing dev database:
-
-```bash
-cd backend
-bash scripts/seed_dev.sh
-```
-
-### 3. Run the app locally
-
-1. Start the backend API:
    ```bash
    cd backend
-   python run.py
+   bash scripts/setup.sh
    ```
-2. Start the frontend:
+
+   - Copies `backend/example.env` to `backend/.env`.
+   - Spins up PostgreSQL via `backend/docker-compose.yml` and waits for readiness.
+   - Applies Alembic migrations with `flask db upgrade` (see [Flask-Migrate](https://flask-migrate.readthedocs.io/en/latest/)).
+
+3. **Run local services:**
+
    ```bash
-   cd frontend
+   # Backend API (Flask)
+   cd backend
+   python run.py
+
+   # Frontend (Vue 3)
+   cd ../frontend
+   npm install
    npm run dev
    ```
 
-For automatic updates when new commits are pushed to the repository, use the
-watcher script from the project root:
+4. **Database utilities:**
+   ```bash
+   cd backend
+   bash scripts/reset_db.sh   # drop/recreate + migrations
+   bash scripts/seed_dev.sh   # load demo data
+   ```
+
+For auto-reloading during collaborative work, run the watcher from the project root:
 
 ```bash
 ./scripts/dev-watcher.sh
 ```
-
-It starts the frontend development server and periodically performs a
-`git pull --rebase` when the tracked branch receives new commits, ensuring Git
-hooks run and the server restarts with the latest changes.
 
 ## Configuration
 
