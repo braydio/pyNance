@@ -57,14 +57,18 @@ flask --app backend.run db upgrade
 
 1. **Install prerequisites:** [Docker + Docker Compose](https://docs.docker.com/compose/), [Python 3.12+](https://docs.python.org/3/), and [Node 20+](https://nodejs.org/en/docs/).
 2. **Configure the backend:**
+
    ```bash
    cd backend
    bash scripts/setup.sh
    ```
+
    - Copies `backend/example.env` to `backend/.env`.
    - Spins up PostgreSQL via `backend/docker-compose.yml` and waits for readiness.
    - Applies Alembic migrations with `flask db upgrade` (see [Flask-Migrate](https://flask-migrate.readthedocs.io/en/latest/)).
+
 3. **Run local services:**
+
    ```bash
    # Backend API (Flask)
    cd backend
@@ -75,6 +79,7 @@ flask --app backend.run db upgrade
    npm install
    npm run dev
    ```
+
 4. **Database utilities:**
    ```bash
    cd backend
