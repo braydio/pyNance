@@ -1,4 +1,6 @@
 
+"""Expose lightweight API documentation in HTML and JSON forms."""
+
 from flask import Blueprint, jsonify, render_template_string, current_app
 
 docs = Blueprint("docs", __name__)
@@ -73,11 +75,13 @@ def _collect_routes():
 
 @docs.route("/api/docs", methods=["GET"])
 def api_docs():
+    """Render the HTML documentation page showing grouped routes."""
     grouped = _collect_routes()
     return render_template_string(HTML_TEMPLATE, grouped=grouped)
 
 
 @docs.route("/api/docs.json", methods=["GET"])
 def api_docs_json():
+    """Return grouped route metadata as a JSON payload."""
     grouped = _collect_routes()
     return jsonify(grouped)
