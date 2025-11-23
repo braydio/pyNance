@@ -27,9 +27,7 @@ API documentation blueprint that surfaces the current Flask `url_map` in both HT
     { "rule": "/api/accounts", "methods": ["GET"] },
     { "rule": "/api/transactions", "methods": ["GET", "POST"] }
   ],
-  "/api/plaid": [
-    { "rule": "/api/plaid/link", "methods": ["POST"] }
-  ]
+  "/api/plaid": [{ "rule": "/api/plaid/link", "methods": ["POST"] }]
 }
 ```
 
