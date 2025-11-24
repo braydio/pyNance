@@ -360,7 +360,8 @@ export default {
 
 <style scoped>
 .transactions-page {
-  @apply bg-gradient-to-br from-slate-50 via-white to-indigo-50 min-h-screen;
+  @apply min-h-screen;
+  background: linear-gradient(135deg, #f8fafc, #ffffff 40%, #eef2ff);
 }
 
 .card-surface {
