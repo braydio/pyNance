@@ -7,6 +7,7 @@ API documentation blueprint that surfaces the current Flask `url_map` in both HT
 - Expose a lightweight HTML page at `/api/docs` summarizing all registered routes, grouped by first path segment.
 - Provide a machine-readable listing at `/api/docs.json` for tooling or API clients.
 - Filter out noise by skipping static assets plus `HEAD`/`OPTIONS` auto-routes.
+- Serve as a quick discovery tool for developers, QA, and automation scripts.
 
 ## Endpoints
 
