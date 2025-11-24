@@ -1,94 +1,97 @@
-# Backend Routes - Accounts and Categories [ROUTES_ACCOUNTS_CATEGORIES]
+# Accounts and Categories Routes (`accounts.py`, `categories.py`)
 
-This document provides comprehensive documentation for account management and transaction categorization routes in the pyNance backend application. These routes handle financial institution linking, account lifecycle operations, and transaction categorization logic.
+## Accounts Route
 
----
+### Purpose
+Manages account lifecycle operations including institution linking, metadata updates, and removal of linked accounts with Plaid integration.
 
-## 📘 `accounts.py`
+### Endpoints
+- `GET /accounts` – Retrieve all linked accounts and metadata.
+- `POST /accounts/link` – Initiate account linking via external aggregators such as Plaid.
+- `PATCH /accounts/<account_id>` – Update stored account metadata.
+- `DELETE /accounts/<account_id>` – Remove a linked account.
 
-```markdown
-# Accounts Route
-
-## Purpose
-
-Handles account lifecycle operations, primarily focused on financial institution linking, management, and metadata sync. Integrates with external APIs (Plaid) and internal services for data ingestion.
-
-## Key Endpoints
-
-- `GET /accounts`: Retrieve all linked accounts.
-- `POST /accounts/link`: Initiates link flow (typically with an external aggregator like Plaid).
-- `DELETE /accounts/<account_id>`: Removes a linked account.
-- `PATCH /accounts/<account_id>`: Updates account metadata (e.g., custom labels).
-
-## Inputs & Outputs
-
+### Inputs/Outputs
 - **POST /accounts/link**
-  - **Input:** `{ public_token: str, provider: 'plaid' }`
-  - **Output:** `{ account_id: str, status: str }`
-
+  - **Inputs:** JSON `{ "public_token": str, "provider": "plaid" }`.
+  - **Outputs:** `{ "account_id": str, "status": str }` describing the new linkage.
 - **GET /accounts**
-  - **Output:** List of accounts with metadata (balance, institution name, link status)
+  - **Outputs:** Array of linked accounts with balances, institution names, and link status metadata.
 
-## Internal Dependencies
+### Auth
+- Requires authenticated user context; uses the standard auth middleware to scope linked accounts.
 
-- `services.account_link_service`
-- `models.Account`
+### Dependencies
+- `services.account_link_service` for Plaid token exchange and account provisioning.
+- `models.Account` for persistence.
 
-## Known Behaviors
+### Behaviors/Edge Cases
+- Triggers metadata sync jobs when a link succeeds.
+- Validates token payloads before invoking Plaid.
+- Deletions cascade to associated metadata according to model constraints.
 
-- Supports Plaid account linkage
-- Triggers metadata sync jobs on link success
+### Sample Request/Response
+```http
+POST /accounts/link HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
-
-- [`docs/backend/services/account_link_service.md`](../services/account_link_service.md)
-- [`docs/dataflow/sync_pipeline.md`](../../dataflow/sync_pipeline.md)
+{ "public_token": "public-sandbox-123", "provider": "plaid" }
 ```
 
----
+```json
+{ "account_id": "acc_123", "status": "linked" }
+```
 
-## 📘 `categories.py`
+## Categories Route
 
-```markdown
-# Categories Route
+### Purpose
+Supports automatic and manual transaction categorization, including updates to category metadata and application of rules.
 
-## Purpose
+### Endpoints
+- `GET /categories` – Fetch default and user-defined categories.
+- `GET /categories/tree` – Provide nested category and detail relationships.
+- `POST /categories/update` – Update category metadata (label, emoji, etc.).
+- `POST /categories/apply` – Reassign category tags to transactions.
+- `GET /rules` – List saved transaction rules.
+- `POST /rules` – Create a new rule.
+- `PATCH /rules/<id>` – Modify or disable a rule.
+- `DELETE /rules/<id>` – Remove a rule.
 
-Manages transaction categorization logic and user-defined category updates. Supports automatic and manual tagging workflows.
-
-## Key Endpoints
-
-- `GET /categories`: Fetch default and user-defined categories.
-- `POST /categories/update`: Update category metadata (e.g., label, emoji).
-- `POST /categories/apply`: Reassign category tags to transactions.
-
-## Inputs & Outputs
-
+### Inputs/Outputs
 - **GET /categories**
-  - **Output:** List of all categories, including system and custom types.
-
+  - **Outputs:** Full list of system and custom categories.
+- **GET /categories/tree**
+  - **Outputs:** Tree payload `{ "status": "success", "data": [{ "name": str, "children": [{ "id": int, "name": str }] }] }` for dropdowns.
 - **POST /categories/update**
-  - **Input:** `{ category_id: str, label: str, emoji?: str }`
-  - **Output:** Updated category object.
-
+  - **Inputs:** `{ "category_id": str, "label": str, "emoji"?: str }`.
+  - **Outputs:** Updated category object.
 - **POST /categories/apply**
-  - **Input:** `{ transaction_ids: [str], category_id: str }`
-  - **Output:** `{ success: boolean, updated: int }`
+  - **Inputs:** `{ "transaction_ids": [str], "category_id": str }`.
+  - **Outputs:** `{ "success": boolean, "updated": int }` summarizing updates.
+- **GET /rules` / **POST /rules** / **PATCH /rules/<id>** / **DELETE /rules/<id>**
+  - **Inputs:** Rule criteria or partial updates depending on verb.
+  - **Outputs:** Saved rule objects or `{ "success": boolean }` after deletion.
 
-## Internal Dependencies
+### Auth
+- Requires authenticated user context; category lists and rules are scoped per user or institution.
 
-- `models.Category`
-- `services.categorization_service`
-- Validation schema utilities
+### Dependencies
+- `models.Category` for category persistence.
+- `services.categorization_service` and related validation utilities for applying and updating categories.
 
-## Known Behaviors
+### Behaviors/Edge Cases
+- Automatic category assignment follows merchant rules but manual overrides persist across syncs.
+- Enforces duplicate-label protection.
+- Rule edits can deactivate logic without deletion.
 
-- Automatic category assignment based on merchant rules.
-- Manual overrides persist across syncs.
-- Duplicate protection on category labels.
+### Sample Request/Response
+```http
+POST /categories/apply HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "transaction_ids": ["txn_1", "txn_2"], "category_id": "cat_groceries" }
+```
 
-- [`docs/backend/services/categorization_service.md`](../services/categorization_service.md)
-- [`docs/dataflow/categorization_pipeline.md`](../../dataflow/categorization_pipeline.md)
+```json
+{ "success": true, "updated": 2 }
 ```

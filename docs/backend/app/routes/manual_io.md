@@ -1,69 +1,47 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `manual_io.py`
-
-````markdown
-# Manual IO Route
+# Manual IO Route (`manual_io.py`)
 
 ## Purpose
+Allow manual creation, update, and deletion of transactions to supplement imported financial data.
 
-Provides an interface for manually entering, editing, or deleting financial transactions. Used to supplement imported data with custom entries (e.g., cash expenses, corrections).
+## Endpoints
+- `POST /manual` – Add a new manual transaction.
+- `GET /manual` – Retrieve all manual entries.
+- `PATCH /manual/<id>` – Update a specific manual transaction.
+- `DELETE /manual/<id>` – Delete a manual entry.
 
-## Key Endpoints
-
-- `POST /manual`: Add a new manual transaction.
-- `GET /manual`: Retrieve all manual entries.
-- `PATCH /manual/<id>`: Update a specific manual transaction.
-- `DELETE /manual/<id>`: Delete a manual entry.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **POST /manual**
-
-  - **Input:**
-    ```json
-    {
-      "amount": 34.2,
-      "date": "2024-12-10",
-      "description": "Lunch - Cash",
-      "category": "Food",
-      "account_id": "acct_001"
-    }
-    ```
-  - **Output:** Newly created transaction object with `id`
-
+  - **Inputs:** Transaction payload including `amount`, `date`, `description`, `category`, and `account_id`.
+  - **Outputs:** Newly created transaction object with server-assigned `id`.
 - **GET /manual**
-
-  - **Output:** Array of manual transaction objects
-
+  - **Inputs:** None.
+  - **Outputs:** Array of manual transaction objects.
 - **PATCH /manual/<id>**
-
-  - **Input:** Partial update (e.g., new `description`, `amount`)
-  - **Output:** Updated transaction object
-
+  - **Inputs:** Partial transaction updates (e.g., `description`, `amount`).
+  - **Outputs:** Updated transaction object.
 - **DELETE /manual/<id>**
-  - **Output:** `{ success: true }` if entry removed
+  - **Inputs:** Path parameter `id`.
+  - **Outputs:** `{ "success": true }` on deletion.
 
-## Internal Dependencies
+## Auth
+- Requires authenticated user; manual entries are scoped to the user's accounts.
 
-- `models.Transaction`
-- `services.manual_transaction_service`
-- Validation & ID generation utilities
+## Dependencies
+- `models.Transaction` for persistence.
+- `services.manual_transaction_service` plus validation and ID helpers.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Manual entries are stored separately from imports but merge into charts and summaries.
+- Edits remain auditable through transaction history.
 
-- Stored distinctly from imported transactions
-- Edits are fully auditable
-- Automatic merging into charts/summary data
+## Sample Request/Response
+```http
+POST /manual HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "amount": 34.2, "date": "2024-12-10", "description": "Lunch - Cash", "category": "Food", "account_id": "acct_001" }
+```
 
-- [`docs/frontend/pages/ManualEntryForm.md`](../../frontend/pages/ManualEntryForm.md)
-- [`docs/dataflow/manual_data_handling.md`](../../dataflow/manual_data_handling.md)
-````
-
----
-
-Next: `plaid.py`?
+```json
+{ "id": "manual_123", "amount": 34.2, "date": "2024-12-10", "description": "Lunch - Cash" }
+```

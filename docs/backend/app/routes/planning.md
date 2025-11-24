@@ -1,46 +1,42 @@
-# Planning Route
+# Planning Route (`planning.py`)
 
 ## Purpose
+Provide CRUD endpoints for budgeting and bill planning artifacts, delegating validation and storage to `planning_service`.
 
-Offers CRUD endpoints for financial planning artifacts that power the budgeting
-views. Request handling is thin: JSON payloads are validated for presence and
-then delegated to `app.services.planning_service`, which currently stores data
-in memory for ease of testing.
+## Endpoints
+- `GET /api/planning/bills` – Return the list of planned bills.
+- `POST /api/planning/bills` – Create a bill using the provided JSON body.
+- `PUT /api/planning/bills/<bill_id>` – Update a bill by ID.
+- `DELETE /api/planning/bills/<bill_id>` – Delete a bill.
+- `GET /api/planning/allocations` – Fetch allocation targets for the planning UI.
+- `PUT /api/planning/allocations` – Replace allocation targets.
 
-## Key Endpoints
+## Inputs/Outputs
+- **Bill endpoints**
+  - **Inputs:** JSON bodies describing bills; missing bodies raise `BadRequest`.
+  - **Outputs:** Raw JSON lists/dicts for reads; created resources return `(payload, status)` tuples with HTTP 201.
+- **Allocations endpoints**
+  - **Inputs:** JSON allocation targets validated for 100% caps.
+  - **Outputs:** Updated allocation payload or error details when validation fails.
 
-- `GET /api/planning/bills` – Return the full list of planned bills.
-- `POST /api/planning/bills` – Create a bill using the JSON body forwarded to
-  `planning_service.create_bill`.
-- `PUT /api/planning/bills/<bill_id>` – Update a bill by ID with the provided
-  payload.
-- `DELETE /api/planning/bills/<bill_id>` – Remove a bill and acknowledge the
-  deletion.
-- `GET /api/planning/allocations` – Fetch the allocation targets used by the
-  planning UI.
-- `PUT /api/planning/allocations` – Replace allocation targets, delegating the
-  validation (including the 100% cap) to `planning_service.update_allocations`.
+## Auth
+- Requires authenticated user; planning data is scoped per user context.
 
-## Inputs & Outputs
+## Dependencies
+- `app.services.planning_service` functions for bill CRUD and allocation updates.
 
-- All mutating endpoints require a JSON body; missing bodies raise a `BadRequest`.
-- Responses return bare JSON payloads for reads and `(payload, status)` tuples
-  for creates.
-- `update_allocations` propagates any `ValueError` raised by the service (for
-  example when percentages exceed 100%), which surfaces as an error response to
-  the client.
+## Behaviors/Edge Cases
+- Persistence is in-memory in current implementation; data resets on process restart.
+- `update_allocations` propagates `ValueError` when totals exceed allowed percentages.
 
-## Internal Dependencies
+## Sample Request/Response
+```http
+POST /api/planning/bills HTTP/1.1
+Content-Type: application/json
 
-- `app.services.planning_service.get_bills`
-- `app.services.planning_service.create_bill`
-- `app.services.planning_service.update_bill`
-- `app.services.planning_service.delete_bill`
-- `app.services.planning_service.get_allocations`
-- `app.services.planning_service.update_allocations`
+{ "name": "Rent", "amount": 1200, "due_day": 1 }
+```
 
-## Known Behaviors
-
-- Because persistence is in-memory, data resets when the process restarts.
-- Endpoints return minimal envelopes (raw lists/dicts) so callers should handle
-  presentation formatting.
+```json
+{ "name": "Rent", "amount": 1200, "due_day": 1 }
+```

@@ -1,59 +1,44 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `export.py`
-
-````markdown
-# Export Route
+# Export Route (`export.py`)
 
 ## Purpose
+Enable exporting financial data for offline analysis or import into third-party tools with CSV and JSON formats.
 
-Provides functionality to export financial data for offline use or import into third-party tools. Formats include CSV and JSON. This route supports exporting transactions, accounts, and budget summaries.
+## Endpoints
+- `GET /export/transactions` – Download transactions as CSV or JSON.
+- `GET /export/accounts` – Download account metadata as JSON.
 
-## Key Endpoints
-
-- `GET /export/transactions`: Download transactions as a CSV file.
-- `GET /export/accounts`: Download account metadata in JSON.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **GET /export/transactions**
-  - **Params (optional):**
-    - `start_date`, `end_date` — to filter transactions
-    - `format` (default: `csv`) — options: `csv`, `json`
-  - **Output:** CSV or JSON file (content-disposition: attachment)
-
+  - **Inputs:** Optional `start_date`, `end_date`, and `format` (`csv` default, supports `json`).
+  - **Outputs:** Attachment response streaming transactions in the requested format.
 - **GET /export/accounts**
-  - **Output:** JSON payload:
-    ```json
-    [
-      {
-        "id": "account_123",
-        "institution": "Chase",
-        "balance": 1532.44,
-        "type": "checking"
-      },
-      ...
-    ]
-    ```
+  - **Inputs:** None.
+  - **Outputs:** JSON array of account records with IDs, institution names, balances, and types.
 
-## Internal Dependencies
+## Auth
+- Requires authenticated user; exports are scoped to the requesting account set.
 
-- `services.export_service`
-- `utils.csv_writer`
-- `models.Transaction`, `models.Account`
+## Dependencies
+- `services.export_service` and CSV writer utilities.
+- `models.Transaction` and `models.Account` for source data.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Streams large CSV responses to avoid memory pressure.
+- Sets proper `Content-Disposition` headers for downloads.
+- Honors backend rate limits and pagination when configured.
 
-- Uses streaming for large CSV files
-- Proper MIME headers set for downloads
-- Rate-limiting and pagination supported in backend
+## Sample Request/Response
+```http
+GET /export/transactions?start_date=2024-01-01&end_date=2024-01-31 HTTP/1.1
+```
 
-## Related Docs
-
-- [`docs/frontend/pages/ExportPage.md`](../../frontend/pages/ExportPage.md)
-- [`docs/dataflow/export_pipeline.md`](../../dataflow/export_pipeline.md)
-````
-
----
+```json
+[
+  {
+    "id": "txn_001",
+    "date": "2024-01-05",
+    "amount": -45.23,
+    "description": "Groceries"
+  }
+]
+```

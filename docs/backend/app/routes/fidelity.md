@@ -1,29 +1,38 @@
-# Fidelity Route
+# Fidelity Route (`fidelity.py`)
 
 ## Purpose
+Expose investment account snapshots by wrapping the Fidelity scraping/integration service behind a simple read-only endpoint.
 
-Provide a thin HTTP wrapper around the Fidelity scraping/integration service.
-When registered, the blueprint exposes a single read-only endpoint that returns
-investment account snapshots sourced from `FidelityService`.
+## Endpoints
+- `GET /fidelity/investments` – Instantiate `FidelityService` and return investment account data as JSON.
 
-## Key Endpoints
+## Inputs/Outputs
+- **GET /fidelity/investments**
+  - **Inputs:** None.
+  - **Outputs:** Array of investment account dictionaries returned by `get_investment_accounts()`.
 
-- `GET /fidelity/investments` – Instantiate `FidelityService` and return the
-  result of `get_investment_accounts()` as JSON.
+## Auth
+- Requires the standard authenticated session; upstream credentials are handled inside the service layer.
 
-## Inputs & Outputs
+## Dependencies
+- `app.services.fidelity_service.FidelityService` for scraping/authentication.
+- Blueprint must be registered (commonly under `/api/fidelity`).
 
-- No query or body parameters are required.
-- Responses return the list of investment account dictionaries produced by the
-  service.
+## Behaviors/Edge Cases
+- No caching is performed; each request initializes a new service instance.
+- Errors from upstream scraping bubble to the client for troubleshooting.
 
-## Internal Dependencies
+## Sample Request/Response
+```http
+GET /fidelity/investments HTTP/1.1
+```
 
-- `app.services.fidelity_service.FidelityService`
-
-## Known Behaviors
-
-- The route performs no caching; each request initializes a new service
-  instance, delegating authentication and scraping to the service layer.
-- Applications must register the blueprint (e.g., with `/api/fidelity`) for the
-  endpoint to become reachable.
+```json
+[
+  {
+    "account_name": "Brokerage",
+    "balance": 12500.55,
+    "holdings": []
+  }
+]
+```
