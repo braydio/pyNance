@@ -341,8 +341,12 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     # included for the entire end date. Without this, transactions occurring
     # later in the day would be excluded and tooltips would not match modal
     # totals.
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
+    start_dt = datetime.combine(start_date, datetime.min.time()).replace(
+        tzinfo=timezone.utc
+    )
+    end_dt = datetime.combine(end_date, datetime.max.time()).replace(
+        tzinfo=timezone.utc
+    )
 
     # Align filtering with transactions listing: exclude hidden accounts
     # (is_hidden == False) and internal transfers so tooltip counts match
