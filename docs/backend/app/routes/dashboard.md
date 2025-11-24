@@ -1,9 +1,11 @@
 # Dashboard Route (`dashboard.py`)
 
 ## Purpose
+
 Serve dashboard configuration data including account snapshot selections and customizable account groups to power personalized views.
 
 ## Endpoints
+
 - `GET /api/dashboard/account_snapshot` – Return the persisted snapshot selection and hydrated account metadata.
 - `PUT /api/dashboard/account_snapshot` – Validate and persist account snapshot selections.
 - `GET /api/dashboard/account-groups` – Load all account groups and the active preference.
@@ -17,6 +19,7 @@ Serve dashboard configuration data including account snapshot selections and cus
 - `POST /api/dashboard/account-groups/<group_id>/accounts/reorder` – Save the ordering of accounts within a group.
 
 ## Inputs/Outputs
+
 - **Snapshot endpoints**
   - **Inputs:** Optional `user_id` in query/body for scoping.
   - **Outputs:** `{ "status": "success", "data": { ...snapshot payload... } }`.
@@ -25,19 +28,23 @@ Serve dashboard configuration data including account snapshot selections and cus
   - **Outputs:** Success payloads mirroring the request structure or updated group objects.
 
 ## Auth
+
 - Requires authenticated context; selections are stored per user.
 
 ## Dependencies
+
 - `app.services.account_snapshot` helpers (`build_snapshot_payload`, `update_snapshot_selection`).
 - `app.services.account_groups` CRUD helpers for group and membership management.
 - Application logger for defensive error logging.
 
 ## Behaviors/Edge Cases
+
 - Falls back to default scope when no `user_id` is provided.
 - Validation rejects missing or incorrectly typed payloads before delegating to services.
 - Errors from the service layer are surfaced with `status: error` while logging the underlying exception.
 
 ## Sample Request/Response
+
 ```http
 PUT /api/dashboard/account-groups/reorder HTTP/1.1
 Content-Type: application/json

@@ -1,9 +1,11 @@
 # Categories Route (`categories.py`)
 
 ## Purpose
+
 Manage transaction categorization workflows, including listing categories, applying category updates, and maintaining rule-based tagging.
 
 ## Endpoints
+
 - `GET /categories` – Fetch default and user-defined categories.
 - `GET /categories/tree` – Provide nested category/detail relationships.
 - `POST /categories/update` – Update category metadata.
@@ -14,6 +16,7 @@ Manage transaction categorization workflows, including listing categories, apply
 - `DELETE /rules/<id>` – Remove a rule.
 
 ## Inputs/Outputs
+
 - **GET /categories**
   - **Inputs:** None.
   - **Outputs:** Full list of system and custom categories.
@@ -31,17 +34,21 @@ Manage transaction categorization workflows, including listing categories, apply
   - **Outputs:** Rule objects or `{ "success": boolean }` after deletion.
 
 ## Auth
+
 - Requires authenticated user context; categories and rules are scoped to the user's data.
 
 ## Dependencies
+
 - `models.Category` for persistence.
 - `services.categorization_service` and validation utilities.
 
 ## Behaviors/Edge Cases
+
 - Automatic assignment uses merchant rules; manual overrides persist across syncs.
 - Enforces duplicate-label protection and allows deactivating rules without deletion.
 
 ## Sample Request/Response
+
 ```http
 POST /categories/apply HTTP/1.1
 Content-Type: application/json

@@ -1,9 +1,11 @@
 # Charts Route (`charts.py`)
 
 ## Purpose
+
 Provide chart-ready financial summaries for dashboard components, covering category breakdowns, net cash movement, and forecast overlays.
 
 ## Endpoints
+
 - `GET /charts/category_breakdown` – Category spending summary.
 - `GET /charts/daily_net` – Net income/expense per day.
 - `GET /charts/cash_flow` – Aggregated income and expenses by day or month.
@@ -12,6 +14,7 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 - `GET|POST /charts/forecast` – Forecast vs. actual balance timeseries.
 
 ## Inputs/Outputs
+
 - **GET /charts/category_breakdown**
   - **Inputs:** `start_date`, `end_date` query params.
   - **Outputs:** `{ "status": "success", "data": [{ "category": str, "amount": float, "date": str }] }`.
@@ -30,18 +33,22 @@ Provide chart-ready financial summaries for dashboard components, covering categ
   - **Outputs:** `{ "labels": [str], "forecast": [float], "actuals": [float], "metadata": { ... } }`.
 
 ## Auth
+
 - Uses the standard authenticated user context to scope transactions and balances.
 
 ## Dependencies
+
 - `services.chart_aggregation_service` for summarization.
 - `models.Transaction` for raw transaction data.
 - Helper utilities for grouping and summing cash flow.
 
 ## Behaviors/Edge Cases
+
 - Responses are optimized for minimal payload size and tolerate empty result sets.
 - Forecast endpoint mirrors the `/api/forecast` logic for overlayed views.
 
 ## Sample Request/Response
+
 ```http
 GET /charts/cash_flow?granularity=daily&start_date=2024-04-01&end_date=2024-04-07 HTTP/1.1
 ```
