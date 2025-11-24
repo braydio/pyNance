@@ -18,16 +18,23 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="rounded-2xl border border-slate-200 shadow-[0_10px_50px_rgba(15,23,42,0.08)] overflow-hidden">
-      <div class="max-h-[640px] min-h-[520px] overflow-auto bg-gradient-to-b from-white to-slate-50/60">
+    <div
+      class="rounded-2xl border border-slate-200 shadow-[0_10px_50px_rgba(15,23,42,0.08)] overflow-hidden"
+    >
+      <div
+        class="max-h-[640px] min-h-[520px] overflow-auto bg-gradient-to-b from-white to-slate-50/60"
+      >
         <table class="min-w-full border-separate border-spacing-0 mt-2">
-          <thead class="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500 bg-slate-50 sticky top-0 z-10">
+          <thead
+            class="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500 bg-slate-50 sticky top-0 z-10"
+          >
             <tr>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('date')">
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('amount')">
-                Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Amount
+                <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('description')">
                 Description
@@ -39,7 +46,9 @@
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('merchant_name')">
                 Merchant
-                <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'merchant_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('account_name')">
                 Account Name
@@ -47,10 +56,13 @@
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('institution_name')">
                 Institution
-                <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'institution_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="px-4 py-3 cursor-pointer" @click="sortBy('subtype')">
-                Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Subtype
+                <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="px-4 py-3">Actions</th>
             </tr>
@@ -184,7 +196,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
+import {
+  updateTransaction,
+  fetchMerchantSuggestions,
+  createTransactionRule,
+} from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 

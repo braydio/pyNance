@@ -31,11 +31,7 @@
     </Card>
 
     <!-- Top Controls -->
-    <Card
-      v-if="showControls"
-      id="top-controls"
-      class="p-6 rounded-3xl card-surface space-y-4"
-    >
+    <Card v-if="showControls" id="top-controls" class="p-6 rounded-3xl card-surface space-y-4">
       <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <div class="space-y-1">
           <p class="eyebrow">Controls</p>
@@ -48,7 +44,9 @@
         <div class="rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-inner">
           <ImportFileSelector />
         </div>
-        <div class="relative rounded-2xl border border-dashed border-slate-200 bg-white/80 shadow-inner">
+        <div
+          class="relative rounded-2xl border border-dashed border-slate-200 bg-white/80 shadow-inner"
+        >
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
             <Search class="w-4 h-4" />
           </span>
