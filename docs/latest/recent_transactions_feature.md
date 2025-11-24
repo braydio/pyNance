@@ -1,12 +1,7 @@
 # Recent Transactions API
 
-`GET /api/transactions/<account_id>/transactions?recent=true&limit=10`
-returns the newest transactions for an account.
+> Status: Archived (Merged)
+> Planned Destination: `docs/backend/app/routes/transactions.md#recent-transactions-shortcut`
+> Resolution: Details have been merged into the Transactions route documentation; this draft remains as an archived pointer.
 
-## Logic Overview
-- `get_paginated_transactions` now accepts `account_id`, `recent`, and `limit` arguments.
-- When `recent=true`, pagination is skipped and only the latest `limit` rows are returned.
-- The new route wraps this logic and supports standard filtering params.
-
-## Potential Issues
-- Sorting relies on `Transaction.date` which may not match insertion time if data was backfilled.
+This draft introduced the `recent=true` shortcut on `/api/transactions/<account_id>/transactions` for fetching the latest rows without pagination. The maintained documentation now lives in [Transactions Route](../backend/app/routes/transactions.md#recent-transactions-shortcut), including the sorting caveats for backfilled data.

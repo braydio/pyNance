@@ -7,7 +7,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - `PUT /api/transactions/update` – Update editable transaction attributes and optionally create automation rules.
 - `POST /api/transactions/scan-internal` – Identify potential internal transfer pairs without mutation.
 - `GET /api/transactions/get_transactions` – Paginated transactions across linked accounts.
-- `GET /api/transactions/<account_id>/transactions` – Account-scoped paginated transactions.
+- `GET /api/transactions/<account_id>/transactions` – Account-scoped paginated transactions with optional `recent=true` shortcut.
 - `GET /api/transactions/merchants` – Merchant name suggestions for autocomplete.
 
 ## Inputs/Outputs
@@ -18,8 +18,8 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
   - **Inputs:** None.
   - **Outputs:** `{ "status": "success", "pairs": [...] }` listing likely transfer pairs.
 - **GET /api/transactions/get_transactions` and `/api/transactions/<account_id>/transactions`**
-  - **Inputs:** Pagination parameters (`page`, `page_size`), optional `start_date`, `end_date`, `category`, `account_ids`, `tx_type`, and `recent=true` for account-specific endpoint.
-  - **Outputs:** `{ "status": "success", "data": { "transactions": [...], "total": int } }`.
+  - **Inputs:** Pagination parameters (`page`, `page_size`), optional `start_date`, `end_date`, `category`, `account_ids`, `tx_type`, and `recent=true` for account-specific endpoint (with optional `limit`).
+  - **Outputs:** `{ "status": "success", "data": { "transactions": [...], "total": int } }`; when `recent=true`, pagination is bypassed and only the latest `limit` rows are returned.
 - **GET /api/transactions/merchants**
   - **Inputs:** Optional `q` substring filter and `limit` (default 50).
   - **Outputs:** `{ "status": "success", "data": ["Merchant", ...] }`.
@@ -36,6 +36,12 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - Update endpoint marks `user_modified` fields and normalizes amounts/dates.
 - Internal transfer scanning looks ±1 day for negating amounts within `±0.01`.
 - Legacy compatibility: `/api/transactions/user_modify/update` mirrors the update contract.
+- When `recent=true`, transactions are returned in descending date order without pagination; sorting relies on `Transaction.date`, which may lag insertion time for backfilled data.
+
+## Recent Transactions Shortcut
+- `get_paginated_transactions` accepts `account_id`, `recent`, and `limit` to serve the newest transactions quickly.
+- Supplying `recent=true` on `/api/transactions/<account_id>/transactions` skips pagination and caps the response at `limit` (default 10) most recent rows.
+- Filters still apply, but date filters are ignored in the recent path to ensure the latest records are surfaced.
 
 ## Sample Request/Response
 ```http
