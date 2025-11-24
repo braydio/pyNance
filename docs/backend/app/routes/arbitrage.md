@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Arbitrage Route (`arbitrage.py`)
 
 ## Purpose

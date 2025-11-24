@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Plaid Webhook Route (`plaid_webhook.py`)
 
 ## Purpose

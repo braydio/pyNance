@@ -32,6 +32,14 @@ jobs:
         run: |
           flake8 .
 
+      - name: Lint documentation front matter
+        run: |
+          python scripts/frontmatter_lint.py --paths \
+            docs/backend/app/routes \
+            docs/backend/app/__init__.md \
+            docs/backend/app/extensions.md \
+            docs/backend/app/models.md
+
   test:
     name: Run Tests
     runs-on: ubuntu-latest
