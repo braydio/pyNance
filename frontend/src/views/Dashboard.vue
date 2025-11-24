@@ -401,18 +401,41 @@ async function loadCategoryGroups() {
   }
 }
 
+/**
+ * Convert chart labels into ISO date strings accepted by the transactions API.
+ * Falls back to the original label when parsing fails so the modal still
+ * opens, even if no data is returned.
+ *
+ * @param {string} label - Label emitted from the DailyNetChart click handler.
+ * @returns {string} ISO-formatted date (YYYY-MM-DD) when parseable, otherwise
+ *   the original label value.
+ */
+function normalizeDateLabel(label) {
+  const parsed = new Date(label)
+  if (Number.isNaN(parsed.getTime())) return label
+  return parsed.toISOString().slice(0, 10)
+}
+
 async function onNetBarClick(label) {
   // Fetch *all* transactions for the clicked date so the modal matches the
   // counts and amounts shown in the DailyNetChart. Use a large page_size to
   // avoid pagination truncation for high-activity days.
-  const result = await fetchTransactions({
-    start_date: label,
-    end_date: label,
-    page: 1,
-    page_size: 1000,
-  })
-  dailyModalTransactions.value = result.transactions || []
-  dailyModalSubtitle.value = label
+  const isoDate = normalizeDateLabel(label)
+
+  try {
+    const result = await fetchTransactions({
+      start_date: isoDate,
+      end_date: isoDate,
+      page: 1,
+      page_size: 1000,
+    })
+    dailyModalTransactions.value = result.transactions || []
+  } catch (error) {
+    console.error('Failed to fetch transactions for date', label, error)
+    dailyModalTransactions.value = []
+  }
+
+  dailyModalSubtitle.value = isoDate
   showDailyModal.value = true
 }
 
