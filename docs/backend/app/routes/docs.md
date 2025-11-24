@@ -14,6 +14,12 @@ API documentation blueprint that surfaces the current Flask `url_map` in both HT
 - `GET /api/docs` — renders a minimal, inline-styled HTML view of grouped routes and their HTTP methods.
 - `GET /api/docs.json` — returns the same grouped structure as JSON.
 
+## Usage
+
+- Browser: open `/api/docs` on the running backend (e.g., `http://localhost:5000/api/docs`).
+- CLI: `curl -s http://localhost:5000/api/docs.json | jq`
+- Consumers: devs during discovery, QA when verifying surfaces, scripts that need a route inventory.
+
 ## How It Works
 
 - Uses `_collect_routes()` to iterate `current_app.url_map`, drop static/auto routes, and group by leading path segment.
@@ -26,15 +32,21 @@ API documentation blueprint that surfaces the current Flask `url_map` in both HT
 {
   "/api": [
     { "rule": "/api/accounts", "methods": ["GET"] },
-    { "rule": "/api/transactions", "methods": ["GET", "POST"] }
+    { "rule": "/api/transactions", "methods": ["GET", "POST"] },
+    { "rule": "/api/export/download", "methods": ["GET"] }
   ],
   "/api/plaid": [
-    { "rule": "/api/plaid/link", "methods": ["POST"] }
+    { "rule": "/api/plaid/link", "methods": ["POST"] },
+    { "rule": "/api/plaid/transactions", "methods": ["GET"] }
+  ],
+  "/api/arbit": [
+    { "rule": "/api/arbit/metrics", "methods": ["GET"] }
   ]
 }
 ```
 
-## Notes and Limitations
+## Environment and Limitations
 
 - Intended for development/debug visibility; no authentication or rate limiting is applied here.
-- Output depends on which blueprints are registered in the current app context and will vary by environment flags.
+- Output depends on which blueprints are registered in the current app context and will vary by environment flags
+  (e.g., `ENABLE_ARBIT_DASHBOARD` toggles `/api/arbit/*` routes).
