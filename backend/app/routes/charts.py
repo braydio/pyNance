@@ -3,7 +3,7 @@
 # TODO: move business logic to accounts_logic and transactions_logic modules
 import traceback
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict
 
 from app.config import logger
@@ -337,6 +337,17 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
 
     logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
 
+    # Convert to timezone-aware datetime bounds so timestamped transactions are
+    # included for the entire end date. Without this, transactions occurring
+    # later in the day would be excluded and tooltips would not match modal
+    # totals.
+    start_dt = datetime.combine(start_date, datetime.min.time()).replace(
+        tzinfo=timezone.utc
+    )
+    end_dt = datetime.combine(end_date, datetime.max.time()).replace(
+        tzinfo=timezone.utc
+    )
+
     # Align filtering with transactions listing: exclude hidden accounts
     # (is_hidden == False) and internal transfers so tooltip counts match
     # the transactions modal and tables.
@@ -344,8 +355,8 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         db.session.query(Transaction)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter(Account.is_hidden.is_(False))
-        .filter(Transaction.date >= start_date)
-        .filter(Transaction.date <= end_date)
+        .filter(Transaction.date >= start_dt)
+        .filter(Transaction.date <= end_dt)
         .filter(
             (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
         )
