@@ -1,7 +1,7 @@
 <!-- Transactions.vue - View and manage transactions using tabbed layout. -->
 <template>
   <TabbedPageLayout
-    class="transactions-page"
+    class="transactions-page text-slate-900"
     :tabs="tabs"
     v-model="activeTab"
     padding="px-4 sm:px-6 lg:px-8 py-8"
@@ -14,9 +14,13 @@
       </PageHeader>
     </template>
     <!-- Internal Transfer Scanner (moved to top) -->
-    <Card class="p-6 rounded-2xl">
+    <Card class="p-6 rounded-3xl card-surface">
       <div class="flex items-center justify-between">
-        <h2 class="text-xl font-semibold">Internal Transfer Scanner</h2>
+        <div>
+          <p class="eyebrow">Automation</p>
+          <h2 class="text-xl font-semibold text-slate-900">Internal Transfer Scanner</h2>
+          <p class="text-sm text-slate-600">Quickly spot and link matching transfers.</p>
+        </div>
         <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
           {{ showScanner ? 'Hide' : 'Show' }}
         </button>
@@ -30,23 +34,21 @@
     <Card
       v-if="showControls"
       id="top-controls"
-      class="p-6 rounded-2xl border border-[var(--border)] bg-gradient-to-br from-white/80 via-white to-[var(--color-bg-sec)] shadow-sm space-y-4"
+      class="p-6 rounded-3xl card-surface space-y-4"
     >
-      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-[var(--border)] pb-4">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <div class="space-y-1">
-          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Controls</p>
-          <h3 class="text-lg font-semibold text-gray-900">Import &amp; quick search</h3>
-          <p class="text-sm text-gray-600">Upload transactions and instantly narrow the view.</p>
+          <p class="eyebrow">Controls</p>
+          <h3 class="text-lg font-semibold text-slate-900">Import &amp; quick search</h3>
+          <p class="text-sm text-slate-600">Upload transactions and instantly narrow the view.</p>
         </div>
-        <span class="px-3 py-1 text-xs font-semibold text-gray-600 bg-[var(--hover)-light] border border-[var(--border)] rounded-full">
-          Transactions
-        </span>
+        <span class="pill">Transactions</span>
       </div>
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)]">
-        <div class="rounded-xl border border-dashed border-[var(--border)] bg-white/80 p-4 shadow-inner">
+        <div class="rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-inner">
           <ImportFileSelector />
         </div>
-        <div class="relative rounded-xl border border-dashed border-[var(--border)] bg-white/80 shadow-inner">
+        <div class="relative rounded-2xl border border-dashed border-slate-200 bg-white/80 shadow-inner">
           <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
             <Search class="w-4 h-4" />
           </span>
@@ -54,29 +56,27 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search transactions..."
-            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)]"
+            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)] text-slate-900"
           />
         </div>
       </div>
     </Card>
 
     <!-- Filter Controls -->
-    <Card
-      class="p-6 rounded-2xl border border-[var(--border)] bg-white/90 shadow-sm space-y-4"
-    >
+    <Card class="p-6 rounded-3xl card-surface space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p class="text-xs font-semibold uppercase tracking-[0.12em] text-gray-500">Filters</p>
-          <h3 class="text-lg font-semibold text-gray-900">Refine the transaction view</h3>
-          <p class="text-sm text-gray-600">Adjust time range, account, and transaction type.</p>
+          <p class="eyebrow">Filters</p>
+          <h3 class="text-lg font-semibold text-slate-900">Refine the transaction view</h3>
+          <p class="text-sm text-slate-600">Adjust time range, account, and transaction type.</p>
         </div>
-        <div class="flex items-center gap-2 text-xs text-gray-500">
-          <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)]"></span>
+        <div class="flex items-center gap-2 text-xs text-slate-600">
+          <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)] shadow-glow"></span>
           Live updates
         </div>
       </div>
       <div class="grid w-full gap-3 md:grid-cols-3">
-        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
           <DateRangeSelector
             :start-date="startDate"
             :end-date="endDate"
@@ -85,18 +85,21 @@
             @update:endDate="endDate = $event"
           />
         </div>
-        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
           <AccountFilter v-model="accountFilter" />
         </div>
-        <div class="rounded-xl border border-[var(--border)] bg-white/80 px-4 py-3 shadow-inner">
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
           <TypeSelector v-model="txType" />
         </div>
       </div>
     </Card>
 
     <!-- Main Table -->
-    <Card class="p-6 space-y-4 rounded-2xl border border-[var(--border)] shadow-sm">
-      <h2 class="text-2xl font-bold">Recent Transactions</h2>
+    <Card class="p-6 space-y-4 rounded-3xl card-surface">
+      <div class="flex items-center justify-between">
+        <h2 class="text-2xl font-bold text-slate-900">Recent Transactions</h2>
+        <span class="pill pill-subtle">Updated feed</span>
+      </div>
       <transition name="fade-in-up" mode="out-in">
         <SkeletonCard v-if="isLoading" key="loading" />
         <RetryError
@@ -119,8 +122,8 @@
 
     <!-- Activity Tab -->
     <template #Activity>
-      <Card class="p-6 space-y-4 rounded-2xl border border-[var(--border)] shadow-sm">
-        <h2 class="text-2xl font-bold">Recent Transactions</h2>
+      <Card class="p-6 space-y-4 rounded-3xl card-surface">
+        <h2 class="text-2xl font-bold text-slate-900">Recent Transactions</h2>
         <transition name="fade-in-up" mode="out-in">
           <SkeletonCard v-if="isLoading" key="loading-activity" />
           <RetryError
@@ -153,15 +156,15 @@
 
     <!-- Recurring Tab -->
     <template #Recurring>
-      <Card class="p-6 space-y-4">
-        <h2 class="text-2xl font-bold">Recurring Transactions</h2>
+      <Card class="p-6 space-y-4 rounded-3xl card-surface">
+        <h2 class="text-2xl font-bold text-slate-900">Recurring Transactions</h2>
         <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
       </Card>
     </template>
 
     <!-- Scanner Tab -->
     <template #Scanner>
-      <Card class="p-6">
+      <Card class="p-6 rounded-3xl card-surface">
         <InternalTransferScanner />
       </Card>
     </template>
@@ -354,3 +357,37 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.transactions-page {
+  @apply bg-gradient-to-br from-slate-50 via-white to-indigo-50 min-h-screen;
+}
+
+.card-surface {
+  @apply border border-slate-200 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.08)];
+}
+
+.eyebrow {
+  @apply text-xs font-semibold uppercase tracking-[0.12em] text-slate-500;
+}
+
+.pill {
+  @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-full shadow-sm;
+}
+
+.pill-subtle {
+  @apply bg-indigo-50 text-indigo-700 border-indigo-100;
+}
+
+.shadow-glow {
+  box-shadow: 0 0 0 6px rgba(157, 121, 214, 0.12);
+}
+
+.transactions-page :deep(.input) {
+  @apply bg-white text-slate-900 border border-slate-200 rounded-xl;
+}
+
+.transactions-page :deep(.input:focus) {
+  @apply ring-2 ring-indigo-200 outline-none;
+}
+</style>
