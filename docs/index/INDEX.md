@@ -22,3 +22,8 @@
 - [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI
 - [Arbit Dashboard UI](../frontend/arbit_dashboard.md) – component layout and live log feed
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
+
+## High-Traffic Backend References
+
+- [Transactions API](../backend/app/routes/transactions.md) – primary CRUD surface for accounts and transactions.
+- [Transactions Service](../backend/app/services/transactions.md) – ingestion and reconciliation logic powering the Transactions API.

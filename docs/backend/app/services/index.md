@@ -41,3 +41,7 @@
 ---
 
 Consult the linked documents above for detailed responsibilities, function summaries, and integration notes for each service module.
+
+## Cross-References
+
+- Routes that rely heavily on this layer include [Transactions](../routes/transactions.md), [Plaid sync](../routes/plaid_transactions.md), and [Accounts](../routes/accounts.md). Use the linked route docs alongside the services above for end-to-end context.

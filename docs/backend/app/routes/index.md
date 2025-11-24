@@ -4,6 +4,12 @@ This index catalogs the Flask blueprints defined under `backend/app/routes` and
 links to the corresponding reference material. Routes are grouped by the
 features they support so contributors can quickly find the relevant API surface.
 
+## Quick Links
+
+- [Transactions](transactions.md) – core CRUD routes for accounts and ledger entries (service: [transactions](../services/transactions.md)).
+- [Plaid sync](plaid_transactions.md) – high-volume Plaid transaction ingest endpoints (service: [plaid_sync](../services/plaid_sync.md)).
+- [Accounts](accounts.md) – account lifecycle and linking flows (service: [account_history](../services/account_history.md)).
+
 ---
 
 ## Table of Contents
