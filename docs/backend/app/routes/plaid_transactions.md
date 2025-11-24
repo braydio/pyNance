@@ -1,70 +1,47 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `plaid_transactions.py`
-
-````markdown
-# Plaid Transactions Route
+# Plaid Transactions Route (`plaid_transactions.py`)
 
 ## Purpose
+Synchronize and expose transaction data retrieved via the Plaid API, supporting fetches, detail lookups, and manual refreshes.
 
-Synchronizes and exposes transaction data retrieved via the Plaid API. Allows fetching, reviewing, and interacting with financial transactions pulled from linked institutions.
+## Endpoints
+- `GET /plaid/transactions` – Retrieve synced transactions with optional filters.
+- `GET /plaid/transactions/<id>` – Fetch a specific transaction by ID.
+- `POST /plaid/transactions/sync` – Force-refresh Plaid transactions.
+- `POST /plaid/transactions/refresh_accounts` – Refresh Plaid accounts and transactions with optional date scoping.
 
-## Key Endpoints
-
-- `GET /plaid/transactions`: Retrieve all synced transactions.
-- `GET /plaid/transactions/<id>`: Fetch a specific transaction by its ID.
-- `POST /plaid/transactions/sync`: Force-refresh Plaid transactions.
-- `POST /plaid/transactions/refresh_accounts`: Refresh Plaid accounts and transactions.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **GET /plaid/transactions**
-  - **Params (optional):**
-    - `start_date`, `end_date`
-    - `account_ids[]`
-  - **Output:**
-    ```json
-    [
-      {
-        "id": "txn_001",
-        "date": "2024-11-18",
-        "amount": -64.23,
-        "name": "Target",
-        "category": "Shopping"
-      }
-    ]
-    ```
-
+  - **Inputs:** Optional `start_date`, `end_date`, and `account_ids[]` query params.
+  - **Outputs:** Array of transaction objects with dates, amounts, names, and categories.
 - **GET /plaid/transactions/<id>**
-  - **Output:** Transaction object with full metadata
-
+  - **Inputs:** Path parameter `id`.
+  - **Outputs:** Full transaction object.
 - **POST /plaid/transactions/sync**
-  - **Output:** `{ success: true, new_records: int }`
-
+  - **Inputs:** None.
+  - **Outputs:** `{ "success": true, "new_records": int }` summarizing ingest results.
 - **POST /plaid/transactions/refresh_accounts**
-  - **Body:** `{ "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`
-  - **Output:** `{ "status": "success", "updated_accounts": ["name"] }`
+  - **Inputs:** JSON body `{ "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`.
+  - **Outputs:** `{ "status": "success", "updated_accounts": ["name"] }` with refresh counts.
 
-## Internal Dependencies
+## Auth
+- Requires authenticated user; transactions are scoped to linked Plaid items for that user.
 
-- `services.plaid_transaction_service`
-- `models.Transaction`
-- `utils.date_filtering`
+## Dependencies
+- `services.plaid_transaction_service` for sync logic.
+- `models.Transaction` and date filtering utilities.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Automatically paginates Plaid transactions and applies deduplication across manual/synced data.
+- Categorization occurs post-ingestion.
 
-- Automatically paginates Plaid’s transactions API
-- Categorization applied post-ingestion
-- Partial deduplication across manual and synced data
+## Sample Request/Response
+```http
+POST /plaid/transactions/refresh_accounts HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "start_date": "2024-01-01", "end_date": "2024-01-15", "account_ids": ["acc_1"] }
+```
 
-- [`docs/dataflow/transaction_sync.md`](../../dataflow/transaction_sync.md)
-- [`docs/models/Transaction.md`](../../models/Transaction.md)
-````
-
----
-
-Next: `plaid_transfer.py`?
+```json
+{ "status": "success", "updated_accounts": ["Checking"] }
+```

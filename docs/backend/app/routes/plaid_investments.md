@@ -1,67 +1,44 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `plaid_investments.py`
-
-````markdown
-# Plaid Investments Route
+# Plaid Investments Route (`plaid_investments.py`)
 
 ## Purpose
+Expose Plaid-synced investment holdings and securities so clients can display portfolio composition and valuations.
 
-Facilitates access to investment data via Plaid. Enables viewing of holdings, securities, and current portfolio performance synced from financial institutions.
+## Endpoints
+- `GET /plaid/investments/holdings` – Return current investment holdings.
+- `GET /plaid/investments/securities` – List referenced securities.
 
-## Key Endpoints
-
-- `GET /plaid/investments/holdings`: Returns current investment holdings.
-- `GET /plaid/investments/securities`: Lists all referenced securities.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **GET /plaid/investments/holdings**
-  - **Output:**
-    ```json
-    [
-      {
-        "account_id": "plaid_001",
-        "symbol": "AAPL",
-        "quantity": 15,
-        "value": 2895.45,
-        "current_price": 193.03
-      }
-    ]
-    ```
-
+  - **Inputs:** None.
+  - **Outputs:** Array of holding objects containing account IDs, symbols, quantities, valuations, and prices.
 - **GET /plaid/investments/securities**
-  - **Output:**
-    ```json
-    [
-      {
-        "security_id": "sec_123",
-        "name": "Apple Inc.",
-        "ticker_symbol": "AAPL",
-        "type": "equity"
-      }
-    ]
-    ```
+  - **Inputs:** None.
+  - **Outputs:** Array of security descriptors with IDs, names, ticker symbols, and types.
 
-## Internal Dependencies
+## Auth
+- Requires authenticated user; holdings and securities are filtered to linked accounts.
 
-- `services.plaid_client`
-- `models.InvestmentHolding`, `models.Security`
+## Dependencies
+- `services.plaid_client` for investment retrieval.
+- `models.InvestmentHolding` and `models.Security` for persistence.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Returns only securities relevant to the user's linked accounts.
+- Prices and valuations reflect the latest sync (scheduled or manual).
 
-- Returns only securities relevant to linked accounts
-- Prices and valuations are real-time where available
-- Holdings are updated via scheduled sync jobs or manual sync
+## Sample Request/Response
+```http
+GET /plaid/investments/holdings HTTP/1.1
+```
 
-## Related Docs
-
-- [`docs/dataflow/investment_sync_pipeline.md`](../../dataflow/investment_sync_pipeline.md)
-- [`docs/integrations/plaid_investments.md`](../../integrations/plaid_investments.md)
-````
-
----
-
-Next: `plaid_transactions.py`?
+```json
+[
+  {
+    "account_id": "plaid_001",
+    "symbol": "AAPL",
+    "quantity": 15,
+    "value": 2895.45,
+    "current_price": 193.03
+  }
+]
+```

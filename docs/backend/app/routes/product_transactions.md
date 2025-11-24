@@ -1,59 +1,44 @@
----
-
-## 📘 `product_transactions.py`
-
-```markdown
-# Product Transactions Route
+# Product Transactions Route (`product_transactions.py`)
 
 ## Purpose
-Handles ingestion and display of transactions tied to specific products or merchant items. This supports granular expense tracking and product-level budgeting.
+Handle ingestion and display of transactions tied to specific products or merchant items for granular expense tracking and budgeting.
 
-## Key Endpoints
-- `GET /products/transactions`: Fetch transactions annotated with product-level metadata.
-- `GET /products/summary`: Aggregated spending per product category or SKU.
+## Endpoints
+- `GET /products/transactions` – Fetch transactions annotated with product-level metadata.
+- `GET /products/summary` – Retrieve aggregated spending per product category or SKU.
 
-## Inputs & Outputs
+## Inputs/Outputs
 - **GET /products/transactions**
-  - **Params:** `category_id`, `merchant_id`, `date_range`
-  - **Output:**
-    ```json
-    [
-      {
-        "transaction_id": "txn_202",
-        "product_name": "Kindle Paperwhite",
-        "amount": 129.99,
-        "merchant": "Amazon",
-        "date": "2024-11-10"
-      }
-    ]
-    ```
-
+  - **Inputs:** Optional `category_id`, `merchant_id`, and `date_range` filters.
+  - **Outputs:** Array of enriched transactions including product names, amounts, merchants, and dates.
 - **GET /products/summary**
-  - **Output:**
-    ```json
-    {
-      "categories": [
-        { "name": "Tech", "total_spent": 843.19 },
-        { "name": "Groceries", "total_spent": 214.75 }
-      ]
-    }
-    ```
+  - **Inputs:** Optional filters aligned with transaction query params.
+  - **Outputs:** Aggregated totals per product/category (e.g., `{ "categories": [{ "name": "Tech", "total_spent": 843.19 }] }`).
 
-## Internal Dependencies
-- `services.product_transaction_parser`
-- `models.Transaction`
-- `utils.product_classifier`
+## Auth
+- Requires authenticated user; results are scoped to the user's transactions.
 
-## Known Behaviors
-- May use embedded merchant metadata for classification
-- Enables per-item budgeting and tagging
-- Relies on enriched transaction data from imports or manual tagging
+## Dependencies
+- `services.product_transaction_parser` for enrichment.
+- `models.Transaction` and product classification utilities.
 
-## Related Docs
-- [`docs/dataflow/product_categorization.md`](../../dataflow/product_categorization.md)
-- [`docs/models/ProductTransaction.md`](../../models/ProductTransaction.md)
+## Behaviors/Edge Cases
+- Leverages merchant metadata for classification; relies on enriched data from imports or manual tagging.
+- Supports per-item budgeting and tagging workflows.
+
+## Sample Request/Response
+```http
+GET /products/transactions?merchant_id=amazon HTTP/1.1
 ```
 
----
-
-Next: `recurring.py`?
+```json
+[
+  {
+    "transaction_id": "txn_202",
+    "product_name": "Kindle Paperwhite",
+    "amount": 129.99,
+    "merchant": "Amazon",
+    "date": "2024-11-10"
+  }
+]
+```

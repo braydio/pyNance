@@ -1,79 +1,47 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `recurring.py`
-
-````markdown
-# Recurring Transactions Route
+# Recurring Transactions Route (`recurring.py`)
 
 ## Purpose
+Detect, configure, and track recurring transactions such as subscriptions, rent, or utilities to provide visibility into fixed obligations.
 
-Handles detection, configuration, and tracking of recurring transactions such as subscriptions, rent, or utilities. Provides visibility into fixed financial obligations.
+## Endpoints
+- `GET /recurring` – Return detected recurring transactions.
+- `POST /recurring/confirm` – Confirm a transaction pattern as recurring.
+- `DELETE /recurring/<id>` – Remove or disable tracking of a recurring item.
+- `POST /recurring/scan/<account_id>` – Scan an account and persist newly detected recurring entries.
 
-## Key Endpoints
-
-- `GET /recurring`: Returns list of detected recurring transactions.
-- `POST /recurring/confirm`: Confirms a transaction pattern as recurring.
-- `DELETE /recurring/<id>`: Removes or disables tracking of a recurring item.
-- `POST /recurring/scan/<account_id>`: Scan an account and store any newly detected recurring entries.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **GET /recurring**
-  - **Output:**
-    ```json
-    [
-      {
-        "id": "rec_001",
-        "description": "Spotify",
-        "amount": 9.99,
-        "frequency": "monthly",
-        "next_date": "2024-12-01"
-      }
-    ]
-    ```
-
+  - **Inputs:** None.
+  - **Outputs:** Array of recurring entries with description, amount, frequency, and next expected date.
 - **POST /recurring/confirm**
-  - **Input:**
-    ```json
-    {
-      "transaction_id": "txn_812",
-      "confirmed_label": "Spotify Subscription"
-    }
-    ```
-  - **Output:** Updated recurring entry metadata
-
-- **DELETE /recurring/<id>`**
-  - **Output:** `{ success: true }` on successful disable
-
+  - **Inputs:** `{ "transaction_id": "txn_812", "confirmed_label": "Spotify Subscription" }`.
+  - **Outputs:** Updated recurring entry metadata.
+- **DELETE /recurring/<id>**
+  - **Inputs:** Path parameter `id`.
+  - **Outputs:** `{ "success": true }` on successful disable.
 - **POST /recurring/scan/<account_id>**
-  - **Output:**
-    ```json
-    {
-      "status": "success",
-      "actions": []
-    }
-    ```
+  - **Inputs:** Path parameter `account_id`.
+  - **Outputs:** `{ "status": "success", "actions": [] }` summarizing detected changes.
 
-## Internal Dependencies
+## Auth
+- Requires authenticated user; recurring items are scoped to the user's accounts.
 
-- `services.recurring_detector`
-- `models.RecurringTransaction`, `models.Transaction`
-- Pattern matching, frequency inference modules
+## Dependencies
+- `services.recurring_detector` for detection logic.
+- `models.RecurringTransaction` and `models.Transaction` for storage.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Recurrence inferred from merchant and cadence heuristics; user confirmation stabilizes predictions.
+- Confirmed recurring entries feed budgeting and forecast views.
 
-- Recurrence inferred from merchant + cadence heuristics
-- User confirmation required before prediction affects forecasts
-- Recurring entries appear in budget and forecast views
+## Sample Request/Response
+```http
+POST /recurring/confirm HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "transaction_id": "txn_812", "confirmed_label": "Spotify Subscription" }
+```
 
-- [`docs/dataflow/recurring_detection.md`](../../dataflow/recurring_detection.md)
-- [`docs/models/RecurringTransaction.md`](../../models/RecurringTransaction.md)
-````
-
----
-
-Next: audit remaining provider routes.
+```json
+{ "id": "rec_001", "description": "Spotify Subscription", "amount": 9.99, "frequency": "monthly" }
+```

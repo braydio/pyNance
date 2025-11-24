@@ -1,56 +1,42 @@
-## 📘 `forecast.py`
-
-````markdown
-# Forecast Route
+# Forecast Route (`forecast.py`)
 
 ## Purpose
+Provides projected balances and metadata for dashboard forecasting views by delegating computation to the forecasting services.
 
-Serves the `/api/forecast` endpoint which provides projected balances and
-metadata. The route simply delegates to `ForecastOrchestrator` to assemble the
-response on demand.
+## Endpoints
+- `GET /api/forecast` – Returns projected balances, labels, and supporting metadata for either monthly or yearly horizons.
 
-## Key Endpoint
+## Inputs/Outputs
+- **GET /api/forecast**
+  - **Inputs:** Query params `view_type` (`"Month"` or `"Year"`), optional `manual_income` (float adjustment), optional `liability_rate` (float deduction).
+  - **Outputs:** JSON payload with `labels`, `forecast`, `actuals`, and `metadata` summarizing account counts, recurring items, and data age.
 
-- `GET /api/forecast`
+## Auth
+- Expects an authenticated user context; relies on the standard application auth/session middleware.
 
-## Inputs & Outputs
+## Dependencies
+- `ForecastOrchestrator` and `services.forecast_engine` for projection assembly.
+- Transaction history via `models.Transaction` and related budget smoothing utilities.
 
-- **Query Params**
-  - `view_type` – `'Month'` (30 days) or `'Year'` (365 days)
-  - `manual_income` – optional float adjustment
-  - `liability_rate` – optional float deduction
+## Behaviors/Edge Cases
+- Historical transaction patterns combined with recurring and nonrecurring projections drive the response.
+- Override parameters (`manual_income`, `liability_rate`) are applied to adjust the forecast.
+- View selection switches horizon lengths (30 days for month, 365 days for year).
 
-- **Output Example**
+## Sample Request/Response
+```http
+GET /api/forecast?view_type=Month&manual_income=200 HTTP/1.1
+```
 
-  ```json
-  {
-    "labels": ["May 1", "May 2", "May 3"],
-    "forecast": [4200.0, 4250.0, 4300.0],
-    "actuals": [4180.0, null, null],
-    "metadata": {
-      "account_count": 2,
-      "recurring_count": 5,
-      "data_age_days": 0
-    }
+```json
+{
+  "labels": ["May 1", "May 2", "May 3"],
+  "forecast": [4200.0, 4250.0, 4300.0],
+  "actuals": [4180.0, null, null],
+  "metadata": {
+    "account_count": 2,
+    "recurring_count": 5,
+    "data_age_days": 0
   }
-  ```
-
-## Internal Dependencies
-
-- `services.forecast_engine`
-- `models.Transaction`
-- Historical budget models and smoothing algorithms
-
-## Known Behaviors
-
-- Uses historical transaction patterns as basis
-- Supports override parameters
-- Supports merging recurring + nonrecurring projections
-
-## Related Docs
-
-- [`docs/forecast/FORECAST_PURPOSE.md`](../../forecast/FORECAST_PURPOSE.md)
-- [`docs/dataflow/forecast_pipeline.md`](../../dataflow/forecast_pipeline.md)
-````
-
----
+}
+```

@@ -1,62 +1,43 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `frontend.py`
-
-````markdown
-# Frontend Route
+# Frontend Route (`frontend.py`)
 
 ## Purpose
+Serve metadata and configuration that bootstrap the UI, including layout descriptors and user-specific settings.
 
-Serves metadata and configuration necessary for frontend rendering and bootstrapping. This includes layout descriptors, onboarding flags, and settings that influence the UI state.
+## Endpoints
+- `GET /frontend/layout` – Return the UI layout schema and feature flags.
+- `GET /frontend/settings` – Retrieve stored UI preferences and onboarding flags.
+- `POST /frontend/settings` – Persist updated UI preferences.
 
-## Key Endpoints
-
-- `GET /frontend/layout`: Returns UI layout schema.
-- `GET /frontend/settings`: Retrieves UI preferences and flags.
-- `POST /frontend/settings`: Updates UI flags and state.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **GET /frontend/layout**
-  - **Output:**
-    ```json
-    {
-      "panels": ["chart", "transactions", "summary"],
-      "feature_flags": { "forecast": true, "recurring": false }
-    }
-    ```
-
+  - **Inputs:** None.
+  - **Outputs:** Layout definition with panel ordering and feature flags.
 - **GET /frontend/settings**
-  - **Output:**
-    ```json
-    {
-      "theme": "dark",
-      "onboarding_complete": true,
-      "preferred_view": "table"
-    }
-    ```
-
+  - **Inputs:** None.
+  - **Outputs:** JSON object containing settings such as theme, onboarding completion, and preferred view.
 - **POST /frontend/settings**
-  - **Input:** JSON object with any settings keys
-  - **Output:** Status code with updated payload echo
+  - **Inputs:** JSON payload with settings keys to update.
+  - **Outputs:** Updated settings echoed back with success status.
 
-## Internal Dependencies
+## Auth
+- Uses standard user authentication; preferences are stored per user/device context.
 
-- `models.UserPreferences`
-- `services.settings_store`
+## Dependencies
+- `models.UserPreferences` and related settings storage utilities.
+- Service helpers that manage defaults based on browser environment or stored state.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- Defaults are inferred on first use and overridden on subsequent updates.
+- Settings persistence may be device-specific depending on storage strategy.
 
-- Settings persisted per device.
-- Defaults inferred from browser environment on first use.
-- Overrides persisted for returning sessions.
+## Sample Request/Response
+```http
+POST /frontend/settings HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "theme": "dark", "preferred_view": "table" }
+```
 
-- [`docs/frontend/components/LayoutManager.md`](../../frontend/components/LayoutManager.md)
-- [`docs/dataflow/ui_config_pipeline.md`](../../dataflow/ui_config_pipeline.md)
-````
-
----
+```json
+{ "theme": "dark", "onboarding_complete": true, "preferred_view": "table" }
+```

@@ -1,68 +1,48 @@
-# backend/app/routes Documentation
-
----
-
-## 📘 `plaid.py`
-
-````markdown
-# Plaid Integration Route
+# Plaid Integration Route (`plaid.py`)
 
 ## Purpose
+Handle Plaid link flows, token exchange, account retrieval, transaction syncs, and webhook verification for aggregated data ingestion.
 
-Handles authentication and data integration with the Plaid API. Supports institution linking, token exchange, webhook verification, and data synchronization for accounts, transactions, and balances.
+## Endpoints
+- `POST /plaid/link-token` – Generate a Link token, optionally enabling multiple Plaid products.
+- `POST /plaid/exchange` – Exchange a public token for an access token tagged with the requested product.
+- `GET /plaid/accounts` – Retrieve linked account metadata from Plaid.
+- `GET /plaid/transactions` – Fetch Plaid-synced transactions.
+- `POST /plaid/sync` – Force a manual Plaid sync.
 
-## Key Endpoints
-
-- `POST /plaid/link-token`: Initiates link token generation. Accepts optional
-  `products` array to enable multiple Plaid products in a single Link flow.
-- `POST /plaid/exchange`: Exchanges public token for access token. Requires a
-  `product` field to tag the resulting credentials.
-- `GET /plaid/accounts`: Retrieves linked account metadata.
-- `GET /plaid/transactions`: Fetches Plaid-synced transactions.
-- `POST /plaid/sync`: Forces a manual sync with Plaid.
-
-## Inputs & Outputs
-
+## Inputs/Outputs
 - **POST /plaid/link-token**
-  - **Input:** `{ user_id: str, products?: [str, ...] }`
-  - **Output:** `{ link_token: str }`
-
+  - **Inputs:** `{ "user_id": str, "products"?: [str, ...] }`.
+  - **Outputs:** `{ "link_token": str }`.
 - **POST /plaid/exchange**
-  - **Input:** `{ public_token: str, product: str }`
-  - **Output:** `{ access_token: str, item_id: str, product: str }`
-
+  - **Inputs:** `{ "public_token": str, "product": str }`.
+  - **Outputs:** `{ "access_token": str, "item_id": str, "product": str }`.
 - **GET /plaid/accounts**
-  - **Output:**
-    ```json
-    [{ "id": "plaid_001", "name": "Checking", "balance": 820.34 }]
-    ```
-
+  - **Inputs:** None.
+  - **Outputs:** Array of account objects with balances and names.
 - **POST /plaid/sync**
-  - **Input:** `{ access_token: str }`
-  - **Output:** `{ transactions_synced: int, status: string }`
+  - **Inputs:** `{ "access_token": str }`.
+  - **Outputs:** `{ "transactions_synced": int, "status": str }`.
 
-## Internal Dependencies
+## Auth
+- Uses authenticated user context; Plaid credentials are managed per user/institution.
 
-- `services.plaid_client`
-- `models.Account`, `models.Transaction`
-- Secrets manager for Plaid credentials
+## Dependencies
+- `services.plaid_client` plus Plaid credential storage.
+- `models.Account` and `models.Transaction` for persistence.
 
-## Known Behaviors
+## Behaviors/Edge Cases
+- When multiple products are requested, the client must exchange the token per product so credentials are tagged correctly.
+- Syncs occur automatically but can be manually triggered when data staleness is detected.
 
-- Uses client-side link flow for Plaid integration
-- Triggers webhook registration post-link
-- Syncs occur automatically and can be forced
-- When multiple products are requested, Plaid generates a single link token
-  covering each product. The client must call `/plaid/exchange` separately for
-  every selected product so the backend can persist credentials with a
-  product tag.
+## Sample Request/Response
+```http
+POST /plaid/exchange HTTP/1.1
+Content-Type: application/json
 
-## Related Docs
+{ "public_token": "public-sandbox-123", "product": "transactions" }
+```
 
-- [`docs/dataflow/plaid_ingestion_pipeline.md`](../../dataflow/plaid_ingestion_pipeline.md)
-- [`docs/integrations/plaid_config.md`](../../integrations/plaid_config.md)
-````
-
----
-
-Next: `plaid_investments.py`?
+```json
+{ "access_token": "access-sandbox-abc", "item_id": "item-123", "product": "transactions" }
+```

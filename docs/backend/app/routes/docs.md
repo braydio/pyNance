@@ -1,52 +1,41 @@
-# Docs Route (`docs.py`)
-
-API documentation blueprint that surfaces the current Flask `url_map` in both HTML and JSON forms for quick discovery.
+# Docs Routes (`docs.py`)
 
 ## Purpose
-
-- Expose a lightweight HTML page at `/api/docs` summarizing all registered routes, grouped by first path segment.
-- Provide a machine-readable listing at `/api/docs.json` for tooling or API clients.
-- Filter out noise by skipping static assets plus `HEAD`/`OPTIONS` auto-routes.
-- Serve as a quick discovery tool for developers, QA, and automation scripts.
+Expose a lightweight, auto-generated view of registered Flask routes for quick discovery in browsers and automation.
 
 ## Endpoints
+- `GET /api/docs` – Render an inline HTML table of grouped routes and their HTTP methods.
+- `GET /api/docs.json` – Return the same grouped structure as JSON.
 
-- `GET /api/docs` — renders a minimal, inline-styled HTML view of grouped routes and their HTTP methods.
-- `GET /api/docs.json` — returns the same grouped structure as JSON.
+## Inputs/Outputs
+- **GET /api/docs**
+  - **Inputs:** None.
+  - **Outputs:** HTML page grouping routes by their first path segment.
+- **GET /api/docs.json**
+  - **Inputs:** None.
+  - **Outputs:** JSON object keyed by base path with arrays of `{ "rule": str, "methods": [str] }` entries.
 
-## Usage
+## Auth
+- Intended for development visibility; no authentication or rate limiting is applied by default.
 
-- Browser: open `/api/docs` on the running backend (e.g., `http://localhost:5000/api/docs`).
-- CLI: `curl -s http://localhost:5000/api/docs.json | jq`
-- Consumers: devs during discovery, QA when verifying surfaces, scripts that need a route inventory.
+## Dependencies
+- `_collect_routes()` helper iterating `current_app.url_map` while filtering static and auto-generated routes.
+- Inline `render_template_string` for the HTML view.
 
-## How It Works
+## Behaviors/Edge Cases
+- Output varies based on which blueprints are registered (e.g., feature flags such as `ENABLE_ARBIT_DASHBOARD`).
+- Excludes `HEAD`/`OPTIONS` methods and static assets to reduce noise.
 
-- Uses `_collect_routes()` to iterate `current_app.url_map`, drop static/auto routes, and group by leading path segment.
-- HTML template is defined inline (`render_template_string`) to avoid separate asset management.
-- Registered in `create_app()` with `url_prefix="/api/docs"` so the effective paths are `/api/docs` and `/api/docs.json`.
-
-## JSON Shape
+## Sample Request/Response
+```http
+GET /api/docs.json HTTP/1.1
+```
 
 ```json
 {
   "/api": [
     { "rule": "/api/accounts", "methods": ["GET"] },
-    { "rule": "/api/transactions", "methods": ["GET", "POST"] },
-    { "rule": "/api/export/download", "methods": ["GET"] }
-  ],
-  "/api/plaid": [
-    { "rule": "/api/plaid/link", "methods": ["POST"] },
-    { "rule": "/api/plaid/transactions", "methods": ["GET"] }
-  ],
-  "/api/arbit": [
-    { "rule": "/api/arbit/metrics", "methods": ["GET"] }
+    { "rule": "/api/transactions", "methods": ["GET", "POST"] }
   ]
 }
 ```
-
-## Environment and Limitations
-
-- Intended for development/debug visibility; no authentication or rate limiting is applied here.
-- Output depends on which blueprints are registered in the current app context and will vary by environment flags
-  (e.g., `ENABLE_ARBIT_DASHBOARD` toggles `/api/arbit/*` routes).

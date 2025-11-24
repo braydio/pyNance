@@ -1,56 +1,50 @@
-# Dashboard Route
+# Dashboard Route (`dashboard.py`)
 
 ## Purpose
+Serve dashboard configuration data including account snapshot selections and customizable account groups to power personalized views.
 
-Manages the data needed to render the personalized dashboard experience. The
-blueprint exposes endpoints for retrieving and updating account snapshot
-preferences as well as a full CRUD surface for user-defined account groups.
-Logic heavy lifting is delegated to `app.services.account_snapshot` and
-`app.services.account_groups`.
-
-## Key Endpoints
-
-- `GET /api/dashboard/account_snapshot` – Return the persisted snapshot
-  selection together with hydrated account metadata via
-  `build_snapshot_payload`.
-- `PUT /api/dashboard/account_snapshot` – Validate and persist a list of
-  account IDs by forwarding to `update_snapshot_selection`.
-- `GET /api/dashboard/account-groups` – Load all account groups plus the active
-  group preference through `list_account_groups`.
-- `POST /api/dashboard/account-groups` – Create a group and activate it using
-  `create_account_group`.
-- `PUT /api/dashboard/account-groups/<group_id>` – Update group display
-  metadata.
-- `DELETE /api/dashboard/account-groups/<group_id>` – Remove a group and
-  resequence remaining groups.
+## Endpoints
+- `GET /api/dashboard/account_snapshot` – Return the persisted snapshot selection and hydrated account metadata.
+- `PUT /api/dashboard/account_snapshot` – Validate and persist account snapshot selections.
+- `GET /api/dashboard/account-groups` – Load all account groups and the active preference.
+- `POST /api/dashboard/account-groups` – Create and activate a new account group.
+- `PUT /api/dashboard/account-groups/<group_id>` – Update group display metadata.
+- `DELETE /api/dashboard/account-groups/<group_id>` – Remove a group and resequence remaining groups.
 - `POST /api/dashboard/account-groups/reorder` – Persist a new group ordering.
 - `PUT /api/dashboard/account-groups/active` – Set the active group preference.
-- `POST /api/dashboard/account-groups/<group_id>/accounts` – Attach an account
-  to a group.
-- `DELETE /api/dashboard/account-groups/<group_id>/accounts/<account_id>` –
-  Detach an account from a group.
-- `POST /api/dashboard/account-groups/<group_id>/accounts/reorder` – Save the
-  ordering of accounts within a group.
+- `POST /api/dashboard/account-groups/<group_id>/accounts` – Attach an account to a group.
+- `DELETE /api/dashboard/account-groups/<group_id>/accounts/<account_id>` – Detach an account from a group.
+- `POST /api/dashboard/account-groups/<group_id>/accounts/reorder` – Save the ordering of accounts within a group.
 
-## Inputs & Outputs
+## Inputs/Outputs
+- **Snapshot endpoints**
+  - **Inputs:** Optional `user_id` in query/body for scoping.
+  - **Outputs:** `{ "status": "success", "data": { ...snapshot payload... } }`.
+- **Group endpoints**
+  - **Inputs:** JSON bodies with identifiers (`group_id`, `group_ids`, `account_id`) and metadata to create, reorder, or update groups.
+  - **Outputs:** Success payloads mirroring the request structure or updated group objects.
 
-- Snapshot endpoints accept an optional `user_id` in the query string or request
-  body. Responses wrap payloads with `{ "status": "success", "data": ... }`
-  or include error messaging when validation fails.
-- Account group mutating endpoints expect JSON bodies that include identifiers
-  such as `group_ids`, `group_id`, or `account_id` depending on the action.
+## Auth
+- Requires authenticated context; selections are stored per user.
 
-## Internal Dependencies
+## Dependencies
+- `app.services.account_snapshot` helpers (`build_snapshot_payload`, `update_snapshot_selection`).
+- `app.services.account_groups` CRUD helpers for group and membership management.
+- Application logger for defensive error logging.
 
-- `app.services.account_snapshot.build_snapshot_payload`
-- `app.services.account_snapshot.update_snapshot_selection`
-- `app.services.account_groups` CRUD helpers for groups and memberships
-- `app.config.logger` for defensive error logging
+## Behaviors/Edge Cases
+- Falls back to default scope when no `user_id` is provided.
+- Validation rejects missing or incorrectly typed payloads before delegating to services.
+- Errors from the service layer are surfaced with `status: error` while logging the underlying exception.
 
-## Known Behaviors
+## Sample Request/Response
+```http
+PUT /api/dashboard/account-groups/reorder HTTP/1.1
+Content-Type: application/json
 
-- When no `user_id` is provided the routes fall back to the default scope.
-- Validation rejects missing or incorrectly typed selection payloads before
-  delegating to the services.
-- Errors from the service layer are surfaced with `status: error` while still
-  logging the underlying exception.
+{ "group_ids": [1, 3, 2] }
+```
+
+```json
+{ "status": "success", "data": { "group_ids": [1, 3, 2] } }
+```

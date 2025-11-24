@@ -1,36 +1,44 @@
-# Rules Route
+# Rules Route (`rules.py`)
 
 ## Purpose
+Expose CRUD operations for transaction rules that automate categorization and metadata enrichment while persisting changes through SQL helpers.
 
-Expose CRUD operations for transaction rules that automate categorization and
-metadata enrichment. The routes coordinate with the SQL helper module so changes
-are persisted consistently.
+## Endpoints
+- `GET /api/rules/` – Return active rules for a user in creation order.
+- `POST /api/rules/` – Create a rule for the provided user.
+- `PATCH /api/rules/<rule_id>` – Partially update a rule's criteria, action, or active flag.
+- `DELETE /api/rules/<rule_id>` – Remove a rule record.
 
-## Key Endpoints
+## Inputs/Outputs
+- **GET /api/rules/**
+  - **Inputs:** Query parameter `user_id`.
+  - **Outputs:** `{ "status": "success", "data": [ ...rules ] }` scoped to the user.
+- **POST /api/rules/**
+  - **Inputs:** JSON payloads with `match_criteria` and `action` dictionaries.
+  - **Outputs:** `{ "status": "success", "data": { ...created_rule } }`.
+- **PATCH /api/rules/<rule_id>` / `DELETE /api/rules/<rule_id>`**
+  - **Inputs:** Path parameter `rule_id` and partial rule body for PATCH.
+  - **Outputs:** Success envelopes or 4xx errors for missing/not-found identifiers.
 
-- `GET /api/rules/` – Require a `user_id` query param and return active rules in
-  creation order.
-- `POST /api/rules/` – Accept a JSON payload to create a rule for the given
-  user.
-- `PATCH /api/rules/<rule_id>` – Partially update a rule's criteria, action, or
-  active flag.
-- `DELETE /api/rules/<rule_id>` – Remove the rule record.
+## Auth
+- Requires authenticated user context; all rules are scoped by `user_id`.
 
-## Inputs & Outputs
+## Dependencies
+- `app.sql.transaction_rules_logic` helpers for create/update/list logic.
+- `app.models.TransactionRule` and `app.extensions.db` for persistence.
 
-- Payloads use `match_criteria` and `action` dictionaries mirroring the
-  structure consumed by `transaction_rules_logic.apply_rules`.
-- Responses wrap results in `{ "status": "success", ... }` and surface 4xx
-  errors for missing identifiers or not-found cases.
+## Behaviors/Edge Cases
+- Updates normalize `is_active` using `bool(...)` to handle truthy inputs.
+- Endpoints reject missing `user_id` to ensure correct scoping.
 
-## Internal Dependencies
+## Sample Request/Response
+```http
+POST /api/rules/ HTTP/1.1
+Content-Type: application/json
 
-- `app.sql.transaction_rules_logic.create_rule`
-- `app.sql.transaction_rules_logic.get_applicable_rules`
-- `app.models.TransactionRule`
-- `app.extensions.db`
+{ "user_id": 1, "match_criteria": { "merchant": "Target" }, "action": { "category_id": "shopping" } }
+```
 
-## Known Behaviors
-
-- Updates toggle `is_active` using `bool(...)` to normalize truthy inputs.
-- Create/list endpoints enforce the presence of a `user_id` to scope results.
+```json
+{ "status": "success", "data": { "id": 10, "is_active": true } }
+```

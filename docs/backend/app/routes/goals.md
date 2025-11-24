@@ -1,34 +1,39 @@
-# Goals Route
+# Goals Route (`goals.py`)
 
 ## Purpose
+Manage CRUD operations for user financial goals stored in the `FinancialGoal` model.
 
-Expose endpoints for CRUD-style management of user financial goals stored in the
-`FinancialGoal` model. The blueprint currently supports listing existing goals
-and inserting new ones.
+## Endpoints
+- `GET /api/goals` – Return all financial goals for the authenticated user.
+- `POST /api/goals` – Create a new financial goal from the provided payload.
 
-## Key Endpoints
+## Inputs/Outputs
+- **GET /api/goals**
+  - **Inputs:** None beyond authenticated user context.
+  - **Outputs:** `{ "status": "success", "data": [ ...goals ] }`.
+- **POST /api/goals**
+  - **Inputs:** JSON body with `user_id`, `account_id`, `due_date` (`YYYY-MM-DD`), and `target_amount`.
+  - **Outputs:** `{ "status": "success", "id": <pk> }` with HTTP 201 on success; validation errors return 400 with message.
 
-- `GET /api/goals` – Return all financial goals belonging to the authenticated
-  scope. Results are wrapped with `status` and `data` keys.
-- `POST /api/goals` – Accept a JSON payload describing the goal and persist a new
-  `FinancialGoal` row.
+## Auth
+- Requires authenticated user; all operations are scoped to that user.
 
-## Inputs & Outputs
+## Dependencies
+- `app.models.FinancialGoal` ORM model.
+- `app.extensions.db` for persistence.
 
-- Requests must supply `user_id`, `account_id`, `due_date` (`YYYY-MM-DD`), and
-  `target_amount`; missing or malformed fields trigger a `400` response with the
-  exception message before reaching the database.
-- Successful creates respond with `{ "status": "success", "id": <pk> }` and
-  HTTP 201.
+## Behaviors/Edge Cases
+- `due_date` must follow `YYYY-MM-DD` and is parsed with `datetime.strptime`.
+- Goals inherit timestamp mixins for chronological reporting.
 
-## Internal Dependencies
+## Sample Request/Response
+```http
+POST /api/goals HTTP/1.1
+Content-Type: application/json
 
-- `app.models.FinancialGoal` for the ORM mapping
-- `app.extensions.db` for persistence
+{ "user_id": 1, "account_id": 2, "due_date": "2025-12-31", "target_amount": 5000 }
+```
 
-## Known Behaviors
-
-- Goals are timestamped via SQLAlchemy mixins, enabling chronological reporting
-  in downstream analytics.
-- `due_date` is parsed with `datetime.strptime(..., "%Y-%m-%d")`; callers must
-  conform to this format.
+```json
+{ "status": "success", "id": 42 }
+```
