@@ -359,9 +359,10 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss";
 .transactions-page {
   @apply min-h-screen;
-  background: linear-gradient(135deg, #f8fafc, #ffffff 40%, #eef2ff);
+  background: linear-gradient(135deg, #e6e9f0 0%, #f3f5f9 38%, #e9ecf8 100%);
 }
 
 .card-surface {
