@@ -1,6 +1,6 @@
 <!-- Editable transactions table with category filtering and consistent row count -->
 <template>
-  <div class="card space-y-4">
+  <div class="transactions-table space-y-4">
     <!-- Category Filters -->
     <div class="flex items-center gap-4">
       <select v-model="selectedPrimaryCategory" class="input">
@@ -18,41 +18,41 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="rounded-2xl border border-[var(--border)] shadow-sm overflow-hidden">
-      <div class="max-h-[640px] min-h-[520px] overflow-auto bg-white/80">
-        <table class="min-w-full divide-y mt-4">
-          <thead class="text-sm font-semibold uppercase bg-[var(--color-bg-sec)] sticky top-0 z-10">
+    <div class="rounded-2xl border border-slate-200 shadow-[0_10px_50px_rgba(15,23,42,0.08)] overflow-hidden">
+      <div class="max-h-[640px] min-h-[520px] overflow-auto bg-gradient-to-b from-white to-slate-50/60">
+        <table class="min-w-full border-separate border-spacing-0 mt-2">
+          <thead class="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500 bg-slate-50 sticky top-0 z-10">
             <tr>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('date')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('date')">
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('amount')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('amount')">
                 Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('description')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('description')">
                 Description
                 <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('category')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('category')">
                 Category
                 <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('merchant_name')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('merchant_name')">
                 Merchant
                 <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('account_name')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('account_name')">
                 Account Name
                 <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('institution_name')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('institution_name')">
                 Institution
                 <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3 cursor-pointer" @click="sortBy('subtype')">
+              <th class="px-4 py-3 cursor-pointer" @click="sortBy('subtype')">
                 Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-3 py-3">Actions</th>
+              <th class="px-4 py-3">Actions</th>
             </tr>
           </thead>
 
@@ -61,19 +61,21 @@
               v-for="(tx, index) in displayTransactions"
               :key="tx.transaction_id"
               :class="[
-                'text-sm align-middle h-12 transition-colors',
+                'text-sm align-middle h-14 transition-colors text-slate-800 border-b border-slate-100 last:border-b-0',
                 tx._placeholder
                   ? 'bg-white'
                   : editingIndex === index
-                    ? 'bg-[var(--color-bg-sec)]'
-                    : 'hover:bg-[var(--hover)-light]',
+                    ? 'bg-indigo-50'
+                    : index % 2 === 0
+                      ? 'bg-white hover:bg-indigo-50/70'
+                      : 'bg-slate-50 hover:bg-indigo-50/70',
               ]"
             >
               <template v-if="tx._placeholder">
-                <td v-for="n in 9" :key="n" class="px-3 py-2">&nbsp;</td>
+                <td v-for="n in 9" :key="n" class="px-4 py-3">&nbsp;</td>
               </template>
               <template v-else>
-                <td class="px-3 py-2">
+                <td class="px-4 py-3 font-medium text-slate-700">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.date"
@@ -82,7 +84,7 @@
                   />
                   <span v-else>{{ formatDate(tx.date) }}</span>
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-4 py-3 font-semibold text-slate-900">
                   <input
                     v-if="editingIndex === index"
                     v-model.number="editBuffer.amount"
@@ -92,7 +94,7 @@
                   />
                   <span v-else>{{ formatAmount(tx.amount) }}</span>
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-4 py-3">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.description"
@@ -101,7 +103,7 @@
                   />
                   <span v-else>{{ tx.description }}</span>
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-4 py-3">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.category"
@@ -112,7 +114,7 @@
                   />
                   <span v-else>{{ tx.category }}</span>
                 </td>
-                <td class="px-3 py-2">
+                <td class="px-4 py-3">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.merchant_name"
@@ -122,23 +124,25 @@
                   />
                   <span v-else>{{ tx.merchant_name }}</span>
                 </td>
-                <td class="px-3 py-2">{{ tx.account_name || 'N/A' }}</td>
-            <td class="px-3 py-2">{{ tx.institution_name || 'N/A' }}</td>
-            <td class="px-3 py-2">{{ tx.subtype || 'N/A' }}</td>
-            <td class="px-3 py-2 space-x-1">
-              <template v-if="editingIndex === index">
-                <button class="btn-sm" @click="saveEdit(tx)">Save</button>
-                <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                <td class="px-4 py-3">{{ tx.account_name || 'N/A' }}</td>
+                <td class="px-4 py-3">{{ tx.institution_name || 'N/A' }}</td>
+                <td class="px-4 py-3">{{ tx.subtype || 'N/A' }}</td>
+                <td class="px-4 py-3">
+                  <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+                    <template v-if="editingIndex === index">
+                      <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                      <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                    </template>
+                    <template v-else>
+                      <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+                      <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
+                      <button class="btn-sm" @click="toggleInternal(tx)">
+                        {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
+                      </button>
+                    </template>
+                  </div>
+                </td>
               </template>
-              <template v-else>
-                <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-                <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
-                <button class="btn-sm" @click="toggleInternal(tx)">
-                  {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
-                </button>
-              </template>
-            </td>
-          </template>
             </tr>
           </tbody>
         </table>
@@ -496,23 +500,33 @@ onMounted(async () => {
 <style scoped>
 @reference "../../assets/css/main.css";
 
+.transactions-table {
+  @apply bg-white rounded-3xl p-6 border border-slate-200 shadow-[0_18px_60px_rgba(15,23,42,0.12)];
+  color: #0f172a;
+}
+
 .input {
-  @apply w-full px-2 py-1 rounded border border-gray-300 bg-white text-gray-800 text-sm;
+  @apply w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 shadow-inner shadow-slate-100;
 }
 
 .input:focus {
-  @apply outline-none ring-2 ring-blue-300;
+  @apply outline-none ring-2 ring-indigo-200 ring-offset-1 ring-offset-white;
 }
 
 .btn-sm {
-  @apply inline-flex items-center px-2 py-1 text-xs rounded;
-  background-color: var(--color-accent-purple);
-  color: var(--color-bg-dark);
-  border: 1px solid var(--color-accent-purple);
+  @apply inline-flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg transition shadow-sm;
+  background: linear-gradient(135deg, var(--color-accent-purple), var(--color-accent-cyan));
+  color: #0f172a;
+  border: none;
 }
 
 .btn-sm:hover {
-  background-color: var(--color-accent-cyan);
-  border-color: var(--color-accent-cyan);
+  filter: brightness(1.03);
+  box-shadow: 0 10px 30px rgba(99, 102, 241, 0.18);
+}
+
+.btn-sm:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>
