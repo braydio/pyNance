@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Plaid Investments Route (`plaid_investments.py`)
 
 ## Purpose

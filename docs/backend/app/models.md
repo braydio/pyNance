@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Database Models - Core SQLAlchemy Schema [DB_MODELS]
 
 This document defines the core database models for the pyNance application, including account entities, transaction records, and relationship mappings used throughout the backend services and API routes.

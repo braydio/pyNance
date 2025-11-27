@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Plaid Transactions Route (`plaid_transactions.py`)
 
 ## Purpose

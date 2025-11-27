@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Charts Route (`charts.py`)
 
 ## Purpose
