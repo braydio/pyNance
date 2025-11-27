@@ -1,3 +1,9 @@
+---
+Owner: Backend Team
+Last Updated: 2025-11-24
+Status: Active
+---
+
 # Plaid Transfer Route (`plaid_transfer.py`)
 
 ## Purpose
