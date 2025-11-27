@@ -2,7 +2,7 @@
 <template>
   <div class="transactions-table space-y-4">
     <!-- Category Filters -->
-    <div class="flex items-center gap-4">
+    <div class="flex items-center gap-4 category-filters">
       <select v-model="selectedPrimaryCategory" class="input">
         <option value="">All Categories</option>
         <option v-for="group in categoryTree" :key="group.name" :value="group.name">
@@ -18,41 +18,41 @@
     </div>
 
     <!-- Transactions Table -->
-    <div class="rounded-2xl border border-slate-200 shadow-[0_10px_50px_rgba(15,23,42,0.08)] overflow-hidden">
-      <div class="max-h-[640px] min-h-[520px] overflow-auto bg-gradient-to-b from-white to-slate-50/60">
-        <table class="min-w-full border-separate border-spacing-0 mt-2">
-          <thead class="text-[13px] font-semibold uppercase tracking-[0.08em] text-slate-500 bg-slate-50 sticky top-0 z-10">
+    <div class="table-shell overflow-hidden">
+      <div class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
+        <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
+          <thead class="table-head sticky top-0 z-10">
             <tr>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('date')">
+              <th class="col-date" @click="sortBy('date')">
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('amount')">
+              <th class="col-amount text-right" @click="sortBy('amount')">
                 Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('description')">
+              <th class="col-description" @click="sortBy('description')">
                 Description
                 <span v-if="sortKey === 'description'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('category')">
+              <th class="col-category" @click="sortBy('category')">
                 Category
                 <span v-if="sortKey === 'category'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('merchant_name')">
+              <th class="col-merchant" @click="sortBy('merchant_name')">
                 Merchant
                 <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('account_name')">
+              <th class="col-account" @click="sortBy('account_name')">
                 Account Name
                 <span v-if="sortKey === 'account_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('institution_name')">
+              <th class="col-institution" @click="sortBy('institution_name')">
                 Institution
                 <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3 cursor-pointer" @click="sortBy('subtype')">
+              <th class="col-subtype" @click="sortBy('subtype')">
                 Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
-              <th class="px-4 py-3">Actions</th>
+              <th class="col-actions">Actions</th>
             </tr>
           </thead>
 
@@ -61,30 +61,30 @@
               v-for="(tx, index) in displayTransactions"
               :key="tx.transaction_id"
               :class="[
-                'text-sm align-middle h-14 transition-colors text-slate-800 border-b border-slate-100 last:border-b-0',
+                'text-sm align-middle h-14 transition-colors text-[var(--color-text-light)] border-b last:border-b-0',
                 tx._placeholder
-                  ? 'bg-white'
+                  ? 'row-placeholder'
                   : editingIndex === index
-                    ? 'bg-indigo-50'
+                    ? 'row-editing'
                     : index % 2 === 0
-                      ? 'bg-white hover:bg-indigo-50/70'
-                      : 'bg-slate-50 hover:bg-indigo-50/70',
+                      ? 'row-even'
+                      : 'row-odd',
               ]"
             >
               <template v-if="tx._placeholder">
                 <td v-for="n in 9" :key="n" class="px-4 py-3">&nbsp;</td>
               </template>
               <template v-else>
-                <td class="px-4 py-3 font-medium text-slate-700">
+                <td class="col-date">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.date"
                     type="date"
                     class="input"
                   />
-                  <span v-else>{{ formatDate(tx.date) }}</span>
+                  <span v-else class="truncate">{{ formatDate(tx.date) }}</span>
                 </td>
-                <td class="px-4 py-3 font-semibold text-slate-900">
+                <td class="col-amount">
                   <input
                     v-if="editingIndex === index"
                     v-model.number="editBuffer.amount"
@@ -92,18 +92,18 @@
                     step="0.01"
                     class="input"
                   />
-                  <span v-else>{{ formatAmount(tx.amount) }}</span>
+                  <span v-else class="truncate">{{ formatAmount(tx.amount) }}</span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="col-description">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.description"
                     type="text"
                     class="input"
                   />
-                  <span v-else>{{ tx.description }}</span>
+                  <span v-else class="truncate">{{ tx.description }}</span>
                 </td>
-                <td class="px-4 py-3">
+                <td class="col-category">
                   <input
                     v-if="editingIndex === index"
                     v-model="editBuffer.category"
@@ -122,13 +122,13 @@
                     list="merchant-suggestions"
                     class="input"
                   />
-                  <span v-else>{{ tx.merchant_name }}</span>
+                  <span v-else class="truncate">{{ tx.merchant_name }}</span>
                 </td>
-                <td class="px-4 py-3">{{ tx.account_name || 'N/A' }}</td>
-                <td class="px-4 py-3">{{ tx.institution_name || 'N/A' }}</td>
-                <td class="px-4 py-3">{{ tx.subtype || 'N/A' }}</td>
-                <td class="px-4 py-3">
-                  <div class="flex flex-wrap gap-2 text-xs text-slate-500">
+                <td class="col-account truncate">{{ tx.account_name || 'N/A' }}</td>
+                <td class="col-institution truncate">{{ tx.institution_name || 'N/A' }}</td>
+                <td class="col-subtype truncate">{{ tx.subtype || 'N/A' }}</td>
+                <td class="col-actions">
+                  <div class="flex flex-wrap gap-2 text-xs action-bar">
                     <template v-if="editingIndex === index">
                       <button class="btn-sm" @click="saveEdit(tx)">Save</button>
                       <button class="btn-sm" @click="cancelEdit">Cancel</button>
@@ -501,16 +501,24 @@ onMounted(async () => {
 @reference "../../assets/css/main.css";
 
 .transactions-table {
-  @apply bg-white rounded-3xl p-6 border border-slate-200 shadow-[0_18px_60px_rgba(15,23,42,0.12)];
-  color: #0f172a;
+  background: var(--color-bg-secondary);
+  border: 1.5px solid var(--divider);
+  border-radius: 1.5rem;
+  padding: 1.5rem;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.2);
+  color: var(--color-text-light);
 }
 
 .input {
-  @apply w-full px-3 py-2 rounded-lg border border-slate-200 bg-white text-sm text-slate-900 shadow-inner shadow-slate-100;
+  @apply w-full px-3 py-2 rounded-lg border text-sm shadow-inner;
+  background: var(--input-bg);
+  color: var(--color-text-light);
+  border-color: var(--divider);
 }
 
 .input:focus {
-  @apply outline-none ring-2 ring-indigo-200 ring-offset-1 ring-offset-white;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(113, 156, 214, 0.35);
 }
 
 .btn-sm {
@@ -528,5 +536,103 @@ onMounted(async () => {
 .btn-sm:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.table-shell {
+  background: var(--color-bg-secondary);
+  border: 1.5px solid var(--divider);
+  border-radius: 1.5rem;
+  box-shadow: 0 14px 48px rgba(0, 0, 0, 0.18);
+}
+
+.table-scroll {
+  background: linear-gradient(180deg, rgba(41, 57, 79, 0.9), rgba(33, 46, 63, 0.92));
+}
+
+.transactions-grid {
+  table-layout: fixed;
+  color: var(--color-text-light);
+}
+
+.transactions-grid th,
+.transactions-grid td {
+  padding: 0.75rem 1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-color: var(--divider);
+}
+
+.transactions-grid tr {
+  border-bottom: 1px solid var(--divider);
+}
+
+.table-head {
+  background: rgba(57, 80, 109, 0.45);
+  color: var(--color-text-light);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.table-head th {
+  cursor: pointer;
+  text-align: left;
+}
+
+.col-date {
+  width: 120px;
+}
+
+.col-amount {
+  width: 120px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.col-description {
+  width: 240px;
+}
+
+.col-category,
+.col-merchant,
+.col-account,
+.col-institution,
+.col-subtype {
+  width: 160px;
+}
+
+.col-actions {
+  width: 220px;
+}
+
+.row-placeholder {
+  background: transparent;
+}
+
+.row-editing {
+  background: rgba(113, 156, 214, 0.12);
+}
+
+.row-even {
+  background: rgba(33, 46, 63, 0.65);
+}
+
+.row-odd {
+  background: rgba(41, 57, 79, 0.7);
+}
+
+.row-even:hover,
+.row-odd:hover {
+  background: rgba(113, 156, 214, 0.18);
+}
+
+.action-bar {
+  color: var(--color-text-muted);
+}
+
+.category-filters {
+  margin-bottom: 0.75rem;
 }
 </style>

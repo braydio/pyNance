@@ -1,7 +1,7 @@
 <!-- Transactions.vue - View and manage transactions using tabbed layout. -->
 <template>
   <TabbedPageLayout
-    class="transactions-page text-slate-900"
+    class="transactions-page"
     :tabs="tabs"
     v-model="activeTab"
     padding="px-4 sm:px-6 lg:px-8 py-8"
@@ -9,8 +9,12 @@
     <!-- Header -->
     <template #header>
       <PageHeader :icon="CreditCard">
-        <template #title>Transactions</template>
-        <template #subtitle>View and manage your transactions</template>
+        <template #title>
+          <span class="page-title">Transactions</span>
+        </template>
+        <template #subtitle>
+          <span class="page-subtitle">View and manage your transactions</span>
+        </template>
       </PageHeader>
     </template>
     <!-- Internal Transfer Scanner (moved to top) -->
@@ -18,8 +22,8 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="eyebrow">Automation</p>
-          <h2 class="text-xl font-semibold text-slate-900">Internal Transfer Scanner</h2>
-          <p class="text-sm text-slate-600">Quickly spot and link matching transfers.</p>
+          <h2 class="text-xl font-semibold text-[var(--color-text-light)]">Internal Transfer Scanner</h2>
+          <p class="text-sm text-[var(--color-text-muted)]">Quickly spot and link matching transfers.</p>
         </div>
         <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
           {{ showScanner ? 'Hide' : 'Show' }}
@@ -39,8 +43,8 @@
       <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <div class="space-y-1">
           <p class="eyebrow">Controls</p>
-          <h3 class="text-lg font-semibold text-slate-900">Import &amp; quick search</h3>
-          <p class="text-sm text-slate-600">Upload transactions and instantly narrow the view.</p>
+          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">Import &amp; quick search</h3>
+          <p class="text-sm text-[var(--color-text-muted)]">Upload transactions and instantly narrow the view.</p>
         </div>
         <span class="pill">Transactions</span>
       </div>
@@ -56,7 +60,7 @@
             v-model="searchQuery"
             type="text"
             placeholder="Search transactions..."
-            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)] text-slate-900"
+            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)] search-input"
           />
         </div>
       </div>
@@ -67,10 +71,10 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="eyebrow">Filters</p>
-          <h3 class="text-lg font-semibold text-slate-900">Refine the transaction view</h3>
-          <p class="text-sm text-slate-600">Adjust time range, account, and transaction type.</p>
+          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">Refine the transaction view</h3>
+          <p class="text-sm text-[var(--color-text-muted)]">Adjust time range, account, and transaction type.</p>
         </div>
-        <div class="flex items-center gap-2 text-xs text-slate-600">
+        <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
           <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)] shadow-glow"></span>
           Live updates
         </div>
@@ -97,7 +101,7 @@
     <!-- Main Table -->
     <Card class="p-6 space-y-4 rounded-3xl card-surface">
       <div class="flex items-center justify-between">
-        <h2 class="text-2xl font-bold text-slate-900">Recent Transactions</h2>
+        <h2 class="section-title">Recent Transactions</h2>
         <span class="pill pill-subtle">Updated feed</span>
       </div>
       <transition name="fade-in-up" mode="out-in">
@@ -123,7 +127,7 @@
     <!-- Activity Tab -->
     <template #Activity>
       <Card class="p-6 space-y-4 rounded-3xl card-surface">
-        <h2 class="text-2xl font-bold text-slate-900">Recent Transactions</h2>
+        <h2 class="section-title">Recent Transactions</h2>
         <transition name="fade-in-up" mode="out-in">
           <SkeletonCard v-if="isLoading" key="loading-activity" />
           <RetryError
@@ -157,7 +161,7 @@
     <!-- Recurring Tab -->
     <template #Recurring>
       <Card class="p-6 space-y-4 rounded-3xl card-surface">
-        <h2 class="text-2xl font-bold text-slate-900">Recurring Transactions</h2>
+        <h2 class="text-2xl font-bold text-[var(--color-text-light)]">Recurring Transactions</h2>
         <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
       </Card>
     </template>
@@ -362,23 +366,32 @@ export default {
 @reference "tailwindcss";
 .transactions-page {
   @apply min-h-screen;
-  background: linear-gradient(135deg, #e6e9f0 0%, #f3f5f9 38%, #e9ecf8 100%);
+  background: var(--page-bg);
+  color: var(--color-text-light);
 }
 
 .card-surface {
-  @apply border border-slate-200 bg-white/90 shadow-[0_18px_60px_rgba(15,23,42,0.08)];
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.18);
 }
 
 .eyebrow {
-  @apply text-xs font-semibold uppercase tracking-[0.12em] text-slate-500;
+  @apply text-xs font-semibold uppercase tracking-[0.12em];
+  color: var(--color-text-muted);
 }
 
 .pill {
-  @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 rounded-full shadow-sm;
+  @apply inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold rounded-full shadow-sm;
+  color: var(--color-text-light);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
 }
 
 .pill-subtle {
-  @apply bg-indigo-50 text-indigo-700 border-indigo-100;
+  background: rgba(113, 156, 214, 0.16);
+  color: var(--color-accent-blue);
+  border: 1px solid rgba(113, 156, 214, 0.3);
 }
 
 .shadow-glow {
@@ -386,10 +399,37 @@ export default {
 }
 
 .transactions-page :deep(.input) {
-  @apply bg-white text-slate-900 border border-slate-200 rounded-xl;
+  background: var(--input-bg);
+  color: var(--color-text-light);
+  border: 1px solid var(--divider);
+  border-radius: 0.75rem;
 }
 
 .transactions-page :deep(.input:focus) {
-  @apply ring-2 ring-indigo-200 outline-none;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(113, 156, 214, 0.35);
+}
+
+.search-input {
+  color: var(--color-text-light);
+}
+
+.page-title {
+  font-size: 2.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-text-light);
+}
+
+.page-subtitle {
+  font-size: 1rem;
+  color: var(--color-text-muted);
+}
+
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-text-light);
 }
 </style>
