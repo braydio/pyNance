@@ -28,13 +28,14 @@
     </dl>
 
     <footer class="text-xs text-muted">
-      Updated {{ lastSavedRelative }} · Scenario ID {{ activeScenario?.id ?? 'n/a' }}
+      Updated {{ lastSavedRelative }} · Planning account
+      {{ planningAccountLabel || 'Unassigned' }}
     </footer>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import UiButton from '@/components/ui/Button.vue'
 import { usePlanning } from '@/composables/usePlanning'
 import {
@@ -43,7 +44,13 @@ import {
   selectRemainingCents,
   selectTotalBillsCents,
 } from '@/selectors/planning'
+import api from '@/services/api'
 import { formatCurrency } from '@/utils/currency'
+
+type AccountMetadata = {
+  name?: string
+  institution?: string
+}
 
 const props = withDefaults(
   defineProps<{
@@ -58,12 +65,23 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'refresh'): void }>()
 
 const { state } = usePlanning()
+const accountLookup = ref<Record<string, AccountMetadata>>({})
 
 const activeScenario = computed(() => {
   if (props.scenarioId) {
     return state.scenarios.find((scenario) => scenario.id === props.scenarioId)
   }
   return selectActiveScenario(state)
+})
+
+const planningAccountLabel = computed(() => {
+  const accountId = activeScenario.value?.accountId
+  if (!accountId) return ''
+  const account = accountLookup.value[accountId]
+  if (!account) return accountId
+
+  const parts = [account.name, account.institution].filter(Boolean)
+  return parts.length ? parts.join(' · ') : accountId
 })
 
 const scenarioCurrency = computed(
@@ -90,7 +108,20 @@ const planningBalanceFormatted = computed(() =>
   formatCurrency(planningBalanceCents.value / 100, scenarioCurrency.value),
 )
 
-const scenarioName = computed(() => activeScenario.value?.name ?? 'No scenario selected')
+const scenarioName = computed(() => {
+  const scenario = activeScenario.value
+  if (!scenario) return 'No scenario selected'
+
+  const defaultName = scenario.accountId ? `Plan for ${scenario.accountId}` : ''
+  if (
+    planningAccountLabel.value &&
+    (!scenario.name || scenario.name === defaultName)
+  ) {
+    return `Plan for ${planningAccountLabel.value}`
+  }
+
+  return scenario.name || planningAccountLabel.value || 'No scenario selected'
+})
 const lastSavedRelative = computed(() => {
   if (!state.lastSavedAt) return 'just now'
   const saved = new Date(state.lastSavedAt)
@@ -103,6 +134,36 @@ const lastSavedRelative = computed(() => {
   if (diffHours < 24) return `${diffHours} hours ago`
   const diffDays = Math.round(diffHours / 24)
   return `${diffDays} days ago`
+})
+
+/**
+ * Load account metadata to present a friendly planning account label.
+ */
+async function loadAccountMetadata() {
+  try {
+    const response = await api.getAccounts({ include_hidden: true })
+    if (response?.status === 'success' && Array.isArray(response.accounts)) {
+      const mapped = response.accounts.reduce<Record<string, AccountMetadata>>(
+        (acc, account: any) => {
+          const id = account.account_id ?? account.id
+          if (!id) return acc
+          acc[id] = {
+            name: account.name,
+            institution: account.institution_name,
+          }
+          return acc
+        },
+        {},
+      )
+      accountLookup.value = mapped
+    }
+  } catch (error) {
+    console.error('Failed to load accounts for planning summary', error)
+  }
+}
+
+onMounted(() => {
+  loadAccountMetadata()
 })
 </script>
 
