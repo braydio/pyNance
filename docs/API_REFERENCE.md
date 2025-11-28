@@ -4,6 +4,12 @@ This document serves as the authoritative reference for API routing conventions,
 
 > **Status:** Master Reference - All API changes must align with these conventions
 
+## Live API Documentation
+
+Run the backend server and navigate to `/api/docs` for the interactive Swagger UI or to `/api/docs.json` for the raw OpenAPI schema.
+These live docs reflect the current application state, providing a quick way to verify request/response shapes alongside this
+static markdown reference.
+
 ## Route Organization Structure [ROUTE_ORGANIZATION]
 
 ### 📁 `routes/` Directory Structure
