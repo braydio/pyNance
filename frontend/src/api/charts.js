@@ -1,4 +1,3 @@
-
 /**
  * Chart API helpers.
  *
@@ -13,6 +12,17 @@ export async function fetchCategoryBreakdownTree(params = {}) {
   return response.data
 }
 
+/**
+ * Aggregate spending by merchant name.
+ *
+ * @param {Object} params - Optional query params (e.g., `start_date`, `end_date`).
+ * @returns {Promise<Object>} Merchant totals and metadata.
+ */
+export async function fetchMerchantBreakdown(params = {}) {
+  const response = await axios.get('/api/charts/merchant_breakdown', { params })
+  return response.data
+}
+
 // Old (flat) breakdown, if still needed. LOOK TO DEPRECATE
 export async function fetchCategoryBreakdown(params = {}) {
   const response = await axios.get('/api/charts/category_breakdown', { params })
@@ -24,4 +34,3 @@ export async function fetchDailyNet(params = {}) {
   const response = await axios.get('/api/charts/daily_net', { params })
   return response.data
 }
-
