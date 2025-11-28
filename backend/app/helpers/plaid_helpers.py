@@ -254,16 +254,38 @@ def refresh_plaid_categories():
     return []
 
 
-def get_transactions(access_token: str, start_date: str, end_date: str):
+def get_transactions(
+    access_token: str, start_date: Union[str, date, datetime], end_date: Union[str, date, datetime]
+):
     """Return all transactions between ``start_date`` and ``end_date``.
 
     The Plaid ``/transactions/get`` endpoint returns a maximum of 500
     transactions per request. This helper automatically paginates the
     results by incrementing the ``offset`` parameter until all
-    ``total_transactions`` are retrieved.
+    ``total_transactions`` are retrieved. Accepts ``datetime.date``,
+    ``datetime.datetime``, or ``YYYY-MM-DD`` strings for dates.
     """
 
-    logger.info("Fetching transactions between %s and %s", start_date, end_date)
+    def _coerce_date(value: Union[str, date, datetime], label: str) -> date:
+        if isinstance(value, datetime):
+            return value.date()
+        if isinstance(value, date):
+            return value
+        if isinstance(value, str):
+            try:
+                return datetime.strptime(value, "%Y-%m-%d").date()
+            except ValueError as exc:
+                raise ValueError(
+                    f"{label} must be in YYYY-MM-DD format (got {value!r})"
+                ) from exc
+        raise TypeError(
+            f"{label} must be a date, datetime, or YYYY-MM-DD string (got {type(value).__name__})"
+        )
+
+    start_dt = _coerce_date(start_date, "start_date")
+    end_dt = _coerce_date(end_date, "end_date")
+
+    logger.info("Fetching transactions between %s and %s", start_dt, end_dt)
 
     try:
         all_transactions = []
@@ -274,8 +296,8 @@ def get_transactions(access_token: str, start_date: str, end_date: str):
             options = TransactionsGetRequestOptions(count=count, offset=offset)
             plaid_request = TransactionsGetRequest(
                 access_token=access_token,
-                start_date=start_date,
-                end_date=end_date,
+                start_date=start_dt,
+                end_date=end_dt,
                 options=options,
             )
             response = plaid_client.transactions_get(plaid_request)
