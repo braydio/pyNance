@@ -255,7 +255,9 @@ def refresh_plaid_categories():
 
 
 def get_transactions(
-    access_token: str, start_date: Union[str, date, datetime], end_date: Union[str, date, datetime]
+    access_token: str,
+    start_date: Union[str, date, datetime],
+    end_date: Union[str, date, datetime],
 ):
     """Return all transactions between ``start_date`` and ``end_date``.
 
