@@ -22,8 +22,12 @@
       <div class="flex items-center justify-between">
         <div>
           <p class="eyebrow">Automation</p>
-          <h2 class="text-xl font-semibold text-[var(--color-text-light)]">Internal Transfer Scanner</h2>
-          <p class="text-sm text-[var(--color-text-muted)]">Quickly spot and link matching transfers.</p>
+          <h2 class="text-xl font-semibold text-[var(--color-text-light)]">
+            Internal Transfer Scanner
+          </h2>
+          <p class="text-sm text-[var(--color-text-muted)]">
+            Quickly spot and link matching transfers.
+          </p>
         </div>
         <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
           {{ showScanner ? 'Hide' : 'Show' }}
@@ -39,8 +43,12 @@
       <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
         <div class="space-y-1">
           <p class="eyebrow">Controls</p>
-          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">Import &amp; quick search</h3>
-          <p class="text-sm text-[var(--color-text-muted)]">Upload transactions and instantly narrow the view.</p>
+          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
+            Import &amp; quick search
+          </h3>
+          <p class="text-sm text-[var(--color-text-muted)]">
+            Upload transactions and instantly narrow the view.
+          </p>
         </div>
         <span class="pill">Transactions</span>
       </div>
@@ -69,8 +77,12 @@
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="eyebrow">Filters</p>
-          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">Refine the transaction view</h3>
-          <p class="text-sm text-[var(--color-text-muted)]">Adjust time range, account, and transaction type.</p>
+          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
+            Refine the transaction view
+          </h3>
+          <p class="text-sm text-[var(--color-text-muted)]">
+            Adjust time range, account, and transaction type.
+          </p>
         </div>
         <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
           <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)] shadow-glow"></span>
