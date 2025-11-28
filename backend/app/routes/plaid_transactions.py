@@ -217,7 +217,7 @@ def exchange_public_token_endpoint():
 def delete_plaid_account():
     """Delete an account and revoke its Plaid item."""
     try:
-        data = request.json
+        data = request.get_json(silent=True) or {}
         account_id = data.get("account_id")
         logger.debug("Received request to delete account_id=%s", account_id)
 
@@ -226,19 +226,64 @@ def delete_plaid_account():
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
 
         plaid_acct = PlaidAccount.query.filter_by(account_id=account_id).first()
-        if plaid_acct and plaid_acct.access_token:
+        if not plaid_acct:
+            logger.warning("PlaidAccount not found for account_id=%s", account_id)
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": f"No PlaidAccount found for {account_id}",
+                    }
+                ),
+                404,
+            )
+
+        # Collect all accounts tied to the same Plaid item so we don't orphan them
+        item_id = plaid_acct.item_id
+        linked_accounts = [plaid_acct.account_id]
+        if item_id:
+            linked_accounts = [
+                pa.account_id
+                for pa in PlaidAccount.query.filter_by(item_id=item_id).all()
+                if pa.account_id
+            ]
+
+        access_token = plaid_acct.access_token
+        if not access_token and item_id:
+            plaid_item = PlaidItem.query.filter_by(item_id=item_id).first()
+            access_token = getattr(plaid_item, "access_token", None)
+
+        plaid_acct = PlaidAccount.query.filter_by(account_id=account_id).first()
+        if access_token:
             try:
-                remove_item(plaid_acct.access_token)
+                remove_item(access_token)
             except Exception as ex:
                 logger.warning("Failed to remove Plaid item: %s", ex)
 
-        Account.query.filter_by(account_id=account_id).delete()
+        if item_id:
+            # Clean up the stored PlaidItem row for this item as well
+            PlaidItem.query.filter_by(item_id=item_id).delete()
+
+        deleted_count = (
+            Account.query.filter(Account.account_id.in_(linked_accounts)).delete(
+                synchronize_session=False
+            )
+        )
         db.session.commit()
-        logger.info("Deleted Plaid account %s and associated records", account_id)
+        logger.info(
+            "Deleted Plaid item %s and %d linked account(s): %s",
+            item_id or "<none>",
+            deleted_count or 0,
+            ", ".join(linked_accounts),
+        )
 
         return (
             jsonify(
-                {"status": "success", "message": "Account and related records deleted"}
+                {
+                    "status": "success",
+                    "deleted_accounts": linked_accounts,
+                    "item_id": item_id,
+                }
             ),
             200,
         )
