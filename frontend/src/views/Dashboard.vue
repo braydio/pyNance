@@ -92,7 +92,9 @@
             <ChartWidgetTopBar>
               <template #controls>
                 <div class="flex flex-wrap gap-2 items-center">
-                  <div class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden">
+                  <div
+                    class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
+                  >
                     <button
                       class="px-3 py-1 text-sm transition"
                       :class="

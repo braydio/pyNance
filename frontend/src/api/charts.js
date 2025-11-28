@@ -1,4 +1,3 @@
-
 /**
  * Chart API helpers.
  *
@@ -35,4 +34,3 @@ export async function fetchDailyNet(params = {}) {
   const response = await axios.get('/api/charts/daily_net', { params })
   return response.data
 }
-
