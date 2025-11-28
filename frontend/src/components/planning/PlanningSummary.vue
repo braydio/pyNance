@@ -28,13 +28,13 @@
     </dl>
 
     <footer class="text-xs text-muted">
-      Updated {{ lastSavedRelative }} · Scenario ID {{ activeScenario?.id ?? 'n/a' }}
+      Updated {{ lastSavedRelative }} · Account {{ accountLabel || activeScenario?.accountId || 'n/a' }}
     </footer>
   </section>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import UiButton from '@/components/ui/Button.vue'
 import { usePlanning } from '@/composables/usePlanning'
 import {
@@ -58,6 +58,7 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'refresh'): void }>()
 
 const { state } = usePlanning()
+const accountsById = ref<Record<string, { name?: string; institution_name?: string }>>({})
 
 const activeScenario = computed(() => {
   if (props.scenarioId) {
@@ -90,7 +91,25 @@ const planningBalanceFormatted = computed(() =>
   formatCurrency(planningBalanceCents.value / 100, scenarioCurrency.value),
 )
 
-const scenarioName = computed(() => activeScenario.value?.name ?? 'No scenario selected')
+const accountLabel = computed(() => {
+  const accountId = activeScenario.value?.accountId
+  if (!accountId) return ''
+  const account = accountsById.value[accountId]
+  if (!account) return accountId
+  if (account.name && account.institution_name) {
+    return `${account.name} • ${account.institution_name}`
+  }
+  return account.name || account.institution_name || accountId
+})
+
+const scenarioName = computed(() => {
+  const scenario = activeScenario.value
+  if (!scenario) return 'No scenario selected'
+  if (accountLabel.value) {
+    return `Plan for ${accountLabel.value}`
+  }
+  return scenario.name || 'No scenario selected'
+})
 const lastSavedRelative = computed(() => {
   if (!state.lastSavedAt) return 'just now'
   const saved = new Date(state.lastSavedAt)
@@ -104,6 +123,29 @@ const lastSavedRelative = computed(() => {
   const diffDays = Math.round(diffHours / 24)
   return `${diffDays} days ago`
 })
+
+/**
+ * Fetch accounts so account-linked scenarios can display human-friendly labels.
+ */
+async function loadAccounts() {
+  try {
+    const response = await fetch('/api/accounts/get_accounts')
+    const payload = await response.json()
+
+    if (payload?.status === 'success' && Array.isArray(payload.accounts)) {
+      accountsById.value = Object.fromEntries(
+        payload.accounts.map((account: any) => [
+          account.account_id,
+          { name: account.name, institution_name: account.institution_name },
+        ]),
+      )
+    }
+  } catch (error) {
+    console.error('Failed to load accounts for planning summary', error)
+  }
+}
+
+onMounted(loadAccounts)
 </script>
 
 <style scoped>
