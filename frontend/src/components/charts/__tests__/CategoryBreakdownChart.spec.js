@@ -2,6 +2,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import CategoryBreakdownChart from '../CategoryBreakdownChart.vue'
+import * as chartsApi from '@/api/charts'
 
 // Stub canvas context
 HTMLCanvasElement.prototype.getContext = vi.fn(() => ({}))
@@ -39,6 +40,10 @@ vi.mock('@/api/charts', () => ({
       },
     ],
   }),
+  fetchMerchantBreakdown: vi.fn().mockResolvedValue({
+    status: 'success',
+    data: [{ label: 'Merchant One', amount: 42.5 }],
+  }),
 }))
 
 describe('CategoryBreakdownChart.vue', () => {
@@ -60,5 +65,23 @@ describe('CategoryBreakdownChart.vue', () => {
     const emitted = wrapper.emitted('bar-click')
     expect(emitted).toBeTruthy()
     expect(emitted[0][0]).toEqual({ label: 'Parent', ids: ['c1'] })
+  })
+
+  it('loads merchant breakdown data when requested', async () => {
+    const wrapper = shallowMount(CategoryBreakdownChart, {
+      props: {
+        startDate: '2024-01-01',
+        endDate: '2024-01-31',
+        selectedCategoryIds: ['Merchant One'],
+        groupOthers: false,
+        breakdownType: 'merchant',
+      },
+    })
+
+    await flushPromises()
+
+    expect(chartsApi.fetchMerchantBreakdown).toHaveBeenCalled()
+    expect(mockChartInstance.data.labels).toEqual(['Merchant One'])
+    wrapper.unmount()
   })
 })

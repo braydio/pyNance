@@ -21,7 +21,7 @@
 import { ref, watch, nextTick, onMounted, onUnmounted, toRefs, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
-import { fetchCategoryBreakdownTree } from '@/api/charts'
+import { fetchCategoryBreakdownTree, fetchMerchantBreakdown } from '@/api/charts'
 import { formatAmount } from '@/utils/format'
 import { getAccentColor } from '@/utils/colors'
 
@@ -30,9 +30,14 @@ const props = defineProps({
   endDate: { type: String, required: true },
   selectedCategoryIds: { type: Array, default: () => [] },
   groupOthers: { type: Boolean, default: true },
+  breakdownType: {
+    type: String,
+    default: 'category',
+    validator: (value) => ['category', 'merchant'].includes(value),
+  },
 })
 
-const { startDate, endDate, selectedCategoryIds, groupOthers } = toRefs(props)
+const { startDate, endDate, selectedCategoryIds, groupOthers, breakdownType } = toRefs(props)
 
 const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
 
@@ -55,6 +60,21 @@ function destroyPreviousChart(canvasEl) {
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+}
+
+function mapMerchantBreakdownToTree(raw = []) {
+  return (raw || []).map((merchant) => ({
+    id: merchant.label,
+    label: merchant.label,
+    amount: merchant.amount,
+    children: [
+      {
+        id: merchant.label,
+        label: merchant.label,
+        amount: merchant.amount,
+      },
+    ],
+  }))
 }
 
 function extractStackedBarData(tree, selectedIds = []) {
@@ -222,17 +242,24 @@ async function renderChart() {
 
 async function fetchData() {
   try {
-    const response = await fetchCategoryBreakdownTree({
+    const params = {
       start_date: startDate.value,
       end_date: endDate.value,
       top_n: 50,
-    })
+    }
+
+    const response =
+      breakdownType.value === 'merchant'
+        ? await fetchMerchantBreakdown(params)
+        : await fetchCategoryBreakdownTree(params)
     if (response.status === 'success') {
       const raw = response.data || []
-      let processed = raw
-      if (groupOthers.value && raw.length > 4) {
-        const topFour = raw.slice(0, 4)
-        const others = raw.slice(4)
+      const normalizedTree =
+        breakdownType.value === 'merchant' ? mapMerchantBreakdownToTree(raw) : raw
+      let processed = normalizedTree
+      if (groupOthers.value && normalizedTree.length > 4) {
+        const topFour = normalizedTree.slice(0, 4)
+        const others = normalizedTree.slice(4)
         const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
         const otherBar = {
           id: 'others',
@@ -282,7 +309,7 @@ function updateSummary() {
 onMounted(fetchData)
 
 // Refetch data when range or grouping changes
-watch([startDate, endDate, groupOthers], debounce(fetchData, 200))
+watch([startDate, endDate, groupOthers, breakdownType], debounce(fetchData, 200))
 
 // When selectedCategoryIds changes, update summary and re-render
 watch(
