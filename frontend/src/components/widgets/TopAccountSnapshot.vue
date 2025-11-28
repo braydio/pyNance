@@ -538,7 +538,20 @@ watch(
   (val) => {
     if (syncingToActive) return
     syncingFromActive = true
-    groupAccounts.value = normalizeAccounts(val)
+    const normalized = normalizeAccounts(val)
+    groupAccounts.value = normalized
+    // Close open details and prune cached txns when the active group changes underneath us
+    if (
+      openAccountId.value &&
+      !normalized.some((acct) => accountId(acct) === openAccountId.value)
+    ) {
+      openAccountId.value = null
+    }
+    for (const key of Object.keys(recentTxs)) {
+      if (!normalized.some((acct) => accountId(acct) === key)) {
+        delete recentTxs[key]
+      }
+    }
     syncingFromActive = false
   },
   { immediate: true, deep: true },
@@ -778,6 +791,27 @@ const fallbackAccounts = computed(() => {
 const hasConfiguredAccounts = computed(() => groupAccounts.value.length > 0)
 const showAccountSelector = ref(false)
 const selectedAccountId = ref('')
+
+watch(
+  activeGroupId,
+  () => {
+    const normalized = normalizeAccounts(effectiveGroup.value?.accounts || [])
+    groupAccounts.value = normalized
+    openAccountId.value = null
+    showAccountSelector.value = false
+    selectedAccountId.value = ''
+  },
+  { flush: 'post' },
+)
+
+watch(
+  isEditingGroups,
+  (editing) => {
+    if (!editing) return
+    openAccountId.value = null
+  },
+  { flush: 'post' },
+)
 
 function startAddAccount() {
   if (activeAccounts.value.length >= MAX_ACCOUNTS_PER_GROUP) return
