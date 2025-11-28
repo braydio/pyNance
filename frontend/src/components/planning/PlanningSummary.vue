@@ -113,10 +113,7 @@ const scenarioName = computed(() => {
   if (!scenario) return 'No scenario selected'
 
   const defaultName = scenario.accountId ? `Plan for ${scenario.accountId}` : ''
-  if (
-    planningAccountLabel.value &&
-    (!scenario.name || scenario.name === defaultName)
-  ) {
+  if (planningAccountLabel.value && (!scenario.name || scenario.name === defaultName)) {
     return `Plan for ${planningAccountLabel.value}`
   }
 
