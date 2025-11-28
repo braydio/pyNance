@@ -27,7 +27,8 @@
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-amount text-right" @click="sortBy('amount')">
-                Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Amount
+                <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-description" @click="sortBy('description')">
                 Description
@@ -39,7 +40,9 @@
               </th>
               <th class="col-merchant" @click="sortBy('merchant_name')">
                 Merchant
-                <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'merchant_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="col-account" @click="sortBy('account_name')">
                 Account Name
@@ -47,10 +50,13 @@
               </th>
               <th class="col-institution" @click="sortBy('institution_name')">
                 Institution
-                <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'institution_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="col-subtype" @click="sortBy('subtype')">
-                Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Subtype
+                <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-actions">Actions</th>
             </tr>
@@ -130,15 +136,41 @@
                 <td class="col-actions">
                   <div class="flex flex-wrap gap-2 text-xs action-bar">
                     <template v-if="editingIndex === index">
-                      <button class="btn-sm" @click="saveEdit(tx)">Save</button>
-                      <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                      <div class="flex flex-wrap gap-2 option-toggle-group">
+                        <button
+                          class="btn-sm option-toggle"
+                          :class="{ active: tx.is_internal }"
+                          @click="toggleInternal(tx)"
+                        >
+                          <span class="option-label">Internal Transfer</span>
+                          <span
+                            class="option-status"
+                            :class="tx.is_internal ? 'status-marked' : 'status-unmarked'"
+                          >
+                            {{ tx.is_internal ? 'Marked' : 'Not Marked' }}
+                          </span>
+                        </button>
+                        <button
+                          class="btn-sm option-toggle"
+                          :class="{ active: isRecurringMarked(tx) }"
+                          @click="markRecurring(index)"
+                        >
+                          <span class="option-label">Recurring Transaction</span>
+                          <span
+                            class="option-status"
+                            :class="isRecurringMarked(tx) ? 'status-marked' : 'status-unmarked'"
+                          >
+                            {{ isRecurringMarked(tx) ? 'Marked' : 'Not Marked' }}
+                          </span>
+                        </button>
+                      </div>
+                      <div class="flex flex-wrap gap-2">
+                        <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                        <button class="btn-sm" @click="cancelEdit">Cancel</button>
+                      </div>
                     </template>
                     <template v-else>
                       <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
-                      <button class="btn-sm" @click="markRecurring(index)">Recurring</button>
-                      <button class="btn-sm" @click="toggleInternal(tx)">
-                        {{ tx.is_internal ? 'Unmark Internal' : 'Mark Internal' }}
-                      </button>
                     </template>
                   </div>
                 </td>
@@ -184,7 +216,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
+import {
+  updateTransaction,
+  fetchMerchantSuggestions,
+  createTransactionRule,
+} from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
@@ -333,10 +369,17 @@ async function saveEdit(tx) {
   }
 }
 
+function isRecurringMarked(tx) {
+  return Boolean(tx?.is_recurring || tx?.recurrence_rule || tx?.recurring_transaction_id)
+}
+
 function markRecurring(index) {
   const tx = props.transactions[index]
   toast.success('Marked as recurring')
   emit('editRecurringFromTransaction', tx)
+  if (!isRecurringMarked(tx)) {
+    tx.is_recurring = true
+  }
 }
 
 async function toggleInternal(tx) {
@@ -634,5 +677,42 @@ onMounted(async () => {
 
 .category-filters {
   margin-bottom: 0.75rem;
+}
+
+.option-toggle-group {
+  width: 100%;
+}
+
+.option-toggle {
+  @apply justify-between;
+  border: 1px solid var(--divider);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-light);
+  min-width: 230px;
+}
+
+.option-toggle.active {
+  box-shadow: 0 0 0 1px var(--color-accent-purple);
+  background: rgba(113, 156, 214, 0.18);
+}
+
+.option-label {
+  font-weight: 700;
+}
+
+.option-status {
+  @apply inline-flex items-center px-2 py-1 rounded-md text-[11px] font-semibold;
+  border: 1px solid var(--divider);
+}
+
+.status-marked {
+  color: var(--color-accent-green, #34d399);
+  background: rgba(52, 211, 153, 0.12);
+  border-color: rgba(52, 211, 153, 0.4);
+}
+
+.status-unmarked {
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.04);
 }
 </style>
