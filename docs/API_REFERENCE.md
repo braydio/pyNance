@@ -4,6 +4,12 @@ This document serves as the authoritative reference for API routing conventions,
 
 > **Status:** Master Reference - All API changes must align with these conventions
 
+## Live API Documentation
+
+Run the backend server and navigate to `/api/docs` for the interactive Swagger UI or to `/api/docs.json` for the raw OpenAPI schema.
+These live docs reflect the current application state, providing a quick way to verify request/response shapes alongside this
+static markdown reference.
+
 ## Route Organization Structure [ROUTE_ORGANIZATION]
 
 ### 📁 `routes/` Directory Structure
@@ -116,7 +122,7 @@ returned.
 
 **Response Body**
 
-```json
+````json
 {
   "accountId": "uuid",
   "asOfDate": "YYYY-MM-DD",
@@ -142,13 +148,14 @@ Response Body
   "net_change": 269.5,
   "period": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }
 }
-```
+````
 
 Notes:
 
 - `income` and `expense` are magnitudes; `net = income - expense`.
 - Legacy fields (`account_id`, `net_change`, `period`) are preserved for backward compatibility.
-```
+
+````
 
 **GET /api/accounts/<account_id>/transaction_history**
 
@@ -188,7 +195,7 @@ Returns a paginated list of transactions for the specified account. The `<accoun
     "next_offset": 100
   }
 }
-```
+````
 
 **PUT /api/transactions/update**
 
