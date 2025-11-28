@@ -27,7 +27,8 @@
                 Date <span v-if="sortKey === 'date'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-amount text-right" @click="sortBy('amount')">
-                Amount <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Amount
+                <span v-if="sortKey === 'amount'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-description" @click="sortBy('description')">
                 Description
@@ -39,7 +40,9 @@
               </th>
               <th class="col-merchant" @click="sortBy('merchant_name')">
                 Merchant
-                <span v-if="sortKey === 'merchant_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'merchant_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="col-account" @click="sortBy('account_name')">
                 Account Name
@@ -47,10 +50,13 @@
               </th>
               <th class="col-institution" @click="sortBy('institution_name')">
                 Institution
-                <span v-if="sortKey === 'institution_name'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                <span v-if="sortKey === 'institution_name'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
               </th>
               <th class="col-subtype" @click="sortBy('subtype')">
-                Subtype <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
+                Subtype
+                <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-actions">Actions</th>
             </tr>
@@ -210,7 +216,11 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { updateTransaction, fetchMerchantSuggestions, createTransactionRule } from '@/api/transactions'
+import {
+  updateTransaction,
+  fetchMerchantSuggestions,
+  createTransactionRule,
+} from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { useToast } from 'vue-toastification'
 
@@ -360,9 +370,7 @@ async function saveEdit(tx) {
 }
 
 function isRecurringMarked(tx) {
-  return Boolean(
-    tx?.is_recurring || tx?.recurrence_rule || tx?.recurring_transaction_id,
-  )
+  return Boolean(tx?.is_recurring || tx?.recurrence_rule || tx?.recurring_transaction_id)
 }
 
 function markRecurring(index) {
