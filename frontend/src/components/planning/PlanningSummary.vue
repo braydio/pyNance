@@ -28,7 +28,8 @@
     </dl>
 
     <footer class="text-xs text-muted">
-      Updated {{ lastSavedRelative }} · Account {{ accountLabel || activeScenario?.accountId || 'n/a' }}
+      Updated {{ lastSavedRelative }} · Account
+      {{ accountLabel || activeScenario?.accountId || 'n/a' }}
     </footer>
   </section>
 </template>
