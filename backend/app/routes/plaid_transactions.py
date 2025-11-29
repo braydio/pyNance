@@ -264,11 +264,9 @@ def delete_plaid_account():
             # Clean up the stored PlaidItem row for this item as well
             PlaidItem.query.filter_by(item_id=item_id).delete()
 
-        deleted_count = (
-            Account.query.filter(Account.account_id.in_(linked_accounts)).delete(
-                synchronize_session=False
-            )
-        )
+        deleted_count = Account.query.filter(
+            Account.account_id.in_(linked_accounts)
+        ).delete(synchronize_session=False)
         db.session.commit()
         logger.info(
             "Deleted Plaid item %s and %d linked account(s): %s",
