@@ -1324,7 +1324,9 @@ defineExpose({
   border-radius: 0.6rem;
   background: color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .bs-title-field.is-active {
