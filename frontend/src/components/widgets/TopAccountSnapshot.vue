@@ -1311,7 +1311,8 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
     color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 0.9rem;
@@ -1344,7 +1345,9 @@ defineExpose({
   border-radius: 0.6rem;
   background: color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
 }
 
 .bs-title-field.is-active {
