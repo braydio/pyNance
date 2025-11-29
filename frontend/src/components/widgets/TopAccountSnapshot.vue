@@ -13,9 +13,10 @@
     :style="{ '--accent': groupAccent }"
   >
     <div class="bs-header-row">
-      <div class="bs-group-title">
-        <template v-if="isEditingGroups">
+      <div class="bs-group-banner">
+        <div class="bs-group-title">
           <div
+            v-if="isEditingGroups"
             class="bs-title-field"
             :class="{ 'is-active': isRenamingTitle }"
             @click="startTitleEdit"
@@ -41,12 +42,16 @@
               Rename
             </button>
           </div>
-        </template>
-        <template v-else>
-          <span class="bs-group-name" :title="effectiveGroup?.name || 'Group'">
-            {{ effectiveGroup?.name || 'Group' }}
-          </span>
-        </template>
+          <template v-else>
+            <span class="bs-group-name" :title="effectiveGroup?.name || 'Group'">
+              {{ effectiveGroup?.name || 'Group' }}
+            </span>
+          </template>
+        </div>
+        <div class="bs-banner-meta">
+          <span class="bs-banner-label">Group</span>
+          <span class="bs-banner-accent"></span>
+        </div>
       </div>
     </div>
     <!-- Group Selector -->
@@ -166,6 +171,7 @@
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
+      :key="activeGroupId"
       v-if="effectiveGroup && (isEditingGroups || hasConfiguredAccounts)"
       v-model="groupAccounts"
       item-key="id"
@@ -1299,6 +1305,20 @@ defineExpose({
   margin-bottom: 0.35rem;
 }
 
+.bs-group-banner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 16%, transparent), transparent),
+    color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  border-radius: 0.9rem;
+  padding: 0.5rem 0.75rem;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
+}
+
 .bs-group-title {
   display: inline-flex;
   align-items: center;
@@ -1357,6 +1377,29 @@ defineExpose({
 .bs-rename-btn:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.bs-banner-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.bs-banner-label {
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bs-banner-accent {
+  width: 36px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--accent);
+  display: inline-block;
+  opacity: 0.8;
 }
 
 .bs-editing-chip {
