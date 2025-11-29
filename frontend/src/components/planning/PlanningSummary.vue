@@ -28,8 +28,8 @@
     </dl>
 
     <footer class="text-xs text-muted">
-      Updated {{ lastSavedRelative }} · Planning account
-      {{ planningAccountLabel || 'Unassigned' }}
+      Updated {{ lastSavedRelative }} · Account
+      {{ accountLabel || activeScenario?.accountId || 'n/a' }}
     </footer>
   </section>
 </template>
@@ -65,7 +65,7 @@ const props = withDefaults(
 const emit = defineEmits<{ (e: 'refresh'): void }>()
 
 const { state } = usePlanning()
-const accountLookup = ref<Record<string, AccountMetadata>>({})
+const accountsById = ref<Record<string, { name?: string; institution_name?: string }>>({})
 
 const activeScenario = computed(() => {
   if (props.scenarioId) {
@@ -108,16 +108,24 @@ const planningBalanceFormatted = computed(() =>
   formatCurrency(planningBalanceCents.value / 100, scenarioCurrency.value),
 )
 
+const accountLabel = computed(() => {
+  const accountId = activeScenario.value?.accountId
+  if (!accountId) return ''
+  const account = accountsById.value[accountId]
+  if (!account) return accountId
+  if (account.name && account.institution_name) {
+    return `${account.name} • ${account.institution_name}`
+  }
+  return account.name || account.institution_name || accountId
+})
+
 const scenarioName = computed(() => {
   const scenario = activeScenario.value
   if (!scenario) return 'No scenario selected'
-
-  const defaultName = scenario.accountId ? `Plan for ${scenario.accountId}` : ''
-  if (planningAccountLabel.value && (!scenario.name || scenario.name === defaultName)) {
-    return `Plan for ${planningAccountLabel.value}`
+  if (accountLabel.value) {
+    return `Plan for ${accountLabel.value}`
   }
-
-  return scenario.name || planningAccountLabel.value || 'No scenario selected'
+  return scenario.name || 'No scenario selected'
 })
 const lastSavedRelative = computed(() => {
   if (!state.lastSavedAt) return 'just now'
@@ -134,34 +142,27 @@ const lastSavedRelative = computed(() => {
 })
 
 /**
- * Load account metadata to present a friendly planning account label.
+ * Fetch accounts so account-linked scenarios can display human-friendly labels.
  */
-async function loadAccountMetadata() {
+async function loadAccounts() {
   try {
-    const response = await api.getAccounts({ include_hidden: true })
-    if (response?.status === 'success' && Array.isArray(response.accounts)) {
-      const mapped = response.accounts.reduce<Record<string, AccountMetadata>>(
-        (acc, account: any) => {
-          const id = account.account_id ?? account.id
-          if (!id) return acc
-          acc[id] = {
-            name: account.name,
-            institution: account.institution_name,
-          }
-          return acc
-        },
-        {},
+    const response = await fetch('/api/accounts/get_accounts')
+    const payload = await response.json()
+
+    if (payload?.status === 'success' && Array.isArray(payload.accounts)) {
+      accountsById.value = Object.fromEntries(
+        payload.accounts.map((account: any) => [
+          account.account_id,
+          { name: account.name, institution_name: account.institution_name },
+        ]),
       )
-      accountLookup.value = mapped
     }
   } catch (error) {
     console.error('Failed to load accounts for planning summary', error)
   }
 }
 
-onMounted(() => {
-  loadAccountMetadata()
-})
+onMounted(loadAccounts)
 </script>
 
 <style scoped>

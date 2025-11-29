@@ -86,19 +86,49 @@
         >
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
-              Spending by Category
+              Spending by
+              {{ spendingBreakdownMode === 'merchant' ? 'Merchant' : 'Category' }}
             </h2>
             <ChartWidgetTopBar>
               <template #controls>
-                <GroupedCategoryDropdown
-                  :groups="categoryGroups"
-                  :modelValue="catSelected"
-                  @update:modelValue="onCatSelected"
-                  class="ml-2 w-full md:w-64"
-                />
-                <button class="btn btn-outline hover-lift ml-2" @click="groupOthers = !groupOthers">
-                  {{ groupOthers ? 'Expand All' : 'Consolidate Minor Categories' }}
-                </button>
+                <div class="flex flex-wrap gap-2 items-center">
+                  <div
+                    class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
+                  >
+                    <button
+                      class="px-3 py-1 text-sm transition"
+                      :class="
+                        spendingBreakdownMode === 'category'
+                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                      "
+                      @click="setSpendingBreakdownMode('category')"
+                    >
+                      Categories
+                    </button>
+                    <button
+                      class="px-3 py-1 text-sm transition"
+                      :class="
+                        spendingBreakdownMode === 'merchant'
+                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                      "
+                      @click="setSpendingBreakdownMode('merchant')"
+                    >
+                      Merchants
+                    </button>
+                  </div>
+                  <GroupedCategoryDropdown
+                    v-if="spendingBreakdownMode === 'category'"
+                    :groups="categoryGroups"
+                    :modelValue="catSelected"
+                    @update:modelValue="onCatSelected"
+                    class="w-full md:w-64"
+                  />
+                  <button class="btn btn-outline hover-lift" @click="groupOthers = !groupOthers">
+                    {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
+                  </button>
+                </div>
               </template>
             </ChartWidgetTopBar>
           </div>
@@ -107,6 +137,7 @@
             :end-date="dateRange.end"
             :selected-category-ids="catSelected"
             :group-others="groupOthers"
+            :breakdown-type="spendingBreakdownMode"
             @summary-change="catSummary = $event"
             @categories-change="allCategoryIds = $event"
             @bar-click="onCategoryBarClick"
@@ -328,6 +359,7 @@ const catSelected = ref([]) // user selected
 const allCategoryIds = ref([]) // from chart data
 const defaultSet = ref(false) // only auto-select ONCE per data load
 const groupOthers = ref(true) // aggregate small categories
+const spendingBreakdownMode = ref('category')
 
 // When CategoryBreakdownChart fetches, auto-select the first 5 categories once
 // per fetch. Includes "Other" when grouping is enabled and does not repopulate
@@ -359,6 +391,13 @@ function onCatSelected(newIds) {
   catSelected.value = Array.isArray(newIds) ? newIds : [newIds]
 }
 
+function setSpendingBreakdownMode(mode) {
+  if (mode === spendingBreakdownMode.value) return
+  spendingBreakdownMode.value = mode
+  catSelected.value = []
+  defaultSet.value = false
+}
+
 // When user changes date range, clear selections so next data load re-applies auto-select
 watch(
   () => [dateRange.value.start, dateRange.value.end],
@@ -370,6 +409,11 @@ watch(
 
 // When grouping mode changes, allow auto-select on next fetch
 watch(groupOthers, () => {
+  defaultSet.value = false
+})
+
+watch(spendingBreakdownMode, () => {
+  catSelected.value = []
   defaultSet.value = false
 })
 
@@ -453,7 +497,7 @@ async function onCategoryBarClick(payload) {
   const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
 
   // Only display the modal when the clicked bar corresponds to selected categories
-  if (!ids.length) return
+  if (!ids.length || spendingBreakdownMode.value === 'merchant') return
 
   // Determine the date range in effect for the category chart. The chart emits
   // `summary-change` events that populate `catSummary` with the actual start

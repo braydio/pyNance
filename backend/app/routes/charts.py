@@ -611,3 +611,77 @@ def category_breakdown_tree():
         logger.error("Error in category_breakdown_tree: %s", e, exc_info=True)
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@charts.route("/merchant_breakdown", methods=["GET"])
+def merchant_breakdown():
+    """Aggregate expense totals by merchant name for the requested range.
+
+    Args:
+        None. Query parameters are read directly from ``request.args``:
+
+        - ``start_date``: Optional ISO date (YYYY-MM-DD). Defaults to 30 days ago.
+        - ``end_date``: Optional ISO date (YYYY-MM-DD). Defaults to today.
+        - ``top_n``: Optional integer limiting the number of merchants returned.
+
+    Returns:
+        flask.Response: JSON payload with ``status``, ``data`` (sorted merchants),
+        and the ``start_date``/``end_date`` used for the query.
+    """
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    top_n = request.args.get("top_n", 50, type=int)
+
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        else:
+            start_date = datetime.now().date() - timedelta(days=30)
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        else:
+            end_date = datetime.now().date()
+
+        transactions = (
+            db.session.query(Transaction, Account)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+            .all()
+        )
+
+        merchant_totals = defaultdict(float)
+        for txn, _account in transactions:
+            normalized_amount = display_transaction_amount(txn)
+            if normalized_amount >= 0:
+                continue
+            merchant_label = txn.merchant_name or txn.description or "Unknown"
+            merchant_totals[merchant_label] += abs(normalized_amount)
+
+        data = [
+            {"label": merchant, "amount": round(amount, 2)}
+            for merchant, amount in sorted(
+                merchant_totals.items(), key=lambda x: x[1], reverse=True
+            )[:top_n]
+        ]
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "data": data,
+                }
+            ),
+            200,
+        )
+    except Exception as e:
+        logger.error("Error in merchant_breakdown: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
