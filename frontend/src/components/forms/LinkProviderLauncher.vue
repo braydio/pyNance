@@ -60,10 +60,17 @@ const linkPlaid = async () => {
   try {
     await ensurePlaidScript()
 
-    const { link_token } = await accountLinkApi.generateLinkToken({
-      user_id: props.userId,
-      products: props.selectedProducts,
-    })
+    const payload = { products: props.selectedProducts }
+    if (props.userId) {
+      payload.user_id = props.userId
+    }
+
+    const { link_token, status, message } = await accountLinkApi.generateLinkToken(payload)
+
+    if (status === 'error') {
+      console.error('Failed to generate link token:', message)
+      return
+    }
 
     if (!link_token || !window.Plaid) {
       console.error('Missing Plaid link token or SDK.')
@@ -73,11 +80,11 @@ const linkPlaid = async () => {
     const handler = window.Plaid.create({
       token: link_token,
       onSuccess: async (public_token) => {
-        await accountLinkApi.exchangePublicToken({
-          public_token,
-          user_id: props.userId,
-          products: props.selectedProducts,
-        })
+        const exchangePayload = { public_token, products: props.selectedProducts }
+        if (props.userId) {
+          exchangePayload.user_id = props.userId
+        }
+        await accountLinkApi.exchangePublicToken(exchangePayload)
         emit('refresh')
       },
       onExit: () => {

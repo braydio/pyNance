@@ -24,7 +24,7 @@ import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms//PlaidProductScopeSelector.vue'
 import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
 
-const selectedProducts = ref([])
+const selectedProducts = ref(['transactions'])
 const showLinkOptions = ref(false)
 const userID = import.meta.env.VITE_USER_ID_PLAID || ''
 </script>

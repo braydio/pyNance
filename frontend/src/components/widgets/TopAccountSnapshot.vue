@@ -12,171 +12,156 @@
     :class="{ 'bs-editing': isEditingGroups }"
     :style="{ '--accent': groupAccent }"
   >
-    <Transition name="fade-in">
-      <div
-        v-if="isEditingGroups"
-        class="bs-editing-banner"
-        :style="{ '--accent': groupAccent }"
-        role="status"
-        aria-live="polite"
-      >
-        <span class="i-carbon-edit bs-editing-icon" aria-hidden="true"></span>
-        <div class="bs-editing-copy">
-          <p class="bs-editing-title">Editing mode enabled</p>
-          <p class="bs-editing-subtitle">
-            Drag to reorder, rename groups inline, and use the icons to remove accounts.
-          </p>
-        </div>
-      </div>
-    </Transition>
-    <!-- Group Tabs -->
-    <div class="bs-toggle-row">
-      <div class="bs-tabs-scroll">
-        <button
-          v-if="!isEditingGroups && groups.length > 3"
-          class="bs-nav-btn gradient-toggle-btn"
-          @click="shiftWindow(-1)"
-          :disabled="visibleGroupIndex === 0"
-          aria-label="Previous group"
-        >
-          &lt;
-        </button>
-        <Draggable
-          v-if="isEditingGroups"
-          v-model="groups"
-          item-key="id"
-          handle=".bs-tab-handle"
-          tag="div"
-          class="bs-tab-list"
-          @end="persistGroupOrder"
-        >
-          <template #item="{ element: g }">
-            <div
-              :key="g.id"
-              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-            >
-              <GripVertical class="bs-tab-handle" />
-              <input
-                v-model="g.name"
-                class="bs-tab-input"
-                maxlength="30"
-                @blur="finishEdit(g)"
-                @keyup.enter="finishEdit(g)"
-              />
-              <X class="bs-tab-delete" @click.stop="removeGroup(g.id)" />
-            </div>
-          </template>
-          <template #footer>
-            <button
-              key="add-group"
-              class="bs-tab bs-tab-add"
-              @click="addGroup"
-              aria-label="Add group"
-            >
-              +
-            </button>
-          </template>
-        </Draggable>
-        <TransitionGroup v-else name="fade-in" tag="div" class="bs-tab-list">
-          <template v-for="g in visibleGroups" :key="g.id">
+    <div class="bs-header-row">
+      <div class="bs-group-title">
+        <template v-if="isEditingGroups">
+          <div
+            class="bs-title-field"
+            :class="{ 'is-active': isRenamingTitle }"
+            @click="startTitleEdit"
+            @dblclick.stop
+          >
             <input
-              v-if="!g.name || editingGroupId === g.id"
-              v-model="g.name"
-              :class="[
-                'bs-tab',
-                activeGroupId === g.id && 'bs-tab-active',
-                'bs-tab-' + g.id,
-                'bs-tab-input',
-              ]"
+              v-if="isRenamingTitle"
+              v-model="activeGroupNameDraft"
+              class="bs-title-input"
               maxlength="30"
-              @blur="finishEdit(g)"
-              @keyup.enter="finishEdit(g)"
+              @blur="finishActiveTitleEdit"
+              @keyup.enter="finishActiveTitleEdit"
             />
+            <span v-else class="bs-group-name muted" :title="effectiveGroup?.name || 'Group'">
+              {{ effectiveGroup?.name || 'Group' }}
+            </span>
             <button
-              v-else
-              :class="['bs-tab', activeGroupId === g.id && 'bs-tab-active', 'bs-tab-' + g.id]"
-              @click="setActiveGroup(g.id)"
-              @dblclick.stop="startEdit(g.id)"
-              :aria-label="`Show ${g.name}`"
+              v-if="isRenamingTitle"
+              type="button"
+              class="bs-rename-btn"
+              @click.stop="finishActiveTitleEdit"
             >
-              {{ g.name }}
+              Rename
             </button>
-          </template>
-        </TransitionGroup>
-
-        <button
-          v-if="groups.length > 3"
-          class="bs-nav-btn gradient-toggle-btn"
-          @click="shiftWindow(1)"
-          :disabled="visibleGroupIndex + 3 >= groups.length"
-          aria-label="Next group"
-        >
-          &gt;
-        </button>
+          </div>
+        </template>
+        <template v-else>
+          <span class="bs-group-name" :title="effectiveGroup?.name || 'Group'">
+            {{ effectiveGroup?.name || 'Group' }}
+          </span>
+        </template>
       </div>
-
-      <!-- Group Dropdown -->
+    </div>
+    <!-- Group Selector -->
+    <div class="bs-toggle-row">
       <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button
           ref="groupMenuButtonRef"
           type="button"
           :class="groupDropdownClasses"
           @click="toggleGroupMenu"
-          aria-label="Select account group"
+          aria-label="Switch group"
         >
-          {{ effectiveGroup ? effectiveGroup.name : 'Select group' }} ▾
+          Switch ▾
         </button>
         <Transition name="slide-down">
-          <ul v-if="showGroupMenu" ref="groupMenuRef" class="bs-group-menu">
-            <li v-for="g in groups" :key="g.id">
-              <template v-if="isEditingGroups">
-                <input
-                  v-model="g.name"
-                  class="bs-group-input"
-                  maxlength="30"
-                  @blur="finishEdit(g)"
-                  @keyup.enter="finishEdit(g)"
-                />
-              </template>
-              <template v-else>
+          <Draggable
+            v-if="showGroupMenu && isEditingGroups"
+            ref="groupMenuRef"
+            v-model="groups"
+            item-key="id"
+            handle=".bs-group-handle"
+            tag="ul"
+            class="bs-group-menu"
+            @end="persistGroupOrder"
+          >
+            <template #item="{ element: g }">
+              <li :key="g.id" class="bs-group-row">
+                <GripVertical class="bs-group-handle" aria-hidden="true" />
+                <template v-if="editingGroupId === g.id">
+                  <input
+                    v-model="g.name"
+                    class="bs-group-input"
+                    maxlength="30"
+                    @blur="finishEdit(g)"
+                    @keyup.enter="finishEdit(g)"
+                  />
+                </template>
+                <template v-else>
+                  <button
+                    type="button"
+                    class="bs-group-item"
+                    :class="{
+                      'bs-group-item-active': g.id === activeGroupId,
+                      'is-active': g.id === activeGroupId,
+                    }"
+                    :aria-pressed="g.id === activeGroupId"
+                    @click="selectGroup(g.id)"
+                    @dblclick.stop="startEdit(g.id)"
+                  >
+                    <Check v-if="g.id === activeGroupId" class="bs-group-check" />
+                    {{ g.name || '(unnamed)' }}
+                  </button>
+                </template>
                 <button
                   type="button"
-                  class="bs-group-item"
-                  :class="{
-                    'bs-group-item-active': g.id === activeGroupId,
-                    'is-active': g.id === activeGroupId,
-                  }"
-                  :aria-pressed="g.id === activeGroupId"
-                  @click="selectGroup(g.id)"
+                  class="bs-group-delete"
+                  aria-label="Remove group"
+                  @click.stop="removeGroup(g.id)"
                 >
-                  <Check v-if="g.id === activeGroupId" class="bs-group-check" />
-                  {{ g.name || '(unnamed)' }}
+                  <X />
                 </button>
-              </template>
+              </li>
+            </template>
+            <template #footer>
+              <li>
+                <button
+                  type="button"
+                  class="bs-group-item bs-group-action gradient-toggle-btn"
+                  @click="addGroup"
+                  aria-label="Add account group"
+                >
+                  + Add group
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  class="bs-group-item bs-group-action gradient-toggle-btn"
+                  @click="finishEditingSession"
+                  aria-label="Finish editing account groups"
+                >
+                  Done
+                </button>
+              </li>
+            </template>
+          </Draggable>
+          <ul v-else-if="showGroupMenu" ref="groupMenuRef" class="bs-group-menu">
+            <li v-for="g in groups" :key="g.id" class="bs-group-row">
+              <button
+                type="button"
+                class="bs-group-item"
+                :class="{
+                  'bs-group-item-active': g.id === activeGroupId,
+                  'is-active': g.id === activeGroupId,
+                }"
+                :aria-pressed="g.id === activeGroupId"
+                @click="selectGroup(g.id)"
+              >
+                <Check v-if="g.id === activeGroupId" class="bs-group-check" />
+                {{ g.name || '(unnamed)' }}
+              </button>
             </li>
-            <li v-if="!isEditingGroups">
+            <li>
               <button
                 type="button"
                 class="bs-group-item bs-group-action gradient-toggle-btn"
-                @click="toggleEditGroups"
+                @click="toggleEditGroups(true)"
                 aria-label="Edit account groups"
               >
-                Edit
+                Edit groups
               </button>
             </li>
           </ul>
         </Transition>
       </div>
-
-      <button
-        v-if="isEditingGroups"
-        type="button"
-        class="bs-done-btn gradient-toggle-btn"
-        @click="finishEditingSession"
-        aria-label="Finish editing account groups"
-      >
-        Done
-      </button>
     </div>
 
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
@@ -275,6 +260,7 @@
       <!-- Add Account + Summary -->
       <template #footer>
         <li
+          v-if="isEditingGroups || activeAccounts.length === 0"
           class="bs-account-container bs-add-account"
           :class="{ 'bs-disabled': activeAccounts.length >= MAX_ACCOUNTS_PER_GROUP }"
           :key="'add-' + activeGroupId"
@@ -391,6 +377,10 @@
       </ul>
     </div>
     <div v-else class="bs-empty">No accounts to display</div>
+
+    <div v-if="isEditingGroups" class="bs-editing-footer">
+      <span class="bs-editing-chip">Editing groups</span>
+    </div>
   </div>
 </template>
 
@@ -494,6 +484,8 @@ const showGroupMenu = ref(false)
 const groupMenuRef = ref(null)
 const groupMenuButtonRef = ref(null)
 const editingGroupId = ref(null)
+const activeGroupNameDraft = ref('')
+const isRenamingTitle = ref(false)
 // Maximum allowed characters for group names, including ellipsis when truncated.
 const MAX_GROUP_NAME_LENGTH = 30
 const isEditingGroups = ref(props.isEditingGroups)
@@ -623,39 +615,6 @@ watch(
   { immediate: true },
 )
 
-const visibleGroupIndex = ref(0)
-const visibleGroups = computed(() =>
-  groups.value.slice(visibleGroupIndex.value, visibleGroupIndex.value + 3),
-)
-
-/** Shift the visible tab window left or right */
-function shiftWindow(direction) {
-  const maxStart = Math.max(0, groups.value.length - 3)
-  visibleGroupIndex.value = Math.min(maxStart, Math.max(0, visibleGroupIndex.value + direction))
-}
-
-/** Keep active group within the visible range */
-watch(activeGroupId, (id) => {
-  const idx = groups.value.findIndex((g) => g.id === id)
-  if (idx === -1) return
-  if (idx < visibleGroupIndex.value) {
-    visibleGroupIndex.value = idx
-  } else if (idx > visibleGroupIndex.value + 2) {
-    visibleGroupIndex.value = idx - 2
-  }
-})
-
-/** Adjust window when group list changes */
-watch(
-  () => groups.value.length,
-  (len) => {
-    const maxStart = Math.max(0, len - 3)
-    if (visibleGroupIndex.value > maxStart) {
-      visibleGroupIndex.value = maxStart
-    }
-  },
-)
-
 const spectrum = [
   'var(--color-accent-cyan)',
   'var(--color-accent-yellow)',
@@ -690,6 +649,11 @@ function toggleGroupMenu() {
 function selectGroup(id) {
   if (id) {
     setActiveGroup(id)
+    const picked = groups.value.find((g) => g.id === id)
+    groupAccounts.value = normalizeAccounts(picked?.accounts || [])
+    openAccountId.value = null
+    isRenamingTitle.value = false
+    activeGroupNameDraft.value = ''
   }
   showGroupMenu.value = false
   groupMenuButtonRef.value?.focus?.()
@@ -709,6 +673,8 @@ function resetEditingUi() {
   editingGroupId.value = null
   showAccountSelector.value = false
   selectedAccountId.value = ''
+  isRenamingTitle.value = false
+  activeGroupNameDraft.value = ''
 }
 
 function toggleEditGroups(force) {
@@ -742,6 +708,36 @@ function finishEditingSession(event) {
 function startEdit(id) {
   if (!isEditingGroups.value) return
   editingGroupId.value = id
+}
+
+function startTitleEdit() {
+  if (!isEditingGroups.value || !activeGroup.value) return
+  activeGroupNameDraft.value = activeGroup.value.name || ''
+  editingGroupId.value = activeGroupId.value
+  isRenamingTitle.value = true
+  // focus handled by input mount
+}
+
+function finishActiveTitleEdit() {
+  if (!isEditingGroups.value || !activeGroup.value) {
+    isRenamingTitle.value = false
+    return
+  }
+  const trimmed = (activeGroupNameDraft.value || '').trim()
+  if (!trimmed) {
+    activeGroupNameDraft.value = activeGroup.value.name || ''
+    isRenamingTitle.value = false
+    editingGroupId.value = null
+    return
+  }
+  activeGroup.value.name =
+    trimmed.length > MAX_GROUP_NAME_LENGTH
+      ? `${trimmed.slice(0, MAX_GROUP_NAME_LENGTH - 1)}…`
+      : trimmed
+  finishEdit(activeGroup.value)
+  activeGroupNameDraft.value = ''
+  isRenamingTitle.value = false
+  editingGroupId.value = null
 }
 
 /**
@@ -800,6 +796,8 @@ watch(
     openAccountId.value = null
     showAccountSelector.value = false
     selectedAccountId.value = ''
+    isRenamingTitle.value = false
+    activeGroupNameDraft.value = ''
   },
   { flush: 'post' },
 )
@@ -807,13 +805,18 @@ watch(
 watch(
   isEditingGroups,
   (editing) => {
-    if (!editing) return
-    openAccountId.value = null
+    if (editing) {
+      openAccountId.value = null
+    } else {
+      showAccountSelector.value = false
+      selectedAccountId.value = ''
+    }
   },
   { flush: 'post' },
 )
 
 function startAddAccount() {
+  if (!isEditingGroups.value && activeAccounts.value.length > 0) return
   if (activeAccounts.value.length >= MAX_ACCOUNTS_PER_GROUP) return
   selectedAccountId.value = ''
   showAccountSelector.value = true
@@ -1036,55 +1039,34 @@ defineExpose({
 }
 
 .bs-editing-banner {
-  position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.85rem 1rem;
-  margin-bottom: 1.1rem;
-  border-radius: 0.9rem;
-  border: 1.6px dashed var(--accent, var(--color-accent-cyan));
+  gap: 0.4rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  border: 1px dashed var(--accent, var(--color-accent-cyan));
   color: var(--accent, var(--color-accent-cyan));
-  background: linear-gradient(120deg, rgba(12, 23, 52, 0.92), rgba(12, 23, 52, 0.72));
-  box-shadow: 0 18px 36px rgba(12, 23, 52, 0.32);
-  overflow: hidden;
-}
-
-.bs-editing-banner::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, var(--accent, var(--color-accent-cyan)) 0%, transparent 70%);
-  opacity: 0.18;
-  pointer-events: none;
+  background: color-mix(in srgb, var(--accent, var(--color-accent-cyan)) 15%, transparent);
+  margin-bottom: 0.4rem;
+  font-size: 0.85rem;
 }
 
 .bs-editing-icon {
-  font-size: 1.6rem;
+  font-size: 1rem;
   line-height: 1;
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 10px rgba(12, 23, 52, 0.4));
-}
-
-.bs-editing-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-  color: var(--color-text-light);
 }
 
 .bs-editing-title {
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   text-transform: uppercase;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
 }
 
 .bs-editing-subtitle {
-  font-size: 0.85rem;
-  line-height: 1.4;
-  opacity: 0.85;
-  max-width: 32rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
 }
 
 .bs-editing .bs-tab {
@@ -1310,6 +1292,91 @@ defineExpose({
   flex-shrink: 0;
 }
 
+.bs-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.35rem;
+}
+
+.bs-group-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bs-group-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+}
+
+.bs-group-name.muted {
+  color: var(--color-text-muted);
+}
+
+.bs-title-field {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.bs-title-field.is-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--color-bg-sec));
+}
+
+.bs-title-input {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text-light);
+  background: var(--color-bg-sec);
+  border: 1px solid var(--accent);
+  border-radius: 0.4rem;
+  padding: 0.25rem 0.5rem;
+  min-width: 9rem;
+}
+
+.bs-rename-btn {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  cursor: pointer;
+}
+
+.bs-rename-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+
+.bs-editing-chip {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.bs-editing-footer {
+  margin-top: 0.75rem;
+  display: flex;
+  justify-content: flex-end;
+}
+
 @media (max-width: 900px) {
   .bs-toggle-row {
     row-gap: 0.5rem;
@@ -1388,6 +1455,40 @@ defineExpose({
   flex-direction: column;
   min-width: 8rem;
   padding: 0.2rem 0;
+}
+
+.bs-group-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0 0.25rem;
+}
+
+.bs-group-handle {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--accent);
+  cursor: grab;
+  flex-shrink: 0;
+  opacity: 0.75;
+}
+
+.bs-group-delete {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 0.15rem;
+  border-radius: 0.35rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bs-group-delete:hover,
+.bs-group-delete:focus-visible {
+  color: var(--color-accent-red);
+  outline: none;
 }
 
 /* Establish a positioning context for the absolute menu */
