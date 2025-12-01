@@ -4,6 +4,28 @@ import { mount } from '@vue/test-utils'
 import { ref, nextTick, watch } from 'vue'
 import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 
+function ensureMockStorage() {
+  if (typeof localStorage !== 'undefined' && typeof localStorage.clear === 'function') {
+    return
+  }
+  let store = {}
+  const storage = {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, val) => {
+      store[key] = String(val)
+    },
+    removeItem: (key) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+  }
+  Object.defineProperty(globalThis, 'localStorage', { value: storage, writable: true })
+}
+
+ensureMockStorage()
+
 const sampleAccounts = [
   { id: 'acc-1', name: 'Account 1', adjusted_balance: 1 },
   { id: 'acc-2', name: 'Account 2', adjusted_balance: 2 },
@@ -145,7 +167,13 @@ vi.mock('@/composables/useAccountGroups', () => {
   }
 })
 
+// Stub fetchRecentTransactions to avoid network calls in jsdom
+vi.mock('@/api/accounts', () => ({
+  fetchRecentTransactions: vi.fn(async () => ({ data: { transactions: [] } })),
+}))
+
 beforeEach(() => {
+  ensureMockStorage()
   localStorage.clear()
   accountsRef.value = sampleAccounts.map((acct) => ({ ...acct }))
   addAccountToGroupMock.mockReset()

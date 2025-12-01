@@ -172,7 +172,7 @@
     <!-- Render draggable without container Transition to avoid DOM detachment issues -->
     <Draggable
       :key="activeGroupId"
-      v-if="effectiveGroup && (isEditingGroups || hasConfiguredAccounts)"
+      v-if="effectiveGroup"
       v-model="groupAccounts"
       item-key="id"
       handle=".bs-drag-handle"
@@ -440,6 +440,7 @@ const props = defineProps({
 
 // fetch accounts generically for potential group management
 const { accounts: allAccounts } = useTopAccounts()
+const accounts = allAccounts
 const {
   groups,
   activeGroupId,
@@ -464,7 +465,11 @@ let syncingToActive = false
 /** Toggle details dropdown for an account and load recent transactions */
 function toggleDetails(accountId, event) {
   if (!accountId) return
+  const switchingAccount = openAccountId.value !== accountId
   openAccountId.value = openAccountId.value === accountId ? null : accountId
+  if (switchingAccount && showGroupMenu.value) {
+    showGroupMenu.value = false
+  }
   // Ensure the originating row retains focus for accessibility
   event?.currentTarget?.focus()
   if (openAccountId.value === accountId && !recentTxs[accountId]) {
@@ -588,21 +593,28 @@ function containsTarget(el, target) {
   return typeof el.contains === 'function' && el.contains(target)
 }
 
+function closeGroupMenu(focusButton = false) {
+  if (!showGroupMenu.value) return
+  showGroupMenu.value = false
+  if (focusButton) {
+    groupMenuButtonRef.value?.focus?.()
+  }
+}
+
 function onDocumentClick(e) {
   if (!showGroupMenu.value) return
   const target = e?.target ?? null
   const insideButton = containsTarget(groupMenuButtonRef.value, target)
   const insideMenu = containsTarget(groupMenuRef.value, target)
   if (!insideButton && !insideMenu) {
-    showGroupMenu.value = false
+    closeGroupMenu()
   }
 }
 
 function onDocumentKeydown(e) {
   if (!showGroupMenu.value) return
   if (e.key === 'Escape' || e.key === 'Esc') {
-    showGroupMenu.value = false
-    groupMenuButtonRef.value?.focus?.()
+    closeGroupMenu(true)
   }
 }
 
@@ -612,9 +624,11 @@ watch(
     if (typeof document === 'undefined') return
     if (open) {
       document.addEventListener('click', onDocumentClick, true)
+      document.addEventListener('pointerdown', onDocumentClick, true)
       document.addEventListener('keydown', onDocumentKeydown, true)
     } else {
       document.removeEventListener('click', onDocumentClick, true)
+      document.removeEventListener('pointerdown', onDocumentClick, true)
       document.removeEventListener('keydown', onDocumentKeydown, true)
     }
   },
@@ -661,8 +675,7 @@ function selectGroup(id) {
     isRenamingTitle.value = false
     activeGroupNameDraft.value = ''
   }
-  showGroupMenu.value = false
-  groupMenuButtonRef.value?.focus?.()
+  closeGroupMenu(true)
 }
 
 function persistGroupOrder() {
@@ -914,8 +927,8 @@ function amountClass(val) {
 }
 
 defineExpose({
-  accounts: allAccounts,
-  allAccounts,
+  accounts,
+  allAccounts: accounts,
   groups,
   activeGroupId,
   groupAccounts,
@@ -1681,8 +1694,8 @@ defineExpose({
 }
 
 .bs-sparkline {
-  width: 60px;
-  height: 20px;
+  width: 96px;
+  height: 36px;
   align-self: center;
   color: var(--accent, var(--color-accent-cyan));
 }

@@ -171,8 +171,8 @@ const points = computed(() => {
 <style scoped>
 .sparkline-container {
   position: relative;
-  width: 60px;
-  height: 20px;
+  width: 92px;
+  height: 32px;
   cursor: pointer;
   transition: all 0.2s ease;
   background: none;
@@ -183,7 +183,7 @@ const points = computed(() => {
 }
 
 .sparkline-container:hover {
-  transform: scale(1.05);
+  transform: translateY(-1px) scale(1.05);
 }
 
 .sparkline-container:focus-visible {
@@ -197,16 +197,22 @@ const points = computed(() => {
   height: 100%;
   stroke: currentColor;
   fill: none;
-  stroke-width: 1.5;
-  transition: stroke 0.3s ease;
+  stroke-width: 2.6;
+  transition: stroke 0.2s ease;
 }
 
 .sparkline-balance {
-  stroke: var(--color-accent-cyan);
+  stroke: color-mix(in srgb, var(--color-accent-cyan) 86%, #e0f9ff 14%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-accent-cyan) 50%, transparent));
 }
 
 .sparkline-transactions {
-  stroke: var(--color-accent-yellow);
+  stroke: color-mix(in srgb, var(--color-accent-yellow) 88%, #fff1c2 12%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--color-accent-yellow) 55%, transparent));
 }
 
 .bs-sparkline-placeholder {
@@ -219,12 +225,12 @@ const points = computed(() => {
 
 .sparkline-indicator {
   position: absolute;
-  bottom: -1px;
-  right: -1px;
-  width: 8px;
-  height: 8px;
+  bottom: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  font-size: 6px;
+  font-size: 8px;
   font-weight: 700;
   display: flex;
   align-items: center;

@@ -523,14 +523,14 @@ onMounted(async () => {
             name: child.label,
             plaid_id: child.plaid_id || null,
           }))
-          .sort((a, b) => a.name.localeCompare(b.name))
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
         return {
           id: group.id,
           name: group.label,
           children,
         }
       })
-      categoryTree.value = tree.sort((a, b) => a.name.localeCompare(b.name))
+      categoryTree.value = tree.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
     }
     // Fetch merchant suggestions for autocomplete
     merchantSuggestions.value = await fetchMerchantSuggestions('')

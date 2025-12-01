@@ -306,6 +306,9 @@ export default {
       sortOrder,
       setSort,
       setPage,
+      isLoading,
+      error,
+      fetchTransactions,
     } = useTransactions(initialPageSize, promotedTransactionId, filters)
 
     /**
@@ -357,6 +360,10 @@ export default {
       sortOrder,
       setSort,
       setPage,
+      isLoading,
+      error,
+      fetchTransactions,
+      errorMessage,
       recurringFormRef,
       prefillRecurringFromTransaction,
       CreditCard,

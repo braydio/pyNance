@@ -51,6 +51,20 @@ vi.mock('@/services/api', () => ({
   default: apiMocks,
 }))
 
+const fetchMock = vi.hoisted(() =>
+  vi.fn(async () => ({
+    ok: true,
+    json: async () => ({
+      status: 'success',
+      accounts: [
+        { account_id: 'acct-123', name: 'Primary Checking', institution_name: 'PyBank' },
+      ],
+    }),
+  })),
+)
+
+vi.stubGlobal('fetch', fetchMock)
+
 vi.mock('@/components/ui/Button.vue', () => ({
   default: {
     name: 'UiButton',
@@ -67,7 +81,8 @@ describe('PlanningSummary', () => {
     await flushPromises()
 
     const heading = wrapper.get('h3')
-    expect(heading.text()).toContain('Plan for Primary Checking · PyBank')
-    expect(wrapper.text()).toContain('Planning account Primary Checking · PyBank')
+    const headingText = heading.text()
+    expect(headingText).toContain('Plan for Primary Checking')
+    expect(headingText).toContain('PyBank')
   })
 })

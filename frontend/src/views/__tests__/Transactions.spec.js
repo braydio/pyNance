@@ -58,7 +58,10 @@ describe('Transactions.vue', () => {
           DateRangeSelector: true,
           ImportFileSelector: true,
           InternalTransferScanner: true,
-          PageHeader: true,
+          PageHeader: {
+            props: ['icon'],
+            template: '<header><slot name="title" /><slot name="subtitle" /></header>',
+          },
           RecurringTransactionSection: true,
           TabbedPageLayout: {
             template:

@@ -1,9 +1,26 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-const DEFAULT_ACCENT = 'var(--color-accent-cyan)'
+const storage = (() => {
+  let store = {}
+  return {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, val) => {
+      store[key] = String(val)
+    },
+    removeItem: (key) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+  }
+})()
+
+vi.stubGlobal('localStorage', storage)
 
 vi.mock('@/services/api', () => {
+  const DEFAULT_ACCENT = 'var(--color-accent-cyan)'
   const backendState = {
     groups: [],
     active_group_id: 'group-1',

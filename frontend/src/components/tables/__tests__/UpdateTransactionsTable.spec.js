@@ -22,7 +22,17 @@ vi.mock('vue-toastification', () => ({
   useToast: () => ({ info: vi.fn(), error: vi.fn(), success: vi.fn() }),
 }))
 
-vi.mock('@/api/transactions', () => ({ updateTransaction: vi.fn() }))
+vi.mock('@/api/transactions', () => ({
+  updateTransaction: vi.fn(),
+  fetchCategoryTree: vi.fn(async () => ({
+    status: 'success',
+    data: [
+      { id: 'food', label: 'Food', children: [{ id: 'c1', label: 'Grocery' }] },
+      { id: 'bills', label: 'Bills', children: [{ id: 'c2', label: 'Utilities' }] },
+    ],
+  })),
+  fetchMerchantSuggestions: vi.fn(async () => []),
+}))
 import { updateTransaction } from '@/api/transactions'
 
 describe('UpdateTransactionsTable.vue', () => {

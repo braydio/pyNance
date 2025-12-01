@@ -4,11 +4,33 @@ import { mount } from '@vue/test-utils'
 import { ref, watch, nextTick } from 'vue'
 import TopAccountSnapshot from '../TopAccountSnapshot.vue'
 
+function ensureMockStorage() {
+  if (typeof localStorage !== 'undefined' && typeof localStorage.clear === 'function') {
+    return
+  }
+  let store = {}
+  const storage = {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, val) => {
+      store[key] = String(val)
+    },
+    removeItem: (key) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+  }
+  Object.defineProperty(globalThis, 'localStorage', { value: storage, writable: true })
+}
+
 // Sample accounts used for localStorage-backed groups
 const sampleAccounts = [
   { id: 'acc-1', name: 'Account 1', adjusted_balance: 1 },
   { id: 'acc-2', name: 'Account 2', adjusted_balance: 2 },
 ]
+
+ensureMockStorage()
 
 // --- Composable Mocks ---
 
@@ -132,7 +154,13 @@ vi.mock('@/composables/useAccountGroups', () => {
   }
 })
 
+// Stub fetchRecentTransactions to avoid network calls in jsdom
+vi.mock('@/api/accounts', () => ({
+  fetchRecentTransactions: vi.fn(async () => ({ data: { transactions: [] } })),
+}))
+
 beforeEach(() => {
+  ensureMockStorage()
   localStorage.clear()
 })
 
@@ -691,6 +719,38 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.find('.bs-group-menu').exists()).toBe(true)
 
     document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    await nextTick()
+
+    expect(wrapper.find('.bs-group-menu').exists()).toBe(false)
+  })
+
+  it('closes the group dropdown when clicking a different account row', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          { id: 'credit', name: 'Credit', accounts: sampleAccounts },
+          { id: 'depository', name: 'Depository', accounts: [] },
+        ],
+        activeGroupId: 'credit',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const toggle = wrapper.find('.bs-group-btn')
+    await toggle.trigger('click')
+    await nextTick()
+    expect(wrapper.find('.bs-group-menu').exists()).toBe(true)
+
+    const rows = wrapper.findAll('.bs-account-container .bs-row')
+    expect(rows.length).toBeGreaterThan(1)
+
+    await rows[1].trigger('click')
     await nextTick()
 
     expect(wrapper.find('.bs-group-menu').exists()).toBe(false)
