@@ -310,6 +310,7 @@ def get_paginated_transactions(
     tx_type=None,
     recent=False,
     limit=None,
+    include_running_balance=False,
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -364,10 +365,20 @@ def get_paginated_transactions(
         query = query.filter(Transaction.amount < 0)
 
     total = query.count()
-    if recent:
+    offset = (page - 1) * page_size
+
+    # When running balances are requested, compute them from the full result set so pagination
+    # slices still show accurate balances.
+    if include_running_balance and not recent:
+        all_results = query.all()
+        running_map = _calculate_running_balances(all_results)
+        results = all_results[offset : offset + page_size]
+    elif recent:
         results = query.limit(limit or page_size).all()
+        running_map = {}
     else:
-        results = query.offset((page - 1) * page_size).limit(page_size).all()
+        results = query.offset(offset).limit(page_size).all()
+        running_map = {}
 
     # Unpack and serialize
     serialized = []
@@ -395,10 +406,42 @@ def get_paginated_transactions(
                 "account_id": acc.account_id or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
+                "running_balance": running_map.get(txn.transaction_id),
             }
         )
 
     return serialized, total
+
+
+def _calculate_running_balances(results):
+    """Return a map of transaction_id -> running balance (per account).
+
+    Balances start from the latest ``accounts.balance`` value and walk backward in time. This
+    ensures the balance shown next to each transaction reflects the account balance immediately
+    after that transaction posted.
+    """
+
+    from app.utils.finance_utils import display_transaction_amount, normalize_account_balance
+
+    running_by_account = {}
+    running_map = {}
+
+    for txn, acc, _ in results:
+        if not acc:
+            continue
+        acc_id = acc.account_id
+        if acc_id not in running_by_account:
+            running_by_account[acc_id] = float(
+                normalize_account_balance(acc.balance, acc.type or acc.subtype)
+            )
+
+        current_balance = running_by_account[acc_id]
+        running_map[txn.transaction_id] = current_balance
+
+        signed_amount = display_transaction_amount(txn)
+        running_by_account[acc_id] = current_balance - signed_amount
+
+    return running_map
 
 
 def get_balance_at(account_id: str, target_date: pydate) -> Optional[float]:

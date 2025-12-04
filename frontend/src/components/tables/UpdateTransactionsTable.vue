@@ -59,6 +59,12 @@
                 <span v-if="sortKey === 'subtype'">{{ sortOrder === 'asc' ? '▲' : '▼' }}</span>
               </th>
               <th class="col-actions">Actions</th>
+              <th class="col-running" @click="sortBy('running_balance')">
+                Running Balance
+                <span v-if="sortKey === 'running_balance'">{{
+                  sortOrder === 'asc' ? '▲' : '▼'
+                }}</span>
+              </th>
             </tr>
           </thead>
 
@@ -78,7 +84,7 @@
               ]"
             >
               <template v-if="tx._placeholder">
-                <td v-for="n in 9" :key="n" class="px-4 py-3">&nbsp;</td>
+                <td v-for="n in 10" :key="n" class="px-4 py-3">&nbsp;</td>
               </template>
               <template v-else>
                 <td class="col-date">
@@ -173,6 +179,10 @@
                       <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
                     </template>
                   </div>
+                </td>
+                <td class="col-running text-right font-mono">
+                  <span v-if="tx.running_balance != null">{{ formatAmount(tx.running_balance) }}</span>
+                  <span v-else class="text-muted">—</span>
                 </td>
               </template>
             </tr>
@@ -648,6 +658,10 @@ onMounted(async () => {
 
 .col-actions {
   width: 220px;
+}
+
+.col-running {
+  width: 160px;
 }
 
 .row-placeholder {

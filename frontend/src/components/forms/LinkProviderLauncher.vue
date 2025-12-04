@@ -3,7 +3,7 @@
     <h3 class="text-md font-medium mb-2">Link accounts with Plaid</h3>
 
     <p class="text-sm text-neutral-400 mb-3">
-      Select at least one product to enable the Plaid Link flow.
+      Each account link requires at least one product scope.
     </p>
 
     <div class="flex gap-2">
@@ -14,7 +14,7 @@
         :disabled="selectedProducts.length === 0 || loading"
         @click="linkPlaid"
       >
-        {{ loading ? 'Linking…' : 'Link with Plaid' }}
+        {{ loading ? 'Linking…' : 'Link With Selected Scope' }}
       </UiButton>
     </div>
   </div>

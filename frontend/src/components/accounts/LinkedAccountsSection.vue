@@ -9,7 +9,7 @@
     </header>
 
     <div v-if="!groupedAccounts.length" class="text-sm text-muted-foreground">
-      No linked accounts available yet. Add an account to see it listed here.
+      No  accounts available yet. Link an account to see details below.
     </div>
 
     <div v-else class="space-y-8">

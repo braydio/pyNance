@@ -331,6 +331,7 @@ def get_transactions_paginated():
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
+        include_running_balance = request.args.get("include_running_balance") == "true"
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -361,6 +362,7 @@ def get_transactions_paginated():
             category=category,
             account_ids=account_ids or None,
             tx_type=tx_type,
+            include_running_balance=include_running_balance,
         )
 
         return (

@@ -179,7 +179,10 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
     const p = tx.primary_category || ''
     const d = tx.detailed_category || ''
     if (p && d) return `${p}: ${d}`
-    return p || d || ''
+    if (p) return p
+    if (d) return d
+    // Fall back to the raw category string from the API so the table isn't blank.
+    return tx.category || 'Uncategorized'
   }
 
   onMounted(() => {

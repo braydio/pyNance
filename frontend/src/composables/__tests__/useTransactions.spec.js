@@ -1,9 +1,14 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { useTransactions } from '../useTransactions.js'
+import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
 vi.mock('@/api/transactions', () => ({
   fetchTransactions: vi.fn(),
 }))
+
+afterEach(() => {
+  vi.clearAllMocks()
+})
 
 // Ensure filteredTransactions returns only search matches without padding
 // when a query is applied.
@@ -18,5 +23,17 @@ describe('useTransactions', () => {
     searchQuery.value = 'coffee'
     const result = filteredTransactions.value
     expect(result).toHaveLength(1)
+  })
+
+  it('keeps API category when no primary/detailed fields are provided', async () => {
+    fetchTransactionsApi.mockResolvedValue({
+      transactions: [{ transaction_id: '1', description: 'Coffee', category: 'Food & Drink' }],
+      total: 1,
+    })
+    const { fetchTransactions, transactions } = useTransactions(5)
+
+    await fetchTransactions(1, { force: true })
+
+    expect(transactions.value[0].category).toBe('Food & Drink')
   })
 })

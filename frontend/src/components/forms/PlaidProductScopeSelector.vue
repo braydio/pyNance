@@ -1,6 +1,6 @@
 <template>
   <div class="section-container mb-4">
-    <h3 class="text-lg font-semibold mb-2">Select Plaid Products</h3>
+    <h3 class="text-lg font-semibold mb-2">Plaid Link Account Types</h3>
     <div class="flex gap-2 flex-wrap">
       <button
         v-for="product in availableProducts"

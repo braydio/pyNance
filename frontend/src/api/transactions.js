@@ -23,8 +23,8 @@ import axios from 'axios'
  * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {
-  const { category_ids, account_ids, ...rest } = params
-  const query = { ...rest }
+  const { category_ids, account_ids, include_running_balance = true, ...rest } = params
+  const query = { include_running_balance, ...rest }
 
   // Allow callers to pass an array of IDs or a preformatted string
   if (Array.isArray(category_ids)) {

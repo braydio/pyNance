@@ -53,6 +53,10 @@
           <span class="bs-banner-accent"></span>
         </div>
       </div>
+      <div class="bs-total" :style="{ '--accent': groupAccent }">
+        <span class="bs-total-label">Total Balance</span>
+        <span class="bs-total-value">{{ format(visibleTotal) }}</span>
+      </div>
     </div>
     <!-- Group Selector -->
     <div class="bs-toggle-row">
@@ -803,6 +807,9 @@ const fallbackAccounts = computed(() => {
   const normalized = normalizeAccounts(allAccounts.value)
   return normalized.slice(0, MAX_ACCOUNTS_PER_GROUP)
 })
+const visibleAccounts = computed(() =>
+  activeAccounts.value.length ? activeAccounts.value : fallbackAccounts.value,
+)
 const hasConfiguredAccounts = computed(() => groupAccounts.value.length > 0)
 const showAccountSelector = ref(false)
 const selectedAccountId = ref('')
@@ -871,8 +878,8 @@ function removeAccount(id) {
   }
 }
 
-const activeTotal = computed(() =>
-  activeAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
+const visibleTotal = computed(() =>
+  visibleAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
 )
 
 const format = (val) => {
@@ -1316,6 +1323,28 @@ defineExpose({
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.35rem;
+}
+.bs-total {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.2rem;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.9rem;
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+.bs-total-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+.bs-total-value {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-accent-cyan);
 }
 
 .bs-group-banner {
