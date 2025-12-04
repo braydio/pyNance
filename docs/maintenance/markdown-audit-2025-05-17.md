@@ -3,12 +3,14 @@
 Purpose: classify every tracked Markdown file by recommended action (acceptable, needs content update, relocate, or deprecate) to align documentation with current structure.
 
 ## Legend
+
 - **Keep**: location/content acceptable.
 - **Update**: content needs refresh or verification.
 - **Move**: relocate to a more relevant directory (content otherwise fine).
 - **Deprecate**: retire or merge; note existing replacements where known.
 
 ## Root-Level Files
+
 - `ACCOUNT_SNAPSHOT_FIXES.md` — Move to `docs/maintenance/` and confirm whether tasks are still open; document is a temporary checklist intended for removal once completed. **Move + Update**
 - `AGENTS.md` — Keep at root; active contributor guidance referenced by automation. **Keep**
 - `CONTRIBUTING.md` — Keep; primary contribution standards. **Keep**
@@ -19,12 +21,14 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `SQL_DATABASE_CHANGES.md` — Move to `docs/backend/` and polish incomplete sentences for clarity. **Move + Update**
 
 ## Backend (non-docs) Directory
+
 - `backend/AGENTS.md` — Keep; scoped contributor rules. **Keep**
 - `backend/app/routes/CHARTS_CAT_BREAKDOWN.md` — Route-specific reference is in `backend/app/routes`; location matches scope. **Keep**
 - `backend/app/services/FORECAST_RECURRING_ROADMAP.md` — Service roadmap fits services context. **Keep**
 - `backend/app/static/README.md` — Static assets README fits location. **Keep**
 
 ## Backend Documentation (`docs/backend/...`)
+
 - `docs/backend/cron_sync.md` — Keep.
 - `docs/backend/features/transaction_rules.md` — Keep.
 - `docs/backend/load_transactions.md` — Keep.
@@ -45,6 +49,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/backend/app/utils/*.md` — Keep.
 
 ## Core Docs (`docs/` root)
+
 - `docs/API_REFERENCE.md` — Keep.
 - `docs/BACKEND_STATUS.md` — Update to reflect current service health if stale. **Update**
 - `docs/CODEX_REPORT.md` — Update or merge into `docs/process/` if still active; content appears archival. **Update/Assess**
@@ -95,6 +100,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/ui/planning.md` — Keep.
 
 ## Docs – Frontend Subtree
+
 - `docs/frontend/CURRENCY_FORMAT_GUIDE.md` — Keep.
 - `docs/frontend/Consolidated_TODO.md` — Update/merge with maintenance TODOs to reduce duplication. **Update**
 - `docs/frontend/DAILY_NET_CHART.md` — Keep.
@@ -119,6 +125,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/frontend/transactions-ui.md` — Keep.
 
 ## Docs – Maintenance Subtree
+
 - `docs/maintenance/claude-reference.md` — Deprecate or merge into `codex-reference`; duplicative naming. **Deprecate/Consolidate**
 - `docs/maintenance/cleanup_checklist.md` — Keep.
 - `docs/maintenance/codex-reference.md` — Keep; ensure consistent with claude-reference consolidation. **Keep**
@@ -131,6 +138,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/maintenance/widget-improvements.md` — Keep.
 
 ## Docs – Roadmaps, Latest, and UI
+
 - `docs/roadmaps/README.md` — Keep.
 - `docs/roadmaps/accounts.md` — Keep.
 - `docs/roadmaps/investments.md` — Keep.
@@ -142,20 +150,24 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/ui/planning.md` — Keep.
 
 ## Docs – Additional Frontend/Architecture
+
 - `docs/architecture/01_DEV-ArchitectureChecks.md` — Keep.
 - `docs/architecture/Plaid_Helpers_Design.md` — Keep.
 - `docs/frontend_duplicate_component_review.md` — Move to `docs/frontend/` (duplicate listing above). **Move**
 
 ## Docs – Arbitrage/Arbit
+
 - `docs/arbit_dashboard.md` — Move to `docs/frontend/` (see above). **Move/Consolidate**
 - `docs/arbitrage_page.md` — Move to `docs/frontend/` (see above). **Move**
 
 ## Docs – Miscellaneous
+
 - `docs/maps/link_account_products_map.md` — Keep.
 - `docs/maps/repository_map.md` — Update (see above). **Update**
 - `docs/migration_plan.md` — Update (see above). **Update**
 
 ## Frontend Repo Files
+
 - `frontend/README.md` — Keep.
 - `frontend/ANIMATIONS_GUIDE.md` — Keep.
 - `frontend/docs/typography-spacing-guide.md` — Keep.
@@ -173,8 +185,9 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `frontend/src/views/Mock/MockDataCanvas.md` — Deprecate or relocate with above. **Deprecate/Move**
 
 ## Scripts
+
 - `scripts/README-CADDY.md` — Keep (script-specific doc is appropriately located). **Keep**
 
 ## Cached Artifact
-- `.pytest_cache/README.md` — Deprecate/ignore; generated cache, should not require curation. **Deprecate**
 
+- `.pytest_cache/README.md` — Deprecate/ignore; generated cache, should not require curation. **Deprecate**
