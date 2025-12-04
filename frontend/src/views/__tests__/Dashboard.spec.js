@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import Dashboard from '../Dashboard.vue'
+import { fetchTransactions } from '@/api/transactions'
 
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
@@ -92,5 +93,41 @@ describe('Dashboard.vue', () => {
     wrapper.vm.allCategoryIds = ['x', 'y', 'z']
     await nextTick()
     expect(wrapper.vm.catSelected).toEqual(['x', 'y', 'z'])
+  })
+
+  it('uses the clicked bar date when opening the daily transactions modal', async () => {
+    const wrapper = shallowMount(Dashboard, {
+      global: {
+        stubs: {
+          AppLayout: PassThrough,
+          BasePageLayout: PassThrough,
+          DailyNetChart: true,
+          CategoryBreakdownChart: true,
+          ChartWidgetTopBar: true,
+          ChartDetailsSidebar: true,
+          DateRangeSelector: true,
+          AccountsTable: true,
+          TransactionsTable: true,
+          PaginationControls: true,
+          TransactionModal: true,
+          TopAccountSnapshot: TopAccountSnapshotStub,
+          GroupedCategoryDropdown: true,
+          FinancialSummary: true,
+          SpendingInsights: true,
+        },
+      },
+    })
+
+    const barLabel = '2024-06-10T00:00:00'
+    await wrapper.vm.onNetBarClick(barLabel)
+
+    expect(fetchTransactions).toHaveBeenCalledWith({
+      start_date: '2024-06-10',
+      end_date: '2024-06-10',
+      page: 1,
+      page_size: 1000,
+    })
+    expect(wrapper.vm.dailyModalSubtitle).toBe('2024-06-10')
+    expect(wrapper.vm.showDailyModal).toBe(true)
   })
 })
