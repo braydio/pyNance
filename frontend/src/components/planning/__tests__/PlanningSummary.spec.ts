@@ -56,9 +56,7 @@ const fetchMock = vi.hoisted(() =>
     ok: true,
     json: async () => ({
       status: 'success',
-      accounts: [
-        { account_id: 'acct-123', name: 'Primary Checking', institution_name: 'PyBank' },
-      ],
+      accounts: [{ account_id: 'acct-123', name: 'Primary Checking', institution_name: 'PyBank' }],
     }),
   })),
 )
