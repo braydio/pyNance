@@ -5,7 +5,9 @@
       <input type="date" v-model="startDate" class="input" />
       <input type="date" v-model="endDate" class="input" />
       <div class="account-select" v-click-outside="closeDropdown">
-        <UiButton type="button" variant="outline" @click="toggleDropdown">All Linked Accounts</UiButton>
+        <UiButton type="button" variant="outline" @click="toggleDropdown"
+          >All Linked Accounts</UiButton
+        >
         <div v-if="dropdownOpen" class="dropdown-menu">
           <label v-for="acct in accounts" :key="acct.account_id">
             <input type="checkbox" :value="acct.account_id" v-model="selectedAccounts" />

@@ -421,7 +421,10 @@ def _calculate_running_balances(results):
     after that transaction posted.
     """
 
-    from app.utils.finance_utils import display_transaction_amount, normalize_account_balance
+    from app.utils.finance_utils import (
+        display_transaction_amount,
+        normalize_account_balance,
+    )
 
     running_by_account = {}
     running_map = {}

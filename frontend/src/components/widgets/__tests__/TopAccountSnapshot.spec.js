@@ -108,7 +108,9 @@ vi.mock('@/composables/useAccountGroups', () => {
       function removeAccountFromGroup(groupId, accountId) {
         const group = groups.value.find((g) => g.id === groupId)
         if (!group) return
-        const idx = group.accounts.findIndex((a) => a.id === accountId || a.account_id === accountId)
+        const idx = group.accounts.findIndex(
+          (a) => a.id === accountId || a.account_id === accountId,
+        )
         if (idx !== -1) {
           group.accounts.splice(idx, 1)
           persist()
@@ -159,9 +161,7 @@ beforeEach(() => {
   localStorage.setItem(
     'accountGroups',
     JSON.stringify({
-      groups: [
-        { id: 'group-1', name: 'Group', accounts: sampleAccounts },
-      ],
+      groups: [{ id: 'group-1', name: 'Group', accounts: sampleAccounts }],
       activeGroupId: 'group-1',
     }),
   )
@@ -180,7 +180,9 @@ describe('TopAccountSnapshot', () => {
   })
 
   it('shows total balance pill for visible accounts', async () => {
-    const wrapper = mount(TopAccountSnapshot, { global: { stubs: { AccountSparkline: sparklineStub } } })
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: sparklineStub } },
+    })
     await nextTick()
     expect(wrapper.find('.bs-total-value').text()).toContain('$3.00')
   })
@@ -198,5 +200,4 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.find('.bank-statement-list').classes()).toContain('bs-editing')
     expect(wrapper.emitted('update:isEditingGroups')?.[0]).toEqual([true])
   })
-
 })

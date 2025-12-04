@@ -181,7 +181,9 @@
                   </div>
                 </td>
                 <td class="col-running text-right font-mono">
-                  <span v-if="tx.running_balance != null">{{ formatAmount(tx.running_balance) }}</span>
+                  <span v-if="tx.running_balance != null">{{
+                    formatAmount(tx.running_balance)
+                  }}</span>
                   <span v-else class="text-muted">—</span>
                 </td>
               </template>

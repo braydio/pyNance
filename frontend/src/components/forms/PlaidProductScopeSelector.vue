@@ -8,9 +8,7 @@
         @click="toggle(product)"
         :class="[
           'btn btn-pill transition-all duration-200',
-          modelValue.includes(product)
-            ? 'bg-primary text-white shadow'
-            : 'btn-outline text-muted'
+          modelValue.includes(product) ? 'bg-primary text-white shadow' : 'btn-outline text-muted',
         ]"
       >
         {{ capitalize(product) }}
@@ -20,26 +18,26 @@
 </template>
 
 <script setup>
-const availableProducts = ['transactions', 'investments', 'liabilities'];
+const availableProducts = ['transactions', 'investments', 'liabilities']
 
 const props = defineProps({
   modelValue: {
     type: Array,
     default: () => [],
   },
-});
-const emit = defineEmits(['update:modelValue']);
+})
+const emit = defineEmits(['update:modelValue'])
 
 function toggle(product) {
   const next = props.modelValue.includes(product)
-    ? props.modelValue.filter(p => p !== product)
-    : [...props.modelValue, product];
+    ? props.modelValue.filter((p) => p !== product)
+    : [...props.modelValue, product]
 
-  emit('update:modelValue', next);
+  emit('update:modelValue', next)
 }
 
 function capitalize(word) {
-  return word.charAt(0).toUpperCase() + word.slice(1);
+  return word.charAt(0).toUpperCase() + word.slice(1)
 }
 </script>
 
