@@ -446,18 +446,29 @@ async function loadCategoryGroups() {
 }
 
 /**
- * Convert chart labels into ISO date strings accepted by the transactions API.
- * Falls back to the original label when parsing fails so the modal still
- * opens, even if no data is returned.
+ * Convert chart labels into ISO date strings accepted by the transactions API
+ * without shifting the date across timezones. Falls back to the original label
+ * when parsing fails so the modal still opens, even if no data is returned.
  *
  * @param {string} label - Label emitted from the DailyNetChart click handler.
  * @returns {string} ISO-formatted date (YYYY-MM-DD) when parseable, otherwise
  *   the original label value.
  */
 function normalizeDateLabel(label) {
-  const parsed = new Date(label)
+  const rawLabel = String(label ?? '').trim()
+  if (!rawLabel) return label
+
+  // Fast path for ISO-like strings (YYYY-MM-DD or YYYY-MM-DDTHH:mm:ss)
+  const isoMatch = rawLabel.match(/^(\d{4}-\d{2}-\d{2})/)
+  if (isoMatch) return isoMatch[1]
+
+  const parsed = new Date(rawLabel)
   if (Number.isNaN(parsed.getTime())) return label
-  return parsed.toISOString().slice(0, 10)
+
+  const year = parsed.getFullYear()
+  const month = String(parsed.getMonth() + 1).padStart(2, '0')
+  const day = String(parsed.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 async function onNetBarClick(label) {
