@@ -79,6 +79,81 @@ describe('UpdateTransactionsTable.vue', () => {
     expect(displayed[0].transaction_id).toBe('t1')
   })
 
+  it('sorts transactions by date descending by default', async () => {
+    const transactions = [
+      {
+        transaction_id: 'old',
+        date: '2023-01-01',
+        amount: 10,
+        description: 'Oldest',
+        category: 'Food: Grocery',
+        merchant_name: 'M1',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+      {
+        transaction_id: 'new',
+        date: '2024-05-01',
+        amount: 20,
+        description: 'Newest',
+        category: 'Bills: Utilities',
+        merchant_name: 'M2',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+
+    const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)
+    expect(displayed[0].transaction_id).toBe('new')
+  })
+
+  it('supports fuzzy filtering on selected field', async () => {
+    const transactions = [
+      {
+        transaction_id: 't1',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Grocery Market',
+        category: 'Food: Grocery',
+        merchant_name: 'Fresh Foods',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+      {
+        transaction_id: 't2',
+        date: '2024-01-02',
+        amount: 20,
+        description: 'Online Subscription',
+        category: 'Bills: Utilities',
+        merchant_name: 'Streamio',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+
+    wrapper.vm.selectFilterField('description')
+    wrapper.vm.fieldSearch = 'market'
+    await flushPromises()
+
+    const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)
+    expect(displayed).toHaveLength(1)
+    expect(displayed[0].transaction_id).toBe('t1')
+  })
+
   it('prompts for internal counterpart selection', async () => {
     const transactions = [
       {

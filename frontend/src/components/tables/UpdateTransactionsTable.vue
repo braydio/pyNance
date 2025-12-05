@@ -17,6 +17,43 @@
       </select>
     </div>
 
+    <!-- Column Filter Controls -->
+    <div class="field-filter-bar">
+      <div class="flex flex-wrap gap-2">
+        <button
+          v-for="field in filterableFields"
+          :key="field.key"
+          type="button"
+          class="btn-sm filter-chip"
+          :class="{ active: activeFilterKey === field.key }"
+          @click="selectFilterField(field.key)"
+        >
+          Filter {{ field.label }}
+        </button>
+      </div>
+      <div v-if="activeFilterKey" class="filter-input-row">
+        <label class="text-xs font-semibold text-[var(--color-text-muted)]">
+          Filtering by {{ activeFilterLabel }}
+        </label>
+        <div class="flex gap-2 items-center">
+          <input
+            ref="filterInputRef"
+            v-model="fieldSearch"
+            :list="`${activeFilterKey}-filters`"
+            type="text"
+            class="input"
+            :placeholder="`Type to filter ${activeFilterLabel.toLowerCase()}…`"
+          />
+          <button type="button" class="btn-sm clear-filter" @click="clearFieldFilter">
+            Clear
+          </button>
+        </div>
+        <datalist :id="`${activeFilterKey}-filters`">
+          <option v-for="option in filteredFieldSuggestions" :key="option" :value="option" />
+        </datalist>
+      </div>
+    </div>
+
     <!-- Transactions Table -->
     <div class="table-shell overflow-hidden">
       <div class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
@@ -227,7 +264,8 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import Fuse from 'fuse.js'
 import {
   updateTransaction,
   fetchMerchantSuggestions,
@@ -273,7 +311,20 @@ const activeInternalTx = ref(null)
 const categoryTree = ref([])
 const merchantSuggestions = ref([])
 const sortKey = ref('date')
-const sortOrder = ref('asc')
+const sortOrder = ref('desc')
+
+const filterableFields = [
+  { key: 'date', label: 'Date' },
+  { key: 'description', label: 'Description' },
+  { key: 'merchant_name', label: 'Merchant' },
+  { key: 'account_name', label: 'Account' },
+  { key: 'institution_name', label: 'Institution' },
+  { key: 'category', label: 'Category' },
+]
+
+const activeFilterKey = ref('')
+const fieldSearch = ref('')
+const filterInputRef = ref(null)
 
 const categorySuggestions = computed(() => {
   const seen = new Set()
@@ -301,6 +352,56 @@ const subcategoryOptions = computed(() => {
 
 // Maintain a steady table height even when searches return few results.
 const baseRowCount = computed(() => Math.max(MIN_ROW_COUNT, props.transactions.length))
+
+const filterSuggestions = computed(() => {
+  if (!activeFilterKey.value) return []
+  const seen = new Set()
+  const values = []
+  props.transactions.forEach((tx) => {
+    const raw = tx[activeFilterKey.value]
+    if (!raw) return
+    const value = String(raw)
+    if (seen.has(value)) return
+    seen.add(value)
+    values.push(value)
+  })
+  return values
+})
+
+const suggestionSearch = computed(
+  () =>
+    new Fuse(filterSuggestions.value.map((value) => ({ value })), {
+      keys: ['value'],
+      threshold: 0.35,
+      ignoreLocation: true,
+    }),
+)
+
+const filteredFieldSuggestions = computed(() => {
+  if (!activeFilterKey.value) return []
+  const query = fieldSearch.value.trim()
+  if (!query) return filterSuggestions.value.slice(0, 12)
+  return suggestionSearch.value.search(query).map((r) => r.item.value)
+})
+
+const activeFilterLabel = computed(
+  () => filterableFields.find((field) => field.key === activeFilterKey.value)?.label || '',
+)
+
+function selectFilterField(key) {
+  activeFilterKey.value = key
+  fieldSearch.value = ''
+  nextTick(() => {
+    if (filterInputRef.value) {
+      filterInputRef.value.focus()
+    }
+  })
+}
+
+function clearFieldFilter() {
+  fieldSearch.value = ''
+  activeFilterKey.value = ''
+}
 
 function startEdit(index, tx) {
   editingIndex.value = index
@@ -475,12 +576,20 @@ function sortBy(key) {
     sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
   } else {
     sortKey.value = key
-    sortOrder.value = 'asc'
+    sortOrder.value = key === 'date' || key === 'amount' ? 'desc' : 'asc'
   }
 }
 
 const displayTransactions = computed(() => {
   let txs = [...props.transactions]
+  if (activeFilterKey.value && fieldSearch.value.trim()) {
+    const columnFuse = new Fuse(txs, {
+      keys: [activeFilterKey.value],
+      threshold: 0.35,
+      ignoreLocation: true,
+    })
+    txs = columnFuse.search(fieldSearch.value.trim()).map((r) => r.item)
+  }
   // Primary category filter if selected
   if (selectedPrimaryCategory.value) {
     const primary = selectedPrimaryCategory.value.toLowerCase()
@@ -689,6 +798,37 @@ onMounted(async () => {
 
 .action-bar {
   color: var(--color-text-muted);
+}
+
+.field-filter-bar {
+  @apply flex flex-col gap-2;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--divider);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.filter-chip {
+  background: rgba(113, 156, 214, 0.12);
+  color: var(--color-text-light);
+  border: 1px solid var(--divider);
+}
+
+.filter-chip.active {
+  box-shadow: 0 0 0 1px var(--color-accent-purple);
+  background: rgba(113, 156, 214, 0.24);
+}
+
+.filter-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.clear-filter {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--color-text-light);
+  border: 1px solid var(--divider);
 }
 
 .category-filters {
