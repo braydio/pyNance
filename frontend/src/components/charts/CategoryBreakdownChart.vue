@@ -1,23 +1,23 @@
 <template>
   <div
-    class="relative w-full max-w-full h-[400px] bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
+    class="relative w-full max-w-full bg-[var(--theme-bg)] rounded-xl overflow-hidden border border-[var(--divider)]"
+    :style="{ height: chartHeight }"
   >
     <canvas ref="chartCanvas" class="absolute inset-0 w-full h-full"></canvas>
     <div
       v-if="showEmptyState"
       class="absolute inset-0 flex items-center justify-center text-center px-6 text-[var(--color-text-muted)]"
     >
-      Your chart has no items to display. A chart needs items to display for it to feel satisfied
-      and complete.
+      Select at least one category to see spending.
     </div>
   </div>
 </template>
 
 <script setup>
 // CategoryBreakdownChart.vue
-// Displays a stacked bar chart of spending. By default, only the top four
-// parent categories are shown individually with the rest grouped into an
-// "Other" bar. Set `groupOthers` to `false` to show all categories.
+// Displays a thin horizontal bar chart of spending by selected category or merchant.
+// Defaults to grouping smaller parent categories into an "Other" bucket unless
+// `groupOthers` is set to `false`.
 import { ref, watch, nextTick, onMounted, onUnmounted, toRefs, computed } from 'vue'
 import { debounce } from 'lodash-es'
 import { Chart } from 'chart.js/auto'
@@ -44,7 +44,14 @@ const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const categoryTree = ref([])
+const barRows = ref([])
 const showEmptyState = computed(() => (selectedCategoryIds.value?.length || 0) === 0)
+const chartHeight = computed(() => {
+  const rows = barRows.value.length || 0
+  const base = 220
+  const perRow = 36
+  return `${Math.max(base, rows * perRow)}px`
+})
 
 // Cycle through theme accent colors for each dataset segment
 function getGroupColor(idx) {
@@ -77,44 +84,21 @@ function mapMerchantBreakdownToTree(raw = []) {
   }))
 }
 
-function extractStackedBarData(tree, selectedIds = []) {
-  // Only include parents that have at least one selected child
+function extractHorizontalBarData(tree, selectedIds = []) {
   const sel = new Set((selectedIds || []).map((x) => String(x)))
-  const parents = tree.filter((node) => node.children?.some((child) => sel.has(String(child.id))))
-  const labels = parents.map((p) => p.label)
+  const rows =
+    tree?.flatMap((parent) =>
+      (parent.children || [])
+        .filter((child) => sel.has(String(child.id)))
+        .map((child) => ({
+          id: String(child.id),
+          label: child.label || parent.label || 'Category',
+          parentLabel: parent.label || '',
+          amount: child.amount || 0,
+        })),
+    ) || []
 
-  // Collect unique child IDs for selected categories across all parents
-  const childIdSet = new Set()
-  parents.forEach((p) =>
-    (p.children || []).forEach((c) => {
-      if (sel.has(String(c.id))) childIdSet.add(String(c.id))
-    }),
-  )
-  const allChildIds = Array.from(childIdSet)
-
-  // Map each child ID to its label for display
-  function labelForId(id) {
-    for (const p of parents) {
-      const match = (p.children || []).find((c) => String(c.id) === String(id))
-      if (match) return match.label
-    }
-    return ''
-  }
-
-  const datasets = allChildIds.map((childId, colorIdx) => ({
-    label: labelForId(childId),
-    data: parents.map((p) => {
-      const child = (p.children || []).find((c) => String(c.id) === String(childId))
-      return child ? child.amount : 0
-    }),
-    backgroundColor: getGroupColor(colorIdx),
-    borderWidth: 2,
-    borderSkipped: false,
-    barPercentage: 0.9,
-    categoryPercentage: 0.8,
-  }))
-
-  return { labels, datasets }
+  return rows.sort((a, b) => (b.amount || 0) - (a.amount || 0))
 }
 
 async function renderChart() {
@@ -127,65 +111,56 @@ async function renderChart() {
 
   // If nothing is selected, do not render a chart; show the empty-state overlay instead
   if (showEmptyState.value) {
+    barRows.value = []
     return
   }
 
-  const { labels, datasets } = extractStackedBarData(categoryTree.value, selectedCategoryIds.value)
+  const rows = extractHorizontalBarData(categoryTree.value, selectedCategoryIds.value)
+  barRows.value = rows
 
-  // If there are no datasets to show (e.g., selected IDs do not match current data),
+  // If there are no rows to show (e.g., selected IDs do not match current data),
   // avoid rendering an empty chart.
-  if (!datasets.length || !labels.length) {
+  if (!rows.length) {
     return
   }
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
-      datasets,
+      labels: rows.map((row) => row.label),
+      datasets: [
+        {
+          label: 'Spend',
+          data: rows.map((row) => row.amount),
+          backgroundColor: rows.map((_, idx) => getGroupColor(idx)),
+          borderRadius: 10,
+          borderSkipped: false,
+          barThickness: 14,
+          maxBarThickness: 18,
+          minBarLength: 6,
+        },
+      ],
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      layout: { padding: { top: 20, bottom: 20 } },
+      layout: { padding: { top: 12, bottom: 12, left: 12, right: 18 } },
       plugins: {
         legend: {
-          display: true,
-          labels: {
-            color: getStyle('--color-text-muted'),
-            // Hide any legend item with text 'Debit'
-            filter: (legendItem) => legendItem.text !== 'Debit',
-          },
+          display: false,
         },
         tooltip: {
-          mode: 'index',
-          intersect: false,
-          displayColors: false,
-          filter: (tooltipItem) => tooltipItem.datasetIndex === 0,
+          mode: 'nearest',
+          intersect: true,
+          displayColors: true,
           callbacks: {
-            // No title; axis label already shows parent
-            title: () => '',
-            // Show total first in the body
-            beforeBody: (items) => {
-              const label = items?.[0]?.label || ''
-              const node = categoryTree.value.find((cat) => cat.label === label)
-              const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
-              const children = (node?.children || []).filter((c) => sel.has(String(c.id)))
-              const total = children.reduce((sum, c) => sum + (c.amount || 0), 0)
-              return [`Total: ${formatAmount(total)}`]
+            title: (items) => {
+              const row = barRows.value[items[0]?.dataIndex ?? 0]
+              if (!row) return ''
+              return row.parentLabel ? `${row.label} • ${row.parentLabel}` : row.label
             },
-            // Body lists top 5 child categories with amounts
-            label: (context) => {
-              const label = context.label || ''
-              const node = categoryTree.value.find((cat) => cat.label === label)
-              const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
-              const children = (node?.children || [])
-                .filter((c) => sel.has(String(c.id)))
-                .sort((a, b) => (b.amount || 0) - (a.amount || 0))
-                .slice(0, 5)
-              if (!children.length) return []
-              return children.map((c) => `${c.label}: ${formatAmount(c.amount || 0)}`)
-            },
+            label: (context) => `Spend: ${formatAmount(context.raw || 0)}`,
           },
           backgroundColor: getStyle('--theme-bg'),
           titleColor: getStyle('--color-accent-yellow'),
@@ -204,19 +179,13 @@ async function renderChart() {
         )
         if (points.length) {
           const index = points[0].index
-          const label = chartInstance.value.data.labels[index]
-          const node = categoryTree.value.find((cat) => cat.label === label)
-          // Only emit IDs for categories currently selected by the user
-          const sel = new Set((selectedCategoryIds.value || []).map((x) => String(x)))
-          const ids = (node?.children || [])
-            .filter((c) => sel.has(String(c.id)))
-            .map((c) => String(c.id))
-          emit('bar-click', { label, ids })
+          const row = barRows.value[index]
+          if (!row) return
+          emit('bar-click', { label: row.label, ids: [row.id] })
         }
       },
       scales: {
-        x: {
-          stacked: true,
+        y: {
           display: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
@@ -224,15 +193,14 @@ async function renderChart() {
             font: { family: "'Fira Code', monospace", size: 14 },
           },
         },
-        y: {
-          stacked: true,
+        x: {
           display: true,
           beginAtZero: true,
           grid: { display: true, color: getStyle('--divider') },
           ticks: {
             callback: (value) => formatAmount(value),
             color: getStyle('--color-text-muted'),
-            font: { family: "'Fira Code', monospace", size: 14 },
+            font: { family: "'Fira Code', monospace", size: 13 },
           },
         },
       },

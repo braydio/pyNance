@@ -64,7 +64,7 @@ describe('CategoryBreakdownChart.vue', () => {
 
     const emitted = wrapper.emitted('bar-click')
     expect(emitted).toBeTruthy()
-    expect(emitted[0][0]).toEqual({ label: 'Parent', ids: ['c1'] })
+    expect(emitted[0][0]).toEqual({ label: 'Child 1', ids: ['c1'] })
   })
 
   it('loads merchant breakdown data when requested', async () => {
