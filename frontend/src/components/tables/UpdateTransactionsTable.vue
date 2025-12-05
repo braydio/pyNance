@@ -44,9 +44,7 @@
             class="input"
             :placeholder="`Type to filter ${activeFilterLabel.toLowerCase()}…`"
           />
-          <button type="button" class="btn-sm clear-filter" @click="clearFieldFilter">
-            Clear
-          </button>
+          <button type="button" class="btn-sm clear-filter" @click="clearFieldFilter">Clear</button>
         </div>
         <datalist :id="`${activeFilterKey}-filters`">
           <option v-for="option in filteredFieldSuggestions" :key="option" :value="option" />
@@ -370,11 +368,14 @@ const filterSuggestions = computed(() => {
 
 const suggestionSearch = computed(
   () =>
-    new Fuse(filterSuggestions.value.map((value) => ({ value })), {
-      keys: ['value'],
-      threshold: 0.35,
-      ignoreLocation: true,
-    }),
+    new Fuse(
+      filterSuggestions.value.map((value) => ({ value })),
+      {
+        keys: ['value'],
+        threshold: 0.35,
+        ignoreLocation: true,
+      },
+    ),
 )
 
 const filteredFieldSuggestions = computed(() => {
