@@ -28,8 +28,8 @@ import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef = ref({})) {
   const transactions = ref([])
   const searchQuery = ref('')
-  const sortKey = ref(null)
-  const sortOrder = ref(1)
+  const sortKey = ref('date')
+  const sortOrder = ref(-1)
   const currentPage = ref(1)
   const totalPages = ref(1)
   const totalCount = ref(0)
@@ -112,7 +112,7 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
       sortOrder.value *= -1
     } else {
       sortKey.value = key
-      sortOrder.value = 1
+      sortOrder.value = key === 'date' ? -1 : 1
     }
   }
 
@@ -152,6 +152,14 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
       items = [...items].sort((a, b) => {
         const valA = a[sortKey.value] || ''
         const valB = b[sortKey.value] || ''
+        if (sortKey.value === 'date') {
+          const aTime = new Date(valA).getTime()
+          const bTime = new Date(valB).getTime()
+          return sortOrder.value === -1 ? bTime - aTime : aTime - bTime
+        }
+        if (typeof valA === 'number' && typeof valB === 'number') {
+          return sortOrder.value === -1 ? valB - valA : valA - valB
+        }
         return valA.toString().localeCompare(valB.toString()) * sortOrder.value
       })
     }
