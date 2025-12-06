@@ -200,4 +200,16 @@ describe('TopAccountSnapshot', () => {
     expect(wrapper.find('.bank-statement-list').classes()).toContain('bs-editing')
     expect(wrapper.emitted('update:isEditingGroups')?.[0]).toEqual([true])
   })
+
+  it('collapses the group dropdown after selecting a group', async () => {
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: sparklineStub } },
+    })
+    await nextTick()
+    const firstGroupId = wrapper.vm.activeGroupId?.value || wrapper.vm.groups?.value?.[0]?.id
+    wrapper.vm.showGroupMenu = true
+    wrapper.vm.selectGroup(firstGroupId)
+    await nextTick()
+    expect(wrapper.vm.showGroupMenu).toBe(false)
+  })
 })

@@ -397,7 +397,7 @@
 <!-- liabilities section removed -->
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
 import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -670,7 +670,7 @@ function toggleGroupMenu() {
   showGroupMenu.value = !showGroupMenu.value
 }
 
-function selectGroup(id) {
+async function selectGroup(id) {
   if (id) {
     setActiveGroup(id)
     const picked = groups.value.find((g) => g.id === id)
@@ -679,6 +679,8 @@ function selectGroup(id) {
     isRenamingTitle.value = false
     activeGroupNameDraft.value = ''
   }
+  showGroupMenu.value = false
+  await nextTick()
   closeGroupMenu(true)
 }
 
@@ -941,11 +943,13 @@ defineExpose({
   groupAccounts,
   groupAccent,
   isEditingGroups,
+  showGroupMenu,
   finishEditingSession,
   selectedAccountId,
   showAccountSelector,
   startAddAccount,
   confirmAddAccount,
+  selectGroup,
 })
 </script>
 
