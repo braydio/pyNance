@@ -539,6 +539,12 @@ watch(
   { immediate: true, deep: true },
 )
 
+// Close the dropdown any time the active group changes (e.g., on selection)
+watch(
+  () => activeGroupId.value,
+  () => closeGroupMenu(),
+)
+
 // Keep local draggable list in sync with the effective group accounts
 watch(
   () => effectiveGroup.value?.accounts,
@@ -597,8 +603,8 @@ function containsTarget(el, target) {
   return typeof el.contains === 'function' && el.contains(target)
 }
 
-function closeGroupMenu(focusButton = false) {
-  if (!showGroupMenu.value) return
+function closeGroupMenu(focusButton = false, force = false) {
+  if (!showGroupMenu.value && !force) return
   showGroupMenu.value = false
   if (focusButton) {
     groupMenuButtonRef.value?.focus?.()
@@ -670,7 +676,7 @@ function toggleGroupMenu() {
   showGroupMenu.value = !showGroupMenu.value
 }
 
-async function selectGroup(id) {
+function selectGroup(id) {
   if (id) {
     setActiveGroup(id)
     const picked = groups.value.find((g) => g.id === id)
@@ -679,9 +685,7 @@ async function selectGroup(id) {
     isRenamingTitle.value = false
     activeGroupNameDraft.value = ''
   }
-  showGroupMenu.value = false
-  await nextTick()
-  closeGroupMenu(true)
+  closeGroupMenu(true, true)
 }
 
 function persistGroupOrder() {
