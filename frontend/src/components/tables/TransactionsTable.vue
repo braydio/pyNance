@@ -186,7 +186,11 @@ export default {
       if (accountId.value) params.account_ids = accountId.value
       if (txType.value) params.tx_type = txType.value
       const res = await fetchTransactions(params)
-      transactions.value = res.transactions || []
+      transactions.value = (res.transactions || []).slice().sort((a, b) => {
+        const aTime = new Date(a?.date || 0).getTime()
+        const bTime = new Date(b?.date || 0).getTime()
+        return bTime - aTime
+      })
       total.value = res.total || 0
       updateChart()
     }
