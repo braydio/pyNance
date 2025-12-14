@@ -397,7 +397,7 @@
 <!-- liabilities section removed -->
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
 import { GripVertical, X, Check } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
@@ -513,6 +513,9 @@ watch(
   () => props.isEditingGroups,
   (val) => {
     isEditingGroups.value = val
+    if (!val) {
+      closeGroupMenu()
+    }
   },
 )
 
@@ -628,22 +631,35 @@ function onDocumentKeydown(e) {
   }
 }
 
+function addDropdownListeners() {
+  if (typeof document === 'undefined') return
+  document.addEventListener('click', onDocumentClick, true)
+  document.addEventListener('pointerdown', onDocumentClick, true)
+  document.addEventListener('keydown', onDocumentKeydown, true)
+}
+
+function removeDropdownListeners() {
+  if (typeof document === 'undefined') return
+  document.removeEventListener('click', onDocumentClick, true)
+  document.removeEventListener('pointerdown', onDocumentClick, true)
+  document.removeEventListener('keydown', onDocumentKeydown, true)
+}
+
 watch(
   showGroupMenu,
   (open) => {
-    if (typeof document === 'undefined') return
     if (open) {
-      document.addEventListener('click', onDocumentClick, true)
-      document.addEventListener('pointerdown', onDocumentClick, true)
-      document.addEventListener('keydown', onDocumentKeydown, true)
+      addDropdownListeners()
     } else {
-      document.removeEventListener('click', onDocumentClick, true)
-      document.removeEventListener('pointerdown', onDocumentClick, true)
-      document.removeEventListener('keydown', onDocumentKeydown, true)
+      removeDropdownListeners()
     }
   },
   { immediate: true },
 )
+
+onBeforeUnmount(() => {
+  removeDropdownListeners()
+})
 
 const spectrum = [
   'var(--color-accent-cyan)',

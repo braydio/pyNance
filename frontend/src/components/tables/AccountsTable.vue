@@ -6,35 +6,36 @@
       Accounts
     </h2>
     <!-- Controls/Filters -->
-    <div class="mb-4 flex flex-wrap items-center gap-2" data-testid="accounts-control-bar">
-      <div class="flex items-center gap-2 flex-wrap flex-1">
+    <div class="control-surface" data-testid="accounts-control-bar">
+      <div class="input-shell">
+        <span class="icon i-ph:magnifying-glass-duotone"></span>
         <input
           v-model="searchQuery"
           class="filter-input"
           type="text"
-          placeholder="Filter accounts..."
+          placeholder="Search accounts, institutions, or types"
         />
-        <button class="btn btn-outline btn-sm" @click="controlsVisible = !controlsVisible">
-          {{ controlsVisible ? 'Hide Controls' : 'Show Controls' }}
-        </button>
-        <template v-if="controlsVisible">
-          <button class="btn btn-outline btn-sm" @click="toggleDeleteButtons">
-            {{ showDeleteButtons ? 'Hide Delete Buttons' : 'Show Delete Buttons' }}
-          </button>
-          <button class="btn btn-outline btn-sm" @click="exportCSV">Export CSV</button>
-          <button class="btn btn-outline btn-sm" @click="showTypeFilter = !showTypeFilter">
-            Filter by Type
-          </button>
-          <button class="btn btn-outline btn-sm" @click="showHidden = !showHidden">
-            {{ showHidden ? 'Hide Hidden' : 'Show Hidden' }}
-          </button>
-        </template>
+        <button class="ghost-btn" v-if="searchQuery" @click="searchQuery = ''">Clear</button>
       </div>
-      <!-- Maintain width alignment with sparkline column -->
-      <div class="flex-none w-[60px]"></div>
+      <div class="chip-row">
+        <button class="pill" :class="{ active: controlsVisible }" @click="controlsVisible = !controlsVisible">
+          {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
+        </button>
+        <button class="pill" :class="{ active: showHidden }" @click="showHidden = !showHidden">
+          {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
+        </button>
+        <button class="pill" :class="{ active: showTypeFilter }" @click="showTypeFilter = !showTypeFilter">
+          Filter Types
+        </button>
+        <button class="pill" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
+          {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
+        </button>
+        <button class="pill" @click="exportCSV">Export CSV</button>
+      </div>
     </div>
-    <div class="type-filter-row" :class="{ 'slide-in': showTypeFilter }">
-      <select multiple v-model="typeFilters" class="filter-input">
+    <div v-if="showTypeFilter" class="type-filter-row">
+      <label class="type-filter-label">Account Types</label>
+      <select multiple v-model="typeFilters" class="filter-input filter-input--ghost">
         <option v-for="type in uniqueTypes" :key="type" :value="type">
           {{ formatType(type) }}
         </option>
@@ -64,11 +65,6 @@
               class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
             >
               Account Type
-            </th>
-            <th
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Link Type
             </th>
             <th
               class="py-2 px-4 text-right font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
@@ -110,10 +106,12 @@
                 class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain"
                 loading="lazy"
               />
-              <span class="font-medium text-blue-100">{{ account.institution_name || 'N/A' }}</span>
+              <span class="font-medium text-blue-100">
+                {{ formatTitle(account.institution_name) }}
+              </span>
             </td>
             <!-- Name -->
-            <td class="px-4 py-2 text-blue-50">{{ account.name || 'N/A' }}</td>
+            <td class="px-4 py-2 text-blue-50">{{ formatTitle(account.name) }}</td>
             <!-- Account Type (capitalize first/last) -->
             <td class="px-4 py-2">
               <span
@@ -122,8 +120,6 @@
                 {{ capitalizeFirstLast(account.subtype || account.type) }}
               </span>
             </td>
-            <!-- Link Type -->
-            <td class="px-4 py-2 text-blue-200">{{ account.link_type || 'N/A' }}</td>
             <!-- Balance -->
             <td class="px-4 py-2 text-right font-mono font-semibold text-blue-300">
               {{ formatBalance(account.balance) }}
@@ -236,7 +232,6 @@ export default {
             acc.type,
             acc.subtype,
             acc.status,
-            acc.link_type,
           ].map((val) => (val || '').toLowerCase())
           return fields.some((f) => f.includes(query))
         })
@@ -373,6 +368,11 @@ export default {
       if (!type) return 'Unknown'
       return type.charAt(0).toUpperCase() + type.slice(1)
     },
+    formatTitle(value) {
+      if (!value) return 'N/A'
+      const str = String(value).toLowerCase()
+      return str.replace(/(^|[\s/-])([a-z])/g, (_, sep, ch) => `${sep}${ch.toUpperCase()}`)
+    },
     capitalizeFirstLast(type) {
       if (!type || typeof type !== 'string') return 'Unknown'
       const clean = type.toLowerCase()
@@ -405,5 +405,47 @@ export default {
 </script>
 
 <style scoped>
-/* Use blue analytic styles, card/table borders, and hover/active transitions as above */
+.control-surface {
+  @apply flex flex-col gap-3 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-3 md:p-4 shadow-inner;
+}
+
+.input-shell {
+  @apply flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2;
+}
+
+.filter-input {
+  @apply flex-1 bg-transparent outline-none text-blue-50 placeholder:text-neutral-500;
+}
+
+.filter-input--ghost {
+  @apply border border-neutral-800 bg-neutral-950/70 rounded-xl px-3 py-2 mt-1;
+}
+
+.icon {
+  @apply text-blue-400 text-lg;
+}
+
+.ghost-btn {
+  @apply text-xs text-neutral-400 hover:text-blue-200 transition;
+}
+
+.chip-row {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.pill {
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70 hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+}
+
+.pill.active {
+  @apply border-blue-500 text-blue-200 bg-blue-950/50;
+}
+
+.type-filter-row {
+  @apply mb-4 bg-neutral-900/70 border border-neutral-800 rounded-xl p-3 flex flex-col gap-1;
+}
+
+.type-filter-label {
+  @apply text-xs uppercase tracking-wide text-neutral-400;
+}
 </style>

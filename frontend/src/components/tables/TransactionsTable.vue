@@ -4,7 +4,7 @@
       <span class="i-ph:currency-circle-dollar-duotone text-2xl mr-2 text-blue-400"></span>
       Recent Transactions
     </h3>
-    <div class="flex flex-wrap items-center gap-4 mb-4">
+    <div class="control-surface">
       <DateRangeSelector
         :start-date="startDate"
         :end-date="endDate"
@@ -12,25 +12,49 @@
         @update:startDate="startDate = $event"
         @update:endDate="endDate = $event"
       />
-      <select
-        v-model="accountId"
-        data-test="account-filter"
-        class="select px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]"
-      >
-        <option value="">All Accounts</option>
-        <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
-          {{ acc.name }}
-        </option>
-      </select>
-      <select
-        v-model="txType"
-        data-test="type-filter"
-        class="select px-2 py-1 rounded border border-[var(--divider)] bg-[var(--theme-bg)] text-[var(--color-text-light)]"
-      >
-        <option value="">All Types</option>
-        <option value="credit">Credit</option>
-        <option value="debit">Debit</option>
-      </select>
+      <div class="control-group">
+        <label class="control-label" for="account-filter">Account</label>
+        <select
+          id="account-filter"
+          v-model="accountId"
+          data-test="account-filter"
+          class="control-select"
+        >
+          <option value="">All Accounts</option>
+          <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
+            {{ formatName(acc.name) }}
+          </option>
+        </select>
+      </div>
+      <div class="control-group">
+        <label class="control-label" for="type-filter">Type</label>
+        <div class="pill-row">
+          <button
+            class="pill"
+            :class="{ active: txType === '' }"
+            @click="txType = ''"
+            type="button"
+          >
+            All
+          </button>
+          <button
+            class="pill"
+            :class="{ active: txType === 'credit' }"
+            @click="txType = 'credit'"
+            type="button"
+          >
+            Credit
+          </button>
+          <button
+            class="pill"
+            :class="{ active: txType === 'debit' }"
+            @click="txType = 'debit'"
+            type="button"
+          >
+            Debit
+          </button>
+        </div>
+      </div>
     </div>
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
@@ -104,11 +128,11 @@
                 class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain"
                 loading="lazy"
               />
-              <span class="font-medium">{{ tx.institution_name }}</span>
+              <span class="font-medium">{{ formatName(tx.institution_name) }}</span>
               <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-neutral-500"
                 >/</span
               >
-              <span>{{ tx.account_name }}</span>
+              <span>{{ formatName(tx.account_name) }}</span>
             </td>
             <!-- Amount -->
             <td
@@ -323,6 +347,12 @@ export default {
         : str
             .toLowerCase()
             .replace(/([^\s\/-]+)(?=[\s\/-]?)/g, (w) => w.charAt(0).toUpperCase() + w.slice(1))
+    const formatName = (val) =>
+      !val
+        ? 'N/A'
+        : String(val)
+            .toLowerCase()
+            .replace(/(^|[\s/-])([a-z])/g, (_, sep, ch) => `${sep}${ch.toUpperCase()}`)
 
     watch([startDate, endDate, accountId, txType], () => {
       page.value = 1
@@ -349,6 +379,7 @@ export default {
       formatAmount,
       formatDescription,
       formatCategory,
+      formatName,
       setPage,
       nextPage,
       prevPage,
@@ -356,3 +387,33 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.control-surface {
+  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 shadow-inner;
+}
+
+.control-group {
+  @apply flex flex-col gap-2 min-w-[160px];
+}
+
+.control-label {
+  @apply text-xs uppercase tracking-wide text-neutral-400;
+}
+
+.control-select {
+  @apply bg-neutral-950 border border-neutral-800 text-blue-50 rounded-xl px-3 py-2 shadow-sm outline-none focus:border-blue-500 transition;
+}
+
+.pill-row {
+  @apply inline-flex gap-2;
+}
+
+.pill {
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70 hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+}
+
+.pill.active {
+  @apply border-blue-500 text-blue-200 bg-blue-950/50;
+}
+</style>

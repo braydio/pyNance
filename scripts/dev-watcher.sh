@@ -12,6 +12,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="${REPO_DIR}/frontend"
 BRANCH="${1:-$(git -C "${REPO_DIR}" rev-parse --abbrev-ref HEAD)}"
 INTERVAL="${INTERVAL:-360}"
+CHECKPOINT_MSG_PREFIX="${AUTO_GITPULL_MESSAGE:-chore: dev-watcher checkpoint}"
 
 declare DEV_PID=0
 
@@ -33,6 +34,26 @@ stop_dev() {
 
 trap stop_dev EXIT
 
+checkpoint_local_changes() {
+  cd "${REPO_DIR}"
+  if [[ -n "$(git status --porcelain)" ]]; then
+    local timestamp
+    timestamp=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+    git add -A
+    git commit -m "${CHECKPOINT_MSG_PREFIX} (${timestamp})"
+    echo "Saved local changes to checkpoint commit before pulling."
+  fi
+}
+
+rebase_onto_remote() {
+  if ! git rebase "origin/${BRANCH}"; then
+    echo "Rebase failed; aborting to preserve the worktree."
+    git rebase --abort || true
+    return 1
+  fi
+  return 0
+}
+
 cd "${REPO_DIR}"
 start_dev
 
@@ -42,9 +63,14 @@ while true; do
   REMOTE=$(git rev-parse "origin/${BRANCH}")
   if [ "${LOCAL}" != "${REMOTE}" ]; then
     echo "Changes detected on origin/${BRANCH}. Pulling updates..."
+    checkpoint_local_changes
     stop_dev
-    git pull --rebase
-    start_dev
+    if rebase_onto_remote; then
+      start_dev
+    else
+      echo "Pull failed; restarting dev server with existing code."
+      start_dev
+    fi
   fi
   sleep "${INTERVAL}"
 
