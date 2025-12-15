@@ -414,9 +414,9 @@ def get_paginated_transactions(
                 "account_id": acc.account_id or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
-                "running_balance": float(running_balance)
-                if running_balance is not None
-                else None,
+                "running_balance": (
+                    float(running_balance) if running_balance is not None else None
+                ),
             }
         )
 

@@ -26,7 +26,7 @@ import axios from 'axios'
  */
 export const fetchTransactions = async (params = {}) => {
   const { category_ids, account_ids, include_running_balance = false, ...rest } = params
- const query = { ...rest }
+  const query = { ...rest }
 
   if (include_running_balance) {
     query.include_running_balance = include_running_balance
@@ -38,7 +38,7 @@ export const fetchTransactions = async (params = {}) => {
   } else if (category_ids) {
     query.category_ids = category_ids
   }
- if (Array.isArray(account_ids)) {
+  if (Array.isArray(account_ids)) {
     query.account_ids = account_ids.join(',')
   } else if (account_ids) {
     query.account_ids = account_ids
