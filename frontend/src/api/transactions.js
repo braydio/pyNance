@@ -19,12 +19,18 @@ import axios from 'axios'
  *
  * @param {Object} params - Query parameters such as `start_date`, `end_date`,
  *   `account_ids` (array or comma-separated string), `tx_type` (credit|debit),
- *   and an optional `category_ids` array or comma-separated string.
+ *   and an optional `category_ids` array or comma-separated string. Set
+ *   `include_running_balance` to `true` only when the UI needs running balances
+ *   returned.
  * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {
-  const { category_ids, account_ids, include_running_balance = true, ...rest } = params
-  const query = { include_running_balance, ...rest }
+  const { category_ids, account_ids, include_running_balance = false, ...rest } = params
+  const query = { ...rest }
+
+  if (include_running_balance) {
+    query.include_running_balance = include_running_balance
+  }
 
   // Allow callers to pass an array of IDs or a preformatted string
   if (Array.isArray(category_ids)) {

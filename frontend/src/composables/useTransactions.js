@@ -24,8 +24,16 @@ import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
  *   id to prioritise in the client-side sort.
  * @param {import('vue').Ref<Record<string, unknown>>} filtersRef - Reactive
  *   collection of API filter parameters.
+ * @param {Object} options - Additional configuration flags.
+ * @param {boolean} [options.includeRunningBalance=false] - Request running
+ *   balances from the API when the UI needs the column.
  */
-export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef = ref({})) {
+export function useTransactions(
+  pageSize = 15,
+  promoteIdRef = null,
+  filtersRef = ref({}),
+  options = {},
+) {
   const transactions = ref([])
   const searchQuery = ref('')
   const sortKey = ref('date')
@@ -47,6 +55,8 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
    * object directly. This helper normalizes both shapes so the table renders
    * even when the backend does not include a status key.
    */
+  const { includeRunningBalance = false } = options
+
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
     const cached = pageCache.get(page)
     if (!force && cached) {
@@ -63,6 +73,7 @@ export function useTransactions(pageSize = 15, promoteIdRef = null, filtersRef =
       const res = await fetchTransactionsApi({
         page,
         page_size: pageSize,
+        ...(includeRunningBalance ? { include_running_balance: true } : {}),
         ...(filtersRef.value || {}),
       })
 

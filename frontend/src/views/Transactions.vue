@@ -309,7 +309,9 @@ export default {
       isLoading,
       error,
       fetchTransactions,
-    } = useTransactions(initialPageSize, promotedTransactionId, filters)
+    } = useTransactions(initialPageSize, promotedTransactionId, filters, {
+      includeRunningBalance: true,
+    })
 
     /**
      * Provide a stable, human-readable message for retryable errors.
