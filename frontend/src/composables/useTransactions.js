@@ -47,9 +47,28 @@ export function useTransactions(
   const isLoading = ref(false)
   const error = ref(null)
 
-  /** @type {Map<number, Array>} */
-  let pageCache = new Map()
-  const serverTotal = ref(0)
+  const cacheStore = new Map()
+
+  const PREFETCH_DEPTH = 3
+
+  const cacheKey = computed(() => {
+    const filters = filtersRef.value || {}
+    const sorted = Object.keys(filters)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = filters[key]
+        return acc
+      }, {})
+    return JSON.stringify(sorted)
+  })
+
+  const ensureBucket = () => {
+    const key = cacheKey.value
+    if (!cacheStore.has(key)) {
+      cacheStore.set(key, { pages: new Map(), lastTotal: 0, prefetching: new Set() })
+    }
+    return cacheStore.get(key)
+  }
 
   /**
    * Fetch a page of transactions from the API.
@@ -153,14 +172,16 @@ export function useTransactions(
   }
 
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
-    const cached = pageCache.get(page)
+    const bucket = ensureBucket()
+    const cached = bucket.pages.get(page)
     const shouldUseCache = !force && cached
 
     if (shouldUseCache && !targetTransactionId.value) {
       isLoading.value = false
       error.value = null
-      refreshTransactionsFromCache()
-      updatePaginationMeta()
+      transactions.value = cached
+      totalCount.value = bucket.lastTotal || cached.length
+      totalPages.value = Math.max(1, Math.ceil(totalCount.value / pageSize))
       return
     }
 
@@ -171,7 +192,7 @@ export function useTransactions(
         shouldUseCache
           ? Promise.resolve({
               transactions: cached,
-              total: serverTotal.value || cached.length,
+              total: bucket.lastTotal || cached.length,
             })
           : fetchTransactionsApi({
               page,
@@ -188,7 +209,7 @@ export function useTransactions(
         transactions.value = []
         totalPages.value = 1
         totalCount.value = 0
-        pageCache.clear()
+        bucket.pages.clear()
         return
       }
 
@@ -199,10 +220,12 @@ export function useTransactions(
 
       const merged = mergeWithTarget(normalised, targetTx)
 
-      serverTotal.value = res.total != null ? res.total : normalised.length
-      pageCache.set(page, merged)
-      refreshTransactionsFromCache()
-      updatePaginationMeta()
+      bucket.lastTotal = res.total != null ? res.total : normalised.length
+      totalCount.value = bucket.lastTotal
+      totalPages.value = Math.max(1, Math.ceil(bucket.lastTotal / pageSize))
+      transactions.value = merged
+      bucket.pages.set(page, normalised)
+      prefetchNeighborPages(bucket, page, totalPages.value)
     } catch (err) {
       console.error('Error fetching transactions:', err)
       error.value = err
@@ -334,8 +357,7 @@ export function useTransactions(
   watch(
     filtersRef,
     () => {
-      pageCache = new Map()
-      serverTotal.value = 0
+      cacheStore.clear() // reset buckets for new filters
       totalPages.value = 1
       totalCount.value = 0
       if (currentPage.value !== 1) {
@@ -347,12 +369,45 @@ export function useTransactions(
     { deep: true },
   )
 
+  async function prefetchNeighborPages(bucket, current, total) {
+    const upper = Math.min(total, PREFETCH_DEPTH)
+    const targets = []
+    for (let p = current + 1; p <= upper; p += 1) {
+      if (bucket.pages.has(p) || bucket.prefetching.has(p)) continue
+      targets.push(p)
+      bucket.prefetching.add(p)
+    }
+    if (!targets.length) return
+
+    await Promise.allSettled(
+      targets.map(async (page) => {
+        try {
+          const res = await fetchTransactionsApi({
+            page,
+            page_size: pageSize,
+            ...(includeRunningBalance ? { include_running_balance: true } : {}),
+            ...(filtersRef.value || {}),
+          })
+          const normalised = (res.transactions || []).map((tx) => ({
+            ...tx,
+            category: formatCategory(tx),
+          }))
+          bucket.pages.set(page, normalised)
+          bucket.lastTotal = res.total != null ? res.total : bucket.lastTotal
+        } catch (prefetchErr) {
+          console.warn('Prefetch page failed', prefetchErr)
+        } finally {
+          bucket.prefetching.delete(page)
+        }
+      }),
+    )
+  }
+
   if (targetTransactionIdRef) {
     watch(
       targetTransactionIdRef,
       () => {
-        pageCache = new Map()
-        serverTotal.value = 0
+        cacheStore.clear()
         fetchTransactions(currentPage.value, { force: true })
       },
       { immediate: false },

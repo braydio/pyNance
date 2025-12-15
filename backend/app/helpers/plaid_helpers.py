@@ -180,14 +180,18 @@ def generate_link_token(user_id: str, products=None):
             base = str(BACKEND_PUBLIC_URL).rstrip("/")
             webhook_url = f"{base}/api/webhooks/plaid"
 
-        plaid_request = LinkTokenCreateRequest(
+        request_kwargs = dict(
             user=LinkTokenCreateRequestUser(client_user_id=user_id),
             client_name=PLAID_CLIENT_NAME,
             products=product_enums,
             language="en",
             country_codes=country_enum,
-            webhook=webhook_url,
         )
+        # Only include webhook when configured; Plaid rejects None
+        if webhook_url:
+            request_kwargs["webhook"] = webhook_url
+
+        plaid_request = LinkTokenCreateRequest(**request_kwargs)
 
         response = plaid_client.link_token_create(plaid_request)
         return response.link_token

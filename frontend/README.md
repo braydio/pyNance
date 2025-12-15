@@ -56,6 +56,10 @@ npm run test:e2e
 npm run lint
 ```
 
+### Tailwind (v4) scoped styles
+
+When using `@apply` inside `<style scoped>` blocks, include `@reference "tailwindcss";` at the top of the style block. Tailwind v4 needs this hint to resolve utilities (including responsive variants) inside scoped CSS.
+
 ### Account Groups
 
 The dashboard lets you organize accounts into custom groups. Groups and the

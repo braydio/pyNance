@@ -1,6 +1,7 @@
 """Database persistence and refresh helpers for account data."""
 
 import json
+import time
 from datetime import date as pydate
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
@@ -26,6 +27,161 @@ TRANSACTIONS_RAW_ENRICHED = FILES["TRANSACTIONS_RAW_ENRICHED"]
 
 # Valid account status values stored in the database enum.
 ALLOWED_ACCOUNT_STATUSES = {"active", "inactive", "closed", "archived"}
+
+# Rate limit handling and stale detection
+PLAID_RATE_LIMIT_CODES = {"ACCOUNTS_LIMIT", "RATE_LIMIT_EXCEEDED"}
+PLAID_RATE_LIMIT_COOLDOWN = timedelta(minutes=10)
+REFRESH_SLA = timedelta(hours=6)
+REFRESH_STATUS_VERSION = 1
+TX_CACHE_TTL_SECONDS = 90
+TX_CACHE_MAX_PAGE = 5
+TX_PAGE_CACHE: dict = {}
+TX_CACHE_VERSION = 0
+
+
+def _now_utc():
+    return datetime.now(timezone.utc)
+
+
+def _coerce_iso_datetime(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime):
+        return value if value.tzinfo else value.replace(tzinfo=timezone.utc)
+    if isinstance(value, pydate):
+        return datetime.combine(value, datetime.min.time(), tzinfo=timezone.utc)
+    if isinstance(value, str):
+        try:
+            cleaned = value.replace("Z", "+00:00")
+            return datetime.fromisoformat(cleaned)
+        except ValueError:
+            return None
+    return None
+
+
+def _build_refresh_status(
+    status: str,
+    code: str | None = None,
+    message: str | None = None,
+    request_id: str | None = None,
+    cooldown_until: datetime | None = None,
+):
+    payload = {
+        "status": status,
+        "code": code,
+        "message": message,
+        "request_id": request_id,
+        "timestamp": _now_utc().isoformat(),
+        "version": REFRESH_STATUS_VERSION,
+    }
+    if cooldown_until:
+        payload["cooldown_until"] = _coerce_iso_datetime(cooldown_until).isoformat()
+    return {k: v for k, v in payload.items() if v is not None}
+
+
+def _parse_refresh_status(raw_status: str | None) -> dict:
+    if not raw_status:
+        return {}
+    try:
+        parsed = json.loads(raw_status)
+        return parsed if isinstance(parsed, dict) else {}
+    except json.JSONDecodeError:
+        return {"status": "unknown", "message": str(raw_status)}
+
+
+def persist_refresh_status(plaid_account: PlaidAccount | None, status: dict, commit: bool):
+    """Persist structured refresh status into PlaidAccount.last_error for UI visibility."""
+
+    if not plaid_account:
+        return
+    plaid_account.last_error = json.dumps(status)
+    plaid_account.updated_at = _now_utc()
+    db.session.add(plaid_account)
+    if commit:
+        db.session.commit()
+
+
+def serialized_refresh_status(plaid_account: PlaidAccount | None) -> dict:
+    status = _parse_refresh_status(getattr(plaid_account, "last_error", None))
+    cooldown = _coerce_iso_datetime(status.get("cooldown_until"))
+    if cooldown:
+        status["cooldown_until"] = cooldown.isoformat()
+    return status
+
+
+def should_throttle_refresh(plaid_account: PlaidAccount | None) -> bool:
+    """Return True if the account is still in a rate-limit cooldown window."""
+
+    status = serialized_refresh_status(plaid_account)
+    cooldown_until = _coerce_iso_datetime(status.get("cooldown_until"))
+    if not cooldown_until:
+        return False
+    return _now_utc() < cooldown_until
+
+
+def refresh_is_stale(plaid_account: PlaidAccount | None, sla: timedelta = REFRESH_SLA) -> bool:
+    """Return True if the last successful refresh is older than the SLA window."""
+
+    if not plaid_account:
+        return True
+    last_success = getattr(plaid_account, "last_refreshed", None)
+    last_success = _coerce_iso_datetime(last_success)
+    if not last_success:
+        return True
+    return (_now_utc() - last_success) > sla
+
+
+def _tx_cache_key(page, page_size, start_date, end_date, category, user_id, account_id, account_ids, tx_type, include_running_balance, recent, limit):
+    ids = None
+    if account_ids:
+        ids = tuple(sorted(account_ids))
+    start = start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
+    end = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
+    return (
+        TX_CACHE_VERSION,
+        page,
+        page_size,
+        start,
+        end,
+        category or "",
+        user_id or "",
+        account_id or "",
+        ids,
+        tx_type or "",
+        bool(include_running_balance),
+        bool(recent),
+        limit,
+    )
+
+
+def _get_cached_tx_page(key):
+    entry = TX_PAGE_CACHE.get(key)
+    if not entry:
+        return None
+    if entry["expires_at"] < time.time():
+        try:
+            TX_PAGE_CACHE.pop(key, None)
+        except Exception:
+            pass
+        return None
+    return entry
+
+
+def _set_cached_tx_page(key, data, meta):
+    TX_PAGE_CACHE[key] = {
+        "data": data,
+        "meta": meta,
+        "cached_at": _now_utc(),
+        "expires_at": time.time() + TX_CACHE_TTL_SECONDS,
+    }
+
+
+def invalidate_tx_cache():
+    """Bump the cache version to invalidate all cached transaction pages."""
+
+    global TX_CACHE_VERSION
+    TX_PAGE_CACHE.clear()
+    TX_CACHE_VERSION = int(time.time())
 
 
 def process_transaction_amount(amount):
@@ -376,6 +532,47 @@ def get_paginated_transactions(
     offset = (page - 1) * page_size
 
     running_balance_expr = None
+    cacheable = (
+        not recent
+        and not include_running_balance
+        and page <= TX_CACHE_MAX_PAGE
+        and page_size > 0
+    )
+    cache_key = None
+    cached_meta = {
+        "cache_hit": False,
+        "cached_until": None,
+        "page": page,
+        "page_size": page_size,
+    }
+    if cacheable:
+        cache_key = _tx_cache_key(
+            page,
+            page_size,
+            start_date,
+            end_date,
+            category,
+            user_id,
+            account_id,
+            account_ids,
+            tx_type,
+            include_running_balance,
+            recent,
+            limit,
+        )
+        cached = _get_cached_tx_page(cache_key)
+        if cached:
+            cached_meta = {
+                **cached.get("meta", {}),
+                "cache_hit": True,
+                "cached_until": _coerce_iso_datetime(cached.get("cached_at") or _now_utc())
+                .replace(tzinfo=timezone.utc)
+                .isoformat()
+                if cached.get("cached_at")
+                else None,
+            }
+            return (*cached["data"], cached_meta)
+
     if include_running_balance:
         running_balance_expr = _running_balance_expression()
         balance_query = query.add_columns(running_balance_expr.label("running_balance"))
@@ -425,7 +622,21 @@ def get_paginated_transactions(
             }
         )
 
-    return serialized, total
+    meta = {
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "cache_hit": False,
+        "cached_until": None,
+    }
+    if cacheable and cache_key:
+        meta["cache_hit"] = False
+        meta["cached_until"] = (
+            _now_utc() + timedelta(seconds=TX_CACHE_TTL_SECONDS)
+        ).isoformat()
+        _set_cached_tx_page(cache_key, (serialized, total), meta)
+
+    return serialized, total, meta
 
 
 def _running_balance_expression():
@@ -597,7 +808,10 @@ def refresh_data_for_plaid_account(
         account = Account.query.filter_by(account_id=account_id).first()
         if not account:
             logger.warning("[DB Lookup] No account found for account_id=%s", account_id)
-            return False
+            return False, {
+                "plaid_error_code": "account_not_found",
+                "plaid_error_message": "Account not found for the provided account_id",
+            }
 
         # Refresh balance
         accounts_data = get_accounts(access_token, account.user_id)
@@ -762,7 +976,14 @@ def refresh_data_for_plaid_account(
                     )
                 detect_internal_transfer(new_txn)
 
+        if plaid_account_obj:
+            success_status = _build_refresh_status(status="success")
+            persist_refresh_status(plaid_account_obj, success_status, commit=False)
+            plaid_account_obj.last_refreshed = _now_utc()
+
         db.session.commit()
+        if updated:
+            invalidate_tx_cache()
         logger.info(
             (
                 "[REFRESH] Account %s | fetched=%d | processed=%d | "
@@ -787,6 +1008,12 @@ def refresh_data_for_plaid_account(
             plaid_err = {}
         plaid_error_code = plaid_err.get("error_code", "unknown")
         plaid_error_message = plaid_err.get("error_message", str(e))
+        request_id = plaid_err.get("request_id") or getattr(e, "request_id", None)
+        cooldown_until = None
+        status_label = "error"
+        if plaid_error_code in PLAID_RATE_LIMIT_CODES:
+            status_label = "rate_limited"
+            cooldown_until = _now_utc() + PLAID_RATE_LIMIT_COOLDOWN
         institution = getattr(account, "institution_name", "Unknown")
         account_name = getattr(account, "name", account_id)
         logger.error(
@@ -798,6 +1025,15 @@ def refresh_data_for_plaid_account(
             exc_info=True,
         )
         db.session.rollback()
+        if plaid_account_obj:
+            status = _build_refresh_status(
+                status=status_label,
+                code=plaid_error_code,
+                message=plaid_error_message,
+                request_id=request_id,
+                cooldown_until=cooldown_until,
+            )
+            persist_refresh_status(plaid_account_obj, status, commit=True)
         return False, {
             "plaid_error_code": plaid_error_code,
             "plaid_error_message": plaid_error_message,
@@ -811,6 +1047,13 @@ def refresh_data_for_plaid_account(
             exc_info=True,
         )
         db.session.rollback()
+        if plaid_account_obj:
+            status = _build_refresh_status(
+                status="error",
+                code=getattr(e, "code", "unknown"),
+                message=str(e),
+            )
+            persist_refresh_status(plaid_account_obj, status, commit=True)
         return False, {
             "plaid_error_code": getattr(e, "code", "unknown"),
             "plaid_error_message": str(e),

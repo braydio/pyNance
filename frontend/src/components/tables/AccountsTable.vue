@@ -6,7 +6,7 @@
       Accounts
     </h2>
     <!-- Controls/Filters -->
-    <div class="control-surface" data-testid="accounts-control-bar">
+    <div class="control-surface md:p-4" data-testid="accounts-control-bar">
       <div class="input-shell">
         <span class="icon i-ph:magnifying-glass-duotone"></span>
         <input
@@ -19,26 +19,26 @@
       </div>
       <div class="chip-row">
         <button
-          class="pill"
+          class="pill md:text-sm"
           :class="{ active: controlsVisible }"
           @click="controlsVisible = !controlsVisible"
         >
           {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
         </button>
-        <button class="pill" :class="{ active: showHidden }" @click="showHidden = !showHidden">
+        <button class="pill md:text-sm" :class="{ active: showHidden }" @click="showHidden = !showHidden">
           {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
         </button>
         <button
-          class="pill"
+          class="pill md:text-sm"
           :class="{ active: showTypeFilter }"
           @click="showTypeFilter = !showTypeFilter"
         >
           Filter Types
         </button>
-        <button class="pill" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
+        <button class="pill md:text-sm" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
           {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
         </button>
-        <button class="pill" @click="exportCSV">Export CSV</button>
+        <button class="pill md:text-sm" @click="exportCSV">Export CSV</button>
       </div>
     </div>
     <div v-if="showTypeFilter" class="type-filter-row">
@@ -462,8 +462,9 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 .control-surface {
-  @apply flex flex-col gap-3 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-3 md:p-4 shadow-inner;
+  @apply flex flex-col gap-3 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-3 shadow-inner;
 }
 
 .input-shell {

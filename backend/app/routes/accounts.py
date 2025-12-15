@@ -1,11 +1,17 @@
 """Account management and refresh routes."""
 
 from datetime import date, datetime, timedelta, timezone
+import time
 from typing import Optional
 
 from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
+from app.sql.account_logic import (
+    refresh_is_stale,
+    serialized_refresh_status,
+    should_throttle_refresh,
+)
 from app.sql.forecast_logic import update_account_history
 from app.utils.finance_utils import (
     display_transaction_amount,
@@ -15,6 +21,19 @@ from flask import Blueprint, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
+
+INSTITUTION_STAGGER_SECONDS = 0.35
+
+
+def _to_iso(dt):
+    if not dt:
+        return None
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    try:
+        return datetime.fromisoformat(str(dt)).isoformat()
+    except Exception:
+        return str(dt)
 
 
 def resolve_account_by_any_id(identifier) -> Optional[Account]:
@@ -159,12 +178,17 @@ def refresh_all_accounts():
         query = Account.query
         if account_ids:
             query = query.filter(Account.account_id.in_(account_ids))
-        accounts = query.all()
+        accounts = sorted(
+            query.all(),
+            key=lambda acc: ((acc.institution_name or "").lower(), acc.account_id),
+        )
         updated_accounts = []
         refreshed_counts: dict[str, int] = {}
         error_map: dict[tuple[str, str, str], dict] = {}
         skipped_non_plaid = 0
         missing_tokens = 0
+        skipped_rate_limited = 0
+        previous_institution = None
 
         for account in accounts:
             if _is_plaid_link_type(account.link_type):
@@ -177,7 +201,18 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug("Refreshing Plaid account %s", account.account_id)
+                if should_throttle_refresh(account.plaid_account):
+                    skipped_rate_limited += 1
+                    logger.info(
+                        "Skipping Plaid refresh due to active cooldown | account_id=%s | institution=%s",
+                        account.account_id,
+                        account.institution_name or "Unknown",
+                    )
+                    continue
                 inst = account.institution_name or "Unknown"
+                if previous_institution and inst != previous_institution:
+                    time.sleep(INSTITUTION_STAGGER_SECONDS)
+                previous_institution = inst
                 products = _plaid_products_for_account(account)
                 account_updated = False
 
@@ -319,13 +354,15 @@ def refresh_all_accounts():
         logger.info(
             (
                 "[REFRESH][bulk] completed | total=%d | updated=%d | "
-                "institutions=%d | missing_tokens=%d | non_plaid_skipped=%d | errors=%d"
+                "institutions=%d | missing_tokens=%d | non_plaid_skipped=%d | "
+                "rate_limited_skipped=%d | errors=%d"
             ),
             len(accounts),
             len(updated_accounts),
             len(refreshed_counts),
             missing_tokens,
             skipped_non_plaid,
+            skipped_rate_limited,
             len(error_map),
         )
         return (
@@ -335,6 +372,7 @@ def refresh_all_accounts():
                     "message": "All linked accounts refreshed.",
                     "updated_accounts": updated_accounts,
                     "refreshed_counts": refreshed_counts,
+                    "rate_limited_skipped": skipped_rate_limited,
                     "errors": list(error_map.values()),
                 }
             ),
@@ -379,6 +417,18 @@ def refresh_single_account(account_id):
         return (
             jsonify({"status": "error", "message": "Missing Plaid token"}),
             400,
+        )
+    if should_throttle_refresh(account.plaid_account):
+        status = serialized_refresh_status(account.plaid_account)
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Plaid rate limit cooldown active. Try again shortly.",
+                    "cooldown_until": status.get("cooldown_until"),
+                }
+            ),
+            429,
         )
     products = _plaid_products_for_account(account)
     plaid_updated = False
@@ -501,6 +551,8 @@ def list_accounts():
         for a in accounts:
             try:
                 last_refreshed = None
+                refresh_status = serialized_refresh_status(getattr(a, "plaid_account", None))
+                cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
                 normalized_balance = normalize_account_balance(a.balance, a.type)
@@ -529,8 +581,11 @@ def list_accounts():
                         "adjusted_balance": balance_value,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
-                        "last_refreshed": last_refreshed,
+                        "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,
+                        "refresh_status": refresh_status,
+                        "refresh_stale": refresh_is_stale(getattr(a, "plaid_account", None)),
+                        "refresh_cooldown_until": cooldown_until,
                     }
                 )
             except Exception as item_err:
@@ -550,6 +605,42 @@ def list_accounts():
 
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/refresh_status", methods=["GET"])
+def refresh_status():
+    """Expose last refresh details for each Plaid-linked account."""
+
+    include_hidden = request.args.get("include_hidden", "false").lower() == "true"
+    sla_hours = float(request.args.get("sla_hours", 6))
+    sla = timedelta(hours=sla_hours)
+
+    query = Account.query
+    if not include_hidden:
+        query = query.filter(Account.is_hidden.is_(False))
+
+    rows = []
+    for acc in query.all():
+        if str(getattr(acc, "link_type", "")).lower() != "plaid":
+            continue
+
+        pa = getattr(acc, "plaid_account", None)
+        status = serialized_refresh_status(pa)
+        cooldown_until = _to_iso(status.get("cooldown_until"))
+        last_refreshed = getattr(pa, "last_refreshed", None) if pa else None
+        rows.append(
+            {
+                "account_id": acc.account_id,
+                "account_name": acc.name,
+                "institution_name": acc.institution_name,
+                "last_refreshed": _to_iso(last_refreshed),
+                "refresh_status": status,
+                "refresh_stale": refresh_is_stale(pa, sla=sla),
+                "refresh_cooldown_until": cooldown_until,
+            }
+        )
+
+    return jsonify({"status": "success", "accounts": rows}), 200
 
 
 @accounts.route("/<account_id>/recurring", methods=["GET"])

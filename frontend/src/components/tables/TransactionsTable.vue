@@ -4,7 +4,7 @@
       <span class="i-ph:currency-circle-dollar-duotone text-2xl mr-2 text-blue-400"></span>
       Recent Transactions
     </h3>
-    <div class="control-surface">
+    <div class="control-surface md:flex-row md:items-center">
       <DateRangeSelector
         :start-date="startDate"
         :end-date="endDate"
@@ -30,7 +30,7 @@
         <label class="control-label" for="type-filter">Type</label>
         <div class="pill-row">
           <button
-            class="pill"
+            class="pill md:text-sm"
             :class="{ active: txType === '' }"
             @click="txType = ''"
             type="button"
@@ -38,7 +38,7 @@
             All
           </button>
           <button
-            class="pill"
+            class="pill md:text-sm"
             :class="{ active: txType === 'credit' }"
             @click="txType = 'credit'"
             type="button"
@@ -46,7 +46,7 @@
             Credit
           </button>
           <button
-            class="pill"
+            class="pill md:text-sm"
             :class="{ active: txType === 'debit' }"
             @click="txType = 'debit'"
             type="button"
@@ -461,6 +461,7 @@ export default {
 </script>
 
 <style scoped>
+@reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 .control-surface {
   @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800;
   @apply rounded-2xl p-4 shadow-inner;
