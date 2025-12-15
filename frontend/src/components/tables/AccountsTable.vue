@@ -18,13 +18,21 @@
         <button class="ghost-btn" v-if="searchQuery" @click="searchQuery = ''">Clear</button>
       </div>
       <div class="chip-row">
-        <button class="pill" :class="{ active: controlsVisible }" @click="controlsVisible = !controlsVisible">
+        <button
+          class="pill"
+          :class="{ active: controlsVisible }"
+          @click="controlsVisible = !controlsVisible"
+        >
           {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
         </button>
         <button class="pill" :class="{ active: showHidden }" @click="showHidden = !showHidden">
           {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
         </button>
-        <button class="pill" :class="{ active: showTypeFilter }" @click="showTypeFilter = !showTypeFilter">
+        <button
+          class="pill"
+          :class="{ active: showTypeFilter }"
+          @click="showTypeFilter = !showTypeFilter"
+        >
           Filter Types
         </button>
         <button class="pill" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
@@ -226,13 +234,9 @@ export default {
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase()
         results = results.filter((acc) => {
-          const fields = [
-            acc.institution_name,
-            acc.name,
-            acc.type,
-            acc.subtype,
-            acc.status,
-          ].map((val) => (val || '').toLowerCase())
+          const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status].map(
+            (val) => (val || '').toLowerCase(),
+          )
           return fields.some((f) => f.includes(query))
         })
       }
