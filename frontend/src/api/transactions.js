@@ -21,7 +21,8 @@ import axios from 'axios'
  *   `account_ids` (array or comma-separated string), `tx_type` (credit|debit),
  *   and an optional `category_ids` array or comma-separated string. Set
  *   `include_running_balance` to `true` only when the UI needs running balances
- *   returned.
+ *   returned. Provide `transaction_id` to fetch a specific transaction without
+ *   altering the default pagination window.
  * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {

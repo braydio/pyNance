@@ -325,13 +325,15 @@ def get_transactions_paginated():
 
     Accepted query parameters include ``start_date`` and ``end_date``
     (YYYY-MM-DD), ``account_id`` or ``account_ids`` (comma-delimited or
-    repeated parameters) and ``tx_type``/``transaction_type`` with values
-    ``credit`` or ``debit``. Unknown or empty parameters are ignored.
+    repeated parameters), ``transaction_id`` for a specific lookup and
+    ``tx_type``/``transaction_type`` with values ``credit`` or ``debit``.
+    Unknown or empty parameters are ignored.
     """
     try:
         page = int(request.args.get("page", 1))
         page_size = int(request.args.get("page_size", 15))
         include_running_balance = request.args.get("include_running_balance") == "true"
+        transaction_id = request.args.get("transaction_id")
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -362,6 +364,7 @@ def get_transactions_paginated():
             category=category,
             account_ids=account_ids or None,
             tx_type=tx_type,
+            transaction_id=transaction_id,
             include_running_balance=include_running_balance,
         )
 

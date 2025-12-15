@@ -27,6 +27,9 @@ import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
  * @param {Object} options - Additional configuration flags.
  * @param {boolean} [options.includeRunningBalance=false] - Request running
  *   balances from the API when the UI needs the column.
+ * @param {import('vue').Ref<string | null>} [options.targetTransactionIdRef]
+ *   - Optional transaction id to fetch explicitly so it can be highlighted when
+ *   it is not on the first page of results.
  */
 export function useTransactions(
   pageSize = 15,
@@ -57,9 +60,62 @@ export function useTransactions(
    */
   const { includeRunningBalance = false } = options
 
+  const targetTransactionIdRef = options.targetTransactionIdRef || null
+
+  const targetTransactionId = computed(() => {
+    if (!targetTransactionIdRef) return ''
+    return targetTransactionIdRef.value ? String(targetTransactionIdRef.value) : ''
+  })
+
+  /**
+   * Retrieve a specific transaction by id without inflating the primary page size.
+   *
+   * @param {string} transactionId - Identifier to fetch.
+   * @returns {Promise<Object|null>} Normalized transaction when available.
+   */
+  async function fetchTargetTransaction(transactionId) {
+    if (!transactionId) return null
+
+    try {
+      const res = await fetchTransactionsApi({
+        page: 1,
+        page_size: 1,
+        transaction_id: transactionId,
+        ...(includeRunningBalance ? { include_running_balance: true } : {}),
+        ...(filtersRef.value || {}),
+      })
+
+      if (!res || !Array.isArray(res.transactions) || res.transactions.length === 0) {
+        return null
+      }
+
+      return {
+        ...res.transactions[0],
+        category: formatCategory(res.transactions[0]),
+      }
+    } catch (err) {
+      console.warn('Unable to fetch targeted transaction', err)
+      return null
+    }
+  }
+
+  function mergeWithTarget(transactionsForPage, targetTx) {
+    if (!targetTx) return transactionsForPage
+
+    const exists = transactionsForPage.some(
+      (tx) => String(tx.transaction_id || '') === String(targetTx.transaction_id || ''),
+    )
+    if (exists) return transactionsForPage
+
+    const merged = [targetTx, ...transactionsForPage]
+    return merged.slice(0, pageSize)
+  }
+
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
     const cached = pageCache.get(page)
-    if (!force && cached) {
+    const shouldUseCache = !force && cached
+
+    if (shouldUseCache && !targetTransactionId.value) {
       isLoading.value = false
       error.value = null
       transactions.value = cached
@@ -70,12 +126,20 @@ export function useTransactions(
     isLoading.value = true
     error.value = null
     try {
-      const res = await fetchTransactionsApi({
-        page,
-        page_size: pageSize,
-        ...(includeRunningBalance ? { include_running_balance: true } : {}),
-        ...(filtersRef.value || {}),
-      })
+      const [res, targetTx] = await Promise.all([
+        shouldUseCache
+          ? Promise.resolve({
+              transactions: cached,
+              total: lastTotal || cached.length,
+            })
+          : fetchTransactionsApi({
+              page,
+              page_size: pageSize,
+              ...(includeRunningBalance ? { include_running_balance: true } : {}),
+              ...(filtersRef.value || {}),
+            }),
+        fetchTargetTransaction(targetTransactionId.value),
+      ])
 
       if (!res || typeof res !== 'object' || !('transactions' in res)) {
         console.error('Unexpected response shape:', res)
@@ -92,11 +156,13 @@ export function useTransactions(
         category: formatCategory(tx),
       }))
 
+      const merged = mergeWithTarget(normalised, targetTx)
+
       lastTotal = res.total != null ? res.total : normalised.length
       totalCount.value = lastTotal
       totalPages.value = Math.max(1, Math.ceil(lastTotal / pageSize))
-      transactions.value = normalised
-      pageCache.set(page, normalised)
+      transactions.value = merged
+      pageCache.set(page, merged)
     } catch (err) {
       console.error('Error fetching transactions:', err)
       error.value = err
@@ -231,6 +297,17 @@ export function useTransactions(
     },
     { deep: true },
   )
+
+  if (targetTransactionIdRef) {
+    watch(
+      targetTransactionIdRef,
+      () => {
+        pageCache = new Map()
+        fetchTransactions(currentPage.value, { force: true })
+      },
+      { immediate: false },
+    )
+  }
 
   return {
     transactions,
