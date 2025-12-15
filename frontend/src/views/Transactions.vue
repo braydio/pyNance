@@ -243,7 +243,7 @@ export default {
     }
 
     const txidParam = coerceQueryValue(route.query?.txid)
-    const initialPageSize = txidParam ? 250 : 10
+    const initialPageSize = 10
     const startDate = ref('')
     const endDate = ref('')
     const initialAccountId = coerceQueryValue(route.query?.account_id)
@@ -251,6 +251,7 @@ export default {
     const txType = ref('')
     const initialPromoteId = coerceQueryValue(route.query?.promote || route.query?.promote_txid)
     const promotedTransactionId = ref(initialPromoteId)
+    const targetTransactionId = ref(txidParam)
     const showScanner = ref(false)
     const showControls = ref(true)
 
@@ -311,6 +312,7 @@ export default {
       fetchTransactions,
     } = useTransactions(initialPageSize, promotedTransactionId, filters, {
       includeRunningBalance: true,
+      targetTransactionIdRef: targetTransactionId,
     })
 
     /**

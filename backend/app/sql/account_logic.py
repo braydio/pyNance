@@ -308,6 +308,7 @@ def get_paginated_transactions(
     account_id=None,
     account_ids=None,
     tx_type=None,
+    transaction_id=None,
     recent=False,
     limit=None,
     include_running_balance=False,
@@ -330,6 +331,8 @@ def get_paginated_transactions(
         Filter by one or more account identifiers.
     tx_type : str, optional
         ``"credit"`` or ``"debit"`` to filter by amount sign.
+    transaction_id : str, optional
+        Specific transaction identifier to target a single record.
     recent : bool, default False
         If ``True`` limit results to the newest records ignoring pagination.
     limit : int, optional
@@ -362,6 +365,8 @@ def get_paginated_transactions(
         query = query.filter(Transaction.account_id == account_id)
     if account_ids:
         query = query.filter(Transaction.account_id.in_(account_ids))
+    if transaction_id:
+        query = query.filter(Transaction.transaction_id == transaction_id)
     if tx_type == "credit":
         query = query.filter(Transaction.amount > 0)
     elif tx_type == "debit":
