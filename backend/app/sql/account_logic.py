@@ -16,7 +16,7 @@ from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
 from plaid import ApiException
-from sqlalchemy import func
+from sqlalchemy import case, func
 from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
@@ -334,6 +334,9 @@ def get_paginated_transactions(
         If ``True`` limit results to the newest records ignoring pagination.
     limit : int, optional
         Maximum number of rows when ``recent`` is ``True``.
+    include_running_balance : bool, default False
+        When ``True``, include a per-transaction running balance computed with a window
+        function so pagination does not require loading every row into memory.
     """
 
     query = (
@@ -344,7 +347,7 @@ def get_paginated_transactions(
         .filter(
             (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
         )
-        .order_by(Transaction.date.desc())
+        .order_by(Transaction.date.desc(), Transaction.transaction_id.desc())
     )
 
     if user_id:
@@ -364,25 +367,30 @@ def get_paginated_transactions(
     elif tx_type == "debit":
         query = query.filter(Transaction.amount < 0)
 
-    total = query.count()
+    total = query.order_by(None).count()
     offset = (page - 1) * page_size
 
-    # When running balances are requested, compute them from the full result set so pagination
-    # slices still show accurate balances.
-    if include_running_balance and not recent:
-        all_results = query.all()
-        running_map = _calculate_running_balances(all_results)
-        results = all_results[offset : offset + page_size]
+    running_balance_expr = None
+    if include_running_balance:
+        running_balance_expr = _running_balance_expression()
+        balance_query = query.add_columns(running_balance_expr.label("running_balance"))
+        if recent:
+            results = balance_query.limit(limit or page_size).all()
+        else:
+            results = balance_query.offset(offset).limit(page_size).all()
     elif recent:
         results = query.limit(limit or page_size).all()
-        running_map = {}
     else:
         results = query.offset(offset).limit(page_size).all()
-        running_map = {}
 
     # Unpack and serialize
     serialized = []
-    for txn, acc, cat in results:
+    for row in results:
+        if running_balance_expr is not None:
+            txn, acc, cat, running_balance = row
+        else:
+            txn, acc, cat = row
+            running_balance = None
         # Prefer stored txn.category; fall back to joined Category.display_name
         category_label = txn.category
         if not category_label and cat and getattr(cat, "display_name", None):
@@ -406,45 +414,52 @@ def get_paginated_transactions(
                 "account_id": acc.account_id or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
-                "running_balance": running_map.get(txn.transaction_id),
+                "running_balance": float(running_balance)
+                if running_balance is not None
+                else None,
             }
         )
 
     return serialized, total
 
 
-def _calculate_running_balances(results):
-    """Return a map of transaction_id -> running balance (per account).
+def _running_balance_expression():
+    """Build a window expression for per-transaction running balances.
 
-    Balances start from the latest ``accounts.balance`` value and walk backward in time. This
-    ensures the balance shown next to each transaction reflects the account balance immediately
-    after that transaction posted.
+    The expression starts from the normalized account balance (assets positive,
+    liabilities negative) and walks backwards through transactions ordered by
+    posting date so each row returns the balance immediately after that
+    transaction.
     """
 
-    from app.utils.finance_utils import (
-        display_transaction_amount,
-        normalize_account_balance,
+    account_type = func.lower(func.coalesce(Account.type, Account.subtype, "asset"))
+    balance_value = func.coalesce(Account.balance, 0)
+    normalized_balance = case(
+        (
+            account_type.in_(
+                ("credit card", "credit", "loan", "liability"),
+            ),
+            -balance_value,
+        ),
+        else_=func.abs(balance_value),
     )
 
-    running_by_account = {}
-    running_map = {}
+    signed_amount = case(
+        (Transaction.transaction_type == "income", func.abs(Transaction.amount)),
+        (Transaction.transaction_type == "expense", -func.abs(Transaction.amount)),
+        else_=-Transaction.amount,
+    )
 
-    for txn, acc, _ in results:
-        if not acc:
-            continue
-        acc_id = acc.account_id
-        if acc_id not in running_by_account:
-            running_by_account[acc_id] = float(
-                normalize_account_balance(acc.balance, acc.type or acc.subtype)
-            )
+    cumulative_delta = func.coalesce(
+        func.sum(signed_amount).over(
+            partition_by=Transaction.account_id,
+            order_by=[Transaction.date.desc(), Transaction.transaction_id.desc()],
+            rows=(None, -1),
+        ),
+        0,
+    )
 
-        current_balance = running_by_account[acc_id]
-        running_map[txn.transaction_id] = current_balance
-
-        signed_amount = display_transaction_amount(txn)
-        running_by_account[acc_id] = current_balance - signed_amount
-
-    return running_map
+    return normalized_balance - cumulative_delta
 
 
 def get_balance_at(account_id: str, target_date: pydate) -> Optional[float]:

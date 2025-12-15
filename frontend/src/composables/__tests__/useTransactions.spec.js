@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
+import { ref } from 'vue'
 import { useTransactions } from '../useTransactions.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
@@ -35,5 +36,20 @@ describe('useTransactions', () => {
     await fetchTransactions(1, { force: true })
 
     expect(transactions.value[0].category).toBe('Food & Drink')
+  })
+
+  it('requests running balances only when explicitly enabled', async () => {
+    fetchTransactionsApi.mockResolvedValue({ transactions: [], total: 0 })
+    const filters = ref({ account_ids: ['acc-1'] })
+
+    const { fetchTransactions } = useTransactions(5, null, filters, {
+      includeRunningBalance: true,
+    })
+
+    await fetchTransactions(1, { force: true })
+
+    expect(fetchTransactionsApi).toHaveBeenCalledWith(
+      expect.objectContaining({ include_running_balance: true, account_ids: ['acc-1'] }),
+    )
   })
 })
