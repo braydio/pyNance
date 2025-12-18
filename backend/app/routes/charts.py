@@ -14,10 +14,16 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g, has_request_context
 from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
+
+
+def _request_cache():
+    if has_request_context():
+        return g.setdefault("dashboard_cache", {})
+    return {}
 
 
 @charts.route("/category_breakdown", methods=["GET"])
@@ -260,15 +266,25 @@ def get_net_assets():
 
     logger.debug("Computing net assets for months: %s", months)
 
+    cache = _request_cache()
+    month_accounts_cache = cache.setdefault("month_accounts", {})
+
     data = []
 
     for month in months:
-        accounts = db.session.query(Account).filter(Account.is_hidden.is_(False)).all()
+        accounts = month_accounts_cache.get(month)
+        if accounts is None:
+            accounts = (
+                db.session.query(Account).filter(Account.is_hidden.is_(False)).all()
+            )
+            month_accounts_cache[month] = accounts
         logger.debug("Month %s - retrieved %d accounts", month, len(accounts))
 
         net = sum(
             normalize_account_balance(
-                acc.balance if acc.balance is not None else 0, acc.type
+                acc.balance if acc.balance is not None else 0,
+                acc.type,
+                account_id=acc.account_id,
             )
             for acc in accounts
         )
@@ -439,7 +455,9 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": float(normalize_account_balance(acc.balance, acc.type)),
+            "balance": float(
+                normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)
+            ),
             "type": acc.type,
             "subtype": acc.subtype,
         }

@@ -602,13 +602,15 @@ def list_accounts():
                 cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
-                normalized_balance = normalize_account_balance(a.balance, a.type)
+                normalized_balance = normalize_account_balance(
+                    a.balance, a.type, account_id=a.account_id
+                )
                 balance_value = (
                     float(normalized_balance)
                     if normalized_balance is not None
                     else None
                 )
-                logger.info(
+                logger.debug(
                     "Normalized original balance of %s to %s because account type %s",
                     a.balance,
                     normalized_balance,

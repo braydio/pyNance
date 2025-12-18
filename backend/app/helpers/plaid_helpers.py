@@ -8,6 +8,7 @@ keep logs concise.
 import json
 from datetime import date, datetime
 from typing import Union
+from flask import has_request_context, request
 
 from app.config import (
     BACKEND_PUBLIC_URL,
@@ -43,6 +44,21 @@ from plaid.model.transactions_get_request_options import TransactionsGetRequestO
 
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
+
+
+def _warn_if_dashboard_request():
+    if not has_request_context():
+        return
+    try:
+        if request.method == "GET" and str(request.path).startswith(("/api/charts", "/api/dashboard")):
+            logger.warning(
+                "Plaid helper invoked during dashboard request: %s %s",
+                request.method,
+                request.path,
+            )
+    except Exception:
+        # Do not block normal flow if inspection fails
+        return
 
 
 def load_plaid_tokens():
