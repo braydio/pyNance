@@ -19,6 +19,7 @@ from app.config import (
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
+from plaid.exceptions import ApiException
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
@@ -140,6 +141,14 @@ def get_accounts(access_token: str, user_id: str):
         )
         return accounts
 
+    except ApiException as e:
+        if getattr(e, "status", None) == 429:
+            logger.error(
+                "Plaid ACCOUNTS_LIMIT hit for user %s – aborting refresh", user_id
+            )
+            return None
+        logger.error("Error syncing accounts: %s", e, exc_info=True)
+        raise
     except Exception as e:
         logger.error("Error syncing accounts: %s", e, exc_info=True)
         raise
