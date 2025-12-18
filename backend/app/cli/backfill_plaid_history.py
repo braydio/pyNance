@@ -22,6 +22,7 @@ from datetime import date, datetime
 import click
 from app.config import logger
 from app.models import PlaidAccount
+from app.helpers.plaid_helpers import get_accounts
 from app.sql import account_logic
 from flask.cli import with_appcontext
 from sqlalchemy.orm import joinedload
@@ -84,8 +85,20 @@ def backfill_plaid_history(
                 f"{start.isoformat() if start else '[default]'} "
                 f"to {end.isoformat() if end else '[today]'}"
             )
+            accounts_data = get_accounts(pa.access_token, pa.account.user_id)
+            if accounts_data is None:
+                click.echo("Plaid rate limit hit; try again later.")
+                return
+            accounts_data = [
+                item.to_dict() if hasattr(item, "to_dict") else dict(item)
+                for item in accounts_data
+            ]
             updated, error = account_logic.refresh_data_for_plaid_account(
-                pa.access_token, pa.account_id, start_date=start, end_date=end
+                pa.access_token,
+                pa.account,
+                accounts_data=accounts_data,
+                start_date=start,
+                end_date=end,
             )
             if error:
                 logger.error("Backfill failed for account %s: %s", pa.account_id, error)
@@ -120,8 +133,22 @@ def backfill_plaid_history(
                     f"from {start.isoformat() if start else '[default]'} "
                     f"to {end.isoformat() if end else '[today]'}"
                 )
+                accounts_data = get_accounts(pa.access_token, pa.account.user_id)
+                if accounts_data is None:
+                    click.echo(
+                        f"Plaid rate limit hit; skipping {pa.account_id} for now."
+                    )
+                    continue
+                accounts_data = [
+                    item.to_dict() if hasattr(item, "to_dict") else dict(item)
+                    for item in accounts_data
+                ]
                 updated, error = account_logic.refresh_data_for_plaid_account(
-                    pa.access_token, pa.account_id, start_date=start, end_date=end
+                    pa.access_token,
+                    pa.account,
+                    accounts_data=accounts_data,
+                    start_date=start,
+                    end_date=end,
                 )
                 if error:
                     logger.error(

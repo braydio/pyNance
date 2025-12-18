@@ -14,6 +14,7 @@ from app.config import logger
 from app.extensions import db
 from app.models import PlaidAccount
 from app.sql import account_logic
+from app.helpers.plaid_helpers import get_accounts
 from flask.cli import with_appcontext
 from sqlalchemy.orm import joinedload
 
@@ -21,8 +22,15 @@ from sqlalchemy.orm import joinedload
 def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
     """Run a Plaid refresh for a single account and update metadata."""
 
+    accounts_data = get_accounts(pa.access_token, pa.account.user_id)
+    if accounts_data is None:
+        return False, "PLAID_RATE_LIMIT"
+    accounts_data = [
+        item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
+    ]
+
     result = account_logic.refresh_data_for_plaid_account(
-        pa.access_token, pa.account_id
+        pa.access_token, pa.account, accounts_data=accounts_data
     )
     if isinstance(result, tuple) and len(result) == 2:
         updated, error = result

@@ -781,7 +781,7 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
 
 
 def refresh_data_for_plaid_account(
-    access_token, account_id, start_date=None, end_date=None
+    access_token, account_or_id, accounts_data=None, start_date=None, end_date=None
 ):
     """Refresh a single Plaid account and return update status and error info.
 
@@ -790,6 +790,7 @@ def refresh_data_for_plaid_account(
     ``plaid_error_code`` and ``plaid_error_message`` when an exception is raised
     by the Plaid client.
     """
+    plaid_account_obj = None
     updated = False
     now = datetime.now(timezone.utc)
 
@@ -805,22 +806,30 @@ def refresh_data_for_plaid_account(
         start_date_obj = datetime.strptime(start_date_obj, "%Y-%m-%d").date()
 
     try:
-        account = Account.query.filter_by(account_id=account_id).first()
+        account = account_or_id
+        if not isinstance(account, Account):
+            account = Account.query.filter_by(account_id=account_or_id).first()
         if not account:
-            logger.warning("[DB Lookup] No account found for account_id=%s", account_id)
+            logger.warning(
+                "[DB Lookup] No account found for account_id=%s", account_or_id
+            )
             return False, {
                 "plaid_error_code": "account_not_found",
                 "plaid_error_message": "Account not found for the provided account_id",
             }
 
-        # Refresh balance
-        accounts_data = get_accounts(access_token, account.user_id)
+        account_id = account.account_id
+        if not accounts_data:
+            logger.warning("No cached accounts_data available")
+            return False, "NO_ACCOUNTS_DATA"
+
         for acct in accounts_data:
-            if acct.get("account_id") == account_id:
+            acct_dict = acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
+            if acct_dict.get("account_id") == account_id:
                 raw_balance = (
-                    acct.get("balances", {}).get("current")
-                    or acct.get("balance", {}).get("current")
-                    or acct.get("balance")
+                    acct_dict.get("balances", {}).get("current")
+                    or acct_dict.get("balance", {}).get("current")
+                    or acct_dict.get("balance")
                     or 0
                 )
                 account.balance = normalize_balance(raw_balance, account.type)
@@ -1034,10 +1043,7 @@ def refresh_data_for_plaid_account(
                 cooldown_until=cooldown_until,
             )
             persist_refresh_status(plaid_account_obj, status, commit=True)
-        return False, {
-            "plaid_error_code": plaid_error_code,
-            "plaid_error_message": plaid_error_message,
-        }
+        return False, str(e)
 
     except Exception as e:
         logger.error(
@@ -1054,9 +1060,6 @@ def refresh_data_for_plaid_account(
                 message=str(e),
             )
             persist_refresh_status(plaid_account_obj, status, commit=True)
-        return False, {
-            "plaid_error_code": getattr(e, "code", "unknown"),
-            "plaid_error_message": str(e),
-        }
+        return False, str(e)
 
     return updated, None

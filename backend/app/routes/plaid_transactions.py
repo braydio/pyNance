@@ -314,11 +314,27 @@ def refresh_accounts_endpoint():
             query = query.filter(Account.account_id.in_(account_ids))
         accounts = query.all()
         refreshed = []
+        token_account_cache: dict[str, list] = {}
         for acct in accounts:
             if acct.plaid_account and acct.plaid_account.access_token:
+                access_token = acct.plaid_account.access_token
+                accounts_data = token_account_cache.get(access_token)
+                if accounts_data is None:
+                    accounts_data = get_accounts(access_token, acct.user_id)
+                    if accounts_data is None:
+                        logger.warning(
+                            "Plaid rate limit hit; skipping account %s", acct.account_id
+                        )
+                        continue
+                    accounts_data = [
+                        item.to_dict() if hasattr(item, "to_dict") else dict(item)
+                        for item in accounts_data
+                    ]
+                    token_account_cache[access_token] = accounts_data
                 refreshed_flag, _ = account_logic.refresh_data_for_plaid_account(
-                    access_token=acct.plaid_account.access_token,
-                    account_id=acct.account_id,
+                    access_token=access_token,
+                    account_or_id=acct,
+                    accounts_data=accounts_data,
                     start_date=start_date,
                     end_date=end_date,
                 )
@@ -478,8 +494,26 @@ def sync_transactions_endpoint():
                 404,
             )
 
+        accounts_data = get_accounts(plaid_account.access_token, plaid_account.account.user_id)
+        if accounts_data is None:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Plaid rate limit hit; try again later",
+                        "code": "PLAID_RATE_LIMIT",
+                    }
+                ),
+                429,
+            )
+        accounts_data = [
+            item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
+        ]
+
         result = account_logic.refresh_data_for_plaid_account(
-            plaid_account.access_token, plaid_account.account_id
+            plaid_account.access_token,
+            plaid_account.account,
+            accounts_data=accounts_data,
         )
         if isinstance(result, tuple) and len(result) == 2:
             updated, error = result

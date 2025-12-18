@@ -7,4 +7,4 @@
   - `POST /api/accounts/refresh_accounts` now reports `rate_limited_skipped` in the payload.
   - `GET /api/accounts/refresh_status` returns per-account refresh status, cooldowns, and staleness flags for UI warnings.
 - **Staggering:** Bulk refreshes are sorted by institution and staggered slightly between institutions to reduce burst load on Plaid.
-
+- **Planned:** Add per-access-token cooldowns to further reduce rate-limit risk when multiple accounts share a token.
