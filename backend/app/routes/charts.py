@@ -442,6 +442,11 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
 @charts.route("/accounts-snapshot", methods=["GET"])
 def accounts_snapshot():
     user_id = request.args.get("user_id")
+    cache = _request_cache()
+    cache_key = ("accounts_snapshot", user_id)
+    if cache_key in cache:
+        return jsonify(cache[cache_key])
+
     accounts = (
         db.session.query(Account)
         .filter(Account.user_id == user_id)
@@ -463,6 +468,7 @@ def accounts_snapshot():
         }
         for acc in accounts
     ]
+    cache[cache_key] = result
     return jsonify(result)
 
 

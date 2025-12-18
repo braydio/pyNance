@@ -124,6 +124,7 @@ def save_transactions_json(transactions):
 def get_accounts(access_token: str, user_id: str):
     """Fetch accounts for ``user_id`` and update local history without leaking tokens."""
 
+    _warn_if_dashboard_request()
     logger.info("Syncing Plaid accounts for user %s", user_id or "<missing>")
 
     if not user_id:
@@ -296,6 +297,8 @@ def get_transactions(
     ``total_transactions`` are retrieved. Accepts ``datetime.date``,
     ``datetime.datetime``, or ``YYYY-MM-DD`` strings for dates.
     """
+
+    _warn_if_dashboard_request()
 
     def _coerce_date(value: Union[str, date, datetime], label: str) -> date:
         if isinstance(value, datetime):
