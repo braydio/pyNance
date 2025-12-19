@@ -8,6 +8,12 @@ This guide documents how to migrate an existing SQLite deployment of pyNance to 
 - `SQLALCHEMY_DATABASE_URI` configured for the target database (see `backend/example.env`).
 - Legacy SQLite file (default `backend/app/data/dashboard_database.db`) available for export.
 
+## Recent migrations
+
+- `backend/migrations/versions/b1f9c2a6c57f_add_transaction_pagination_indexes.py`: Adds
+  composite transaction indexes to accelerate pagination and count queries that
+  filter by user or account and order by posting date.
+
 ## 1. Snapshot The SQLite Database
 
 ```bash

@@ -3,6 +3,7 @@
 from datetime import datetime
 from decimal import Decimal
 
+import sqlalchemy as sa
 from app.extensions import db
 from sqlalchemy.orm import validates
 
@@ -44,6 +45,13 @@ ProviderEnum = db.Enum("manual", "plaid", name="provider_type")
 class Transaction(db.Model):
     __tablename__ = "transactions"
 
+    """Financial transaction tied to a user-linked account.
+
+    The composite indexes declared in ``__table_args__`` mirror the filters and
+    ordering used by transaction pagination to keep retrieval predictable under
+    pagination and count workloads.
+    """
+
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
@@ -81,7 +89,22 @@ class Transaction(db.Model):
             f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
         )
 
-    __table_args__ = (db.UniqueConstraint("transaction_id"),)
+    __table_args__ = (
+        db.UniqueConstraint("transaction_id"),
+        db.Index(
+            "ix_transactions_user_date_transaction_id_desc",
+            "user_id",
+            sa.text("date DESC"),
+            sa.text("transaction_id DESC"),
+        ),
+        db.Index(
+            "ix_transactions_account_date_transaction_id_desc",
+            "account_id",
+            sa.text("date DESC"),
+            sa.text("transaction_id DESC"),
+        ),
+        db.Index("ix_transactions_account_date", "account_id", "date"),
+    )
 
     @validates("provider")
     def _validate_provider(self, key, value):
