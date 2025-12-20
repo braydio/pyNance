@@ -7,10 +7,13 @@
 </template>
 
 <script setup>
-// Displays income, expenses, and net totals for the selected date range.
-// Accepts start and end dates along with a zoom toggle for aggregated view.
-// X-axis labels scale automatically so extended ranges remain legible.
-// Days exceeding their average are highlighted with a slightly intensified hue.
+/**
+ * Displays income, expenses, and net totals for the selected date range.
+ *
+ * Accepts start and end dates along with a zoom toggle for aggregated view.
+ * X-axis labels scale automatically so extended ranges remain legible.
+ * Days exceeding their average are highlighted with a slightly intensified hue.
+ */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
@@ -37,6 +40,91 @@ function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 }
 
+/**
+ * Format a Date object into YYYY-MM-DD without timezone shifts.
+ *
+ * @param {Date} date - Date to format.
+ * @returns {string} ISO-like date string.
+ */
+function formatDateKey(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Parse a YYYY-MM-DD date string into a Date object at local midnight.
+ *
+ * @param {string} dateString - Date string to parse.
+ * @returns {Date|null} Parsed date or null if invalid.
+ */
+function parseDateKey(dateString) {
+  if (!dateString) return null
+  const parsed = new Date(`${dateString}T00:00:00`)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed
+}
+
+/**
+ * Generate date labels for every day in the month of the given date string.
+ *
+ * @param {string} dateString - Reference date in YYYY-MM-DD format.
+ * @returns {string[]} Array of date labels covering the full month.
+ */
+function buildMonthLabels(dateString) {
+  const baseDate = parseDateKey(dateString)
+  if (!baseDate) return []
+  const year = baseDate.getFullYear()
+  const month = baseDate.getMonth()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, idx) =>
+    formatDateKey(new Date(year, month, idx + 1)),
+  )
+}
+
+/**
+ * Create a placeholder daily net entry for dates without data.
+ *
+ * @param {string} label - Date label for the placeholder entry.
+ * @returns {object} Normalized daily net entry.
+ */
+function createEmptyDailyNetEntry(label) {
+  return {
+    date: label,
+    income: { parsedValue: 0 },
+    expenses: { parsedValue: 0 },
+    net: { parsedValue: 0 },
+    transaction_count: 0,
+  }
+}
+
+/**
+ * Pad daily net data with placeholders so every label has an entry.
+ *
+ * @param {Array} data - Data returned from the API for the selected range.
+ * @param {string[]} labels - Labels for each day in the month.
+ * @returns {Array} Padded data aligned with the labels.
+ */
+function padDailyNetData(data, labels) {
+  const byDate = new Map((data || []).map((entry) => [entry.date, entry]))
+  return labels.map((label) => byDate.get(label) ?? createEmptyDailyNetEntry(label))
+}
+
+/**
+ * Determine the cutoff date for month-to-date summaries.
+ *
+ * @param {string} endDate - Selected end date in YYYY-MM-DD format.
+ * @returns {Date} Date to use as the summary cutoff.
+ */
+function getMonthToDateCutoff(endDate) {
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const parsedEnd = parseDateKey(endDate)
+  if (!parsedEnd) return todayStart
+  return parsedEnd > todayStart ? todayStart : parsedEnd
+}
+
 function filterDataByRange(data) {
   const now = new Date()
   let start
@@ -55,6 +143,27 @@ function filterDataByRange(data) {
     const d = new Date(item.date)
     return d >= start && d <= now
   })
+}
+
+/**
+ * Build display-ready labels and data, padding empty days for full month views.
+ *
+ * @param {Array} filteredData - API data filtered to the selected range.
+ * @returns {{ labels: string[], displayData: Array }} Labels and aligned data.
+ */
+function getDisplaySeries(filteredData) {
+  if (!props.zoomedOut) {
+    const referenceDate = props.startDate || props.endDate
+    const labels = buildMonthLabels(referenceDate)
+    if (labels.length) {
+      return { labels, displayData: padDailyNetData(filteredData, labels) }
+    }
+  }
+
+  return {
+    labels: filteredData.length ? filteredData.map((item) => item.date) : [' '],
+    displayData: filteredData,
+  }
 }
 
 // Emit the selected date when a bar is clicked
@@ -165,19 +274,24 @@ async function renderChart() {
   }
 
   const filtered = filterDataByRange(chartData.value)
+  const { labels, displayData } = getDisplaySeries(filtered)
+  const hasDisplayData = displayData.length > 0
   // Calculate moving averages from the complete dataset so trend lines aren't
   // truncated by the date filter.
   const allNetValues = chartData.value.map((item) => item.net.parsedValue)
   const ma7Full = movingAverage(allNetValues, 7)
   const ma30Full = movingAverage(allNetValues, 30)
 
-  const labels = filtered.length ? filtered.map((item) => item.date) : [' ']
   // Determine how frequently to display x-axis labels so long ranges remain readable
   const tickInterval = Math.max(1, Math.ceil(labels.length / 14))
   // Extract numeric values from response objects for the filtered range
-  const netValues = filtered.length ? filtered.map((item) => item.net.parsedValue) : [0]
-  const incomeValues = filtered.length ? filtered.map((item) => item.income.parsedValue) : [0]
-  const expenseValues = filtered.length ? filtered.map((item) => item.expenses.parsedValue) : [0]
+  const netValues = hasDisplayData ? displayData.map((item) => item.net?.parsedValue || 0) : [0]
+  const incomeValues = hasDisplayData
+    ? displayData.map((item) => item.income?.parsedValue || 0)
+    : [0]
+  const expenseValues = hasDisplayData
+    ? displayData.map((item) => item.expenses?.parsedValue || 0)
+    : [0]
   // Expenses are already negative (parsedValue); use as is for chart
 
   // Lookup table to align moving averages with filtered labels
@@ -185,14 +299,20 @@ async function renderChart() {
     acc[item.date] = idx
     return acc
   }, {})
-  const ma7 = filtered.map((item) => ma7Full[indexByDate[item.date]])
-  const ma30 = filtered.map((item) => ma30Full[indexByDate[item.date]])
+  const ma7 = labels.map((label) =>
+    indexByDate[label] === undefined ? null : ma7Full[indexByDate[label]],
+  )
+  const ma30 = labels.map((label) =>
+    indexByDate[label] === undefined ? null : ma30Full[indexByDate[label]],
+  )
 
-  const avgIncome = incomeValues.length
-    ? incomeValues.reduce((a, b) => a + b, 0) / incomeValues.length
+  const actualIncomeValues = filtered.map((item) => item.income?.parsedValue || 0)
+  const actualExpenseValues = filtered.map((item) => item.expenses?.parsedValue || 0)
+  const avgIncome = actualIncomeValues.length
+    ? actualIncomeValues.reduce((a, b) => a + b, 0) / actualIncomeValues.length
     : 0
-  const avgExpenses = expenseValues.length
-    ? expenseValues.reduce((a, b) => a + b, 0) / expenseValues.length
+  const avgExpenses = actualExpenseValues.length
+    ? actualExpenseValues.reduce((a, b) => a + b, 0) / actualExpenseValues.length
     : 0
 
   const incomeBase = getStyle('--color-accent-green')
@@ -300,20 +420,27 @@ async function renderChart() {
             // Show the date as title
             title: (tooltipItems) => {
               const idx = tooltipItems[0].dataIndex
-              return filtered[idx]?.date || tooltipItems[0].label
+              return displayData[idx]?.date || tooltipItems[0].label
             },
             // Suppress default per-dataset labels
             label: () => null,
             // After title, display income, expenses, net, and transactions
             afterBody: (tooltipItems) => {
               const idx = tooltipItems[0].dataIndex
-              const rec = filtered[idx]
-              if (!rec) return []
+              const rec = displayData[idx]
+              if (!rec) {
+                return [
+                  `Income: ${formatAmount(0)}`,
+                  `Expenses: ${formatAmount(0)}`,
+                  `Net: ${formatAmount(0)}`,
+                  `Transactions: 0`,
+                ]
+              }
               return [
-                `Income: ${formatAmount(rec.income.parsedValue)}`,
-                `Expenses: ${formatAmount(rec.expenses.parsedValue)}`,
-                `Net: ${formatAmount(rec.net.parsedValue)}`,
-                `Transactions: ${rec.transaction_count}`,
+                `Income: ${formatAmount(rec.income?.parsedValue || 0)}`,
+                `Expenses: ${formatAmount(rec.expenses?.parsedValue || 0)}`,
+                `Net: ${formatAmount(rec.net?.parsedValue || 0)}`,
+                `Transactions: ${rec.transaction_count ?? 0}`,
               ]
             },
           },
@@ -395,9 +522,16 @@ async function fetchData() {
 
 function updateSummary() {
   const filtered = filterDataByRange(chartData.value)
-  const totalIncome = filtered.reduce((sum, d) => sum + (d.income?.parsedValue || 0), 0)
-  const totalExpenses = filtered.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
-  const totalNet = filtered.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
+  const summaryCutoff = props.zoomedOut ? null : getMonthToDateCutoff(props.endDate)
+  const summaryData = summaryCutoff
+    ? filtered.filter((entry) => {
+        const entryDate = parseDateKey(entry?.date)
+        return entryDate ? entryDate <= summaryCutoff : false
+      })
+    : filtered
+  const totalIncome = summaryData.reduce((sum, d) => sum + (d.income?.parsedValue || 0), 0)
+  const totalExpenses = summaryData.reduce((sum, d) => sum + (d.expenses?.parsedValue || 0), 0)
+  const totalNet = summaryData.reduce((sum, d) => sum + (d.net?.parsedValue || 0), 0)
 
   emit('summary-change', {
     totalIncome,
@@ -406,7 +540,7 @@ function updateSummary() {
   })
 
   // Also emit the filtered chart data for the statistics component
-  emit('data-change', filtered)
+  emit('data-change', summaryData)
 }
 
 watch(

@@ -261,7 +261,9 @@
 </template>
 
 <script setup>
-// Dashboard view showing financial charts and transaction tables.
+/**
+ * Dashboard view showing financial charts, summaries, and transaction tables.
+ */
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
@@ -346,12 +348,36 @@ const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 
 // --- SHARED DATE RANGE STATE ---
+/**
+ * Format a Date instance as YYYY-MM-DD without timezone shifts.
+ *
+ * @param {Date} date - Date instance to format.
+ * @returns {string} Date string formatted for date inputs.
+ */
+function formatDateInput(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Compute the first and last day of the month for the provided date.
+ *
+ * @param {Date} referenceDate - Date whose month should be used.
+ * @returns {{ start: Date, end: Date }} Start and end dates for the month.
+ */
+function getMonthBounds(referenceDate) {
+  const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1)
+  const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0)
+  return { start, end }
+}
+
 const today = new Date()
+const { start: monthStart, end: monthEnd } = getMonthBounds(today)
 const dateRange = ref({
-  start: new Date(today.getFullYear(), today.getMonth(), today.getDate() - 30)
-    .toISOString()
-    .slice(0, 10),
-  end: today.toISOString().slice(0, 10),
+  start: formatDateInput(monthStart),
+  end: formatDateInput(monthEnd),
 })
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })

@@ -54,7 +54,51 @@ const PassThrough = { template: '<div><slot /></div>' }
 
 // Tests for Dashboard.vue date range behavior
 
+/**
+ * Format a Date instance as YYYY-MM-DD for dashboard assertions.
+ *
+ * @param {Date} date - Date to format.
+ * @returns {string} Date string in YYYY-MM-DD format.
+ */
+function formatDateInput(date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 describe('Dashboard.vue', () => {
+  it('defaults the date range to the current month', async () => {
+    const wrapper = shallowMount(Dashboard, {
+      global: {
+        stubs: {
+          AppLayout: PassThrough,
+          BasePageLayout: PassThrough,
+          DailyNetChart: true,
+          CategoryBreakdownChart: true,
+          ChartWidgetTopBar: true,
+          ChartDetailsSidebar: true,
+          DateRangeSelector: true,
+          AccountsTable: true,
+          TransactionsTable: true,
+          PaginationControls: true,
+          TransactionModal: true,
+          TopAccountSnapshot: TopAccountSnapshotStub,
+          GroupedCategoryDropdown: true,
+          FinancialSummary: true,
+          SpendingInsights: true,
+        },
+      },
+    })
+
+    const today = new Date()
+    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
+    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+
+    expect(wrapper.vm.dateRange.start).toBe(formatDateInput(monthStart))
+    expect(wrapper.vm.dateRange.end).toBe(formatDateInput(monthEnd))
+  })
+
   it('clears selected categories when date range changes', async () => {
     const wrapper = shallowMount(Dashboard, {
       global: {
