@@ -205,7 +205,9 @@
                       </div>
                     </template>
                     <template v-else>
-                      <button class="btn-sm" @click="startEdit(row.renderIndex, row.tx)">Edit</button>
+                      <button class="btn-sm" @click="startEdit(row.renderIndex, row.tx)">
+                        Edit
+                      </button>
                     </template>
                   </div>
                 </td>
@@ -396,7 +398,8 @@ const activeFilterLabel = computed(
 
 /** Build row classes for standard, placeholder, and editing states. */
 function getRowClasses(tx, index) {
-  const base = 'text-sm align-middle h-14 transition-colors text-[var(--color-text-light)] border-b last:border-b-0'
+  const base =
+    'text-sm align-middle h-14 transition-colors text-[var(--color-text-light)] border-b last:border-b-0'
   if (tx._placeholder) {
     return [base, 'row-placeholder']
   }
