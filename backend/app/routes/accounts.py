@@ -489,7 +489,8 @@ def refresh_single_account(account_id):
 
 
 @accounts.route("/get_accounts", methods=["GET"])
-def get_accounts():
+def list_accounts():
+    """Return serialized account data for the requesting client."""
     try:
         include_hidden = request.args.get("include_hidden", "false").lower() == "true"
         query = Account.query
