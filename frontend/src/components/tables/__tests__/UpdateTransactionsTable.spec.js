@@ -154,6 +154,27 @@ describe('UpdateTransactionsTable.vue', () => {
     expect(displayed[0].transaction_id).toBe('t1')
   })
 
+  it('enables virtualization for large datasets', async () => {
+    const transactions = Array.from({ length: 120 }, (_, index) => ({
+      transaction_id: `t-${index}`,
+      date: '2024-01-01',
+      amount: index,
+      description: `Transaction ${index}`,
+      category: 'Food: Grocery',
+      merchant_name: 'Vendor',
+      account_name: 'A1',
+      institution_name: 'I1',
+      subtype: 's',
+    }))
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+
+    expect(wrapper.vm.useVirtualization).toBe(true)
+  })
+
   it('prompts for internal counterpart selection', async () => {
     const transactions = [
       {
