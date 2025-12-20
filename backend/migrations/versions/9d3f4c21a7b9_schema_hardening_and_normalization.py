@@ -25,13 +25,14 @@ provider_type = sa.Enum("manual", "plaid", name="provider_type")
 
 
 def upgrade() -> None:
+    """Apply schema hardening changes for accounts, enums, and indexes."""
     bind = op.get_bind()
     dialect = bind.dialect.name
     inspector = sa.inspect(bind)
 
     # 1) accounts: ensure PK is on account_id, but only perform swap if needed
     pk = inspector.get_pk_constraint("accounts") or {}
-    pk_cols = [c for c in (pk.get("constrained_columns") or [])]
+    pk_cols = list(pk.get("constrained_columns") or [])
     cols = [c["name"] for c in inspector.get_columns("accounts")]
 
     if pk_cols and [c.lower() for c in pk_cols] != ["account_id"]:
