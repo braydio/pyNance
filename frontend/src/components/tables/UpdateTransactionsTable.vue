@@ -54,7 +54,7 @@
 
     <!-- Transactions Table -->
     <div class="table-shell overflow-hidden">
-      <div class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
+      <div ref="tableScrollRef" class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
           <thead class="table-head sticky top-0 z-10">
             <tr>
@@ -104,124 +104,121 @@
           </thead>
 
           <tbody>
+            <tr v-if="useVirtualization && virtualPaddingTop" class="virtual-padding-row">
+              <td :colspan="10" :style="{ height: `${virtualPaddingTop}px` }"></td>
+            </tr>
             <tr
-              v-for="(tx, index) in displayTransactions"
-              :key="tx.transaction_id"
-              :class="[
-                'text-sm align-middle h-14 transition-colors text-[var(--color-text-light)] border-b last:border-b-0',
-                tx._placeholder
-                  ? 'row-placeholder'
-                  : editingIndex === index
-                    ? 'row-editing'
-                    : index % 2 === 0
-                      ? 'row-even'
-                      : 'row-odd',
-              ]"
+              v-for="row in rowsToRender"
+              :key="row.tx.transaction_id"
+              :class="getRowClasses(row.tx, row.renderIndex)"
             >
-              <template v-if="tx._placeholder">
+              <template v-if="row.tx._placeholder">
                 <td v-for="n in 10" :key="n" class="px-4 py-3">&nbsp;</td>
               </template>
               <template v-else>
                 <td class="col-date">
                   <input
-                    v-if="editingIndex === index"
+                    v-if="editingIndex === row.renderIndex"
                     v-model="editBuffer.date"
                     type="date"
                     class="input"
                   />
-                  <span v-else class="truncate">{{ formatDate(tx.date) }}</span>
+                  <span v-else class="truncate">{{ formatDate(row.tx.date) }}</span>
                 </td>
                 <td class="col-amount">
                   <input
-                    v-if="editingIndex === index"
+                    v-if="editingIndex === row.renderIndex"
                     v-model.number="editBuffer.amount"
                     type="number"
                     step="0.01"
                     class="input"
                   />
-                  <span v-else class="truncate">{{ formatAmount(tx.amount) }}</span>
+                  <span v-else class="truncate">{{ formatAmount(row.tx.amount) }}</span>
                 </td>
                 <td class="col-description">
                   <input
-                    v-if="editingIndex === index"
+                    v-if="editingIndex === row.renderIndex"
                     v-model="editBuffer.description"
                     type="text"
                     class="input"
                   />
-                  <span v-else class="truncate">{{ tx.description }}</span>
+                  <span v-else class="truncate">{{ row.tx.description }}</span>
                 </td>
                 <td class="col-category">
                   <input
-                    v-if="editingIndex === index"
+                    v-if="editingIndex === row.renderIndex"
                     v-model="editBuffer.category"
                     type="text"
                     list="category-suggestions"
                     class="input"
                     placeholder="Select or type category"
                   />
-                  <span v-else>{{ tx.category }}</span>
+                  <span v-else>{{ row.tx.category }}</span>
                 </td>
                 <td class="px-4 py-3">
                   <input
-                    v-if="editingIndex === index"
+                    v-if="editingIndex === row.renderIndex"
                     v-model="editBuffer.merchant_name"
                     type="text"
                     list="merchant-suggestions"
                     class="input"
                   />
-                  <span v-else class="truncate">{{ tx.merchant_name }}</span>
+                  <span v-else class="truncate">{{ row.tx.merchant_name }}</span>
                 </td>
-                <td class="col-account truncate">{{ tx.account_name || 'N/A' }}</td>
-                <td class="col-institution truncate">{{ tx.institution_name || 'N/A' }}</td>
-                <td class="col-subtype truncate">{{ tx.subtype || 'N/A' }}</td>
+                <td class="col-account truncate">{{ row.tx.account_name || 'N/A' }}</td>
+                <td class="col-institution truncate">{{ row.tx.institution_name || 'N/A' }}</td>
+                <td class="col-subtype truncate">{{ row.tx.subtype || 'N/A' }}</td>
                 <td class="col-actions">
                   <div class="flex flex-wrap gap-2 text-xs action-bar">
-                    <template v-if="editingIndex === index">
+                    <template v-if="editingIndex === row.renderIndex">
                       <div class="flex flex-wrap gap-2 option-toggle-group">
                         <button
                           class="btn-sm option-toggle"
-                          :class="{ active: tx.is_internal }"
-                          @click="toggleInternal(tx)"
+                          :class="{ active: row.tx.is_internal }"
+                          @click="toggleInternal(row.tx)"
                         >
                           <span class="option-label">Internal Transfer</span>
                           <span
                             class="option-status"
-                            :class="tx.is_internal ? 'status-marked' : 'status-unmarked'"
+                            :class="row.tx.is_internal ? 'status-marked' : 'status-unmarked'"
                           >
-                            {{ tx.is_internal ? 'Marked' : 'Not Marked' }}
+                            {{ row.tx.is_internal ? 'Marked' : 'Not Marked' }}
                           </span>
                         </button>
                         <button
                           class="btn-sm option-toggle"
-                          :class="{ active: isRecurringMarked(tx) }"
-                          @click="markRecurring(index)"
+                          :class="{ active: isRecurringMarked(row.tx) }"
+                          @click="markRecurring(row.tx)"
                         >
                           <span class="option-label">Recurring Transaction</span>
                           <span
                             class="option-status"
-                            :class="isRecurringMarked(tx) ? 'status-marked' : 'status-unmarked'"
+                            :class="isRecurringMarked(row.tx) ? 'status-marked' : 'status-unmarked'"
                           >
-                            {{ isRecurringMarked(tx) ? 'Marked' : 'Not Marked' }}
+                            {{ isRecurringMarked(row.tx) ? 'Marked' : 'Not Marked' }}
                           </span>
                         </button>
                       </div>
                       <div class="flex flex-wrap gap-2">
-                        <button class="btn-sm" @click="saveEdit(tx)">Save</button>
+                        <button class="btn-sm" @click="saveEdit(row.tx)">Save</button>
                         <button class="btn-sm" @click="cancelEdit">Cancel</button>
                       </div>
                     </template>
                     <template v-else>
-                      <button class="btn-sm" @click="startEdit(index, tx)">Edit</button>
+                      <button class="btn-sm" @click="startEdit(row.renderIndex, row.tx)">Edit</button>
                     </template>
                   </div>
                 </td>
                 <td class="col-running text-right font-mono">
-                  <span v-if="tx.running_balance != null">{{
-                    formatAmount(tx.running_balance)
+                  <span v-if="row.tx.running_balance != null">{{
+                    formatAmount(row.tx.running_balance)
                   }}</span>
                   <span v-else class="text-muted">—</span>
                 </td>
               </template>
+            </tr>
+            <tr v-if="useVirtualization && virtualPaddingBottom" class="virtual-padding-row">
+              <td :colspan="10" :style="{ height: `${virtualPaddingBottom}px` }"></td>
             </tr>
           </tbody>
         </table>
@@ -229,10 +226,7 @@
     </div>
 
     <!-- Empty State -->
-    <div
-      v-if="displayTransactions.every((tx) => tx._placeholder)"
-      class="text-center text-gray-500"
-    >
+    <div v-if="!hasVisibleTransactions" class="text-center text-gray-500">
       No transactions found.
     </div>
     <Modal v-if="showInternalModal" @close="showInternalModal = false">
@@ -262,7 +256,14 @@
 </template>
 
 <script setup>
+/**
+ * UpdateTransactionsTable.vue
+ *
+ * Editable transaction table with filters, sorting, and virtualized rendering
+ * for large transaction sets.
+ */
 import { ref, computed, onMounted, watch, nextTick } from 'vue'
+import { useVirtualizer } from '@tanstack/vue-virtual'
 import Fuse from 'fuse.js'
 import {
   updateTransaction,
@@ -285,6 +286,9 @@ const props = defineProps({
 })
 
 const MIN_ROW_COUNT = 12
+const VIRTUALIZATION_ROW_THRESHOLD = 80
+const VIRTUAL_ROW_HEIGHT_PX = 56
+const VIRTUAL_OVERSCAN = 8
 
 // Fields that may be edited by the user. All other transaction properties are locked.
 const EDITABLE_FIELDS = ['date', 'amount', 'description', 'category', 'merchant_name']
@@ -323,6 +327,7 @@ const filterableFields = [
 const activeFilterKey = ref('')
 const fieldSearch = ref('')
 const filterInputRef = ref(null)
+const tableScrollRef = ref(null)
 
 const categorySuggestions = computed(() => {
   const seen = new Set()
@@ -388,6 +393,18 @@ const filteredFieldSuggestions = computed(() => {
 const activeFilterLabel = computed(
   () => filterableFields.find((field) => field.key === activeFilterKey.value)?.label || '',
 )
+
+/** Build row classes for standard, placeholder, and editing states. */
+function getRowClasses(tx, index) {
+  const base = 'text-sm align-middle h-14 transition-colors text-[var(--color-text-light)] border-b last:border-b-0'
+  if (tx._placeholder) {
+    return [base, 'row-placeholder']
+  }
+  if (editingIndex.value === index) {
+    return [base, 'row-editing']
+  }
+  return [base, index % 2 === 0 ? 'row-even' : 'row-odd']
+}
 
 function selectFilterField(key) {
   activeFilterKey.value = key
@@ -487,8 +504,12 @@ function isRecurringMarked(tx) {
   return Boolean(tx?.is_recurring || tx?.recurrence_rule || tx?.recurring_transaction_id)
 }
 
-function markRecurring(index) {
-  const tx = props.transactions[index]
+/**
+ * Mark a transaction as recurring and emit the edit flow.
+ *
+ * @param {Object} tx - Transaction to mark recurring.
+ */
+function markRecurring(tx) {
   toast.success('Marked as recurring')
   emit('editRecurringFromTransaction', tx)
   if (!isRecurringMarked(tx)) {
@@ -581,7 +602,7 @@ function sortBy(key) {
   }
 }
 
-const displayTransactions = computed(() => {
+const filteredTransactions = computed(() => {
   let txs = [...props.transactions]
   if (activeFilterKey.value && fieldSearch.value.trim()) {
     const columnFuse = new Fuse(txs, {
@@ -620,14 +641,59 @@ const displayTransactions = computed(() => {
     const bNum = bVal ?? 0
     return (sortOrder.value === 'asc' ? 1 : -1) * (aNum > bNum ? 1 : aNum < bNum ? -1 : 0)
   })
-  // pad to preserve table height
-  const padded = txs.slice(0, txs.length)
-  const targetLength = Math.max(baseRowCount.value, txs.length)
+  return txs
+})
+
+const displayTransactions = computed(() => {
+  // Pad to preserve table height for small datasets.
+  const padded = filteredTransactions.value.slice(0, filteredTransactions.value.length)
+  const targetLength = Math.max(baseRowCount.value, padded.length)
   while (padded.length < targetLength) {
     padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
   }
   return padded
 })
+
+const useVirtualization = computed(
+  () => filteredTransactions.value.length > VIRTUALIZATION_ROW_THRESHOLD,
+)
+
+const rowVirtualizer = useVirtualizer(
+  computed(() => ({
+    count: filteredTransactions.value.length,
+    getScrollElement: () => tableScrollRef.value,
+    estimateSize: () => VIRTUAL_ROW_HEIGHT_PX,
+    overscan: VIRTUAL_OVERSCAN,
+  })),
+)
+
+const virtualRows = computed(() =>
+  rowVirtualizer.value.getVirtualItems().map((row) => ({
+    ...row,
+    tx: filteredTransactions.value[row.index],
+  })),
+)
+
+const virtualPaddingTop = computed(() => {
+  if (!useVirtualization.value || virtualRows.value.length === 0) return 0
+  return virtualRows.value[0].start
+})
+
+const virtualPaddingBottom = computed(() => {
+  if (!useVirtualization.value || virtualRows.value.length === 0) return 0
+  const lastRow = virtualRows.value[virtualRows.value.length - 1]
+  // Padding rows preserve scroll height while rendering only visible items.
+  return rowVirtualizer.value.getTotalSize() - lastRow.end
+})
+
+const rowsToRender = computed(() => {
+  if (useVirtualization.value) {
+    return virtualRows.value.map((row) => ({ tx: row.tx, renderIndex: row.index }))
+  }
+  return displayTransactions.value.map((tx, index) => ({ tx, renderIndex: index }))
+})
+
+const hasVisibleTransactions = computed(() => filteredTransactions.value.length > 0)
 
 // Reset subcategory when primary category changes to avoid stale filters
 watch(selectedPrimaryCategory, () => {
@@ -795,6 +861,11 @@ onMounted(async () => {
 .row-even:hover,
 .row-odd:hover {
   background: rgba(113, 156, 214, 0.18);
+}
+
+.virtual-padding-row td {
+  padding: 0;
+  border: 0;
 }
 
 .action-bar {
