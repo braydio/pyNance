@@ -255,7 +255,8 @@ function buildComparisonSeries(labels, data, context) {
 
   return labels.map((label) => {
     const labelDate = parseDateKey(label)
-    if (!labelDate || labelDate < context.currentStart || labelDate > context.currentEnd) return null
+    if (!labelDate || labelDate < context.currentStart || labelDate > context.currentEnd)
+      return null
     const index = Math.floor((labelDate - context.currentStart) / MS_PER_DAY)
     return valuesByIndex.get(index) ?? null
   })
