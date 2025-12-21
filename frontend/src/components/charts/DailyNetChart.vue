@@ -27,14 +27,25 @@ const props = defineProps({
   show30Day: { type: Boolean, default: false },
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
+  showComparisonOverlay: { type: Boolean, default: false },
+  comparisonMode: { type: String, default: 'prior_month_to_date' },
 })
-const { show7Day, show30Day, showAvgIncome, showAvgExpenses } = toRefs(props)
+const {
+  show7Day,
+  show30Day,
+  showAvgIncome,
+  showAvgExpenses,
+  showComparisonOverlay,
+  comparisonMode,
+} = toRefs(props)
 // Emits "bar-click" when a bar is selected, "summary-change" when data totals change, and "data-change" when chart data updates
 const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 
 const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
+const comparisonData = ref([])
+const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 function getStyle(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim()
@@ -123,6 +134,142 @@ function getMonthToDateCutoff(endDate) {
   const parsedEnd = parseDateKey(endDate)
   if (!parsedEnd) return todayStart
   return parsedEnd > todayStart ? todayStart : parsedEnd
+}
+
+/**
+ * Normalize a comparison end date to local midnight without future dates.
+ *
+ * @param {string} endDate - Selected end date in YYYY-MM-DD format.
+ * @returns {Date} Clamped end date for comparisons.
+ */
+function getComparisonEndDate(endDate) {
+  const today = new Date()
+  const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+  const parsedEnd = parseDateKey(endDate)
+  if (!parsedEnd) return todayStart
+  return parsedEnd > todayStart ? todayStart : parsedEnd
+}
+
+/**
+ * Determine the comparison range to request based on the current mode.
+ *
+ * @returns {object|null} Comparison range metadata for API requests and alignment.
+ */
+function buildComparisonContext() {
+  const currentEnd = getComparisonEndDate(props.endDate)
+  if (!currentEnd) return null
+
+  if (comparisonMode.value === 'prior_month_to_date') {
+    const priorMonthStart = new Date(currentEnd.getFullYear(), currentEnd.getMonth() - 1, 1)
+    const priorMonthLast = new Date(currentEnd.getFullYear(), currentEnd.getMonth(), 0)
+    const priorDay = Math.min(currentEnd.getDate(), priorMonthLast.getDate())
+    const priorMonthEnd = new Date(
+      priorMonthStart.getFullYear(),
+      priorMonthStart.getMonth(),
+      priorDay,
+    )
+    return {
+      mode: 'prior_month_to_date',
+      priorStart: priorMonthStart,
+      priorEnd: priorMonthEnd,
+    }
+  }
+
+  const currentStart = new Date(currentEnd)
+  currentStart.setDate(currentStart.getDate() - 29)
+  const priorEnd = new Date(currentStart)
+  priorEnd.setDate(priorEnd.getDate() - 1)
+  const priorStart = new Date(priorEnd)
+  priorStart.setDate(priorStart.getDate() - 29)
+
+  return {
+    mode: 'last_30_vs_previous_30',
+    priorStart,
+    priorEnd,
+    currentStart,
+    currentEnd,
+  }
+}
+
+/**
+ * Apply an alpha channel to a hex or rgb color string.
+ *
+ * @param {string} color - Base color from theme variables.
+ * @param {number} alpha - Opacity value between 0 and 1.
+ * @returns {string} Color string with alpha applied.
+ */
+function applyAlphaToColor(color, alpha) {
+  if (color.startsWith('rgb(')) {
+    return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
+  }
+  if (!color.startsWith('#')) return color
+
+  let normalized = color.replace('#', '')
+  if (normalized.length === 3) {
+    normalized = normalized
+      .split('')
+      .map((ch) => ch + ch)
+      .join('')
+  }
+  const hexValue = parseInt(normalized, 16)
+  const red = (hexValue >> 16) & 0xff
+  const green = (hexValue >> 8) & 0xff
+  const blue = hexValue & 0xff
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`
+}
+
+/**
+ * Align comparison data to the current chart labels.
+ *
+ * @param {string[]} labels - Current chart labels.
+ * @param {Array} data - Comparison dataset from the API.
+ * @param {object|null} context - Comparison range metadata.
+ * @returns {Array} Aligned comparison net values.
+ */
+function buildComparisonSeries(labels, data, context) {
+  if (!context) return []
+
+  if (context.mode === 'prior_month_to_date') {
+    const valuesByDay = new Map()
+    ;(data || []).forEach((entry) => {
+      const entryDate = parseDateKey(entry?.date)
+      if (!entryDate) return
+      valuesByDay.set(entryDate.getDate(), entry.net?.parsedValue || 0)
+    })
+
+    return labels.map((label) => {
+      const labelDate = parseDateKey(label)
+      if (!labelDate) return null
+      return valuesByDay.get(labelDate.getDate()) ?? null
+    })
+  }
+
+  const valuesByIndex = new Map()
+  ;(data || []).forEach((entry) => {
+    const entryDate = parseDateKey(entry?.date)
+    if (!entryDate) return
+    const index = Math.floor((entryDate - context.priorStart) / MS_PER_DAY)
+    if (index < 0 || index > 29) return
+    valuesByIndex.set(index, entry.net?.parsedValue || 0)
+  })
+
+  return labels.map((label) => {
+    const labelDate = parseDateKey(label)
+    if (!labelDate || labelDate < context.currentStart || labelDate > context.currentEnd) return null
+    const index = Math.floor((labelDate - context.currentStart) / MS_PER_DAY)
+    return valuesByIndex.get(index) ?? null
+  })
+}
+
+/**
+ * Provide display labels for comparison series.
+ *
+ * @param {string} mode - Comparison mode key.
+ * @returns {string} Human-friendly label.
+ */
+function getComparisonLabel(mode) {
+  if (mode === 'prior_month_to_date') return 'Prior month to-date'
+  return 'Last 30 days vs previous 30'
 }
 
 function filterDataByRange(data) {
@@ -276,6 +423,10 @@ async function renderChart() {
   const filtered = filterDataByRange(chartData.value)
   const { labels, displayData } = getDisplaySeries(filtered)
   const hasDisplayData = displayData.length > 0
+  const comparisonContext = showComparisonOverlay.value ? buildComparisonContext() : null
+  const comparisonSeries = showComparisonOverlay.value
+    ? buildComparisonSeries(labels, comparisonData.value, comparisonContext)
+    : []
   // Calculate moving averages from the complete dataset so trend lines aren't
   // truncated by the date filter.
   const allNetValues = chartData.value.map((item) => item.net.parsedValue)
@@ -402,6 +553,19 @@ async function renderChart() {
     })
   }
 
+  if (showComparisonOverlay.value && comparisonSeries.some((value) => value !== null)) {
+    datasets.push({
+      type: 'line',
+      label: getComparisonLabel(comparisonMode.value),
+      data: comparisonSeries,
+      borderColor: applyAlphaToColor(getStyle('--color-accent-purple'), 0.45),
+      borderDash: [6, 4],
+      borderWidth: 2,
+      pointRadius: 0,
+      order: 1, // ensure line renders above bars
+    })
+  }
+
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     // include netLinePlugin to draw net lines
@@ -520,6 +684,36 @@ async function fetchData() {
   }
 }
 
+/**
+ * Fetch comparison data for the selected overlay mode.
+ */
+async function fetchComparisonData() {
+  if (!showComparisonOverlay.value) {
+    comparisonData.value = []
+    return
+  }
+
+  const context = buildComparisonContext()
+  if (!context) {
+    comparisonData.value = []
+    return
+  }
+
+  try {
+    const params = {
+      start_date: formatDateKey(context.priorStart),
+      end_date: formatDateKey(context.priorEnd),
+    }
+    const response = await fetchDailyNet(params)
+    if (response.status === 'success') {
+      comparisonData.value = response.data
+    }
+  } catch (error) {
+    console.error('Error fetching comparison net data:', error)
+    comparisonData.value = []
+  }
+}
+
 function updateSummary() {
   const filtered = filterDataByRange(chartData.value)
   const summaryCutoff = props.zoomedOut ? null : getMonthToDateCutoff(props.endDate)
@@ -553,6 +747,9 @@ watch(
     show30Day,
     showAvgIncome,
     showAvgExpenses,
+    showComparisonOverlay,
+    comparisonMode,
+    comparisonData,
   ],
   async () => {
     updateSummary()
@@ -561,9 +758,20 @@ watch(
 )
 
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
+watch(
+  () => [
+    props.startDate,
+    props.endDate,
+    props.zoomedOut,
+    showComparisonOverlay.value,
+    comparisonMode.value,
+  ],
+  fetchComparisonData,
+)
 
 onMounted(() => {
   fetchData()
+  fetchComparisonData()
 })
 
 onUnmounted(() => {
