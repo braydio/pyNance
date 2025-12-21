@@ -49,6 +49,7 @@ async function flushRender() {
 describe('DailyNetChart.vue', () => {
   beforeEach(() => {
     chartMock.mockClear()
+    fetchDailyNet.mockReset()
     fetchDailyNet.mockResolvedValue({
       status: 'success',
       data: [
@@ -138,5 +139,129 @@ describe('DailyNetChart.vue', () => {
 
     expect(labels[0]).toBe(expectedStart)
     expect(labels[labels.length - 1]).toBe(expectedEnd)
+  })
+
+  it('aligns prior month overlay values to day-of-month labels', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+          {
+            date: '2024-06-15',
+            income: { parsedValue: 200 },
+            expenses: { parsedValue: -80 },
+            net: { parsedValue: 120 },
+            transaction_count: 3,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-05-02',
+            income: { parsedValue: 90 },
+            expenses: { parsedValue: -35 },
+            net: { parsedValue: 55 },
+            transaction_count: 1,
+          },
+          {
+            date: '2024-05-15',
+            income: { parsedValue: 210 },
+            expenses: { parsedValue: -90 },
+            net: { parsedValue: 120 },
+            transaction_count: 4,
+          },
+        ],
+      })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        comparisonMode: 'prior_month_to_date',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    const labels = lastConfig.data.labels
+    const comparisonDataset = lastConfig.data.datasets.find(
+      (dataset) => dataset.label === 'Prior month to-date',
+    )
+
+    expect(comparisonDataset).toBeTruthy()
+
+    const juneSecondIndex = labels.indexOf('2024-06-02')
+    const juneFifteenthIndex = labels.indexOf('2024-06-15')
+
+    expect(comparisonDataset.data[juneSecondIndex]).toBe(55)
+    expect(comparisonDataset.data[juneFifteenthIndex]).toBe(120)
+  })
+
+  it('removes comparison dataset when overlay is disabled', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-05-02',
+            income: { parsedValue: 90 },
+            expenses: { parsedValue: -35 },
+            net: { parsedValue: 55 },
+            transaction_count: 1,
+          },
+        ],
+      })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        comparisonMode: 'prior_month_to_date',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    let lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    expect(
+      lastConfig.data.datasets.some((dataset) => dataset.label === 'Prior month to-date'),
+    ).toBe(true)
+
+    await wrapper.setProps({ showComparisonOverlay: false })
+    await flushRender()
+    await flushRender()
+
+    lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    expect(
+      lastConfig.data.datasets.some((dataset) => dataset.label === 'Prior month to-date'),
+    ).toBe(false)
   })
 })
