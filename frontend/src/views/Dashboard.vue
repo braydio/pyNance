@@ -48,6 +48,8 @@
             v-model:show30-day="show30Day"
             v-model:show-avg-income="showAvgIncome"
             v-model:show-avg-expenses="showAvgExpenses"
+            v-model:show-comparison-overlay="showComparisonOverlay"
+            v-model:comparison-mode="comparisonMode"
           />
           <div class="flex items-center justify-center mb-4">
             <h2 class="daily-net-chart-title">
@@ -64,6 +66,8 @@
             :show30-day="show30Day"
             :show-avg-income="showAvgIncome"
             :show-avg-expenses="showAvgExpenses"
+            :show-comparison-overlay="showComparisonOverlay"
+            :comparison-mode="comparisonMode"
             @summary-change="netSummary = $event"
             @data-change="chartData = $event"
             @bar-click="onNetBarClick"
@@ -346,6 +350,8 @@ const show7Day = ref(false)
 const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
+const showComparisonOverlay = ref(false)
+const comparisonMode = ref('prior_month_to_date')
 
 // --- SHARED DATE RANGE STATE ---
 /**
