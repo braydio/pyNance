@@ -67,20 +67,29 @@ function parseDateKey(dateString) {
 }
 
 /**
- * Generate date labels for every day in the month of the given date string.
+ * Build contiguous date labels between two dates, inclusive.
  *
- * @param {string} dateString - Reference date in YYYY-MM-DD format.
- * @returns {string[]} Array of date labels covering the full month.
+ * @param {string} startDate - Range start in YYYY-MM-DD format.
+ * @param {string} endDate - Range end in YYYY-MM-DD format.
+ * @returns {string[]} Array of date labels covering the full range.
  */
-function buildMonthLabels(dateString) {
-  const baseDate = parseDateKey(dateString)
-  if (!baseDate) return []
-  const year = baseDate.getFullYear()
-  const month = baseDate.getMonth()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
-  return Array.from({ length: daysInMonth }, (_, idx) =>
-    formatDateKey(new Date(year, month, idx + 1)),
-  )
+function buildDateRangeLabels(startDate, endDate) {
+  const start = parseDateKey(startDate)
+  const end = parseDateKey(endDate)
+  if (!start || !end) return []
+
+  const labels = []
+  const cursor = new Date(start.getTime())
+  const finalDate = start <= end ? end : start
+  const startDateValue = start <= end ? start : end
+
+  cursor.setTime(startDateValue.getTime())
+  while (cursor <= finalDate) {
+    labels.push(formatDateKey(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+
+  return labels
 }
 
 /**
@@ -103,7 +112,7 @@ function createEmptyDailyNetEntry(label) {
  * Pad daily net data with placeholders so every label has an entry.
  *
  * @param {Array} data - Data returned from the API for the selected range.
- * @param {string[]} labels - Labels for each day in the month.
+ * @param {string[]} labels - Labels for each day in the range.
  * @returns {Array} Padded data aligned with the labels.
  */
 function padDailyNetData(data, labels) {
@@ -123,6 +132,22 @@ function getMonthToDateCutoff(endDate) {
   const parsedEnd = parseDateKey(endDate)
   if (!parsedEnd) return todayStart
   return parsedEnd > todayStart ? todayStart : parsedEnd
+}
+
+/**
+ * Resolve the active chart range for building labels.
+ *
+ * @returns {{ startDate: string | null, endDate: string | null }} Date range for the chart.
+ */
+function getActiveDateRange() {
+  if (props.zoomedOut) {
+    const end = new Date()
+    const start = new Date()
+    start.setMonth(start.getMonth() - 6)
+    return { startDate: formatDateKey(start), endDate: formatDateKey(end) }
+  }
+
+  return { startDate: props.startDate, endDate: props.endDate }
 }
 
 function filterDataByRange(data) {
@@ -146,23 +171,29 @@ function filterDataByRange(data) {
 }
 
 /**
- * Build display-ready labels and data, padding empty days for full month views.
+ * Build display-ready labels and data, padding empty days for full ranges.
  *
  * @param {Array} filteredData - API data filtered to the selected range.
  * @returns {{ labels: string[], displayData: Array }} Labels and aligned data.
  */
 function getDisplaySeries(filteredData) {
-  if (!props.zoomedOut) {
-    const referenceDate = props.startDate || props.endDate
-    const labels = buildMonthLabels(referenceDate)
-    if (labels.length) {
-      return { labels, displayData: padDailyNetData(filteredData, labels) }
+  const { startDate, endDate } = getActiveDateRange()
+  const labels = buildDateRangeLabels(startDate, endDate)
+
+  if (labels.length) {
+    return { labels, displayData: padDailyNetData(filteredData, labels) }
+  }
+
+  if (filteredData.length) {
+    return {
+      labels: filteredData.map((item) => item.date),
+      displayData: filteredData,
     }
   }
 
   return {
-    labels: filteredData.length ? filteredData.map((item) => item.date) : [' '],
-    displayData: filteredData,
+    labels: [' '],
+    displayData: [createEmptyDailyNetEntry(' ')],
   }
 }
 
@@ -276,43 +307,32 @@ async function renderChart() {
   const filtered = filterDataByRange(chartData.value)
   const { labels, displayData } = getDisplaySeries(filtered)
   const hasDisplayData = displayData.length > 0
-  // Calculate moving averages from the complete dataset so trend lines aren't
-  // truncated by the date filter.
-  const allNetValues = chartData.value.map((item) => item.net.parsedValue)
-  const ma7Full = movingAverage(allNetValues, 7)
-  const ma30Full = movingAverage(allNetValues, 30)
+  const paddedNetValues = hasDisplayData
+    ? displayData.map((item) => item.net?.parsedValue || 0)
+    : [0]
+  const paddedIncomeValues = hasDisplayData
+    ? displayData.map((item) => item.income?.parsedValue || 0)
+    : [0]
+  const paddedExpenseValues = hasDisplayData
+    ? displayData.map((item) => item.expenses?.parsedValue || 0)
+    : [0]
+  // Calculate moving averages from the padded dataset so missing days count as zeros.
+  const ma7 = movingAverage(paddedNetValues, 7)
+  const ma30 = movingAverage(paddedNetValues, 30)
 
   // Determine how frequently to display x-axis labels so long ranges remain readable
   const tickInterval = Math.max(1, Math.ceil(labels.length / 14))
   // Extract numeric values from response objects for the filtered range
-  const netValues = hasDisplayData ? displayData.map((item) => item.net?.parsedValue || 0) : [0]
-  const incomeValues = hasDisplayData
-    ? displayData.map((item) => item.income?.parsedValue || 0)
-    : [0]
-  const expenseValues = hasDisplayData
-    ? displayData.map((item) => item.expenses?.parsedValue || 0)
-    : [0]
+  const netValues = paddedNetValues
+  const incomeValues = paddedIncomeValues
+  const expenseValues = paddedExpenseValues
   // Expenses are already negative (parsedValue); use as is for chart
 
-  // Lookup table to align moving averages with filtered labels
-  const indexByDate = chartData.value.reduce((acc, item, idx) => {
-    acc[item.date] = idx
-    return acc
-  }, {})
-  const ma7 = labels.map((label) =>
-    indexByDate[label] === undefined ? null : ma7Full[indexByDate[label]],
-  )
-  const ma30 = labels.map((label) =>
-    indexByDate[label] === undefined ? null : ma30Full[indexByDate[label]],
-  )
-
-  const actualIncomeValues = filtered.map((item) => item.income?.parsedValue || 0)
-  const actualExpenseValues = filtered.map((item) => item.expenses?.parsedValue || 0)
-  const avgIncome = actualIncomeValues.length
-    ? actualIncomeValues.reduce((a, b) => a + b, 0) / actualIncomeValues.length
+  const avgIncome = paddedIncomeValues.length
+    ? paddedIncomeValues.reduce((a, b) => a + b, 0) / paddedIncomeValues.length
     : 0
-  const avgExpenses = actualExpenseValues.length
-    ? actualExpenseValues.reduce((a, b) => a + b, 0) / actualExpenseValues.length
+  const avgExpenses = paddedExpenseValues.length
+    ? paddedExpenseValues.reduce((a, b) => a + b, 0) / paddedExpenseValues.length
     : 0
 
   const incomeBase = getStyle('--color-accent-green')
