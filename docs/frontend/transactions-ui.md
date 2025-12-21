@@ -28,3 +28,16 @@ This document standardizes formatting and styling rules for recent transactions 
 
 - Location: `frontend/src/components/widgets/TopAccountSnapshot.vue`
 - Helpers: `formatShortDate`, `format`, `amountClass`.
+
+## Update Transactions Table Virtualization
+
+The editable update transactions table now virtualizes row rendering for large datasets.
+Manual test the scroll performance when working with large transaction histories.
+
+Manual test checklist:
+
+1. Navigate to the transactions update screen that renders
+   `frontend/src/components/tables/UpdateTransactionsTable.vue`.
+2. Load an account or date range with 200+ transactions (seed data or API data).
+3. Scroll from top to bottom and confirm row highlights, inline edit actions, and sorting continue to work.
+4. Verify the scroll remains smooth and no blank gaps appear as new rows render in.

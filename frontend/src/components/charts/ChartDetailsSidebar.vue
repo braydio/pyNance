@@ -76,7 +76,7 @@
             <input
               type="checkbox"
               :checked="showComparisonOverlay"
-              @change="onOptionChange('update:show-comparison-overlay', $event.target.checked)"
+              @change="onOptionChange('update:showComparisonOverlay', $event.target.checked)"
             />
             Comparison Overlay
           </label>
@@ -85,7 +85,7 @@
             <select
               :value="comparisonMode"
               :disabled="!showComparisonOverlay"
-              @change="onOptionChange('update:comparison-mode', $event.target.value)"
+              @change="onOptionChange('update:comparisonMode', $event.target.value)"
             >
               <option value="prior_month_to_date">Prior month to-date</option>
               <option value="last_30_vs_previous_30">Last 30 days vs previous 30</option>
@@ -120,8 +120,8 @@ const emit = defineEmits([
   'update:show30Day',
   'update:showAvgIncome',
   'update:showAvgExpenses',
-  'update:show-comparison-overlay',
-  'update:comparison-mode',
+  'update:showComparisonOverlay',
+  'update:comparisonMode',
 ])
 
 const {
