@@ -16,7 +16,7 @@
 - [Forecast](../forecast/) – financial forecasting docs
 - [Integrations](../integrations/) – third-party connections
 - [Stake Cleanup Audit](../integrations/stake_cleanup.md) – confirmation that the legacy Stake integration has no remaining code paths
-- [Internal](../internal/) – internal notes
+- [Devnotes](../devnotes/) – working notes and scratch references
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI

@@ -7,6 +7,7 @@ Use this guide to keep contributions consistent with the project's structure, to
 - `backend/app/` contains the Flask app factory, HTTP routes in `app/routes/`, and services in `app/services/`; shared extensions live in `app/extensions.py`, with Alembic migrations under `backend/migrations/versions/`.
 - `frontend/` holds the Vue 3 client (script-setup) along with scoped components, stores, and assets.
 - `tests/` stores the pytest suite and fixtures (`tests/conftest.py`); automation scripts sit in `scripts/`, while long-form docs live in `docs/`.
+- Documentation is organized under `docs/` with architecture notes in `docs/architecture/`, workflows in `docs/process/`, and working notes in `docs/devnotes/`.
 
 ## Build, Test, and Development Commands
 

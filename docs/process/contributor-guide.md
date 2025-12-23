@@ -52,7 +52,7 @@ git config core.hooksPath .githooks
 - Consult `.pre-commit-config.yaml` for formatting enforcement
 - Review `docs/index/INDEX.md` for documentation map
 - Consult `docs/maintenance/cleanup_checklist.md` for repo organization tasks
-- Refer to `docs/ToDoCodex.md` for current dashboard development items
+- Refer to `docs/frontend/Consolidated_TODO.md` for current dashboard development items
 
 ## Migration Areas
 

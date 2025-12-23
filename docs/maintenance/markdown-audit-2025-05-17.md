@@ -59,7 +59,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/RAW_PAYLOAD_STORAGE.md` — Keep.
 - `docs/README.md` — Keep.
 - `docs/TAILWIND_VITE_STYLE_REFERENCE.md` — Keep.
-- `docs/ToDoCodex.md` — Move to `docs/maintenance/` and reconcile with other TODOs. **Move + Update**
+- `docs/ToDoCodex.md` — Merge into `docs/frontend/Consolidated_TODO.md` and remove the legacy file. **Move + Update**
 - `docs/arbit_dashboard.md` — Move to `docs/frontend/` to align with UI focus; duplicate with frontend version. **Move/Consolidate**
 - `docs/arbitrage_page.md` — Move to `docs/frontend/` for UI alignment. **Move**
 - `docs/backend_routing_plan.md` — Deprecated (already marked); keep as archived note or remove after confirming consumers. **Deprecate**
@@ -76,10 +76,10 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/index/INDEX.md` — Update after any relocations to keep index accurate. **Update**
 - `docs/integrations/plaid_investments.md` — Keep.
 - `docs/integrations/stake_cleanup.md` — Keep.
-- `docs/internal/Dev_ForecastReference.md` — Keep.
-- `docs/internal/Retrospective_Mapping.md` — Keep.
-- `docs/internal/architecture/arch_ux_02.md` — Keep.
-- `docs/internal/refresh_route_reviewer.md` — Keep.
+- `docs/devnotes/Dev_ForecastReference.md` — Keep.
+- `docs/devnotes/Retrospective_Mapping.md` — Keep.
+- `docs/architecture/arch_ux_02.md` — Keep.
+- `docs/devnotes/refresh_route_reviewer.md` — Keep.
 - `docs/latest/net_changes_feature.md` — Update if feature evolved. **Update**
 - `docs/latest/recent_transactions_feature.md` — Update if feature evolved. **Update**
 - `docs/maps/link_account_products_map.md` — Keep.
@@ -87,7 +87,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/migration_plan.md` — Update if migration plans changed. **Update**
 - `docs/organize/CODEX_RECC-MIGRATION.md` — Keep.
 - `docs/organize/routing_refactor/*` (all) — Keep; organizing notes. **Keep**
-- `docs/process/architecture_notes.md` — Keep.
+- `docs/architecture/architecture_notes.md` — Keep.
 - `docs/process/contributor-guide.md` — Keep.
 - `docs/process/execution-plan.md` — Keep.
 - `docs/process/github-templates.md` — Keep.
