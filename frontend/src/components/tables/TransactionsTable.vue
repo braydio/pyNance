@@ -363,7 +363,11 @@ export default {
         filters.push({ key: 'date', label: 'Dates', value: `${startLabel} → ${endLabel}` })
       }
       if (accountId.value) {
-        filters.push({ key: 'account', label: 'Account', value: formatAccountLabel(accountId.value) })
+        filters.push({
+          key: 'account',
+          label: 'Account',
+          value: formatAccountLabel(accountId.value),
+        })
       }
       if (txType.value) {
         filters.push({
