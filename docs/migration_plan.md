@@ -4,7 +4,7 @@
 
 This document provides a concrete mapping of current files to their target locations based on the repository conventions already present.
 
-Generated on: $(date)
+Last updated: 2025-12-23
 
 ---
 
@@ -23,6 +23,15 @@ Generated on: $(date)
 
 ## 2. Move to docs/ Structure
 
+### Completed moves (2025-12-23)
+
+- `docs/internal/architecture/arch_ux_02.md` → `docs/architecture/arch_ux_02.md`
+- `docs/process/architecture_notes.md` → `docs/architecture/architecture_notes.md`
+- `docs/internal/Dev_ForecastReference.md` → `docs/devnotes/Dev_ForecastReference.md`
+- `docs/internal/DevelopingForecast.txt` → `docs/devnotes/DevelopingForecast.txt`
+- `docs/internal/refresh_route_reviewer.md` → `docs/devnotes/refresh_route_reviewer.md`
+- `docs/internal/Retrospective_Mapping.md` → `docs/devnotes/Retrospective_Mapping.md`
+
 ### Process Documentation:
 
 - **docs/process/repo_organization.md** → **docs/process/repo_organization.md**
@@ -36,8 +45,8 @@ Generated on: $(date)
 
 - **docs/architecture/01_DEV-ArchitectureChecks.md** → ✅ Keep in place (already correctly located)
 - **docs/architecture/Plaid_Helpers_Design.md** → ✅ Keep in place (already correctly located)
-- **docs/internal/architecture/arch_ux_02.md** → **docs/architecture/arch_ux_02.md**
-- **docs/process/architecture_notes.md** → **docs/architecture/architecture_notes.md**
+- **docs/internal/architecture/arch_ux_02.md** → **docs/architecture/arch_ux_02.md** (done)
+- **docs/process/architecture_notes.md** → **docs/architecture/architecture_notes.md** (done)
 
 ### Maps and Integration Documentation:
 
@@ -47,10 +56,10 @@ Generated on: $(date)
 
 ### Developer Notes and Scratch Pads:
 
-- **docs/internal/Dev_ForecastReference.md** → **docs/devnotes/Dev_ForecastReference.md**
-- **docs/internal/DevelopingForecast.txt** → **docs/devnotes/DevelopingForecast.txt**
-- **docs/internal/refresh_route_reviewer.md** → **docs/devnotes/refresh_route_reviewer.md**
-- **docs/internal/Retrospective_Mapping.md** → **docs/devnotes/Retrospective_Mapping.md**
+- **docs/internal/Dev_ForecastReference.md** → **docs/devnotes/Dev_ForecastReference.md** (done)
+- **docs/internal/DevelopingForecast.txt** → **docs/devnotes/DevelopingForecast.txt** (done)
+- **docs/internal/refresh_route_reviewer.md** → **docs/devnotes/refresh_route_reviewer.md** (done)
+- **docs/internal/Retrospective_Mapping.md** → **docs/devnotes/Retrospective_Mapping.md** (done)
 
 ### Maintenance Documentation:
 
@@ -73,7 +82,7 @@ Based on repository scan, the following files mentioned in cleanup_checklist.md 
 - **ToDo.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
 - **WarpToDo.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
 - ~~docs/TODO.md → Merge unique content into docs/frontend/Consolidated_TODO.md, then remove~~ (completed)
-- **docs/ToDoCodex.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove
+- **docs/ToDoCodex.md** → Merge unique content into **docs/frontend/Consolidated_TODO.md**, then remove (done)
 
 ### Other Files for Review:
 
@@ -140,10 +149,10 @@ mv docs/internal/Retrospective_Mapping.md docs/devnotes/Retrospective_Mapping.md
 # - NewToDo.md → docs/frontend/Consolidated_TODO.md
 # - ToDo.md → docs/frontend/Consolidated_TODO.md
 # - WarpToDo.md → docs/frontend/Consolidated_TODO.md
-# - docs/ToDoCodex.md → docs/frontend/Consolidated_TODO.md
+# - docs/ToDoCodex.md → docs/frontend/Consolidated_TODO.md (done)
 
 # After merging unique content:
-# rm NewToDo.md ToDo.md WarpToDo.md docs/ToDoCodex.md
+# rm NewToDo.md ToDo.md WarpToDo.md docs/ToDoCodex.md (done)
 ```
 
 ### Phase 5: Create missing files

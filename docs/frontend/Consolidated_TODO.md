@@ -843,6 +843,14 @@ pytest tests/test_model_field_validation.py
 - **View Components** → Distributed across [COMPONENT_TASKS] sections
 - **Task Structure** → Converted to checkbox format with consistent component tags
 
+#### ToDoCodex.md → Consolidated Integration
+
+- **Dashboard Development To-Do (Codex)** → Mapped into [COMPONENT_DASHBOARD] tasks
+- **Spending Insights Panel** → See [COMPONENT_DASHBOARD] and [LEGACY_TODO_ITEMS]
+- **Category Spending Chart UX** → See [COMPONENT_DASHBOARD] and [LEGACY_TODO_ITEMS]
+- **Accounts & Transactions Tables** → See [COMPONENT_DASHBOARD] and [LEGACY_TODO_ITEMS]
+- **Responsiveness and Accessibility Reviews** → See [LEGACY_TODO_ITEMS]
+
 #### docs/TODO.md → Specific Mapping
 
 - **Component Tags Legend** → Integrated into [LEGEND_MAP]

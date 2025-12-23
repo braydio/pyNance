@@ -25,6 +25,6 @@ This structure keeps concerns isolated and makes the codebase easier to test.
 - Ensure SQL layer only operates on transformed data.
 - [] Update `sql/` layer to operate on transformed data only
 
-### ðŸ™ƒ File to Save This Note:
+### File Location
 
-`process/architecture_notes.md`
+`docs/architecture/architecture_notes.md`
