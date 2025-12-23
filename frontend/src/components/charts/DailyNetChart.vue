@@ -318,10 +318,7 @@ async function renderChart() {
   const paddedExpenseValues = hasDisplayData
     ? displayData.map((item) => item.expenses?.parsedValue || 0)
     : [0]
-  const fullLabels = buildDateRangeLabels(
-    requestRange.value.startDate,
-    requestRange.value.endDate,
-  )
+  const fullLabels = buildDateRangeLabels(requestRange.value.startDate, requestRange.value.endDate)
   const paddedFullData = fullLabels.length
     ? padDailyNetData(chartData.value, fullLabels)
     : chartData.value
