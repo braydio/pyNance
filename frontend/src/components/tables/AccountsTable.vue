@@ -49,6 +49,15 @@
         </option>
       </select>
     </div>
+    <div v-if="activeFilters.length" class="filter-tags" data-testid="accounts-filter-tags">
+      <span v-for="filter in activeFilters" :key="filter.key" class="filter-tag">
+        <span class="filter-tag__label">{{ filter.label }}:</span>
+        <span class="filter-tag__value">{{ filter.value }}</span>
+        <button type="button" class="filter-tag__remove" @click="removeFilter(filter.key)">
+          ×
+        </button>
+      </span>
+    </div>
     <!-- Table -->
     <div class="overflow-x-auto rounded-xl border border-neutral-800">
       <table class="min-w-full text-sm divide-y divide-neutral-800">
@@ -80,7 +89,10 @@
               Balance
             </th>
             <th
-              class="py-2 px-4 text-center font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800 w-[60px]"
+              :class="[
+                'py-2 px-4 text-center font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800',
+                'w-[60px]',
+              ]"
             >
               Trend
             </th>
@@ -123,7 +135,10 @@
             <!-- Account Type (capitalize first/last) -->
             <td class="px-4 py-2">
               <span
-                class="inline-block rounded-xl border border-blue-700 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200"
+                :class="[
+                  'inline-block rounded-xl border border-blue-700 bg-gradient-to-r from-neutral-900 to-blue-950',
+                  'px-3 py-1 text-xs font-semibold text-blue-200',
+                ]"
               >
                 {{ capitalizeFirstLast(account.subtype || account.type) }}
               </span>
@@ -190,6 +205,12 @@
 </template>
 
 <script>
+/**
+ * AccountsTable
+ *
+ * Displays linked accounts with search, visibility, and type filters.
+ * Active filters are surfaced as removable tags.
+ */
 import api from '@/services/api'
 import AccountSparkline from '@/components/widgets/AccountSparkline.vue'
 import Modal from '@/components/ui/Modal.vue'
@@ -265,6 +286,20 @@ export default {
       }
       const { name, institution_name: institutionName } = this.accountPendingDelete
       return name || institutionName || 'this account'
+    },
+    activeFilters() {
+      const filters = []
+      const query = this.searchQuery.trim()
+      if (query) {
+        filters.push({ key: 'search', label: 'Search', value: query })
+      }
+      this.typeFilters.forEach((type) => {
+        filters.push({ key: `type:${type}`, label: 'Type', value: this.formatType(type) })
+      })
+      if (this.showHidden) {
+        filters.push({ key: 'hidden', label: 'Hidden', value: 'Included' })
+      }
+      return filters
     },
   },
   methods: {
@@ -398,6 +433,24 @@ export default {
     toggleDeleteButtons() {
       this.showDeleteButtons = !this.showDeleteButtons
     },
+    /**
+     * Remove a single filter tag and reset the associated state.
+     * @param {string} key - Filter tag identifier.
+     */
+    removeFilter(key) {
+      if (key === 'search') {
+        this.searchQuery = ''
+        return
+      }
+      if (key === 'hidden') {
+        this.showHidden = false
+        return
+      }
+      if (key.startsWith('type:')) {
+        const type = key.replace('type:', '')
+        this.typeFilters = this.typeFilters.filter((entry) => entry !== type)
+      }
+    },
     exportCSV() {
       window.open('/api/export/accounts', '_blank')
     },
@@ -438,7 +491,8 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70 hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
+  @apply hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
 }
 
 .pill.active {
@@ -451,5 +505,26 @@ export default {
 
 .type-filter-label {
   @apply text-xs uppercase tracking-wide text-neutral-400;
+}
+
+.filter-tags {
+  @apply flex flex-wrap items-center gap-2 mb-4;
+}
+
+.filter-tag {
+  @apply inline-flex items-center gap-2 rounded-full border border-blue-800/60 bg-blue-950/40;
+  @apply px-3 py-1 text-xs text-blue-100;
+}
+
+.filter-tag__label {
+  @apply uppercase tracking-wide text-[11px] text-blue-300;
+}
+
+.filter-tag__value {
+  @apply font-semibold text-blue-50;
+}
+
+.filter-tag__remove {
+  @apply text-blue-200 hover:text-blue-50 transition;
 }
 </style>
