@@ -1,6 +1,6 @@
 # for arch_ux_02
 
-## Start of Task 
+## Start of Task
 
 Reviewing flow from chart to account list logic, with target files:
 
@@ -12,5 +12,5 @@ Reviewing flow from chart to account list logic, with target files:
 ## UX Refinment
 
 - [X ] AccountsReorderChart.vue bug: chart renders before filtered data array is set
-- [\] AssetsBarTrended.vue: added nextTick(), destroy on switch type, error handling 
+- [\] AssetsBarTrended.vue: added nextTick(), destroy on switch type, error handling
 - [] NET Year Comparison: refactored data toggles, safe error handling, debug support verified
