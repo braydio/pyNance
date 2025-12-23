@@ -1,4 +1,7 @@
 // @vitest-environment jsdom
+/**
+ * Component tests for DailyNetChart date padding and moving averages.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -117,15 +120,15 @@ describe('DailyNetChart.vue', () => {
     expect(expenseDataset.data[juneLastIndex]).toBe(0)
   })
 
-  it('keeps labels aligned to the month of the selected start date', async () => {
+  it('keeps labels aligned to the selected date range', async () => {
     const referenceDate = new Date('2024-02-10T00:00:00')
-    const expectedStart = formatDateKey(new Date(referenceDate.getFullYear(), 1, 1))
-    const expectedEnd = formatDateKey(new Date(referenceDate.getFullYear(), 2, 0))
+    const expectedStart = formatDateKey(referenceDate)
+    const expectedEnd = formatDateKey(new Date(referenceDate.getFullYear(), 1, 29))
 
     mount(DailyNetChart, {
       props: {
         startDate: formatDateKey(referenceDate),
-        endDate: formatDateKey(new Date(referenceDate.getFullYear(), 1, 29)),
+        endDate: expectedEnd,
         zoomedOut: false,
       },
     })
@@ -138,5 +141,56 @@ describe('DailyNetChart.vue', () => {
 
     expect(labels[0]).toBe(expectedStart)
     expect(labels[labels.length - 1]).toBe(expectedEnd)
+  })
+
+  it('pads sparse ranges and uses zeros in moving averages', async () => {
+    fetchDailyNet.mockResolvedValueOnce({
+      status: 'success',
+      data: [
+        {
+          date: '2024-03-01',
+          income: { parsedValue: 70 },
+          expenses: { parsedValue: 0 },
+          net: { parsedValue: 70 },
+          transaction_count: 1,
+        },
+        {
+          date: '2024-03-07',
+          income: { parsedValue: 70 },
+          expenses: { parsedValue: 0 },
+          net: { parsedValue: 70 },
+          transaction_count: 1,
+        },
+      ],
+    })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-03-01',
+        endDate: '2024-03-07',
+        zoomedOut: false,
+        show7Day: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    const labels = lastConfig.data.labels
+
+    expect(labels).toHaveLength(7)
+    expect(labels[0]).toBe('2024-03-01')
+    expect(labels[6]).toBe('2024-03-07')
+
+    const incomeDataset = lastConfig.data.datasets.find((dataset) => dataset.label === 'Income')
+    const movingAverageDataset = lastConfig.data.datasets.find(
+      (dataset) => dataset.label === '7-Day Avg',
+    )
+
+    expect(incomeDataset.data[1]).toBe(0)
+    expect(movingAverageDataset.data[0]).toBeCloseTo(10, 5)
+    expect(movingAverageDataset.data[5]).toBeCloseTo(10, 5)
+    expect(movingAverageDataset.data[6]).toBeCloseTo(20, 5)
   })
 })
