@@ -22,6 +22,15 @@
         </select>
       </div>
     </div>
+    <div v-if="activeFilterTags.length" class="filter-tags">
+      <span v-for="filter in activeFilterTags" :key="filter.key" class="filter-tag">
+        <span class="filter-tag__label">{{ filter.label }}:</span>
+        <span class="filter-tag__value">{{ filter.value }}</span>
+        <button type="button" class="filter-tag__remove" @click="removeFilterTag(filter.key)">
+          ×
+        </button>
+      </span>
+    </div>
     <table class="min-w-full divide-y divide-gray-200">
       <thead class="bg-gray-100 text-gray-700 text-sm font-semibold uppercase">
         <tr>
@@ -104,6 +113,11 @@
 </template>
 
 <script setup>
+/**
+ * MasterTxidTable.vue
+ *
+ * Editable transactions table with stacked category filters and tag summaries.
+ */
 import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import { updateTransaction } from '@/api/transactions'
@@ -135,6 +149,47 @@ const categoryTree = ref([])
 const sortKey = ref('date')
 const sortOrder = ref('asc')
 
+const activeFilterTags = computed(() => {
+  const tags = []
+  if (selectedPrimaryCategory.value) {
+    tags.push({ key: 'primary', label: 'Category', value: selectedPrimaryCategory.value })
+  }
+  if (selectedSubcategory.value) {
+    tags.push({ key: 'subcategory', label: 'Subcategory', value: selectedSubcategory.value })
+  }
+  return tags
+})
+
+/**
+ * Remove a selected filter tag.
+ * @param {string} key - Filter tag identifier.
+ */
+function removeFilterTag(key) {
+  if (key === 'primary') {
+    selectedPrimaryCategory.value = ''
+    selectedSubcategory.value = ''
+    return
+  }
+  if (key === 'subcategory') {
+    selectedSubcategory.value = ''
+  }
+}
+
+/**
+ * Resolve the primary category name for a transaction.
+ * @param {Object} tx - Transaction record.
+ * @returns {string} Primary category label if available.
+ */
+function getPrimaryCategory(tx) {
+  if (tx.primary_category) {
+    return String(tx.primary_category)
+  }
+  if (tx.category && typeof tx.category === 'string') {
+    return tx.category.split(':')[0].trim()
+  }
+  return ''
+}
+
 function startEdit(index, tx) {
   editingIndex.value = index
   editBuffer.value = { ...tx }
@@ -162,7 +217,10 @@ async function saveEdit(tx) {
     toast.success('Transaction updated')
 
     const confirmed = confirm(
-      `Always use description "${editBuffer.value.description}" for merchant "${tx.merchant_name}" on account "${tx.account_name}"?`
+      [
+        `Always use description "${editBuffer.value.description}" for merchant "${tx.merchant_name}"`,
+        `on account "${tx.account_name}"?`,
+      ].join(' ')
     )
     if (confirmed) {
       console.log('[RuleEngine] Create rule: if merchant is', tx.merchant_name)
@@ -199,6 +257,11 @@ function sortBy(key) {
 
 const filteredTransactions = computed(() => {
   let txs = [...props.transactions]
+
+  if (selectedPrimaryCategory.value) {
+    const primary = selectedPrimaryCategory.value.toLowerCase()
+    txs = txs.filter(tx => getPrimaryCategory(tx).toLowerCase() === primary)
+  }
 
   if (selectedSubcategory.value) {
     txs = txs.filter(tx =>
@@ -240,5 +303,25 @@ onMounted(async () => {
 
 .btn-sm {
   @apply inline-flex items-center px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700;
+}
+
+.filter-tags {
+  @apply flex flex-wrap items-center gap-2 text-sm;
+}
+
+.filter-tag {
+  @apply inline-flex items-center gap-2 rounded-full border border-gray-300 bg-white px-3 py-1 text-xs text-gray-700;
+}
+
+.filter-tag__label {
+  @apply uppercase tracking-wide text-[11px] text-gray-500;
+}
+
+.filter-tag__value {
+  @apply font-semibold text-gray-800;
+}
+
+.filter-tag__remove {
+  @apply text-gray-500 hover:text-gray-800 transition;
 }
 </style>

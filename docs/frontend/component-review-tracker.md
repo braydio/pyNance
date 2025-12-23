@@ -13,6 +13,7 @@ This document consolidates **FileLegend.md** and **ProcessLegend.md** into a sin
 - **[AS]** = `frontend/src/components/widgets/AccountSnapshot.vue`
 - **[AT]** = `frontend/src/components/tables/AccountsTable.vue`
 - **[TT]** = `frontend/src/components/tables/TransactionsTable.vue`
+- **[MTT]** = `frontend/src/components/tables/MasterTxidTable.vue`
 - **[PC]** = `frontend/src/components/tables/PaginationControls.vue`
 - **[TM]** = `frontend/src/components/modals/TransactionModal.vue`
 - **[GCD]** = `frontend/src/components/ui/GroupedCategoryDropdown.vue`
