@@ -661,9 +661,8 @@ def _running_balance_expression():
     )
 
     signed_amount = case(
-        (Transaction.transaction_type == "income", func.abs(Transaction.amount)),
-        (Transaction.transaction_type == "expense", -func.abs(Transaction.amount)),
-        else_=-Transaction.amount,
+        (Transaction.amount >= 0, func.abs(Transaction.amount)),
+        else_=-func.abs(Transaction.amount),
     )
 
     cumulative_delta = func.coalesce(

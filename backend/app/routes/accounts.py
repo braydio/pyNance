@@ -13,12 +13,12 @@ from app.sql.account_logic import (
     should_throttle_refresh,
 )
 from app.sql.forecast_logic import update_account_history
-from app.helpers.plaid_helpers import get_accounts
+from app.services.accounts_service import fetch_accounts
 from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -161,6 +161,10 @@ def _is_plaid_link_type(value) -> bool:
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """Refresh all linked accounts for their enabled products."""
+    cached_response = getattr(g, "bulk_refresh_response", None)
+    if cached_response is not None:
+        logger.debug("Skipping duplicate bulk refresh call in the same request.")
+        return cached_response
     try:
         from app.sql import account_logic
 
@@ -217,7 +221,7 @@ def refresh_all_accounts():
                 previous_institution = inst
                 accounts_data = token_account_cache.get(access_token)
                 if accounts_data is None:
-                    accounts_data = get_accounts(access_token, account.user_id)
+                    accounts_data = fetch_accounts(access_token, account.user_id)
                     if accounts_data is None:
                         skipped_rate_limited += 1
                         logger.info(
@@ -391,7 +395,7 @@ def refresh_all_accounts():
             skipped_rate_limited,
             len(error_map),
         )
-        return (
+        response = (
             jsonify(
                 {
                     "status": "success",
@@ -404,10 +408,14 @@ def refresh_all_accounts():
             ),
             200,
         )
+        g.bulk_refresh_response = response
+        return response
 
     except Exception as ex:
         logger.error("Error in refresh_accounts: %s", ex, exc_info=True)
-        return jsonify({"error": str(ex)}), 500
+        response = (jsonify({"error": str(ex)}), 500)
+        g.bulk_refresh_response = response
+        return response
 
 
 @accounts.route("/<account_id>/refresh", methods=["POST"])
@@ -444,7 +452,7 @@ def refresh_single_account(account_id):
             jsonify({"status": "error", "message": "Missing Plaid token"}),
             400,
         )
-    accounts_data = get_accounts(token, account.user_id)
+    accounts_data = fetch_accounts(token, account.user_id)
     if accounts_data is None:
         return (
             jsonify(

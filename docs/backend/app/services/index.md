@@ -11,6 +11,7 @@
 - [`enhanced_account_history.py`](enhanced_account_history.md): Cache-aware wrapper that orchestrates history recomputation and storage.
 - [`account_snapshot.py`](account_snapshot.md): Manage preferred snapshot selections for dashboard widgets.
 - [`account_groups.py`](account_groups.md): CRUD and ordering logic for customizable dashboard account groups.
+- [`accounts_service.py`](accounts_service.md): Lightweight Plaid account fetch adapter used by refresh routes.
 
 ### Forecasting
 
