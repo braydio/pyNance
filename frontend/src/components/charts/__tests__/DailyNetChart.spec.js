@@ -228,9 +228,7 @@ describe('DailyNetChart.vue', () => {
 
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
-    const comparison = lastConfig.data.datasets.find(
-      (d) => d.label === 'Prior month to-date',
-    )
+    const comparison = lastConfig.data.datasets.find((d) => d.label === 'Prior month to-date')
 
     expect(comparison).toBeTruthy()
 

@@ -51,13 +51,13 @@ const requestRange = ref({ startDate: null, endDate: null })
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000
 
-const getStyle = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 const formatDateKey = (d) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(
-    d.getDate(),
-  ).padStart(2, '0')}`
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
+    2,
+    '0',
+  )}`
 
 const parseDateKey = (s) => (s ? new Date(`${s}T00:00:00`) : null)
 
@@ -95,9 +95,7 @@ function padDailyNetData(data, labels) {
 
 function movingAverage(values, window) {
   return values.map((_, i) =>
-    i < window - 1
-      ? null
-      : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
+    i < window - 1 ? null : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
   )
 }
 
@@ -160,7 +158,11 @@ function buildComparisonSeries(labels, data, ctx) {
 
 function emphasizeColor(hex, channel) {
   let n = hex.replace('#', '')
-  if (n.length === 3) n = n.split('').map((c) => c + c).join('')
+  if (n.length === 3)
+    n = n
+      .split('')
+      .map((c) => c + c)
+      .join('')
   let r = parseInt(n.slice(0, 2), 16)
   let g = parseInt(n.slice(2, 4), 16)
   let b = parseInt(n.slice(4, 6), 16)
@@ -185,14 +187,9 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
 
-  const fullLabels = buildDateRangeLabels(
-    requestRange.value.startDate,
-    requestRange.value.endDate,
-  )
+  const fullLabels = buildDateRangeLabels(requestRange.value.startDate, requestRange.value.endDate)
 
-  const fullNet = padDailyNetData(chartData.value, fullLabels).map(
-    (d) => d.net.parsedValue,
-  )
+  const fullNet = padDailyNetData(chartData.value, fullLabels).map((d) => d.net.parsedValue)
 
   const ma7Full = movingAverage(fullNet, 7)
   const ma30Full = movingAverage(fullNet, 30)
