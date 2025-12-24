@@ -190,9 +190,13 @@
                 Tap to view recent activity
               </span>
             </div>
-            <div class="flex flex-col items-end gap-2 text-right">
-              <span class="font-mono text-lg font-semibold text-blue-900 dark:text-blue-100">
-                {{ formatAccounting(account.balance) }}
+            <div class="flex flex-col items-end gap-1 text-right">
+              <span class="text-[10px] uppercase tracking-wide text-gray-400">Balance</span>
+              <span
+                class="font-mono text-lg font-semibold text-blue-900 dark:text-blue-100"
+                data-testid="account-balance"
+              >
+                {{ formatAccounting(resolveAccountBalance(account)) }}
               </span>
               <span
                 class="inline-flex items-center gap-1 rounded-full text-xs font-medium"
@@ -285,6 +289,10 @@
 </template>
 
 <script setup>
+/**
+ * Account snapshot widget rendering selected accounts with balances, reminders,
+ * and recent activity for quick dashboard insight.
+ */
 import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
@@ -446,6 +454,31 @@ function upcomingClass(val) {
   return 'text-gray-500 dark:text-gray-300'
 }
 
+/**
+ * Resolve the most accurate balance field available for an account.
+ * Falls back to zero when no numeric balance data is present.
+ *
+ * @param {Record<string, unknown>} account - Account record from the snapshot API.
+ * @returns {number} Parsed balance value.
+ */
+function resolveAccountBalance(account) {
+  if (!account || typeof account !== 'object') return 0
+  const candidates = [
+    account.balance,
+    account.adjusted_balance,
+    account?.balances?.current,
+    account?.balances?.available,
+  ]
+
+  for (const candidate of candidates) {
+    const numeric = parseFloat(candidate)
+    if (!Number.isNaN(numeric)) {
+      return numeric
+    }
+  }
+  return 0
+}
+
 function upcomingPillClass(val) {
   // Pill palettes: emerald for positive (success), rose for negative (risk), blue for neutral/info.
   const palette = {
@@ -493,7 +526,7 @@ function upcomingPillClass(val) {
 }
 
 const totalBalance = computed(() =>
-  stagedAccounts.value.reduce((sum, account) => sum + parseFloat(account.balance || 0), 0),
+  stagedAccounts.value.reduce((sum, account) => sum + resolveAccountBalance(account), 0),
 )
 
 const totalUpcoming = computed(() =>
