@@ -160,7 +160,21 @@ def exchange_public_token_endpoint():
         except Exception as e:
             logger.error("Failed to upsert PlaidItem: %s", e)
 
-        # --- PATCH: Persist PlaidAccount entries ---
+        for acct in accounts:
+            acct["institution_name"] = institution_name
+            logger.debug(
+                "Injected institution name into %d accounts: %s",
+                len(accounts),
+                institution_name,
+            )
+
+        logger.debug("[CHECK] Calling upsert_accounts() with user_id=%s", user_id)
+        account_logic.upsert_accounts(
+            user_id, accounts, provider="plaid", access_token=access_token
+        )
+        logger.info("Upserted %d accounts for user %s", len(accounts), user_id)
+
+        # --- Persist PlaidAccount entries after accounts exist ---
         for acct in accounts:
             account_id = acct.get("account_id")
             if not account_id:
@@ -181,21 +195,7 @@ def exchange_public_token_endpoint():
             )
             db.session.add(new_plaid_account)
 
-        for acct in accounts:
-            acct["institution_name"] = institution_name
-            logger.debug(
-                "Injected institution name into %d accounts: %s",
-                len(accounts),
-                institution_name,
-            )
-
         db.session.commit()
-
-        logger.debug("[CHECK] Calling upsert_accounts() with user_id=%s", user_id)
-        account_logic.upsert_accounts(
-            user_id, accounts, provider="plaid", access_token=access_token
-        )
-        logger.info("Upserted %d accounts for user %s", len(accounts), user_id)
 
         return (
             jsonify(
