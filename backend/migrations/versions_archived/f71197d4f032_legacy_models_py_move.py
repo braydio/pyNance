@@ -9,8 +9,6 @@ Alembic autogen incorrectly detected NUMERIC → UUID changes
 due to SQLite type reflection. In reality, UUIDs were already in use.
 """
 
-import sqlalchemy as sa
-from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "f71197d4f032"

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from typing import Any
 
 from arbit.config import settings
 from arbit.models import Fill, OrderSpec
