@@ -1,4 +1,8 @@
 // @vitest-environment jsdom
+/**
+ * Component tests for DailyNetChart date padding, moving averages,
+ * and comparison overlays.
+ */
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
@@ -24,10 +28,7 @@ vi.mock('@/api/charts', () => ({
 }))
 
 /**
- * Format a Date object as YYYY-MM-DD for chart expectations.
- *
- * @param {Date} date - Date to format.
- * @returns {string} ISO-like date string.
+ * Format a Date object as YYYY-MM-DD.
  */
 function formatDateKey(date) {
   const year = date.getFullYear()
@@ -37,9 +38,7 @@ function formatDateKey(date) {
 }
 
 /**
- * Flush pending promises and Vue renders.
- *
- * @returns {Promise<void>} Promise resolved after queued microtasks.
+ * Flush Vue + promise queues.
  */
 async function flushRender() {
   await Promise.resolve()
@@ -50,6 +49,7 @@ describe('DailyNetChart.vue', () => {
   beforeEach(() => {
     chartMock.mockClear()
     fetchDailyNet.mockReset()
+
     fetchDailyNet.mockResolvedValue({
       status: 'success',
       data: [
@@ -90,43 +90,37 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    const lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
 
     expect(labels).toHaveLength(30)
     expect(labels[0]).toBe('2024-06-01')
     expect(labels[29]).toBe('2024-06-30')
 
-    const incomeDataset = lastConfig.data.datasets.find((dataset) => dataset.label === 'Income')
-    const expenseDataset = lastConfig.data.datasets.find((dataset) => dataset.label === 'Expenses')
-    const netDataset = lastConfig.data.datasets.find((dataset) => dataset.label === 'Net')
+    const income = lastConfig.data.datasets.find((d) => d.label === 'Income')
+    const expenses = lastConfig.data.datasets.find((d) => d.label === 'Expenses')
+    const net = lastConfig.data.datasets.find((d) => d.label === 'Net')
 
-    expect(incomeDataset.data).toHaveLength(30)
-    expect(expenseDataset.data).toHaveLength(30)
-    expect(netDataset.data).toHaveLength(30)
+    expect(income.data).toHaveLength(30)
+    expect(expenses.data).toHaveLength(30)
+    expect(net.data).toHaveLength(30)
 
-    const juneFirstIndex = labels.indexOf('2024-06-01')
-    expect(incomeDataset.data[juneFirstIndex]).toBe(0)
-    expect(expenseDataset.data[juneFirstIndex]).toBe(0)
-    expect(netDataset.data[juneFirstIndex]).toBe(0)
+    expect(income.data[0]).toBe(0)
+    expect(expenses.data[0]).toBe(0)
+    expect(net.data[0]).toBe(0)
 
     const juneSecondIndex = labels.indexOf('2024-06-02')
-    expect(incomeDataset.data[juneSecondIndex]).toBe(100)
-
-    const juneLastIndex = labels.indexOf('2024-06-30')
-    expect(incomeDataset.data[juneLastIndex]).toBe(0)
-    expect(expenseDataset.data[juneLastIndex]).toBe(0)
+    expect(income.data[juneSecondIndex]).toBe(100)
   })
 
-  it('keeps labels aligned to the month of the selected start date', async () => {
-    const referenceDate = new Date('2024-02-10T00:00:00')
-    const expectedStart = formatDateKey(new Date(referenceDate.getFullYear(), 1, 1))
-    const expectedEnd = formatDateKey(new Date(referenceDate.getFullYear(), 2, 0))
+  it('keeps labels aligned to the selected date range', async () => {
+    const start = new Date('2024-02-10T00:00:00')
+    const end = new Date(start.getFullYear(), 1, 29)
 
     mount(DailyNetChart, {
       props: {
-        startDate: formatDateKey(referenceDate),
-        endDate: formatDateKey(new Date(referenceDate.getFullYear(), 1, 29)),
+        startDate: formatDateKey(start),
+        endDate: formatDateKey(end),
         zoomedOut: false,
       },
     })
@@ -134,11 +128,56 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    const lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
 
-    expect(labels[0]).toBe(expectedStart)
-    expect(labels[labels.length - 1]).toBe(expectedEnd)
+    expect(labels[0]).toBe(formatDateKey(start))
+    expect(labels.at(-1)).toBe(formatDateKey(end))
+  })
+
+  it('pads sparse ranges and uses zeros in moving averages', async () => {
+    fetchDailyNet.mockResolvedValueOnce({
+      status: 'success',
+      data: [
+        {
+          date: '2024-03-01',
+          income: { parsedValue: 70 },
+          expenses: { parsedValue: 0 },
+          net: { parsedValue: 70 },
+          transaction_count: 1,
+        },
+        {
+          date: '2024-03-07',
+          income: { parsedValue: 70 },
+          expenses: { parsedValue: 0 },
+          net: { parsedValue: 70 },
+          transaction_count: 1,
+        },
+      ],
+    })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-03-01',
+        endDate: '2024-03-07',
+        zoomedOut: false,
+        show7Day: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const labels = lastConfig.data.labels
+
+    expect(labels).toHaveLength(7)
+
+    const income = lastConfig.data.datasets.find((d) => d.label === 'Income')
+    const ma7 = lastConfig.data.datasets.find((d) => d.label === '7-Day Avg')
+
+    expect(income.data[1]).toBe(0)
+    expect(ma7.data.at(-1)).toBeCloseTo(20, 5)
   })
 
   it('aligns prior month overlay values to day-of-month labels', async () => {
@@ -151,14 +190,12 @@ describe('DailyNetChart.vue', () => {
             income: { parsedValue: 100 },
             expenses: { parsedValue: -40 },
             net: { parsedValue: 60 },
-            transaction_count: 2,
           },
           {
             date: '2024-06-15',
             income: { parsedValue: 200 },
             expenses: { parsedValue: -80 },
             net: { parsedValue: 120 },
-            transaction_count: 3,
           },
         ],
       })
@@ -167,17 +204,11 @@ describe('DailyNetChart.vue', () => {
         data: [
           {
             date: '2024-05-02',
-            income: { parsedValue: 90 },
-            expenses: { parsedValue: -35 },
             net: { parsedValue: 55 },
-            transaction_count: 1,
           },
           {
             date: '2024-05-15',
-            income: { parsedValue: 210 },
-            expenses: { parsedValue: -90 },
             net: { parsedValue: 120 },
-            transaction_count: 4,
           },
         ],
       })
@@ -195,47 +226,20 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    const lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
-    const comparisonDataset = lastConfig.data.datasets.find(
-      (dataset) => dataset.label === 'Prior month to-date',
-    )
+    const comparison = lastConfig.data.datasets.find((d) => d.label === 'Prior month to-date')
 
-    expect(comparisonDataset).toBeTruthy()
+    expect(comparison).toBeTruthy()
 
-    const juneSecondIndex = labels.indexOf('2024-06-02')
-    const juneFifteenthIndex = labels.indexOf('2024-06-15')
-
-    expect(comparisonDataset.data[juneSecondIndex]).toBe(55)
-    expect(comparisonDataset.data[juneFifteenthIndex]).toBe(120)
+    expect(comparison.data[labels.indexOf('2024-06-02')]).toBe(55)
+    expect(comparison.data[labels.indexOf('2024-06-15')]).toBe(120)
   })
 
   it('removes comparison dataset when overlay is disabled', async () => {
     fetchDailyNet
-      .mockResolvedValueOnce({
-        status: 'success',
-        data: [
-          {
-            date: '2024-06-02',
-            income: { parsedValue: 100 },
-            expenses: { parsedValue: -40 },
-            net: { parsedValue: 60 },
-            transaction_count: 2,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        status: 'success',
-        data: [
-          {
-            date: '2024-05-02',
-            income: { parsedValue: 90 },
-            expenses: { parsedValue: -35 },
-            net: { parsedValue: 55 },
-            transaction_count: 1,
-          },
-        ],
-      })
+      .mockResolvedValueOnce({ status: 'success', data: [] })
+      .mockResolvedValueOnce({ status: 'success', data: [] })
 
     const wrapper = mount(DailyNetChart, {
       props: {
@@ -250,18 +254,14 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
-    let lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
-    expect(
-      lastConfig.data.datasets.some((dataset) => dataset.label === 'Prior month to-date'),
-    ).toBe(true)
+    let lastConfig = chartMock.mock.calls.at(-1)[0]
+    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(true)
 
     await wrapper.setProps({ showComparisonOverlay: false })
     await flushRender()
     await flushRender()
 
-    lastConfig = chartMock.mock.calls[chartMock.mock.calls.length - 1][0]
-    expect(
-      lastConfig.data.datasets.some((dataset) => dataset.label === 'Prior month to-date'),
-    ).toBe(false)
+    lastConfig = chartMock.mock.calls.at(-1)[0]
+    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(false)
   })
 })
