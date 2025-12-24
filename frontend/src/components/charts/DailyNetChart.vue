@@ -211,6 +211,7 @@ async function renderChart() {
   const incomeBase = getStyle('--color-accent-green')
   const expenseBase = getStyle('--color-accent-red')
   const netColor = getStyle('--color-accent-yellow')
+  const netNegative = getStyle('--color-accent-magenta')
   const comparisonColor = getStyle('--color-text-muted')
 
   const datasets = [
@@ -231,15 +232,16 @@ async function renderChart() {
       barThickness: 20,
     },
     {
-      type: 'line',
+      type: 'bar',
       label: 'Net',
       data: net,
-      borderColor: netColor,
-      backgroundColor: netColor,
-      borderWidth: 2,
-      pointRadius: 3,
-      pointHoverRadius: 4,
-      tension: 0.2,
+      backgroundColor: net.map((value) => (value >= 0 ? netColor : netNegative)),
+      borderRadius: 4,
+      borderSkipped: false,
+      barThickness: 4,
+      maxBarThickness: 6,
+      grouped: false,
+      order: 3,
     },
   ]
 
@@ -332,8 +334,9 @@ async function renderChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          mode: 'index',
-          intersect: false,
+          mode: 'nearest',
+          intersect: true,
+          displayColors: true,
           callbacks: {
             title: (items) =>
               items.length ? formatAxisDate(items[0].label, true) : '',
@@ -360,7 +363,26 @@ async function renderChart() {
               return [`Transactions: ${dataPoint.transaction_count}`]
             },
           },
+          backgroundColor: getStyle('--theme-bg'),
+          titleColor: getStyle('--color-accent-yellow'),
+          bodyColor: getStyle('--color-text-light'),
+          borderColor: getStyle('--color-accent-yellow'),
+          borderWidth: 1,
         },
+      },
+      onClick(evt) {
+        if (!chartInstance.value) return
+        const points = chartInstance.value.getElementsAtEventForMode(
+          evt,
+          'nearest',
+          { intersect: true },
+          false,
+        )
+        if (!points.length) return
+        const { index, datasetIndex } = points[0]
+        const dataset = chartInstance.value.data.datasets[datasetIndex]
+        if (dataset?.type !== 'bar') return
+        emit('bar-click', labels[index])
       },
     },
   })
