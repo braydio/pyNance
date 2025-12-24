@@ -41,35 +41,35 @@
         </div>
         <!-- Net Income Summary Card -->
         <div
-        class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
-      >
-        <div class="flex justify-end pr-28 mb-2">
-          <div class="range-toggle" role="group" aria-label="Daily net date range">
-            <button
-              type="button"
-              class="range-toggle__option"
-              :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'month_to_date' }"
-              data-testid="daily-net-range-month"
-              @click="setDailyNetRangeMode('month_to_date')"
-            >
-              Current month-to-date
-            </button>
-            <button
-              type="button"
-              class="range-toggle__option"
-              :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'last_30_days' }"
-              data-testid="daily-net-range-rolling"
-              @click="setDailyNetRangeMode('last_30_days')"
-            >
-              Rolling last 30 days
-            </button>
+          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
+        >
+          <div class="flex justify-end pr-28 mb-2">
+            <div class="range-toggle" role="group" aria-label="Daily net date range">
+              <button
+                type="button"
+                class="range-toggle__option"
+                :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'month_to_date' }"
+                data-testid="daily-net-range-month"
+                @click="setDailyNetRangeMode('month_to_date')"
+              >
+                Current month-to-date
+              </button>
+              <button
+                type="button"
+                class="range-toggle__option"
+                :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'last_30_days' }"
+                data-testid="daily-net-range-rolling"
+                @click="setDailyNetRangeMode('last_30_days')"
+              >
+                Rolling last 30 days
+              </button>
+            </div>
           </div>
-        </div>
-        <ChartDetailsSidebar
-          v-model:show7-day="show7Day"
-          v-model:show30-day="show30Day"
-          v-model:show-avg-income="showAvgIncome"
-          v-model:show-avg-expenses="showAvgExpenses"
+          <ChartDetailsSidebar
+            v-model:show7-day="show7Day"
+            v-model:show30-day="show30Day"
+            v-model:show-avg-income="showAvgIncome"
+            v-model:show-avg-expenses="showAvgExpenses"
             v-model:show-comparison-overlay="showComparisonOverlay"
             v-model:comparison-mode="comparisonMode"
           />
@@ -767,7 +767,9 @@ async function onCategoryBarClick(payload) {
   font-size: 0.85rem;
   color: var(--color-text-muted);
   background: transparent;
-  transition: background 0.2s ease, color 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .range-toggle__option:hover,

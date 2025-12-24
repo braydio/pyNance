@@ -52,14 +52,7 @@ const TopAccountSnapshotStub = {
 
 const DailyNetChartStub = {
   name: 'DailyNetChart',
-  props: [
-    'startDate',
-    'endDate',
-    'displayStartDate',
-    'displayEndDate',
-    'rangeMode',
-    'zoomedOut',
-  ],
+  props: ['startDate', 'endDate', 'displayStartDate', 'displayEndDate', 'rangeMode', 'zoomedOut'],
   emits: ['summary-change', 'data-change', 'bar-click'],
   template: '<div class="daily-net-chart-stub"></div>',
 }

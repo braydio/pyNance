@@ -264,9 +264,7 @@ async function renderChart() {
   const ma30 = labels.map((l) => ma30Full[idx[l]] ?? null)
 
   const avgIncome = income.length ? income.reduce((a, b) => a + b, 0) / income.length : 0
-  const avgExpenses = expenses.length
-    ? expenses.reduce((a, b) => a + b, 0) / expenses.length
-    : 0
+  const avgExpenses = expenses.length ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
 
   const incomeBase = getStyle('--color-accent-green')
   const expenseBase = getStyle('--color-accent-red')
@@ -355,15 +353,14 @@ async function renderChart() {
           ? buildComparisonSeries(labels, comparisonData.value, ctx, {
               limitToDayOfMonth:
                 rangeMode.value === 'month_to_date'
-                  ? parseDateKey(props.endDate)?.getDate() ?? null
+                  ? (parseDateKey(props.endDate)?.getDate() ?? null)
                   : null,
             })
           : labels.map(() => null)
 
       datasets.push({
         type: 'line',
-        label:
-          ctx.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days',
+        label: ctx.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days',
         data: comparisonSeries,
         borderWidth: 2,
         pointRadius: 0,
@@ -424,10 +421,7 @@ async function fetchData() {
   emitSummary()
 }
 
-watch(
-  [chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses],
-  renderChart,
-)
+watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
 watch(
   () => [
     props.startDate,
