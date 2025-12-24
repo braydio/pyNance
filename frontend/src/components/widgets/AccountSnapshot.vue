@@ -526,10 +526,7 @@ function upcomingPillClass(val) {
 }
 
 const totalBalance = computed(() =>
-  stagedAccounts.value.reduce(
-    (sum, account) => sum + resolveAccountBalance(account),
-    0,
-  ),
+  stagedAccounts.value.reduce((sum, account) => sum + resolveAccountBalance(account), 0),
 )
 
 const totalUpcoming = computed(() =>
