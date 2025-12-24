@@ -6,6 +6,10 @@ By default the chart displays every day in the selected month, including future 
 
 The chart emits a `bar-click` event with the associated date whenever a bar is clicked. See [DASHBOARD_MODAL_GUIDE.md](./DASHBOARD_MODAL_GUIDE.md) for how these events open the transaction modal.
 
+## Range Toggle
+
+The dashboard includes a dedicated toggle next to the chart to choose between **Current month-to-date** and **Rolling last 30 days** views. Month-to-date is the default and still renders full-month labels while querying data through today. Rolling last 30 days uses an exact 30-day window ending today with matching axis labels.
+
 ## Comparison Overlay
 
 The dashboard overlay sidebar now supports a comparison series that fetches a prior-period dataset from

@@ -461,8 +461,10 @@ export default {
 </script>
 
 <style scoped>
+@reference "../../assets/css/main.css";
+
 .control-surface {
-  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800;
+  @apply flex flex-col gap-4 mb-4 bg-neutral-900/70 border border-neutral-800;
   @apply rounded-2xl p-4 shadow-inner;
 }
 
@@ -484,7 +486,7 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
+  @apply text-xs px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
   @apply hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
 }
 
@@ -511,5 +513,16 @@ export default {
 
 .filter-tag__remove {
   @apply text-blue-200 hover:text-blue-50 transition;
+}
+
+@media (min-width: 768px) {
+  .control-surface {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .pill {
+    font-size: 0.875rem;
+  }
 }
 </style>
