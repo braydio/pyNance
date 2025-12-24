@@ -147,7 +147,7 @@ describe('DailyNetChart.vue', () => {
           transaction_count: 1,
         },
         {
-          date: '2024-03-07',
+          date: '2024-03-10',
           income: { parsedValue: 70 },
           expenses: { parsedValue: 0 },
           net: { parsedValue: 70 },
@@ -159,7 +159,7 @@ describe('DailyNetChart.vue', () => {
     mount(DailyNetChart, {
       props: {
         startDate: '2024-03-01',
-        endDate: '2024-03-07',
+        endDate: '2024-03-10',
         zoomedOut: false,
         show7Day: true,
       },
@@ -171,13 +171,15 @@ describe('DailyNetChart.vue', () => {
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
 
-    expect(labels).toHaveLength(7)
+    expect(labels).toHaveLength(10)
+    expect(labels[0]).toBe('2024-03-01')
+    expect(labels.at(-1)).toBe('2024-03-10')
 
     const income = lastConfig.data.datasets.find((d) => d.label === 'Income')
     const ma7 = lastConfig.data.datasets.find((d) => d.label === '7-Day Avg')
 
     expect(income.data[1]).toBe(0)
-    expect(ma7.data.at(-1)).toBeCloseTo(20, 5)
+    expect(ma7.data.at(-1)).toBeCloseTo(10, 5)
   })
 
   it('aligns prior month overlay values to day-of-month labels', async () => {
