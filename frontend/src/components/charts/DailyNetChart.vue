@@ -53,13 +53,6 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
-const formatAxisDate = (label, includeMonth) => {
-  const parsed = parseDateKey(label)
-  if (!parsed) return label
-  if (!includeMonth) return `${parsed.getDate()}`
-  return `${parsed.getMonth() + 1}/${parsed.getDate()}`
-}
-
 const formatDateKey = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
     2,
@@ -67,6 +60,16 @@ const formatDateKey = (d) =>
   )}`
 
 const parseDateKey = (s) => (s ? new Date(`${s}T00:00:00`) : null)
+
+const formatTooltipTitle = (label) => {
+  const parsed = parseDateKey(label)
+  if (!parsed) return label
+  return parsed.toLocaleDateString(undefined, {
+    month: 'short',
+    day: '2-digit',
+    year: 'numeric',
+  })
+}
 
 function buildDateRangeLabels(startDate, endDate) {
   const start = parseDateKey(startDate)
@@ -179,93 +182,122 @@ function emphasizeColor(hex, channel) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
 }
 
+const netLinePlugin = {
+  id: 'netLinePlugin',
+  afterDatasetsDraw(chart) {
+    const netIndex = chart.data.datasets.findIndex((dataset) => dataset.label === 'Net')
+    if (netIndex === -1) return
+    const dataset = chart.data.datasets[netIndex]
+    const meta = chart.getDatasetMeta(netIndex)
+    const barThickness = dataset.barThickness || 20
+    meta.data.forEach((bar) => {
+      const { ctx } = chart
+      const y = bar.y
+      const x = bar.x
+      ctx.save()
+      ctx.strokeStyle = getStyle('--color-accent-yellow')
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(x - barThickness / 2, y)
+      ctx.lineTo(x + barThickness / 2, y)
+      ctx.stroke()
+      ctx.restore()
+    })
+  },
+}
+
+function handleBarClick(evt) {
+  if (!chartInstance.value) return
+  const points = chartInstance.value.getElementsAtEventForMode(
+    evt,
+    'nearest',
+    { intersect: true },
+    false,
+  )
+  if (!points.length) return
+  const index = points[0].index
+  const label = chartInstance.value.data.labels[index]
+  if (label) emit('bar-click', label)
+}
+
 async function renderChart() {
   await nextTick()
-  if (chartInstance.value) chartInstance.value.destroy()
+  if (chartInstance.value) {
+    chartInstance.value.destroy()
+    chartInstance.value = null
+  }
 
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
 
   const { startDate, endDate } = getActiveDateRange()
   const labels = buildDateRangeLabels(startDate, endDate)
-  const displayData = padDailyNetData(chartData.value, labels)
+  if (!labels.length) return
 
-  const net = displayData.map((d) => d.net.parsedValue)
+  const displayData = padDailyNetData(chartData.value, labels)
+  updateSummary(displayData)
+
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
+  const net = displayData.map((d) => d.net.parsedValue)
 
-  const fullLabels = buildDateRangeLabels(requestRange.value.startDate, requestRange.value.endDate)
-
+  const fullLabels =
+    requestRange.value.startDate && requestRange.value.endDate
+      ? buildDateRangeLabels(requestRange.value.startDate, requestRange.value.endDate)
+      : labels
   const fullNet = padDailyNetData(chartData.value, fullLabels).map((d) => d.net.parsedValue)
 
   const ma7Full = movingAverage(fullNet, 7)
   const ma30Full = movingAverage(fullNet, 30)
+  const lookup = Object.fromEntries(fullLabels.map((l, i) => [l, i]))
+  const ma7 = labels.map((label) => (lookup[label] === undefined ? null : ma7Full[lookup[label]]))
+  const ma30 = labels.map((label) => (lookup[label] === undefined ? null : ma30Full[lookup[label]]))
 
-  const idx = Object.fromEntries(fullLabels.map((l, i) => [l, i]))
-  const ma7 = labels.map((l) => ma7Full[idx[l]] ?? null)
-  const ma30 = labels.map((l) => ma30Full[idx[l]] ?? null)
-
-  const avgIncome = income.reduce((a, b) => a + b, 0) / income.length
-  const avgExpenses = expenses.reduce((a, b) => a + b, 0) / expenses.length
+  const actualIncomeValues = income.length ? income : [0]
+  const actualExpenseValues = expenses.length ? expenses : [0]
+  const avgIncome =
+    actualIncomeValues.reduce((sum, value) => sum + value, 0) / actualIncomeValues.length
+  const avgExpenses =
+    actualExpenseValues.reduce((sum, value) => sum + value, 0) / actualExpenseValues.length
 
   const incomeBase = getStyle('--color-accent-green')
   const expenseBase = getStyle('--color-accent-red')
-  const netColor = getStyle('--color-accent-yellow')
-  const netNegative = getStyle('--color-accent-magenta')
   const comparisonColor = getStyle('--color-text-muted')
+
+  const incomeColors = income.map((value) =>
+    value > avgIncome ? emphasizeColor(incomeBase, 'g') : incomeBase,
+  )
+  const expenseColors = expenses.map((value) =>
+    Math.abs(value) > Math.abs(avgExpenses) ? emphasizeColor(expenseBase, 'r') : expenseBase,
+  )
 
   const datasets = [
     {
       type: 'bar',
       label: 'Income',
       data: income,
-      backgroundColor: income.map((v) =>
-        v > avgIncome ? emphasizeColor(incomeBase, 'g') : incomeBase,
-      ),
+      backgroundColor: incomeColors,
+      borderRadius: 4,
       barThickness: 20,
     },
     {
       type: 'bar',
       label: 'Expenses',
       data: expenses,
-      backgroundColor: expenseBase,
+      backgroundColor: expenseColors,
+      borderRadius: 4,
       barThickness: 20,
     },
     {
       type: 'bar',
       label: 'Net',
       data: net,
-      backgroundColor: net.map((value) => (value >= 0 ? netColor : netNegative)),
-      borderRadius: 4,
-      borderSkipped: false,
-      barThickness: 4,
-      maxBarThickness: 6,
-      grouped: false,
-      order: 3,
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      barThickness: 20,
+      order: 2,
     },
   ]
-
-  if (show7Day.value) {
-    datasets.push({
-      type: 'line',
-      label: '7-Day Avg',
-      data: ma7,
-      borderWidth: 2,
-      pointRadius: 0,
-      borderColor: getStyle('--color-accent-cyan'),
-    })
-  }
-
-  if (show30Day.value) {
-    datasets.push({
-      type: 'line',
-      label: '30-Day Avg',
-      data: ma30,
-      borderWidth: 2,
-      pointRadius: 0,
-      borderColor: getStyle('--color-accent-magenta'),
-    })
-  }
 
   if (showAvgIncome.value) {
     datasets.push({
@@ -275,6 +307,7 @@ async function renderChart() {
       borderColor: emphasizeColor(incomeBase, 'g'),
       borderDash: [6, 6],
       pointRadius: 0,
+      order: 1,
     })
   }
 
@@ -286,81 +319,119 @@ async function renderChart() {
       borderColor: emphasizeColor(expenseBase, 'r'),
       borderDash: [6, 6],
       pointRadius: 0,
+      order: 1,
     })
   }
 
-  if (showComparisonOverlay.value) {
-    const context = buildComparisonContext()
-    const comparisonSeries = buildComparisonSeries(labels, comparisonData.value, context)
+  if (show7Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '7-Day Avg',
+      data: ma7,
+      borderWidth: 2,
+      pointRadius: 0,
+      borderColor: getStyle('--color-accent-cyan'),
+      order: 1,
+    })
+  }
+
+  if (show30Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '30-Day Avg',
+      data: ma30,
+      borderWidth: 2,
+      pointRadius: 0,
+      borderColor: getStyle('--color-accent-magenta'),
+      order: 1,
+    })
+  }
+
+  const comparisonContext = showComparisonOverlay.value ? buildComparisonContext() : null
+  const comparisonSeries =
+    comparisonContext && comparisonData.value.length
+      ? buildComparisonSeries(labels, comparisonData.value, comparisonContext)
+      : []
+  if (showComparisonOverlay.value && comparisonSeries.some((value) => value !== null)) {
     datasets.push({
       type: 'line',
       label:
-        context?.mode === 'prior_month_to_date' ? 'Prior Month' : 'Previous 30 Days',
+        comparisonContext?.mode === 'prior_month_to_date'
+          ? 'Prior Month'
+          : 'Previous 30 Days',
       data: comparisonSeries,
       borderColor: comparisonColor,
       borderDash: [4, 6],
       pointRadius: 0,
       borderWidth: 2,
+      order: 1,
     })
   }
 
-  const startLabel = labels[0]
-  const endLabel = labels[labels.length - 1]
-  const start = parseDateKey(startLabel)
-  const end = parseDateKey(endLabel)
-  const includeMonth =
-    !start || !end || start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()
+  const tickInterval = Math.max(1, Math.ceil(labels.length / 14))
+
+  const yValues = [...income, ...expenses]
+  const yMin = Math.min(...yValues, 0)
+  const yMax = Math.max(...yValues, 0)
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
+    plugins: [netLinePlugin],
     data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 20, bottom: 8 } },
       scales: {
         x: {
+          stacked: true,
+          display: true,
+          grid: { display: true, color: getStyle('--divider') },
           ticks: {
-            autoSkip: true,
-            maxTicksLimit: labels.length > 90 ? 12 : labels.length > 45 ? 10 : 8,
-            callback: (value, index) => formatAxisDate(labels[index], includeMonth),
+            autoSkip: false,
+            maxTicksLimit: 14,
+            color: getStyle('--color-text-muted'),
+            callback: (value, index) => {
+              if (index % tickInterval !== 0) return ''
+              const label = labels[index]
+              if (!label) return ''
+              const dt = parseDateKey(label)
+              if (!dt) return label
+              return dt.toLocaleDateString(undefined, { month: 'short', day: '2-digit' })
+            },
           },
-          grid: { color: getStyle('--divider') },
         },
         y: {
-          ticks: { callback: (v) => formatAmount(v) },
-          grid: { color: getStyle('--divider') },
+          min: yMin,
+          max: yMax,
+          grid: { display: true, color: getStyle('--divider') },
+          ticks: {
+            callback: (value) => formatAmount(value),
+            color: getStyle('--color-text-muted'),
+            font: { family: "'Fira Code', monospace", size: 14 },
+          },
         },
       },
       plugins: {
         legend: { display: false },
         tooltip: {
-          mode: 'nearest',
-          intersect: true,
           displayColors: true,
           callbacks: {
-            title: (items) =>
-              items.length ? formatAxisDate(items[0].label, true) : '',
-            label: (context) => {
-              const idx = context.dataIndex
-              const dataPoint = displayData[idx]
-              if (!dataPoint) return null
-              if (context.dataset.label === 'Income') {
-                return `Income: ${formatAmount(dataPoint.income.parsedValue)}`
-              }
-              if (context.dataset.label === 'Expenses') {
-                return `Expenses: ${formatAmount(dataPoint.expenses.parsedValue)}`
-              }
-              if (context.dataset.label === 'Net') {
-                return `Net: ${formatAmount(dataPoint.net.parsedValue)}`
-              }
-              if (typeof context.parsed.y !== 'number') return null
-              return `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+            title: (items) => {
+              const label = items[0]?.label || labels[items[0]?.dataIndex]
+              return formatTooltipTitle(label)
             },
+            label: () => null,
             afterBody: (items) => {
               const idx = items?.[0]?.dataIndex
-              const dataPoint = displayData[idx]
-              if (!dataPoint) return []
-              return [`Transactions: ${dataPoint.transaction_count}`]
+              const record = displayData[idx]
+              if (!record) return []
+              return [
+                `Income: ${formatAmount(record.income.parsedValue)}`,
+                `Expenses: ${formatAmount(record.expenses.parsedValue)}`,
+                `Net: ${formatAmount(record.net.parsedValue)}`,
+                `Transactions: ${record.transaction_count ?? 0}`,
+              ]
             },
           },
           backgroundColor: getStyle('--theme-bg'),
@@ -370,61 +441,116 @@ async function renderChart() {
           borderWidth: 1,
         },
       },
-      onClick(evt) {
-        if (!chartInstance.value) return
-        const points = chartInstance.value.getElementsAtEventForMode(
-          evt,
-          'nearest',
-          { intersect: true },
-          false,
-        )
-        if (!points.length) return
-        const { index, datasetIndex } = points[0]
-        const dataset = chartInstance.value.data.datasets[datasetIndex]
-        if (dataset?.type !== 'bar') return
-        emit('bar-click', labels[index])
-      },
+      onClick: handleBarClick,
     },
   })
 }
 
-async function fetchData() {
-  const start = new Date(props.startDate)
-  start.setDate(start.getDate() - 30)
+function updateSummary(displayData) {
+  const summary = displayData.reduce(
+    (acc, record) => {
+      acc.totalIncome += record.income.parsedValue
+      acc.totalExpenses += record.expenses.parsedValue
+      acc.totalNet += record.net.parsedValue
+      return acc
+    },
+    { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+  )
 
-  const params = {
-    start_date: formatDateKey(start),
-    end_date: props.endDate,
+  emit('summary-change', summary)
+  emit('data-change', displayData)
+}
+
+function buildFetchParams() {
+  if (props.zoomedOut) {
+    const end = new Date()
+    const start = new Date()
+    start.setMonth(start.getMonth() - 6)
+    start.setDate(start.getDate() - 30)
+    return { start_date: formatDateKey(start), end_date: formatDateKey(end) }
   }
 
-  requestRange.value = params
-  const res = await fetchDailyNet(params)
-  if (res.status === 'success') chartData.value = res.data
+  const end = parseDateKey(props.endDate) ?? new Date()
+  const paddedStart = parseDateKey(props.startDate) ?? new Date()
+  paddedStart.setDate(paddedStart.getDate() - 30)
+  return { start_date: formatDateKey(paddedStart), end_date: formatDateKey(end) }
+}
 
-  if (showComparisonOverlay.value) {
-    const comparisonContext = buildComparisonContext()
-    if (comparisonContext) {
-      const comparisonParams = {
-        start_date: formatDateKey(comparisonContext.priorStart),
-        end_date: formatDateKey(comparisonContext.priorEnd),
-      }
-      const comparisonRes = await fetchDailyNet(comparisonParams)
-      if (comparisonRes.status === 'success') comparisonData.value = comparisonRes.data
+async function fetchData() {
+  const params = buildFetchParams()
+  requestRange.value = { startDate: params.start_date, endDate: params.end_date }
+  try {
+    const res = await fetchDailyNet(params)
+    if (res.status === 'success') {
+      chartData.value = res.data
     }
-  } else {
+  } catch (error) {
+    console.error('Error fetching daily net data:', error)
+  }
+}
+
+async function fetchComparisonData() {
+  if (!showComparisonOverlay.value) {
+    comparisonData.value = []
+    return
+  }
+
+  const context = buildComparisonContext()
+  if (!context) {
+    comparisonData.value = []
+    return
+  }
+
+  try {
+    const comparisonParams = {
+      start_date: formatDateKey(context.priorStart),
+      end_date: formatDateKey(context.priorEnd),
+    }
+    const comparisonRes = await fetchDailyNet(comparisonParams)
+    if (comparisonRes.status === 'success') {
+      comparisonData.value = comparisonRes.data
+    }
+  } catch (error) {
+    console.error('Error fetching comparison data:', error)
     comparisonData.value = []
   }
 }
 
 watch(
-  [chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay],
-  renderChart,
-)
-watch(
-  () => [props.startDate, props.endDate, props.zoomedOut, comparisonMode.value, showComparisonOverlay.value],
-  fetchData,
+  [
+    chartData,
+    comparisonData,
+    show7Day,
+    show30Day,
+    showAvgIncome,
+    showAvgExpenses,
+    showComparisonOverlay,
+    comparisonMode,
+  ],
+  () => {
+    renderChart()
+  },
 )
 
-onMounted(fetchData)
+watch(
+  () => [props.startDate, props.endDate, props.zoomedOut],
+  () => {
+    fetchData()
+    fetchComparisonData()
+  },
+)
+
+watch(
+  () => [comparisonMode.value, showComparisonOverlay.value],
+  () => {
+    fetchComparisonData()
+  },
+)
+
+onMounted(() => {
+  fetchData()
+  fetchComparisonData()
+})
+
 onUnmounted(() => chartInstance.value?.destroy())
 </script>
