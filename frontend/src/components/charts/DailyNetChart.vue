@@ -53,6 +53,13 @@ const MS_PER_DAY = 24 * 60 * 60 * 1000
 
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
+const formatAxisDate = (label, includeMonth) => {
+  const parsed = parseDateKey(label)
+  if (!parsed) return label
+  if (!includeMonth) return `${parsed.getDate()}`
+  return `${parsed.getMonth() + 1}/${parsed.getDate()}`
+}
+
 const formatDateKey = (d) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
     2,
@@ -203,6 +210,8 @@ async function renderChart() {
 
   const incomeBase = getStyle('--color-accent-green')
   const expenseBase = getStyle('--color-accent-red')
+  const netColor = getStyle('--color-accent-yellow')
+  const comparisonColor = getStyle('--color-text-muted')
 
   const datasets = [
     {
@@ -221,9 +230,84 @@ async function renderChart() {
       backgroundColor: expenseBase,
       barThickness: 20,
     },
-    { type: 'line', label: '7-Day Avg', data: ma7, borderWidth: 2, pointRadius: 0 },
-    { type: 'line', label: '30-Day Avg', data: ma30, borderWidth: 2, pointRadius: 0 },
+    {
+      type: 'line',
+      label: 'Net',
+      data: net,
+      borderColor: netColor,
+      backgroundColor: netColor,
+      borderWidth: 2,
+      pointRadius: 3,
+      pointHoverRadius: 4,
+      tension: 0.2,
+    },
   ]
+
+  if (show7Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '7-Day Avg',
+      data: ma7,
+      borderWidth: 2,
+      pointRadius: 0,
+      borderColor: getStyle('--color-accent-cyan'),
+    })
+  }
+
+  if (show30Day.value) {
+    datasets.push({
+      type: 'line',
+      label: '30-Day Avg',
+      data: ma30,
+      borderWidth: 2,
+      pointRadius: 0,
+      borderColor: getStyle('--color-accent-magenta'),
+    })
+  }
+
+  if (showAvgIncome.value) {
+    datasets.push({
+      type: 'line',
+      label: 'Avg Income',
+      data: labels.map(() => avgIncome),
+      borderColor: emphasizeColor(incomeBase, 'g'),
+      borderDash: [6, 6],
+      pointRadius: 0,
+    })
+  }
+
+  if (showAvgExpenses.value) {
+    datasets.push({
+      type: 'line',
+      label: 'Avg Expenses',
+      data: labels.map(() => avgExpenses),
+      borderColor: emphasizeColor(expenseBase, 'r'),
+      borderDash: [6, 6],
+      pointRadius: 0,
+    })
+  }
+
+  if (showComparisonOverlay.value) {
+    const context = buildComparisonContext()
+    const comparisonSeries = buildComparisonSeries(labels, comparisonData.value, context)
+    datasets.push({
+      type: 'line',
+      label:
+        context?.mode === 'prior_month_to_date' ? 'Prior Month' : 'Previous 30 Days',
+      data: comparisonSeries,
+      borderColor: comparisonColor,
+      borderDash: [4, 6],
+      pointRadius: 0,
+      borderWidth: 2,
+    })
+  }
+
+  const startLabel = labels[0]
+  const endLabel = labels[labels.length - 1]
+  const start = parseDateKey(startLabel)
+  const end = parseDateKey(endLabel)
+  const includeMonth =
+    !start || !end || start.getMonth() !== end.getMonth() || start.getFullYear() !== end.getFullYear()
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -232,7 +316,51 @@ async function renderChart() {
       responsive: true,
       maintainAspectRatio: false,
       scales: {
-        y: { ticks: { callback: (v) => formatAmount(v) } },
+        x: {
+          ticks: {
+            autoSkip: true,
+            maxTicksLimit: labels.length > 90 ? 12 : labels.length > 45 ? 10 : 8,
+            callback: (value, index) => formatAxisDate(labels[index], includeMonth),
+          },
+          grid: { color: getStyle('--divider') },
+        },
+        y: {
+          ticks: { callback: (v) => formatAmount(v) },
+          grid: { color: getStyle('--divider') },
+        },
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: (items) =>
+              items.length ? formatAxisDate(items[0].label, true) : '',
+            label: (context) => {
+              const idx = context.dataIndex
+              const dataPoint = displayData[idx]
+              if (!dataPoint) return null
+              if (context.dataset.label === 'Income') {
+                return `Income: ${formatAmount(dataPoint.income.parsedValue)}`
+              }
+              if (context.dataset.label === 'Expenses') {
+                return `Expenses: ${formatAmount(dataPoint.expenses.parsedValue)}`
+              }
+              if (context.dataset.label === 'Net') {
+                return `Net: ${formatAmount(dataPoint.net.parsedValue)}`
+              }
+              if (typeof context.parsed.y !== 'number') return null
+              return `${context.dataset.label}: ${formatAmount(context.parsed.y)}`
+            },
+            afterBody: (items) => {
+              const idx = items?.[0]?.dataIndex
+              const dataPoint = displayData[idx]
+              if (!dataPoint) return []
+              return [`Transactions: ${dataPoint.transaction_count}`]
+            },
+          },
+        },
       },
     },
   })
@@ -250,10 +378,30 @@ async function fetchData() {
   requestRange.value = params
   const res = await fetchDailyNet(params)
   if (res.status === 'success') chartData.value = res.data
+
+  if (showComparisonOverlay.value) {
+    const comparisonContext = buildComparisonContext()
+    if (comparisonContext) {
+      const comparisonParams = {
+        start_date: formatDateKey(comparisonContext.priorStart),
+        end_date: formatDateKey(comparisonContext.priorEnd),
+      }
+      const comparisonRes = await fetchDailyNet(comparisonParams)
+      if (comparisonRes.status === 'success') comparisonData.value = comparisonRes.data
+    }
+  } else {
+    comparisonData.value = []
+  }
 }
 
-watch([chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
-watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
+watch(
+  [chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay],
+  renderChart,
+)
+watch(
+  () => [props.startDate, props.endDate, props.zoomedOut, comparisonMode.value, showComparisonOverlay.value],
+  fetchData,
+)
 
 onMounted(fetchData)
 onUnmounted(() => chartInstance.value?.destroy())
