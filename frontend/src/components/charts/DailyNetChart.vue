@@ -233,7 +233,7 @@ function buildComparisonSeries(labels, data, ctx) {
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
-      return parsed ? byDay.get(parsed.getDate()) ?? null : null
+      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
     })
   }
 
@@ -413,13 +413,16 @@ async function fetchComparisonData() {
   if (res.status === 'success') comparisonData.value = res.data
 }
 
-watch(
-  [chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses, comparisonData],
-  renderChart,
-)
+watch([chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses, comparisonData], renderChart)
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
 watch(
-  () => [props.startDate, props.endDate, props.zoomedOut, comparisonMode.value, showComparisonOverlay.value],
+  () => [
+    props.startDate,
+    props.endDate,
+    props.zoomedOut,
+    comparisonMode.value,
+    showComparisonOverlay.value,
+  ],
   fetchComparisonData,
 )
 
