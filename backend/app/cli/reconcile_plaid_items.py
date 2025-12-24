@@ -20,7 +20,7 @@ compare with a dashboard export separately (future enhancement).
 from __future__ import annotations
 
 import click
-from app.config import logger, plaid_client
+from app.config import plaid_client
 from app.models import PlaidAccount, PlaidItem
 from flask.cli import with_appcontext
 from plaid.model.item_get_request import ItemGetRequest
@@ -66,7 +66,7 @@ def reconcile_plaid_items(verbose: bool) -> None:
         try:
             req = ItemGetRequest(access_token=token)
             resp = plaid_client.item_get(req)
-            status = getattr(resp.item, "error", None)
+            getattr(resp.item, "error", None)
             if verbose:
                 click.echo(
                     f"✔ {item_id} OK (institution={getattr(resp.item, 'institution_id', 'n/a')})"

@@ -18,6 +18,12 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
 - Timestamp mixins for created/updated fields
 - Relationship mappings for foreign key constraints
 
+### Shared Mixins
+
+The timestamp helpers that populate `created_at` and `updated_at` fields live in
+`backend/app/models/mixins.py`. Import `TimestampMixin` from that module when
+defining new models that require audit columns.
+
 ### Key Models
 
 - **Account**: Core account entity with provider-agnostic fields

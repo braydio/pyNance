@@ -73,9 +73,9 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
                 if key == "category_id" and value is not None:
                     category = Category.query.get(value)
                 elif key == "category" and value:
-                    category = (
-                        Category.query.filter(Category.display_name == value).first()
-                    )
+                    category = Category.query.filter(
+                        Category.display_name == value
+                    ).first()
                 if category:
                     transaction["category_id"] = category.id
                     transaction["category"] = category.display_name

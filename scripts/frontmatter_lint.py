@@ -85,12 +85,16 @@ def lint_file(path: Path, max_age_days: int) -> LintResult:
     text = path.read_text(encoding="utf-8")
     front_matter = parse_front_matter(text)
     if front_matter is None:
-        return LintResult(path=path, passed=False, message="missing front matter header")
+        return LintResult(
+            path=path, passed=False, message="missing front matter header"
+        )
 
     missing = [key for key in REQUIRED_KEYS if not front_matter.get(key)]
     if missing:
         missing_keys = ", ".join(missing)
-        return LintResult(path=path, passed=False, message=f"missing keys: {missing_keys}")
+        return LintResult(
+            path=path, passed=False, message=f"missing keys: {missing_keys}"
+        )
 
     last_updated = front_matter.get("Last Updated")
     if last_updated is None:
@@ -107,7 +111,11 @@ def lint_file(path: Path, max_age_days: int) -> LintResult:
                 ),
             )
     except ValueError:
-        return LintResult(path=path, passed=False, message="invalid Last Updated format; use YYYY-MM-DD")
+        return LintResult(
+            path=path,
+            passed=False,
+            message="invalid Last Updated format; use YYYY-MM-DD",
+        )
 
     return LintResult(path=path, passed=True)
 
@@ -122,7 +130,9 @@ def run_lint(paths: Iterable[Path], max_age_days: int) -> list[LintResult]:
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Configure CLI arguments for the front matter linter."""
 
-    parser = argparse.ArgumentParser(description="Validate documentation front matter blocks.")
+    parser = argparse.ArgumentParser(
+        description="Validate documentation front matter blocks."
+    )
     parser.add_argument(
         "--paths",
         nargs="*",
@@ -153,7 +163,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     if results:
-        print(f"Validated {len(results)} documentation files; no front matter issues found.")
+        print(
+            f"Validated {len(results)} documentation files; no front matter issues found."
+        )
     else:
         print("No documentation files found to lint.")
     return 0

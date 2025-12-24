@@ -9,6 +9,9 @@ The Plaid maintenance scripts live under `backend/app/cli/` and cover:
   reconciles stored Plaid accounts against institution records.
 - [`sync_plaid_transactions.py`](../../../../backend/app/cli/sync_plaid_transactions.py)
   provides Click commands for ad-hoc Plaid refreshes.
+- [`reconcile_plaid_items.py`](../../../../backend/app/cli/reconcile_plaid_items.py)
+  verifies locally stored Plaid items via `/item/get` and reports any tokens that
+  need to be rotated or re-authenticated.
 
 Each script is safe to invoke with `flask --app backend.run` or via the
 packaged Click entrypoints documented in `scripts/sync.md`.
