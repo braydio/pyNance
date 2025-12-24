@@ -25,6 +25,7 @@ describe('Transactions.vue', () => {
     const totalPages = ref(1)
     const totalCount = ref(0)
     const filteredTransactions = ref([])
+    const paginatedTransactions = ref([])
     const sortKey = ref(null)
     const sortOrder = ref(1)
     const isLoadingRef = ref(isLoading)
@@ -40,6 +41,7 @@ describe('Transactions.vue', () => {
       totalPages,
       totalCount,
       filteredTransactions,
+      paginatedTransactions,
       changePage,
       setPage,
       sortKey,
