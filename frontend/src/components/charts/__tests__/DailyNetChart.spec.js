@@ -135,6 +135,28 @@ describe('DailyNetChart.vue', () => {
     expect(labels.at(-1)).toBe(formatDateKey(end))
   })
 
+  it('extends month-to-date labels through the full month for display', async () => {
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-15',
+        displayStartDate: '2024-06-01',
+        displayEndDate: '2024-06-30',
+        rangeMode: 'month_to_date',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const labels = lastConfig.data.labels
+
+    expect(labels[0]).toBe('2024-06-01')
+    expect(labels.at(-1)).toBe('2024-06-30')
+  })
+
   it('pads sparse ranges and uses zeros in moving averages', async () => {
     fetchDailyNet.mockResolvedValueOnce({
       status: 'success',

@@ -41,13 +41,35 @@
         </div>
         <!-- Net Income Summary Card -->
         <div
-          class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
-        >
-          <ChartDetailsSidebar
-            v-model:show7-day="show7Day"
-            v-model:show30-day="show30Day"
-            v-model:show-avg-income="showAvgIncome"
-            v-model:show-avg-expenses="showAvgExpenses"
+        class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
+      >
+        <div class="flex justify-end pr-28 mb-2">
+          <div class="range-toggle" role="group" aria-label="Daily net date range">
+            <button
+              type="button"
+              class="range-toggle__option"
+              :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'month_to_date' }"
+              data-testid="daily-net-range-month"
+              @click="setDailyNetRangeMode('month_to_date')"
+            >
+              Current month-to-date
+            </button>
+            <button
+              type="button"
+              class="range-toggle__option"
+              :class="{ 'range-toggle__option--active': dailyNetRangeMode === 'last_30_days' }"
+              data-testid="daily-net-range-rolling"
+              @click="setDailyNetRangeMode('last_30_days')"
+            >
+              Rolling last 30 days
+            </button>
+          </div>
+        </div>
+        <ChartDetailsSidebar
+          v-model:show7-day="show7Day"
+          v-model:show30-day="show30Day"
+          v-model:show-avg-income="showAvgIncome"
+          v-model:show-avg-expenses="showAvgExpenses"
             v-model:show-comparison-overlay="showComparisonOverlay"
             v-model:comparison-mode="comparisonMode"
           />
@@ -61,7 +83,10 @@
           <DailyNetChart
             :start-date="dateRange.start"
             :end-date="dateRange.end"
+            :display-start-date="dailyNetDisplayRange.start"
+            :display-end-date="dailyNetDisplayRange.end"
             :zoomed-out="zoomedOut"
+            :range-mode="dailyNetRangeMode"
             :show7-day="show7Day"
             :show30-day="show30Day"
             :show-avg-income="showAvgIncome"
@@ -379,12 +404,77 @@ function getMonthBounds(referenceDate) {
   return { start, end }
 }
 
-const today = new Date()
-const { start: monthStart, end: monthEnd } = getMonthBounds(today)
-const dateRange = ref({
-  start: formatDateInput(monthStart),
-  end: formatDateInput(monthEnd),
+/**
+ * Compute the current month-to-date range using local time.
+ *
+ * @returns {{ start: string, end: string }} Formatted start/end dates.
+ */
+function getMonthToDateRange() {
+  const today = new Date()
+  const { start } = getMonthBounds(today)
+  return {
+    start: formatDateInput(start),
+    end: formatDateInput(today),
+  }
+}
+
+/**
+ * Compute a rolling 30-day window ending today.
+ *
+ * @returns {{ start: string, end: string }} Formatted start/end dates.
+ */
+function getRollingThirtyDayRange() {
+  const end = new Date()
+  const start = new Date(end)
+  start.setDate(start.getDate() - 30)
+  return {
+    start: formatDateInput(start),
+    end: formatDateInput(end),
+  }
+}
+
+const dateRange = ref(getMonthToDateRange())
+const dailyNetRangeMode = ref('month_to_date')
+const dailyNetDisplayRange = computed(() => {
+  if (dailyNetRangeMode.value === 'month_to_date') {
+    const startDate = new Date(dateRange.value.start)
+    if (!Number.isNaN(startDate.getTime())) {
+      const { end } = getMonthBounds(startDate)
+      return { start: dateRange.value.start, end: formatDateInput(end) }
+    }
+  }
+  return { start: dateRange.value.start, end: dateRange.value.end }
 })
+
+/**
+ * Update the shared date range to match the requested daily net view.
+ *
+ * @param {'month_to_date' | 'last_30_days'} mode - Range preset to apply.
+ */
+function setDailyNetRangeMode(mode) {
+  dailyNetRangeMode.value = mode
+  if (mode === 'month_to_date') {
+    dateRange.value = getMonthToDateRange()
+    return
+  }
+  if (mode === 'last_30_days') {
+    dateRange.value = getRollingThirtyDayRange()
+  }
+}
+
+/**
+ * Identify which preset, if any, matches the provided date range.
+ *
+ * @param {{ start: string, end: string }} range - Range to classify.
+ * @returns {'month_to_date' | 'last_30_days' | 'custom'} Matching preset identifier.
+ */
+function inferRangeMode(range) {
+  const monthRange = getMonthToDateRange()
+  const rollingRange = getRollingThirtyDayRange()
+  if (range.start === monthRange.start && range.end === monthRange.end) return 'month_to_date'
+  if (range.start === rollingRange.start && range.end === rollingRange.end) return 'last_30_days'
+  return 'custom'
+}
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([]) // user selected
@@ -436,6 +526,7 @@ watch(
   () => {
     catSelected.value = []
     defaultSet.value = false
+    dailyNetRangeMode.value = inferRangeMode(dateRange.value)
   },
 )
 
@@ -660,6 +751,35 @@ async function onCategoryBarClick(payload) {
   color: var(--color-text-muted);
   font-weight: 500;
   opacity: 0.8;
+}
+
+.range-toggle {
+  display: inline-flex;
+  border: 1px solid var(--divider);
+  border-radius: 9999px;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--color-bg) 92%, var(--color-accent-cyan) 8%);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.range-toggle__option {
+  padding: 0.35rem 0.85rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  background: transparent;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.range-toggle__option:hover,
+.range-toggle__option:focus-visible {
+  color: var(--color-accent-cyan);
+  background: color-mix(in srgb, var(--color-accent-cyan) 18%, transparent);
+}
+
+.range-toggle__option--active {
+  color: var(--color-bg);
+  background: var(--color-accent-cyan);
+  font-weight: 700;
 }
 
 @keyframes subtle-glow {

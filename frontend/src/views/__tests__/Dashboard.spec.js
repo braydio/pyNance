@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
 import { ref, nextTick } from 'vue'
 import Dashboard from '../Dashboard.vue'
@@ -50,6 +50,20 @@ const TopAccountSnapshotStub = {
   },
 }
 
+const DailyNetChartStub = {
+  name: 'DailyNetChart',
+  props: [
+    'startDate',
+    'endDate',
+    'displayStartDate',
+    'displayEndDate',
+    'rangeMode',
+    'zoomedOut',
+  ],
+  emits: ['summary-change', 'data-change', 'bar-click'],
+  template: '<div class="daily-net-chart-stub"></div>',
+}
+
 const PassThrough = { template: '<div><slot /></div>' }
 
 // Tests for Dashboard.vue date range behavior
@@ -68,13 +82,22 @@ function formatDateInput(date) {
 }
 
 describe('Dashboard.vue', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2024-06-18T12:00:00Z'))
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('defaults the date range to the current month', async () => {
     const wrapper = shallowMount(Dashboard, {
       global: {
         stubs: {
           AppLayout: PassThrough,
           BasePageLayout: PassThrough,
-          DailyNetChart: true,
+          DailyNetChart: DailyNetChartStub,
           CategoryBreakdownChart: true,
           ChartWidgetTopBar: true,
           ChartDetailsSidebar: true,
@@ -91,12 +114,59 @@ describe('Dashboard.vue', () => {
       },
     })
 
-    const today = new Date()
+    const today = new Date('2024-06-18T12:00:00Z')
     const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
 
     expect(wrapper.vm.dateRange.start).toBe(formatDateInput(monthStart))
-    expect(wrapper.vm.dateRange.end).toBe(formatDateInput(monthEnd))
+    expect(wrapper.vm.dateRange.end).toBe(formatDateInput(today))
+  })
+
+  it('switches between month-to-date and rolling 30 day ranges', async () => {
+    const wrapper = shallowMount(Dashboard, {
+      global: {
+        stubs: {
+          AppLayout: PassThrough,
+          BasePageLayout: PassThrough,
+          DailyNetChart: DailyNetChartStub,
+          CategoryBreakdownChart: true,
+          ChartWidgetTopBar: true,
+          ChartDetailsSidebar: true,
+          DateRangeSelector: true,
+          AccountsTable: true,
+          TransactionsTable: true,
+          PaginationControls: true,
+          TransactionModal: true,
+          TopAccountSnapshot: TopAccountSnapshotStub,
+          GroupedCategoryDropdown: true,
+          FinancialSummary: true,
+          SpendingInsights: true,
+        },
+      },
+    })
+
+    const chart = wrapper.findComponent(DailyNetChartStub)
+    expect(chart.props('startDate')).toBe('2024-06-01')
+    expect(chart.props('endDate')).toBe('2024-06-18')
+    expect(chart.props('displayEndDate')).toBe('2024-06-30')
+    expect(chart.props('rangeMode')).toBe('month_to_date')
+
+    await wrapper.find('[data-testid="daily-net-range-rolling"]').trigger('click')
+    await nextTick()
+
+    const rollingChart = wrapper.findComponent(DailyNetChartStub)
+    expect(rollingChart.props('startDate')).toBe('2024-05-19')
+    expect(rollingChart.props('endDate')).toBe('2024-06-18')
+    expect(rollingChart.props('displayEndDate')).toBe('2024-06-18')
+    expect(rollingChart.props('rangeMode')).toBe('last_30_days')
+
+    await wrapper.find('[data-testid="daily-net-range-month"]').trigger('click')
+    await nextTick()
+
+    const monthlyChart = wrapper.findComponent(DailyNetChartStub)
+    expect(monthlyChart.props('startDate')).toBe('2024-06-01')
+    expect(monthlyChart.props('endDate')).toBe('2024-06-18')
+    expect(monthlyChart.props('displayEndDate')).toBe('2024-06-30')
+    expect(monthlyChart.props('rangeMode')).toBe('month_to_date')
   })
 
   it('clears selected categories when date range changes', async () => {
@@ -105,7 +175,7 @@ describe('Dashboard.vue', () => {
         stubs: {
           AppLayout: PassThrough,
           BasePageLayout: PassThrough,
-          DailyNetChart: true,
+          DailyNetChart: DailyNetChartStub,
           CategoryBreakdownChart: true,
           ChartWidgetTopBar: true,
           ChartDetailsSidebar: true,
