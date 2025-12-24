@@ -147,6 +147,51 @@ describe('UpdateTransactionsTable.vue', () => {
 
     wrapper.vm.selectFilterField('description')
     wrapper.vm.fieldSearch = 'market'
+    wrapper.vm.addFieldFilter()
+    await flushPromises()
+
+    const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)
+    expect(displayed).toHaveLength(1)
+    expect(displayed[0].transaction_id).toBe('t1')
+  })
+
+  it('stacks multiple field filters', async () => {
+    const transactions = [
+      {
+        transaction_id: 't1',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Grocery Market',
+        category: 'Food: Grocery',
+        merchant_name: 'Fresh Foods',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+      {
+        transaction_id: 't2',
+        date: '2024-01-02',
+        amount: 20,
+        description: 'Grocery Market',
+        category: 'Food: Grocery',
+        merchant_name: 'Streamio',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+
+    wrapper.vm.selectFilterField('description')
+    wrapper.vm.fieldSearch = 'grocery'
+    wrapper.vm.addFieldFilter()
+    wrapper.vm.selectFilterField('merchant_name')
+    wrapper.vm.fieldSearch = 'fresh'
+    wrapper.vm.addFieldFilter()
     await flushPromises()
 
     const displayed = wrapper.vm.displayTransactions.filter((tx) => !tx._placeholder)

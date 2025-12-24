@@ -3,6 +3,8 @@
 This is the entry point for documentation.
 See docs/index/INDEX.md for a categorized index.
 
+Working notes and scratch references live under `docs/devnotes/`.
+
 ## Front matter standard
 
 Key backend documentation (including `docs/backend/app/routes`) now starts with a

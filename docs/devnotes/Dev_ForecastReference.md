@@ -1,4 +1,3 @@
-
 # 📊 Forecast Engine & Graph Specification
 
 ## 🧠 Overview: How Forecasting Works
@@ -46,10 +45,10 @@ The forecast system overlays projected financial data with historical performanc
 
 ### Modes
 
-| View     | X-Axis         | Granularity  |
-|----------|----------------|--------------|
-| Month    | 1st → End of Month | Daily/Weekly |
-| Year     | Jan 1st → Dec 31st | Monthly      |
+| View  | X-Axis             | Granularity  |
+| ----- | ------------------ | ------------ |
+| Month | 1st → End of Month | Daily/Weekly |
+| Year  | Jan 1st → Dec 31st | Monthly      |
 
 ### Toggle Behavior
 
@@ -101,6 +100,8 @@ The forecast system overlays projected financial data with historical performanc
 ### 🧩 `useForecastEngine.ts` (Composable Module)
 
 Exports:
+
 ```ts
 getForecastData(viewType, forecastItems, manualIncome, liabilityRate): ForecastPoint[]
 getActualsData(viewType): ForecastPoint[]
+```

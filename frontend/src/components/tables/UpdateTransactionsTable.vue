@@ -35,7 +35,7 @@
         <label class="text-xs font-semibold text-[var(--color-text-muted)]">
           Filtering by {{ activeFilterLabel }}
         </label>
-        <div class="flex gap-2 items-center">
+        <div class="flex flex-wrap gap-2 items-center">
           <input
             ref="filterInputRef"
             v-model="fieldSearch"
@@ -44,11 +44,28 @@
             class="input"
             :placeholder="`Type to filter ${activeFilterLabel.toLowerCase()}…`"
           />
+          <button
+            type="button"
+            class="btn-sm"
+            :disabled="!fieldSearch.trim()"
+            @click="addFieldFilter"
+          >
+            Add Filter
+          </button>
           <button type="button" class="btn-sm clear-filter" @click="clearFieldFilter">Clear</button>
         </div>
         <datalist :id="`${activeFilterKey}-filters`">
           <option v-for="option in filteredFieldSuggestions" :key="option" :value="option" />
         </datalist>
+      </div>
+      <div v-if="activeFilterTags.length" class="active-filter-tags">
+        <span v-for="filter in activeFilterTags" :key="filter.key" class="filter-tag">
+          <span class="filter-tag__label">{{ filter.label }}:</span>
+          <span class="filter-tag__value">{{ filter.value }}</span>
+          <button type="button" class="filter-tag__remove" @click="removeFilterTag(filter.key)">
+            ×
+          </button>
+        </span>
       </div>
     </div>
 
@@ -328,6 +345,7 @@ const filterableFields = [
 
 const activeFilterKey = ref('')
 const fieldSearch = ref('')
+const activeFieldFilters = ref([])
 const filterInputRef = ref(null)
 const tableScrollRef = ref(null)
 
@@ -396,6 +414,20 @@ const activeFilterLabel = computed(
   () => filterableFields.find((field) => field.key === activeFilterKey.value)?.label || '',
 )
 
+const activeFilterTags = computed(() => {
+  const tags = []
+  if (selectedPrimaryCategory.value) {
+    tags.push({ key: 'primary', label: 'Category', value: selectedPrimaryCategory.value })
+  }
+  if (selectedSubcategory.value) {
+    tags.push({ key: 'subcategory', label: 'Subcategory', value: selectedSubcategory.value })
+  }
+  activeFieldFilters.value.forEach((filter) => {
+    tags.push({ key: `field:${filter.key}`, label: filter.label, value: filter.query })
+  })
+  return tags
+})
+
 /** Build row classes for standard, placeholder, and editing states. */
 function getRowClasses(tx, index) {
   const base =
@@ -411,7 +443,8 @@ function getRowClasses(tx, index) {
 
 function selectFilterField(key) {
   activeFilterKey.value = key
-  fieldSearch.value = ''
+  const existing = activeFieldFilters.value.find((filter) => filter.key === key)
+  fieldSearch.value = existing ? existing.query : ''
   nextTick(() => {
     if (filterInputRef.value) {
       filterInputRef.value.focus()
@@ -419,9 +452,51 @@ function selectFilterField(key) {
   })
 }
 
+/**
+ * Add or replace a field-level filter for the current key.
+ */
+function addFieldFilter() {
+  const query = fieldSearch.value.trim()
+  if (!activeFilterKey.value || !query) {
+    return
+  }
+  const label = filterableFields.find((field) => field.key === activeFilterKey.value)?.label || ''
+  const existingIndex = activeFieldFilters.value.findIndex(
+    (filter) => filter.key === activeFilterKey.value,
+  )
+  const nextFilter = { key: activeFilterKey.value, label, query }
+  if (existingIndex >= 0) {
+    activeFieldFilters.value.splice(existingIndex, 1, nextFilter)
+  } else {
+    activeFieldFilters.value.push(nextFilter)
+  }
+  fieldSearch.value = ''
+  activeFilterKey.value = ''
+}
+
 function clearFieldFilter() {
   fieldSearch.value = ''
   activeFilterKey.value = ''
+}
+
+/**
+ * Remove an active filter tag by identifier.
+ * @param {string} key - Filter tag identifier.
+ */
+function removeFilterTag(key) {
+  if (key === 'primary') {
+    selectedPrimaryCategory.value = ''
+    selectedSubcategory.value = ''
+    return
+  }
+  if (key === 'subcategory') {
+    selectedSubcategory.value = ''
+    return
+  }
+  if (key.startsWith('field:')) {
+    const fieldKey = key.replace('field:', '')
+    activeFieldFilters.value = activeFieldFilters.value.filter((filter) => filter.key !== fieldKey)
+  }
 }
 
 function startEdit(index, tx) {
@@ -480,7 +555,10 @@ async function saveEdit(tx) {
     const changedField = ['category', 'merchant_name', 'merchant_type'].find((f) => f in payload)
     if (changedField) {
       const newValue = payload[changedField]
-      const promptText = `Always set ${changedField} to "${newValue}" for ${tx.description} in ${tx.account_name} at ${tx.institution_name}?`
+      const promptText = [
+        `Always set ${changedField} to "${newValue}" for ${tx.description}`,
+        `in ${tx.account_name} at ${tx.institution_name}?`,
+      ].join(' ')
       if (confirm(promptText)) {
         try {
           await createTransactionRule({
@@ -607,13 +685,17 @@ function sortBy(key) {
 
 const filteredTransactions = computed(() => {
   let txs = [...props.transactions]
-  if (activeFilterKey.value && fieldSearch.value.trim()) {
-    const columnFuse = new Fuse(txs, {
-      keys: [activeFilterKey.value],
-      threshold: 0.35,
-      ignoreLocation: true,
+  if (activeFieldFilters.value.length) {
+    activeFieldFilters.value.forEach((filter) => {
+      const query = filter.query.trim()
+      if (!query) return
+      const columnFuse = new Fuse(txs, {
+        keys: [filter.key],
+        threshold: 0.35,
+        ignoreLocation: true,
+      })
+      txs = columnFuse.search(query).map((r) => r.item)
     })
-    txs = columnFuse.search(fieldSearch.value.trim()).map((r) => r.item)
   }
   // Primary category filter if selected
   if (selectedPrimaryCategory.value) {
@@ -898,6 +980,27 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+}
+
+.active-filter-tags {
+  @apply flex flex-wrap items-center gap-2;
+}
+
+.filter-tag {
+  @apply inline-flex items-center gap-2 rounded-full border border-[var(--divider)];
+  @apply bg-[rgba(113,156,214,0.12)] px-3 py-1 text-xs text-[var(--color-text-light)];
+}
+
+.filter-tag__label {
+  @apply uppercase tracking-wide text-[11px] text-[var(--color-text-muted)];
+}
+
+.filter-tag__value {
+  @apply font-semibold text-[var(--color-text-light)];
+}
+
+.filter-tag__remove {
+  @apply text-[var(--color-text-muted)] hover:text-[var(--color-text-light)] transition;
 }
 
 .clear-filter {

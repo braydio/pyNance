@@ -56,6 +56,15 @@
         </div>
       </div>
     </div>
+    <div v-if="activeFilters.length" class="filter-tags" data-testid="transactions-filter-tags">
+      <span v-for="filter in activeFilters" :key="filter.key" class="filter-tag">
+        <span class="filter-tag__label">{{ filter.label }}:</span>
+        <span class="filter-tag__value">{{ filter.value }}</span>
+        <button type="button" class="filter-tag__remove" @click="removeFilter(filter.key)">
+          ×
+        </button>
+      </span>
+    </div>
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
     </div>
@@ -110,7 +119,10 @@
               />
               <span
                 v-else
-                class="inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950 px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm"
+                :class="[
+                  'inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950',
+                  'px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm',
+                ]"
               >
                 {{ formatCategory(tx) }}
               </span>
@@ -177,8 +189,9 @@ import { formatAmount as formatCurrency } from '@/utils/format'
  * TransactionsTable
  *
  * Displays a paginated table of transactions with date range,
- * account and type filters. Data is fetched from the backend
- * `/transactions` endpoint using the provided filters.
+ * account and type filters. Active filters are displayed as tags and can
+ * be cleared individually. Data is fetched from the backend `/transactions`
+ * endpoint using the provided filters.
  */
 export default {
   name: 'TransactionsTable',
@@ -193,20 +206,25 @@ export default {
     const accountId = ref('')
     const txType = ref('')
     const today = new Date()
-    const endDate = ref(today.toISOString().slice(0, 10))
-    const startDate = ref(
-      new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
-    )
+    const defaultEndDate = today.toISOString().slice(0, 10)
+    const defaultStartDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10)
+    const endDate = ref(defaultEndDate)
+    const startDate = ref(defaultStartDate)
 
     const totalPages = computed(() => Math.ceil(total.value / pageSize))
+    const accountLookup = computed(
+      () => new Map(accounts.value.map((account) => [account.account_id, account.name])),
+    )
 
     async function load() {
       const params = {
         page: page.value,
         page_size: pageSize,
-        start_date: startDate.value,
-        end_date: endDate.value,
       }
+      if (startDate.value) params.start_date = startDate.value
+      if (endDate.value) params.end_date = endDate.value
       if (accountId.value) params.account_ids = accountId.value
       if (txType.value) params.tx_type = txType.value
       const res = await fetchTransactions(params)
@@ -309,6 +327,58 @@ export default {
       }
     }
 
+    /**
+     * Provide a user-friendly label for an account id.
+     * @param {string} id - Account identifier.
+     * @returns {string} Display label for the account filter.
+     */
+    function formatAccountLabel(id) {
+      return formatName(accountLookup.value.get(id) || id)
+    }
+
+    /**
+     * Reset a single filter tag by key.
+     * @param {string} key - Filter tag key.
+     */
+    function removeFilter(key) {
+      if (key === 'account') {
+        accountId.value = ''
+        return
+      }
+      if (key === 'type') {
+        txType.value = ''
+        return
+      }
+      if (key === 'date') {
+        startDate.value = ''
+        endDate.value = ''
+      }
+    }
+
+    const activeFilters = computed(() => {
+      const filters = []
+      if (startDate.value || endDate.value) {
+        const startLabel = startDate.value || 'Any'
+        const endLabel = endDate.value || 'Any'
+        filters.push({ key: 'date', label: 'Dates', value: `${startLabel} → ${endLabel}` })
+      }
+      if (accountId.value) {
+        filters.push({
+          key: 'account',
+          label: 'Account',
+          value: formatAccountLabel(accountId.value),
+        })
+      }
+      if (txType.value) {
+        filters.push({
+          key: 'type',
+          label: 'Type',
+          value: txType.value === 'credit' ? 'Credit' : 'Debit',
+        })
+      }
+      return filters
+    })
+
     // Formatting methods
     const formatDate = (dateStr) => {
       if (!dateStr) return 'N/A'
@@ -375,11 +445,13 @@ export default {
       page,
       total,
       totalPages,
+      activeFilters,
       formatDate,
       formatAmount,
       formatDescription,
       formatCategory,
       formatName,
+      removeFilter,
       setPage,
       nextPage,
       prevPage,
@@ -390,7 +462,8 @@ export default {
 
 <style scoped>
 .control-surface {
-  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-4 shadow-inner;
+  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800;
+  @apply rounded-2xl p-4 shadow-inner;
 }
 
 .control-group {
@@ -402,7 +475,8 @@ export default {
 }
 
 .control-select {
-  @apply bg-neutral-950 border border-neutral-800 text-blue-50 rounded-xl px-3 py-2 shadow-sm outline-none focus:border-blue-500 transition;
+  @apply bg-neutral-950 border border-neutral-800 text-blue-50 rounded-xl px-3 py-2 shadow-sm outline-none;
+  @apply focus:border-blue-500 transition;
 }
 
 .pill-row {
@@ -410,10 +484,32 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70 hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
+  @apply hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
 }
 
 .pill.active {
   @apply border-blue-500 text-blue-200 bg-blue-950/50;
+}
+
+.filter-tags {
+  @apply flex flex-wrap items-center gap-2 mb-6;
+}
+
+.filter-tag {
+  @apply inline-flex items-center gap-2 rounded-full border border-blue-800/60 bg-blue-950/40;
+  @apply px-3 py-1 text-xs text-blue-100;
+}
+
+.filter-tag__label {
+  @apply uppercase tracking-wide text-[11px] text-blue-300;
+}
+
+.filter-tag__value {
+  @apply font-semibold text-blue-50;
+}
+
+.filter-tag__remove {
+  @apply text-blue-200 hover:text-blue-50 transition;
 }
 </style>
