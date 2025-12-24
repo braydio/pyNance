@@ -69,9 +69,7 @@ describe('TransactionsTable', () => {
     mount(TransactionsTable)
     cy.wait('@fetchFilteredPages')
     cy.get('[data-test="account-filter"]').select('a1')
-    cy.wait('@fetchFilteredPages')
-      .its('request.url')
-      .should('include', 'account_ids=a1')
+    cy.wait('@fetchFilteredPages').its('request.url').should('include', 'account_ids=a1')
     cy.contains('td', 'Coffee').should('be.visible')
 
     cy.contains('button', 'Next ›').click()
