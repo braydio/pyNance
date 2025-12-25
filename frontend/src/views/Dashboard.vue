@@ -59,8 +59,8 @@
           </div>
 
           <DailyNetChart
-            :start-date="dateRange.start"
-            :end-date="dateRange.end"
+            :start-date="debouncedRange.start"
+            :end-date="debouncedRange.end"
             :zoomed-out="zoomedOut"
             :show7-day="show7Day"
             :show30-day="show30Day"
@@ -137,8 +137,8 @@
             </ChartWidgetTopBar>
           </div>
           <CategoryBreakdownChart
-            :start-date="dateRange.start"
-            :end-date="dateRange.end"
+            :start-date="debouncedRange.start"
+            :end-date="debouncedRange.end"
             :selected-category-ids="catSelected"
             :group-others="groupOthers"
             :breakdown-type="spendingBreakdownMode"
@@ -287,6 +287,7 @@ import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted, watch } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
+import { useDateRange } from '@/composables/useDateRange'
 import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
 
@@ -353,45 +354,22 @@ const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
 const comparisonMode = ref('prior_month_to_date')
 
-// --- SHARED DATE RANGE STATE ---
-/**
- * Format a Date instance as YYYY-MM-DD without timezone shifts.
- *
- * @param {Date} date - Date instance to format.
- * @returns {string} Date string formatted for date inputs.
- */
-function formatDateInput(date) {
-  const year = date.getFullYear()
-  const month = String(date.getMonth() + 1).padStart(2, '0')
-  const day = String(date.getDate()).padStart(2, '0')
-  return `${year}-${month}-${day}`
-}
-
-/**
- * Compute the first and last day of the month for the provided date.
- *
- * @param {Date} referenceDate - Date whose month should be used.
- * @returns {{ start: Date, end: Date }} Start and end dates for the month.
- */
-function getMonthBounds(referenceDate) {
-  const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1)
-  const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth() + 1, 0)
-  return { start, end }
-}
-
-const today = new Date()
-const { start: monthStart, end: monthEnd } = getMonthBounds(today)
-const dateRange = ref({
-  start: formatDateInput(monthStart),
-  end: formatDateInput(monthEnd),
-})
-
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const catSelected = ref([]) // user selected
 const allCategoryIds = ref([]) // from chart data
 const defaultSet = ref(false) // only auto-select ONCE per data load
 const groupOthers = ref(true) // aggregate small categories
 const spendingBreakdownMode = ref('category')
+
+// --- SHARED DATE RANGE STATE ---
+function onDateRangeChange() {
+  catSelected.value = []
+  defaultSet.value = false
+}
+
+const { dateRange, debouncedRange } = useDateRange({
+  onDebouncedChange: onDateRangeChange,
+})
 
 // When CategoryBreakdownChart fetches, auto-select the first 5 categories once
 // per fetch. Includes "Other" when grouping is enabled and does not repopulate
@@ -429,15 +407,6 @@ function setSpendingBreakdownMode(mode) {
   catSelected.value = []
   defaultSet.value = false
 }
-
-// When user changes date range, clear selections so next data load re-applies auto-select
-watch(
-  () => [dateRange.value.start, dateRange.value.end],
-  () => {
-    catSelected.value = []
-    defaultSet.value = false
-  },
-)
 
 // When grouping mode changes, allow auto-select on next fetch
 watch(groupOthers, () => {
@@ -546,8 +515,8 @@ async function onCategoryBarClick(payload) {
   // `summary-change` events that populate `catSummary` with the actual start
   // and end dates used in its query. This ensures the modal reflects the same
   // range, even if it differs from the user-selected inputs.
-  const start = catSummary.value.startDate || dateRange.value.start
-  const end = catSummary.value.endDate || dateRange.value.end
+  const start = catSummary.value.startDate || debouncedRange.value.start
+  const end = catSummary.value.endDate || debouncedRange.value.end
 
   const result = await fetchTransactions({
     category_ids: ids,
