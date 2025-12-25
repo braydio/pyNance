@@ -374,7 +374,11 @@ def get_transactions_paginated():
             jsonify(
                 {
                     "status": "success",
-                    "data": {"transactions": transactions, "total": total, "meta": meta},
+                    "data": {
+                        "transactions": transactions,
+                        "total": total,
+                        "meta": meta,
+                    },
                 }
             ),
             200,
@@ -441,7 +445,11 @@ def get_account_transactions(account_id):
             jsonify(
                 {
                     "status": "success",
-                    "data": {"transactions": transactions, "total": total, "meta": meta},
+                    "data": {
+                        "transactions": transactions,
+                        "total": total,
+                        "meta": meta,
+                    },
                 }
             ),
             200,

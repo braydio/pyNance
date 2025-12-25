@@ -12,9 +12,9 @@ from typing import Optional, Tuple
 import click
 from app.config import logger
 from app.extensions import db
+from app.helpers.plaid_helpers import get_accounts
 from app.models import PlaidAccount
 from app.sql import account_logic
-from app.helpers.plaid_helpers import get_accounts
 from flask.cli import with_appcontext
 from sqlalchemy.orm import joinedload
 
@@ -26,7 +26,8 @@ def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
     if accounts_data is None:
         return False, "PLAID_RATE_LIMIT"
     accounts_data = [
-        item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
+        item.to_dict() if hasattr(item, "to_dict") else dict(item)
+        for item in accounts_data
     ]
 
     result = account_logic.refresh_data_for_plaid_account(

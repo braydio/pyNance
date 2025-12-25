@@ -8,7 +8,6 @@ keep logs concise.
 import json
 from datetime import date, datetime
 from typing import Union
-from flask import has_request_context, request
 
 from app.config import (
     BACKEND_PUBLIC_URL,
@@ -20,6 +19,7 @@ from app.config import (
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
+from flask import has_request_context, request
 from plaid.exceptions import ApiException
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
@@ -50,7 +50,9 @@ def _warn_if_dashboard_request():
     if not has_request_context():
         return
     try:
-        if request.method == "GET" and str(request.path).startswith(("/api/charts", "/api/dashboard")):
+        if request.method == "GET" and str(request.path).startswith(
+            ("/api/charts", "/api/dashboard")
+        ):
             logger.warning(
                 "Plaid helper invoked during dashboard request: %s %s",
                 request.method,

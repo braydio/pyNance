@@ -25,7 +25,11 @@
         >
           {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
         </button>
-        <button class="pill md:text-sm" :class="{ active: showHidden }" @click="showHidden = !showHidden">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showHidden }"
+          @click="showHidden = !showHidden"
+        >
           {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
         </button>
         <button
@@ -35,7 +39,11 @@
         >
           Filter Types
         </button>
-        <button class="pill md:text-sm" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showDeleteButtons }"
+          @click="toggleDeleteButtons"
+        >
           {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
         </button>
         <button class="pill md:text-sm" @click="exportCSV">Export CSV</button>

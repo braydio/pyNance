@@ -494,7 +494,9 @@ def sync_transactions_endpoint():
                 404,
             )
 
-        accounts_data = get_accounts(plaid_account.access_token, plaid_account.account.user_id)
+        accounts_data = get_accounts(
+            plaid_account.access_token, plaid_account.account.user_id
+        )
         if accounts_data is None:
             return (
                 jsonify(
@@ -507,7 +509,8 @@ def sync_transactions_endpoint():
                 429,
             )
         accounts_data = [
-            item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
+            item.to_dict() if hasattr(item, "to_dict") else dict(item)
+            for item in accounts_data
         ]
 
         result = account_logic.refresh_data_for_plaid_account(

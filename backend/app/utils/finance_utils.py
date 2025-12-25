@@ -1,10 +1,10 @@
 """Utility helpers for normalizing financial data."""
 
 from decimal import Decimal
-from flask import g, has_request_context
 
 from app.config import logger
 from app.models import Transaction
+from flask import g, has_request_context
 
 TWOPLACES = Decimal("0.01")
 
@@ -31,7 +31,11 @@ def normalize_account_balance(balance, account_type, account_id=None):
     cache = _normalize_cache()
     key = None
     if cache is not None:
-        key = (str(account_id) if account_id is not None else None, str(balance), str(account_type))
+        key = (
+            str(account_id) if account_id is not None else None,
+            str(balance),
+            str(account_type),
+        )
         if key in cache:
             return cache[key]
 

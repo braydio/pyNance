@@ -14,7 +14,7 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, jsonify, request, g, has_request_context
+from flask import Blueprint, g, has_request_context, jsonify, request
 from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
@@ -461,7 +461,9 @@ def accounts_snapshot():
             "name": acc.name,
             "institution_name": acc.institution_name,
             "balance": float(
-                normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)
+                normalize_account_balance(
+                    acc.balance, acc.type, account_id=acc.account_id
+                )
             ),
             "type": acc.type,
             "subtype": acc.subtype,
