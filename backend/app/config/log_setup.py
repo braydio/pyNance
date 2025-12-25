@@ -46,7 +46,10 @@ if os.getenv("SQL_ECHO", "false").lower() == "true":
 LOG_LEVEL = os.getenv("LOG_LEVEL")
 if not LOG_LEVEL:
     LOG_LEVEL = "INFO"
-elif os.getenv("FLASK_ENV", "production").lower() == "production" and LOG_LEVEL.upper() == "DEBUG":
+elif (
+    os.getenv("FLASK_ENV", "production").lower() == "production"
+    and LOG_LEVEL.upper() == "DEBUG"
+):
     LOG_LEVEL = "INFO"
 LOG_LEVEL = LOG_LEVEL.upper()
 

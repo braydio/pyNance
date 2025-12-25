@@ -355,10 +355,7 @@ async function renderChart() {
   if (showComparisonOverlay.value && comparisonSeries.some((value) => value !== null)) {
     datasets.push({
       type: 'line',
-      label:
-        comparisonContext?.mode === 'prior_month_to_date'
-          ? 'Prior Month'
-          : 'Previous 30 Days',
+      label: comparisonContext?.mode === 'prior_month_to_date' ? 'Prior Month' : 'Previous 30 Days',
       data: comparisonSeries,
       borderColor: comparisonColor,
       borderDash: [4, 6],

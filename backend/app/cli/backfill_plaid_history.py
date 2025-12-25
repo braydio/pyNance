@@ -21,8 +21,8 @@ from datetime import date, datetime
 
 import click
 from app.config import logger
-from app.models import PlaidAccount
 from app.helpers.plaid_helpers import get_accounts
+from app.models import PlaidAccount
 from app.sql import account_logic
 from flask.cli import with_appcontext
 from sqlalchemy.orm import joinedload
