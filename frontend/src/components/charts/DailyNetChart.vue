@@ -44,8 +44,7 @@ const requestRange = ref({ startDate: null, endDate: null, displayStart: null, d
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
 
-const getStyle = (name) =>
-  getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 function formatDateKey(date) {
   const d = date instanceof Date && !Number.isNaN(date) ? date : new Date()
@@ -101,9 +100,7 @@ function padDailyNetData(data, labels) {
 
 function movingAverage(values, window) {
   return values.map((_, i) =>
-    i < window - 1
-      ? null
-      : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
+    i < window - 1 ? null : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
   )
 }
 
@@ -169,7 +166,7 @@ function buildComparisonSeries(labels, data, ctx) {
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
-      return parsed ? byDay.get(parsed.getDate()) ?? null : null
+      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
     })
   }
 
@@ -191,7 +188,11 @@ function buildComparisonSeries(labels, data, ctx) {
 
 function emphasizeColor(hex, channel) {
   let n = hex.replace('#', '')
-  if (n.length === 3) n = n.split('').map((c) => c + c).join('')
+  if (n.length === 3)
+    n = n
+      .split('')
+      .map((c) => c + c)
+      .join('')
   let r = parseInt(n.slice(0, 2), 16)
   let g = parseInt(n.slice(2, 4), 16)
   let b = parseInt(n.slice(4, 6), 16)
