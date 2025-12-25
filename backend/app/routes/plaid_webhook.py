@@ -8,7 +8,7 @@ from typing import Optional, Tuple
 
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
-from app.helpers.plaid_helpers import get_investment_transactions
+from app.helpers.plaid_helpers import get_investment_transactions, get_accounts
 from app.models import Account, PlaidAccount, PlaidWebhookLog
 from app.sql import account_logic, investments_logic
 from flask import Blueprint, Request, jsonify, request
@@ -220,6 +220,7 @@ def handle_plaid_webhook():
         triggered = []
         success_count = 0
         failure_count = 0
+        token_account_cache: dict[str, list] = {}
         for pa in accounts:
             try:
                 if not pa.access_token:
@@ -231,8 +232,25 @@ def handle_plaid_webhook():
                     webhook_metrics.increment("failure", webhook_code)
                     continue
 
+                accounts_data = token_account_cache.get(pa.access_token)
+                if accounts_data is None:
+                    accounts_data = get_accounts(pa.access_token, pa.account.user_id)
+                    if accounts_data is None:
+                        logger.warning(
+                            "Plaid rate limit hit during webhook for account %s",
+                            pa.account_id,
+                        )
+                        failure_count += 1
+                        webhook_metrics.increment("failure", webhook_code)
+                        continue
+                    accounts_data = [
+                        item.to_dict() if hasattr(item, "to_dict") else dict(item)
+                        for item in accounts_data
+                    ]
+                    token_account_cache[pa.access_token] = accounts_data
+
                 result = account_logic.refresh_data_for_plaid_account(
-                    pa.access_token, pa.account_id
+                    pa.access_token, pa.account, accounts_data=accounts_data
                 )
                 if isinstance(result, tuple) and len(result) == 2:
                     _updated, error = result

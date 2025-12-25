@@ -189,7 +189,9 @@ def update_account_balance_history(
         end_date = datetime.now(timezone.utc).date()
         start_date = end_date - timedelta(days=days - 1)
 
-        current_balance = normalize_account_balance(account.balance, account.type)
+        current_balance = normalize_account_balance(
+            account.balance, account.type, account_id=account.account_id
+        )
 
         logger.info(
             "Updating balance history for %s (%s/%s) from %s to %s",

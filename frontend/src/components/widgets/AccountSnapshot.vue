@@ -187,6 +187,9 @@
                 account.institution_name || '—'
               }}</span>
               <span class="text-[10px] uppercase tracking-wide text-gray-400">
+                Balance as of {{ formatAsOf(account.last_refreshed) }}
+              </span>
+              <span class="text-[10px] uppercase tracking-wide text-gray-400">
                 Tap to view recent activity
               </span>
             </div>
@@ -593,6 +596,22 @@ function handleTransactionClick(tx, fallbackAccountId) {
     router.push({ name: 'Transactions', query })
   } else {
     router.push({ name: 'Transactions' })
+  }
+}
+
+function formatAsOf(value) {
+  if (!value) return 'N/A'
+  try {
+    const date = new Date(value)
+    const now = Date.now()
+    const diff = Math.abs(now - date.getTime())
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    if (hours < 24) {
+      return `${hours}h ago`
+    }
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  } catch (err) {
+    return String(value)
   }
 }
 </script>

@@ -1,20 +1,40 @@
 """Account management and refresh routes."""
 
 from datetime import date, datetime, timedelta, timezone
+import time
 from typing import Optional
 
 from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
+from app.sql.account_logic import (
+    refresh_is_stale,
+    serialized_refresh_status,
+    should_throttle_refresh,
+)
 from app.sql.forecast_logic import update_account_history
+from app.services.accounts_service import fetch_accounts
 from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
+
+INSTITUTION_STAGGER_SECONDS = 0.35
+
+
+def _to_iso(dt):
+    if not dt:
+        return None
+    if isinstance(dt, datetime):
+        return dt.isoformat()
+    try:
+        return datetime.fromisoformat(str(dt)).isoformat()
+    except Exception:
+        return str(dt)
 
 
 def resolve_account_by_any_id(identifier) -> Optional[Account]:
@@ -141,6 +161,10 @@ def _is_plaid_link_type(value) -> bool:
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """Refresh all linked accounts for their enabled products."""
+    cached_response = getattr(g, "bulk_refresh_response", None)
+    if cached_response is not None:
+        logger.debug("Skipping duplicate bulk refresh call in the same request.")
+        return cached_response
     try:
         from app.sql import account_logic
 
@@ -159,12 +183,18 @@ def refresh_all_accounts():
         query = Account.query
         if account_ids:
             query = query.filter(Account.account_id.in_(account_ids))
-        accounts = query.all()
+        accounts = sorted(
+            query.all(),
+            key=lambda acc: ((acc.institution_name or "").lower(), acc.account_id),
+        )
         updated_accounts = []
         refreshed_counts: dict[str, int] = {}
         error_map: dict[tuple[str, str, str], dict] = {}
         skipped_non_plaid = 0
         missing_tokens = 0
+        skipped_rate_limited = 0
+        previous_institution = None
+        token_account_cache: dict[str, list] = {}
 
         for account in accounts:
             if _is_plaid_link_type(account.link_type):
@@ -177,7 +207,34 @@ def refresh_all_accounts():
                     continue
 
                 logger.debug("Refreshing Plaid account %s", account.account_id)
+                if should_throttle_refresh(account.plaid_account):
+                    skipped_rate_limited += 1
+                    logger.info(
+                        "Skipping Plaid refresh due to active cooldown | account_id=%s | institution=%s",
+                        account.account_id,
+                        account.institution_name or "Unknown",
+                    )
+                    continue
                 inst = account.institution_name or "Unknown"
+                if previous_institution and inst != previous_institution:
+                    time.sleep(INSTITUTION_STAGGER_SECONDS)
+                previous_institution = inst
+                accounts_data = token_account_cache.get(access_token)
+                if accounts_data is None:
+                    accounts_data = fetch_accounts(access_token, account.user_id)
+                    if accounts_data is None:
+                        skipped_rate_limited += 1
+                        logger.info(
+                            "Skipping refresh due to Plaid rate limit | account_id=%s | institution=%s",
+                            account.account_id,
+                            inst,
+                        )
+                        continue
+                    accounts_data = [
+                        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
+                        for acct in accounts_data
+                    ]
+                    token_account_cache[access_token] = accounts_data
                 products = _plaid_products_for_account(account)
                 account_updated = False
 
@@ -185,28 +242,36 @@ def refresh_all_accounts():
                     if product_name == "transactions":
                         updated, err = account_logic.refresh_data_for_plaid_account(
                             access_token,
-                            account.account_id,
+                            account,
+                            accounts_data=accounts_data,
                             start_date=start_date,
                             end_date=end_date,
                         )
                         if err:
+                            err_payload = (
+                                err
+                                if isinstance(err, dict)
+                                else {"plaid_error_code": err, "plaid_error_message": str(err)}
+                            )
                             key = (
                                 inst,
-                                err.get("plaid_error_code"),
-                                err.get("plaid_error_message"),
+                                err_payload.get("plaid_error_code"),
+                                err_payload.get("plaid_error_message"),
                             )
                             if key not in error_map:
                                 error_map[key] = {
                                     "institution_name": inst,
                                     "account_ids": [account.account_id],
                                     "account_names": [account.name],
-                                    "plaid_error_code": err.get("plaid_error_code"),
-                                    "plaid_error_message": err.get(
+                                    "plaid_error_code": err_payload.get(
+                                        "plaid_error_code"
+                                    ),
+                                    "plaid_error_message": err_payload.get(
                                         "plaid_error_message"
                                     ),
                                 }
 
-                                if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
                                     error_map[key]["update_link_token_endpoint"] = (
                                         "/api/plaid/transactions/generate_update_link_token"
@@ -218,7 +283,7 @@ def refresh_all_accounts():
                                 error_map[key]["account_ids"].append(account.account_id)
                                 error_map[key]["account_names"].append(account.name)
 
-                                if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     affected_ids = set(
                                         error_map[key].get("affected_account_ids", [])
                                     )
@@ -227,22 +292,22 @@ def refresh_all_accounts():
                                         affected_ids
                                     )
 
-                            if err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                            if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                 logger.warning(
                                     "Plaid re-auth required: Institution: %s, Account: %s, Error: %s. "
                                     "User must re-auth via Link update mode. Call POST "
                                     "/api/plaid/transactions/generate_update_link_token with account_id.",
                                     inst,
                                     account.name,
-                                    err.get("plaid_error_message"),
+                                    err_payload.get("plaid_error_message"),
                                 )
                             else:
                                 logger.error(
                                     "Plaid refresh error | institution=%s | account=%s | code=%s | message=%s",
                                     inst,
                                     account.name,
-                                    err.get("plaid_error_code"),
-                                    err.get("plaid_error_message"),
+                                    err_payload.get("plaid_error_code"),
+                                    err_payload.get("plaid_error_message"),
                                 )
                         else:
                             account_updated = account_updated or updated
@@ -319,31 +384,38 @@ def refresh_all_accounts():
         logger.info(
             (
                 "[REFRESH][bulk] completed | total=%d | updated=%d | "
-                "institutions=%d | missing_tokens=%d | non_plaid_skipped=%d | errors=%d"
+                "institutions=%d | missing_tokens=%d | non_plaid_skipped=%d | "
+                "rate_limited_skipped=%d | errors=%d"
             ),
             len(accounts),
             len(updated_accounts),
             len(refreshed_counts),
             missing_tokens,
             skipped_non_plaid,
+            skipped_rate_limited,
             len(error_map),
         )
-        return (
+        response = (
             jsonify(
                 {
                     "status": "success",
                     "message": "All linked accounts refreshed.",
                     "updated_accounts": updated_accounts,
                     "refreshed_counts": refreshed_counts,
+                    "rate_limited_skipped": skipped_rate_limited,
                     "errors": list(error_map.values()),
                 }
             ),
             200,
         )
+        g.bulk_refresh_response = response
+        return response
 
     except Exception as ex:
         logger.error("Error in refresh_accounts: %s", ex, exc_info=True)
-        return jsonify({"error": str(ex)}), 500
+        response = (jsonify({"error": str(ex)}), 500)
+        g.bulk_refresh_response = response
+        return response
 
 
 @accounts.route("/<account_id>/refresh", methods=["POST"])
@@ -380,6 +452,33 @@ def refresh_single_account(account_id):
             jsonify({"status": "error", "message": "Missing Plaid token"}),
             400,
         )
+    accounts_data = fetch_accounts(token, account.user_id)
+    if accounts_data is None:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Plaid rate limit hit; try again shortly.",
+                    "code": "PLAID_RATE_LIMIT",
+                }
+            ),
+            429,
+        )
+    accounts_data = [
+        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct) for acct in accounts_data
+    ]
+    if should_throttle_refresh(account.plaid_account):
+        status = serialized_refresh_status(account.plaid_account)
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "Plaid rate limit cooldown active. Try again shortly.",
+                    "cooldown_until": status.get("cooldown_until"),
+                }
+            ),
+            429,
+        )
     products = _plaid_products_for_account(account)
     plaid_updated = False
 
@@ -387,12 +486,13 @@ def refresh_single_account(account_id):
         if product_name == "transactions":
             updated_flag, err = account_logic.refresh_data_for_plaid_account(
                 token,
-                account_id,
+                account,
+                accounts_data=accounts_data,
                 start_date=start_date,
                 end_date=end_date,
             )
 
-            if err and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+            if isinstance(err, dict) and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                 logger.warning(
                     "Plaid re-auth required for account %s: %s. User must re-auth via Link update mode. "
                     "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",
@@ -421,13 +521,18 @@ def refresh_single_account(account_id):
                     account.account_id,
                     err,
                 )
+                err_payload = (
+                    err
+                    if isinstance(err, dict)
+                    else {"plaid_error_code": "unknown", "plaid_error_message": str(err)}
+                )
                 return (
                     jsonify(
                         {
                             "status": "error",
                             "updated": False,
-                            "message": f"Plaid error: {err.get('plaid_error_message', 'Unknown error')}",
-                            "error": err,
+                            "message": f"Plaid error: {err_payload.get('plaid_error_message', 'Unknown error')}",
+                            "error": err_payload,
                         }
                     ),
                     502,
@@ -501,15 +606,19 @@ def list_accounts():
         for a in accounts:
             try:
                 last_refreshed = None
+                refresh_status = serialized_refresh_status(getattr(a, "plaid_account", None))
+                cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
-                normalized_balance = normalize_account_balance(a.balance, a.type)
+                normalized_balance = normalize_account_balance(
+                    a.balance, a.type, account_id=a.account_id
+                )
                 balance_value = (
                     float(normalized_balance)
                     if normalized_balance is not None
                     else None
                 )
-                logger.info(
+                logger.debug(
                     "Normalized original balance of %s to %s because account type %s",
                     a.balance,
                     normalized_balance,
@@ -529,8 +638,11 @@ def list_accounts():
                         "adjusted_balance": balance_value,
                         "subtype": a.subtype,
                         "link_type": a.link_type,
-                        "last_refreshed": last_refreshed,
+                        "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,
+                        "refresh_status": refresh_status,
+                        "refresh_stale": refresh_is_stale(getattr(a, "plaid_account", None)),
+                        "refresh_cooldown_until": cooldown_until,
                     }
                 )
             except Exception as item_err:
@@ -550,6 +662,42 @@ def list_accounts():
 
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@accounts.route("/refresh_status", methods=["GET"])
+def refresh_status():
+    """Expose last refresh details for each Plaid-linked account."""
+
+    include_hidden = request.args.get("include_hidden", "false").lower() == "true"
+    sla_hours = float(request.args.get("sla_hours", 6))
+    sla = timedelta(hours=sla_hours)
+
+    query = Account.query
+    if not include_hidden:
+        query = query.filter(Account.is_hidden.is_(False))
+
+    rows = []
+    for acc in query.all():
+        if str(getattr(acc, "link_type", "")).lower() != "plaid":
+            continue
+
+        pa = getattr(acc, "plaid_account", None)
+        status = serialized_refresh_status(pa)
+        cooldown_until = _to_iso(status.get("cooldown_until"))
+        last_refreshed = getattr(pa, "last_refreshed", None) if pa else None
+        rows.append(
+            {
+                "account_id": acc.account_id,
+                "account_name": acc.name,
+                "institution_name": acc.institution_name,
+                "last_refreshed": _to_iso(last_refreshed),
+                "refresh_status": status,
+                "refresh_stale": refresh_is_stale(pa, sla=sla),
+                "refresh_cooldown_until": cooldown_until,
+            }
+        )
+
+    return jsonify({"status": "success", "accounts": rows}), 200
 
 
 @accounts.route("/<account_id>/recurring", methods=["GET"])

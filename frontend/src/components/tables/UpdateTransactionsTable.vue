@@ -140,7 +140,9 @@
                     type="date"
                     class="input"
                   />
-                  <span v-else class="truncate">{{ formatDate(row.tx.date) }}</span>
+                  <span v-else class="truncate">{{
+                    formatDate(row.tx.date || row.tx.transaction_date)
+                  }}</span>
                 </td>
                 <td class="col-amount">
                   <input
@@ -501,7 +503,7 @@ function removeFilterTag(key) {
 
 function startEdit(index, tx) {
   editingIndex.value = index
-  editBuffer.value = { ...tx }
+  editBuffer.value = { ...tx, date: resolveTransactionDate(tx) }
 }
 
 function cancelEdit() {
@@ -520,11 +522,16 @@ function isValidDate(value) {
   return !isNaN(d.getTime())
 }
 
+function resolveTransactionDate(tx) {
+  return tx?.date || tx?.transaction_date || ''
+}
+
 async function saveEdit(tx) {
   try {
     const payload = { transaction_id: tx.transaction_id }
     EDITABLE_FIELDS.forEach((field) => {
-      if (editBuffer.value[field] !== tx[field]) {
+      const currentValue = field === 'date' ? resolveTransactionDate(tx) : tx[field]
+      if (editBuffer.value[field] !== currentValue) {
         payload[field] = editBuffer.value[field]
       }
     })

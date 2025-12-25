@@ -8,6 +8,7 @@ keep logs concise.
 import json
 from datetime import date, datetime
 from typing import Union
+from flask import has_request_context, request
 
 from app.config import (
     BACKEND_PUBLIC_URL,
@@ -19,6 +20,7 @@ from app.config import (
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
+from plaid.exceptions import ApiException
 from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
@@ -42,6 +44,21 @@ from plaid.model.transactions_get_request_options import TransactionsGetRequestO
 
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
+
+
+def _warn_if_dashboard_request():
+    if not has_request_context():
+        return
+    try:
+        if request.method == "GET" and str(request.path).startswith(("/api/charts", "/api/dashboard")):
+            logger.warning(
+                "Plaid helper invoked during dashboard request: %s %s",
+                request.method,
+                request.path,
+            )
+    except Exception:
+        # Do not block normal flow if inspection fails
+        return
 
 
 def load_plaid_tokens():
@@ -107,6 +124,7 @@ def save_transactions_json(transactions):
 def get_accounts(access_token: str, user_id: str):
     """Fetch accounts for ``user_id`` and update local history without leaking tokens."""
 
+    _warn_if_dashboard_request()
     logger.info("Syncing Plaid accounts for user %s", user_id or "<missing>")
 
     if not user_id:
@@ -140,6 +158,14 @@ def get_accounts(access_token: str, user_id: str):
         )
         return accounts
 
+    except ApiException as e:
+        if getattr(e, "status", None) == 429:
+            logger.error(
+                "Plaid ACCOUNTS_LIMIT hit for user %s – aborting refresh", user_id
+            )
+            return None
+        logger.error("Error syncing accounts: %s", e, exc_info=True)
+        raise
     except Exception as e:
         logger.error("Error syncing accounts: %s", e, exc_info=True)
         raise
@@ -180,14 +206,18 @@ def generate_link_token(user_id: str, products=None):
             base = str(BACKEND_PUBLIC_URL).rstrip("/")
             webhook_url = f"{base}/api/webhooks/plaid"
 
-        plaid_request = LinkTokenCreateRequest(
+        request_kwargs = dict(
             user=LinkTokenCreateRequestUser(client_user_id=user_id),
             client_name=PLAID_CLIENT_NAME,
             products=product_enums,
             language="en",
             country_codes=country_enum,
-            webhook=webhook_url,
         )
+        # Only include webhook when configured; Plaid rejects None
+        if webhook_url:
+            request_kwargs["webhook"] = webhook_url
+
+        plaid_request = LinkTokenCreateRequest(**request_kwargs)
 
         response = plaid_client.link_token_create(plaid_request)
         return response.link_token
@@ -267,6 +297,8 @@ def get_transactions(
     ``total_transactions`` are retrieved. Accepts ``datetime.date``,
     ``datetime.datetime``, or ``YYYY-MM-DD`` strings for dates.
     """
+
+    _warn_if_dashboard_request()
 
     def _coerce_date(value: Union[str, date, datetime], label: str) -> date:
         if isinstance(value, datetime):

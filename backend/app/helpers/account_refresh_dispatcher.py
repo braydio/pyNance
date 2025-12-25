@@ -5,6 +5,7 @@ from datetime import date, datetime, timedelta, timezone
 from app.config import logger  # uses app logger
 from app.models import Account, db
 from app.services import sync_service
+from app.sql.account_logic import should_throttle_refresh
 
 SYNC_INTERVALS = {
     "plaid": timedelta(days=2),
@@ -59,6 +60,14 @@ def refresh_all_accounts():
         last_synced = getattr(rel, "last_refreshed", None)
 
         if not is_due(last_synced, provider):
+            skipped += 1
+            continue
+        if should_throttle_refresh(rel):
+            logger.info(
+                "[DISPATCH] cooldown active; skipping account=%s institution=%s",
+                getattr(acct, "account_id", None),
+                getattr(acct, "institution_name", "Unknown"),
+            )
             skipped += 1
             continue
 

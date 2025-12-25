@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
+from app.config import logger
 
 from app.extensions import db
 from app.models import Institution
 from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
+from app.helpers.plaid_helpers import get_accounts
 from flask import Blueprint, jsonify, request
 
 institutions = Blueprint("institutions", __name__)
@@ -32,7 +34,11 @@ def list_institutions():
                     "name": acc.name,
                     "type": acc.type,
                     "subtype": acc.subtype,
-                    "balance": float(normalize_account_balance(acc.balance, acc.type)),
+                    "balance": float(
+                        normalize_account_balance(
+                            acc.balance, acc.type, account_id=acc.account_id
+                        )
+                    ),
                     "link_type": acc.link_type,
                 }
             )
@@ -58,6 +64,7 @@ def refresh_institution(institution_id: int):
 
     updated_accounts = []
     refreshed_counts: dict[str, int] = {}
+    token_account_cache: dict[str, list] = {}
     for account in inst.accounts:
         updated = False
         # Accept both 'plaid' and 'Plaid' values
@@ -65,9 +72,23 @@ def refresh_institution(institution_id: int):
             token = getattr(account.plaid_account, "access_token", None)
             if not token:
                 continue
+            accounts_data = token_account_cache.get(token)
+            if accounts_data is None:
+                accounts_data = get_accounts(token, account.user_id)
+                if accounts_data is None:
+                    logger.warning(
+                        "Plaid rate limit hit; skipping institution account %s", account.account_id
+                    )
+                    continue
+                accounts_data = [
+                    item.to_dict() if hasattr(item, "to_dict") else dict(item)
+                    for item in accounts_data
+                ]
+                token_account_cache[token] = accounts_data
             updated, _ = account_logic.refresh_data_for_plaid_account(
                 token,
-                account.account_id,
+                account,
+                accounts_data=accounts_data,
                 start_date=start_date,
                 end_date=end_date,
             )

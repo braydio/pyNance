@@ -43,7 +43,12 @@ if os.getenv("SQL_ECHO", "false").lower() == "true":
 # ---------------------------------------------------------------------------
 #   App Logging
 # ---------------------------------------------------------------------------
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+LOG_LEVEL = os.getenv("LOG_LEVEL")
+if not LOG_LEVEL:
+    LOG_LEVEL = "INFO"
+elif os.getenv("FLASK_ENV", "production").lower() == "production" and LOG_LEVEL.upper() == "DEBUG":
+    LOG_LEVEL = "INFO"
+LOG_LEVEL = LOG_LEVEL.upper()
 
 
 class ColorFormatter(logging.Formatter):
@@ -56,7 +61,13 @@ class ColorFormatter(logging.Formatter):
     }
     RESET = "\033[0m"
 
+    def __init__(self, fmt=None, datefmt=None, style="%", use_color=True):
+        super().__init__(fmt=fmt, datefmt=datefmt, style=style)
+        self.use_color = use_color
+
     def format(self, record):
+        if not self.use_color:
+            return super().format(record)
         color = self.COLORS.get(record.levelno, "")
         return f"{color}{super().format(record)}{self.RESET}"
 
@@ -118,7 +129,8 @@ def setup_logger():
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setFormatter(
             ColorFormatter(
-                "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+                "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
+                use_color=sys.stdout.isatty(),
             )
         )
         console_handler.setLevel(log_level)

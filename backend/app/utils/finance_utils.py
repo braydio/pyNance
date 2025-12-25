@@ -1,6 +1,7 @@
 """Utility helpers for normalizing financial data."""
 
 from decimal import Decimal
+from flask import g, has_request_context
 
 from app.config import logger
 from app.models import Transaction
@@ -18,8 +19,21 @@ def _to_decimal(value: Decimal | float | int | None) -> Decimal:
     return Decimal(str(value)).quantize(TWOPLACES)
 
 
-def normalize_account_balance(balance, account_type):
+def _normalize_cache():
+    if has_request_context():
+        return g.setdefault("normalize_cache", {})
+    return None
+
+
+def normalize_account_balance(balance, account_type, account_id=None):
     """Normalize the balance: liabilities are negative, assets are positive."""
+
+    cache = _normalize_cache()
+    key = None
+    if cache is not None:
+        key = (str(account_id) if account_id is not None else None, str(balance), str(account_type))
+        if key in cache:
+            return cache[key]
 
     amount = _to_decimal(balance)
     if (account_type or "").lower() in [
@@ -34,8 +48,13 @@ def normalize_account_balance(balance, account_type):
             account_type,
             norm_balance,
         )
-        return norm_balance
-    return abs(amount).quantize(TWOPLACES)
+        result = norm_balance
+    else:
+        result = abs(amount).quantize(TWOPLACES)
+
+    if cache is not None and key is not None:
+        cache[key] = result
+    return result
 
 
 def normalize_transaction_amount(amount, account_type):

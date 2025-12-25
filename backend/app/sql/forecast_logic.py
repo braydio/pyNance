@@ -27,6 +27,13 @@ def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
 
 
 def update_account_history(account_id, user_id, balance, is_hidden=None):
+    if not Account.query.filter_by(account_id=account_id).first():
+        logger.debug(
+            "Skipping AccountHistory update; account_id=%s not found yet.",
+            account_id,
+        )
+        return
+
     now = datetime.now(timezone.utc)
     today = now.date()
     dt_today = datetime.combine(today, datetime.min.time(), tzinfo=timezone.utc)

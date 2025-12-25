@@ -47,9 +47,28 @@ export function useTransactions(
   const isLoading = ref(false)
   const error = ref(null)
 
-  /** @type {Map<number, Array>} */
-  let pageCache = new Map()
-  let lastTotal = 0
+  const cacheStore = new Map()
+
+  const PREFETCH_DEPTH = 3
+
+  const cacheKey = computed(() => {
+    const filters = filtersRef.value || {}
+    const sorted = Object.keys(filters)
+      .sort()
+      .reduce((acc, key) => {
+        acc[key] = filters[key]
+        return acc
+      }, {})
+    return JSON.stringify(sorted)
+  })
+
+  const ensureBucket = () => {
+    const key = cacheKey.value
+    if (!cacheStore.has(key)) {
+      cacheStore.set(key, { pages: new Map(), lastTotal: 0, prefetching: new Set() })
+    }
+    return cacheStore.get(key)
+  }
 
   /**
    * Fetch a page of transactions from the API.
@@ -111,15 +130,58 @@ export function useTransactions(
     return merged.slice(0, pageSize)
   }
 
+  /**
+   * Rebuild the unpaginated transaction collection from cached pages.
+   *
+   * The cache stores normalized pages keyed by page number. Flattening the map
+   * ensures that client-side filters (search, sort, promote) operate on all
+   * known pages rather than a single page of results.
+   */
+  function refreshTransactionsFromCache() {
+    const orderedPages = Array.from(pageCache.entries()).sort(([a], [b]) => a - b)
+    const seen = new Set()
+    const combined = []
+
+    orderedPages.forEach(([, pageTransactions]) => {
+      pageTransactions.forEach((tx) => {
+        const key = String(tx.transaction_id || tx.id || combined.length)
+        if (seen.has(key)) return
+        seen.add(key)
+        combined.push(tx)
+      })
+    })
+
+    transactions.value = combined
+  }
+
+  /**
+   * Synchronize pagination metadata with the current filtered dataset.
+   *
+   * When a search query is active, totals reflect the client-side filtered
+   * collection. Otherwise the backend-reported total is preferred so page
+   * controls remain accurate while additional pages are fetched on demand.
+   */
+  function updatePaginationMeta() {
+    const filteredLength = filteredTransactions.value.length
+    const derivedTotal = searchQuery.value.trim()
+      ? filteredLength
+      : Math.max(serverTotal.value || 0, filteredLength)
+
+    totalCount.value = derivedTotal
+    totalPages.value = Math.max(1, Math.ceil(derivedTotal / pageSize))
+  }
+
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
-    const cached = pageCache.get(page)
+    const bucket = ensureBucket()
+    const cached = bucket.pages.get(page)
     const shouldUseCache = !force && cached
 
     if (shouldUseCache && !targetTransactionId.value) {
       isLoading.value = false
       error.value = null
       transactions.value = cached
-      totalPages.value = Math.max(1, Math.ceil((lastTotal || cached.length) / pageSize))
+      totalCount.value = bucket.lastTotal || cached.length
+      totalPages.value = Math.max(1, Math.ceil(totalCount.value / pageSize))
       return
     }
 
@@ -130,7 +192,7 @@ export function useTransactions(
         shouldUseCache
           ? Promise.resolve({
               transactions: cached,
-              total: lastTotal || cached.length,
+              total: bucket.lastTotal || cached.length,
             })
           : fetchTransactionsApi({
               page,
@@ -147,7 +209,7 @@ export function useTransactions(
         transactions.value = []
         totalPages.value = 1
         totalCount.value = 0
-        pageCache.clear()
+        bucket.pages.clear()
         return
       }
 
@@ -158,11 +220,12 @@ export function useTransactions(
 
       const merged = mergeWithTarget(normalised, targetTx)
 
-      lastTotal = res.total != null ? res.total : normalised.length
-      totalCount.value = lastTotal
-      totalPages.value = Math.max(1, Math.ceil(lastTotal / pageSize))
+      bucket.lastTotal = res.total != null ? res.total : normalised.length
+      totalCount.value = bucket.lastTotal
+      totalPages.value = Math.max(1, Math.ceil(bucket.lastTotal / pageSize))
       transactions.value = merged
-      pageCache.set(page, merged)
+      bucket.pages.set(page, normalised)
+      prefetchNeighborPages(bucket, page, totalPages.value)
     } catch (err) {
       console.error('Error fetching transactions:', err)
       error.value = err
@@ -220,7 +283,6 @@ export function useTransactions(
     if (query) {
       // fzf-like narrowing; preserve Fuse order by score
       items = fuse.value.search(query).map((r) => r.item)
-      // When searching, show all matches and skip pagination/padding
       return items
     }
 
@@ -252,11 +314,21 @@ export function useTransactions(
       })
     }
 
-    // Page slice with placeholder padding for consistent row height
-    const pageItems = items.slice(0, pageSize)
+    return items
+  })
+
+  const paginatedTransactions = computed(() => {
+    if (searchQuery.value.trim()) {
+      return filteredTransactions.value
+    }
+
+    const start = (currentPage.value - 1) * pageSize
+    const pageItems = filteredTransactions.value.slice(start, start + pageSize)
+
     while (pageItems.length < pageSize) {
       pageItems.push({ _placeholder: true, transaction_id: `placeholder-${pageItems.length}` })
     }
+
     return pageItems
   })
 
@@ -285,8 +357,7 @@ export function useTransactions(
   watch(
     filtersRef,
     () => {
-      pageCache = new Map()
-      lastTotal = 0
+      cacheStore.clear() // reset buckets for new filters
       totalPages.value = 1
       totalCount.value = 0
       if (currentPage.value !== 1) {
@@ -298,16 +369,54 @@ export function useTransactions(
     { deep: true },
   )
 
+  async function prefetchNeighborPages(bucket, current, total) {
+    const upper = Math.min(total, PREFETCH_DEPTH)
+    const targets = []
+    for (let p = current + 1; p <= upper; p += 1) {
+      if (bucket.pages.has(p) || bucket.prefetching.has(p)) continue
+      targets.push(p)
+      bucket.prefetching.add(p)
+    }
+    if (!targets.length) return
+
+    await Promise.allSettled(
+      targets.map(async (page) => {
+        try {
+          const res = await fetchTransactionsApi({
+            page,
+            page_size: pageSize,
+            ...(includeRunningBalance ? { include_running_balance: true } : {}),
+            ...(filtersRef.value || {}),
+          })
+          const normalised = (res.transactions || []).map((tx) => ({
+            ...tx,
+            category: formatCategory(tx),
+          }))
+          bucket.pages.set(page, normalised)
+          bucket.lastTotal = res.total != null ? res.total : bucket.lastTotal
+        } catch (prefetchErr) {
+          console.warn('Prefetch page failed', prefetchErr)
+        } finally {
+          bucket.prefetching.delete(page)
+        }
+      }),
+    )
+  }
+
   if (targetTransactionIdRef) {
     watch(
       targetTransactionIdRef,
       () => {
-        pageCache = new Map()
+        cacheStore.clear()
         fetchTransactions(currentPage.value, { force: true })
       },
       { immediate: false },
     )
   }
+
+  watch([filteredTransactions, searchQuery, serverTotal], updatePaginationMeta, {
+    immediate: true,
+  })
 
   return {
     transactions,
@@ -324,6 +433,7 @@ export function useTransactions(
     setPage,
     setSort,
     filteredTransactions,
+    paginatedTransactions,
     hasNextPage: computed(() => currentPage.value < totalPages.value),
   }
 }

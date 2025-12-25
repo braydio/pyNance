@@ -198,6 +198,7 @@ def update_transaction():
                 action[field] = value or getattr(txn, field)
 
             transaction_rules_logic.create_rule(txn.user_id, match_criteria, action)
+        account_logic.invalidate_tx_cache()
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logger.error("Error updating transaction: %s", e, exc_info=True)
@@ -313,6 +314,7 @@ def user_modified_update_transaction():
         txn.user_modified_fields = json.dumps(existing_fields)
 
         db.session.commit()
+        account_logic.invalidate_tx_cache()
         return jsonify({"status": "success"}), 200
     except Exception as e:
         logger.error("Error updating transaction: %s", e, exc_info=True)
@@ -356,7 +358,7 @@ def get_transactions_paginated():
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
-        transactions, total = account_logic.get_paginated_transactions(
+        transactions, total, meta = account_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,
@@ -372,7 +374,7 @@ def get_transactions_paginated():
             jsonify(
                 {
                     "status": "success",
-                    "data": {"transactions": transactions, "total": total},
+                    "data": {"transactions": transactions, "total": total, "meta": meta},
                 }
             ),
             200,
@@ -424,7 +426,7 @@ def get_account_transactions(account_id):
             start_date = None
             end_date = None
 
-        transactions, total = account_logic.get_paginated_transactions(
+        transactions, total, meta = account_logic.get_paginated_transactions(
             page,
             page_size,
             start_date=start_date,
@@ -439,7 +441,7 @@ def get_account_transactions(account_id):
             jsonify(
                 {
                     "status": "success",
-                    "data": {"transactions": transactions, "total": total},
+                    "data": {"transactions": transactions, "total": total, "meta": meta},
                 }
             ),
             200,

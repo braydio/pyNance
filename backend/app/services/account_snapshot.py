@@ -255,7 +255,9 @@ def _build_payload(
 
 
 def _serialize_account(account: Account) -> dict:
-    normalized_balance = normalize_account_balance(account.balance, account.type)
+    normalized_balance = normalize_account_balance(
+        account.balance, account.type, account_id=account.account_id
+    )
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
 

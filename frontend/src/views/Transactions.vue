@@ -125,7 +125,7 @@
         <UpdateTransactionsTable
           v-else
           :key="currentPage"
-          :transactions="filteredTransactions"
+          :transactions="paginatedTransactions"
           :sort-key="sortKey"
           :sort-order="sortOrder"
           @sort="setSort"
@@ -149,7 +149,7 @@
           <UpdateTransactionsTable
             v-else
             :key="currentPage"
-            :transactions="filteredTransactions"
+            :transactions="paginatedTransactions"
             :sort-key="sortKey"
             :sort-order="sortOrder"
             @sort="setSort"
@@ -303,6 +303,7 @@ export default {
       totalPages,
       totalCount,
       filteredTransactions,
+      paginatedTransactions,
       sortKey,
       sortOrder,
       setSort,
@@ -360,6 +361,7 @@ export default {
       totalCount,
       initialPageSize,
       filteredTransactions,
+      paginatedTransactions,
       sortKey,
       sortOrder,
       setSort,

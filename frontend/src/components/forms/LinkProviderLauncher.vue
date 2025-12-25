@@ -25,6 +25,8 @@ import { ref } from 'vue'
 import UiButton from '@/components/ui/Button.vue'
 import accountLinkApi from '@/api/accounts_link'
 
+let plaidScriptPromise = null
+
 const props = defineProps({
   selectedProducts: {
     type: Array,
@@ -43,18 +45,37 @@ const loading = ref(false)
 async function ensurePlaidScript() {
   if (window.Plaid) return
 
-  return new Promise((resolve, reject) => {
+  if (plaidScriptPromise) {
+    return plaidScriptPromise
+  }
+
+  const existing = document.querySelector('script[data-plaid-link]')
+  if (existing) {
+    plaidScriptPromise = new Promise((resolve, reject) => {
+      if (window.Plaid) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', resolve, { once: true })
+      existing.addEventListener('error', reject, { once: true })
+    })
+    return plaidScriptPromise
+  }
+
+  plaidScriptPromise = new Promise((resolve, reject) => {
     const script = document.createElement('script')
+    script.dataset.plaidLink = 'true'
     script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
     script.async = true
     script.onload = resolve
     script.onerror = reject
     document.head.appendChild(script)
   })
+  return plaidScriptPromise
 }
 
 const linkPlaid = async () => {
-  if (props.selectedProducts.length === 0) return
+  if (props.selectedProducts.length === 0 || loading.value) return
   loading.value = true
 
   try {
