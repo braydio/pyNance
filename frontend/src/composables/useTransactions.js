@@ -49,7 +49,7 @@ export function useTransactions(
 
   /** @type {Map<number, Array>} */
   let pageCache = new Map()
-  let lastTotal = 0
+  const serverTotal = ref(0)
 
   /**
    * Fetch a page of transactions from the API.
@@ -111,6 +111,47 @@ export function useTransactions(
     return merged.slice(0, pageSize)
   }
 
+  /**
+   * Rebuild the unpaginated transaction collection from cached pages.
+   *
+   * The cache stores normalized pages keyed by page number. Flattening the map
+   * ensures that client-side filters (search, sort, promote) operate on all
+   * known pages rather than a single page of results.
+   */
+  function refreshTransactionsFromCache() {
+    const orderedPages = Array.from(pageCache.entries()).sort(([a], [b]) => a - b)
+    const seen = new Set()
+    const combined = []
+
+    orderedPages.forEach(([, pageTransactions]) => {
+      pageTransactions.forEach((tx) => {
+        const key = String(tx.transaction_id || tx.id || combined.length)
+        if (seen.has(key)) return
+        seen.add(key)
+        combined.push(tx)
+      })
+    })
+
+    transactions.value = combined
+  }
+
+  /**
+   * Synchronize pagination metadata with the current filtered dataset.
+   *
+   * When a search query is active, totals reflect the client-side filtered
+   * collection. Otherwise the backend-reported total is preferred so page
+   * controls remain accurate while additional pages are fetched on demand.
+   */
+  function updatePaginationMeta() {
+    const filteredLength = filteredTransactions.value.length
+    const derivedTotal = searchQuery.value.trim()
+      ? filteredLength
+      : Math.max(serverTotal.value || 0, filteredLength)
+
+    totalCount.value = derivedTotal
+    totalPages.value = Math.max(1, Math.ceil(derivedTotal / pageSize))
+  }
+
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
     const cached = pageCache.get(page)
     const shouldUseCache = !force && cached
@@ -118,8 +159,8 @@ export function useTransactions(
     if (shouldUseCache && !targetTransactionId.value) {
       isLoading.value = false
       error.value = null
-      transactions.value = cached
-      totalPages.value = Math.max(1, Math.ceil((lastTotal || cached.length) / pageSize))
+      refreshTransactionsFromCache()
+      updatePaginationMeta()
       return
     }
 
@@ -130,7 +171,7 @@ export function useTransactions(
         shouldUseCache
           ? Promise.resolve({
               transactions: cached,
-              total: lastTotal || cached.length,
+              total: serverTotal.value || cached.length,
             })
           : fetchTransactionsApi({
               page,
@@ -158,11 +199,10 @@ export function useTransactions(
 
       const merged = mergeWithTarget(normalised, targetTx)
 
-      lastTotal = res.total != null ? res.total : normalised.length
-      totalCount.value = lastTotal
-      totalPages.value = Math.max(1, Math.ceil(lastTotal / pageSize))
-      transactions.value = merged
+      serverTotal.value = res.total != null ? res.total : normalised.length
       pageCache.set(page, merged)
+      refreshTransactionsFromCache()
+      updatePaginationMeta()
     } catch (err) {
       console.error('Error fetching transactions:', err)
       error.value = err
@@ -220,7 +260,6 @@ export function useTransactions(
     if (query) {
       // fzf-like narrowing; preserve Fuse order by score
       items = fuse.value.search(query).map((r) => r.item)
-      // When searching, show all matches and skip pagination/padding
       return items
     }
 
@@ -252,11 +291,21 @@ export function useTransactions(
       })
     }
 
-    // Page slice with placeholder padding for consistent row height
-    const pageItems = items.slice(0, pageSize)
+    return items
+  })
+
+  const paginatedTransactions = computed(() => {
+    if (searchQuery.value.trim()) {
+      return filteredTransactions.value
+    }
+
+    const start = (currentPage.value - 1) * pageSize
+    const pageItems = filteredTransactions.value.slice(start, start + pageSize)
+
     while (pageItems.length < pageSize) {
       pageItems.push({ _placeholder: true, transaction_id: `placeholder-${pageItems.length}` })
     }
+
     return pageItems
   })
 
@@ -286,7 +335,7 @@ export function useTransactions(
     filtersRef,
     () => {
       pageCache = new Map()
-      lastTotal = 0
+      serverTotal.value = 0
       totalPages.value = 1
       totalCount.value = 0
       if (currentPage.value !== 1) {
@@ -303,11 +352,16 @@ export function useTransactions(
       targetTransactionIdRef,
       () => {
         pageCache = new Map()
+        serverTotal.value = 0
         fetchTransactions(currentPage.value, { force: true })
       },
       { immediate: false },
     )
   }
+
+  watch([filteredTransactions, searchQuery, serverTotal], updatePaginationMeta, {
+    immediate: true,
+  })
 
   return {
     transactions,
@@ -324,6 +378,7 @@ export function useTransactions(
     setPage,
     setSort,
     filteredTransactions,
+    paginatedTransactions,
     hasNextPage: computed(() => currentPage.value < totalPages.value),
   }
 }
