@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { ref, nextTick } from 'vue'
+import { ref, nextTick, watch } from 'vue'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
 
@@ -50,7 +50,117 @@ const TopAccountSnapshotStub = {
   },
 }
 
+let dailyNetChartProps = null
+const DailyNetChartStub = {
+  name: 'DailyNetChart',
+  props: {
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
+    zoomedOut: { type: Boolean, default: false },
+    show7Day: { type: Boolean, default: false },
+    show30Day: { type: Boolean, default: false },
+    showAvgIncome: { type: Boolean, default: false },
+    showAvgExpenses: { type: Boolean, default: false },
+    showComparisonOverlay: { type: Boolean, default: false },
+    comparisonMode: { type: String, default: 'prior_month_to_date' },
+  },
+  emits: ['summary-change', 'data-change', 'bar-click'],
+  template: '<div class="daily-net-chart-stub"></div>',
+  setup(props, { emit }) {
+    watch(
+      () => ({
+        startDate: props.startDate,
+        endDate: props.endDate,
+        zoomedOut: props.zoomedOut,
+      }),
+      (val) => {
+        dailyNetChartProps = val
+      },
+      { immediate: true },
+    )
+
+    return {
+      emitBarClick: (payload) => emit('bar-click', payload),
+    }
+  },
+}
+
+let categoryChartProps = null
+const CategoryBreakdownChartStub = {
+  name: 'CategoryBreakdownChart',
+  props: {
+    startDate: { type: String, required: true },
+    endDate: { type: String, required: true },
+    selectedCategoryIds: { type: Array, default: () => [] },
+    groupOthers: { type: Boolean, default: true },
+    breakdownType: { type: String, default: 'category' },
+  },
+  emits: ['bar-click', 'summary-change', 'categories-change'],
+  template: '<div class="category-breakdown-stub"></div>',
+  setup(props, { emit }) {
+    watch(
+      () => ({
+        startDate: props.startDate,
+        endDate: props.endDate,
+        breakdownType: props.breakdownType,
+      }),
+      (val) => {
+        categoryChartProps = val
+      },
+      { immediate: true },
+    )
+
+    return {
+      emitSummaryChange: (payload) => emit('summary-change', payload),
+      emitCategoriesChange: (payload) => emit('categories-change', payload),
+    }
+  },
+}
+
 const PassThrough = { template: '<div><slot /></div>' }
+
+function createWrapper(options = {}) {
+  const baseStubs = {
+    AppLayout: PassThrough,
+    BasePageLayout: PassThrough,
+    DailyNetChart: DailyNetChartStub,
+    CategoryBreakdownChart: CategoryBreakdownChartStub,
+    ChartWidgetTopBar: true,
+    ChartDetailsSidebar: true,
+    DateRangeSelector: true,
+    AccountsTable: true,
+    TransactionsTable: true,
+    PaginationControls: true,
+    TransactionModal: true,
+    TopAccountSnapshot: TopAccountSnapshotStub,
+    GroupedCategoryDropdown: true,
+    FinancialSummary: true,
+    SpendingInsights: true,
+  }
+
+  return shallowMount(Dashboard, {
+    global: {
+      ...(options.global || {}),
+      stubs: {
+        ...baseStubs,
+        ...(options.global?.stubs || {}),
+      },
+    },
+    ...options,
+  })
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(new Date('2024-02-15T00:00:00Z'))
+  receivedProps = null
+  dailyNetChartProps = null
+  categoryChartProps = null
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 // Tests for Dashboard.vue date range behavior
 
@@ -68,59 +178,22 @@ function formatDateInput(date) {
 }
 
 describe('Dashboard.vue', () => {
-  it('defaults the date range to the current month', async () => {
-    const wrapper = shallowMount(Dashboard, {
-      global: {
-        stubs: {
-          AppLayout: PassThrough,
-          BasePageLayout: PassThrough,
-          DailyNetChart: true,
-          CategoryBreakdownChart: true,
-          ChartWidgetTopBar: true,
-          ChartDetailsSidebar: true,
-          DateRangeSelector: true,
-          AccountsTable: true,
-          TransactionsTable: true,
-          PaginationControls: true,
-          TransactionModal: true,
-          TopAccountSnapshot: TopAccountSnapshotStub,
-          GroupedCategoryDropdown: true,
-          FinancialSummary: true,
-          SpendingInsights: true,
-        },
-      },
-    })
+  it('defaults the date range to the current month boundaries', async () => {
+    const wrapper = createWrapper()
 
-    const today = new Date()
-    const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-    const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+    const monthStart = new Date(2024, 1, 1)
+    const monthEnd = new Date(2024, 1, 29)
 
-    expect(wrapper.vm.dateRange.start).toBe(formatDateInput(monthStart))
-    expect(wrapper.vm.dateRange.end).toBe(formatDateInput(monthEnd))
+    expect(formatDateInput(monthStart)).toBe('2024-02-01')
+    expect(formatDateInput(monthEnd)).toBe('2024-02-29')
+    expect(wrapper.vm.dateRange.start).toBe('2024-02-01')
+    expect(wrapper.vm.dateRange.end).toBe('2024-02-29')
+    expect(dailyNetChartProps.startDate).toBe(formatDateInput(monthStart))
+    expect(dailyNetChartProps.endDate).toBe(formatDateInput(monthEnd))
   })
 
   it('clears selected categories when date range changes', async () => {
-    const wrapper = shallowMount(Dashboard, {
-      global: {
-        stubs: {
-          AppLayout: PassThrough,
-          BasePageLayout: PassThrough,
-          DailyNetChart: true,
-          CategoryBreakdownChart: true,
-          ChartWidgetTopBar: true,
-          ChartDetailsSidebar: true,
-          DateRangeSelector: true,
-          AccountsTable: true,
-          TransactionsTable: true,
-          PaginationControls: true,
-          TransactionModal: true,
-          TopAccountSnapshot: TopAccountSnapshotStub,
-          GroupedCategoryDropdown: true,
-          FinancialSummary: true,
-          SpendingInsights: true,
-        },
-      },
-    })
+    const wrapper = createWrapper()
 
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
@@ -131,6 +204,7 @@ describe('Dashboard.vue', () => {
 
     wrapper.vm.dateRange.start = '2024-01-01'
     wrapper.vm.dateRange.end = '2024-01-31'
+    await vi.runAllTimersAsync()
     await nextTick()
     expect(wrapper.vm.catSelected).toEqual([])
 
@@ -140,27 +214,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('uses the clicked bar date when opening the daily transactions modal', async () => {
-    const wrapper = shallowMount(Dashboard, {
-      global: {
-        stubs: {
-          AppLayout: PassThrough,
-          BasePageLayout: PassThrough,
-          DailyNetChart: true,
-          CategoryBreakdownChart: true,
-          ChartWidgetTopBar: true,
-          ChartDetailsSidebar: true,
-          DateRangeSelector: true,
-          AccountsTable: true,
-          TransactionsTable: true,
-          PaginationControls: true,
-          TransactionModal: true,
-          TopAccountSnapshot: TopAccountSnapshotStub,
-          GroupedCategoryDropdown: true,
-          FinancialSummary: true,
-          SpendingInsights: true,
-        },
-      },
-    })
+    const wrapper = createWrapper()
 
     const barLabel = '2024-06-10T00:00:00'
     await wrapper.vm.onNetBarClick(barLabel)
@@ -173,5 +227,32 @@ describe('Dashboard.vue', () => {
     })
     expect(wrapper.vm.dailyModalSubtitle).toBe('2024-06-10')
     expect(wrapper.vm.showDailyModal).toBe(true)
+  })
+
+  it('normalizes reversed date inputs before notifying charts', async () => {
+    const wrapper = createWrapper()
+
+    wrapper.vm.dateRange.start = '2024-03-15'
+    wrapper.vm.dateRange.end = '2024-03-01'
+    await vi.runAllTimersAsync()
+    await nextTick()
+
+    expect(dailyNetChartProps.startDate).toBe('2024-03-01')
+    expect(dailyNetChartProps.endDate).toBe('2024-03-15')
+    expect(categoryChartProps.startDate).toBe('2024-03-01')
+    expect(categoryChartProps.endDate).toBe('2024-03-15')
+  })
+
+  it('propagates zoom toggles to charts without altering the debounced dates', async () => {
+    const wrapper = createWrapper()
+    const initialStart = dailyNetChartProps.startDate
+    const initialEnd = dailyNetChartProps.endDate
+
+    wrapper.vm.zoomedOut = true
+    await nextTick()
+
+    expect(dailyNetChartProps.zoomedOut).toBe(true)
+    expect(dailyNetChartProps.startDate).toBe(initialStart)
+    expect(dailyNetChartProps.endDate).toBe(initialEnd)
   })
 })
