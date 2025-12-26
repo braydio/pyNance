@@ -18,12 +18,15 @@ const canvas = ref(null)
 let chart
 
 function build() {
-  if (!canvas.value) return
+  const canvasEl = canvas.value
+  if (!canvasEl) return
   if (chart) chart.destroy()
+  const ctx = canvasEl.getContext('2d')
+  if (!ctx) return
   const labels = props.allocations.map((a) => a.label)
   const data = props.allocations.map((a) => a.value)
   const colors = labels.map((_, i) => getAccentColor(i))
-  chart = new Chart(canvas.value.getContext('2d'), {
+  chart = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels,

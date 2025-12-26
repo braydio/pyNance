@@ -53,14 +53,17 @@ export default {
 
     const updateChart = async () => {
       await nextTick()
-      const ctx = chartCanvas.value.getContext('2d')
+      const canvasEl = chartCanvas.value
+      if (!canvasEl) return
+      const ctx = canvasEl.getContext('2d')
+      if (!ctx) return
       if (chartInstance.value) {
         chartInstance.value.destroy()
       }
 
       const netValues = chartData.value.map((item) => item.income - item.expenses)
       const gradients = netValues.map((value) => {
-        const gradient = ctx.createLinearGradient(0, 0, 0, chartCanvas.value.height)
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvasEl.height)
         if (value >= 0) {
           gradient.addColorStop(0, getStyle('--color-accent-green'))
           gradient.addColorStop(1, getStyle('--color-accent-cyan'))

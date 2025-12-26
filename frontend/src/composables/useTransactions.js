@@ -44,6 +44,7 @@ export function useTransactions(
   const currentPage = ref(1)
   const totalPages = ref(1)
   const totalCount = ref(0)
+  const serverTotal = ref(0)
   const isLoading = ref(false)
   const error = ref(null)
   const highlightedTransaction = ref(null)
@@ -180,8 +181,9 @@ export function useTransactions(
     if (shouldUseCache && !targetTransactionId.value) {
       isLoading.value = false
       error.value = null
-      refreshTransactionsFromCache(bucket.pages)
-      totalCount.value = bucket.lastTotal || transactions.value.length
+      transactions.value = cached
+      totalCount.value = bucket.lastTotal || cached.length
+      serverTotal.value = bucket.lastTotal || cached.length
       totalPages.value = Math.max(1, Math.ceil(totalCount.value / pageSize))
       return
     }
@@ -219,7 +221,15 @@ export function useTransactions(
         category: formatCategory(tx),
       }))
 
-      highlightedTransaction.value = targetTx
+      const merged = mergeWithTarget(normalised, targetTx)
+
+      const responseTotal = res.total != null ? res.total : normalised.length
+
+      bucket.lastTotal = responseTotal
+      serverTotal.value = responseTotal
+      totalCount.value = responseTotal
+      totalPages.value = Math.max(1, Math.ceil(responseTotal / pageSize))
+      transactions.value = merged
       bucket.pages.set(page, normalised)
       bucket.lastTotal = res.total != null ? res.total : bucket.lastTotal || normalised.length
       refreshTransactionsFromCache(bucket.pages)

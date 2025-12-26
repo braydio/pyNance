@@ -436,6 +436,12 @@ const normalizeAccounts = (list) => {
   return normalized
 }
 
+function accountsMatch(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return false
+  if (a.length !== b.length) return false
+  return a.every((item, idx) => accountId(item) === accountId(b[idx]))
+}
+
 const props = defineProps({
   accountSubtype: { type: String, default: '' },
   useSpectrum: { type: Boolean, default: false },
@@ -553,8 +559,9 @@ watch(
   () => effectiveGroup.value?.accounts,
   (val) => {
     if (syncingToActive) return
-    syncingFromActive = true
     const normalized = normalizeAccounts(val)
+    if (accountsMatch(normalized, groupAccounts.value)) return
+    syncingFromActive = true
     groupAccounts.value = normalized
     // Close open details and prune cached txns when the active group changes underneath us
     if (
@@ -579,6 +586,10 @@ watch(
     if (syncingFromActive || !activeGroup.value) return
     syncingToActive = true
     const normalized = normalizeAccounts(val)
+    if (accountsMatch(normalized, activeGroup.value?.accounts || [])) {
+      syncingToActive = false
+      return
+    }
     if (!Array.isArray(activeGroup.value.accounts)) {
       activeGroup.value.accounts = []
     }
@@ -839,8 +850,6 @@ const selectedAccountId = ref('')
 watch(
   activeGroupId,
   () => {
-    const normalized = normalizeAccounts(effectiveGroup.value?.accounts || [])
-    groupAccounts.value = normalized
     openAccountId.value = null
     showAccountSelector.value = false
     selectedAccountId.value = ''

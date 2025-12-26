@@ -46,7 +46,10 @@ function render() {
   if (!chartData.value.length) return
   if (chartInstance.value) chartInstance.value.destroy()
 
-  const ctx = canvasRef.value.getContext('2d')
+  const canvasEl = canvasRef.value
+  if (!canvasEl) return
+  const ctx = canvasEl.getContext('2d')
+  if (!ctx) return
 
   chartInstance.value = new Chart(ctx, {
     type: 'line',

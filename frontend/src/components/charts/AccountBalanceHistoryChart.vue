@@ -56,7 +56,10 @@ async function renderChart() {
   const labels = props.historyData.map((b) => b.date)
   const values = props.historyData.map((b) => b.balance)
 
-  const ctx = chartCanvas.value.getContext('2d')
+  const canvasEl = chartCanvas.value
+  if (!canvasEl) return
+  const ctx = canvasEl.getContext('2d')
+  if (!ctx) return
   chartInstance.value = new Chart(ctx, {
     type: 'line',
     data: {

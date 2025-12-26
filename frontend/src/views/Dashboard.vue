@@ -373,7 +373,10 @@ function onDateRangeChange() {
   defaultSet.value = false
 }
 
-const { dateRange, debouncedRange } = useDateRange({
+const {
+  dateRange = ref({ start: '', end: '' }),
+  debouncedRange = ref({ start: '', end: '' }),
+} = useDateRange({
   onDebouncedChange: onDateRangeChange,
 })
 
