@@ -135,6 +135,31 @@ describe('DailyNetChart.vue', () => {
     expect(labels.at(-1)).toBe(formatDateKey(end))
   })
 
+  it('uses the zoomed default window when zoomed out', async () => {
+    const endDate = '2024-07-31'
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-07-01',
+        endDate,
+        zoomedOut: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const labels = lastConfig.data.labels
+
+    const zoomedStart = new Date(`${endDate}T00:00:00`)
+    zoomedStart.setMonth(zoomedStart.getMonth() - 6)
+
+    expect(labels[0]).toBe(formatDateKey(zoomedStart))
+    expect(labels.at(-1)).toBe(endDate)
+    expect(labels[0]).not.toBe('2024-07-01')
+  })
+
   it('pads sparse ranges and uses zeros in moving averages', async () => {
     fetchDailyNet.mockResolvedValueOnce({
       status: 'success',

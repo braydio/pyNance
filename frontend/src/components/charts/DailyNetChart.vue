@@ -104,20 +104,36 @@ function movingAverage(values, window) {
   )
 }
 
+/**
+ * Derive the zoomed display window anchored to the current end date.
+ *
+ * When zoomed out, ignore the inbound start date and expand to a six-month window ending
+ * at the selected end date (or today when no end date is provided).
+ *
+ * @returns {{ startDate: string, endDate: string }} Formatted date boundaries for zoomed view.
+ */
 function getZoomedDisplayRange() {
   const end = parseDateKey(props.endDate) ?? new Date()
-  const start = parseDateKey(props.startDate) ?? new Date(end)
-  if (!props.startDate) start.setMonth(start.getMonth() - DEFAULT_ZOOM_MONTHS)
+  const start = new Date(end)
+  start.setMonth(start.getMonth() - DEFAULT_ZOOM_MONTHS)
   return { startDate: formatDateKey(start), endDate: formatDateKey(end) }
 }
 
+/**
+ * Determine which date range the chart should render based on zoom state.
+ *
+ * The zoomed-out view favors the computed zoom window, even when explicit start or end
+ * dates are provided, so the chart reliably expands beyond the selected inputs.
+ *
+ * @returns {{ startDate: string | null, endDate: string | null }} Active label boundaries.
+ */
 function getActiveLabelRange() {
   if (!props.zoomedOut) return { startDate: props.startDate, endDate: props.endDate }
 
   const zoomed = getZoomedDisplayRange()
   return {
-    startDate: props.startDate || requestRange.value.displayStart || zoomed.startDate,
-    endDate: props.endDate || requestRange.value.displayEnd || zoomed.endDate,
+    startDate: requestRange.value.displayStart ?? zoomed.startDate ?? props.startDate,
+    endDate: requestRange.value.displayEnd ?? zoomed.endDate ?? props.endDate,
   }
 }
 
