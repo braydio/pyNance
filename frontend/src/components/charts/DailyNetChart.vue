@@ -318,7 +318,13 @@ async function fetchData() {
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
 watch(
-  () => [props.startDate, props.endDate, props.zoomedOut, props.showComparisonOverlay, props.comparisonMode],
+  () => [
+    props.startDate,
+    props.endDate,
+    props.zoomedOut,
+    props.showComparisonOverlay,
+    props.comparisonMode,
+  ],
   fetchData,
 )
 
