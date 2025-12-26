@@ -112,4 +112,32 @@ describe('FinancialSummary trends', () => {
 
     expect(wrapper.find('.detail-date-reset').exists()).toBe(false)
   })
+
+  it('pads missing dates and includes zeros in averages and moving averages', async () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 200, totalExpenses: 0, totalNet: 200 },
+        chartData: [
+          {
+            date: '2024-01-01',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: 0 },
+            net: { parsedValue: 100 },
+          },
+          {
+            date: '2024-01-04',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: 0 },
+            net: { parsedValue: 100 },
+          },
+        ],
+      },
+    })
+
+    await wrapper.find('.gradient-toggle-btn').trigger('click')
+
+    const html = wrapper.html()
+    expect(html).toContain('$50.00')
+    expect(html).toContain('$0.00')
+  })
 })

@@ -93,10 +93,23 @@ function padDailyNetData(data, labels) {
   return labels.map((l) => map.get(l) ?? createEmptyDailyNetEntry(l))
 }
 
+/**
+ * Calculate a trailing moving average that gracefully handles sparse leading data.
+ *
+ * @param {number[]} values - Series to smooth.
+ * @param {number} window - Window size in days.
+ * @returns {number[]} Moving average series.
+ */
 function movingAverage(values, window) {
-  return values.map((_, i) =>
-    i < window - 1 ? null : values.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0) / window,
-  )
+  if (!values.length) return []
+
+  return values.map((_, i) => {
+    const start = Math.max(0, i - window + 1)
+    const slice = values.slice(start, i + 1)
+    const divisor = Math.min(window, slice.length)
+    const sum = slice.reduce((a, b) => a + b, 0)
+    return divisor ? sum / divisor : 0
+  })
 }
 
 function getActiveDateRange() {
@@ -195,8 +208,20 @@ async function renderChart() {
   const ma30Full = movingAverage(fullNet, 30)
 
   const idx = Object.fromEntries(fullLabels.map((l, i) => [l, i]))
-  const ma7 = labels.map((l) => ma7Full[idx[l]] ?? null)
-  const ma30 = labels.map((l) => ma30Full[idx[l]] ?? null)
+  const ma7 = labels.map((l, index) => {
+    const value = ma7Full[idx[l]]
+    if (value !== undefined && value !== null) return value
+    const start = Math.max(0, index - 6)
+    const slice = net.slice(start, index + 1)
+    return slice.length ? slice.reduce((a, b) => a + b, 0) / Math.min(7, slice.length) : 0
+  })
+  const ma30 = labels.map((l, index) => {
+    const value = ma30Full[idx[l]]
+    if (value !== undefined && value !== null) return value
+    const start = Math.max(0, index - 29)
+    const slice = net.slice(start, index + 1)
+    return slice.length ? slice.reduce((a, b) => a + b, 0) / Math.min(30, slice.length) : 0
+  })
 
   const avgIncome = income.reduce((a, b) => a + b, 0) / income.length
   const avgExpenses = expenses.reduce((a, b) => a + b, 0) / expenses.length
@@ -221,9 +246,34 @@ async function renderChart() {
       backgroundColor: expenseBase,
       barThickness: 20,
     },
-    { type: 'line', label: '7-Day Avg', data: ma7, borderWidth: 2, pointRadius: 0 },
-    { type: 'line', label: '30-Day Avg', data: ma30, borderWidth: 2, pointRadius: 0 },
+    { type: 'line', label: 'Net', data: net, borderWidth: 2, pointRadius: 0 },
   ]
+
+  if (props.show7Day) {
+    datasets.push({ type: 'line', label: '7-Day Avg', data: ma7, borderWidth: 2, pointRadius: 0 })
+  }
+  if (props.show30Day) {
+    datasets.push({
+      type: 'line',
+      label: '30-Day Avg',
+      data: ma30,
+      borderWidth: 2,
+      pointRadius: 0,
+    })
+  }
+
+  if (props.showComparisonOverlay) {
+    const ctx = buildComparisonContext()
+    const comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
+    datasets.push({
+      type: 'line',
+      label: 'Prior month to-date',
+      data: comparisonSeries,
+      borderWidth: 1,
+      borderDash: [5, 5],
+      pointRadius: 0,
+    })
+  }
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -236,6 +286,7 @@ async function renderChart() {
       },
     },
   })
+  emit('data-change', displayData)
 }
 
 async function fetchData() {
@@ -250,10 +301,26 @@ async function fetchData() {
   requestRange.value = params
   const res = await fetchDailyNet(params)
   if (res.status === 'success') chartData.value = res.data
+
+  if (props.showComparisonOverlay) {
+    const ctx = buildComparisonContext()
+    if (ctx?.priorStart && ctx?.priorEnd) {
+      const comparisonRes = await fetchDailyNet({
+        start_date: formatDateKey(ctx.priorStart),
+        end_date: formatDateKey(ctx.priorEnd),
+      })
+      if (comparisonRes.status === 'success') comparisonData.value = comparisonRes.data
+    }
+  } else {
+    comparisonData.value = []
+  }
 }
 
-watch([chartData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
-watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
+watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
+watch(
+  () => [props.startDate, props.endDate, props.zoomedOut, props.showComparisonOverlay, props.comparisonMode],
+  fetchData,
+)
 
 onMounted(fetchData)
 onUnmounted(() => chartInstance.value?.destroy())

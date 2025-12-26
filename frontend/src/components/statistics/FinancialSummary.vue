@@ -214,6 +214,8 @@ const props = defineProps({
   },
 })
 
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
 // Toggle state for basic/extended view
 const isExtendedView = ref(false)
 
@@ -227,8 +229,10 @@ const TODAY_ISO = formatAsISODate(TODAY)
 const detailDate = ref(TODAY_ISO)
 const userAdjustedDate = ref(false)
 
+const paddedChartData = computed(() => padChartData(props.chartData))
+
 const chartDateBounds = computed(() => {
-  const data = Array.isArray(props.chartData) ? props.chartData : []
+  const data = paddedChartData.value
   if (!data.length) {
     return { min: '', max: '' }
   }
@@ -289,7 +293,7 @@ function resetDetailDate() {
 }
 
 const filteredChartData = computed(() => {
-  const data = Array.isArray(props.chartData) ? props.chartData : []
+  const data = paddedChartData.value
   const cutoff = parseISODate(detailDate.value)
   if (!cutoff) {
     return data
@@ -629,6 +633,67 @@ function clampDateString(value, min, max) {
   }
 
   return formatAsISODate(result)
+}
+
+/**
+ * Build an inclusive, day-by-day sequence between the supplied dates.
+ *
+ * @param {string | Date} start - Starting date boundary.
+ * @param {string | Date} end - Ending date boundary.
+ * @returns {string[]} Ordered YYYY-MM-DD date strings between the bounds.
+ */
+function buildDateSequence(start, end) {
+  const startDate = parseISODate(start)
+  const endDate = parseISODate(end)
+  if (!startDate || !endDate) {
+    return []
+  }
+
+  const [min, max] = startDate <= endDate ? [startDate, endDate] : [endDate, startDate]
+  const cursor = new Date(min)
+  const dates = []
+
+  while (cursor <= max) {
+    dates.push(formatAsISODate(cursor))
+    cursor.setTime(cursor.getTime() + ONE_DAY_MS)
+  }
+
+  return dates
+}
+
+/**
+ * Produce a zeroed chart entry for dates with no transactions.
+ *
+ * @param {string} date - Date to attach to the entry.
+ * @returns {Object} Zeroed income, expense, and net values for the date.
+ */
+function createZeroDayEntry(date) {
+  return {
+    date,
+    income: { parsedValue: 0 },
+    expenses: { parsedValue: 0 },
+    net: { parsedValue: 0 },
+    transaction_count: 0,
+  }
+}
+
+/**
+ * Fill missing dates in chart data to ensure averages consider zero-activity days.
+ *
+ * @param {Array} rawData - Original chart data series.
+ * @returns {Array} Date-padded chart data.
+ */
+function padChartData(rawData) {
+  const rows = Array.isArray(rawData) ? rawData.filter((row) => parseISODate(row?.date)) : []
+  if (!rows.length) {
+    return []
+  }
+
+  const sorted = [...rows].sort((a, b) => parseISODate(a.date) - parseISODate(b.date))
+  const labels = buildDateSequence(sorted[0].date, sorted[sorted.length - 1].date)
+  const byDate = new Map(sorted.map((entry) => [entry.date, entry]))
+
+  return labels.map((date) => byDate.get(date) ?? createZeroDayEntry(date))
 }
 </script>
 
