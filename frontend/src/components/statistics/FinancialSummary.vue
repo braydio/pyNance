@@ -212,6 +212,14 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  startDate: {
+    type: String,
+    default: '',
+  },
+  endDate: {
+    type: String,
+    default: '',
+  },
 })
 
 // Toggle state for basic/extended view
@@ -229,12 +237,9 @@ const userAdjustedDate = ref(false)
 
 const chartDateBounds = computed(() => {
   const data = Array.isArray(props.chartData) ? props.chartData : []
-  if (!data.length) {
-    return { min: '', max: '' }
-  }
-
   const sortedDates = data
     .map((entry) => entry?.date)
+    .concat([props.startDate, props.endDate])
     .filter((date) => Boolean(parseISODate(date)))
     .sort()
 
@@ -288,8 +293,72 @@ function resetDetailDate() {
   detailDate.value = defaultDetailDate.value
 }
 
-const filteredChartData = computed(() => {
+/**
+ * Build an inclusive list of date labels between two ISO date strings.
+ *
+ * @param {string} startISO - Inclusive start date (YYYY-MM-DD).
+ * @param {string} endISO - Inclusive end date (YYYY-MM-DD).
+ * @returns {string[]} Ordered list of ISO date labels.
+ */
+function buildDateRangeLabels(startISO, endISO) {
+  const start = parseISODate(startISO)
+  const end = parseISODate(endISO)
+  if (!start || !end) return []
+
+  const labels = []
+  const cursor = new Date(Math.min(start, end))
+  const last = new Date(Math.max(start, end))
+  while (cursor <= last) {
+    labels.push(formatAsISODate(cursor))
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return labels
+}
+
+/**
+ * Create a zero-filled chart entry for the supplied date label.
+ *
+ * @param {string} date - ISO date string.
+ * @returns {Object} Zero-valued chart entry.
+ */
+function createZeroFilledEntry(date) {
+  return {
+    date,
+    income: { parsedValue: 0 },
+    expenses: { parsedValue: 0 },
+    net: { parsedValue: 0 },
+    transaction_count: 0,
+  }
+}
+
+const paddedChartData = computed(() => {
   const data = Array.isArray(props.chartData) ? props.chartData : []
+  const parsedStart = parseISODate(props.startDate)
+  const parsedDetail = parseISODate(detailDate.value)
+  const parsedEnd = parseISODate(props.endDate)
+
+  const sortedDates = data
+    .map((d) => parseISODate(d?.date))
+    .filter(Boolean)
+    .sort((a, b) => a - b)
+
+  const start = parsedStart || sortedDates[0]
+  const end = parsedDetail || parsedEnd || sortedDates.at(-1)
+  if (!start || !end) {
+    return data
+  }
+
+  const labels = buildDateRangeLabels(formatAsISODate(start), formatAsISODate(end))
+  if (!labels.length) {
+    return data
+  }
+
+  const byDate = new Map(data.map((entry) => [entry?.date, entry]))
+  return labels.map((label) => byDate.get(label) ?? createZeroFilledEntry(label))
+})
+
+const filteredChartData = computed(() => {
+  const data = paddedChartData.value
   const cutoff = parseISODate(detailDate.value)
   if (!cutoff) {
     return data

@@ -21,6 +21,8 @@
       :summary="summary"
       :chart-data="chartData"
       :zoomed-out="zoomedOut"
+      :start-date="dateRange.start"
+      :end-date="dateRange.end"
     />
   </BasePageLayout>
 </template>

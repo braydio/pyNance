@@ -21,6 +21,7 @@
 - [Latest](../latest/) – recent drafts and experiments
 - [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI
 - [Arbit Dashboard UI](../frontend/arbit_dashboard.md) – component layout and live log feed
+- [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
 
 ## High-Traffic Backend References

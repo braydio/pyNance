@@ -79,7 +79,13 @@
       <div
         class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
       >
-        <FinancialSummary :summary="netSummary" :chart-data="chartData" :zoomed-out="zoomedOut" />
+        <FinancialSummary
+          :summary="netSummary"
+          :chart-data="chartData"
+          :zoomed-out="zoomedOut"
+          :start-date="debouncedRange.start"
+          :end-date="debouncedRange.end"
+        />
       </div>
 
       <!-- SPENDING ROW: Category Chart & Insights -->
