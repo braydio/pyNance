@@ -43,7 +43,7 @@ describe('TransactionsTable', () => {
     cy.wait('@fetchTx').its('request.url').should('include', 'page=2')
   })
 
-  it('keeps account filters applied across pagination without empty rows', () => {
+  it('keeps filters applied across pagination without empty rows', () => {
     const pageData = {
       1: [
         { transaction_id: 'p1', date: '2024-01-01', category: 'Food', description: 'Coffee' },
@@ -57,6 +57,12 @@ describe('TransactionsTable', () => {
 
     cy.intercept('GET', '/api/transactions/get_transactions*', (req) => {
       const page = Number(req.query.page || '1')
+      if (req.query.account_ids) {
+        expect(req.query.account_ids).to.eq('a1')
+      }
+      if (req.query.tx_type) {
+        expect(req.query.tx_type).to.eq('debit')
+      }
       req.reply({
         statusCode: 200,
         body: {
@@ -69,15 +75,24 @@ describe('TransactionsTable', () => {
     mount(TransactionsTable)
     cy.wait('@fetchFilteredPages')
     cy.get('[data-test="account-filter"]').select('a1')
-    cy.wait('@fetchFilteredPages').its('request.url').should('include', 'account_ids=a1')
+    cy.get('[data-test="type-filter"]').select('debit')
+    cy.wait('@fetchFilteredPages')
+      .its('request.url')
+      .then((url) => {
+        expect(url).to.include('account_ids=a1')
+        expect(url).to.include('tx_type=debit')
+      })
     cy.contains('td', 'Coffee').should('be.visible')
+    cy.get('tbody tr').should('have.length', 2)
 
     cy.contains('button', 'Next ›').click()
     cy.wait('@fetchFilteredPages').then(({ request }) => {
       expect(request.url).to.include('account_ids=a1')
+      expect(request.url).to.include('tx_type=debit')
       expect(request.url).to.include('page=2')
     })
     cy.contains('td', 'Train').should('be.visible')
     cy.contains('td', 'Paycheck').should('be.visible')
+    cy.get('tbody tr').should('have.length', 2)
   })
 })

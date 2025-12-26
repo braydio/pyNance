@@ -123,4 +123,53 @@ describe('useTransactions', () => {
     expect(totalCount.value).toBe(4)
     expect(totalPages.value).toBe(2)
   })
+
+  it('backfills filtered results across cached pages before paginating', async () => {
+    const filtersRef = ref({ account_ids: ['acct-1'] })
+    const pageSize = 2
+    const firstPage = [
+      { transaction_id: 'alpha-1', date: '2024-02-01', description: 'Apple Store' },
+      { transaction_id: 'beta-1', date: '2024-02-02', description: 'Book Shop' },
+    ]
+    const secondPage = [
+      { transaction_id: 'alpha-2', date: '2024-02-03', description: 'Apricot Market' },
+      { transaction_id: 'gamma-1', date: '2024-02-04', description: 'Grocery' },
+    ]
+
+    vi.mocked(fetchTransactions).mockImplementation(({ page, account_ids }) => {
+      expect(account_ids).toEqual(['acct-1'])
+      if (page === 2) {
+        return Promise.resolve({ transactions: secondPage, total: 4 })
+      }
+      return Promise.resolve({ transactions: firstPage, total: 4 })
+    })
+
+    let composable
+    mount({
+      template: '<div />',
+      setup() {
+        composable = useTransactions(pageSize, null, filtersRef)
+        return {}
+      },
+    })
+
+    const {
+      fetchTransactions: fetchTransactionsPage,
+      paginatedTransactions,
+      searchQuery,
+      totalCount,
+    } = composable
+
+    await fetchTransactionsPage(1, { force: true })
+    await fetchTransactionsPage(2, { force: true })
+    await flushPromises()
+
+    searchQuery.value = 'ap'
+    await nextTick()
+
+    const filteredIds = paginatedTransactions.value.map((tx) => tx.transaction_id)
+    expect(filteredIds).toEqual(expect.arrayContaining(['alpha-1', 'alpha-2']))
+    expect(filteredIds).toHaveLength(2)
+    expect(totalCount.value).toBe(2)
+  })
 })
