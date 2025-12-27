@@ -375,9 +375,6 @@ const subcategoryOptions = computed(() => {
   return group ? group.children : []
 })
 
-// Maintain a steady table height even when searches return few results.
-const baseRowCount = computed(() => Math.max(MIN_ROW_COUNT, props.transactions.length))
-
 const filterSuggestions = computed(() => {
   if (!activeFilterKey.value) return []
   const seen = new Set()
@@ -735,6 +732,9 @@ const filteredTransactions = computed(() => {
   })
   return txs
 })
+
+// Maintain a steady table height even when searches return few results.
+const baseRowCount = computed(() => Math.max(MIN_ROW_COUNT, filteredTransactions.value.length))
 
 const displayTransactions = computed(() => {
   // Pad to preserve table height for small datasets.
