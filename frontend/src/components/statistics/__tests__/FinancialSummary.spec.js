@@ -112,4 +112,39 @@ describe('FinancialSummary trends', () => {
 
     expect(wrapper.find('.detail-date-reset').exists()).toBe(false)
   })
+
+  it('includes zero-value days when calculating averages and moving averages', async () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 150, totalExpenses: 70, totalNet: 80 },
+        startDate: '2024-04-01',
+        endDate: '2024-04-05',
+        chartData: [
+          {
+            date: '2024-04-01',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -20 },
+            net: { parsedValue: 80 },
+          },
+          {
+            date: '2024-04-03',
+            income: { parsedValue: 50 },
+            expenses: { parsedValue: -50 },
+            net: { parsedValue: 0 },
+          },
+        ],
+      },
+    })
+
+    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await nextTick()
+
+    const metrics = wrapper.vm.extendedMetrics
+
+    expect(metrics.avgDailyIncome).toBeCloseTo(30)
+    expect(metrics.avgDailyExpenses).toBeCloseTo(-14)
+    expect(metrics.avgDailyNet).toBeCloseTo(16)
+    expect(metrics.netMA7).toBeCloseTo(16)
+    expect(metrics.netMA30).toBeCloseTo(16)
+  })
 })

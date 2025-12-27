@@ -288,8 +288,9 @@ async function renderChart() {
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     const series = buildComparisonSeries(labels, comparisonData.value, ctx)
-    if (series.some((v) => v !== null))
-      datasets.push({ type: 'line', label: 'Comparison', data: series })
+    const comparisonLabel =
+      ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
+    datasets.push({ type: 'line', label: comparisonLabel, data: series })
   }
 
   chartInstance.value = new Chart(ctx, {
