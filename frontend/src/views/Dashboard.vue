@@ -373,12 +373,10 @@ function onDateRangeChange() {
   defaultSet.value = false
 }
 
-const {
-  dateRange = ref({ start: '', end: '' }),
-  debouncedRange = ref({ start: '', end: '' }),
-} = useDateRange({
-  onDebouncedChange: onDateRangeChange,
-})
+const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '', end: '' }) } =
+  useDateRange({
+    onDebouncedChange: onDateRangeChange,
+  })
 
 // When CategoryBreakdownChart fetches, auto-select the first 5 categories once
 // per fetch. Includes "Other" when grouping is enabled and does not repopulate
