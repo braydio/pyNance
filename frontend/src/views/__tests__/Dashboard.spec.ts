@@ -159,7 +159,10 @@ const TopAccountSnapshotStub = {
 }
 
 let dailyNetChartProps = null
-const ChartWidgetTopBarStub = { name: 'ChartWidgetTopBar', template: '<div><slot name="controls" /></div>' }
+const ChartWidgetTopBarStub = {
+  name: 'ChartWidgetTopBar',
+  template: '<div><slot name="controls" /></div>',
+}
 const DailyNetChartStub = {
   name: 'DailyNetChart',
   props: {

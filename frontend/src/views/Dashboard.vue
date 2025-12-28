@@ -374,12 +374,10 @@ async function onDateRangeChange(range) {
   await refreshOptions({ start_date: range.start, end_date: range.end })
 }
 
-const {
-  dateRange = ref({ start: '', end: '' }),
-  debouncedRange = ref({ start: '', end: '' }),
-} = useDateRange({
-  onDebouncedChange: onDateRangeChange,
-})
+const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '', end: '' }) } =
+  useDateRange({
+    onDebouncedChange: onDateRangeChange,
+  })
 
 const accountsExpanded = ref(false)
 const transactionsExpanded = ref(false)
