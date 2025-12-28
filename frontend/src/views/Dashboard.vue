@@ -97,7 +97,7 @@
           <div class="flex items-center justify-between mb-2">
             <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
               Spending by
-              {{ spendingBreakdownMode === 'merchant' ? 'Merchant' : 'Category' }}
+              {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
             </h2>
             <ChartWidgetTopBar>
               <template #controls>
@@ -108,34 +108,34 @@
                     <button
                       class="px-3 py-1 text-sm transition"
                       :class="
-                        spendingBreakdownMode === 'category'
+                        breakdownType === 'category'
                           ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
                           : 'text-muted hover:bg-[var(--color-bg-dark)]'
                       "
-                      @click="setSpendingBreakdownMode('category')"
+                      @click="setDashboardBreakdownMode('category')"
                     >
                       Categories
                     </button>
                     <button
                       class="px-3 py-1 text-sm transition"
                       :class="
-                        spendingBreakdownMode === 'merchant'
+                        breakdownType === 'merchant'
                           ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
                           : 'text-muted hover:bg-[var(--color-bg-dark)]'
                       "
-                      @click="setSpendingBreakdownMode('merchant')"
+                      @click="setDashboardBreakdownMode('merchant')"
                     >
                       Merchants
                     </button>
                   </div>
                   <GroupedCategoryDropdown
-                    v-if="spendingBreakdownMode === 'category'"
+                    v-if="breakdownType === 'category'"
                     :groups="categoryGroups"
-                    :modelValue="catSelected"
-                    @update:modelValue="onCatSelected"
+                    :modelValue="selectedCategoryIds"
+                    @update:modelValue="updateSelection"
                     class="w-full md:w-64"
                   />
-                  <button class="btn btn-outline hover-lift" @click="groupOthers = !groupOthers">
+                  <button class="btn btn-outline hover-lift" @click="toggleGroupOthers">
                     {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
                   </button>
                 </div>
@@ -145,11 +145,11 @@
           <CategoryBreakdownChart
             :start-date="debouncedRange.start"
             :end-date="debouncedRange.end"
-            :selected-category-ids="catSelected"
+            :selected-category-ids="selectedCategoryIds"
             :group-others="groupOthers"
-            :breakdown-type="spendingBreakdownMode"
+            :breakdown-type="breakdownType"
             @summary-change="catSummary = $event"
-            @categories-change="allCategoryIds = $event"
+            @categories-change="onCategoriesChange"
             @bar-click="onCategoryBarClick"
           />
 
@@ -290,12 +290,12 @@ import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { useDateRange } from '@/composables/useDateRange'
-import { fetchCategoryTree } from '@/api/categories'
 import { fetchTransactions } from '@/api/transactions'
+import { useCategories } from '@/composables/useCategories'
 
 // Transactions and user
 const pageSize = 15
@@ -333,18 +333,6 @@ const netWorthMessage = computed(() => {
   return 'Uhh... keep up the... whatever this is.'
 })
 
-onMounted(async () => {
-  try {
-    const res = await api.fetchNetAssets()
-    if (res.status === 'success' && Array.isArray(res.data) && res.data.length) {
-      netWorth.value = res.data[res.data.length - 1].net_assets
-    }
-    await loadCategoryGroups()
-  } catch (e) {
-    console.error('Failed to fetch net assets:', e)
-  }
-})
-
 /** --- DAILY NET STATE --- */
 const netSummary = ref({
   totalIncome: 0,
@@ -361,16 +349,29 @@ const showComparisonOverlay = ref(false)
 const comparisonMode = ref('prior_month_to_date')
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
-const catSelected = ref([]) // user selected
-const allCategoryIds = ref([]) // from chart data
-const defaultSet = ref(false) // only auto-select ONCE per data load
-const groupOthers = ref(true) // aggregate small categories
-const spendingBreakdownMode = ref('category')
+const {
+  breakdownType,
+  groupOthers,
+  selectedIds: selectedCategoryIds,
+  groupedOptions: categoryGroups,
+  toggleGroupOthers,
+  setAvailableIds,
+  updateSelection,
+  resetSelection,
+  setBreakdownType,
+  refreshOptions,
+  loadMerchantGroups,
+} = useCategories()
 
 // --- SHARED DATE RANGE STATE ---
-function onDateRangeChange() {
-  catSelected.value = []
-  defaultSet.value = false
+/**
+ * Reset spending selections when the date range changes and refresh option data.
+ *
+ * @param {{ start: string; end: string }} range - Debounced date range boundaries.
+ */
+async function onDateRangeChange(range) {
+  resetSelection()
+  await refreshOptions({ start_date: range.start, end_date: range.end })
 }
 
 const {
@@ -378,16 +379,6 @@ const {
   debouncedRange = ref({ start: '', end: '' }),
 } = useDateRange({
   onDebouncedChange: onDateRangeChange,
-})
-
-// When CategoryBreakdownChart fetches, auto-select the first 5 categories once
-// per fetch. Includes "Other" when grouping is enabled and does not repopulate
-// on clear.
-watch(allCategoryIds, (ids) => {
-  if ((!catSelected.value || !catSelected.value.length) && ids.length && !defaultSet.value) {
-    catSelected.value = ids.slice(0, 5)
-    defaultSet.value = true
-  }
 })
 
 const accountsExpanded = ref(false)
@@ -403,56 +394,6 @@ function expandTransactions() {
 function collapseTables() {
   accountsExpanded.value = false
   transactionsExpanded.value = false
-}
-
-// When user clears selection, do NOT re-select (unless new data is fetched)
-function onCatSelected(newIds) {
-  catSelected.value = Array.isArray(newIds) ? newIds : [newIds]
-}
-
-function setSpendingBreakdownMode(mode) {
-  if (mode === spendingBreakdownMode.value) return
-  spendingBreakdownMode.value = mode
-  catSelected.value = []
-  defaultSet.value = false
-}
-
-// When grouping mode changes, allow auto-select on next fetch
-watch(groupOthers, () => {
-  defaultSet.value = false
-})
-
-watch(spendingBreakdownMode, () => {
-  catSelected.value = []
-  defaultSet.value = false
-})
-
-// For dropdown: fetch full tree for grouped dropdown (not just breakdown result)
-const categoryGroups = ref([])
-
-/**
- * Fetch the full category tree and transform it into groups for the
- * dropdown component.
- */
-async function loadCategoryGroups() {
-  try {
-    const res = await fetchCategoryTree()
-    if (res.status === 'success' && Array.isArray(res.data)) {
-      // res.data is confirmed to be an array, so no fallback is required
-      categoryGroups.value = res.data
-        .map((root) => ({
-          id: root.id,
-          label: root.label,
-          children: (root.children || []).map((c) => ({
-            id: c.id,
-            label: c.label ?? c.name,
-          })),
-        }))
-        .sort((a, b) => a.label.localeCompare(b.label))
-    }
-  } catch {
-    categoryGroups.value = []
-  }
 }
 
 /**
@@ -518,7 +459,7 @@ async function onCategoryBarClick(payload) {
   const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
 
   // Only display the modal when the clicked bar corresponds to selected categories
-  if (!ids.length || spendingBreakdownMode.value === 'merchant') return
+  if (!ids.length || breakdownType.value === 'merchant') return
 
   // Determine the date range in effect for the category chart. The chart emits
   // `summary-change` events that populate `catSummary` with the actual start
@@ -536,6 +477,45 @@ async function onCategoryBarClick(payload) {
   categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
   showCategoryModal.value = true
 }
+
+/**
+ * Track IDs emitted from the category chart and refresh dropdown defaults.
+ *
+ * @param {Array} ids - Category or merchant identifiers emitted from the chart.
+ */
+function onCategoriesChange(ids) {
+  setAvailableIds(ids)
+}
+
+/**
+ * Switch spending breakdown modes and ensure merchant dropdown options stay current.
+ *
+ * @param {string} mode - Breakdown dimension to display.
+ */
+async function setDashboardBreakdownMode(mode) {
+  setBreakdownType(mode)
+  if (mode === 'merchant') {
+    await loadMerchantGroups({
+      start_date: debouncedRange.value.start,
+      end_date: debouncedRange.value.end,
+    })
+  }
+}
+
+onMounted(async () => {
+  try {
+    const res = await api.fetchNetAssets()
+    if (res.status === 'success' && Array.isArray(res.data) && res.data.length) {
+      netWorth.value = res.data[res.data.length - 1].net_assets
+    }
+    await refreshOptions({
+      start_date: debouncedRange.value.start,
+      end_date: debouncedRange.value.end,
+    })
+  } catch (e) {
+    console.error('Failed to fetch net assets:', e)
+  }
+})
 
 /**
  * Centralize modal state mutations so chart handlers cannot accidentally hide
