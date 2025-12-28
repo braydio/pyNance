@@ -68,11 +68,6 @@ def create_app():
     app.register_blueprint(institutions, url_prefix="/api/institutions")
     app.register_blueprint(summary, url_prefix="/api/summary")
 
-    if ENABLE_ARBIT_DASHBOARD:
-        from app.routes.arbit_dashboard import arbit_dashboard
-
-        app.register_blueprint(arbit_dashboard, url_prefix="/api/arbit")
-
     app.cli.add_command(sync_accounts)
     # Dev CLI: seed demo data into a fresh database
     from app.cli.seed_dev import seed_dev
@@ -112,9 +107,6 @@ def create_app():
 
     if plaid_client:
         logger.info("Plaid client initialized.")
-
-    # Clean, grouped route logging (debug-only)
-    if app.debug:
         with app.app_context():
             # 🎯 only GET routes (skip static, HEAD, OPTIONS)
             unique_routes = sorted(

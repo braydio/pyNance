@@ -1,6 +1,17 @@
 """Tests for the CCXT exchange adapter implementation."""
 
+import os
+import sys
+
 import pytest
+
+ROOT_DIR = os.path.join(os.path.dirname(__file__), "..")
+PLUGINS_DIR = os.path.join(ROOT_DIR, "plugins")
+if PLUGINS_DIR not in sys.path:
+    sys.path.insert(0, PLUGINS_DIR)
+
+if not os.path.isdir(os.path.join(PLUGINS_DIR, "arbit")):
+    pytest.skip("Arbit plugin not available in plugins/arbit", allow_module_level=True)
 
 ccxt = pytest.importorskip("ccxt")
 

@@ -106,7 +106,7 @@ def test_start_endpoint(monkeypatch):
     assert data["stdout"] == "started"
     assert called["cmd"] == [
         "python",
-        "arbit/cli.py",
+        "plugins/arbit/cli.py",
         "start",
         "--threshold",
         "1.0",
@@ -128,7 +128,7 @@ def test_stop_endpoint(monkeypatch):
     app = make_app(True)
 
     def fake_run(cmd, capture_output, text, check):
-        assert cmd == ["python", "arbit/cli.py", "stop"]
+        assert cmd == ["python", "plugins/arbit/cli.py", "stop"]
 
         class Res:
             stdout = "stopped"
@@ -167,7 +167,7 @@ def test_config_update_endpoint(monkeypatch):
     assert data["stdout"] == "updated"
     assert called["cmd"] == [
         "python",
-        "arbit/cli.py",
+        "plugins/arbit/cli.py",
         "config",
         "update",
         "--threshold",

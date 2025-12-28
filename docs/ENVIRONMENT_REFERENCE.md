@@ -47,6 +47,7 @@ It also provides verified examples and troubleshooting tips so you can get up an
 
 - `ENABLE_ARBIT_DASHBOARD` (optional; default: `false`)
   - Set to `true` to enable the experimental arbitrage dashboard (`/arbit`).
+  - Expects the Arbit plugin repo to be available at `plugins/arbit/`.
 - `ARBIT_EXPORTER_URL` (optional; default: `http://localhost:8000`)
   - Base URL for the Arbit metrics exporter if enabled.
 
