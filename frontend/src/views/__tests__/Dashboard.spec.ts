@@ -1,17 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, computed } from 'vue'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
 
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
   default: { fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }) },
-}))
-
-vi.mock('@/api/categories', () => ({
-  fetchCategoryTree: vi.fn().mockResolvedValue({ status: 'success', data: [] }),
 }))
 
 vi.mock('@/composables/useTransactions.js', () => ({
@@ -37,6 +33,118 @@ vi.mock('@/composables/useAccountGroups', () => ({
   useAccountGroups: () => ({ groups: ref([]), activeGroupId: ref(null) }),
 }))
 
+vi.mock('@/composables/useDateRange', () => {
+  const { ref, watch } = require('vue')
+
+  function formatDateInput(date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
+  }
+
+  function normalizeRange(range) {
+    const startDate = new Date(range.start)
+    const endDate = new Date(range.end)
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return range
+    }
+    if (startDate > endDate) {
+      return {
+        start: formatDateInput(endDate),
+        end: formatDateInput(startDate),
+      }
+    }
+    return {
+      start: formatDateInput(startDate),
+      end: formatDateInput(endDate),
+    }
+  }
+
+  return {
+    useDateRange: (options = {}) => {
+      const dateRange = ref({ start: '2024-02-01', end: '2024-02-29' })
+      const debouncedRange = ref(normalizeRange(dateRange.value))
+      const onChange = options.onDebouncedChange || (() => {})
+      watch(
+        dateRange,
+        () => {
+          const normalized = normalizeRange(dateRange.value)
+          debouncedRange.value = normalized
+          onChange(normalized)
+        },
+        { deep: true, immediate: true },
+      )
+
+      return {
+        dateRange,
+        debouncedRange,
+        formatDateInput,
+        getMonthBounds: () => ({
+          start: new Date(dateRange.value.start),
+          end: new Date(dateRange.value.end),
+        }),
+      }
+    },
+  }
+})
+
+const mockBreakdownType = ref<'category' | 'merchant'>('category')
+const mockGroupOthers = ref(true)
+const mockSelectedIds = ref<string[]>([])
+const mockGroupedOptions = ref([
+  {
+    id: 'essentials',
+    label: 'Essentials',
+    children: [
+      { id: 'groceries', label: 'Groceries' },
+      { id: 'rent', label: 'Rent' },
+    ],
+  },
+])
+let autoSelected = false
+const mockRefreshOptions = vi.fn(async () => {})
+const mockLoadMerchantGroups = vi.fn(async () => {})
+const mockResetSelection = vi.fn(() => {
+  mockSelectedIds.value = []
+  autoSelected = false
+})
+const mockSetBreakdownType = vi.fn((mode: 'category' | 'merchant') => {
+  if (mockBreakdownType.value === mode) return
+  mockBreakdownType.value = mode
+  mockResetSelection()
+})
+const mockToggleGroupOthers = vi.fn(() => {
+  mockGroupOthers.value = !mockGroupOthers.value
+  autoSelected = false
+})
+const mockSetAvailableIds = vi.fn((ids: Array<string | number>) => {
+  const normalized = (ids || []).map(String)
+  if (!mockSelectedIds.value.length && normalized.length && !autoSelected) {
+    mockSelectedIds.value = normalized.slice(0, 5)
+    autoSelected = true
+  }
+})
+const mockUpdateSelection = vi.fn((ids: string[] | string) => {
+  mockSelectedIds.value = Array.isArray(ids) ? ids.map(String) : [String(ids)]
+})
+
+vi.mock('@/composables/useCategories', () => ({
+  useCategories: () => ({
+    breakdownType: mockBreakdownType,
+    groupOthers: mockGroupOthers,
+    selectedIds: mockSelectedIds,
+    groupedOptions: computed(() => mockGroupedOptions.value),
+    toggleGroupOthers: mockToggleGroupOthers,
+    setAvailableIds: mockSetAvailableIds,
+    updateSelection: mockUpdateSelection,
+    resetSelection: mockResetSelection,
+    setBreakdownType: mockSetBreakdownType,
+    refreshOptions: mockRefreshOptions,
+    loadMerchantGroups: mockLoadMerchantGroups,
+  }),
+}))
+
 let receivedProps = null
 const TopAccountSnapshotStub = {
   name: 'TopAccountSnapshot',
@@ -51,6 +159,10 @@ const TopAccountSnapshotStub = {
 }
 
 let dailyNetChartProps = null
+const ChartWidgetTopBarStub = {
+  name: 'ChartWidgetTopBar',
+  template: '<div><slot name="controls" /></div>',
+}
 const DailyNetChartStub = {
   name: 'DailyNetChart',
   props: {
@@ -103,6 +215,7 @@ const CategoryBreakdownChartStub = {
         startDate: props.startDate,
         endDate: props.endDate,
         breakdownType: props.breakdownType,
+        groupOthers: props.groupOthers,
       }),
       (val) => {
         categoryChartProps = val
@@ -125,7 +238,7 @@ function createWrapper(options = {}) {
     BasePageLayout: PassThrough,
     DailyNetChart: DailyNetChartStub,
     CategoryBreakdownChart: CategoryBreakdownChartStub,
-    ChartWidgetTopBar: true,
+    ChartWidgetTopBar: ChartWidgetTopBarStub,
     ChartDetailsSidebar: true,
     DateRangeSelector: true,
     AccountsTable: true,
@@ -156,6 +269,17 @@ beforeEach(() => {
   receivedProps = null
   dailyNetChartProps = null
   categoryChartProps = null
+  autoSelected = false
+  mockBreakdownType.value = 'category'
+  mockGroupOthers.value = true
+  mockSelectedIds.value = []
+  mockRefreshOptions.mockClear()
+  mockLoadMerchantGroups.mockClear()
+  mockResetSelection.mockClear()
+  mockSetBreakdownType.mockClear()
+  mockToggleGroupOthers.mockClear()
+  mockSetAvailableIds.mockClear()
+  mockUpdateSelection.mockClear()
 })
 
 afterEach(() => {
@@ -170,7 +294,7 @@ afterEach(() => {
  * @param {Date} date - Date to format.
  * @returns {string} Date string in YYYY-MM-DD format.
  */
-function formatDateInput(date) {
+function formatDateInput(date: Date): string {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -180,6 +304,7 @@ function formatDateInput(date) {
 describe('Dashboard.vue', () => {
   it('defaults the date range to the current month boundaries', async () => {
     const wrapper = createWrapper()
+    await nextTick()
 
     const monthStart = new Date(2024, 1, 1)
     const monthEnd = new Date(2024, 1, 29)
@@ -194,23 +319,25 @@ describe('Dashboard.vue', () => {
 
   it('clears selected categories when date range changes', async () => {
     const wrapper = createWrapper()
+    await nextTick()
 
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
 
-    wrapper.vm.allCategoryIds = ['a', 'b', 'c', 'd', 'e', 'f']
+    const chart = wrapper.findComponent(CategoryBreakdownChartStub)
+    chart.vm.emitCategoriesChange(['a', 'b', 'c', 'd', 'e', 'f'])
     await nextTick()
-    expect(wrapper.vm.catSelected).toEqual(['a', 'b', 'c', 'd', 'e'])
+    expect(mockSelectedIds.value).toEqual(['a', 'b', 'c', 'd', 'e'])
 
     wrapper.vm.dateRange.start = '2024-01-01'
     wrapper.vm.dateRange.end = '2024-01-31'
-    await vi.runAllTimersAsync()
+    await vi.advanceTimersByTimeAsync(250)
     await nextTick()
-    expect(wrapper.vm.catSelected).toEqual([])
+    expect(mockSelectedIds.value).toEqual([])
 
-    wrapper.vm.allCategoryIds = ['x', 'y', 'z']
+    chart.vm.emitCategoriesChange(['x', 'y', 'z'])
     await nextTick()
-    expect(wrapper.vm.catSelected).toEqual(['x', 'y', 'z'])
+    expect(mockSelectedIds.value).toEqual(['x', 'y', 'z'])
   })
 
   it('uses the clicked bar date when opening the daily transactions modal', async () => {
@@ -234,7 +361,7 @@ describe('Dashboard.vue', () => {
 
     wrapper.vm.dateRange.start = '2024-03-15'
     wrapper.vm.dateRange.end = '2024-03-01'
-    await vi.runAllTimersAsync()
+    await vi.advanceTimersByTimeAsync(250)
     await nextTick()
 
     expect(dailyNetChartProps.startDate).toBe('2024-03-01')
@@ -254,5 +381,44 @@ describe('Dashboard.vue', () => {
     expect(dailyNetChartProps.zoomedOut).toBe(true)
     expect(dailyNetChartProps.startDate).toBe(initialStart)
     expect(dailyNetChartProps.endDate).toBe(initialEnd)
+  })
+
+  it('auto-selects top breakdown IDs when the chart emits category data', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+    const chart = wrapper.findComponent(CategoryBreakdownChartStub)
+
+    chart.vm.emitCategoriesChange(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
+    await nextTick()
+
+    expect(mockSetAvailableIds).toHaveBeenCalledWith(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
+    expect(mockSelectedIds.value).toEqual(['c1', 'c2', 'c3', 'c4', 'c5'])
+
+    mockResetSelection()
+    chart.vm.emitCategoriesChange(['m1', 'm2'])
+    await nextTick()
+    expect(mockSelectedIds.value).toEqual(['m1', 'm2'])
+  })
+
+  it('switches grouping mode when toggling consolidation controls', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+    const toggleButton = wrapper
+      .findAll('button')
+      .find(
+        (btn) =>
+          btn.text().includes('Expand All') || btn.text().includes('Consolidate Minor Items'),
+      )
+
+    expect(toggleButton).toBeDefined()
+    expect(toggleButton?.text()).toContain('Expand All')
+
+    await toggleButton?.trigger('click')
+    await nextTick()
+
+    expect(mockToggleGroupOthers).toHaveBeenCalled()
+    expect(mockGroupOthers.value).toBe(false)
+    expect(categoryChartProps.groupOthers).toBe(false)
+    expect(toggleButton?.text()).toContain('Consolidate Minor Items')
   })
 })
