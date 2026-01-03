@@ -266,6 +266,7 @@ function createWrapper(options = {}) {
 beforeEach(() => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2024-02-15T00:00:00Z'))
+  fetchTransactions.mockClear()
   receivedProps = null
   dailyNetChartProps = null
   categoryChartProps = null
@@ -420,5 +421,48 @@ describe('Dashboard.vue', () => {
     expect(mockGroupOthers.value).toBe(false)
     expect(categoryChartProps.groupOthers).toBe(false)
     expect(toggleButton?.text()).toContain('Consolidate Minor Items')
+  })
+
+  it('keeps overlays mutually exclusive between tables and modals', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    wrapper.vm.expandAccounts()
+    await nextTick()
+    expect(wrapper.vm.accountsExpanded).toBe(true)
+    expect(wrapper.vm.transactionsExpanded).toBe(false)
+    expect(wrapper.vm.showDailyModal).toBe(false)
+
+    await wrapper.vm.onNetBarClick('2024-06-11')
+    await nextTick()
+    expect(wrapper.vm.accountsExpanded).toBe(false)
+    expect(wrapper.vm.transactionsExpanded).toBe(false)
+    expect(wrapper.vm.showDailyModal).toBe(true)
+
+    wrapper.vm.expandTransactions()
+    await nextTick()
+    expect(wrapper.vm.transactionsExpanded).toBe(true)
+    expect(wrapper.vm.showDailyModal).toBe(false)
+
+    wrapper.vm.collapseTables()
+    await nextTick()
+    expect(wrapper.vm.accountsExpanded).toBe(false)
+    expect(wrapper.vm.transactionsExpanded).toBe(false)
+    expect(wrapper.vm.showDailyModal).toBe(false)
+  })
+
+  it('switches between transaction modals without overlapping overlays', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    await wrapper.vm.onNetBarClick('2024-06-12')
+    await nextTick()
+    expect(wrapper.vm.showDailyModal).toBe(true)
+    expect(wrapper.vm.showCategoryModal).toBe(false)
+
+    await wrapper.vm.onCategoryBarClick({ label: 'Food', ids: ['cat-1'] })
+    await nextTick()
+    expect(wrapper.vm.showDailyModal).toBe(false)
+    expect(wrapper.vm.showCategoryModal).toBe(true)
   })
 })
