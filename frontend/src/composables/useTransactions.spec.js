@@ -199,8 +199,11 @@ describe('useTransactions', () => {
       },
     })
 
-    const { fetchTransactions: fetchTransactionsPage, paginatedTransactions, totalCount } =
-      composable
+    const {
+      fetchTransactions: fetchTransactionsPage,
+      paginatedTransactions,
+      totalCount,
+    } = composable
 
     await fetchTransactionsPage(1, { force: true })
     await flushPromises()
