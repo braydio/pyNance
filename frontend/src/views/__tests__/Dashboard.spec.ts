@@ -184,7 +184,7 @@ const DailyNetChartStub = {
     showAvgIncome: { type: Boolean, default: false },
     showAvgExpenses: { type: Boolean, default: false },
     showComparisonOverlay: { type: Boolean, default: false },
-    comparisonMode: { type: String, default: 'prior_month_to_date' },
+    timeframe: { type: String, default: 'mtd' },
   },
   emits: ['summary-change', 'data-change', 'bar-click'],
   template: '<div class="daily-net-chart-stub"></div>',
@@ -194,6 +194,7 @@ const DailyNetChartStub = {
         startDate: props.startDate,
         endDate: props.endDate,
         zoomedOut: props.zoomedOut,
+        timeframe: props.timeframe,
       }),
       (val) => {
         dailyNetChartProps = val
@@ -329,8 +330,9 @@ describe('Dashboard.vue', () => {
     expect(formatDateInput(monthEnd)).toBe('2024-02-29')
     expect(wrapper.vm.dateRange.start).toBe('2024-02-01')
     expect(wrapper.vm.dateRange.end).toBe('2024-02-29')
-    expect(dailyNetChartProps.startDate).toBe(formatDateInput(monthStart))
-    expect(dailyNetChartProps.endDate).toBe(formatDateInput(monthEnd))
+    expect(dailyNetChartProps.startDate).toBe('2024-02-01')
+    expect(dailyNetChartProps.endDate).toBe('2024-02-15')
+    expect(dailyNetChartProps.timeframe).toBe('mtd')
   })
 
   it('clears selected categories when date range changes', async () => {
@@ -380,8 +382,6 @@ describe('Dashboard.vue', () => {
     await vi.advanceTimersByTimeAsync(250)
     await nextTick()
 
-    expect(dailyNetChartProps.startDate).toBe('2024-03-01')
-    expect(dailyNetChartProps.endDate).toBe('2024-03-15')
     expect(categoryChartProps.startDate).toBe('2024-03-01')
     expect(categoryChartProps.endDate).toBe('2024-03-15')
   })

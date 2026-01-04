@@ -21,7 +21,11 @@ const props = defineProps({
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
-  comparisonMode: { type: String, default: 'prior_month_to_date' },
+  timeframe: {
+    type: String,
+    default: 'mtd',
+    validator: (value) => ['mtd', 'rolling_30'].includes(value),
+  },
 })
 
 const {
@@ -30,7 +34,7 @@ const {
   showAvgIncome,
   showAvgExpenses,
   showComparisonOverlay,
-  comparisonMode,
+  timeframe,
 } = toRefs(props)
 
 const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
@@ -63,6 +67,13 @@ const formatTooltipTitle = (label) => {
   const parsed = parseDateKey(label)
   return parsed
     ? parsed.toLocaleDateString(undefined, { month: 'short', day: '2-digit', year: 'numeric' })
+    : label
+}
+
+function formatAxisLabel(label) {
+  const parsed = parseDateKey(label)
+  return parsed
+    ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
     : label
 }
 
@@ -129,30 +140,29 @@ function getDisplaySeries() {
 
 function buildComparisonContext() {
   const end = parseDateKey(props.endDate)
-  if (!end) return null
+  const start = parseDateKey(props.startDate)
+  if (!end || !start) return null
 
-  if (comparisonMode.value === 'prior_month_to_date') {
-    const start = new Date(end.getFullYear(), end.getMonth() - 1, 1)
+  if (timeframe.value === 'mtd') {
+    const priorMonthStart = new Date(end.getFullYear(), end.getMonth() - 1, 1)
     const last = new Date(end.getFullYear(), end.getMonth(), 0)
     const day = Math.min(end.getDate(), last.getDate())
     return {
       mode: 'prior_month_to_date',
-      priorStart: start,
-      priorEnd: new Date(start.getFullYear(), start.getMonth(), day),
+      priorStart: priorMonthStart,
+      priorEnd: new Date(priorMonthStart.getFullYear(), priorMonthStart.getMonth(), day),
     }
   }
 
+  const currentStart = start
   const currentEnd = end
-  const currentStart = new Date(end)
-  currentStart.setDate(end.getDate() - 29)
-
   const priorEnd = new Date(currentStart)
   priorEnd.setDate(priorEnd.getDate() - 1)
 
   const priorStart = new Date(priorEnd)
   priorStart.setDate(priorStart.getDate() - 29)
 
-  return { mode: 'last_30_vs_previous_30', priorStart, priorEnd, currentStart, currentEnd }
+  return { mode: 'rolling_30', priorStart, priorEnd, currentStart, currentEnd }
 }
 
 function buildComparisonSeries(labels, data, ctx) {
@@ -260,6 +270,11 @@ async function renderChart() {
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
 
+  const incomeColor = getStyle('--color-accent-green') || '#22c55e'
+  const expenseColor = getStyle('--color-accent-red') || '#ef4444'
+  const netColor = getStyle('--color-accent-yellow') || '#eab308'
+  const fontFamily = getStyle('--font-chart') || "ui-sans-serif, system-ui, sans-serif"
+
   const fullLabels = buildDateRangeLabels(
     requestRange.value.startDate || labels[0],
     requestRange.value.endDate || labels.at(-1),
@@ -273,9 +288,33 @@ async function renderChart() {
   const avgExpenses = expenses.length ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
 
   const datasets = [
-    { type: 'bar', label: 'Income', data: income, barThickness: 20 },
-    { type: 'bar', label: 'Expenses', data: expenses, barThickness: 20 },
-    { type: 'bar', label: 'Net', data: net, backgroundColor: 'transparent', barThickness: 20 },
+    {
+      type: 'bar',
+      label: 'Income',
+      data: income,
+      barThickness: 18,
+      backgroundColor: incomeColor,
+      borderColor: incomeColor,
+      borderWidth: 1,
+    },
+    {
+      type: 'bar',
+      label: 'Expenses',
+      data: expenses,
+      barThickness: 18,
+      backgroundColor: expenseColor,
+      borderColor: expenseColor,
+      borderWidth: 1,
+    },
+    {
+      type: 'bar',
+      label: 'Net',
+      data: net,
+      barThickness: 18,
+      backgroundColor: 'transparent',
+      borderColor: netColor,
+      borderWidth: 0,
+    },
   ]
 
   if (showAvgIncome.value)
@@ -293,11 +332,139 @@ async function renderChart() {
     datasets.push({ type: 'line', label: comparisonLabel, data: series })
   }
 
+  const currentLookup = new Map()
+  labels.forEach((label, index) => {
+    currentLookup.set(label, displayData[index])
+  })
+
+  let priorLookup = null
+  let priorDateByLabel = null
+  if (showComparisonOverlay.value) {
+    const ctx = buildComparisonContext()
+    if (ctx) {
+      priorLookup = new Map()
+      priorDateByLabel = new Map()
+      if (ctx.mode === 'prior_month_to_date') {
+        const dayMap = new Map()
+        comparisonData.value.forEach((entry) => {
+          const parsed = parseDateKey(entry.date)
+          if (!parsed) return
+          dayMap.set(parsed.getDate(), entry)
+        })
+
+        labels.forEach((label) => {
+          const parsed = parseDateKey(label)
+          if (!parsed) return
+          const day = parsed.getDate()
+          const prior = dayMap.get(day)
+          if (!prior) return
+          const priorDate = new Date(
+            ctx.priorStart.getFullYear(),
+            ctx.priorStart.getMonth(),
+            day,
+          )
+          priorLookup.set(label, prior)
+          priorDateByLabel.set(label, priorDate)
+        })
+      } else {
+        const indexMap = new Map()
+        comparisonData.value.forEach((entry) => {
+          const parsed = parseDateKey(entry.date)
+          if (!parsed) return
+          const idx = Math.floor((parsed - ctx.priorStart) / MS_PER_DAY)
+          if (idx >= 0 && idx < 30) indexMap.set(idx, entry)
+        })
+
+        labels.forEach((label) => {
+          const parsed = parseDateKey(label)
+          if (!parsed) return
+          const idx = Math.floor((parsed - ctx.currentStart) / MS_PER_DAY)
+          const prior = indexMap.get(idx)
+          if (!prior) return
+          const priorDate = new Date(ctx.priorStart)
+          priorDate.setDate(priorDate.getDate() + idx)
+          priorLookup.set(label, prior)
+          priorDateByLabel.set(label, priorDate)
+        })
+      }
+    }
+  }
+
+  const tooltipCallbacks = showComparisonOverlay.value
+    ? {
+        title: (items) => formatTooltipTitle(items[0]?.label),
+        label: (ctx) => {
+          if (ctx.datasetIndex !== 0) return null
+          const label = ctx.label
+          const row = currentLookup.get(label)
+          const lines = [
+            `Income: ${formatAmount(row?.income?.parsedValue || 0)}`,
+            `Expenses: ${formatAmount(row?.expenses?.parsedValue || 0)}`,
+            `Net: ${formatAmount(row?.net?.parsedValue || 0)}`,
+          ]
+
+          const prior = priorLookup?.get(label)
+          if (prior) {
+            const priorDate = priorDateByLabel?.get(label)
+            const priorTitle = priorDate
+              ? formatTooltipTitle(formatDateKey(priorDate))
+              : 'Prior period'
+            lines.push(`Prior (${priorTitle}):`)
+            lines.push(`Income: ${formatAmount(prior?.income?.parsedValue || 0)}`)
+            lines.push(`Expenses: ${formatAmount(prior?.expenses?.parsedValue || 0)}`)
+            lines.push(`Net: ${formatAmount(prior?.net?.parsedValue || 0)}`)
+          }
+
+          return lines
+        },
+      }
+    : {
+        title: (items) => formatTooltipTitle(items[0]?.label),
+        label: (ctx) => `${ctx.dataset.label}: ${formatAmount(ctx.raw || 0)}`,
+      }
+
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     plugins: [netLinePlugin],
     data: { labels, datasets },
-    options: { responsive: true, maintainAspectRatio: false, onClick: handleBarClick },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      onClick: handleBarClick,
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            autoSkip: true,
+            maxTicksLimit: 8,
+            minRotation: 0,
+            maxRotation: 0,
+            color: getStyle('--color-text-muted'),
+            font: { family: fontFamily, size: 12 },
+            callback: (_, index) => formatAxisLabel(labels[index]),
+          },
+        },
+        y: {
+          grid: { color: getStyle('--divider') || 'rgba(255, 255, 255, 0.08)' },
+          ticks: {
+            color: getStyle('--color-text-muted'),
+            font: { family: fontFamily, size: 12 },
+            callback: (value) => formatAmount(value),
+          },
+        },
+      },
+      plugins: {
+        legend: {
+          labels: {
+            color: getStyle('--color-text-light'),
+            font: { family: fontFamily, size: 12 },
+          },
+        },
+        tooltip: {
+          callbacks: tooltipCallbacks,
+        },
+      },
+    },
   })
 }
 
@@ -336,7 +503,7 @@ async function fetchComparisonData() {
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
-watch(() => [comparisonMode.value, showComparisonOverlay.value], fetchComparisonData)
+watch(() => [timeframe.value, showComparisonOverlay.value, props.startDate, props.endDate], fetchComparisonData)
 
 onMounted(() => {
   fetchData()

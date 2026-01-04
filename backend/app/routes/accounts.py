@@ -949,6 +949,11 @@ def get_account_history(account_id):
     from datetime import timedelta
 
     from app.services.account_history import compute_balance_history
+    from app.services.enhanced_account_history import (
+        cache_history,
+        get_cached_history,
+        get_or_compute_account_history,
+    )
     from sqlalchemy import func
 
     try:
@@ -997,20 +1002,33 @@ def get_account_history(account_id):
             )
             return jsonify({"error": "Account not found"}), 404
 
-        tx_rows = (
-            db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
-            .filter(Transaction.account_id == account.account_id)
-            .filter(Transaction.date >= start_date)
-            .filter(Transaction.date <= end_date)
-            .group_by(func.date(Transaction.date))
-            .all()
-        )
+        balances = []
+        if start_date and end_date:
+            cached = get_cached_history(account.account_id, start_date, end_date)
+            if cached:
+                balances = cached
+            else:
+                tx_rows = (
+                    db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
+                    .filter(Transaction.account_id == account.account_id)
+                    .filter(Transaction.date >= start_date)
+                    .filter(Transaction.date <= end_date)
+                    .group_by(func.date(Transaction.date))
+                    .all()
+                )
 
-        # Keep Decimal amounts for precise currency math in services
-        txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
+                # Keep Decimal amounts for precise currency math in services
+                txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
 
-        # Use Decimal end-to-end for currency-safe math
-        balances = compute_balance_history(account.balance, txs, start_date, end_date)
+                # Use Decimal end-to-end for currency-safe math
+                balances = compute_balance_history(
+                    account.balance, txs, start_date, end_date
+                )
+
+                if balances:
+                    cache_history(account.account_id, account.user_id, balances)
+        else:
+            balances = get_or_compute_account_history(account.account_id, days=days)
 
         response_payload = {
             "accountId": account.account_id,
