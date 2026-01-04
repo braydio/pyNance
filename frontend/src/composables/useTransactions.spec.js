@@ -172,4 +172,44 @@ describe('useTransactions', () => {
     expect(filteredIds).toHaveLength(2)
     expect(totalCount.value).toBe(2)
   })
+
+  it('fills the visible page when filtered API responses are sparse', async () => {
+    const filtersRef = ref({ account_ids: ['acct-1'] })
+    const pageSize = 2
+    const firstPage = [{ transaction_id: 'only-1', date: '2024-02-01', description: 'Solo' }]
+    const secondPage = [
+      { transaction_id: 'only-2', date: '2024-02-02', description: 'Second' },
+      { transaction_id: 'only-3', date: '2024-02-03', description: 'Third' },
+    ]
+
+    vi.mocked(fetchTransactions).mockImplementation(({ page, account_ids }) => {
+      expect(account_ids).toEqual(['acct-1'])
+      if (page === 1) {
+        return Promise.resolve({ transactions: firstPage, total: 3 })
+      }
+      return Promise.resolve({ transactions: secondPage, total: 3 })
+    })
+
+    let composable
+    mount({
+      template: '<div />',
+      setup() {
+        composable = useTransactions(pageSize, null, filtersRef)
+        return {}
+      },
+    })
+
+    const {
+      fetchTransactions: fetchTransactionsPage,
+      paginatedTransactions,
+      totalCount,
+    } = composable
+
+    await fetchTransactionsPage(1, { force: true })
+    await flushPromises()
+
+    const pageIds = paginatedTransactions.value.map((tx) => tx.transaction_id)
+    expect(pageIds).toEqual(['only-3', 'only-2'])
+    expect(totalCount.value).toBe(3)
+  })
 })

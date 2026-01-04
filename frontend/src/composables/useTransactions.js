@@ -6,7 +6,7 @@
  * Supports dynamic filters via ``filtersRef`` (e.g., ``start_date`` or
  * ``account_ids``) which trigger refetches when changed.
  */
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, nextTick } from 'vue'
 import Fuse from 'fuse.js'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 
@@ -44,7 +44,7 @@ export function useTransactions(
   const currentPage = ref(1)
   const totalPages = ref(1)
   const totalCount = ref(0)
-  const serverTotal = ref(0)
+  const serverTotalRef = ref(0)
   const isLoading = ref(false)
   const error = ref(null)
   const highlightedTransaction = ref(null)
@@ -72,15 +72,10 @@ export function useTransactions(
     return cacheStore.get(key)
   }
 
-  const serverTotal = computed(() => cacheStore.get(cacheKey.value)?.lastTotal || 0)
+  const serverTotal = computed(
+    () => cacheStore.get(cacheKey.value)?.lastTotal || serverTotalRef.value || 0,
+  )
 
-  /**
-   * Fetch a page of transactions from the API.
-   *
-   * Some backend responses omit the `status` field and return the data
-   * object directly. This helper normalizes both shapes so the table renders
-   * even when the backend does not include a status key.
-   */
   const { includeRunningBalance = false } = options
 
   const targetTransactionIdRef = options.targetTransactionIdRef || null
@@ -89,6 +84,19 @@ export function useTransactions(
     if (!targetTransactionIdRef) return ''
     return targetTransactionIdRef.value ? String(targetTransactionIdRef.value) : ''
   })
+
+  /**
+   * Normalize a collection of transactions for table consumption.
+   *
+   * @param {Array<Object>} items - Raw API transactions.
+   * @returns {Array<Object>} Transactions with formatted categories.
+   */
+  function normalizeTransactions(items = []) {
+    return items.map((tx) => ({
+      ...tx,
+      category: formatCategory(tx),
+    }))
+  }
 
   /**
    * Retrieve a specific transaction by id without inflating the primary page size.
@@ -112,10 +120,7 @@ export function useTransactions(
         return null
       }
 
-      return {
-        ...res.transactions[0],
-        category: formatCategory(res.transactions[0]),
-      }
+      return normalizeTransactions(res.transactions)[0]
     } catch (err) {
       console.warn('Unable to fetch targeted transaction', err)
       return null
@@ -171,74 +176,119 @@ export function useTransactions(
 
     totalCount.value = derivedTotal
     totalPages.value = Math.max(1, Math.ceil(derivedTotal / pageSize))
+
+    if (currentPage.value > totalPages.value) {
+      currentPage.value = totalPages.value
+    }
+  }
+
+  /**
+   * Request a page of transactions from the backend using the current filters.
+   *
+   * @param {number} page - Page number to request.
+   * @returns {Promise<Object>} Raw API response containing transactions and totals.
+   */
+  function fetchPageData(page) {
+    return fetchTransactionsApi({
+      page,
+      page_size: pageSize,
+      ...(includeRunningBalance ? { include_running_balance: true } : {}),
+      ...(filtersRef.value || {}),
+    })
+  }
+
+  /**
+   * Load a page into the cache and update totals.
+   *
+   * @param {Map<string, *>} bucket - Cache bucket for the active filter set.
+   * @param {number} page - Page number to load.
+   * @returns {Promise<Array<Object>>} Normalized transactions for the page.
+   */
+  async function loadPage(bucket, page) {
+    const res = await fetchPageData(page)
+    if (!res || typeof res !== 'object' || !('transactions' in res)) {
+      throw new Error('Received an unexpected response from the server.')
+    }
+
+    const normalised = normalizeTransactions(res.transactions || [])
+    const responseTotal = res.total != null ? res.total : normalised.length
+
+    bucket.pages.set(page, normalised)
+    bucket.lastTotal = responseTotal
+    serverTotalRef.value = responseTotal
+
+    return normalised
+  }
+
+  /**
+   * Determine the maximum page number based on the server-reported total.
+   *
+   * @param {Map<string, *>} bucket - Cache bucket for the active filter set.
+   * @returns {number} Maximum page number indicated by the current total.
+   */
+  function maxServerPage(bucket) {
+    return Math.max(1, Math.ceil((bucket.lastTotal || 0) / pageSize))
+  }
+
+  /**
+   * Ensure the filtered collection contains enough items for the active page.
+   *
+   * Additional pages are fetched sequentially when the current slice does not
+   * yet contain enough filtered results to fill the visible page. This allows
+   * client-side filters to backfill rows with matches from later pages instead
+   * of showing placeholders.
+   *
+   * @param {Map<string, *>} bucket - Cache bucket for the active filter set.
+   */
+  async function ensurePageCoverage(bucket) {
+    const needed = currentPage.value * pageSize
+    let nextPage = Math.max(...bucket.pages.keys(), 0) + 1
+    const upperBound = maxServerPage(bucket)
+
+    while (filteredTransactions.value.length < needed && nextPage <= upperBound) {
+      if (bucket.pages.has(nextPage)) {
+        nextPage += 1
+        continue
+      }
+
+      try {
+        await loadPage(bucket, nextPage)
+        refreshTransactionsFromCache(bucket.pages)
+        await nextTick()
+      } catch (prefetchErr) {
+        console.warn(`Backfill for page ${nextPage} failed`, prefetchErr)
+        break
+      }
+
+      nextPage += 1
+    }
   }
 
   const fetchTransactions = async (page = currentPage.value, { force = false } = {}) => {
     const bucket = ensureBucket()
-    const cached = bucket.pages.get(page)
-    const shouldUseCache = !force && cached
-
-    if (shouldUseCache && !targetTransactionId.value) {
-      isLoading.value = false
-      error.value = null
-      transactions.value = cached
-      totalCount.value = bucket.lastTotal || cached.length
-      serverTotal.value = bucket.lastTotal || cached.length
-      totalPages.value = Math.max(1, Math.ceil(totalCount.value / pageSize))
-      return
-    }
+    const hasCachedPage = bucket.pages.has(page)
 
     isLoading.value = true
     error.value = null
-    try {
-      const [res, targetTx] = await Promise.all([
-        shouldUseCache
-          ? Promise.resolve({
-              transactions: cached,
-              total: bucket.lastTotal || cached.length,
-            })
-          : fetchTransactionsApi({
-              page,
-              page_size: pageSize,
-              ...(includeRunningBalance ? { include_running_balance: true } : {}),
-              ...(filtersRef.value || {}),
-            }),
-        fetchTargetTransaction(targetTransactionId.value),
-      ])
 
-      if (!res || typeof res !== 'object' || !('transactions' in res)) {
-        console.error('Unexpected response shape:', res)
-        error.value = new Error('Received an unexpected response from the server.')
-        transactions.value = []
-        totalPages.value = 1
-        totalCount.value = 0
-        bucket.pages.clear()
-        return
+    try {
+      const targetTx = await fetchTargetTransaction(targetTransactionId.value)
+      highlightedTransaction.value = targetTx
+
+      if (!hasCachedPage || force) {
+        await loadPage(bucket, page)
       }
 
-      const normalised = (res.transactions || []).map((tx) => ({
-        ...tx,
-        category: formatCategory(tx),
-      }))
-
-      const merged = mergeWithTarget(normalised, targetTx)
-
-      const responseTotal = res.total != null ? res.total : normalised.length
-
-      bucket.lastTotal = responseTotal
-      serverTotal.value = responseTotal
-      totalCount.value = responseTotal
-      totalPages.value = Math.max(1, Math.ceil(responseTotal / pageSize))
-      transactions.value = merged
-      bucket.pages.set(page, normalised)
-      bucket.lastTotal = res.total != null ? res.total : bucket.lastTotal || normalised.length
       refreshTransactionsFromCache(bucket.pages)
-      totalCount.value = bucket.lastTotal || transactions.value.length
-      totalPages.value = Math.max(1, Math.ceil(bucket.lastTotal / pageSize))
-      prefetchNeighborPages(bucket, page, totalPages.value, cacheKey.value)
+      await ensurePageCoverage(bucket)
+      updatePaginationMeta()
+      prefetchNeighborPages(bucket, page, maxServerPage(bucket), cacheKey.value)
     } catch (err) {
       console.error('Error fetching transactions:', err)
-      error.value = err
+      error.value = err instanceof Error ? err : new Error('Unable to load transactions')
+      transactions.value = []
+      totalPages.value = 1
+      totalCount.value = 0
     } finally {
       isLoading.value = false
     }
@@ -293,11 +343,8 @@ export function useTransactions(
     if (query) {
       // fzf-like narrowing; preserve Fuse order by score
       items = fuse.value.search(query).map((r) => r.item)
-      return items
-    }
-
-    // Optional sort by column
-    if (sortKey.value) {
+    } else if (sortKey.value) {
+      // Optional sort by column
       items = [...items].sort((a, b) => {
         const valA = a[sortKey.value] || ''
         const valB = b[sortKey.value] || ''
@@ -366,6 +413,7 @@ export function useTransactions(
       transactions.value = []
       totalPages.value = 1
       totalCount.value = 0
+      serverTotalRef.value = 0
       if (currentPage.value !== 1) {
         currentPage.value = 1
       } else {
@@ -388,18 +436,7 @@ export function useTransactions(
     await Promise.allSettled(
       targets.map(async (page) => {
         try {
-          const res = await fetchTransactionsApi({
-            page,
-            page_size: pageSize,
-            ...(includeRunningBalance ? { include_running_balance: true } : {}),
-            ...(filtersRef.value || {}),
-          })
-          const normalised = (res.transactions || []).map((tx) => ({
-            ...tx,
-            category: formatCategory(tx),
-          }))
-          bucket.pages.set(page, normalised)
-          bucket.lastTotal = res.total != null ? res.total : bucket.lastTotal
+          await loadPage(bucket, page)
           if (cacheKey.value === bucketKey) {
             refreshTransactionsFromCache(bucket.pages)
             updatePaginationMeta()
