@@ -213,7 +213,7 @@ describe('UpdateTransactionsTable.vue', () => {
     }))
 
     const wrapper = mount(UpdateTransactionsTable, {
-      props: { transactions },
+      props: { transactions, pageSize: transactions.length },
       global: { stubs: ['Modal', 'FuzzyDropdown'] },
     })
 

@@ -304,6 +304,14 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
+  pageSize: {
+    type: Number,
+    default: 15,
+  },
 })
 
 const MIN_ROW_COUNT = 12
@@ -733,12 +741,22 @@ const filteredTransactions = computed(() => {
   return txs
 })
 
+const paginatedFilteredTransactions = computed(() => {
+  const start = (props.currentPage - 1) * props.pageSize
+  return filteredTransactions.value.slice(start, start + props.pageSize)
+})
+
 // Maintain a steady table height even when searches return few results.
-const baseRowCount = computed(() => Math.max(MIN_ROW_COUNT, filteredTransactions.value.length))
+const baseRowCount = computed(() =>
+  Math.max(MIN_ROW_COUNT, props.pageSize, paginatedFilteredTransactions.value.length),
+)
 
 const displayTransactions = computed(() => {
   // Pad to preserve table height for small datasets.
-  const padded = filteredTransactions.value.slice(0, filteredTransactions.value.length)
+  const padded = paginatedFilteredTransactions.value.slice(
+    0,
+    paginatedFilteredTransactions.value.length,
+  )
   const targetLength = Math.max(baseRowCount.value, padded.length)
   while (padded.length < targetLength) {
     padded.push({ _placeholder: true, transaction_id: `placeholder-${padded.length}` })
@@ -747,12 +765,12 @@ const displayTransactions = computed(() => {
 })
 
 const useVirtualization = computed(
-  () => filteredTransactions.value.length > VIRTUALIZATION_ROW_THRESHOLD,
+  () => paginatedFilteredTransactions.value.length > VIRTUALIZATION_ROW_THRESHOLD,
 )
 
 const rowVirtualizer = useVirtualizer(
   computed(() => ({
-    count: filteredTransactions.value.length,
+    count: paginatedFilteredTransactions.value.length,
     getScrollElement: () => tableScrollRef.value,
     estimateSize: () => VIRTUAL_ROW_HEIGHT_PX,
     overscan: VIRTUAL_OVERSCAN,
@@ -762,7 +780,7 @@ const rowVirtualizer = useVirtualizer(
 const virtualRows = computed(() =>
   rowVirtualizer.value.getVirtualItems().map((row) => ({
     ...row,
-    tx: filteredTransactions.value[row.index],
+    tx: paginatedFilteredTransactions.value[row.index],
   })),
 )
 
