@@ -253,7 +253,7 @@
         :hide-category-visuals="false"
         :subtitle="dailyModalSubtitle"
         :transactions="dailyModalTransactions"
-        @close="showDailyModal = false"
+        @close="closeModal('daily')"
       />
       <TransactionModal
         :show="showCategoryModal"
@@ -262,7 +262,7 @@
         :hide-category-visuals="false"
         :subtitle="categoryModalSubtitle"
         :transactions="categoryModalTransactions"
-        @close="showCategoryModal = false"
+        @close="closeModal('category')"
       />
     </BasePageLayout>
 
@@ -296,6 +296,7 @@ import { useTransactions } from '@/composables/useTransactions.js'
 import { useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions } from '@/api/transactions'
 import { useCategories } from '@/composables/useCategories'
+import { useDashboardModals } from '@/composables/useDashboardModals'
 
 // Transactions and user
 const pageSize = 15
@@ -311,13 +312,14 @@ const {
   setPage,
   changePage,
 } = useTransactions(pageSize)
-// Daily Net modal state
-const showDailyModal = ref(false)
+// Modal manager
+const { visibility, openModal, closeModal } = useDashboardModals()
+const showDailyModal = computed(() => visibility.value.daily)
 const dailyModalTransactions = ref([])
 const dailyModalSubtitle = ref('')
 
 // Category modal state
-const showCategoryModal = ref(false)
+const showCategoryModal = computed(() => visibility.value.category)
 const categoryModalTransactions = ref([])
 const categoryModalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
@@ -379,19 +381,16 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
-const accountsExpanded = ref(false)
-const transactionsExpanded = ref(false)
+const accountsExpanded = computed(() => visibility.value.accounts)
+const transactionsExpanded = computed(() => visibility.value.transactions)
 function expandAccounts() {
-  accountsExpanded.value = true
-  transactionsExpanded.value = false
+  openModal('accounts')
 }
 function expandTransactions() {
-  transactionsExpanded.value = true
-  accountsExpanded.value = false
+  openModal('transactions')
 }
 function collapseTables() {
-  accountsExpanded.value = false
-  transactionsExpanded.value = false
+  closeModal()
 }
 
 /**
@@ -440,7 +439,7 @@ async function onNetBarClick(label) {
   }
 
   dailyModalSubtitle.value = isoDate
-  showDailyModal.value = true
+  openModal('daily')
 }
 
 /**
@@ -473,7 +472,7 @@ async function onCategoryBarClick(payload) {
   })
   categoryModalTransactions.value = result.transactions || []
   categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
-  showCategoryModal.value = true
+  openModal('category')
 }
 
 /**
@@ -516,17 +515,9 @@ onMounted(async () => {
 })
 
 /**
- * Centralize modal state mutations so chart handlers cannot accidentally hide
- * category visuals when opening transaction details.
- *
- * @param {Object} options - Modal configuration overrides.
- * @param {Array} options.transactions - Transactions to display.
- * @param {string} options.kind - Modal layout mode, e.g. 'date' or 'category'.
- * @param {boolean} options.showDateColumn - Whether to show the date column.
- * @param {boolean} options.hideCategoryVisuals - Hide category visuals inside the modal.
- * @param {string} options.subtitle - Subtitle label rendered in the modal header.
+ * The modal manager in `useDashboardModals` keeps overlays mutually exclusive so
+ * chart interactions cannot stack dialogs or expanded panels.
  */
-// No shared configure function anymore; each modal manages its own state
 </script>
 
 <style scoped>
