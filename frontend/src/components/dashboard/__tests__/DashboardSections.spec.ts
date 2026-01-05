@@ -11,8 +11,7 @@ const DateRangeSelectorStub = {
   name: 'DateRangeSelector',
   props: ['startDate', 'endDate', 'zoomedOut'],
   emits: ['update:start-date', 'update:end-date', 'update:zoomed-out'],
-  template:
-    '<div class="date-range-stub" @click="$emit(\'update:start-date\', startDate)"></div>',
+  template: '<div class="date-range-stub" @click="$emit(\'update:start-date\', startDate)"></div>',
 }
 
 const ChartDetailsSidebarStub = { name: 'ChartDetailsSidebar', template: '<div />' }

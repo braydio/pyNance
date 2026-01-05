@@ -68,7 +68,9 @@
 
     <div class="mt-1 flex items-center gap-2">
       <span class="font-bold">Total:</span>
-      <span class="text-[var(--color-accent-cyan)] font-bold">{{ formatAmount(summary.total) }}</span>
+      <span class="text-[var(--color-accent-cyan)] font-bold">{{
+        formatAmount(summary.total)
+      }}</span>
       <slot name="after-total" />
     </div>
   </div>

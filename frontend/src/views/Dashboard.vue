@@ -61,7 +61,7 @@
             class="flex flex-row justify-between items-center gap-8 w-full h-full p-12"
           >
             <button
-            @click="expandAccounts"
+              @click="expandAccounts"
               class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition"
             >
               Expand Accounts Table
