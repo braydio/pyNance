@@ -193,9 +193,7 @@ const batchComplete = ref(false)
 
 const hasNextBatch = computed(() => currentPage.value < totalPages.value)
 
-const currentTransaction = computed(
-  () => paginatedTransactions.value?.[currentIndex.value] ?? null,
-)
+const currentTransaction = computed(() => paginatedTransactions.value?.[currentIndex.value] ?? null)
 
 const progressLabel = computed(() => {
   if (!paginatedTransactions.value.length) return '0/0'
@@ -332,9 +330,7 @@ async function saveEdits() {
  * @param {Record<string, unknown>} payload - Fields that were changed.
  */
 async function maybeSaveRule(payload) {
-  const changedField = ['category', 'merchant_name', 'merchant_type'].find(
-    (key) => key in payload,
-  )
+  const changedField = ['category', 'merchant_name', 'merchant_type'].find((key) => key in payload)
   if (!changedField) return
   const newValue = payload[changedField]
   const promptText = [

@@ -8,13 +8,7 @@
  */
 import { computed, ref } from 'vue'
 
-export type DashboardModal =
-  | 'none'
-  | 'daily'
-  | 'category'
-  | 'accounts'
-  | 'transactions'
-  | 'review'
+export type DashboardModal = 'none' | 'daily' | 'category' | 'accounts' | 'transactions' | 'review'
 
 const MODAL_KEYS: DashboardModal[] = [
   'none',
