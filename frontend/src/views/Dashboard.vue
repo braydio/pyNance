@@ -3,225 +3,218 @@
   Main application dashboard showing snapshots, charts, and financial summaries.
 -->
 <template>
-  <AppLayout>
-    <BasePageLayout gap="gap-8">
-      <NetOverviewSection
-        :user-name="userName"
-        :current-date="currentDate"
-        :net-worth-message="netWorthMessage"
-        :date-range="dateRange"
-        :debounced-range="debouncedRange"
-        :zoomed-out="zoomedOut"
-        :net-summary="netSummary"
-        :chart-data="chartData"
-        :show7-day="show7Day"
-        :show30-day="show30Day"
-        :show-avg-income="showAvgIncome"
-        :show-avg-expenses="showAvgExpenses"
-        :show-comparison-overlay="showComparisonOverlay"
-        :comparison-mode="comparisonMode"
-        @update:start-date="dateRange.start = $event"
-        @update:end-date="dateRange.end = $event"
-        @update:zoomed-out="zoomedOut = $event"
-        @update:show7-day="show7Day = $event"
-        @update:show30-day="show30Day = $event"
-        @update:show-avg-income="showAvgIncome = $event"
-        @update:show-avg-expenses="showAvgExpenses = $event"
-        @update:show-comparison-overlay="showComparisonOverlay = $event"
-        @update:comparison-mode="comparisonMode = $event"
-        @net-summary-change="netSummary = $event"
-        @net-data-change="chartData = $event"
-        @net-bar-click="onNetBarClick"
-      />
+  <BasePageLayout gap="gap-8">
+    <NetOverviewSection
+      :user-name="userName"
+      :current-date="currentDate"
+      :net-worth-message="netWorthMessage"
+      :date-range="dateRange"
+      :debounced-range="debouncedRange"
+      :zoomed-out="zoomedOut"
+      :net-summary="netSummary"
+      :chart-data="chartData"
+      :show7-day="show7Day"
+      :show30-day="show30Day"
+      :show-avg-income="showAvgIncome"
+      :show-avg-expenses="showAvgExpenses"
+      :show-comparison-overlay="showComparisonOverlay"
+      :comparison-mode="comparisonMode"
+      @update:start-date="dateRange.start = $event"
+      @update:end-date="dateRange.end = $event"
+      @update:zoomed-out="zoomedOut = $event"
+      @update:show7-day="show7Day = $event"
+      @update:show30-day="show30Day = $event"
+      @update:show-avg-income="showAvgIncome = $event"
+      @update:show-avg-expenses="showAvgExpenses = $event"
+      @update:show-comparison-overlay="showComparisonOverlay = $event"
+      @update:comparison-mode="comparisonMode = $event"
+      @net-summary-change="netSummary = $event"
+      @net-data-change="chartData = $event"
+      @net-bar-click="onNetBarClick"
+    />
 
-      <InsightsRow>
-        <CategoryBreakdownSection
+    <InsightsRow>
+      <CategoryBreakdownSection
+        :start-date="debouncedRange.start"
+        :end-date="debouncedRange.end"
+        :category-groups="categoryGroups"
+        :selected-category-ids="selectedCategoryIds"
+        :group-others="groupOthers"
+        :breakdown-type="breakdownType"
+        :summary="catSummary"
+        @change-breakdown="setDashboardBreakdownMode"
+        @toggle-group-others="toggleGroupOthers"
+        @update-selection="updateSelection"
+        @categories-change="onCategoriesChange"
+        @summary-change="catSummary = $event"
+        @bar-click="onCategoryBarClick"
+      />
+    </InsightsRow>
+
+    <!-- SPENDING ROW: Category Chart & Insights -->
+    <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
+      <!-- Category Spending -->
+      <div
+        class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3 overflow-hidden"
+      >
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
+            Spending by
+            {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
+          </h2>
+          <ChartWidgetTopBar>
+            <template #controls>
+              <div class="flex flex-wrap gap-2 items-center">
+                <div class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden">
+                  <button
+                    class="px-3 py-1 text-sm transition"
+                    :class="
+                      breakdownType === 'category'
+                        ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                        : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                    "
+                    @click="setDashboardBreakdownMode('category')"
+                  >
+                    Categories
+                  </button>
+                  <button
+                    class="px-3 py-1 text-sm transition"
+                    :class="
+                      breakdownType === 'merchant'
+                        ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                        : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                    "
+                    @click="setDashboardBreakdownMode('merchant')"
+                  >
+                    Merchants
+                  </button>
+                </div>
+                <GroupedCategoryDropdown
+                  v-if="breakdownType === 'category'"
+                  :groups="categoryGroups"
+                  :modelValue="selectedCategoryIds"
+                  @update:modelValue="updateSelection"
+                  class="w-full md:w-64"
+                />
+                <button class="btn btn-outline hover-lift" @click="toggleGroupOthers">
+                  {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
+                </button>
+              </div>
+            </template>
+          </ChartWidgetTopBar>
+        </div>
+        <CategoryBreakdownChart
           :start-date="debouncedRange.start"
           :end-date="debouncedRange.end"
-          :category-groups="categoryGroups"
           :selected-category-ids="selectedCategoryIds"
           :group-others="groupOthers"
           :breakdown-type="breakdownType"
-          :summary="catSummary"
-          @change-breakdown="setDashboardBreakdownMode"
-          @toggle-group-others="toggleGroupOthers"
-          @update-selection="updateSelection"
-          @categories-change="onCategoriesChange"
           @summary-change="catSummary = $event"
+          @categories-change="onCategoriesChange"
           @bar-click="onCategoryBarClick"
         />
-      </InsightsRow>
 
-      <!-- SPENDING ROW: Category Chart & Insights -->
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
-        <!-- Category Spending -->
+        <div class="mt-1">
+          <span class="font-bold">Total:</span>
+          <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">{{
+            formatAmount(catSummary.total)
+          }}</span>
+        </div>
+      </div>
+      <SpendingInsights />
+    </div>
+
+    <!-- REVIEW TRANSACTIONS CARD -->
+    <div
+      class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+    >
+      <div>
+        <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+        <p class="text-muted">
+          Step through transactions in batches of 10, approve quickly, or edit in place without
+          leaving the dashboard.
+        </p>
+      </div>
+      <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+    </div>
+
+    <!-- RESERVED TABLES PANEL -->
+    <div
+      class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+    >
+      <transition name="accordion">
         <div
-          class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3 overflow-hidden"
+          v-if="!accountsExpanded && !transactionsExpanded"
+          class="flex flex-row justify-between items-center gap-8 w-full h-full p-12"
         >
-          <div class="flex items-center justify-between mb-2">
-            <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
-              Spending by
-              {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
-            </h2>
-            <ChartWidgetTopBar>
-              <template #controls>
-                <div class="flex flex-wrap gap-2 items-center">
-                  <div
-                    class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
-                  >
-                    <button
-                      class="px-3 py-1 text-sm transition"
-                      :class="
-                        breakdownType === 'category'
-                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                      "
-                      @click="setDashboardBreakdownMode('category')"
-                    >
-                      Categories
-                    </button>
-                    <button
-                      class="px-3 py-1 text-sm transition"
-                      :class="
-                        breakdownType === 'merchant'
-                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                      "
-                      @click="setDashboardBreakdownMode('merchant')"
-                    >
-                      Merchants
-                    </button>
-                  </div>
-                  <GroupedCategoryDropdown
-                    v-if="breakdownType === 'category'"
-                    :groups="categoryGroups"
-                    :modelValue="selectedCategoryIds"
-                    @update:modelValue="updateSelection"
-                    class="w-full md:w-64"
-                  />
-                  <button class="btn btn-outline hover-lift" @click="toggleGroupOthers">
-                    {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
-                  </button>
-                </div>
-              </template>
-            </ChartWidgetTopBar>
-          </div>
-          <CategoryBreakdownChart
-            :start-date="debouncedRange.start"
-            :end-date="debouncedRange.end"
-            :selected-category-ids="selectedCategoryIds"
-            :group-others="groupOthers"
-            :breakdown-type="breakdownType"
-            @summary-change="catSummary = $event"
-            @categories-change="onCategoriesChange"
-            @bar-click="onCategoryBarClick"
-          />
-
-          <div class="mt-1">
-            <span class="font-bold">Total:</span>
-            <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">{{
-              formatAmount(catSummary.total)
-            }}</span>
-          </div>
-        </div>
-        <SpendingInsights />
-      </div>
-
-      <!-- REVIEW TRANSACTIONS CARD -->
-      <div
-        class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-      >
-        <div>
-          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
-          <p class="text-muted">
-            Step through transactions in batches of 10, approve quickly, or edit in place without
-            leaving the dashboard.
-          </p>
-        </div>
-        <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
-      </div>
-
-      <!-- RESERVED TABLES PANEL -->
-      <div
-        class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
-      >
-        <transition name="accordion">
-          <div
-            v-if="!accountsExpanded && !transactionsExpanded"
-            class="flex flex-row justify-between items-center gap-8 w-full h-full p-12"
+          <button
+            @click="expandAccounts"
+            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition"
           >
-            <button
-              @click="expandAccounts"
-              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition"
-            >
-              Expand Accounts Table
-            </button>
-            <div class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none">or</div>
-            <button
-              @click="expandTransactions"
-              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition"
-            >
-              Expand Transactions Table
-            </button>
-          </div>
-        </transition>
-        <transition name="modal-fade-slide">
-          <AccountsSection v-if="accountsExpanded" @close="collapseTables" />
-        </transition>
-        <transition name="modal-fade-slide">
-          <TransactionsSection
-            v-if="transactionsExpanded"
-            :transactions="filteredTransactions"
-            :sort-key="sortKey"
-            :sort-order="sortOrder"
-            :search="searchQuery"
-            @sort="setSort"
-            :current-page="currentPage"
-            :total-pages="totalPages"
-            :page-size="pageSize"
-            :total-count="totalCount"
-            @change-page="changePage"
-            @set-page="setPage"
-            @close="collapseTables"
-          />
-        </transition>
-      </div>
+            Expand Accounts Table
+          </button>
+          <div class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none">or</div>
+          <button
+            @click="expandTransactions"
+            class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition"
+          >
+            Expand Transactions Table
+          </button>
+        </div>
+      </transition>
+      <transition name="modal-fade-slide">
+        <AccountsSection v-if="accountsExpanded" @close="collapseTables" />
+      </transition>
+      <transition name="modal-fade-slide">
+        <TransactionsSection
+          v-if="transactionsExpanded"
+          :transactions="filteredTransactions"
+          :sort-key="sortKey"
+          :sort-order="sortOrder"
+          :search="searchQuery"
+          @sort="setSort"
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :page-size="pageSize"
+          :total-count="totalCount"
+          @change-page="changePage"
+          @set-page="setPage"
+          @close="collapseTables"
+        />
+      </transition>
+    </div>
 
-      <TransactionModal
-        :show="showDailyModal"
-        kind="date"
-        :show-date-column="false"
-        :hide-category-visuals="false"
-        :subtitle="dailyModalSubtitle"
-        :transactions="dailyModalTransactions"
-        @close="closeModal('daily')"
-      />
-      <TransactionModal
-        :show="showCategoryModal"
-        kind="category"
-        :show-date-column="true"
-        :hide-category-visuals="false"
-        :subtitle="categoryModalSubtitle"
-        :transactions="categoryModalTransactions"
-        @close="closeModal('category')"
-      />
-      <TransactionReviewModal
-        v-if="showReviewModal"
-        :show="showReviewModal"
-        :filters="reviewFilters"
-        @close="closeReviewModal"
-      />
-    </BasePageLayout>
-
-    <template #footer> &copy; {{ new Date().getFullYear() }} braydio • pyNance. </template>
-  </AppLayout>
+    <TransactionModal
+      :show="showDailyModal"
+      kind="date"
+      :show-date-column="false"
+      :hide-category-visuals="false"
+      :subtitle="dailyModalSubtitle"
+      :transactions="dailyModalTransactions"
+      @close="closeModal('daily')"
+    />
+    <TransactionModal
+      :show="showCategoryModal"
+      kind="category"
+      :show-date-column="true"
+      :hide-category-visuals="false"
+      :subtitle="categoryModalSubtitle"
+      :transactions="categoryModalTransactions"
+      @close="closeModal('category')"
+    />
+    <TransactionReviewModal
+      v-if="showReviewModal"
+      :show="showReviewModal"
+      :filters="reviewFilters"
+      @close="closeReviewModal"
+    />
+  </BasePageLayout>
 </template>
 
 <script setup>
 /**
  * Dashboard view showing financial charts, summaries, and transaction tables.
  */
-import AppLayout from '@/components/layout/AppLayout.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
@@ -230,7 +223,6 @@ import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
-import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { ref, computed, onMounted } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
