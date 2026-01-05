@@ -82,11 +82,7 @@
             </div>
             <label class="flex items-center gap-3 text-sm text-muted">
               <span>Range</span>
-              <select
-                v-model="selectedRange"
-                class="input w-32"
-                data-testid="history-range-select"
-              >
+              <select v-model="selectedRange" class="input w-32" data-testid="history-range-select">
                 <option v-for="range in ranges" :key="range" :value="range">
                   {{ range }}
                 </option>
@@ -94,7 +90,11 @@
             </label>
           </div>
           <SkeletonCard v-if="loadingHistory" />
-          <RetryError v-else-if="historyError" message="Failed to load history" @retry="loadHistory" />
+          <RetryError
+            v-else-if="historyError"
+            message="Failed to load history"
+            @retry="loadHistory"
+          />
           <AccountBalanceHistoryChart
             v-else
             :history-data="accountHistory"
@@ -109,82 +109,78 @@
       <Card
         class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
       >
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-                Recent Transactions
-              </h2>
-              <p class="text-sm text-muted">
-                Latest activity from accounts linked to your profile.
-              </p>
-            </div>
-            <UiButton
-              variant="outline"
-              class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
-              @click="loadData"
-            >
-              Refresh List
-            </UiButton>
-          </div>
-          <SkeletonCard v-if="loadingTransactions" />
-          <RetryError
-            v-else-if="transactionsError"
-            message="Failed to load transactions"
-            @retry="loadData"
-          />
-          <TransactionsTable v-else :transactions="recentTransactions" />
-        </Card>
-      </template>
-
-      <template #Charts>
-        <section class="space-y-8">
-          <header class="space-y-2">
-            <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
-              Account Analysis
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
+              Recent Transactions
             </h2>
-            <p class="text-sm text-muted">
-              Visualize account health, year-over-year change, and asset distribution.
-            </p>
-          </header>
-          <div class="grid gap-6 lg:grid-cols-3">
-            <Card
-              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-lg"
-            >
-              <h3 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Year Comparison</h3>
-              <NetYearComparisonChart />
-            </Card>
-            <Card
-              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
-            >
-              <h3 class="text-lg font-semibold text-[var(--color-accent-yellow)]">Assets Trend</h3>
-              <AssetsBarTrended />
-            </Card>
-            <Card
-              class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
-            >
-              <h3 class="text-lg font-semibold text-[var(--color-accent-green)]">
-                Account Balance Distribution
-              </h3>
-              <AccountsReorderChart ref="reorderChart" />
-            </Card>
+            <p class="text-sm text-muted">Latest activity from accounts linked to your profile.</p>
           </div>
-        </section>
-      </template>
-
-      <template #AccountDetails>
-        <section class="space-y-8">
-          <LinkedAccountsSection />
-          <Card
-            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          <UiButton
+            variant="outline"
+            class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+            @click="loadData"
           >
-            <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Accounts</h2>
-              <p class="text-sm text-muted">
-                Manage visibility, details, and refresh status for each institution.
-              </p>
-            </div>
-            <AccountsTable @refresh="refreshCharts" />
+            Refresh List
+          </UiButton>
+        </div>
+        <SkeletonCard v-if="loadingTransactions" />
+        <RetryError
+          v-else-if="transactionsError"
+          message="Failed to load transactions"
+          @retry="loadData"
+        />
+        <TransactionsTable v-else :transactions="recentTransactions" />
+      </Card>
+    </template>
+
+    <template #Charts>
+      <section class="space-y-8">
+        <header class="space-y-2">
+          <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">Account Analysis</h2>
+          <p class="text-sm text-muted">
+            Visualize account health, year-over-year change, and asset distribution.
+          </p>
+        </header>
+        <div class="grid gap-6 lg:grid-cols-3">
+          <Card
+            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-lg"
+          >
+            <h3 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Year Comparison</h3>
+            <NetYearComparisonChart />
           </Card>
+          <Card
+            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+          >
+            <h3 class="text-lg font-semibold text-[var(--color-accent-yellow)]">Assets Trend</h3>
+            <AssetsBarTrended />
+          </Card>
+          <Card
+            class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-lg"
+          >
+            <h3 class="text-lg font-semibold text-[var(--color-accent-green)]">
+              Account Balance Distribution
+            </h3>
+            <AccountsReorderChart ref="reorderChart" />
+          </Card>
+        </div>
+      </section>
+    </template>
+
+    <template #AccountDetails>
+      <section class="space-y-8">
+        <LinkedAccountsSection />
+        <Card
+          class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+        >
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Accounts</h2>
+            <p class="text-sm text-muted">
+              Manage visibility, details, and refresh status for each institution.
+            </p>
+          </div>
+          <AccountsTable @refresh="refreshCharts" />
+        </Card>
       </section>
     </template>
   </TabbedPageLayout>

@@ -3,14 +3,14 @@
     <header
       v-if="hasHeader"
       class="glass border-b py-6"
-      style="border-color: var(--divider); box-shadow: 0 2px 4px var(--shadow);"
+      style="border-color: var(--divider); box-shadow: 0 2px 4px var(--shadow)"
     >
       <slot name="header" />
     </header>
     <main class="flex-1">
       <slot />
     </main>
-    <footer class="glass border-t" style="border-color: var(--divider);">
+    <footer class="glass border-t" style="border-color: var(--divider)">
       <div class="container py-4 text-center text-gray-600 text-sm">
         <slot name="footer" />
       </div>
