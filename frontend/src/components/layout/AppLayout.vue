@@ -7,7 +7,7 @@
     >
       <slot name="header" />
     </header>
-    <main class="flex-1 py-6">
+    <main class="flex-1">
       <slot />
     </main>
     <footer class="glass border-t" style="border-color: var(--divider);">
@@ -24,4 +24,3 @@ import { useSlots } from 'vue'
 const slots = useSlots()
 const hasHeader = !!slots.header
 </script>
-

@@ -2,6 +2,10 @@
 
 Use `BasePageLayout` and `PageHeader` to keep view structure and spacing consistent across the application. Combine them at the top of every view to provide a standard header and predictable padding.
 
+## App shell
+
+`AppLayout` now wraps the entire client from `App.vue`, providing the global navbar and footer slots in one place. Views should not nest `AppLayout`; instead, rely on the page-level layouts below so spacing and framing stay consistent without double wrapping.
+
 ## BasePageLayout
 
 Wrap each top-level view with `BasePageLayout` to apply flex column layout and spacing utilities.

@@ -3,8 +3,7 @@
   Main application dashboard showing snapshots, charts, and financial summaries.
 -->
 <template>
-  <AppLayout>
-    <BasePageLayout gap="gap-8">
+  <BasePageLayout gap="gap-8">
       <NetOverviewSection
         :user-name="userName"
         :current-date="currentDate"
@@ -211,17 +210,13 @@
         :filters="reviewFilters"
         @close="closeReviewModal"
       />
-    </BasePageLayout>
-
-    <template #footer> &copy; {{ new Date().getFullYear() }} braydio • pyNance. </template>
-  </AppLayout>
+  </BasePageLayout>
 </template>
 
 <script setup>
 /**
  * Dashboard view showing financial charts, summaries, and transaction tables.
  */
-import AppLayout from '@/components/layout/AppLayout.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
@@ -230,7 +225,6 @@ import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
-import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { ref, computed, onMounted } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
