@@ -57,4 +57,16 @@ describe('useDashboardModals', () => {
       transactions: false,
     })
   })
+
+  it('exposes dedicated visibility refs for each modal', () => {
+    const { currentModal, openModal, isVisible } = useDashboardModals()
+
+    expect(isVisible('daily').value).toBe(false)
+    openModal('transactions')
+    expect(isVisible('transactions').value).toBe(true)
+    expect(isVisible('daily').value).toBe(false)
+
+    currentModal.value = 'invalid' as any
+    expect(isVisible('daily').value).toBe(false)
+  })
 })

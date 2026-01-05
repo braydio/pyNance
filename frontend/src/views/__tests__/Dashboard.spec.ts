@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { shallowMount } from '@vue/test-utils'
-import { ref, nextTick, watch, computed } from 'vue'
+import { ref, nextTick, watch, computed, defineComponent } from 'vue'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
 
@@ -163,6 +163,16 @@ const ChartWidgetTopBarStub = {
   name: 'ChartWidgetTopBar',
   template: '<div><slot name="controls" /></div>',
 }
+const TransactionModalStub = defineComponent({
+  name: 'TransactionModal',
+  props: {
+    show: { type: Boolean, default: false },
+    kind: { type: String, default: 'date' },
+  },
+  emits: ['close'],
+  template:
+    '<div v-if="show" class="transaction-modal" :data-kind="kind" @click="$emit(\'close\')"></div>',
+})
 const DailyNetChartStub = {
   name: 'DailyNetChart',
   props: {
@@ -244,7 +254,7 @@ function createWrapper(options = {}) {
     AccountsTable: true,
     TransactionsTable: true,
     PaginationControls: true,
-    TransactionModal: true,
+    TransactionModal: TransactionModalStub,
     TopAccountSnapshot: TopAccountSnapshotStub,
     GroupedCategoryDropdown: true,
     FinancialSummary: true,
@@ -464,5 +474,28 @@ describe('Dashboard.vue', () => {
     await nextTick()
     expect(wrapper.vm.showDailyModal).toBe(false)
     expect(wrapper.vm.showCategoryModal).toBe(true)
+  })
+
+  it('prevents multiple modal overlays from rendering simultaneously during transitions', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    await wrapper.vm.onNetBarClick('2024-06-13')
+    await nextTick()
+
+    let modals = wrapper.findAll('.transaction-modal')
+    expect(modals).toHaveLength(1)
+    expect(modals[0].attributes('data-kind')).toBe('date')
+
+    await wrapper.vm.onCategoryBarClick({ label: 'Food', ids: ['cat-2'] })
+    await nextTick()
+
+    modals = wrapper.findAll('.transaction-modal')
+    expect(modals).toHaveLength(1)
+    expect(modals[0].attributes('data-kind')).toBe('category')
+
+    await modals[0].trigger('click')
+    await nextTick()
+    expect(wrapper.findAll('.transaction-modal')).toHaveLength(0)
   })
 })

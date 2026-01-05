@@ -313,13 +313,13 @@ const {
   changePage,
 } = useTransactions(pageSize)
 // Modal manager
-const { visibility, openModal, closeModal } = useDashboardModals()
-const showDailyModal = computed(() => visibility.value.daily)
+const { visibility, openModal, closeModal, isVisible } = useDashboardModals()
+const showDailyModal = isVisible('daily')
 const dailyModalTransactions = ref([])
 const dailyModalSubtitle = ref('')
 
 // Category modal state
-const showCategoryModal = computed(() => visibility.value.category)
+const showCategoryModal = isVisible('category')
 const categoryModalTransactions = ref([])
 const categoryModalSubtitle = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
@@ -381,8 +381,8 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
-const accountsExpanded = computed(() => visibility.value.accounts)
-const transactionsExpanded = computed(() => visibility.value.transactions)
+const accountsExpanded = isVisible('accounts')
+const transactionsExpanded = isVisible('transactions')
 function expandAccounts() {
   openModal('accounts')
 }
