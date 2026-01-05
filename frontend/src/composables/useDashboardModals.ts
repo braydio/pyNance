@@ -8,9 +8,16 @@
  */
 import { computed, ref } from 'vue'
 
-export type DashboardModal = 'none' | 'daily' | 'category' | 'accounts' | 'transactions'
+export type DashboardModal = 'none' | 'daily' | 'category' | 'accounts' | 'transactions' | 'review'
 
-const MODAL_KEYS: DashboardModal[] = ['none', 'daily', 'category', 'accounts', 'transactions']
+const MODAL_KEYS: DashboardModal[] = [
+  'none',
+  'daily',
+  'category',
+  'accounts',
+  'transactions',
+  'review',
+]
 
 /**
  * Create modal state for the dashboard view with exclusivity guarantees.
@@ -26,6 +33,7 @@ const MODAL_KEYS: DashboardModal[] = ['none', 'daily', 'category', 'accounts', '
  *     category: boolean;
  *     accounts: boolean;
  *     transactions: boolean;
+ *     review: boolean;
  *   }>;
  * }}
  *   Reactive modal state and control helpers.
@@ -38,6 +46,7 @@ export function useDashboardModals(initial: DashboardModal = 'none') {
     category: currentModal.value === 'category',
     accounts: currentModal.value === 'accounts',
     transactions: currentModal.value === 'transactions',
+    review: currentModal.value === 'review',
   }))
 
   function openModal(modal: DashboardModal) {

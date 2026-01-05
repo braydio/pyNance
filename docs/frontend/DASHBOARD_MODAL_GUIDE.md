@@ -17,26 +17,26 @@ Both `DailyNetChart.vue` and `CategoryBreakdownChart.vue` emit a `bar-click` eve
 `Dashboard.vue` listens for these events to fetch the matching transactions and display them in `TransactionModal.vue`:
 
 ```ts
-const showModal = ref(false)
-const modalTitle = ref('')
-const modalTransactions = ref([])
+const showModal = ref(false);
+const modalTitle = ref("");
+const modalTransactions = ref([]);
 
 async function openModalByDate(date: string) {
-  modalTitle.value = `Transactions for ${date}`
-  const res = await fetchTransactions({ date })
-  modalTransactions.value = res.transactions || []
-  showModal.value = true
+  modalTitle.value = `Transactions for ${date}`;
+  const res = await fetchTransactions({ date });
+  modalTransactions.value = res.transactions || [];
+  showModal.value = true;
 }
 
 async function openModalByCategory(payload: { label: string; ids: number[] }) {
-  modalTitle.value = `Transactions in ${payload.label}`
+  modalTitle.value = `Transactions in ${payload.label}`;
   const res = await fetchTransactions({
     category_ids: payload.ids,
     start_date: catRange.value.start,
     end_date: catRange.value.end,
-  })
-  modalTransactions.value = res.transactions || []
-  showModal.value = true
+  });
+  modalTransactions.value = res.transactions || [];
+  showModal.value = true;
 }
 ```
 
@@ -47,7 +47,8 @@ The modal remains visible until the user triggers the `close` event.
   v-if="showModal"
   :title="modalTitle"
   :transactions="modalTransactions"
-  @close="showModal = false" />
+  @close="showModal = false"
+/>
 ```
 
 ## Maintenance Notes
@@ -55,3 +56,11 @@ The modal remains visible until the user triggers the `close` event.
 - Do **not** strip the `bar-click` listeners or modal helpers when refactoring.
 - Keep the fetch helpers in sync with backend API changes.
 - Update this guide whenever the modal workflow changes.
+
+## Review Transactions Overlay
+
+`Dashboard.vue` also exposes a dedicated **Review Transactions** entry point that opens
+`TransactionReviewModal.vue`. The modal uses `useDashboardModals` with the `review` key to remain
+mutually exclusive with the chart-driven overlays. It fetches transactions in batches of 10 using
+`useTransactions`, supports keyboard left/right shortcuts for edit vs. approve actions, and uses
+`updateTransaction` / `createTransactionRule` to persist edits before advancing through each batch.

@@ -52,6 +52,96 @@
         />
       </InsightsRow>
 
+      <!-- SPENDING ROW: Category Chart & Insights -->
+      <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
+        <!-- Category Spending -->
+        <div
+          class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3 overflow-hidden"
+        >
+          <div class="flex items-center justify-between mb-2">
+            <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
+              Spending by
+              {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
+            </h2>
+            <ChartWidgetTopBar>
+              <template #controls>
+                <div class="flex flex-wrap gap-2 items-center">
+                  <div
+                    class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
+                  >
+                    <button
+                      class="px-3 py-1 text-sm transition"
+                      :class="
+                        breakdownType === 'category'
+                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                      "
+                      @click="setDashboardBreakdownMode('category')"
+                    >
+                      Categories
+                    </button>
+                    <button
+                      class="px-3 py-1 text-sm transition"
+                      :class="
+                        breakdownType === 'merchant'
+                          ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
+                          : 'text-muted hover:bg-[var(--color-bg-dark)]'
+                      "
+                      @click="setDashboardBreakdownMode('merchant')"
+                    >
+                      Merchants
+                    </button>
+                  </div>
+                  <GroupedCategoryDropdown
+                    v-if="breakdownType === 'category'"
+                    :groups="categoryGroups"
+                    :modelValue="selectedCategoryIds"
+                    @update:modelValue="updateSelection"
+                    class="w-full md:w-64"
+                  />
+                  <button class="btn btn-outline hover-lift" @click="toggleGroupOthers">
+                    {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
+                  </button>
+                </div>
+              </template>
+            </ChartWidgetTopBar>
+          </div>
+          <CategoryBreakdownChart
+            :start-date="debouncedRange.start"
+            :end-date="debouncedRange.end"
+            :selected-category-ids="selectedCategoryIds"
+            :group-others="groupOthers"
+            :breakdown-type="breakdownType"
+            @summary-change="catSummary = $event"
+            @categories-change="onCategoriesChange"
+            @bar-click="onCategoryBarClick"
+          />
+
+          <div class="mt-1">
+            <span class="font-bold">Total:</span>
+            <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">{{
+              formatAmount(catSummary.total)
+            }}</span>
+          </div>
+        </div>
+        <SpendingInsights />
+      </div>
+
+      <!-- REVIEW TRANSACTIONS CARD -->
+      <div
+        class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      >
+        <div>
+          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+          <p class="text-muted">
+            Step through transactions in batches of 10, approve quickly, or edit in place without
+            leaving the dashboard.
+          </p>
+        </div>
+        <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+      </div>
+
+      <!-- RESERVED TABLES PANEL -->
       <div
         class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
       >
@@ -115,6 +205,12 @@
         :transactions="categoryModalTransactions"
         @close="closeModal('category')"
       />
+      <TransactionReviewModal
+        v-if="showReviewModal"
+        :show="showReviewModal"
+        :filters="reviewFilters"
+        @close="closeReviewModal"
+      />
     </BasePageLayout>
 
     <template #footer> &copy; {{ new Date().getFullYear() }} braydio • pyNance. </template>
@@ -128,6 +224,13 @@
 import AppLayout from '@/components/layout/AppLayout.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
+import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
+import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
+import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
+import SpendingInsights from '@/components/SpendingInsights.vue'
+import { formatAmount } from '@/utils/format'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
 import { ref, computed, onMounted } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
@@ -156,10 +259,11 @@ const {
   changePage,
 } = useTransactions(pageSize)
 // Modal manager
-const { visibility, openModal, closeModal, isVisible } = useDashboardModals()
+const { openModal, closeModal, isVisible } = useDashboardModals()
 const showDailyModal = isVisible('daily')
 const dailyModalTransactions = ref([])
 const dailyModalSubtitle = ref('')
+const showReviewModal = isVisible('review')
 
 // Category modal state
 const showCategoryModal = isVisible('category')
@@ -224,6 +328,11 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
+const reviewFilters = computed(() => ({
+  start_date: debouncedRange.value.start,
+  end_date: debouncedRange.value.end,
+}))
+
 const accountsExpanded = isVisible('accounts')
 const transactionsExpanded = isVisible('transactions')
 function expandAccounts() {
@@ -234,6 +343,20 @@ function expandTransactions() {
 }
 function collapseTables() {
   closeModal()
+}
+
+/**
+ * Open the transaction review modal with mutual exclusivity.
+ */
+function openReviewModal() {
+  openModal('review')
+}
+
+/**
+ * Close the transaction review modal and clear visibility state.
+ */
+function closeReviewModal() {
+  closeModal('review')
 }
 
 /**
