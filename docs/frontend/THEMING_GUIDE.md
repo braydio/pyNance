@@ -84,6 +84,15 @@ borders (`--themed-border`) to create a frosted glass look. Components can apply
 these styles using `backdrop-filter: blur(6px)` or by setting the background and
 border variables directly.
 
+## Data table surface hierarchy
+
+Data tables now prioritize neutral, token-driven surfaces so hero metrics and gradient cards retain visual focus.
+
+- Wrap tables with the `table-panel` + `table-shell` container classes to pick up `var(--surface)` and `var(--color-bg)` backgrounds with `var(--divider)` borders.
+- Table headers use `var(--color-bg-secondary)` while zebra rows alternate between `var(--color-bg)` and `var(--color-bg-secondary)` for clarity without gradients.
+- Accent colors remain on chips and badges, but gradient fills are reserved for hero metrics and summary cards.
+- Reference implementations live in `frontend/src/components/tables/AccountsTable.vue` and `frontend/src/components/tables/TransactionsTable.vue`.
+
 ## Conclusion
 
 This guide establishes a foundation for consistent theming. By defining all

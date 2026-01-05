@@ -1,8 +1,8 @@
 <!-- AccountsTable.vue - Table of linked accounts with filter controls. -->
 <template>
-  <div class="card bg-neutral-950 border border-neutral-800 shadow-xl rounded-2xl p-4 md:p-6">
-    <h2 class="font-bold text-xl mb-6 text-left tracking-wide text-blue-300 flex items-center">
-      <span class="i-ph:bank-duotone text-2xl mr-2 text-blue-400"></span>
+  <div class="card table-panel">
+    <h2 class="table-title font-bold text-xl mb-6 text-left tracking-wide flex items-center">
+      <span class="title-icon i-ph:bank-duotone text-2xl mr-2"></span>
       Accounts
     </h2>
     <!-- Controls/Filters -->
@@ -25,7 +25,11 @@
         >
           {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
         </button>
-        <button class="pill md:text-sm" :class="{ active: showHidden }" @click="showHidden = !showHidden">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showHidden }"
+          @click="showHidden = !showHidden"
+        >
           {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
         </button>
         <button
@@ -35,7 +39,11 @@
         >
           Filter Types
         </button>
-        <button class="pill md:text-sm" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showDeleteButtons }"
+          @click="toggleDeleteButtons"
+        >
           {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
         </button>
         <button class="pill md:text-sm" @click="exportCSV">Export CSV</button>
@@ -59,100 +67,61 @@
       </span>
     </div>
     <!-- Table -->
-    <div class="overflow-x-auto rounded-xl border border-neutral-800">
-      <table class="min-w-full text-sm divide-y divide-neutral-800">
-        <thead class="bg-neutral-900 border-b border-blue-800">
+    <div class="table-shell">
+      <table class="data-table">
+        <thead class="table-head">
           <tr>
-            <th
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Last Refreshed
-            </th>
-            <th
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Institution
-            </th>
-            <th
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Name
-            </th>
-            <th
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Account Type
-            </th>
-            <th
-              class="py-2 px-4 text-right font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
-              Balance
-            </th>
-            <th
-              :class="[
-                'py-2 px-4 text-center font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800',
-                'w-[60px]',
-              ]"
-            >
-              Trend
-            </th>
-            <th
-              v-if="controlsVisible"
-              class="py-2 px-4 text-left font-bold uppercase tracking-wider text-blue-200"
-            >
-              Actions
-            </th>
+            <th class="th-cell text-left">Last Refreshed</th>
+            <th class="th-cell text-left">Institution</th>
+            <th class="th-cell text-left">Name</th>
+            <th class="th-cell text-left">Account Type</th>
+            <th class="th-cell text-right">Balance</th>
+            <th :class="['th-cell text-center', 'w-[60px]']">Trend</th>
+            <th v-if="controlsVisible" class="th-cell text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="account in sortedAccounts"
-            :key="account.account_id"
-            :class="[
-              'border-b border-neutral-800',
-              'hover:bg-blue-950/50 transition-colors duration-100',
-            ]"
-          >
+          <tr v-for="account in sortedAccounts" :key="account.account_id" class="table-row">
             <!-- Last Refreshed -->
-            <td class="px-4 py-2 text-xs text-neutral-400">
+            <td class="cell text-xs cell-muted font-mono">
               {{ formatDate(account.last_refreshed) }}
             </td>
             <!-- Institution with icon -->
-            <td class="px-4 py-2 flex items-center gap-2">
+            <td class="cell cell-flex">
               <img
                 v-if="account.institution_icon_url"
                 :src="account.institution_icon_url"
                 alt=""
-                class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain"
+                class="h-5 w-5 rounded-full border border-[var(--divider)] bg-[var(--color-bg)] object-contain"
                 loading="lazy"
               />
-              <span class="font-medium text-blue-100">
+              <span class="font-medium text-[color:var(--color-accent-blue)]">
                 {{ formatTitle(account.institution_name) }}
               </span>
             </td>
             <!-- Name -->
-            <td class="px-4 py-2 text-blue-50">{{ formatTitle(account.name) }}</td>
+            <td class="cell">{{ formatTitle(account.name) }}</td>
             <!-- Account Type (capitalize first/last) -->
-            <td class="px-4 py-2">
+            <td class="cell">
               <span
                 :class="[
-                  'inline-block rounded-xl border border-blue-700 bg-gradient-to-r from-neutral-900 to-blue-950',
-                  'px-3 py-1 text-xs font-semibold text-blue-200',
+                  'inline-block rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)]',
+                  'px-3 py-1 text-xs font-semibold text-[color:var(--color-accent-blue)]',
                 ]"
               >
                 {{ capitalizeFirstLast(account.subtype || account.type) }}
               </span>
             </td>
             <!-- Balance -->
-            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-300">
+            <td class="cell cell-number">
               {{ formatBalance(account.balance) }}
             </td>
             <!-- Sparkline -->
-            <td class="px-4 py-2 flex justify-center">
+            <td class="cell cell-center">
               <AccountSparkline :account-id="account.account_id" />
             </td>
             <!-- Actions -->
-            <td v-if="controlsVisible" class="px-4 py-2">
+            <td v-if="controlsVisible" class="cell">
               <div class="btn-group">
                 <button class="btn btn-sm" @click="toggleHidden(account)">
                   {{ account.is_hidden ? 'Unhide' : 'Hide' }}
@@ -166,10 +135,12 @@
         </tbody>
       </table>
     </div>
-    <div v-if="!loading && !sortedAccounts.length" class="p-6 text-blue-200">
+    <div v-if="!loading && !sortedAccounts.length" class="p-6 text-[color:var(--color-text-muted)]">
       No accounts found.
     </div>
-    <div v-else-if="loading" class="p-6 text-blue-200">Loading accounts...</div>
+    <div v-else-if="loading" class="p-6 text-[color:var(--color-text-muted)]">
+      Loading accounts...
+    </div>
 
     <Modal v-if="showDeleteModal" size="md" @close="closeDeleteModal">
       <template #title> Delete account? </template>
@@ -463,28 +434,123 @@ export default {
 
 <style scoped>
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
+
+.table-panel {
+  @apply shadow-xl rounded-2xl p-4 md:p-6;
+  background-color: var(--surface);
+  border: 1px solid var(--divider);
+}
+
+.table-title {
+  color: var(--color-accent-blue);
+}
+
+.title-icon {
+  color: var(--color-accent-blue);
+}
+
+.table-shell {
+  @apply overflow-x-auto rounded-xl border;
+  background-color: var(--color-bg);
+  border-color: var(--divider);
+}
+
+.data-table {
+  @apply min-w-full text-sm;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-head {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--divider);
+}
+
+.th-cell {
+  @apply py-2 px-4 text-left font-bold uppercase tracking-wider;
+  color: var(--color-accent-blue);
+  border-right: 1px solid var(--divider);
+}
+
+.th-cell:last-child {
+  border-right: none;
+}
+
+.table-row {
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--divider);
+  transition: background-color 150ms ease;
+}
+
+.table-row:nth-child(even) {
+  background-color: var(--color-bg-secondary);
+}
+
+.table-row:hover {
+  background-color: var(--hover-bg);
+}
+
+.cell {
+  @apply px-4 py-2;
+  color: var(--text-primary);
+}
+
+.cell-muted {
+  color: var(--color-text-muted);
+}
+
+.cell-flex {
+  @apply flex items-center gap-2;
+}
+
+.cell-number {
+  @apply font-mono text-right font-semibold;
+  color: var(--color-accent-blue);
+}
+
+.cell-center {
+  @apply flex justify-center;
+}
+
 .control-surface {
-  @apply flex flex-col gap-3 mb-4 bg-neutral-900/70 border border-neutral-800 rounded-2xl p-3 shadow-inner;
+  @apply flex flex-col gap-3 mb-4 rounded-2xl p-3 shadow-inner;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
 }
 
 .input-shell {
-  @apply flex items-center gap-3 bg-neutral-950 border border-neutral-800 rounded-xl px-3 py-2;
+  @apply flex items-center gap-3 rounded-xl px-3 py-2;
+  background-color: var(--color-bg);
+  border: 1px solid var(--divider);
 }
 
 .filter-input {
-  @apply flex-1 bg-transparent outline-none text-blue-50 placeholder:text-neutral-500;
+  @apply flex-1 bg-transparent outline-none;
+  color: var(--text-primary);
+}
+
+.filter-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .filter-input--ghost {
-  @apply border border-neutral-800 bg-neutral-950/70 rounded-xl px-3 py-2 mt-1;
+  @apply rounded-xl px-3 py-2 mt-1;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
 }
 
 .icon {
-  @apply text-blue-400 text-lg;
+  @apply text-lg;
+  color: var(--color-accent-cyan);
 }
 
 .ghost-btn {
-  @apply text-xs text-neutral-400 hover:text-blue-200 transition;
+  @apply text-xs transition;
+  color: var(--color-text-muted);
+}
+
+.ghost-btn:hover {
+  color: var(--color-accent-blue);
 }
 
 .chip-row {
@@ -492,20 +558,27 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
-  @apply hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border transition shadow-sm;
+  background-color: var(--color-bg);
+  border-color: var(--divider);
+  color: var(--text-primary);
 }
 
 .pill.active {
-  @apply border-blue-500 text-blue-200 bg-blue-950/50;
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
 }
 
 .type-filter-row {
-  @apply mb-4 bg-neutral-900/70 border border-neutral-800 rounded-xl p-3 flex flex-col gap-1;
+  @apply mb-4 rounded-xl p-3 flex flex-col gap-1;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
 }
 
 .type-filter-label {
-  @apply text-xs uppercase tracking-wide text-neutral-400;
+  @apply text-xs uppercase tracking-wide;
+  color: var(--color-text-muted);
 }
 
 .filter-tags {
@@ -513,19 +586,23 @@ export default {
 }
 
 .filter-tag {
-  @apply inline-flex items-center gap-2 rounded-full border border-blue-800/60 bg-blue-950/40;
-  @apply px-3 py-1 text-xs text-blue-100;
+  @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs;
+  background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+  border: 1px solid var(--divider);
+  color: var(--text-primary);
 }
 
 .filter-tag__label {
-  @apply uppercase tracking-wide text-[11px] text-blue-300;
+  @apply uppercase tracking-wide text-[11px];
+  color: var(--color-accent-blue);
 }
 
 .filter-tag__value {
-  @apply font-semibold text-blue-50;
+  @apply font-semibold;
 }
 
 .filter-tag__remove {
-  @apply text-blue-200 hover:text-blue-50 transition;
+  @apply transition;
+  color: var(--color-accent-blue);
 }
 </style>
