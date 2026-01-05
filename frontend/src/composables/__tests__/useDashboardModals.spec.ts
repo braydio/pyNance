@@ -12,6 +12,7 @@ describe('useDashboardModals', () => {
       category: false,
       accounts: false,
       transactions: false,
+      review: false,
     })
   })
 
@@ -55,6 +56,7 @@ describe('useDashboardModals', () => {
       category: false,
       accounts: false,
       transactions: false,
+      review: false,
     })
   })
 
