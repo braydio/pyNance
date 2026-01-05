@@ -2,7 +2,7 @@
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
@@ -11,6 +11,15 @@ from app.utils.finance_utils import normalize_account_balance
 from sqlalchemy import func
 
 TWOPLACES = Decimal("0.01")
+
+
+def _ensure_utc(value: Optional[datetime]) -> Optional[datetime]:
+    """Return an aware UTC datetime for comparison."""
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
 
 
 def get_or_compute_account_history(
@@ -60,7 +69,10 @@ def get_cached_history(account_id: str, start: date, end: date):
         return None
 
     latest_record = max(records, key=lambda r: r.updated_at)
-    if latest_record.updated_at < datetime.now(timezone.utc) - timedelta(days=1):
+    latest_updated_at = _ensure_utc(latest_record.updated_at)
+    cutoff = datetime.now(timezone.utc) - timedelta(days=1)
+
+    if latest_updated_at is None or latest_updated_at < cutoff:
         return None
 
     return [
