@@ -55,3 +55,11 @@ The modal remains visible until the user triggers the `close` event.
 - Do **not** strip the `bar-click` listeners or modal helpers when refactoring.
 - Keep the fetch helpers in sync with backend API changes.
 - Update this guide whenever the modal workflow changes.
+
+## Review Transactions Overlay
+
+`Dashboard.vue` also exposes a dedicated **Review Transactions** entry point that opens
+`TransactionReviewModal.vue`. The modal uses `useDashboardModals` with the `review` key to remain
+mutually exclusive with the chart-driven overlays. It fetches transactions in batches of 10 using
+`useTransactions`, supports keyboard left/right shortcuts for edit vs. approve actions, and uses
+`updateTransaction` / `createTransactionRule` to persist edits before advancing through each batch.

@@ -163,6 +163,20 @@
         <SpendingInsights />
       </div>
 
+      <!-- REVIEW TRANSACTIONS CARD -->
+      <div
+        class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      >
+        <div>
+          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+          <p class="text-muted">
+            Step through transactions in batches of 10, approve quickly, or edit in place without
+            leaving the dashboard.
+          </p>
+        </div>
+        <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+      </div>
+
       <!-- RESERVED TABLES PANEL -->
       <div
         class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
@@ -264,6 +278,12 @@
         :transactions="categoryModalTransactions"
         @close="closeModal('category')"
       />
+      <TransactionReviewModal
+        v-if="showReviewModal"
+        :show="showReviewModal"
+        :filters="reviewFilters"
+        @close="closeReviewModal"
+      />
     </BasePageLayout>
 
     <template #footer> &copy; {{ new Date().getFullYear() }} braydio • pyNance. </template>
@@ -285,6 +305,7 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import TransactionsTable from '@/components/tables/TransactionsTable.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
+import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
@@ -313,10 +334,11 @@ const {
   changePage,
 } = useTransactions(pageSize)
 // Modal manager
-const { visibility, openModal, closeModal, isVisible } = useDashboardModals()
+const { openModal, closeModal, isVisible } = useDashboardModals()
 const showDailyModal = isVisible('daily')
 const dailyModalTransactions = ref([])
 const dailyModalSubtitle = ref('')
+const showReviewModal = isVisible('review')
 
 // Category modal state
 const showCategoryModal = isVisible('category')
@@ -381,6 +403,11 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
+const reviewFilters = computed(() => ({
+  start_date: debouncedRange.value.start,
+  end_date: debouncedRange.value.end,
+}))
+
 const accountsExpanded = isVisible('accounts')
 const transactionsExpanded = isVisible('transactions')
 function expandAccounts() {
@@ -391,6 +418,20 @@ function expandTransactions() {
 }
 function collapseTables() {
   closeModal()
+}
+
+/**
+ * Open the transaction review modal with mutual exclusivity.
+ */
+function openReviewModal() {
+  openModal('review')
+}
+
+/**
+ * Close the transaction review modal and clear visibility state.
+ */
+function closeReviewModal() {
+  closeModal('review')
 }
 
 /**
