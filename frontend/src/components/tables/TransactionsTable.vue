@@ -1,7 +1,7 @@
 <template>
-  <div class="card bg-neutral-950 border border-neutral-800 shadow-xl rounded-2xl p-4 md:p-6">
-    <h3 class="font-bold text-xl mb-6 text-left tracking-wide text-blue-300 flex items-center">
-      <span class="i-ph:currency-circle-dollar-duotone text-2xl mr-2 text-blue-400"></span>
+  <div class="card table-panel">
+    <h3 class="table-title font-bold text-xl mb-6 text-left tracking-wide flex items-center">
+      <span class="title-icon i-ph:currency-circle-dollar-duotone text-2xl mr-2"></span>
       Recent Transactions
     </h3>
     <div class="control-surface md:flex-row md:items-center">
@@ -68,48 +68,33 @@
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
     </div>
-    <div class="overflow-x-auto rounded-xl border border-neutral-800">
-      <table class="min-w-full divide-y divide-neutral-800 text-sm">
-        <thead class="bg-neutral-900 border-b border-blue-800">
+    <div class="table-shell">
+      <table class="data-table">
+        <thead class="table-head">
           <tr>
-            <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
+            <th class="th-cell text-left">
               Date
             </th>
-            <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
+            <th class="th-cell text-left">
               Category
             </th>
-            <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
+            <th class="th-cell text-left">
               Merchant: Description
             </th>
-            <th
-              class="py-3 px-4 text-left font-bold uppercase tracking-wider text-blue-200 border-r border-neutral-800"
-            >
+            <th class="th-cell text-left">
               Institution / Account
             </th>
-            <th class="py-3 px-4 text-right font-bold uppercase tracking-wider text-blue-200">
+            <th class="th-cell text-right">
               Amount
             </th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="(tx, i) in transactions"
-            :key="tx.transaction_id"
-            :class="[
-              i % 2 === 0 ? 'bg-neutral-950' : 'bg-neutral-900',
-              'hover:bg-blue-950/60 transition-colors duration-100 border-b border-neutral-800',
-            ]"
-          >
+          <tr v-for="tx in transactions" :key="tx.transaction_id" class="table-row">
             <!-- Date -->
-            <td class="px-4 py-2 font-mono text-xs text-neutral-400">{{ formatDate(tx.date) }}</td>
+            <td class="cell font-mono text-xs cell-muted">{{ formatDate(tx.date) }}</td>
             <!-- Category -->
-            <td class="px-4 py-2 text-center">
+            <td class="cell text-center">
               <img
                 v-if="tx.category_icon_url"
                 :src="tx.category_icon_url"
@@ -120,46 +105,46 @@
               <span
                 v-else
                 :class="[
-                  'inline-block rounded-xl border border-blue-800 bg-gradient-to-r from-neutral-900 to-blue-950',
-                  'px-3 py-1 text-xs font-semibold text-blue-200 tracking-wide shadow-sm',
+                  'inline-block rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)]',
+                  'px-3 py-1 text-xs font-semibold text-[color:var(--color-accent-blue)] tracking-wide shadow-sm',
                 ]"
               >
                 {{ formatCategory(tx) }}
               </span>
             </td>
             <!-- Merchant: Description -->
-            <td class="px-4 py-2 font-medium text-neutral-100 truncate max-w-xs">
+            <td class="cell font-medium truncate max-w-xs">
               {{ formatDescription(tx) }}
             </td>
             <!-- Institution: Account with icon -->
-            <td class="px-4 py-2 text-xs text-neutral-300 flex items-center gap-2">
+            <td class="cell text-xs cell-flex text-[color:var(--text-primary)]">
               <img
                 v-if="tx.institution_icon_url"
                 :src="tx.institution_icon_url"
                 alt=""
-                class="h-5 w-5 rounded-full border border-neutral-800 bg-neutral-800 object-contain"
+                class="h-5 w-5 rounded-full border border-[var(--divider)] bg-[var(--color-bg)] object-contain"
                 loading="lazy"
               />
               <span class="font-medium">{{ formatName(tx.institution_name) }}</span>
-              <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-neutral-500"
+              <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-[color:var(--color-text-muted)]"
                 >/</span
               >
               <span>{{ formatName(tx.account_name) }}</span>
             </td>
             <!-- Amount -->
             <td
-              class="px-4 py-2 font-mono text-right text-base font-semibold"
+              class="cell font-mono text-right text-base font-semibold"
               :class="{
-                'text-blue-300': tx.amount > 0,
-                'text-red-400': tx.amount < 0,
-                'text-neutral-500': tx.amount === 0 || !tx.amount,
+                'text-[color:var(--color-accent-cyan)]': tx.amount > 0,
+                'text-[color:var(--color-accent-red)]': tx.amount < 0,
+                'text-[color:var(--color-text-muted)]': tx.amount === 0 || !tx.amount,
               }"
             >
               {{ formatAmount(tx.amount) }}
             </td>
           </tr>
           <tr v-if="transactions.length === 0">
-            <td :colspan="5" class="px-4 py-8 text-center text-neutral-500 italic">
+            <td :colspan="5" class="cell py-8 text-center text-[color:var(--color-text-muted)] italic">
               No transactions found.
             </td>
           </tr>
@@ -462,9 +447,79 @@ export default {
 
 <style scoped>
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
+
+.table-panel {
+  @apply shadow-xl rounded-2xl p-4 md:p-6;
+  background-color: var(--surface);
+  border: 1px solid var(--divider);
+}
+
+.table-title {
+  color: var(--color-accent-blue);
+}
+
+.title-icon {
+  color: var(--color-accent-blue);
+}
+
+.table-shell {
+  @apply overflow-x-auto rounded-xl border;
+  background-color: var(--color-bg);
+  border-color: var(--divider);
+}
+
+.data-table {
+  @apply min-w-full text-sm;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.table-head {
+  background-color: var(--color-bg-secondary);
+  border-bottom: 1px solid var(--divider);
+}
+
+.th-cell {
+  @apply py-3 px-4 text-left font-bold uppercase tracking-wider;
+  color: var(--color-accent-blue);
+  border-right: 1px solid var(--divider);
+}
+
+.th-cell:last-child {
+  border-right: none;
+}
+
+.table-row {
+  background-color: var(--color-bg);
+  border-bottom: 1px solid var(--divider);
+  transition: background-color 150ms ease;
+}
+
+.table-row:nth-child(even) {
+  background-color: var(--color-bg-secondary);
+}
+
+.table-row:hover {
+  background-color: var(--hover-bg);
+}
+
+.cell {
+  @apply px-4 py-2;
+  color: var(--text-primary);
+}
+
+.cell-muted {
+  color: var(--color-text-muted);
+}
+
+.cell-flex {
+  @apply flex items-center gap-2;
+}
+
 .control-surface {
-  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 bg-neutral-900/70 border border-neutral-800;
-  @apply rounded-2xl p-4 shadow-inner;
+  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 rounded-2xl p-4 shadow-inner;
+  background-color: var(--color-bg-secondary);
+  border: 1px solid var(--divider);
 }
 
 .control-group {
@@ -472,12 +527,15 @@ export default {
 }
 
 .control-label {
-  @apply text-xs uppercase tracking-wide text-neutral-400;
+  @apply text-xs uppercase tracking-wide;
+  color: var(--color-text-muted);
 }
 
 .control-select {
-  @apply bg-neutral-950 border border-neutral-800 text-blue-50 rounded-xl px-3 py-2 shadow-sm outline-none;
-  @apply focus:border-blue-500 transition;
+  @apply rounded-xl px-3 py-2 shadow-sm outline-none transition;
+  background-color: var(--color-bg);
+  border: 1px solid var(--divider);
+  color: var(--text-primary);
 }
 
 .pill-row {
@@ -485,12 +543,16 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border border-neutral-700 text-neutral-200 bg-neutral-950/70;
-  @apply hover:border-blue-500 hover:text-blue-200 transition shadow-sm;
+  @apply text-xs md:text-sm px-3 py-2 rounded-full border transition shadow-sm;
+  background-color: var(--color-bg);
+  border-color: var(--divider);
+  color: var(--text-primary);
 }
 
 .pill.active {
-  @apply border-blue-500 text-blue-200 bg-blue-950/50;
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-accent-blue);
+  color: var(--color-accent-blue);
 }
 
 .filter-tags {
@@ -498,19 +560,23 @@ export default {
 }
 
 .filter-tag {
-  @apply inline-flex items-center gap-2 rounded-full border border-blue-800/60 bg-blue-950/40;
-  @apply px-3 py-1 text-xs text-blue-100;
+  @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs;
+  background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
+  border: 1px solid var(--divider);
+  color: var(--text-primary);
 }
 
 .filter-tag__label {
-  @apply uppercase tracking-wide text-[11px] text-blue-300;
+  @apply uppercase tracking-wide text-[11px];
+  color: var(--color-accent-blue);
 }
 
 .filter-tag__value {
-  @apply font-semibold text-blue-50;
+  @apply font-semibold;
 }
 
 .filter-tag__remove {
-  @apply text-blue-200 hover:text-blue-50 transition;
+  @apply transition;
+  color: var(--color-accent-blue);
 }
 </style>
