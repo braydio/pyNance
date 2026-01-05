@@ -25,7 +25,11 @@
         >
           {{ controlsVisible ? 'Hide Options' : 'Show Options' }}
         </button>
-        <button class="pill md:text-sm" :class="{ active: showHidden }" @click="showHidden = !showHidden">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showHidden }"
+          @click="showHidden = !showHidden"
+        >
           {{ showHidden ? 'Showing Hidden' : 'Hide Hidden' }}
         </button>
         <button
@@ -35,7 +39,11 @@
         >
           Filter Types
         </button>
-        <button class="pill md:text-sm" :class="{ active: showDeleteButtons }" @click="toggleDeleteButtons">
+        <button
+          class="pill md:text-sm"
+          :class="{ active: showDeleteButtons }"
+          @click="toggleDeleteButtons"
+        >
           {{ showDeleteButtons ? 'Delete Visible' : 'Hide Delete' }}
         </button>
         <button class="pill md:text-sm" @click="exportCSV">Export CSV</button>
@@ -63,35 +71,17 @@
       <table class="data-table">
         <thead class="table-head">
           <tr>
-            <th class="th-cell text-left">
-              Last Refreshed
-            </th>
-            <th class="th-cell text-left">
-              Institution
-            </th>
-            <th class="th-cell text-left">
-              Name
-            </th>
-            <th class="th-cell text-left">
-              Account Type
-            </th>
-            <th class="th-cell text-right">
-              Balance
-            </th>
-            <th :class="['th-cell text-center', 'w-[60px]']">
-              Trend
-            </th>
-            <th v-if="controlsVisible" class="th-cell text-left">
-              Actions
-            </th>
+            <th class="th-cell text-left">Last Refreshed</th>
+            <th class="th-cell text-left">Institution</th>
+            <th class="th-cell text-left">Name</th>
+            <th class="th-cell text-left">Account Type</th>
+            <th class="th-cell text-right">Balance</th>
+            <th :class="['th-cell text-center', 'w-[60px]']">Trend</th>
+            <th v-if="controlsVisible" class="th-cell text-left">Actions</th>
           </tr>
         </thead>
         <tbody>
-          <tr
-            v-for="account in sortedAccounts"
-            :key="account.account_id"
-            class="table-row"
-          >
+          <tr v-for="account in sortedAccounts" :key="account.account_id" class="table-row">
             <!-- Last Refreshed -->
             <td class="cell text-xs cell-muted font-mono">
               {{ formatDate(account.last_refreshed) }}
@@ -148,7 +138,9 @@
     <div v-if="!loading && !sortedAccounts.length" class="p-6 text-[color:var(--color-text-muted)]">
       No accounts found.
     </div>
-    <div v-else-if="loading" class="p-6 text-[color:var(--color-text-muted)]">Loading accounts...</div>
+    <div v-else-if="loading" class="p-6 text-[color:var(--color-text-muted)]">
+      Loading accounts...
+    </div>
 
     <Modal v-if="showDeleteModal" size="md" @close="closeDeleteModal">
       <template #title> Delete account? </template>

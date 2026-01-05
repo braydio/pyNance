@@ -72,21 +72,11 @@
       <table class="data-table">
         <thead class="table-head">
           <tr>
-            <th class="th-cell text-left">
-              Date
-            </th>
-            <th class="th-cell text-left">
-              Category
-            </th>
-            <th class="th-cell text-left">
-              Merchant: Description
-            </th>
-            <th class="th-cell text-left">
-              Institution / Account
-            </th>
-            <th class="th-cell text-right">
-              Amount
-            </th>
+            <th class="th-cell text-left">Date</th>
+            <th class="th-cell text-left">Category</th>
+            <th class="th-cell text-left">Merchant: Description</th>
+            <th class="th-cell text-left">Institution / Account</th>
+            <th class="th-cell text-right">Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -126,7 +116,9 @@
                 loading="lazy"
               />
               <span class="font-medium">{{ formatName(tx.institution_name) }}</span>
-              <span v-if="tx.institution_name && tx.account_name" class="mx-1 text-[color:var(--color-text-muted)]"
+              <span
+                v-if="tx.institution_name && tx.account_name"
+                class="mx-1 text-[color:var(--color-text-muted)]"
                 >/</span
               >
               <span>{{ formatName(tx.account_name) }}</span>
@@ -144,7 +136,10 @@
             </td>
           </tr>
           <tr v-if="transactions.length === 0">
-            <td :colspan="5" class="cell py-8 text-center text-[color:var(--color-text-muted)] italic">
+            <td
+              :colspan="5"
+              class="cell py-8 text-center text-[color:var(--color-text-muted)] italic"
+            >
               No transactions found.
             </td>
           </tr>
