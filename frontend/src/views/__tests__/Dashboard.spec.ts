@@ -246,6 +246,11 @@ function createWrapper(options = {}) {
   const baseStubs = {
     AppLayout: PassThrough,
     BasePageLayout: PassThrough,
+    NetOverviewSection: false,
+    CategoryBreakdownSection: false,
+    InsightsRow: false,
+    AccountsSection: false,
+    TransactionsSection: false,
     DailyNetChart: DailyNetChartStub,
     CategoryBreakdownChart: CategoryBreakdownChartStub,
     ChartWidgetTopBar: ChartWidgetTopBarStub,

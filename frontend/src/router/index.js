@@ -2,12 +2,12 @@
 // Centralized application route definitions.
 
 import { createRouter, createWebHistory } from 'vue-router'
-import Dashboard from '../views/Dashboard.vue'
-import Accounts from '../views/Accounts.vue'
-import Transactions from '../views/Transactions.vue'
+import Dashboard from '@/views/Dashboard.vue'
+import Accounts from '@/views/Accounts.vue'
+import Transactions from '@/views/Transactions.vue'
 import Forecast from '@/views/Forecast.vue'
 import Planning from '@/views/Planning.vue'
-import Institutions from '../views/Institutions.vue'
+import Institutions from '@/views/Institutions.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
@@ -15,8 +15,8 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import ForecastMock from '@/views/ForecastMock.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
 
-const Investments = () => import('../views/Investments.vue')
-const ArbitDashboard = () => import('../views/ArbitDashboard.vue')
+const Investments = () => import('@/views/Investments.vue')
+const ArbitDashboard = () => import('@/views/ArbitDashboard.vue')
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
