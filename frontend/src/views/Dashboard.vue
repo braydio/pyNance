@@ -82,7 +82,11 @@
           <div class="h-6 w-40 bg-[var(--color-bg-dark)] rounded"></div>
           <div class="h-6 w-28 bg-[var(--color-bg-dark)] rounded"></div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div v-for="index in 4" :key="index" class="h-10 bg-[var(--color-bg-dark)] rounded"></div>
+            <div
+              v-for="index in 4"
+              :key="index"
+              class="h-10 bg-[var(--color-bg-dark)] rounded"
+            ></div>
           </div>
         </section>
       </template>
@@ -218,7 +222,11 @@
             >
               <div class="h-8 w-48 bg-[var(--color-bg-dark)] rounded"></div>
               <div class="flex-1 grid grid-rows-4 gap-3">
-                <div v-for="row in 4" :key="row" class="w-full rounded-xl bg-[var(--color-bg-dark)]"></div>
+                <div
+                  v-for="row in 4"
+                  :key="row"
+                  class="w-full rounded-xl bg-[var(--color-bg-dark)]"
+                ></div>
               </div>
             </div>
           </template>
@@ -252,7 +260,11 @@
             >
               <div class="h-8 w-56 bg-[var(--color-bg-dark)] rounded"></div>
               <div class="flex-1 grid grid-rows-5 gap-3">
-                <div v-for="row in 5" :key="`txn-${row}`" class="w-full rounded-xl bg-[var(--color-bg-dark)]"></div>
+                <div
+                  v-for="row in 5"
+                  :key="`txn-${row}`"
+                  class="w-full rounded-xl bg-[var(--color-bg-dark)]"
+                ></div>
               </div>
             </div>
           </template>
@@ -316,16 +328,18 @@ function createAsyncSection(loader) {
   })
 }
 
-const NetOverviewSection = createAsyncSection(() =>
-  import('@/components/dashboard/NetOverviewSection.vue'),
+const NetOverviewSection = createAsyncSection(
+  () => import('@/components/dashboard/NetOverviewSection.vue'),
 )
-const CategoryBreakdownSection = createAsyncSection(() =>
-  import('@/components/dashboard/CategoryBreakdownSection.vue'),
+const CategoryBreakdownSection = createAsyncSection(
+  () => import('@/components/dashboard/CategoryBreakdownSection.vue'),
 )
 const InsightsRow = createAsyncSection(() => import('@/components/dashboard/InsightsRow.vue'))
-const AccountsSection = createAsyncSection(() => import('@/components/dashboard/AccountsSection.vue'))
-const TransactionsSection = createAsyncSection(() =>
-  import('@/components/dashboard/TransactionsSection.vue'),
+const AccountsSection = createAsyncSection(
+  () => import('@/components/dashboard/AccountsSection.vue'),
+)
+const TransactionsSection = createAsyncSection(
+  () => import('@/components/dashboard/TransactionsSection.vue'),
 )
 
 // Transactions and user
