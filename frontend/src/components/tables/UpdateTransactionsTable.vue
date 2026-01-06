@@ -329,6 +329,8 @@ const EDITABLE_FIELDS = ['date', 'amount', 'description', 'category', 'merchant_
 const selectedPrimaryCategory = ref('')
 const selectedSubcategory = ref('')
 const editingIndex = ref(null)
+const editingTransactionId = ref(null)
+const editingTransactionSnapshot = ref(null)
 const editBuffer = ref({
   date: '',
   amount: null,
@@ -552,13 +554,26 @@ function buildEditBuffer(tx) {
   }
 }
 
+/**
+ * Cache the current transaction and editable values for the active row.
+ *
+ * @param {number} index - Rendered row index selected for editing.
+ * @param {Object} tx - Transaction record associated with the row.
+ */
 function startEdit(index, tx) {
+  editingTransactionId.value = tx?.transaction_id || null
+  editingTransactionSnapshot.value = buildRuleContext(tx)
   editBuffer.value = buildEditBuffer(tx)
   editingIndex.value = index
 }
 
+/**
+ * Reset editing state and clear cached transaction context.
+ */
 function cancelEdit() {
   editingIndex.value = null
+  editingTransactionId.value = null
+  editingTransactionSnapshot.value = null
   editBuffer.value = {
     date: '',
     amount: null,
@@ -577,11 +592,53 @@ function resolveTransactionDate(tx) {
   return tx?.date || tx?.transaction_date || ''
 }
 
+/**
+ * Retrieve a transaction by identifier from the current prop set.
+ *
+ * @param {string|null} transactionId - Identifier to match.
+ * @returns {Object|null} Matching transaction object, if found.
+ */
+function findTransactionById(transactionId) {
+  if (!transactionId) return null
+  return (
+    props.transactions.find((transaction) => transaction.transaction_id === transactionId) || null
+  )
+}
+
+/**
+ * Build a minimal snapshot used for rule prompts when saving edits.
+ *
+ * @param {Object|null} tx - Transaction to snapshot.
+ * @returns {Object|null} Snapshot containing identifiers and display fields.
+ */
+function buildRuleContext(tx) {
+  if (!tx) return null
+  return {
+    transaction_id: tx.transaction_id,
+    user_id: tx.user_id || '',
+    account_id: tx.account_id,
+    description: tx.description || '',
+    account_name: tx.account_name || '',
+    institution_name: tx.institution_name || '',
+  }
+}
+
+/**
+ * Persist edits for the active transaction and optionally create a rule.
+ *
+ * @param {Object} tx - Transaction reference from the current row.
+ */
 async function saveEdit(tx) {
   try {
-    const payload = { transaction_id: tx.transaction_id }
+    const activeTx = findTransactionById(editingTransactionId.value) || tx
+    if (!activeTx) {
+      toast.error('Unable to locate transaction to update.')
+      return
+    }
+
+    const payload = { transaction_id: activeTx.transaction_id }
     EDITABLE_FIELDS.forEach((field) => {
-      const currentValue = field === 'date' ? resolveTransactionDate(tx) : tx[field]
+      const currentValue = field === 'date' ? resolveTransactionDate(activeTx) : activeTx[field]
       if (editBuffer.value[field] !== currentValue) {
         payload[field] = editBuffer.value[field]
       }
@@ -605,8 +662,19 @@ async function saveEdit(tx) {
     await updateTransaction(payload)
     const changes = { ...payload }
     delete changes.transaction_id
-    Object.assign(tx, changes)
+    Object.assign(activeTx, changes)
     editingIndex.value = null
+    const ruleSource = {
+      ...(editingTransactionSnapshot.value || buildRuleContext(activeTx) || {}),
+      ...changes,
+      description: editBuffer.value.description ?? activeTx.description ?? '',
+      account_name: activeTx.account_name ?? '',
+      institution_name: activeTx.institution_name ?? '',
+    }
+    const accountLabel = ruleSource.account_name || 'this account'
+    const institutionLabel = ruleSource.institution_name || 'this institution'
+    editingTransactionId.value = null
+    editingTransactionSnapshot.value = null
     toast.success('Transaction updated')
 
     // Offer to save a rule for future matches when key fields change
@@ -614,17 +682,17 @@ async function saveEdit(tx) {
     if (changedField) {
       const newValue = payload[changedField]
       const promptText = [
-        `Always set ${changedField} to "${newValue}" for ${tx.description}`,
-        `in ${tx.account_name} at ${tx.institution_name}?`,
+        `Always set ${changedField} to "${newValue}" for ${ruleSource.description}`,
+        `in ${accountLabel} at ${institutionLabel}?`,
       ].join(' ')
       if (confirm(promptText)) {
         try {
           await createTransactionRule({
-            user_id: tx.user_id || '',
+            user_id: ruleSource.user_id || '',
             field: changedField,
             value: newValue,
-            description: tx.description,
-            account_id: tx.account_id,
+            description: ruleSource.description,
+            account_id: ruleSource.account_id,
           })
           toast.success('Rule saved')
         } catch (e) {
