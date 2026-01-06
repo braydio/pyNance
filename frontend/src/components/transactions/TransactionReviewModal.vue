@@ -237,17 +237,39 @@ const isEditing = computed(() => {
 })
 
 /**
+ * Safely resolve a transaction date from the available fields.
+ *
+ * @param {Record<string, unknown>} tx - Transaction to inspect.
+ * @returns {string} ISO-like date string or empty when unavailable.
+ */
+function resolveTransactionDate(tx) {
+  if (!tx) return ''
+  return tx.date || tx.transaction_date || ''
+}
+
+/**
+ * Build an edit buffer seeded with the active transaction's current values.
+ *
+ * @param {Record<string, unknown>} tx - Transaction to convert.
+ * @returns {Object} Prefilled edit buffer.
+ */
+function buildEditBuffer(tx) {
+  if (!tx) return {}
+  return {
+    date: resolveTransactionDate(tx),
+    amount: tx.amount,
+    description: tx.description || '',
+    category: tx.category || '',
+    merchant_name: tx.merchant_name || '',
+  }
+}
+
+/**
  * Build an edit buffer from the current transaction using editable fields.
  */
 function populateEditBuffer() {
   if (!currentTransaction.value) return
-  editBuffer.value = {
-    date: currentTransaction.value.date || currentTransaction.value.transaction_date || '',
-    amount: currentTransaction.value.amount,
-    description: currentTransaction.value.description || '',
-    category: currentTransaction.value.category || '',
-    merchant_name: currentTransaction.value.merchant_name || '',
-  }
+  editBuffer.value = buildEditBuffer(currentTransaction.value)
 }
 
 /**
@@ -255,8 +277,8 @@ function populateEditBuffer() {
  */
 function beginEdit() {
   if (!currentTransaction.value) return
-  editingTransactionId.value = String(currentTransaction.value.transaction_id || '')
   populateEditBuffer()
+  editingTransactionId.value = String(currentTransaction.value.transaction_id || '')
 }
 
 /**
@@ -409,6 +431,17 @@ function emitClose() {
  */
 function handleKeydown(event) {
   if (!props.show || batchComplete.value) return
+  const target = event.target
+  if (
+    target &&
+    target instanceof HTMLElement &&
+    (target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.tagName === 'SELECT' ||
+      target.isContentEditable)
+  ) {
+    return
+  }
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
     handleEditToggle()
