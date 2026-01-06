@@ -15,10 +15,11 @@
 
 - [ ] **Implement clear grid breakpoints** - No clear column stacking for charts and tables
   - **Acceptance criteria:** Responsive grid system works on mobile (320px+), tablet (768px+), desktop (1024px+)
-- [ ] **Fix responsive scaling issues** - Some classes (e.g., max-w-5xl) may limit scaling on different screens
-  - **Acceptance criteria:** Dashboard adapts fluidly across all viewport sizes, no horizontal scrolling on mobile
+- [ ] **Fix responsive scaling issues** - Some classes (e.g., max-w-5xl) may limit scaling on different screens - **Acceptance criteria:** Dashboard adapts fluidly across all viewport sizes, no horizontal scrolling on mobile
 - [x] **Stabilize tables panel at mobile breakpoints** - CTA row stacks vertically on small screens and tables use viewport-relative heights to avoid overflow.
-  - **Acceptance criteria:** `frontend/src/views/Dashboard.vue` stacks the reserve panel buttons on small widths, `frontend/src/components/dashboard/AccountsSection.vue` and `frontend/src/components/dashboard/TransactionsSection.vue` use viewport-based minimum heights, and `frontend/src/components/tables/UpdateTransactionsTable.vue` relies on vh sizing instead of fixed pixel heights.
+  - **Acceptance criteria:** `frontend/src/views/Dashboard.vue` stacks the reserve panel buttons on small widths, `frontend/src/components/dashboard/AccountsSection.vue` and `frontend/src/components/dashboard/TransactionsSection.vue` use viewport-based minimum heights, `frontend/src/views/TempDashboard.vue` mirrors the same CTA spacing for the legacy dashboard, and `frontend/src/components/tables/UpdateTransactionsTable.vue` relies on vh sizing instead of fixed pixel heights.
+- [x] **Wrap spending controls on compact widths** - Ensure chart control rows avoid horizontal overflow on phones.
+  - **Acceptance criteria:** `frontend/src/views/Dashboard.vue` renders spending controls with stacked `w-full` buttons below 640px and `sm:flex-wrap` at mid widths, with coverage in `frontend/src/views/__tests__/Dashboard.spec.ts` to guard against overflow at 340px.
 
 ### Navigation and Call-to-Actions
 

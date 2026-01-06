@@ -86,12 +86,13 @@ border variables directly.
 
 ## Data table surface hierarchy
 
-Data tables now prioritize neutral, token-driven surfaces so hero metrics and gradient cards retain visual focus.
+Data tables prioritize neutral, token-driven surfaces so hero metrics and gradient cards retain visual focus.
 
-- Wrap tables with the `table-panel` + `table-shell` container classes to pick up `var(--surface)` and `var(--color-bg)` backgrounds with `var(--divider)` borders.
-- Table headers use `var(--color-bg-secondary)` while zebra rows alternate between `var(--color-bg)` and `var(--color-bg-secondary)` for clarity without gradients.
+- Wrap tables with the `table-panel` + `table-shell` container classes to pick up the neutral table tokens: `var(--table-surface-strong)` shells, `var(--table-surface)` bodies, and `var(--table-border)` outlines.
+- Table headers use `var(--table-header)` while zebra rows alternate between `var(--table-surface)` and `var(--table-surface-alt)`; hover states rely on `var(--table-hover)`.
+- Filters and inline controls should reuse `var(--table-control)` to stay neutral and avoid drawing focus away from gradient cards.
 - Accent colors remain on chips and badges, but gradient fills are reserved for hero metrics and summary cards.
-- Reference implementations live in `frontend/src/components/tables/AccountsTable.vue` and `frontend/src/components/tables/TransactionsTable.vue`.
+- Reference implementations live in `frontend/src/components/tables/AccountsTable.vue`, `frontend/src/components/tables/TransactionsTable.vue`, and the modal/inline tables in `frontend/src/components/tables/UpdateTransactionsTable.vue` and `ModalTransactionsDisplay.vue`.
 
 ## Conclusion
 

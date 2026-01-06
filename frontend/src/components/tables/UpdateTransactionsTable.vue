@@ -1028,14 +1028,14 @@ async function loadCategoryData() {
 }
 
 .table-shell {
-  background: var(--color-bg-secondary);
-  border: 1.5px solid var(--divider);
+  background: var(--table-surface);
+  border: 1.5px solid var(--table-border);
   border-radius: 1.5rem;
   box-shadow: 0 14px 48px rgba(0, 0, 0, 0.18);
 }
 
 .table-scroll {
-  background: linear-gradient(180deg, rgba(41, 57, 79, 0.9), rgba(33, 46, 63, 0.92));
+  background: var(--table-surface-alt);
 }
 
 .transactions-grid {
@@ -1049,15 +1049,15 @@ async function loadCategoryData() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  border-color: var(--divider);
+  border-color: var(--table-border);
 }
 
 .transactions-grid tr {
-  border-bottom: 1px solid var(--divider);
+  border-bottom: 1px solid var(--table-border);
 }
 
 .table-head {
-  background: rgba(57, 80, 109, 0.45);
+  background: var(--table-header);
   color: var(--color-text-light);
   font-size: 13px;
   font-weight: 700;
@@ -1109,16 +1109,16 @@ async function loadCategoryData() {
 }
 
 .row-even {
-  background: rgba(33, 46, 63, 0.65);
+  background: var(--table-surface);
 }
 
 .row-odd {
-  background: rgba(41, 57, 79, 0.7);
+  background: var(--table-surface-alt);
 }
 
 .row-even:hover,
 .row-odd:hover {
-  background: rgba(113, 156, 214, 0.18);
+  background: var(--table-hover);
 }
 
 .virtual-padding-row td {
