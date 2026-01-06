@@ -23,9 +23,7 @@
           :key="tx.transaction_id"
           :class="[
             'group transition-colors border-b cursor-pointer',
-            index % 2 === 0
-              ? 'bg-[var(--table-surface)]'
-              : 'bg-[var(--table-surface-alt)]',
+            index % 2 === 0 ? 'bg-[var(--table-surface)]' : 'bg-[var(--table-surface-alt)]',
             'hover:bg-[var(--table-hover)] border-[var(--table-border)]',
           ]"
           @click="$emit('row-click', tx)"
