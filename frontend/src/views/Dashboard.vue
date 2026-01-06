@@ -300,6 +300,7 @@ const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
 const comparisonMode = ref('prior_month_to_date')
 const netTimeframe = ref('mtd')
+let activeLoadToken = 0
 
 const netRange = computed(() => {
   const today = new Date()
@@ -342,13 +343,14 @@ const {
 
 // --- SHARED DATE RANGE STATE ---
 /**
- * Reset spending selections when the date range changes and refresh option data.
+ * Reset spending selections when the date range changes and trigger a full
+ * dashboard refresh with the new boundaries.
  *
  * @param {{ start: string; end: string }} range - Debounced date range boundaries.
  */
 async function onDateRangeChange(range) {
   resetSelection()
-  await refreshOptions({ start_date: range.start, end_date: range.end })
+  await loadDashboardData(range)
 }
 
 const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '', end: '' }) } =
@@ -364,29 +366,51 @@ const reviewFilters = computed(() => ({
 /**
  * Perform the dashboard's initial data load in parallel so hero, breakdown,
  * and transaction widgets all start with fresh data. Applies a shared fallback
- * message when any fetch fails so the UI surfaces a consistent error tone.
+ * message when any fetch fails so the UI surfaces a consistent error tone. The
+ * optional range argument enables debounced refreshes without overlapping the
+ * results from earlier requests.
  *
+ * @param {{ start: string; end: string }} [range] - Date boundaries to apply to
+ *   option and transaction requests.
  * @returns {Promise<void>} Resolves when the dashboard data requests settle.
  */
-async function loadDashboardData() {
+async function loadDashboardData(range = debouncedRange.value) {
+  const loadToken = ++activeLoadToken
   const params = {
-    start_date: debouncedRange.value.start,
-    end_date: debouncedRange.value.end,
+    start_date: range.start,
+    end_date: range.end,
   }
   const fallback = 'Unable to refresh dashboard data. Showing the latest available info.'
   loadErrorMessage.value = ''
 
+  const recordFailure = (error) => {
+    console.error('Failed to load dashboard data:', error)
+    return { __error: error }
+  }
+
   try {
-    const [netAssetsResult] = await Promise.all([
-      api.fetchNetAssets(),
-      refreshOptions(params),
-      loadTransactions(1, { force: true }),
+    const [netAssetsResult, categoriesResult, transactionsResult] = await Promise.all([
+      api.fetchNetAssets().catch(recordFailure),
+      refreshOptions(params).catch(recordFailure),
+      loadTransactions(1, { force: true }).catch(recordFailure),
     ])
+
+    if (loadToken !== activeLoadToken) {
+      return
+    }
+
+    const hadFailure =
+      [categoriesResult, transactionsResult].some((result) => result && '__error' in result) ||
+      (netAssetsResult && '__error' in netAssetsResult)
 
     if (netAssetsResult?.status === 'success' && Array.isArray(netAssetsResult.data)) {
       const lastPoint = netAssetsResult.data[netAssetsResult.data.length - 1]
       netWorth.value = lastPoint?.net_assets ?? 0
     } else {
+      loadErrorMessage.value = fallback
+    }
+
+    if (hadFailure) {
       loadErrorMessage.value = fallback
     }
   } catch (error) {
