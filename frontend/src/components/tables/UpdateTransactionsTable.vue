@@ -71,7 +71,10 @@
 
     <!-- Transactions Table -->
     <div class="table-shell overflow-hidden">
-      <div ref="tableScrollRef" class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
+      <div
+        ref="tableScrollRef"
+        class="table-scroll max-h-[70vh] lg:max-h-[75vh] min-h-[50vh] sm:min-h-[55vh] overflow-auto"
+      >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
           <thead class="table-head sticky top-0 z-10">
             <tr>
