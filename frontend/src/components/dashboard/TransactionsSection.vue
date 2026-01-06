@@ -3,8 +3,8 @@
   Expanded transactions table container for the dashboard.
 -->
 <template>
-  <div class="absolute inset-0 p-8 flex flex-col bg-[var(--color-bg-sec)]">
-    <div class="flex items-center justify-between mb-4">
+  <div class="absolute inset-0 p-6 sm:p-8 flex flex-col bg-[var(--color-bg-sec)]">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
       <h2 class="text-2xl font-bold text-[var(--color-accent-red)]">Transactions Table</h2>
       <button
         @click="emit('close')"
@@ -13,7 +13,7 @@
         Close
       </button>
     </div>
-    <div class="flex-1 min-h-[50vh] sm:min-h-[60vh]">
+    <div class="flex-1 min-h-[55vh] sm:min-h-[60vh] lg:min-h-[70vh]">
       <TransactionsTable
         :transactions="transactions"
         :sort-key="sortKey"

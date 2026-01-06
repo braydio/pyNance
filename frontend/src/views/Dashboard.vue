@@ -68,10 +68,15 @@
           </h2>
           <ChartWidgetTopBar>
             <template #controls>
-              <div class="flex flex-wrap gap-2 items-center">
-                <div class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden">
+              <div
+                data-testid="spending-controls"
+                class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-4"
+              >
+                <div
+                  class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden w-full sm:w-auto"
+                >
                   <button
-                    class="px-3 py-1 text-sm transition"
+                    class="px-3 py-1 text-sm transition w-full sm:w-auto"
                     :class="
                       breakdownType === 'category'
                         ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
@@ -82,7 +87,7 @@
                     Categories
                   </button>
                   <button
-                    class="px-3 py-1 text-sm transition"
+                    class="px-3 py-1 text-sm transition w-full sm:w-auto"
                     :class="
                       breakdownType === 'merchant'
                         ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
@@ -98,9 +103,12 @@
                   :groups="categoryGroups"
                   :modelValue="selectedCategoryIds"
                   @update:modelValue="updateSelection"
-                  class="w-full md:w-64"
+                  class="w-full sm:w-64 lg:w-72"
                 />
-                <button class="btn btn-outline hover-lift" @click="toggleGroupOthers">
+                <button
+                  class="btn btn-outline hover-lift w-full sm:w-auto"
+                  @click="toggleGroupOthers"
+                >
                   {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
                 </button>
               </div>
@@ -145,7 +153,7 @@
     <!-- RESERVED TABLES PANEL -->
     <div
       data-testid="tables-panel"
-      class="relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+      class="relative min-h-[60vh] sm:min-h-[65vh] lg:min-h-[72vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
     >
       <transition name="accordion">
         <div

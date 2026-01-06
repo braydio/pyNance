@@ -492,7 +492,7 @@ describe('Dashboard.vue', () => {
     const tablesPanel = wrapper.find('[data-testid="tables-panel"]')
     expect(tablesPanel.exists()).toBe(true)
     expect(tablesPanel.classes()).toEqual(
-      expect.arrayContaining(['min-h-[55vh]', 'sm:min-h-[60vh]']),
+      expect.arrayContaining(['min-h-[60vh]', 'sm:min-h-[65vh]', 'lg:min-h-[72vh]']),
     )
 
     const ctaRow = wrapper.find('[data-testid="tables-panel-cta"]')
@@ -520,6 +520,38 @@ describe('Dashboard.vue', () => {
     })
   })
 
+  it('stacks spending controls on narrow widths to prevent overflow', async () => {
+    setViewportWidth(340)
+    const wrapper = createWrapper()
+    await nextTick()
+
+    const controls = wrapper.find('[data-testid="spending-controls"]')
+    expect(controls.exists()).toBe(true)
+    expect(controls.classes()).toEqual(
+      expect.arrayContaining(['flex-col', 'sm:flex-row', 'sm:flex-wrap', 'lg:flex-nowrap']),
+    )
+
+    controls.element.style.width = '320px'
+    Object.defineProperty(controls.element, 'clientWidth', {
+      configurable: true,
+      value: 320,
+    })
+    Object.defineProperty(controls.element, 'scrollWidth', {
+      configurable: true,
+      value: 320,
+    })
+    expect(controls.element.scrollWidth).toBeLessThanOrEqual(controls.element.clientWidth)
+
+    const buttons = controls.findAll('button')
+    expect(buttons).not.toHaveLength(0)
+    const buttonClasses = buttons.map((btn) => btn.classes())
+    expect(
+      buttonClasses.every((classList) =>
+        classList.some((cls) => cls === 'w-full' || cls.startsWith('sm:w-')),
+      ),
+    ).toBe(true)
+  })
+
   it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
     const wrapper = createWrapper()
     await nextTick()
@@ -536,7 +568,7 @@ describe('Dashboard.vue', () => {
     expect(accountsSection.exists()).toBe(true)
     const accountsBody = accountsSection.find('.flex-1')
     expect(accountsBody.classes()).toEqual(
-      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
+      expect.arrayContaining(['min-h-[55vh]', 'sm:min-h-[60vh]', 'lg:min-h-[70vh]']),
     )
 
     wrapper.vm.expandTransactions()
@@ -545,7 +577,7 @@ describe('Dashboard.vue', () => {
     expect(transactionsSection.exists()).toBe(true)
     const transactionsBody = transactionsSection.find('.flex-1')
     expect(transactionsBody.classes()).toEqual(
-      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
+      expect.arrayContaining(['min-h-[55vh]', 'sm:min-h-[60vh]', 'lg:min-h-[70vh]']),
     )
   })
 
