@@ -155,6 +155,46 @@ describe('UpdateTransactionsTable.vue', () => {
     expect(displayed[0].transaction_id).toBe('t1')
   })
 
+  it('surfaces fuzzy category suggestions for approximate input', async () => {
+    const transactions = [
+      {
+        transaction_id: 't1',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Grocery Market',
+        category: 'Food: Grocery',
+        merchant_name: 'Fresh Foods',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+      {
+        transaction_id: 't2',
+        date: '2024-01-02',
+        amount: 20,
+        description: 'Utility',
+        category: 'Bills: Utilities',
+        merchant_name: 'Power Co',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+    await flushPromises()
+
+    wrapper.vm.startEdit(0, transactions[0])
+    wrapper.vm.editBuffer.category = 'groc'
+    await flushPromises()
+
+    expect(wrapper.vm.categorySuggestions).toContain('Food: Grocery')
+    expect(wrapper.vm.categorySuggestions.length).toBeGreaterThan(0)
+  })
+
   it('stacks multiple field filters', async () => {
     const transactions = [
       {

@@ -113,6 +113,7 @@
                     v-if="field.type === 'input'"
                     v-model="editBuffer[field.key]"
                     :type="field.inputType || 'text'"
+                    :list="field.key === 'category' ? 'review-category-suggestions' : undefined"
                     class="input w-full"
                   />
                   <input
@@ -144,6 +145,9 @@
       </div>
     </div>
   </transition>
+  <datalist id="review-category-suggestions">
+    <option v-for="option in categorySuggestions" :key="option" :value="option" />
+  </datalist>
 </template>
 
 <script setup>
@@ -155,9 +159,11 @@
  * through a batch.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import Fuse from 'fuse.js'
 import { useToast } from 'vue-toastification'
 import { useTransactions } from '@/composables/useTransactions'
 import { createTransactionRule, updateTransaction } from '@/api/transactions'
+import { fetchCategoryTree } from '@/api/categories'
 import { formatAmount } from '@/utils/format'
 
 const props = defineProps({
@@ -169,6 +175,7 @@ const emit = defineEmits(['close'])
 const toast = useToast()
 
 const BATCH_SIZE = 10
+const CATEGORY_SUGGESTION_LIMIT = 12
 const filtersRef = computed(() => {
   const nextFilters = { ...(props.filters || {}) }
   if (!nextFilters.start_date) delete nextFilters.start_date
@@ -190,6 +197,7 @@ const currentIndex = ref(0)
 const editingTransactionId = ref('')
 const editBuffer = ref({})
 const batchComplete = ref(false)
+const categoryOptions = ref([])
 
 const hasNextBatch = computed(() => currentPage.value < totalPages.value)
 
@@ -235,6 +243,82 @@ const isEditing = computed(() => {
   const txId = String(currentTransaction.value.transaction_id || '')
   return editingTransactionId.value === txId
 })
+
+const categoryFuse = computed(
+  () =>
+    new Fuse(
+      categoryOptions.value.map((value) => ({ value })),
+      {
+        keys: ['value'],
+        threshold: 0.3,
+        ignoreLocation: true,
+      },
+    ),
+)
+
+const categorySuggestions = computed(() => {
+  if (!categoryOptions.value.length) return []
+  const query = (editBuffer.value.category || '').trim()
+  if (!query) {
+    return categoryOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
+  const seen = new Set()
+  const matches = categoryFuse.value.search(query)
+  const suggestions = []
+  matches.forEach((match) => {
+    if (!seen.has(match.item.value)) {
+      suggestions.push(match.item.value)
+      seen.add(match.item.value)
+    }
+  })
+  if (!suggestions.length) {
+    return categoryOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
+  return suggestions.slice(0, CATEGORY_SUGGESTION_LIMIT)
+})
+
+/**
+ * Flatten category groups into unique suggestion labels.
+ *
+ * @param {Array<Object>} groups - Raw category groups returned by the API.
+ * @returns {string[]} Sorted suggestion labels.
+ */
+function buildCategoryOptions(groups = []) {
+  const options = []
+  groups.forEach((group) => {
+    const parentName = group.label || group.name
+    if (parentName) {
+      options.push(parentName)
+    }
+    ;(group.children || []).forEach((child) => {
+      const childName = child.label || child.name
+      if (!childName) return
+      options.push(childName)
+      if (parentName) {
+        options.push(`${parentName}: ${childName}`)
+      }
+    })
+  })
+  const unique = Array.from(new Set(options.filter(Boolean)))
+  return unique.sort((a, b) => a.localeCompare(b))
+}
+
+/**
+ * Fetch category groups and populate autocomplete options.
+ */
+async function loadCategoryOptions() {
+  try {
+    const response = await fetchCategoryTree()
+    if (response?.status === 'success') {
+      categoryOptions.value = buildCategoryOptions(response.data || [])
+      return
+    }
+    categoryOptions.value = []
+  } catch (error) {
+    console.error('Failed to load category options', error)
+    categoryOptions.value = []
+  }
+}
 
 /**
  * Safely resolve a transaction date from the available fields.
@@ -465,6 +549,7 @@ watch(
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+  loadCategoryOptions()
 })
 
 onUnmounted(() => {
