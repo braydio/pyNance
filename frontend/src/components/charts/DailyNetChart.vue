@@ -12,6 +12,11 @@ import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from '@/utils/format'
 
+/**
+ * Render the daily net stacked bar chart with income, expenses, and net overlays.
+ * Includes optional moving averages and comparison overlays to contextualize trends.
+ */
+
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
@@ -266,6 +271,8 @@ async function renderChart() {
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
+  const stackId = 'daily-net'
+  const netFillColor = emphasizeColor(netColor, 'g')
 
   const fullLabels = buildDateRangeLabels(
     requestRange.value.startDate || labels[0],
@@ -288,24 +295,30 @@ async function renderChart() {
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
+      stack: stackId,
+      order: 1,
     },
     {
       type: 'bar',
       label: 'Expenses',
-      data: expenses,
+      data: expenses.map((value) => -value),
       barThickness: 18,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
       borderWidth: 1,
+      stack: stackId,
+      order: 1,
     },
     {
       type: 'bar',
       label: 'Net',
       data: net,
-      barThickness: 18,
-      backgroundColor: 'transparent',
+      barThickness: 12,
+      backgroundColor: netFillColor,
       borderColor: netColor,
-      borderWidth: 0,
+      borderWidth: 1,
+      stack: stackId,
+      order: 2,
     },
   ]
 
@@ -421,6 +434,7 @@ async function renderChart() {
       onClick: handleBarClick,
       scales: {
         x: {
+          stacked: true,
           grid: { display: false },
           ticks: {
             autoSkip: true,
@@ -433,6 +447,7 @@ async function renderChart() {
           },
         },
         y: {
+          stacked: true,
           grid: { color: getStyle('--divider') || 'rgba(255, 255, 255, 0.08)' },
           ticks: {
             color: getStyle('--color-text-muted'),
