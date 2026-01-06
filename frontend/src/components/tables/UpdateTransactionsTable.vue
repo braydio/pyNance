@@ -506,9 +506,35 @@ function removeFilterTag(key) {
   }
 }
 
+/**
+ * Build an edit buffer seeded with the transaction's current editable fields.
+ *
+ * @param {Object} tx - Transaction being edited.
+ * @returns {Object} Prefilled edit buffer values.
+ */
+function buildEditBuffer(tx) {
+  if (!tx) {
+    return {
+      date: '',
+      amount: null,
+      description: '',
+      category: '',
+      merchant_name: '',
+    }
+  }
+
+  return {
+    date: resolveTransactionDate(tx),
+    amount: tx.amount ?? null,
+    description: tx.description || '',
+    category: tx.category || '',
+    merchant_name: tx.merchant_name || '',
+  }
+}
+
 function startEdit(index, tx) {
+  editBuffer.value = buildEditBuffer(tx)
   editingIndex.value = index
-  editBuffer.value = { ...tx, date: resolveTransactionDate(tx) }
 }
 
 function cancelEdit() {

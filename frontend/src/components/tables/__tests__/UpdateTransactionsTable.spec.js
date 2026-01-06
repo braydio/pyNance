@@ -199,6 +199,41 @@ describe('UpdateTransactionsTable.vue', () => {
     expect(displayed[0].transaction_id).toBe('t1')
   })
 
+  it('preloads edit inputs with the current transaction values', async () => {
+    const transactions = [
+      {
+        transaction_id: 't1',
+        transaction_date: '2024-02-15',
+        amount: -42.5,
+        description: 'Sample transaction',
+        category: 'Bills',
+        merchant_name: 'Utility Co',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 'checking',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+
+    wrapper.vm.startEdit(0, transactions[0])
+    await flushPromises()
+
+    const editingRow = wrapper.find('tr.row-editing')
+    expect(editingRow.exists()).toBe(true)
+
+    const dateInput = editingRow.find('input[type="date"]')
+    const amountInput = editingRow.find('input[type="number"]')
+    const descriptionInput = editingRow.find('input[type="text"]')
+
+    expect(dateInput.element.value).toBe('2024-02-15')
+    expect(amountInput.element.value).toBe('-42.5')
+    expect(descriptionInput.element.value).toBe('Sample transaction')
+  })
+
   it('enables virtualization for large datasets', async () => {
     const transactions = Array.from({ length: 120 }, (_, index) => ({
       transaction_id: `t-${index}`,
