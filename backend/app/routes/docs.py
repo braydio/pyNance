@@ -1,6 +1,6 @@
 """Expose lightweight API documentation in HTML and JSON forms."""
 
-from flask import Blueprint, jsonify, render_template_string, current_app
+from flask import Blueprint, current_app, jsonify, render_template_string
 
 docs = Blueprint("docs", __name__)
 
