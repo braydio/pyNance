@@ -4,53 +4,89 @@
 -->
 <template>
   <BasePageLayout gap="gap-8">
-    <NetOverviewSection
-      :user-name="userName"
-      :current-date="currentDate"
-      :net-worth-message="netWorthMessage"
-      :date-range="dateRange"
-      :debounced-range="debouncedRange"
-      :net-range="netRange"
-      :zoomed-out="zoomedOut"
-      :net-summary="netSummary"
-      :chart-data="chartData"
-      :show7-day="show7Day"
-      :show30-day="show30Day"
-      :show-avg-income="showAvgIncome"
-      :show-avg-expenses="showAvgExpenses"
-      :show-comparison-overlay="showComparisonOverlay"
-      :comparison-mode="comparisonMode"
-      @update:start-date="dateRange.start = $event"
-      @update:end-date="dateRange.end = $event"
-      @update:zoomed-out="zoomedOut = $event"
-      @update:show7-day="show7Day = $event"
-      @update:show30-day="show30Day = $event"
-      @update:show-avg-income="showAvgIncome = $event"
-      @update:show-avg-expenses="showAvgExpenses = $event"
-      @update:show-comparison-overlay="showComparisonOverlay = $event"
-      @update:comparison-mode="comparisonMode = $event"
-      @net-summary-change="netSummary = $event"
-      @net-data-change="chartData = $event"
-      @net-bar-click="onNetBarClick"
-    />
+    <Suspense>
+      <template #default>
+        <NetOverviewSection
+          :user-name="userName"
+          :current-date="currentDate"
+          :net-worth-message="netWorthMessage"
+          :date-range="dateRange"
+          :debounced-range="debouncedRange"
+          :net-range="netRange"
+          :zoomed-out="zoomedOut"
+          :net-summary="netSummary"
+          :chart-data="chartData"
+          :show7-day="show7Day"
+          :show30-day="show30Day"
+          :show-avg-income="showAvgIncome"
+          :show-avg-expenses="showAvgExpenses"
+          :show-comparison-overlay="showComparisonOverlay"
+          :comparison-mode="comparisonMode"
+          @update:start-date="dateRange.start = $event"
+          @update:end-date="dateRange.end = $event"
+          @update:zoomed-out="zoomedOut = $event"
+          @update:show7-day="show7Day = $event"
+          @update:show30-day="show30Day = $event"
+          @update:show-avg-income="showAvgIncome = $event"
+          @update:show-avg-expenses="showAvgExpenses = $event"
+          @update:show-comparison-overlay="showComparisonOverlay = $event"
+          @update:comparison-mode="comparisonMode = $event"
+          @net-summary-change="netSummary = $event"
+          @net-data-change="chartData = $event"
+          @net-bar-click="onNetBarClick"
+        />
+      </template>
+      <template #fallback>
+        <section
+          data-testid="net-overview-skeleton"
+          class="flex flex-col gap-6 p-4 bg-[var(--color-bg-sec)] border border-[var(--divider)] rounded-2xl shadow-sm animate-pulse"
+          aria-busy="true"
+        >
+          <div class="h-3 w-full rounded bg-[var(--color-bg-dark)]"></div>
+          <div class="h-12 w-3/4 rounded bg-[var(--color-bg-dark)]"></div>
+          <div class="grid grid-cols-1 gap-4 md:grid-cols-3 items-stretch">
+            <div class="h-36 rounded-xl bg-[var(--color-bg-dark)]"></div>
+            <div class="h-36 rounded-xl bg-[var(--color-bg-dark)] md:col-span-2"></div>
+          </div>
+          <div class="h-10 rounded-xl bg-[var(--color-bg-dark)]"></div>
+        </section>
+      </template>
+    </Suspense>
 
-    <InsightsRow>
-      <CategoryBreakdownSection
-        :start-date="debouncedRange.start"
-        :end-date="debouncedRange.end"
-        :category-groups="categoryGroups"
-        :selected-category-ids="selectedCategoryIds"
-        :group-others="groupOthers"
-        :breakdown-type="breakdownType"
-        :summary="catSummary"
-        @change-breakdown="setDashboardBreakdownMode"
-        @toggle-group-others="toggleGroupOthers"
-        @update-selection="updateSelection"
-        @categories-change="onCategoriesChange"
-        @summary-change="catSummary = $event"
-        @bar-click="onCategoryBarClick"
-      />
-    </InsightsRow>
+    <Suspense>
+      <template #default>
+        <InsightsRow>
+          <CategoryBreakdownSection
+            :start-date="debouncedRange.start"
+            :end-date="debouncedRange.end"
+            :category-groups="categoryGroups"
+            :selected-category-ids="selectedCategoryIds"
+            :group-others="groupOthers"
+            :breakdown-type="breakdownType"
+            :summary="catSummary"
+            @change-breakdown="setDashboardBreakdownMode"
+            @toggle-group-others="toggleGroupOthers"
+            @update-selection="updateSelection"
+            @categories-change="onCategoriesChange"
+            @summary-change="catSummary = $event"
+            @bar-click="onCategoryBarClick"
+          />
+        </InsightsRow>
+      </template>
+      <template #fallback>
+        <section
+          data-testid="breakdown-skeleton"
+          class="bg-[var(--color-bg-sec)] border border-[var(--divider)] rounded-2xl shadow-sm p-6 space-y-4 animate-pulse"
+          aria-busy="true"
+        >
+          <div class="h-6 w-40 bg-[var(--color-bg-dark)] rounded"></div>
+          <div class="h-6 w-28 bg-[var(--color-bg-dark)] rounded"></div>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div v-for="index in 4" :key="index" class="h-10 bg-[var(--color-bg-dark)] rounded"></div>
+          </div>
+        </section>
+      </template>
+    </Suspense>
 
     <!-- SPENDING ROW: Category Chart & Insights -->
     <div
@@ -169,24 +205,58 @@
         </div>
       </transition>
       <transition name="modal-fade-slide">
-        <AccountsSection v-if="accountsExpanded" @close="collapseTables" />
+        <Suspense>
+          <template #default>
+            <AccountsSection v-if="accountsExpanded" @close="collapseTables" />
+          </template>
+          <template #fallback>
+            <div
+              v-if="accountsExpanded"
+              data-testid="accounts-skeleton"
+              class="absolute inset-0 p-8 flex flex-col gap-4 bg-[var(--color-bg-sec)]"
+              aria-busy="true"
+            >
+              <div class="h-8 w-48 bg-[var(--color-bg-dark)] rounded"></div>
+              <div class="flex-1 grid grid-rows-4 gap-3">
+                <div v-for="row in 4" :key="row" class="w-full rounded-xl bg-[var(--color-bg-dark)]"></div>
+              </div>
+            </div>
+          </template>
+        </Suspense>
       </transition>
       <transition name="modal-fade-slide">
-        <TransactionsSection
-          v-if="transactionsExpanded"
-          :transactions="filteredTransactions"
-          :sort-key="sortKey"
-          :sort-order="sortOrder"
-          :search="searchQuery"
-          @sort="setSort"
-          :current-page="currentPage"
-          :total-pages="totalPages"
-          :page-size="pageSize"
-          :total-count="totalCount"
-          @change-page="changePage"
-          @set-page="setPage"
-          @close="collapseTables"
-        />
+        <Suspense>
+          <template #default>
+            <TransactionsSection
+              v-if="transactionsExpanded"
+              :transactions="filteredTransactions"
+              :sort-key="sortKey"
+              :sort-order="sortOrder"
+              :search="searchQuery"
+              @sort="setSort"
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              :page-size="pageSize"
+              :total-count="totalCount"
+              @change-page="changePage"
+              @set-page="setPage"
+              @close="collapseTables"
+            />
+          </template>
+          <template #fallback>
+            <div
+              v-if="transactionsExpanded"
+              data-testid="transactions-skeleton"
+              class="absolute inset-0 p-8 flex flex-col gap-4 bg-[var(--color-bg-sec)]"
+              aria-busy="true"
+            >
+              <div class="h-8 w-56 bg-[var(--color-bg-dark)] rounded"></div>
+              <div class="flex-1 grid grid-rows-5 gap-3">
+                <div v-for="row in 5" :key="`txn-${row}`" class="w-full rounded-xl bg-[var(--color-bg-dark)]"></div>
+              </div>
+            </div>
+          </template>
+        </Suspense>
       </transition>
     </div>
 
@@ -224,23 +294,39 @@
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
-import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
-import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
-import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
 import api from '@/services/api'
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
-import NetOverviewSection from '@/components/dashboard/NetOverviewSection.vue'
-import CategoryBreakdownSection from '@/components/dashboard/CategoryBreakdownSection.vue'
-import InsightsRow from '@/components/dashboard/InsightsRow.vue'
-import AccountsSection from '@/components/dashboard/AccountsSection.vue'
-import TransactionsSection from '@/components/dashboard/TransactionsSection.vue'
+import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
+import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
+
+function createAsyncSection(loader) {
+  return defineAsyncComponent({
+    loader: async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      return loader()
+    },
+    delay: 0,
+  })
+}
+
+const NetOverviewSection = createAsyncSection(() =>
+  import('@/components/dashboard/NetOverviewSection.vue'),
+)
+const CategoryBreakdownSection = createAsyncSection(() =>
+  import('@/components/dashboard/CategoryBreakdownSection.vue'),
+)
+const InsightsRow = createAsyncSection(() => import('@/components/dashboard/InsightsRow.vue'))
+const AccountsSection = createAsyncSection(() => import('@/components/dashboard/AccountsSection.vue'))
+const TransactionsSection = createAsyncSection(() =>
+  import('@/components/dashboard/TransactionsSection.vue'),
+)
 
 // Transactions and user
 const pageSize = 15

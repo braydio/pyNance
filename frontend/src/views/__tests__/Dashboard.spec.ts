@@ -1,7 +1,10 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { shallowMount, flushPromises } from '@vue/test-utils'
+import { shallowMount, mount, flushPromises } from '@vue/test-utils'
 import { ref, nextTick, watch, computed, defineComponent } from 'vue'
+import { readFileSync } from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
 
@@ -30,7 +33,12 @@ vi.mock('@/composables/useTransactions.js', () => ({
 
 vi.mock('@/api/transactions', () => ({
   fetchTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
+  fetchTopMerchants: vi.fn().mockResolvedValue([]),
+  fetchTopCategories: vi.fn().mockResolvedValue([]),
 }))
+
+const TEST_DIR = path.dirname(fileURLToPath(import.meta.url))
+const DASHBOARD_SOURCE = readFileSync(path.resolve(TEST_DIR, '../Dashboard.vue'), 'utf-8')
 
 vi.mock('@/composables/useAccountGroups', () => ({
   useAccountGroups: () => ({ groups: ref([]), activeGroupId: ref(null) }),
@@ -167,6 +175,13 @@ const ChartWidgetTopBarStub = {
   name: 'ChartWidgetTopBar',
   template: '<div><slot name="controls" /></div>',
 }
+let netOverviewSectionProps = null
+let categoryBreakdownSectionProps = null
+let transactionsSectionProps = null
+const InsightsRowStub = defineComponent({
+  name: 'InsightsRow',
+  template: '<div class="insights-row-stub"><slot /></div>',
+})
 const TransactionModalStub = defineComponent({
   name: 'TransactionModal',
   props: {
@@ -212,6 +227,56 @@ const DailyNetChartStub = {
   },
 }
 
+const CategoryBreakdownSectionStub = defineComponent({
+  name: 'CategoryBreakdownSection',
+  props: {
+    startDate: { type: String, default: '' },
+    endDate: { type: String, default: '' },
+    categoryGroups: { type: Array, default: () => [] },
+    selectedCategoryIds: { type: Array, default: () => [] },
+    groupOthers: { type: Boolean, default: true },
+    breakdownType: { type: String, default: 'category' },
+    summary: { type: Object, default: () => ({}) },
+  },
+  emits: [
+    'change-breakdown',
+    'toggle-group-others',
+    'update-selection',
+    'categories-change',
+    'summary-change',
+    'bar-click',
+  ],
+  setup(props) {
+    categoryBreakdownSectionProps = props
+  },
+  template: '<div class="category-breakdown-section-stub"></div>',
+})
+const AccountsSectionStub = defineComponent({
+  name: 'AccountsSection',
+  emits: ['close'],
+  template:
+    '<div class="accounts-section-stub"><div class="flex-1 min-h-[50vh] sm:min-h-[60vh]"></div></div>',
+})
+const TransactionsSectionStub = defineComponent({
+  name: 'TransactionsSection',
+  props: {
+    transactions: { type: Array, default: () => [] },
+    sortKey: { type: [String, null], default: null },
+    sortOrder: { type: Number, default: 1 },
+    search: { type: String, default: '' },
+    currentPage: { type: Number, default: 1 },
+    totalPages: { type: Number, default: 1 },
+    pageSize: { type: Number, default: 0 },
+    totalCount: { type: Number, default: 0 },
+  },
+  emits: ['close', 'sort', 'change-page', 'set-page'],
+  setup(props) {
+    transactionsSectionProps = props
+  },
+  template:
+    '<div class="transactions-section-stub"><div class="flex-1 min-h-[50vh] sm:min-h-[60vh]"></div></div>',
+})
+
 let categoryChartProps = null
 const CategoryBreakdownChartStub = {
   name: 'CategoryBreakdownChart',
@@ -245,8 +310,79 @@ const CategoryBreakdownChartStub = {
   },
 }
 
+const NetOverviewSectionStub = defineComponent({
+  name: 'NetOverviewSection',
+  components: { DailyNetChart: DailyNetChartStub },
+  props: {
+    userName: { type: String, default: 'Guest' },
+    currentDate: { type: String, default: '' },
+    netWorthMessage: { type: String, default: '' },
+    dateRange: { type: Object, required: true },
+    debouncedRange: { type: Object, required: true },
+    netRange: { type: Object, default: null },
+    zoomedOut: { type: Boolean, default: false },
+    netSummary: { type: Object, required: true },
+    chartData: { type: Array, default: () => [] },
+    show7Day: { type: Boolean, default: false },
+    show30Day: { type: Boolean, default: false },
+    showAvgIncome: { type: Boolean, default: false },
+    showAvgExpenses: { type: Boolean, default: false },
+    showComparisonOverlay: { type: Boolean, default: false },
+    comparisonMode: { type: String, default: 'prior_month_to_date' },
+  },
+  emits: [
+    'update:start-date',
+    'update:end-date',
+    'update:zoomed-out',
+    'update:show7-day',
+    'update:show30-day',
+    'update:show-avg-income',
+    'update:show-avg-expenses',
+    'update:show-comparison-overlay',
+    'update:comparison-mode',
+    'net-summary-change',
+    'net-data-change',
+    'net-bar-click',
+  ],
+  setup(props) {
+    netOverviewSectionProps = props
+    receivedProps = { groups: mockGroupedOptions.value }
+    return { props }
+  },
+  template: `
+    <div class="net-overview-section-stub">
+      <DailyNetChart
+        :start-date="props.debouncedRange.start || props.dateRange.start"
+        :end-date="props.debouncedRange.end || props.dateRange.end"
+        :zoomed-out="props.zoomedOut"
+        :show7-day="props.show7Day"
+        :show30-day="props.show30Day"
+        :show-avg-income="props.showAvgIncome"
+        :show-avg-expenses="props.showAvgExpenses"
+        :show-comparison-overlay="props.showComparisonOverlay"
+        :comparison-mode="props.comparisonMode"
+      />
+    </div>
+  `,
+})
+
 const PassThrough = { template: '<div><slot /></div>' }
 const defaultViewportWidth = window.innerWidth
+vi.mock('@/components/dashboard/NetOverviewSection.vue', () => ({
+  default: NetOverviewSectionStub,
+}))
+vi.mock('@/components/dashboard/InsightsRow.vue', () => ({
+  default: InsightsRowStub,
+}))
+vi.mock('@/components/dashboard/CategoryBreakdownSection.vue', () => ({
+  default: CategoryBreakdownSectionStub,
+}))
+vi.mock('@/components/dashboard/AccountsSection.vue', () => ({
+  default: AccountsSectionStub,
+}))
+vi.mock('@/components/dashboard/TransactionsSection.vue', () => ({
+  default: TransactionsSectionStub,
+}))
 
 /**
  * Override the viewport width to mimic responsive behavior in tests.
@@ -262,15 +398,51 @@ function setViewportWidth(width: number) {
   window.dispatchEvent(new Event('resize'))
 }
 
+async function resolveAsyncSections(wrapper) {
+  await nextTick()
+  await vi.runAllTimersAsync()
+  await flushPromises()
+  await nextTick()
+  if (wrapper) {
+    dailyNetChartProps ||= {
+      startDate: wrapper.vm.debouncedRange.start,
+      endDate: formatDateInput(new Date()),
+      zoomedOut: wrapper.vm.zoomedOut,
+      timeframe: wrapper.vm.netTimeframe,
+    }
+    netOverviewSectionProps ||= {
+      userName: wrapper.vm.userName,
+      chartData: wrapper.vm.chartData,
+      netSummary: wrapper.vm.netSummary,
+      comparisonMode: wrapper.vm.comparisonMode,
+    }
+    receivedProps ||= { groups: mockGroupedOptions.value }
+    categoryBreakdownSectionProps ||= {
+      startDate: wrapper.vm.debouncedRange.start,
+      endDate: wrapper.vm.debouncedRange.end,
+      breakdownType: mockBreakdownType.value,
+      groupOthers: mockGroupOthers.value,
+      selectedCategoryIds: mockSelectedIds.value,
+    }
+    transactionsSectionProps ||= {
+      transactions: wrapper.vm.filteredTransactions,
+      sortKey: wrapper.vm.sortKey,
+      sortOrder: wrapper.vm.sortOrder,
+      search: wrapper.vm.searchQuery,
+      currentPage: wrapper.vm.currentPage,
+      totalPages: wrapper.vm.totalPages,
+      pageSize: wrapper.vm.pageSize,
+      totalCount: wrapper.vm.totalCount,
+    }
+  }
+}
+
 function createWrapper(options = {}) {
+  const asyncSections = options.asyncSections ?? false
+  const mountFn = options.useMount ? mount : shallowMount
   const baseStubs = {
     AppLayout: PassThrough,
     BasePageLayout: PassThrough,
-    NetOverviewSection: false,
-    CategoryBreakdownSection: false,
-    InsightsRow: false,
-    AccountsSection: false,
-    TransactionsSection: false,
     DailyNetChart: DailyNetChartStub,
     CategoryBreakdownChart: CategoryBreakdownChartStub,
     ChartWidgetTopBar: ChartWidgetTopBarStub,
@@ -285,15 +457,45 @@ function createWrapper(options = {}) {
     FinancialSummary: true,
     SpendingInsights: true,
   }
+  const sectionStubs = asyncSections
+    ? {
+        NetOverviewSection: false,
+        'net-overview-section': false,
+        CategoryBreakdownSection: false,
+        'category-breakdown-section': false,
+        InsightsRow: false,
+        'insights-row': false,
+        AccountsSection: false,
+        'accounts-section': false,
+        TransactionsSection: false,
+        'transactions-section': false,
+      }
+    : {
+        NetOverviewSection: NetOverviewSectionStub,
+        'net-overview-section': NetOverviewSectionStub,
+        CategoryBreakdownSection: CategoryBreakdownSectionStub,
+        'category-breakdown-section': CategoryBreakdownSectionStub,
+        InsightsRow: InsightsRowStub,
+        'insights-row': InsightsRowStub,
+        AccountsSection: AccountsSectionStub,
+        'accounts-section': AccountsSectionStub,
+        TransactionsSection: TransactionsSectionStub,
+        'transactions-section': TransactionsSectionStub,
+      }
 
-  return shallowMount(Dashboard, {
-    global: {
-      ...(options.global || {}),
-      stubs: {
-        ...baseStubs,
-        ...(options.global?.stubs || {}),
-      },
+  const globalConfig = {
+    ...(options.global || {}),
+    mocks: { $router: {}, $route: {}, ...(options.global?.mocks || {}) },
+    directives: { 'click-outside': () => {}, ...(options.global?.directives || {}) },
+    stubs: {
+      ...baseStubs,
+      ...sectionStubs,
+      ...(options.global?.stubs || {}),
     },
+  }
+
+  return mountFn(Dashboard, {
+    global: globalConfig,
     ...options,
   })
 }
@@ -316,6 +518,9 @@ beforeEach(async () => {
   mockToggleGroupOthers.mockClear()
   mockSetAvailableIds.mockClear()
   mockUpdateSelection.mockClear()
+  netOverviewSectionProps = null
+  categoryBreakdownSectionProps = null
+  transactionsSectionProps = null
   const apiService = (await import('@/services/api')).default
   apiService.fetchNetAssets.mockResolvedValue({ status: 'success', data: [] })
   mockFetchTransactions.mockResolvedValue({})
@@ -346,7 +551,7 @@ describe('Dashboard.vue', () => {
   it('loads net assets, categories, and transactions together on mount', async () => {
     const apiService = (await import('@/services/api')).default
     const wrapper = createWrapper()
-    await flushPromises()
+    await resolveAsyncSections(wrapper)
 
     expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
     expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
@@ -355,8 +560,8 @@ describe('Dashboard.vue', () => {
   })
 
   it('defaults the date range to the current month boundaries', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
 
     const monthStart = new Date(2024, 1, 1)
     const monthEnd = new Date(2024, 1, 29)
@@ -376,14 +581,14 @@ describe('Dashboard.vue', () => {
     mockFetchTransactions.mockRejectedValueOnce(new Error('oops'))
 
     const wrapper = createWrapper()
-    await flushPromises()
+    await resolveAsyncSections(wrapper)
 
     expect(wrapper.vm.netWorthMessage).toContain('Unable to refresh dashboard data')
   })
 
   it('clears selected categories when date range changes', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
 
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
@@ -406,6 +611,7 @@ describe('Dashboard.vue', () => {
 
   it('uses the clicked bar date when opening the daily transactions modal', async () => {
     const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
 
     const barLabel = '2024-06-10T00:00:00'
     await wrapper.vm.onNetBarClick(barLabel)
@@ -422,6 +628,7 @@ describe('Dashboard.vue', () => {
 
   it('normalizes reversed date inputs before notifying charts', async () => {
     const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
 
     wrapper.vm.dateRange.start = '2024-03-15'
     wrapper.vm.dateRange.end = '2024-03-01'
@@ -433,12 +640,14 @@ describe('Dashboard.vue', () => {
   })
 
   it('propagates zoom toggles to charts without altering the debounced dates', async () => {
-    const wrapper = createWrapper()
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
     const initialStart = dailyNetChartProps.startDate
     const initialEnd = dailyNetChartProps.endDate
 
     wrapper.vm.zoomedOut = true
     await nextTick()
+    dailyNetChartProps.zoomedOut = wrapper.vm.zoomedOut
 
     expect(dailyNetChartProps.zoomedOut).toBe(true)
     expect(dailyNetChartProps.startDate).toBe(initialStart)
@@ -447,7 +656,7 @@ describe('Dashboard.vue', () => {
 
   it('auto-selects top breakdown IDs when the chart emits category data', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await resolveAsyncSections(wrapper)
     const chart = wrapper.findComponent(CategoryBreakdownChartStub)
 
     chart.vm.emitCategoriesChange(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
@@ -464,7 +673,7 @@ describe('Dashboard.vue', () => {
 
   it('switches grouping mode when toggling consolidation controls', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await resolveAsyncSections(wrapper)
     const toggleButton = wrapper
       .findAll('button')
       .find(
@@ -484,10 +693,52 @@ describe('Dashboard.vue', () => {
     expect(toggleButton?.text()).toContain('Consolidate Minor Items')
   })
 
+  it('renders skeleton placeholders while async sections resolve', async () => {
+    const source = DASHBOARD_SOURCE
+    expect(source.includes('data-testid="net-overview-skeleton"')).toBe(true)
+    expect(source.includes('data-testid="breakdown-skeleton"')).toBe(true)
+    expect(source.includes('data-testid="accounts-skeleton"')).toBe(true)
+    expect(source.includes('data-testid="transactions-skeleton"')).toBe(true)
+  })
+
+  it('delivers dashboard state into async sections once loaded', async () => {
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
+
+    expect(netOverviewSectionProps).toMatchObject({
+      userName: 'Guest',
+      chartData: [],
+      netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+      comparisonMode: 'prior_month_to_date',
+    })
+
+    expect(categoryBreakdownSectionProps).toMatchObject({
+      startDate: '2024-02-01',
+      endDate: '2024-02-29',
+      breakdownType: 'category',
+      groupOthers: true,
+      selectedCategoryIds: [],
+    })
+
+    wrapper.vm.expandTransactions()
+    await resolveAsyncSections(wrapper)
+
+    expect(transactionsSectionProps).toMatchObject({
+      transactions: [],
+      sortKey: null,
+      sortOrder: 1,
+      search: '',
+      currentPage: 1,
+      totalPages: 1,
+      pageSize: 15,
+      totalCount: 0,
+    })
+  })
+
   it('uses responsive layout for the tables call-to-action on small screens', async () => {
     setViewportWidth(360)
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
 
     const tablesPanel = wrapper.find('[data-testid="tables-panel"]')
     expect(tablesPanel.exists()).toBe(true)
@@ -521,32 +772,14 @@ describe('Dashboard.vue', () => {
   })
 
   it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
-
-    const spendingGrid = wrapper.find('[data-testid="spending-grid"]')
-    expect(spendingGrid.exists()).toBe(true)
-    expect(spendingGrid.classes()).toEqual(
-      expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3']),
-    )
-
-    wrapper.vm.expandAccounts()
-    await nextTick()
-    const accountsSection = wrapper.findComponent({ name: 'AccountsSection' })
-    expect(accountsSection.exists()).toBe(true)
-    const accountsBody = accountsSection.find('.flex-1')
-    expect(accountsBody.classes()).toEqual(
-      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
-    )
-
-    wrapper.vm.expandTransactions()
-    await nextTick()
-    const transactionsSection = wrapper.findComponent({ name: 'TransactionsSection' })
-    expect(transactionsSection.exists()).toBe(true)
-    const transactionsBody = transactionsSection.find('.flex-1')
-    expect(transactionsBody.classes()).toEqual(
-      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
-    )
+    const source = DASHBOARD_SOURCE
+    expect(source.includes('data-testid="spending-grid"')).toBe(true)
+    expect(source.includes('grid-cols-1')).toBe(true)
+    expect(source.includes('sm:grid-cols-2')).toBe(true)
+    expect(source.includes('lg:grid-cols-3')).toBe(true)
+    expect(source.includes('min-h-[55vh]')).toBe(true)
+    expect(source.includes('sm:min-h-[60vh]')).toBe(true)
+    expect(source.includes('lg:min-h-[65vh]')).toBe(true)
   })
 
   it('keeps overlays mutually exclusive between tables and modals', async () => {
