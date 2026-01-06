@@ -221,7 +221,7 @@ describe('DailyNetChart.vue', () => {
         endDate: '2024-06-30',
         zoomedOut: false,
         showComparisonOverlay: true,
-        comparisonMode: 'prior_month_to_date',
+        timeframe: 'mtd',
       },
     })
 
@@ -249,7 +249,7 @@ describe('DailyNetChart.vue', () => {
         endDate: '2024-06-30',
         zoomedOut: false,
         showComparisonOverlay: true,
-        comparisonMode: 'prior_month_to_date',
+        timeframe: 'mtd',
       },
     })
 

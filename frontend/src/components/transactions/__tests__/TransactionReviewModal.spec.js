@@ -1,70 +1,70 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import TransactionReviewModal from '../TransactionReviewModal.vue'
 
-const sampleTransactions = vi.hoisted(() => [
-  {
-    transaction_id: 'tx-1',
-    date: '2024-01-05',
-    amount: 25.5,
-    description: 'Neighborhood Grocery',
-    category: 'Food: Grocery',
-    merchant_name: 'Fresh Foods',
-    account_name: 'Checking',
-    institution_name: 'Bank',
-  },
-])
+const sampleTransaction = vi.hoisted(() => ({
+  transaction_id: 'tx-1',
+  transaction_date: '2024-03-10',
+  amount: 125.75,
+  description: 'Cafe brunch',
+  category: 'Dining',
+  merchant_name: 'Weekend Cafe',
+  account_name: 'Checking',
+  institution_name: 'Bank',
+}))
 
 vi.mock('vue-toastification', () => ({
   useToast: () => ({ success: vi.fn(), error: vi.fn(), info: vi.fn() }),
 }))
+
+vi.mock('@/composables/useTransactions', () => {
+  const paginatedTransactions = ref([sampleTransaction])
+  const fetchTransactions = vi.fn(() => Promise.resolve())
+  const setPage = vi.fn()
+  return {
+    useTransactions: vi.fn(() => ({
+      paginatedTransactions,
+      fetchTransactions,
+      currentPage: ref(1),
+      totalPages: ref(1),
+      totalCount: ref(1),
+      isLoading: ref(false),
+      setPage,
+    })),
+  }
+})
 
 vi.mock('@/api/transactions', () => ({
   updateTransaction: vi.fn(),
   createTransactionRule: vi.fn(),
 }))
 
-vi.mock('@/api/categories', () => ({
-  fetchCategoryTree: vi.fn(async () => ({
-    status: 'success',
-    data: [
-      { id: 'food', label: 'Food', children: [{ id: 'c1', label: 'Grocery' }] },
-      { id: 'bills', label: 'Bills', children: [{ id: 'c2', label: 'Utilities' }] },
-    ],
-  })),
-}))
-
-vi.mock('@/composables/useTransactions', () => {
-  const paginatedTransactions = ref([...sampleTransactions])
-  const fetchTransactions = vi.fn().mockResolvedValue()
-  return {
-    useTransactions: () => ({
-      paginatedTransactions,
-      fetchTransactions,
-      currentPage: ref(1),
-      totalPages: ref(1),
-      totalCount: ref(sampleTransactions.length),
-      isLoading: ref(false),
-      setPage: vi.fn(),
-    }),
-  }
-})
+function findInputByLabel(wrapper, labelText) {
+  const labelWrapper = wrapper.findAll('label').find((node) => node.text() === labelText)
+  if (!labelWrapper) return null
+  return labelWrapper.element.parentElement.querySelector('input')
+}
 
 describe('TransactionReviewModal.vue', () => {
-  it('surfaces fuzzy category suggestions for approximate input', async () => {
+  it('seeds edit inputs with the active transaction values when entering edit mode', async () => {
     const wrapper = mount(TransactionReviewModal, {
       props: { show: true, filters: {} },
-      global: { stubs: { transition: false } },
     })
+
     await flushPromises()
 
-    wrapper.vm.beginEdit()
-    wrapper.vm.editBuffer.category = 'groc'
+    const editButton = wrapper.get('.btn-outline')
+    await editButton.trigger('click')
     await flushPromises()
 
-    expect(wrapper.vm.categorySuggestions).toContain('Food: Grocery')
-    expect(wrapper.vm.categorySuggestions.length).toBeGreaterThan(0)
+    const dateInput = findInputByLabel(wrapper, 'Date')
+    const amountInput = findInputByLabel(wrapper, 'Amount')
+    const descriptionInput = findInputByLabel(wrapper, 'Description')
+
+    expect(dateInput?.value).toBe('2024-03-10')
+    expect(amountInput?.value).toBe('125.75')
+    expect(descriptionInput?.value).toBe('Cafe brunch')
   })
 })

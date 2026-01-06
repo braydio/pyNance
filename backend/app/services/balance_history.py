@@ -230,6 +230,37 @@ def update_account_balance_history(
         return False
 
 
+def update_all_accounts_balance_history(
+    days: int = 365, force_update: bool = False
+) -> Dict[str, bool]:
+    """Update balance history for every account in the system."""
+
+    results: Dict[str, bool] = {}
+    accounts = Account.query.all()
+
+    for account in accounts:
+        account_id = account.account_id
+        try:
+            results[account_id] = update_account_balance_history(
+                account_id, days=days, force_update=force_update
+            )
+        except Exception as e:
+            logger.error(
+                "Error updating balance history for %s: %s",
+                account_id,
+                e,
+                exc_info=True,
+            )
+            results[account_id] = False
+
+    logger.info(
+        "Balance history update completed: %d/%d accounts updated",
+        sum(1 for success in results.values() if success),
+        len(results),
+    )
+    return results
+
+
 def get_balance_history_from_db(account_id: str, days: int = 30) -> List[Dict]:
     """Retrieve balance history from the database."""
 

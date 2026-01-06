@@ -1,5 +1,7 @@
 # pyNance
 
+[![Frontend CI](https://github.com/braydio/pyNance/actions/workflows/frontend-ci.yml/badge.svg)](https://github.com/braydio/pyNance/actions/workflows/frontend-ci.yml)
+
 pyNance is a full-stack personal finance dashboard that combines a Flask API, a Vue 3 client, and a PostgreSQL database managed through SQLAlchemy and Alembic. It connects to financial institutions through Plaid to aggregate accounts and transactions.
 
 ## Features

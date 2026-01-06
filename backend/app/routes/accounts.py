@@ -1,19 +1,19 @@
 """Account management and refresh routes."""
 
-from datetime import date, datetime, timedelta, timezone
 import time
+from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
+from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
     refresh_is_stale,
     serialized_refresh_status,
     should_throttle_refresh,
 )
 from app.sql.forecast_logic import update_account_history
-from app.services.accounts_service import fetch_accounts
 from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
@@ -251,7 +251,10 @@ def refresh_all_accounts():
                             err_payload = (
                                 err
                                 if isinstance(err, dict)
-                                else {"plaid_error_code": err, "plaid_error_message": str(err)}
+                                else {
+                                    "plaid_error_code": err,
+                                    "plaid_error_message": str(err),
+                                }
                             )
                             key = (
                                 inst,
@@ -271,7 +274,10 @@ def refresh_all_accounts():
                                     ),
                                 }
 
-                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                if (
+                                    err_payload.get("plaid_error_code")
+                                    == "ITEM_LOGIN_REQUIRED"
+                                ):
                                     error_map[key]["requires_reauth"] = True
                                     error_map[key]["update_link_token_endpoint"] = (
                                         "/api/plaid/transactions/generate_update_link_token"
@@ -283,7 +289,10 @@ def refresh_all_accounts():
                                 error_map[key]["account_ids"].append(account.account_id)
                                 error_map[key]["account_names"].append(account.name)
 
-                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                if (
+                                    err_payload.get("plaid_error_code")
+                                    == "ITEM_LOGIN_REQUIRED"
+                                ):
                                     affected_ids = set(
                                         error_map[key].get("affected_account_ids", [])
                                     )
@@ -292,7 +301,10 @@ def refresh_all_accounts():
                                         affected_ids
                                     )
 
-                            if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                            if (
+                                err_payload.get("plaid_error_code")
+                                == "ITEM_LOGIN_REQUIRED"
+                            ):
                                 logger.warning(
                                     "Plaid re-auth required: Institution: %s, Account: %s, Error: %s. "
                                     "User must re-auth via Link update mode. Call POST "
@@ -465,7 +477,8 @@ def refresh_single_account(account_id):
             429,
         )
     accounts_data = [
-        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct) for acct in accounts_data
+        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
+        for acct in accounts_data
     ]
     if should_throttle_refresh(account.plaid_account):
         status = serialized_refresh_status(account.plaid_account)
@@ -492,7 +505,10 @@ def refresh_single_account(account_id):
                 end_date=end_date,
             )
 
-            if isinstance(err, dict) and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+            if (
+                isinstance(err, dict)
+                and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED"
+            ):
                 logger.warning(
                     "Plaid re-auth required for account %s: %s. User must re-auth via Link update mode. "
                     "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",
@@ -524,7 +540,10 @@ def refresh_single_account(account_id):
                 err_payload = (
                     err
                     if isinstance(err, dict)
-                    else {"plaid_error_code": "unknown", "plaid_error_message": str(err)}
+                    else {
+                        "plaid_error_code": "unknown",
+                        "plaid_error_message": str(err),
+                    }
                 )
                 return (
                     jsonify(
@@ -606,7 +625,9 @@ def list_accounts():
         for a in accounts:
             try:
                 last_refreshed = None
-                refresh_status = serialized_refresh_status(getattr(a, "plaid_account", None))
+                refresh_status = serialized_refresh_status(
+                    getattr(a, "plaid_account", None)
+                )
                 cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
@@ -641,7 +662,9 @@ def list_accounts():
                         "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,
                         "refresh_status": refresh_status,
-                        "refresh_stale": refresh_is_stale(getattr(a, "plaid_account", None)),
+                        "refresh_stale": refresh_is_stale(
+                            getattr(a, "plaid_account", None)
+                        ),
                         "refresh_cooldown_until": cooldown_until,
                     }
                 )
@@ -949,6 +972,11 @@ def get_account_history(account_id):
     from datetime import timedelta
 
     from app.services.account_history import compute_balance_history
+    from app.services.enhanced_account_history import (
+        cache_history,
+        get_cached_history,
+        get_or_compute_account_history,
+    )
     from sqlalchemy import func
 
     try:
@@ -997,20 +1025,35 @@ def get_account_history(account_id):
             )
             return jsonify({"error": "Account not found"}), 404
 
-        tx_rows = (
-            db.session.query(func.date(Transaction.date), func.sum(Transaction.amount))
-            .filter(Transaction.account_id == account.account_id)
-            .filter(Transaction.date >= start_date)
-            .filter(Transaction.date <= end_date)
-            .group_by(func.date(Transaction.date))
-            .all()
-        )
+        balances = []
+        if start_date and end_date:
+            cached = get_cached_history(account.account_id, start_date, end_date)
+            if cached:
+                balances = cached
+            else:
+                tx_rows = (
+                    db.session.query(
+                        func.date(Transaction.date), func.sum(Transaction.amount)
+                    )
+                    .filter(Transaction.account_id == account.account_id)
+                    .filter(Transaction.date >= start_date)
+                    .filter(Transaction.date <= end_date)
+                    .group_by(func.date(Transaction.date))
+                    .all()
+                )
 
-        # Keep Decimal amounts for precise currency math in services
-        txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
+                # Keep Decimal amounts for precise currency math in services
+                txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
 
-        # Use Decimal end-to-end for currency-safe math
-        balances = compute_balance_history(account.balance, txs, start_date, end_date)
+                # Use Decimal end-to-end for currency-safe math
+                balances = compute_balance_history(
+                    account.balance, txs, start_date, end_date
+                )
+
+                if balances:
+                    cache_history(account.account_id, account.user_id, balances)
+        else:
+            balances = get_or_compute_account_history(account.account_id, days=days)
 
         response_payload = {
             "accountId": account.account_id,

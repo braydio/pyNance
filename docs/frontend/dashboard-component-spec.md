@@ -17,6 +17,8 @@
   - **Acceptance criteria:** Responsive grid system works on mobile (320px+), tablet (768px+), desktop (1024px+)
 - [ ] **Fix responsive scaling issues** - Some classes (e.g., max-w-5xl) may limit scaling on different screens
   - **Acceptance criteria:** Dashboard adapts fluidly across all viewport sizes, no horizontal scrolling on mobile
+- [x] **Stabilize tables panel at mobile breakpoints** - CTA row stacks vertically on small screens and tables use viewport-relative heights to avoid overflow.
+  - **Acceptance criteria:** `frontend/src/views/Dashboard.vue` stacks the reserve panel buttons on small widths, `frontend/src/components/dashboard/AccountsSection.vue` and `frontend/src/components/dashboard/TransactionsSection.vue` use viewport-based minimum heights, and `frontend/src/components/tables/UpdateTransactionsTable.vue` relies on vh sizing instead of fixed pixel heights.
 
 ### Navigation and Call-to-Actions
 

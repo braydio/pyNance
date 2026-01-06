@@ -127,6 +127,22 @@ export function useTransactions(
     }
   }
 
+  function mergeWithTarget(pageTransactions, targetTx) {
+    if (!targetTx) {
+      highlightedTransaction.value = null
+      return pageTransactions
+    }
+
+    const targetId = String(targetTx.transaction_id || targetTx.id || '')
+    const alreadyIncluded = pageTransactions.some(
+      (tx) => String(tx.transaction_id || tx.id || '') === targetId,
+    )
+
+    highlightedTransaction.value = targetTx
+    if (alreadyIncluded) return pageTransactions
+    return [targetTx, ...pageTransactions]
+  }
+
   /**
    * Rebuild the unpaginated transaction collection from cached pages.
    *

@@ -71,7 +71,10 @@
 
     <!-- Transactions Table -->
     <div class="table-shell overflow-hidden">
-      <div ref="tableScrollRef" class="table-scroll max-h-[640px] min-h-[520px] overflow-auto">
+      <div
+        ref="tableScrollRef"
+        class="table-scroll max-h-[70vh] lg:max-h-[75vh] min-h-[50vh] sm:min-h-[55vh] overflow-auto"
+      >
         <table class="transactions-grid min-w-full border-separate border-spacing-0 mt-2">
           <thead class="table-head sticky top-0 z-10">
             <tr>
@@ -523,9 +526,35 @@ function removeFilterTag(key) {
   }
 }
 
+/**
+ * Build an edit buffer seeded with the transaction's current editable fields.
+ *
+ * @param {Object} tx - Transaction being edited.
+ * @returns {Object} Prefilled edit buffer values.
+ */
+function buildEditBuffer(tx) {
+  if (!tx) {
+    return {
+      date: '',
+      amount: null,
+      description: '',
+      category: '',
+      merchant_name: '',
+    }
+  }
+
+  return {
+    date: resolveTransactionDate(tx),
+    amount: tx.amount ?? null,
+    description: tx.description || '',
+    category: tx.category || '',
+    merchant_name: tx.merchant_name || '',
+  }
+}
+
 function startEdit(index, tx) {
+  editBuffer.value = buildEditBuffer(tx)
   editingIndex.value = index
-  editBuffer.value = { ...tx, date: resolveTransactionDate(tx) }
 }
 
 function cancelEdit() {

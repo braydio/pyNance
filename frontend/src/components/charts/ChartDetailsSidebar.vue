@@ -71,27 +71,14 @@
           />
           Avg Expenses
         </label>
-        <div class="chart-details-sidebar__comparison">
-          <label class="chart-details-sidebar__comparison-toggle">
-            <input
-              type="checkbox"
-              :checked="showComparisonOverlay"
-              @change="onOptionChange('update:showComparisonOverlay', $event.target.checked)"
-            />
-            Comparison Overlay
-          </label>
-          <label class="chart-details-sidebar__comparison-select">
-            <span class="sr-only">Comparison mode</span>
-            <select
-              :value="comparisonMode"
-              :disabled="!showComparisonOverlay"
-              @change="onOptionChange('update:comparisonMode', $event.target.value)"
-            >
-              <option value="prior_month_to_date">Prior month to-date</option>
-              <option value="last_30_vs_previous_30">Last 30 days vs previous 30</option>
-            </select>
-          </label>
-        </div>
+        <label class="chart-details-sidebar__comparison-toggle">
+          <input
+            type="checkbox"
+            :checked="showComparisonOverlay"
+            @change="onOptionChange('update:showComparisonOverlay', $event.target.checked)"
+          />
+          Comparison Overlay
+        </label>
       </fieldset>
     </div>
   </aside>
@@ -112,7 +99,6 @@ const props = defineProps({
   showAvgIncome: { type: Boolean, default: false },
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
-  comparisonMode: { type: String, default: 'prior_month_to_date' },
 })
 
 const emit = defineEmits([
@@ -121,17 +107,9 @@ const emit = defineEmits([
   'update:showAvgIncome',
   'update:showAvgExpenses',
   'update:showComparisonOverlay',
-  'update:comparisonMode',
 ])
 
-const {
-  show7Day,
-  show30Day,
-  showAvgIncome,
-  showAvgExpenses,
-  showComparisonOverlay,
-  comparisonMode,
-} = toRefs(props)
+const { show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay } = toRefs(props)
 
 const isOpen = ref(false)
 const sidebarRef = ref(null)
@@ -276,30 +254,9 @@ onBeforeUnmount(() => {
   accent-color: var(--color-accent-cyan);
 }
 
-.chart-details-sidebar__comparison {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.35rem;
-}
-
 .chart-details-sidebar__comparison-toggle {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-}
-
-.chart-details-sidebar__comparison-select select {
-  width: 100%;
-  border-radius: 0.4rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 40%, transparent);
-  background: color-mix(in srgb, var(--color-bg) 90%, var(--color-accent-cyan) 10%);
-  padding: 0.3rem 0.4rem;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-}
-
-.chart-details-sidebar__comparison-select select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 </style>

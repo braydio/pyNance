@@ -3,4 +3,5 @@
 /* Entry point for theme variables. Nightfox dark palette is the default. */
 :root {
   --font-sans: 'Source Code Pro', ui-sans-serif, system-ui, sans-serif;
+  --font-chart: 'Outfit', ui-sans-serif, system-ui, sans-serif;
 }
