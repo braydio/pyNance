@@ -242,6 +242,21 @@ const CategoryBreakdownChartStub = {
 }
 
 const PassThrough = { template: '<div><slot /></div>' }
+const defaultViewportWidth = window.innerWidth
+
+/**
+ * Override the viewport width to mimic responsive behavior in tests.
+ *
+ * @param {number} width - Pixel width to apply to the simulated viewport.
+ */
+function setViewportWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', {
+    configurable: true,
+    writable: true,
+    value: width,
+  })
+  window.dispatchEvent(new Event('resize'))
+}
 
 function createWrapper(options = {}) {
   const baseStubs = {
@@ -300,6 +315,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  setViewportWidth(defaultViewportWidth)
   vi.useRealTimers()
 })
 
@@ -436,6 +452,71 @@ describe('Dashboard.vue', () => {
     expect(mockGroupOthers.value).toBe(false)
     expect(categoryChartProps.groupOthers).toBe(false)
     expect(toggleButton?.text()).toContain('Consolidate Minor Items')
+  })
+
+  it('uses responsive layout for the tables call-to-action on small screens', async () => {
+    setViewportWidth(360)
+    const wrapper = createWrapper()
+    await nextTick()
+
+    const tablesPanel = wrapper.find('[data-testid="tables-panel"]')
+    expect(tablesPanel.exists()).toBe(true)
+    expect(tablesPanel.classes()).toEqual(
+      expect.arrayContaining(['min-h-[55vh]', 'sm:min-h-[60vh]']),
+    )
+
+    const ctaRow = wrapper.find('[data-testid="tables-panel-cta"]')
+    expect(ctaRow.exists()).toBe(true)
+    expect(ctaRow.classes()).toEqual(
+      expect.arrayContaining(['flex-col', 'sm:flex-row', 'p-6', 'lg:p-12']),
+    )
+
+    ctaRow.element.style.width = '320px'
+    Object.defineProperty(ctaRow.element, 'clientWidth', {
+      configurable: true,
+      value: 320,
+    })
+    Object.defineProperty(ctaRow.element, 'scrollWidth', {
+      configurable: true,
+      value: 320,
+    })
+    expect(ctaRow.element.scrollWidth).toBeLessThanOrEqual(ctaRow.element.clientWidth)
+
+    const buttons = ctaRow.findAll('button')
+    expect(buttons).toHaveLength(2)
+    buttons.forEach((btn) => {
+      expect(btn.classes()).toEqual(expect.arrayContaining(['flex-1']))
+      expect(btn.classes().some((cls) => cls === 'w-full' || cls.startsWith('sm:w-'))).toBe(true)
+    })
+  })
+
+  it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    const spendingGrid = wrapper.find('[data-testid="spending-grid"]')
+    expect(spendingGrid.exists()).toBe(true)
+    expect(spendingGrid.classes()).toEqual(
+      expect.arrayContaining(['grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3']),
+    )
+
+    wrapper.vm.expandAccounts()
+    await nextTick()
+    const accountsSection = wrapper.findComponent({ name: 'AccountsSection' })
+    expect(accountsSection.exists()).toBe(true)
+    const accountsBody = accountsSection.find('.flex-1')
+    expect(accountsBody.classes()).toEqual(
+      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
+    )
+
+    wrapper.vm.expandTransactions()
+    await nextTick()
+    const transactionsSection = wrapper.findComponent({ name: 'TransactionsSection' })
+    expect(transactionsSection.exists()).toBe(true)
+    const transactionsBody = transactionsSection.find('.flex-1')
+    expect(transactionsBody.classes()).toEqual(
+      expect.arrayContaining(['min-h-[50vh]', 'sm:min-h-[60vh]']),
+    )
   })
 
   it('keeps overlays mutually exclusive between tables and modals', async () => {

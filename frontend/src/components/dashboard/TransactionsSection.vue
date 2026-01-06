@@ -13,7 +13,7 @@
         Close
       </button>
     </div>
-    <div class="flex-1 min-h-[300px]">
+    <div class="flex-1 min-h-[50vh] sm:min-h-[60vh]">
       <TransactionsTable
         :transactions="transactions"
         :sort-key="sortKey"
