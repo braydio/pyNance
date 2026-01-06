@@ -1,4 +1,3 @@
-
 // Composable utility to generate consistent date ranges and boundaries.
 import { ref, watch } from 'vue'
 import { debounce } from 'lodash-es'
