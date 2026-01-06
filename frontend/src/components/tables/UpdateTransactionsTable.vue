@@ -318,6 +318,7 @@ const MIN_ROW_COUNT = 12
 const VIRTUALIZATION_ROW_THRESHOLD = 80
 const VIRTUAL_ROW_HEIGHT_PX = 56
 const VIRTUAL_OVERSCAN = 8
+const CATEGORY_SUGGESTION_LIMIT = 12
 
 // Fields that may be edited by the user. All other transaction properties are locked.
 const EDITABLE_FIELDS = ['date', 'amount', 'description', 'category', 'merchant_name']
@@ -340,6 +341,7 @@ const selectedCounterpart = ref([])
 const activeInternalTx = ref(null)
 
 const categoryTree = ref([])
+const categoryOptions = ref([])
 const merchantSuggestions = ref([])
 const sortKey = ref('date')
 const sortOrder = ref('desc')
@@ -359,22 +361,37 @@ const activeFieldFilters = ref([])
 const filterInputRef = ref(null)
 const tableScrollRef = ref(null)
 
+const categoryFuse = computed(
+  () =>
+    new Fuse(
+      categoryOptions.value.map((value) => ({ value })),
+      {
+        keys: ['value'],
+        threshold: 0.3,
+        ignoreLocation: true,
+      },
+    ),
+)
+
 const categorySuggestions = computed(() => {
+  if (!categoryOptions.value.length) return []
+  const query = (editBuffer.value.category || '').trim()
+  if (!query) {
+    return categoryOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
   const seen = new Set()
+  const matches = categoryFuse.value.search(query)
   const suggestions = []
-  categoryTree.value.forEach((group) => {
-    if (group.name && !seen.has(group.name)) {
-      suggestions.push(group.name)
-      seen.add(group.name)
+  matches.forEach((match) => {
+    if (!seen.has(match.item.value)) {
+      suggestions.push(match.item.value)
+      seen.add(match.item.value)
     }
-    group.children.forEach((child) => {
-      if (child.name && !seen.has(child.name)) {
-        suggestions.push(child.name)
-        seen.add(child.name)
-      }
-    })
   })
-  return suggestions.sort((a, b) => a.localeCompare(b))
+  if (!suggestions.length) {
+    return categoryOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
+  return suggestions.slice(0, CATEGORY_SUGGESTION_LIMIT)
 })
 
 const subcategoryOptions = computed(() => {
@@ -812,30 +829,64 @@ watch(selectedPrimaryCategory, () => {
 
 onMounted(async () => {
   try {
-    const res = await fetchCategoryTree()
-    if (res?.status === 'success') {
-      const tree = (res.data || []).map((group) => {
-        const children = (group.children || [])
-          .map((child) => ({
-            id: child.id,
-            name: child.label,
-            plaid_id: child.plaid_id || null,
-          }))
-          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-        return {
-          id: group.id,
-          name: group.label,
-          children,
-        }
-      })
-      categoryTree.value = tree.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    }
+    await loadCategoryData()
     // Fetch merchant suggestions for autocomplete
     merchantSuggestions.value = await fetchMerchantSuggestions('')
   } catch (e) {
     console.error('Failed to load category tree:', e)
   }
 })
+
+/**
+ * Flatten the category tree into unique suggestion labels.
+ *
+ * @param {Array<Object>} groups - Category groups with children.
+ * @returns {string[]} Sorted list of suggestion labels.
+ */
+function buildCategoryOptions(groups = []) {
+  const suggestions = []
+  groups.forEach((group) => {
+    if (group.name) {
+      suggestions.push(group.name)
+    }
+    group.children.forEach((child) => {
+      if (!child.name) return
+      suggestions.push(child.name)
+      suggestions.push(`${group.name}: ${child.name}`)
+    })
+  })
+  const unique = Array.from(new Set(suggestions.filter(Boolean)))
+  return unique.sort((a, b) => a.localeCompare(b))
+}
+
+/**
+ * Fetch and normalize category data for filtering and autocomplete.
+ */
+async function loadCategoryData() {
+  const res = await fetchCategoryTree()
+  if (res?.status === 'success') {
+    const tree = (res.data || []).map((group) => {
+      const groupName = group.label || group.name
+      const children = (group.children || [])
+        .map((child) => ({
+          id: child.id,
+          name: child.label || child.name,
+          plaid_id: child.plaid_id || null,
+        }))
+        .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      return {
+        id: group.id,
+        name: groupName,
+        children,
+      }
+    })
+    categoryTree.value = tree.sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    categoryOptions.value = buildCategoryOptions(categoryTree.value)
+    return
+  }
+  categoryTree.value = []
+  categoryOptions.value = []
+}
 </script>
 
 <style scoped>
