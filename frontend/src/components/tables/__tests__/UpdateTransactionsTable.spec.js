@@ -2,7 +2,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import UpdateTransactionsTable from '../UpdateTransactionsTable.vue'
-import { updateTransaction } from '@/api/transactions'
+import { updateTransaction, createTransactionRule } from '@/api/transactions'
 
 // Mock API dependencies
 vi.mock('axios', () => {
@@ -24,6 +24,7 @@ vi.mock('vue-toastification', () => ({
 
 vi.mock('@/api/transactions', () => ({
   updateTransaction: vi.fn(),
+  createTransactionRule: vi.fn(),
   fetchCategoryTree: vi.fn(async () => ({
     status: 'success',
     data: [
@@ -33,7 +34,6 @@ vi.mock('@/api/transactions', () => ({
   })),
   fetchMerchantSuggestions: vi.fn(async () => []),
 }))
-import { updateTransaction } from '@/api/transactions'
 
 describe('UpdateTransactionsTable.vue', () => {
   it('filters transactions by primary category', async () => {
@@ -339,5 +339,61 @@ describe('UpdateTransactionsTable.vue', () => {
     })
     expect(transactions[0].is_internal).toBe(true)
     expect(transactions[1].is_internal).toBe(true)
+  })
+
+  it('builds rule prompts from the edited transaction when rows shift', async () => {
+    updateTransaction.mockResolvedValue({})
+    createTransactionRule.mockResolvedValue({})
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    const transactions = [
+      {
+        transaction_id: 'alpha',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Coffee Shop',
+        category: 'Food: Coffee',
+        merchant_name: 'Cafe',
+        account_name: 'Everyday Checking',
+        institution_name: 'Bank A',
+        account_id: 'acct-1',
+      },
+      {
+        transaction_id: 'beta',
+        date: '2024-01-02',
+        amount: 25,
+        description: 'Electric Utility',
+        category: 'Bills: Utilities',
+        merchant_name: 'PowerGrid',
+        account_name: 'Bills Checking',
+        institution_name: 'Bank B',
+        account_id: 'acct-2',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+    await flushPromises()
+
+    wrapper.vm.startEdit(1, transactions[1])
+    wrapper.vm.editBuffer.category = 'Household'
+
+    // Simulate the virtualized row changing beneath the edit state.
+    await wrapper.vm.saveEdit(transactions[0])
+    await flushPromises()
+
+    expect(confirmSpy).toHaveBeenCalled()
+    const promptText = confirmSpy.mock.calls[0][0]
+    expect(promptText).toContain('Electric Utility')
+    expect(createTransactionRule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: 'Electric Utility',
+        account_id: 'acct-2',
+      }),
+    )
+
+    confirmSpy.mockRestore()
   })
 })
