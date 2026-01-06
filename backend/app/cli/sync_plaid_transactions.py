@@ -26,7 +26,8 @@ def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
     if accounts_data is None:
         return False, "PLAID_RATE_LIMIT"
     accounts_data = [
-        item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
+        item.to_dict() if hasattr(item, "to_dict") else dict(item)
+        for item in accounts_data
     ]
 
     result = account_logic.refresh_data_for_plaid_account(

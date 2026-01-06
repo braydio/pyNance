@@ -48,4 +48,3 @@ def dialect_insert(table):
     # Fallback to the generic insert which at least allows basic inserts even
     # if dialect-specific conflict resolution is unavailable.
     return generic_insert(table)
-

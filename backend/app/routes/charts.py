@@ -461,7 +461,9 @@ def accounts_snapshot():
             "name": acc.name,
             "institution_name": acc.institution_name,
             "balance": float(
-                normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)
+                normalize_account_balance(
+                    acc.balance, acc.type, account_id=acc.account_id
+                )
             ),
             "type": acc.type,
             "subtype": acc.subtype,

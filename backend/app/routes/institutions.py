@@ -77,7 +77,8 @@ def refresh_institution(institution_id: int):
                 accounts_data = get_accounts(token, account.user_id)
                 if accounts_data is None:
                     logger.warning(
-                        "Plaid rate limit hit; skipping institution account %s", account.account_id
+                        "Plaid rate limit hit; skipping institution account %s",
+                        account.account_id,
                     )
                     continue
                 accounts_data = [

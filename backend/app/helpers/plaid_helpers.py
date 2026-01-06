@@ -50,7 +50,9 @@ def _warn_if_dashboard_request():
     if not has_request_context():
         return
     try:
-        if request.method == "GET" and str(request.path).startswith(("/api/charts", "/api/dashboard")):
+        if request.method == "GET" and str(request.path).startswith(
+            ("/api/charts", "/api/dashboard")
+        ):
             logger.warning(
                 "Plaid helper invoked during dashboard request: %s %s",
                 request.method,
