@@ -1,6 +1,8 @@
-// Composable utility to generate consistent date ranges and boundaries.
-import { ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
+/**
+ * Composable utilities for generating consistent date ranges and boundaries.
+ */
+import { ref } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 
 export function formatDateInput(date) {
   const year = date.getFullYear()
@@ -15,6 +17,12 @@ export function getMonthBounds(referenceDate) {
   return { start, end }
 }
 
+/**
+ * Ensure start and end dates are valid and in chronological order.
+ *
+ * @param {{ start: string; end: string }} range - Raw date range boundaries.
+ * @returns {{ start: string; end: string }} Normalized start/end pair.
+ */
 function normalizeRange(range) {
   const startDate = new Date(range.start)
   const endDate = new Date(range.end)
@@ -36,6 +44,21 @@ function normalizeRange(range) {
   }
 }
 
+/**
+ * Provide normalized date range state with debounced change notifications.
+ *
+ * @param {Object} options - Optional configuration for the range.
+ * @param {Date} [options.initialDate] - Starting reference date.
+ * @param {number} [options.debounceMs=200] - Debounce window in milliseconds.
+ * @param {(range: { start: string; end: string }) => void} [options.onDebouncedChange] -
+ *   Callback invoked after the debounced range updates.
+ * @returns {{
+ *   dateRange: import('vue').Ref<{ start: string; end: string }>;
+ *   debouncedRange: import('vue').Ref<{ start: string; end: string }>;
+ *   formatDateInput: typeof formatDateInput;
+ *   getMonthBounds: typeof getMonthBounds;
+ * }}
+ */
 export function useDateRange(options = {}) {
   const baseDate = options.initialDate ?? new Date()
   const { start, end } = getMonthBounds(baseDate)
@@ -48,13 +71,15 @@ export function useDateRange(options = {}) {
   const notifyChange = options.onDebouncedChange ?? (() => {})
   const debounceMs = options.debounceMs ?? 200
 
-  const applyRangeUpdate = debounce(() => {
-    const normalized = normalizeRange(dateRange.value)
-    debouncedRange.value = normalized
-    notifyChange(normalized)
-  }, debounceMs)
-
-  watch(dateRange, applyRangeUpdate, { deep: true })
+  watchDebounced(
+    dateRange,
+    () => {
+      const normalized = normalizeRange(dateRange.value)
+      debouncedRange.value = normalized
+      notifyChange(normalized)
+    },
+    { deep: true, debounce: debounceMs, maxWait: debounceMs * 3 },
+  )
 
   return {
     dateRange,

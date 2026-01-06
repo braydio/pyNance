@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { shallowMount } from '@vue/test-utils'
+import { shallowMount, flushPromises } from '@vue/test-utils'
 import { ref, nextTick, watch, computed, defineComponent } from 'vue'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
@@ -9,6 +9,8 @@ import { fetchTransactions } from '@/api/transactions'
 vi.mock('@/services/api', () => ({
   default: { fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }) },
 }))
+
+const mockFetchTransactions = vi.fn().mockResolvedValue({})
 
 vi.mock('@/composables/useTransactions.js', () => ({
   useTransactions: () => ({
@@ -22,6 +24,7 @@ vi.mock('@/composables/useTransactions.js', () => ({
     setSort: vi.fn(),
     setPage: vi.fn(),
     changePage: vi.fn(),
+    fetchTransactions: mockFetchTransactions,
   }),
 }))
 
@@ -73,7 +76,7 @@ vi.mock('@/composables/useDateRange', () => {
           debouncedRange.value = normalized
           onChange(normalized)
         },
-        { deep: true, immediate: true },
+        { deep: true, immediate: false },
       )
 
       return {
@@ -86,6 +89,7 @@ vi.mock('@/composables/useDateRange', () => {
         }),
       }
     },
+    formatDateInput,
   }
 })
 
@@ -294,7 +298,7 @@ function createWrapper(options = {}) {
   })
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2024-02-15T00:00:00Z'))
   fetchTransactions.mockClear()
@@ -312,6 +316,10 @@ beforeEach(() => {
   mockToggleGroupOthers.mockClear()
   mockSetAvailableIds.mockClear()
   mockUpdateSelection.mockClear()
+  const apiService = (await import('@/services/api')).default
+  apiService.fetchNetAssets.mockResolvedValue({ status: 'success', data: [] })
+  mockFetchTransactions.mockResolvedValue({})
+  mockFetchTransactions.mockClear()
 })
 
 afterEach(() => {
@@ -335,6 +343,17 @@ function formatDateInput(date: Date): string {
 }
 
 describe('Dashboard.vue', () => {
+  it('loads net assets, categories, and transactions together on mount', async () => {
+    const apiService = (await import('@/services/api')).default
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
+    expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
+    expect(mockFetchTransactions).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
   it('defaults the date range to the current month boundaries', async () => {
     const wrapper = createWrapper()
     await nextTick()
@@ -349,6 +368,17 @@ describe('Dashboard.vue', () => {
     expect(dailyNetChartProps.startDate).toBe('2024-02-01')
     expect(dailyNetChartProps.endDate).toBe('2024-02-15')
     expect(dailyNetChartProps.timeframe).toBe('mtd')
+  })
+
+  it('surfaces a unified fallback message when initial loading fails', async () => {
+    const apiService = (await import('@/services/api')).default
+    apiService.fetchNetAssets.mockRejectedValueOnce(new Error('boom'))
+    mockFetchTransactions.mockRejectedValueOnce(new Error('oops'))
+
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    expect(wrapper.vm.netWorthMessage).toContain('Unable to refresh dashboard data')
   })
 
   it('clears selected categories when date range changes', async () => {

@@ -10,6 +10,7 @@
       :net-worth-message="netWorthMessage"
       :date-range="dateRange"
       :debounced-range="debouncedRange"
+      :net-range="netRange"
       :zoomed-out="zoomedOut"
       :net-summary="netSummary"
       :chart-data="chartData"
@@ -232,7 +233,7 @@ import api from '@/services/api'
 import { ref, computed, onMounted } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
-import { fetchTransactions } from '@/api/transactions'
+import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
 import NetOverviewSection from '@/components/dashboard/NetOverviewSection.vue'
@@ -254,6 +255,7 @@ const {
   setSort,
   setPage,
   changePage,
+  fetchTransactions: loadTransactions,
 } = useTransactions(pageSize)
 // Modal manager
 const { openModal, closeModal, isVisible } = useDashboardModals()
@@ -273,7 +275,11 @@ const currentDate = new Date().toLocaleDateString(undefined, {
   year: 'numeric',
 })
 const netWorth = ref(0)
+const loadErrorMessage = ref('')
 const netWorthMessage = computed(() => {
+  if (loadErrorMessage.value) {
+    return loadErrorMessage.value
+  }
   if (netWorth.value < 0) return '... and things are looking quite bleak.'
   if (netWorth.value > 1000) return 'Ahh... well in the black.'
   return 'Uhh... keep up the... whatever this is.'
@@ -292,6 +298,7 @@ const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
+const comparisonMode = ref('prior_month_to_date')
 const netTimeframe = ref('mtd')
 
 const netRange = computed(() => {
@@ -354,6 +361,40 @@ const reviewFilters = computed(() => ({
   end_date: debouncedRange.value.end,
 }))
 
+/**
+ * Perform the dashboard's initial data load in parallel so hero, breakdown,
+ * and transaction widgets all start with fresh data. Applies a shared fallback
+ * message when any fetch fails so the UI surfaces a consistent error tone.
+ *
+ * @returns {Promise<void>} Resolves when the dashboard data requests settle.
+ */
+async function loadDashboardData() {
+  const params = {
+    start_date: debouncedRange.value.start,
+    end_date: debouncedRange.value.end,
+  }
+  const fallback = 'Unable to refresh dashboard data. Showing the latest available info.'
+  loadErrorMessage.value = ''
+
+  try {
+    const [netAssetsResult] = await Promise.all([
+      api.fetchNetAssets(),
+      refreshOptions(params),
+      loadTransactions(1, { force: true }),
+    ])
+
+    if (netAssetsResult?.status === 'success' && Array.isArray(netAssetsResult.data)) {
+      const lastPoint = netAssetsResult.data[netAssetsResult.data.length - 1]
+      netWorth.value = lastPoint?.net_assets ?? 0
+    } else {
+      loadErrorMessage.value = fallback
+    }
+  } catch (error) {
+    console.error('Failed to load dashboard data:', error)
+    loadErrorMessage.value = fallback
+  }
+}
+
 const accountsExpanded = isVisible('accounts')
 const transactionsExpanded = isVisible('transactions')
 function expandAccounts() {
@@ -413,7 +454,7 @@ async function onNetBarClick(label) {
   const isoDate = normalizeDateLabel(label)
 
   try {
-    const result = await fetchTransactions({
+    const result = await fetchTransactionsApi({
       start_date: isoDate,
       end_date: isoDate,
       page: 1,
@@ -452,7 +493,7 @@ async function onCategoryBarClick(payload) {
   const start = catSummary.value.startDate || debouncedRange.value.start
   const end = catSummary.value.endDate || debouncedRange.value.end
 
-  const result = await fetchTransactions({
+  const result = await fetchTransactionsApi({
     category_ids: ids,
     start_date: start,
     end_date: end,
@@ -486,20 +527,7 @@ async function setDashboardBreakdownMode(mode) {
   }
 }
 
-onMounted(async () => {
-  try {
-    const res = await api.fetchNetAssets()
-    if (res.status === 'success' && Array.isArray(res.data) && res.data.length) {
-      netWorth.value = res.data[res.data.length - 1].net_assets
-    }
-    await refreshOptions({
-      start_date: debouncedRange.value.start,
-      end_date: debouncedRange.value.end,
-    })
-  } catch (e) {
-    console.error('Failed to fetch net assets:', e)
-  }
-})
+onMounted(loadDashboardData)
 
 /**
  * The modal manager in `useDashboardModals` keeps overlays mutually exclusive so
