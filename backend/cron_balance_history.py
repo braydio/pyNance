@@ -14,7 +14,9 @@ def main():
             update_all_accounts_balance_history(days=365, force_update=False)
             logger.info("[CRON] ✅ Balance history update completed successfully.")
         except Exception as e:  # pylint: disable=broad-exception-caught
-            logger.error("[CRON] ❌ Balance history update failed: %s", e, exc_info=True)
+            logger.error(
+                "[CRON] ❌ Balance history update failed: %s", e, exc_info=True
+            )
 
 
 if __name__ == "__main__":

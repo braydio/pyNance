@@ -109,13 +109,7 @@ const emit = defineEmits([
   'update:showComparisonOverlay',
 ])
 
-const {
-  show7Day,
-  show30Day,
-  showAvgIncome,
-  showAvgExpenses,
-  showComparisonOverlay,
-} = toRefs(props)
+const { show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay } = toRefs(props)
 
 const isOpen = ref(false)
 const sidebarRef = ref(null)

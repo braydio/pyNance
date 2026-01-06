@@ -28,14 +28,8 @@ const props = defineProps({
   },
 })
 
-const {
-  show7Day,
-  show30Day,
-  showAvgIncome,
-  showAvgExpenses,
-  showComparisonOverlay,
-  timeframe,
-} = toRefs(props)
+const { show7Day, show30Day, showAvgIncome, showAvgExpenses, showComparisonOverlay, timeframe } =
+  toRefs(props)
 
 const emit = defineEmits(['bar-click', 'summary-change', 'data-change'])
 
@@ -72,9 +66,7 @@ const formatTooltipTitle = (label) => {
 
 function formatAxisLabel(label) {
   const parsed = parseDateKey(label)
-  return parsed
-    ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    : label
+  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : label
 }
 
 function buildDateRangeLabels(startDate, endDate) {
@@ -273,7 +265,7 @@ async function renderChart() {
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
-  const fontFamily = getStyle('--font-chart') || "ui-sans-serif, system-ui, sans-serif"
+  const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
 
   const fullLabels = buildDateRangeLabels(
     requestRange.value.startDate || labels[0],
@@ -358,11 +350,7 @@ async function renderChart() {
           const day = parsed.getDate()
           const prior = dayMap.get(day)
           if (!prior) return
-          const priorDate = new Date(
-            ctx.priorStart.getFullYear(),
-            ctx.priorStart.getMonth(),
-            day,
-          )
+          const priorDate = new Date(ctx.priorStart.getFullYear(), ctx.priorStart.getMonth(), day)
           priorLookup.set(label, prior)
           priorDateByLabel.set(label, priorDate)
         })
@@ -503,7 +491,10 @@ async function fetchComparisonData() {
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
-watch(() => [timeframe.value, showComparisonOverlay.value, props.startDate, props.endDate], fetchComparisonData)
+watch(
+  () => [timeframe.value, showComparisonOverlay.value, props.startDate, props.endDate],
+  fetchComparisonData,
+)
 
 onMounted(() => {
   fetchData()
