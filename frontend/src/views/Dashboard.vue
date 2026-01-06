@@ -350,21 +350,21 @@ import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 
-const NetOverviewSection = defineAsyncComponent(() =>
-  import('@/components/dashboard/NetOverviewSection.vue'),
+const NetOverviewSection = defineAsyncComponent(
+  () => import('@/components/dashboard/NetOverviewSection.vue'),
 )
-const CategoryBreakdownSection = defineAsyncComponent(() =>
-  import('@/components/dashboard/CategoryBreakdownSection.vue'),
+const CategoryBreakdownSection = defineAsyncComponent(
+  () => import('@/components/dashboard/CategoryBreakdownSection.vue'),
 )
-const CategoryBreakdownChart = defineAsyncComponent(() =>
-  import('@/components/charts/CategoryBreakdownChart.vue'),
+const CategoryBreakdownChart = defineAsyncComponent(
+  () => import('@/components/charts/CategoryBreakdownChart.vue'),
 )
 const InsightsRow = defineAsyncComponent(() => import('@/components/dashboard/InsightsRow.vue'))
-const AccountsSection = defineAsyncComponent(() =>
-  import('@/components/dashboard/AccountsSection.vue'),
+const AccountsSection = defineAsyncComponent(
+  () => import('@/components/dashboard/AccountsSection.vue'),
 )
-const TransactionsSection = defineAsyncComponent(() =>
-  import('@/components/dashboard/TransactionsSection.vue'),
+const TransactionsSection = defineAsyncComponent(
+  () => import('@/components/dashboard/TransactionsSection.vue'),
 )
 
 // Transactions and user
