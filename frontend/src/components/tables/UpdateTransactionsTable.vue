@@ -600,7 +600,9 @@ function resolveTransactionDate(tx) {
  */
 function findTransactionById(transactionId) {
   if (!transactionId) return null
-  return props.transactions.find((transaction) => transaction.transaction_id === transactionId) || null
+  return (
+    props.transactions.find((transaction) => transaction.transaction_id === transactionId) || null
+  )
 }
 
 /**
