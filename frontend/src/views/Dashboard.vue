@@ -242,9 +242,6 @@ const TransactionsSection = defineAsyncComponent(() =>
   import('@/components/dashboard/TransactionsSection.vue'),
 )
 
-  () => import('@/components/dashboard/TransactionsSection.vue'),
-)
-
 // Transactions and user
 const pageSize = 15
 const {
