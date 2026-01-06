@@ -1,6 +1,6 @@
 <template>
   <div
-    class="overflow-x-auto rounded-xl shadow bg-[var(--color-bg-secondary)] text-[var(--color-text-light)] px-4 py-4 border border-[var(--color-accent-cyan)]/30"
+    class="overflow-x-auto rounded-xl shadow bg-[var(--table-surface)] text-[var(--color-text-light)] px-4 py-4 border border-[var(--table-border)]"
   >
     <!-- Title Date Above Table -->
     <div v-if="titleDate" class="mb-2 ml-2 text-base font-medium">
@@ -19,10 +19,14 @@
       </thead>
       <tbody>
         <tr
-          v-for="tx in transactions"
+          v-for="(tx, index) in transactions"
           :key="tx.transaction_id"
           :class="[
-            'group transition-colors border-b border-[var(--divider)] bg-[var(--surface)] hover:bg-[var(--hover-bg)] cursor-pointer',
+            'group transition-colors border-b cursor-pointer',
+            index % 2 === 0
+              ? 'bg-[var(--table-surface)]'
+              : 'bg-[var(--table-surface-alt)]',
+            'hover:bg-[var(--table-hover)] border-[var(--table-border)]',
           ]"
           @click="$emit('row-click', tx)"
         >

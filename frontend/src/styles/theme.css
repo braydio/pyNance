@@ -12,6 +12,13 @@
   --input-bg: #2b3b51;
   --divider: #39506d;
   --color-border-secondary: #39506d;
+  --table-surface: color-mix(in srgb, var(--color-bg) 82%, #e5e7eb 18%);
+  --table-surface-alt: color-mix(in srgb, var(--color-bg-secondary) 84%, #dce3ec 16%);
+  --table-surface-strong: color-mix(in srgb, var(--color-bg-secondary) 78%, #e8edf4 22%);
+  --table-header: color-mix(in srgb, var(--color-bg-secondary) 76%, #e2e8f0 24%);
+  --table-border: color-mix(in srgb, var(--divider) 68%, #cbd5e1 32%);
+  --table-hover: color-mix(in srgb, var(--hover-bg) 68%, #e5e7eb 32%);
+  --table-control: color-mix(in srgb, var(--color-bg-secondary) 80%, #e6edf5 20%);
 
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;
