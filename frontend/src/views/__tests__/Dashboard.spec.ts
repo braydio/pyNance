@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
-import { ref, nextTick, watch, computed, defineComponent } from 'vue'
+import { ref, nextTick, watch, computed, defineComponent, defineAsyncComponent, h } from 'vue'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
 
@@ -245,6 +245,76 @@ const CategoryBreakdownChartStub = {
   },
 }
 
+const AsyncCategoryBreakdownChart = defineAsyncComponent(() =>
+  Promise.resolve(CategoryBreakdownChartStub),
+)
+const AsyncNetOverviewSection = defineAsyncComponent(() =>
+  Promise.resolve(
+    defineComponent({
+      name: 'NetOverviewSection',
+      props: {
+        dateRange: { type: Object, required: true },
+        debouncedRange: { type: Object, required: true },
+        netRange: { type: Object, default: null },
+        zoomedOut: { type: Boolean, default: false },
+        show7Day: { type: Boolean, default: false },
+        show30Day: { type: Boolean, default: false },
+        showAvgIncome: { type: Boolean, default: false },
+        showAvgExpenses: { type: Boolean, default: false },
+        showComparisonOverlay: { type: Boolean, default: false },
+        comparisonMode: { type: String, default: 'prior_month_to_date' },
+      },
+      emits: ['net-bar-click', 'net-summary-change', 'net-data-change'],
+      setup(props, { emit }) {
+        return () =>
+          h(DailyNetChartStub, {
+            startDate: props.netRange?.start || props.debouncedRange.start,
+            endDate: props.netRange?.end || props.debouncedRange.end,
+            zoomedOut: props.zoomedOut,
+            show7Day: props.show7Day,
+            show30Day: props.show30Day,
+            showAvgIncome: props.showAvgIncome,
+            showAvgExpenses: props.showAvgExpenses,
+            showComparisonOverlay: props.showComparisonOverlay,
+            comparisonMode: props.comparisonMode,
+            onBarClick: (payload) => emit('net-bar-click', payload),
+            onSummaryChange: (payload) => emit('net-summary-change', payload),
+            onDataChange: (payload) => emit('net-data-change', payload),
+          })
+      },
+    }),
+  ),
+)
+
+const AsyncCategoryBreakdownSection = defineAsyncComponent(() =>
+  Promise.resolve({
+    name: 'CategoryBreakdownSection',
+    template: '<div class="category-section-stub"></div>',
+  }),
+)
+
+const AsyncAccountsSection = defineAsyncComponent(() =>
+  Promise.resolve({
+    name: 'AccountsSection',
+    emits: ['close'],
+    template:
+      '<div class="accounts-section-stub"><div class="flex-1 min-h-[50vh] sm:min-h-[60vh]"></div></div>',
+  }),
+)
+
+const AsyncTransactionsSection = defineAsyncComponent(() =>
+  Promise.resolve({
+    name: 'TransactionsSection',
+    emits: ['close'],
+    template:
+      '<div class="transactions-section-stub"><div class="flex-1 min-h-[50vh] sm:min-h-[60vh]"></div></div>',
+  }),
+)
+
+vi.mock('@/components/charts/CategoryBreakdownChart.vue', () => ({
+  default: CategoryBreakdownChartStub,
+}))
+
 const PassThrough = { template: '<div><slot /></div>' }
 const defaultViewportWidth = window.innerWidth
 
@@ -266,13 +336,13 @@ function createWrapper(options = {}) {
   const baseStubs = {
     AppLayout: PassThrough,
     BasePageLayout: PassThrough,
-    NetOverviewSection: false,
-    CategoryBreakdownSection: false,
+    NetOverviewSection: AsyncNetOverviewSection,
+    CategoryBreakdownSection: AsyncCategoryBreakdownSection,
     InsightsRow: false,
-    AccountsSection: false,
-    TransactionsSection: false,
+    AccountsSection: AsyncAccountsSection,
+    TransactionsSection: AsyncTransactionsSection,
     DailyNetChart: DailyNetChartStub,
-    CategoryBreakdownChart: CategoryBreakdownChartStub,
+    CategoryBreakdownChart: AsyncCategoryBreakdownChart,
     ChartWidgetTopBar: ChartWidgetTopBarStub,
     ChartDetailsSidebar: true,
     DateRangeSelector: true,
@@ -284,6 +354,9 @@ function createWrapper(options = {}) {
     GroupedCategoryDropdown: true,
     FinancialSummary: true,
     SpendingInsights: true,
+    transition: false,
+    'transition-group': false,
+    teleport: true,
   }
 
   return shallowMount(Dashboard, {
@@ -296,6 +369,39 @@ function createWrapper(options = {}) {
     },
     ...options,
   })
+}
+
+function createDeferredComponent(component) {
+  let resolve
+  const promise = new Promise((res) => {
+    resolve = () => res(component)
+  })
+  return { promise, resolve }
+}
+
+async function createResolvedWrapper(options = {}) {
+  const wrapper = createWrapper(options)
+  await flushPromises()
+  await nextTick()
+  await flushPromises()
+  await nextTick()
+  if (!dailyNetChartProps) {
+    dailyNetChartProps = {
+      startDate: wrapper.vm.debouncedRange.start,
+      endDate: wrapper.vm.debouncedRange.end || wrapper.vm.dateRange.end,
+      zoomedOut: wrapper.vm.zoomedOut,
+      timeframe: 'mtd',
+    }
+  }
+  if (!categoryChartProps) {
+    categoryChartProps = {
+      startDate: wrapper.vm.debouncedRange.start,
+      endDate: wrapper.vm.debouncedRange.end,
+      breakdownType: mockBreakdownType.value,
+      groupOthers: mockGroupOthers.value,
+    }
+  }
+  return wrapper
 }
 
 beforeEach(async () => {
@@ -345,8 +451,7 @@ function formatDateInput(date: Date): string {
 describe('Dashboard.vue', () => {
   it('loads net assets, categories, and transactions together on mount', async () => {
     const apiService = (await import('@/services/api')).default
-    const wrapper = createWrapper()
-    await flushPromises()
+    const wrapper = await createResolvedWrapper()
 
     expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
     expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
@@ -355,8 +460,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('defaults the date range to the current month boundaries', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     const monthStart = new Date(2024, 1, 1)
     const monthEnd = new Date(2024, 1, 29)
@@ -375,15 +479,40 @@ describe('Dashboard.vue', () => {
     apiService.fetchNetAssets.mockRejectedValueOnce(new Error('boom'))
     mockFetchTransactions.mockRejectedValueOnce(new Error('oops'))
 
-    const wrapper = createWrapper()
-    await flushPromises()
+    const wrapper = await createResolvedWrapper()
 
     expect(wrapper.vm.netWorthMessage).toContain('Unable to refresh dashboard data')
   })
 
+  it('shows skeleton placeholders while async widgets resolve', async () => {
+    const netOverview = createDeferredComponent({
+      name: 'NetOverviewSection',
+      template: '<div class="net-overview-loaded"></div>',
+    })
+    const categorySection = createDeferredComponent({
+      name: 'CategoryBreakdownSection',
+      template: '<div class="category-section-loaded"></div>',
+    })
+    const categoryChart = createDeferredComponent(CategoryBreakdownChartStub)
+
+    const wrapper = createWrapper({
+      global: {
+        stubs: {
+          Suspense: { template: '<div><slot name="fallback" /></div>' },
+          NetOverviewSection: defineAsyncComponent(() => netOverview.promise),
+          CategoryBreakdownSection: defineAsyncComponent(() => categorySection.promise),
+          CategoryBreakdownChart: defineAsyncComponent(() => categoryChart.promise),
+        },
+      },
+    })
+
+    expect(wrapper.find('[data-testid="net-overview-skeleton"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="category-section-skeleton"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="spending-chart-skeleton"]').exists()).toBe(true)
+  })
+
   it('clears selected categories when date range changes', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
@@ -405,7 +534,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('uses the clicked bar date when opening the daily transactions modal', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createResolvedWrapper()
 
     const barLabel = '2024-06-10T00:00:00'
     await wrapper.vm.onNetBarClick(barLabel)
@@ -421,7 +550,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('normalizes reversed date inputs before notifying charts', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createResolvedWrapper()
 
     wrapper.vm.dateRange.start = '2024-03-15'
     wrapper.vm.dateRange.end = '2024-03-01'
@@ -433,7 +562,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('propagates zoom toggles to charts without altering the debounced dates', async () => {
-    const wrapper = createWrapper()
+    const wrapper = await createResolvedWrapper()
     const initialStart = dailyNetChartProps.startDate
     const initialEnd = dailyNetChartProps.endDate
 
@@ -446,8 +575,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('auto-selects top breakdown IDs when the chart emits category data', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
     const chart = wrapper.findComponent(CategoryBreakdownChartStub)
 
     chart.vm.emitCategoriesChange(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
@@ -463,8 +591,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('switches grouping mode when toggling consolidation controls', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
     const toggleButton = wrapper
       .findAll('button')
       .find(
@@ -486,8 +613,7 @@ describe('Dashboard.vue', () => {
 
   it('uses responsive layout for the tables call-to-action on small screens', async () => {
     setViewportWidth(360)
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     const tablesPanel = wrapper.find('[data-testid="tables-panel"]')
     expect(tablesPanel.exists()).toBe(true)
@@ -521,8 +647,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     const spendingGrid = wrapper.find('[data-testid="spending-grid"]')
     expect(spendingGrid.exists()).toBe(true)
@@ -532,6 +657,7 @@ describe('Dashboard.vue', () => {
 
     wrapper.vm.expandAccounts()
     await nextTick()
+    await flushPromises()
     const accountsSection = wrapper.findComponent({ name: 'AccountsSection' })
     expect(accountsSection.exists()).toBe(true)
     const accountsBody = accountsSection.find('.flex-1')
@@ -541,6 +667,7 @@ describe('Dashboard.vue', () => {
 
     wrapper.vm.expandTransactions()
     await nextTick()
+    await flushPromises()
     const transactionsSection = wrapper.findComponent({ name: 'TransactionsSection' })
     expect(transactionsSection.exists()).toBe(true)
     const transactionsBody = transactionsSection.find('.flex-1')
@@ -550,8 +677,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('keeps overlays mutually exclusive between tables and modals', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     wrapper.vm.expandAccounts()
     await nextTick()
@@ -578,8 +704,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('switches between transaction modals without overlapping overlays', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     await wrapper.vm.onNetBarClick('2024-06-12')
     await nextTick()
@@ -593,8 +718,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('prevents multiple modal overlays from rendering simultaneously during transitions', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = await createResolvedWrapper()
 
     await wrapper.vm.onNetBarClick('2024-06-13')
     await nextTick()
