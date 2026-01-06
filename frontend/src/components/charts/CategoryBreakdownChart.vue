@@ -18,8 +18,8 @@
 // Displays a thin horizontal bar chart of spending by selected category or merchant.
 // Defaults to grouping smaller parent categories into an "Other" bucket unless
 // `groupOthers` is set to `false`.
-import { ref, watch, nextTick, onMounted, onUnmounted, toRefs, computed } from 'vue'
-import { debounce } from 'lodash-es'
+import { ref, nextTick, onMounted, onUnmounted, toRefs, computed } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree, fetchMerchantBreakdown } from '@/api/charts'
 import { formatAmount } from '@/utils/format'
@@ -52,6 +52,13 @@ const chartHeight = computed(() => {
   const perRow = 36
   return `${Math.max(base, rows * perRow)}px`
 })
+
+const chartQuery = computed(() => ({
+  start: startDate.value,
+  end: endDate.value,
+  groupOthers: groupOthers.value,
+  breakdownType: breakdownType.value,
+}))
 
 // Cycle through theme accent colors for each dataset segment
 function getGroupColor(idx) {
@@ -208,24 +215,30 @@ async function renderChart() {
   })
 }
 
+/**
+ * Load breakdown data for the current date range and grouping mode, emitting
+ * category options and summary totals before triggering a chart re-render.
+ *
+ * @returns {Promise<void>} Resolves after the chart datasets refresh.
+ */
 async function fetchData() {
   try {
     const params = {
-      start_date: startDate.value,
-      end_date: endDate.value,
+      start_date: chartQuery.value.start,
+      end_date: chartQuery.value.end,
       top_n: 50,
     }
 
     const response =
-      breakdownType.value === 'merchant'
+      chartQuery.value.breakdownType === 'merchant'
         ? await fetchMerchantBreakdown(params)
         : await fetchCategoryBreakdownTree(params)
     if (response.status === 'success') {
       const raw = response.data || []
       const normalizedTree =
-        breakdownType.value === 'merchant' ? mapMerchantBreakdownToTree(raw) : raw
+        chartQuery.value.breakdownType === 'merchant' ? mapMerchantBreakdownToTree(raw) : raw
       let processed = normalizedTree
-      if (groupOthers.value && normalizedTree.length > 4) {
+      if (chartQuery.value.groupOthers && normalizedTree.length > 4) {
         const topFour = normalizedTree.slice(0, 4)
         const others = normalizedTree.slice(4)
         const otherTotal = others.reduce((sum, c) => sum + (c.amount || 0), 0)
@@ -277,16 +290,16 @@ function updateSummary() {
 onMounted(fetchData)
 
 // Refetch data when range or grouping changes
-watch([startDate, endDate, groupOthers, breakdownType], debounce(fetchData, 200))
+watchDebounced(chartQuery, fetchData, { debounce: 200, maxWait: 750 })
 
 // When selectedCategoryIds changes, update summary and re-render
-watch(
+watchDebounced(
   selectedCategoryIds,
-  debounce(async () => {
+  async () => {
     updateSummary()
     await renderChart()
-  }, 200),
-  { deep: true },
+  },
+  { debounce: 200, maxWait: 750, deep: true },
 )
 
 onUnmounted(() => {

@@ -57,8 +57,8 @@
         </div>
 
         <DailyNetChart
-          :start-date="debouncedRange.start"
-          :end-date="debouncedRange.end"
+          :start-date="activeRange.start"
+          :end-date="activeRange.end"
           :zoomed-out="zoomedOut"
           :show7-day="show7Day"
           :show30-day="show30Day"
@@ -81,8 +81,8 @@
           :summary="netSummary"
           :chart-data="chartData"
           :zoomed-out="zoomedOut"
-          :start-date="debouncedRange.start"
-          :end-date="debouncedRange.end"
+          :start-date="activeRange.start"
+          :end-date="activeRange.end"
         />
       </slot>
     </div>
@@ -111,6 +111,10 @@ const props = defineProps({
   debouncedRange: {
     type: Object,
     required: true,
+  },
+  netRange: {
+    type: Object,
+    default: null,
   },
   zoomedOut: { type: Boolean, default: false },
   netSummary: { type: Object, required: true },
@@ -162,6 +166,12 @@ const comparisonModeModel = computed({
   get: () => props.comparisonMode,
   set: (value) => emit('update:comparison-mode', value),
 })
+
+/**
+ * Net visualization date boundaries, preferring the provided net range while
+ * falling back to the shared debounced range when no override is supplied.
+ */
+const activeRange = computed(() => props.netRange || props.debouncedRange)
 </script>
 
 <style scoped>

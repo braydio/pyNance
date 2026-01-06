@@ -149,6 +149,8 @@
   - **Acceptance criteria:** Every dashboard component loads data and displays without errors
 - [ ] **Fix data loading race conditions** - Resolve component initialization issues
   - **Acceptance criteria:** Components load data in correct order, no dependency conflicts
+- [x] **Synchronize net overview range and fallback messaging** - Keep the hero chart aligned to the active net range while surfacing unified load failures.
+  - **Acceptance criteria:** `frontend/src/components/dashboard/NetOverviewSection.vue` consumes the `netRange` override for hero charts and summaries, and `frontend/src/views/Dashboard.vue` surfaces a single fallback string when the initial Promise.all load fails.
 
 ### UI/UX Refactoring
 
