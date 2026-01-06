@@ -77,12 +77,16 @@ vi.mock('@/composables/useDateRange', () => {
       const dateRange = ref({ start: '2024-02-01', end: '2024-02-29' })
       const debouncedRange = ref(normalizeRange(dateRange.value))
       const onChange = options.onDebouncedChange || (() => {})
+      let timer = null
       watch(
         dateRange,
         () => {
-          const normalized = normalizeRange(dateRange.value)
-          debouncedRange.value = normalized
-          onChange(normalized)
+          if (timer) clearTimeout(timer)
+          timer = setTimeout(() => {
+            const normalized = normalizeRange(dateRange.value)
+            debouncedRange.value = normalized
+            onChange(normalized)
+          }, options.debounceMs ?? 200)
         },
         { deep: true, immediate: false },
       )
@@ -584,6 +588,40 @@ describe('Dashboard.vue', () => {
     await resolveAsyncSections(wrapper)
 
     expect(wrapper.vm.netWorthMessage).toContain('Unable to refresh dashboard data')
+  })
+
+  it('runs a single fetch cycle when the date range changes', async () => {
+    const apiService = (await import('@/services/api')).default
+    const wrapper = createWrapper()
+    await flushPromises()
+
+    apiService.fetchNetAssets.mockClear()
+    mockRefreshOptions.mockClear()
+    mockFetchTransactions.mockClear()
+
+    wrapper.vm.dateRange.start = '2024-03-01'
+    wrapper.vm.dateRange.end = '2024-03-31'
+    await vi.advanceTimersByTimeAsync(220)
+    await flushPromises()
+
+    expect(apiService.fetchNetAssets).toHaveBeenCalledTimes(1)
+    expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
+    expect(mockFetchTransactions).toHaveBeenCalledTimes(1)
+  })
+
+  it('applies debounced date edits to chart inputs', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    wrapper.vm.dateRange.start = '2024-05-15'
+    wrapper.vm.dateRange.end = '2024-05-31'
+    await vi.advanceTimersByTimeAsync(100)
+    wrapper.vm.dateRange.start = '2024-05-01'
+    await vi.advanceTimersByTimeAsync(200)
+    await flushPromises()
+
+    expect(categoryChartProps.startDate).toBe('2024-05-01')
+    expect(categoryChartProps.endDate).toBe('2024-05-31')
   })
 
   it('clears selected categories when date range changes', async () => {
