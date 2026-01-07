@@ -193,26 +193,10 @@ function buildComparisonSeries(labels, data, ctx) {
   })
 }
 
-function emphasizeColor(hex, channel) {
-  let n = hex.replace('#', '')
-  if (n.length === 3)
-    n = n
-      .split('')
-      .map((c) => c + c)
-      .join('')
-  let r = parseInt(n.slice(0, 2), 16)
-  let g = parseInt(n.slice(2, 4), 16)
-  let b = parseInt(n.slice(4, 6), 16)
-  const d = 20
-  if (channel === 'g') g = Math.min(255, g + d)
-  if (channel === 'r') r = Math.min(255, r + d)
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
-}
-
 const netLinePlugin = {
   id: 'netLinePlugin',
   afterDatasetsDraw(chart) {
-    const idx = chart.data.datasets.findIndex((d) => d.label === 'Net')
+    const idx = chart.data.datasets.findIndex((d) => d.netIndicator)
     if (idx === -1) return
     const meta = chart.getDatasetMeta(idx)
     meta.data.forEach((bar) => {
@@ -227,6 +211,18 @@ const netLinePlugin = {
       ctx.restore()
     })
   },
+}
+
+function tooltipPositioner(items, eventPosition) {
+  if (!items.length) return eventPosition
+  const chart = items[0].chart
+  const netIdx = chart.data.datasets.findIndex((d) => d.netIndicator)
+  const dataIndex = items[0].dataIndex
+  if (netIdx === -1) return eventPosition
+  const meta = chart.getDatasetMeta(netIdx)
+  const point = meta?.data?.[dataIndex]
+  if (point) return { x: point.x, y: point.y - 8 }
+  return eventPosition
 }
 
 function handleBarClick(evt) {
@@ -271,9 +267,6 @@ async function renderChart() {
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
-  const stackId = 'daily-net'
-  const netFillColor = emphasizeColor(netColor, 'g')
-
   const fullLabels = buildDateRangeLabels(
     requestRange.value.startDate || labels[0],
     requestRange.value.endDate || labels.at(-1),
@@ -285,23 +278,17 @@ async function renderChart() {
 
   const avgIncome = income.length ? income.reduce((a, b) => a + b, 0) / income.length : 0
   const avgExpenses = expenses.length ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
+  const avgIncomeColor = getStyle('--color-accent-cyan') || '#4ade80'
+  const avgExpensesColor = getStyle('--color-accent-red') || '#f87171'
+  const net7DayColor = getStyle('--color-accent-purple') || '#a855f7'
+  const net30DayColor = getStyle('--color-accent-cyan') || '#38bdf8'
 
+  const stackId = 'daily-stack'
   const datasets = [
     {
       type: 'bar',
-      label: 'Income',
-      data: income,
-      barThickness: 18,
-      backgroundColor: incomeColor,
-      borderColor: incomeColor,
-      borderWidth: 1,
-      stack: stackId,
-      order: 1,
-    },
-    {
-      type: 'bar',
       label: 'Expenses',
-      data: expenses.map((value) => -value),
+      data: expenses,
       barThickness: 18,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
@@ -311,30 +298,84 @@ async function renderChart() {
     },
     {
       type: 'bar',
-      label: 'Net',
-      data: net,
-      barThickness: 12,
-      backgroundColor: netFillColor,
-      borderColor: netColor,
+      label: 'Income',
+      data: income,
+      barThickness: 18,
+      backgroundColor: incomeColor,
+      borderColor: incomeColor,
       borderWidth: 1,
       stack: stackId,
       order: 2,
     },
+    {
+      type: 'line',
+      label: 'Net',
+      data: net,
+      borderColor: 'transparent',
+      backgroundColor: 'transparent',
+      borderWidth: 0,
+      pointRadius: 0,
+      fill: false,
+      netIndicator: true,
+    },
   ]
 
   if (showAvgIncome.value)
-    datasets.push({ type: 'line', label: 'Avg Income', data: labels.map(() => avgIncome) })
+    datasets.push({
+      type: 'line',
+      label: 'Avg Income',
+      data: labels.map(() => avgIncome),
+      borderColor: avgIncomeColor,
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 2,
+    })
   if (showAvgExpenses.value)
-    datasets.push({ type: 'line', label: 'Avg Expenses', data: labels.map(() => avgExpenses) })
-  if (show7Day.value) datasets.push({ type: 'line', label: '7-Day Avg', data: ma7 })
-  if (show30Day.value) datasets.push({ type: 'line', label: '30-Day Avg', data: ma30 })
+    datasets.push({
+      type: 'line',
+      label: 'Avg Expenses',
+      data: labels.map(() => avgExpenses),
+      borderColor: avgExpensesColor,
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 2,
+    })
+  if (show7Day.value)
+    datasets.push({
+      type: 'line',
+      label: '7-Day Avg',
+      data: ma7,
+      borderColor: net7DayColor,
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 2,
+    })
+  if (show30Day.value)
+    datasets.push({
+      type: 'line',
+      label: '30-Day Avg',
+      data: ma30,
+      borderColor: net30DayColor,
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderWidth: 2,
+    })
 
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     const series = buildComparisonSeries(labels, comparisonData.value, ctx)
     const comparisonLabel =
       ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
-    datasets.push({ type: 'line', label: comparisonLabel, data: series })
+    const comparisonLineColor = getStyle('--color-text-light') || '#f8fafc'
+    datasets.push({
+      type: 'line',
+      label: comparisonLabel,
+      data: series,
+      borderColor: comparisonLineColor,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+    })
   }
 
   const currentLookup = new Map()
@@ -391,38 +432,45 @@ async function renderChart() {
     }
   }
 
-  const tooltipCallbacks = showComparisonOverlay.value
-    ? {
-        title: (items) => formatTooltipTitle(items[0]?.label),
-        label: (ctx) => {
-          if (ctx.datasetIndex !== 0) return null
-          const label = ctx.label
-          const row = currentLookup.get(label)
-          const lines = [
-            `Income: ${formatAmount(row?.income?.parsedValue || 0)}`,
-            `Expenses: ${formatAmount(row?.expenses?.parsedValue || 0)}`,
-            `Net: ${formatAmount(row?.net?.parsedValue || 0)}`,
-          ]
+  const buildPrimaryTooltipLines = (row) => {
+    if (!row) return []
+    return [
+      `Income: ${formatAmount(row.income?.parsedValue || 0)}`,
+      `Expenses: ${formatAmount(row.expenses?.parsedValue || 0)}`,
+      `Net: ${formatAmount(row.net?.parsedValue || 0)}`,
+      `Transactions: ${row.transaction_count || 0}`,
+    ]
+  }
 
-          const prior = priorLookup?.get(label)
-          if (prior) {
-            const priorDate = priorDateByLabel?.get(label)
-            const priorTitle = priorDate
-              ? formatTooltipTitle(formatDateKey(priorDate))
-              : 'Prior period'
-            lines.push(`Prior (${priorTitle}):`)
-            lines.push(`Income: ${formatAmount(prior?.income?.parsedValue || 0)}`)
-            lines.push(`Expenses: ${formatAmount(prior?.expenses?.parsedValue || 0)}`)
-            lines.push(`Net: ${formatAmount(prior?.net?.parsedValue || 0)}`)
-          }
+  const tooltipCallbacks = {
+    title: (items) => formatTooltipTitle(items[0]?.label),
+    label: () => null,
+    beforeBody: (items) => {
+      if (!items.length) return []
+      const label = items[0]?.label
+      if (!label) return []
+      const row = currentLookup.get(label)
+      return buildPrimaryTooltipLines(row)
+    },
+    afterBody: (items) => {
+      if (!showComparisonOverlay.value || !items.length) return []
+      const label = items[0]?.label
+      const prior = priorLookup?.get(label)
+      if (!prior) return []
+      const priorDate = priorDateByLabel?.get(label)
+      const priorTitle = priorDate
+        ? formatTooltipTitle(formatDateKey(priorDate))
+        : 'Prior period'
 
-          return lines
-        },
-      }
-    : {
-        title: (items) => formatTooltipTitle(items[0]?.label),
-        label: (ctx) => `${ctx.dataset.label}: ${formatAmount(ctx.raw || 0)}`,
-      }
+      return [
+        '',
+        `Prior (${priorTitle}):`,
+        `Income: ${formatAmount(prior.income?.parsedValue || 0)}`,
+        `Expenses: ${formatAmount(prior.expenses?.parsedValue || 0)}`,
+        `Net: ${formatAmount(prior.net?.parsedValue || 0)}`,
+      ]
+    },
+  }
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -432,9 +480,12 @@ async function renderChart() {
       responsive: true,
       maintainAspectRatio: false,
       onClick: handleBarClick,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
       scales: {
         x: {
-          stacked: true,
           grid: { display: false },
           ticks: {
             autoSkip: true,
@@ -458,12 +509,25 @@ async function renderChart() {
       },
       plugins: {
         legend: {
-          labels: {
-            color: getStyle('--color-text-light'),
-            font: { family: fontFamily, size: 12 },
-          },
+          display: false,
         },
         tooltip: {
+          backgroundColor: '#070c16',
+          borderColor: netColor,
+          borderWidth: 2,
+          padding: 10,
+          displayColors: false,
+          titleColor: getStyle('--color-text-light'),
+          bodyColor: getStyle('--color-text-light'),
+          titleFont: { family: fontFamily, weight: '600' },
+          bodyFont: { family: fontFamily },
+          cornerRadius: 10,
+          caretPadding: 8,
+          caretSize: 7,
+          bodySpacing: 6,
+          titleSpacing: 4,
+          titleMarginBottom: 6,
+          position: tooltipPositioner,
           callbacks: tooltipCallbacks,
         },
       },
