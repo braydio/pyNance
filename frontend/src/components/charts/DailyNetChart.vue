@@ -12,7 +12,7 @@ import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from '@/utils/format'
 
-// --- Fix: Ensure tooltips and chart plugins are registered globally ---
+// Register Chart.js plugins globally
 import {
   Tooltip,
   Legend,
@@ -48,6 +48,7 @@ if (Chart?.Tooltip?.positioners && !Chart.Tooltip.positioners.netDash) {
  * Includes optional moving averages and comparison overlays to contextualize trends.
  */
 
+// Props
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
@@ -143,6 +144,26 @@ function movingAverage(values, window) {
   )
 }
 
+function buildLineDataset(label, data, color, overrides = {}) {
+  return {
+    type: 'line',
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 0,
+    spanGaps: true,
+    fill: false,
+    ...overrides,
+  }
+}
+
+function emphasizeColor(hex, channel = 'g') {
+  return hex
+}
+
 function getZoomedDisplayRange() {
   const end = parseDateKey(props.endDate) ?? new Date()
   const start = parseDateKey(props.startDate) ?? new Date(end)
@@ -195,7 +216,6 @@ function buildComparisonContext() {
 
 function buildComparisonSeries(labels, data, ctx) {
   if (!ctx) return []
-
   if (ctx.mode === 'prior_month_to_date') {
     const byDay = new Map()
     data.forEach((d) => {
@@ -204,7 +224,7 @@ function buildComparisonSeries(labels, data, ctx) {
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
-      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
+      return parsed ? byDay.get(parsed.getDate()) ?? null : null
     })
   }
 
@@ -224,6 +244,7 @@ function buildComparisonSeries(labels, data, ctx) {
   })
 }
 
+// Chart plugin
 const netLinePlugin = {
   id: 'netLinePlugin',
   afterDatasetsDraw(chart) {
@@ -281,24 +302,38 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
+  const normalizedExpenses = expenses.map((value) => (value === 0 ? 0 : -value))
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
+  const averageIncomeColor = emphasizeColor(incomeColor, 'g')
+  const averageExpensesColor = emphasizeColor(expenseColor, 'r')
+  const comparisonColor = getStyle('--color-accent-blue') || '#719cd6'
+  const sevenDayColor = getStyle('--color-accent-cyan') || '#63cdcf'
+  const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
 
   const datasets = [
     {
       type: 'bar',
       label: 'Expenses',
-      data: expenses,
+      data: normalizedExpenses,
+      barThickness: 18,
       backgroundColor: expenseColor,
+      borderColor: expenseColor,
+      borderWidth: 1,
+      order: 1,
     },
     {
       type: 'bar',
       label: 'Income',
       data: income,
+      barThickness: 18,
       backgroundColor: incomeColor,
+      borderColor: incomeColor,
+      borderWidth: 1,
+      order: 2,
     },
     {
       type: 'line',
@@ -310,8 +345,60 @@ async function renderChart() {
       tension: 0.25,
       pointRadius: 0,
       netIndicator: true,
+      order: 3,
     },
   ]
+
+  if (showAvgIncome.value)
+    datasets.push(
+      buildLineDataset(
+        'Avg Income',
+        labels.map(() => income.reduce((a, b) => a + b, 0) / income.length),
+        averageIncomeColor,
+        { borderDash: [6, 6], order: 4 },
+      ),
+    )
+
+  if (showAvgExpenses.value)
+    datasets.push(
+      buildLineDataset(
+        'Avg Expenses',
+        labels.map(() => expenses.reduce((a, b) => a + b, 0) / expenses.length),
+        averageExpensesColor,
+        { borderDash: [4, 8], order: 5 },
+      ),
+    )
+
+  if (showComparisonOverlay.value) {
+    const ctx = buildComparisonContext()
+    const series = buildComparisonSeries(labels, comparisonData.value, ctx)
+    const comparisonLabel =
+      ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
+    datasets.push(
+      buildLineDataset(comparisonLabel, series, comparisonColor, {
+        borderDash: [2, 6],
+        order: 6,
+      }),
+    )
+  }
+
+  if (show30Day.value)
+    datasets.push(
+      buildLineDataset('30-Day Avg', movingAverage(net, 30), thirtyDayColor, {
+        borderDash: [8, 4],
+        borderWidth: 3,
+        order: 7,
+      }),
+    )
+
+  if (show7Day.value)
+    datasets.push(
+      buildLineDataset('7-Day Avg', movingAverage(net, 7), sevenDayColor, {
+        borderDash: [2, 2],
+        borderWidth: 3,
+        order: 8,
+      }),
+    )
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -325,6 +412,8 @@ async function renderChart() {
         x: {
           grid: { display: false },
           ticks: {
+            autoSkip: true,
+            maxTicksLimit: 8,
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
             callback: (_, index) => formatAxisLabel(labels[index]),
@@ -332,7 +421,7 @@ async function renderChart() {
         },
         y: {
           stacked: true,
-          grid: { color: getStyle('--divider') || 'rgba(255, 255, 255, 0.08)' },
+          grid: { color: getStyle('--divider') || 'rgba(255,255,255,0.08)' },
           ticks: {
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
@@ -360,7 +449,7 @@ async function renderChart() {
           bodySpacing: 6,
           titleSpacing: 4,
           titleMarginBottom: 6,
-          position: 'netDash',  // use custom safe positioner
+          position: 'netDash',
         },
       },
     },
