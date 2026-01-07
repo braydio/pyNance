@@ -14,6 +14,7 @@ import { formatAmount } from '@/utils/format'
 
 // Register Chart.js plugins globally
 import {
+  Tooltip,
   Legend,
   LineElement,
   BarElement,
@@ -29,15 +30,15 @@ if (Chart?.Tooltip?.positioners && !Chart.Tooltip.positioners.netDash) {
   Chart.Tooltip.positioners.netDash = function (items, eventPosition) {
     if (!items?.length) return eventPosition
     const chart = items[0].chart
-    const netIdx = chart.data.datasets.findIndex((d) => d.netIndicator)
     const dataIndex = items[0].dataIndex
-    if (netIdx === -1) return eventPosition
-    const meta = chart.getDatasetMeta(netIdx)
-    const point = meta?.data?.[dataIndex]
-    const fallbackPoint = items[0].element
-    if (point) return { x: point.x, y: point.y - 8 }
-    if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
-    return eventPosition ?? { x: 0, y: 0 }
+    const firstMeta = chart.getDatasetMeta(0)
+    const bar = firstMeta?.data?.[dataIndex]
+    const netValues = chart.$netValues
+    const yScale = chart.scales?.y
+    const netValue = netValues?.[dataIndex]
+    if (!bar || netValue == null || !yScale) return eventPosition
+    const y = yScale.getPixelForValue(netValue)
+    return { x: bar.x, y: y - 8 }
   }
 }
 // ----------------------------------------------------------------------
@@ -244,20 +245,28 @@ function buildComparisonSeries(labels, data, ctx) {
 }
 
 // Chart plugin
-const netLinePlugin = {
-  id: 'netLinePlugin',
+const netDashPlugin = {
+  id: 'netDashPlugin',
   afterDatasetsDraw(chart) {
-    const idx = chart.data.datasets.findIndex((d) => d.netIndicator)
-    if (idx === -1) return
-    const meta = chart.getDatasetMeta(idx)
-    meta.data.forEach((bar) => {
+    const netValues = chart.$netValues
+    if (!Array.isArray(netValues)) return
+    const firstMeta = chart.getDatasetMeta(0)
+    const yScale = chart.scales?.y
+
+    if (!firstMeta?.data?.length || !yScale) return
+
+    firstMeta.data.forEach((bar, index) => {
+      const netValue = netValues[index]
+      if (netValue == null) return
+      const x = bar.x
+      const y = yScale.getPixelForValue(netValue)
       const { ctx } = chart
       ctx.save()
       ctx.strokeStyle = getStyle('--color-accent-yellow')
       ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.moveTo(bar.x - 10, bar.y)
-      ctx.lineTo(bar.x + 10, bar.y)
+      ctx.moveTo(x - 10, y)
+      ctx.lineTo(x + 10, y)
       ctx.stroke()
       ctx.restore()
     })
@@ -301,11 +310,9 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
-  const normalizedExpenses = expenses.map((value) => (value === 0 ? 0 : -value))
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
-  const netColor = getStyle('--color-accent-yellow') || '#eab308'
   const averageIncomeColor = emphasizeColor(incomeColor, 'g')
   const averageExpensesColor = emphasizeColor(expenseColor, 'r')
   const comparisonColor = getStyle('--color-accent-blue') || '#719cd6'
@@ -313,15 +320,17 @@ async function renderChart() {
   const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
 
+  const stackId = 'daily-stack'
   const datasets = [
     {
       type: 'bar',
       label: 'Expenses',
-      data: normalizedExpenses,
+      data: expenses,
       barThickness: 18,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
       borderWidth: 1,
+      stack: stackId,
       order: 1,
     },
     {
@@ -332,19 +341,8 @@ async function renderChart() {
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
+      stack: stackId,
       order: 2,
-    },
-    {
-      type: 'line',
-      label: 'Net',
-      data: net,
-      borderColor: netColor,
-      backgroundColor: 'transparent',
-      borderWidth: 2,
-      tension: 0.25,
-      pointRadius: 0,
-      netIndicator: true,
-      order: 3,
     },
   ]
 
@@ -401,7 +399,7 @@ async function renderChart() {
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    plugins: [netLinePlugin],
+    plugins: [netDashPlugin],
     data: { labels, datasets },
     options: {
       responsive: true,
@@ -453,6 +451,7 @@ async function renderChart() {
       },
     },
   })
+  chartInstance.value.$netValues = net
 }
 
 async function fetchData() {
