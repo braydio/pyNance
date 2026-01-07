@@ -143,7 +143,14 @@ def setup_logger():
     # Normalize handler levels
     # ----------------------------
     for handler in root_logger.handlers:
-        if is_app_file_handler(handler) or is_console_handler(handler):
+        if is_app_file_handler(handler):
+            handler.setLevel(log_level)
+            handler.setFormatter(
+                logging.Formatter(
+                    "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
+                )
+            )
+        elif is_console_handler(handler):
             handler.setLevel(log_level)
 
     # ----------------------------
