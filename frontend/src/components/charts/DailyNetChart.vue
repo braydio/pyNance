@@ -25,6 +25,29 @@ import {
 
 Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
+// --- Safe registration for custom tooltip positioner ---
+if (Chart?.Tooltip?.positioners && !Chart.Tooltip.positioners.netDash) {
+  Chart.Tooltip.positioners.netDash = function (items, eventPosition) {
+    if (!items?.length) return eventPosition
+    const chart = items[0].chart
+    const netIdx = chart.data.datasets.findIndex((d) => d.netIndicator)
+    const dataIndex = items[0].dataIndex
+    if (netIdx === -1) return eventPosition
+    const meta = chart.getDatasetMeta(netIdx)
+    const point = meta?.data?.[dataIndex]
+    const fallbackPoint = items[0].element
+    if (point) return { x: point.x, y: point.y - 8 }
+    if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
+    return eventPosition ?? { x: 0, y: 0 }
+  }
+}
+// ----------------------------------------------------------------------
+
+/**
+ * Render the daily net stacked bar chart with income, expenses, and net overlays.
+ * Includes optional moving averages and comparison overlays to contextualize trends.
+ */
+
 // Props
 const props = defineProps({
   startDate: { type: String, required: true },
@@ -121,7 +144,6 @@ function movingAverage(values, window) {
   )
 }
 
-// --- helper for styled line datasets ---
 function buildLineDataset(label, data, color, overrides = {}) {
   return {
     type: 'line',
@@ -139,7 +161,6 @@ function buildLineDataset(label, data, color, overrides = {}) {
 }
 
 function emphasizeColor(hex, channel = 'g') {
-  // lightens green or red tones slightly for contrast
   return hex
 }
 
@@ -244,23 +265,6 @@ const netLinePlugin = {
   },
 }
 
-function tooltipPositioner(items, eventPosition) {
-  if (!items.length) return eventPosition
-  const chart = items[0].chart
-  const netIdx = chart.data.datasets.findIndex((d) => d.netIndicator)
-  const dataIndex = items[0].dataIndex
-  if (netIdx === -1) return eventPosition
-  const meta = chart.getDatasetMeta(netIdx)
-  const point = meta?.data?.[dataIndex]
-  const fallbackPoint = items[0].element
-  if (point) return { x: point.x, y: point.y - 8 }
-  if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
-  return eventPosition ?? { x: 0, y: 0 }
-}
-if (Chart.Tooltip?.positioners) {
-  Chart.Tooltip.positioners.netDash = tooltipPositioner
-}
-
 function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(
@@ -310,8 +314,6 @@ async function renderChart() {
   const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
 
-  const stackId = 'daily-net'
-
   const datasets = [
     {
       type: 'bar',
@@ -321,7 +323,6 @@ async function renderChart() {
       backgroundColor: expenseColor,
       borderColor: expenseColor,
       borderWidth: 1,
-      stack: stackId,
       order: 1,
     },
     {
@@ -332,19 +333,19 @@ async function renderChart() {
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
-      stack: stackId,
       order: 2,
     },
     {
       type: 'line',
       label: 'Net',
       data: net,
-      borderColor: 'transparent',
+      borderColor: netColor,
       backgroundColor: 'transparent',
-      borderWidth: 0,
+      borderWidth: 2,
+      tension: 0.25,
       pointRadius: 0,
-      fill: false,
       netIndicator: true,
+      order: 3,
     },
   ]
 
@@ -354,7 +355,7 @@ async function renderChart() {
         'Avg Income',
         labels.map(() => income.reduce((a, b) => a + b, 0) / income.length),
         averageIncomeColor,
-        { borderDash: [6, 6], order: 3 },
+        { borderDash: [6, 6], order: 4 },
       ),
     )
 
@@ -364,7 +365,7 @@ async function renderChart() {
         'Avg Expenses',
         labels.map(() => expenses.reduce((a, b) => a + b, 0) / expenses.length),
         averageExpensesColor,
-        { borderDash: [4, 8], order: 4 },
+        { borderDash: [4, 8], order: 5 },
       ),
     )
 
@@ -376,7 +377,7 @@ async function renderChart() {
     datasets.push(
       buildLineDataset(comparisonLabel, series, comparisonColor, {
         borderDash: [2, 6],
-        order: 5,
+        order: 6,
       }),
     )
   }
@@ -386,7 +387,7 @@ async function renderChart() {
       buildLineDataset('30-Day Avg', movingAverage(net, 30), thirtyDayColor, {
         borderDash: [8, 4],
         borderWidth: 3,
-        order: 6,
+        order: 7,
       }),
     )
 
@@ -395,11 +396,11 @@ async function renderChart() {
       buildLineDataset('7-Day Avg', movingAverage(net, 7), sevenDayColor, {
         borderDash: [2, 2],
         borderWidth: 3,
-        order: 7,
+        order: 8,
       }),
     )
 
-  const chartConfig = {
+  chartInstance.value = new Chart(ctx, {
     type: 'bar',
     plugins: [netLinePlugin],
     data: { labels, datasets },
@@ -438,13 +439,21 @@ async function renderChart() {
           displayColors: false,
           mode: 'nearest',
           intersect: true,
+          titleColor: getStyle('--color-accent-yellow'),
+          bodyColor: getStyle('--color-text-light'),
+          titleFont: { family: "'Fira Code', monospace", weight: '600' },
+          bodyFont: { family: "'Fira Code', monospace" },
+          cornerRadius: 10,
+          caretPadding: 8,
+          caretSize: 7,
+          bodySpacing: 6,
+          titleSpacing: 4,
+          titleMarginBottom: 6,
           position: 'netDash',
         },
       },
     },
-  }
-
-  chartInstance.value = new Chart(ctx, chartConfig)
+  })
 }
 
 async function fetchData() {
