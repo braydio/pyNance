@@ -12,6 +12,20 @@ import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from '@/utils/format'
 
+// --- Fix: Ensure tooltips and chart plugins are registered globally ---
+import {
+  Tooltip,
+  Legend,
+  LineElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+} from 'chart.js'
+
+Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
+// ----------------------------------------------------------------------
+
 /**
  * Render the daily net stacked bar chart with income, expenses, and net overlays.
  * Includes optional moving averages and comparison overlays to contextualize trends.
