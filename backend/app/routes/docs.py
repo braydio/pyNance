@@ -1,7 +1,6 @@
-
 """Expose lightweight API documentation in HTML and JSON forms."""
 
-from flask import Blueprint, jsonify, render_template_string, current_app
+from flask import Blueprint, current_app, jsonify, render_template_string
 
 docs = Blueprint("docs", __name__)
 
@@ -45,6 +44,7 @@ HTML_TEMPLATE = """
 </html>
 """
 
+
 def _collect_routes():
     """Return grouped route metadata from Flask url_map."""
     rules = current_app.url_map.iter_rules()
@@ -58,10 +58,7 @@ def _collect_routes():
         if rule.rule.startswith("/static"):
             continue
 
-        routes.append({
-            "rule": rule.rule,
-            "methods": clean_methods
-        })
+        routes.append({"rule": rule.rule, "methods": clean_methods})
 
     # Group by first path segment (e.g., /api/accounts)
     grouped = {}

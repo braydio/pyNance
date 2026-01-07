@@ -89,7 +89,9 @@ def _parse_refresh_status(raw_status: str | None) -> dict:
         return {"status": "unknown", "message": str(raw_status)}
 
 
-def persist_refresh_status(plaid_account: PlaidAccount | None, status: dict, commit: bool):
+def persist_refresh_status(
+    plaid_account: PlaidAccount | None, status: dict, commit: bool
+):
     """Persist structured refresh status into PlaidAccount.last_error for UI visibility."""
 
     if not plaid_account:
@@ -119,7 +121,9 @@ def should_throttle_refresh(plaid_account: PlaidAccount | None) -> bool:
     return _now_utc() < cooldown_until
 
 
-def refresh_is_stale(plaid_account: PlaidAccount | None, sla: timedelta = REFRESH_SLA) -> bool:
+def refresh_is_stale(
+    plaid_account: PlaidAccount | None, sla: timedelta = REFRESH_SLA
+) -> bool:
     """Return True if the last successful refresh is older than the SLA window."""
 
     if not plaid_account:
@@ -131,11 +135,26 @@ def refresh_is_stale(plaid_account: PlaidAccount | None, sla: timedelta = REFRES
     return (_now_utc() - last_success) > sla
 
 
-def _tx_cache_key(page, page_size, start_date, end_date, category, user_id, account_id, account_ids, tx_type, include_running_balance, recent, limit):
+def _tx_cache_key(
+    page,
+    page_size,
+    start_date,
+    end_date,
+    category,
+    user_id,
+    account_id,
+    account_ids,
+    tx_type,
+    include_running_balance,
+    recent,
+    limit,
+):
     ids = None
     if account_ids:
         ids = tuple(sorted(account_ids))
-    start = start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
+    start = (
+        start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
+    )
     end = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
     return (
         TX_CACHE_VERSION,
@@ -565,11 +584,13 @@ def get_paginated_transactions(
             cached_meta = {
                 **cached.get("meta", {}),
                 "cache_hit": True,
-                "cached_until": _coerce_iso_datetime(cached.get("cached_at") or _now_utc())
-                .replace(tzinfo=timezone.utc)
-                .isoformat()
-                if cached.get("cached_at")
-                else None,
+                "cached_until": (
+                    _coerce_iso_datetime(cached.get("cached_at") or _now_utc())
+                    .replace(tzinfo=timezone.utc)
+                    .isoformat()
+                    if cached.get("cached_at")
+                    else None
+                ),
             }
             return (*cached["data"], cached_meta)
 
@@ -645,7 +666,9 @@ def _running_balance_expression():
     The expression starts from the normalized account balance (assets positive,
     liabilities negative) and walks backwards through transactions ordered by
     posting date so each row returns the balance immediately after that
-    transaction.
+    transaction. Transaction direction is derived from the sign of
+    ``Transaction.amount`` to avoid relying on potentially stale
+    ``transaction_type`` values.
     """
 
     account_type = func.lower(func.coalesce(Account.type, Account.subtype, "asset"))
@@ -660,10 +683,13 @@ def _running_balance_expression():
         else_=func.abs(balance_value),
     )
 
-    signed_amount = case(
-        (Transaction.amount >= 0, func.abs(Transaction.amount)),
-        else_=-func.abs(Transaction.amount),
+    amount_value = func.coalesce(Transaction.amount, 0)
+    # Use the stored amount sign to decide whether each transaction increases or decreases the balance.
+    amount_direction = case(
+        (amount_value < 0, -1),
+        else_=1,
     )
+    signed_amount = func.abs(amount_value) * amount_direction
 
     cumulative_delta = func.coalesce(
         func.sum(signed_amount).over(

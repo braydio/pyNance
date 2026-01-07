@@ -1,5 +1,8 @@
 """Application factory for the Flask backend."""
 
+import logging
+import os
+
 from app.cli.sync import sync_accounts
 from app.config import logger, plaid_client
 from app.extensions import db
@@ -105,34 +108,42 @@ def create_app():
     except Exception:
         pass
 
+    log_routes_enabled = app.debug or os.getenv("LOG_ROUTE_TABLE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
     if plaid_client:
         logger.info("Plaid client initialized.")
-        with app.app_context():
-            # 🎯 only GET routes (skip static, HEAD, OPTIONS)
-            unique_routes = sorted(
-                {
-                    rule.rule
-                    for rule in app.url_map.iter_rules()
-                    if "GET" in rule.methods
-                    and not rule.rule.startswith("/static")
-                    and not rule.rule.startswith("/favicon")
-                }
-            )
+        if log_routes_enabled and logger.isEnabledFor(logging.DEBUG):
+            with app.app_context():
+                # 🎯 only GET routes (skip static, HEAD, OPTIONS)
+                unique_routes = sorted(
+                    {
+                        rule.rule
+                        for rule in app.url_map.iter_rules()
+                        if "GET" in rule.methods
+                        and not rule.rule.startswith("/static")
+                        and not rule.rule.startswith("/favicon")
+                    }
+                )
 
-            # 📦 group by first path segment
-            grouped = {}
-            for route in unique_routes:
-                parts = route.split("/")
-                group = "/" + parts[1] if len(parts) > 1 else "/"
-                grouped.setdefault(group, []).append(route)
+                # 📦 group by first path segment
+                grouped = {}
+                for route in unique_routes:
+                    parts = route.split("/")
+                    group = "/" + parts[1] if len(parts) > 1 else "/"
+                    grouped.setdefault(group, []).append(route)
 
-            lines = ["\nRegistered Routes:"]
-            for group in sorted(grouped):
-                lines.append(group)
-                for route in grouped[group]:
-                    if route != group:
-                        lines.append(f"    {route}")
+                lines = ["\nRegistered Routes:"]
+                for group in sorted(grouped):
+                    lines.append(group)
+                    for route in grouped[group]:
+                        if route != group:
+                            lines.append(f"    {route}")
 
-            logger.debug("\n".join(lines))
+                logger.debug("\n".join(lines))
 
     return app

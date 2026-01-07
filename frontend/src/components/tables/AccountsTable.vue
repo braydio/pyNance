@@ -437,8 +437,8 @@ export default {
 
 .table-panel {
   @apply shadow-xl rounded-2xl p-4 md:p-6;
-  background-color: var(--surface);
-  border: 1px solid var(--divider);
+  background-color: var(--table-surface-strong);
+  border: 1px solid var(--table-border);
 }
 
 .table-title {
@@ -451,8 +451,8 @@ export default {
 
 .table-shell {
   @apply overflow-x-auto rounded-xl border;
-  background-color: var(--color-bg);
-  border-color: var(--divider);
+  background-color: var(--table-surface);
+  border-color: var(--table-border);
 }
 
 .data-table {
@@ -462,14 +462,14 @@ export default {
 }
 
 .table-head {
-  background-color: var(--color-bg-secondary);
-  border-bottom: 1px solid var(--divider);
+  background-color: var(--table-header);
+  border-bottom: 1px solid var(--table-border);
 }
 
 .th-cell {
   @apply py-2 px-4 text-left font-bold uppercase tracking-wider;
-  color: var(--color-accent-blue);
-  border-right: 1px solid var(--divider);
+  color: var(--color-text-muted);
+  border-right: 1px solid var(--table-border);
 }
 
 .th-cell:last-child {
@@ -477,17 +477,17 @@ export default {
 }
 
 .table-row {
-  background-color: var(--color-bg);
-  border-bottom: 1px solid var(--divider);
+  background-color: var(--table-surface);
+  border-bottom: 1px solid var(--table-border);
   transition: background-color 150ms ease;
 }
 
 .table-row:nth-child(even) {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--table-surface-alt);
 }
 
 .table-row:hover {
-  background-color: var(--hover-bg);
+  background-color: var(--table-hover);
 }
 
 .cell {
@@ -514,14 +514,14 @@ export default {
 
 .control-surface {
   @apply flex flex-col gap-3 mb-4 rounded-2xl p-3 shadow-inner;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--divider);
+  background-color: var(--table-control);
+  border: 1px solid var(--table-border);
 }
 
 .input-shell {
   @apply flex items-center gap-3 rounded-xl px-3 py-2;
-  background-color: var(--color-bg);
-  border: 1px solid var(--divider);
+  background-color: var(--table-surface);
+  border: 1px solid var(--table-border);
 }
 
 .filter-input {
@@ -535,8 +535,8 @@ export default {
 
 .filter-input--ghost {
   @apply rounded-xl px-3 py-2 mt-1;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--divider);
+  background-color: var(--table-surface-alt);
+  border: 1px solid var(--table-border);
 }
 
 .icon {
@@ -559,21 +559,21 @@ export default {
 
 .pill {
   @apply text-xs md:text-sm px-3 py-2 rounded-full border transition shadow-sm;
-  background-color: var(--color-bg);
-  border-color: var(--divider);
+  background-color: var(--table-surface);
+  border-color: var(--table-border);
   color: var(--text-primary);
 }
 
 .pill.active {
-  background-color: var(--color-bg-secondary);
+  background-color: var(--table-control);
   border-color: var(--color-accent-blue);
   color: var(--color-accent-blue);
 }
 
 .type-filter-row {
   @apply mb-4 rounded-xl p-3 flex flex-col gap-1;
-  background-color: var(--color-bg-secondary);
-  border: 1px solid var(--divider);
+  background-color: var(--table-control);
+  border: 1px solid var(--table-border);
 }
 
 .type-filter-label {
@@ -588,7 +588,7 @@ export default {
 .filter-tag {
   @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs;
   background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
-  border: 1px solid var(--divider);
+  border: 1px solid var(--table-border);
   color: var(--text-primary);
 }
 

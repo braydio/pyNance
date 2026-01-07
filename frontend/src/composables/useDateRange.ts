@@ -4,8 +4,8 @@
  * Provides shared date range state with helpers for month boundaries and
  * debounced change notifications for chart consumers.
  */
-import { ref, watch } from 'vue'
-import { debounce } from 'lodash-es'
+import { ref } from 'vue'
+import { watchDebounced } from '@vueuse/core'
 
 export type DateRange = { start: string; end: string }
 
@@ -89,13 +89,15 @@ export function useDateRange(options: UseDateRangeOptions = {}) {
   const notifyChange = options.onDebouncedChange ?? (() => {})
   const debounceMs = options.debounceMs ?? 200
 
-  const applyRangeUpdate = debounce(() => {
-    const normalized = normalizeRange(dateRange.value)
-    debouncedRange.value = normalized
-    notifyChange(normalized)
-  }, debounceMs)
-
-  watch(dateRange, applyRangeUpdate, { deep: true })
+  watchDebounced(
+    dateRange,
+    () => {
+      const normalized = normalizeRange(dateRange.value)
+      debouncedRange.value = normalized
+      notifyChange(normalized)
+    },
+    { deep: true, debounce: debounceMs, maxWait: debounceMs * 3 },
+  )
 
   return {
     dateRange,

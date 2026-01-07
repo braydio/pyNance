@@ -1,4 +1,5 @@
 """Routes providing aggregate financial summary metrics."""
+
 from datetime import datetime, timedelta
 from typing import Any, Dict
 

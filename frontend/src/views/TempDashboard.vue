@@ -142,23 +142,23 @@
 
       <!-- RESERVED TABLES PANEL -->
       <div
-        class="relative min-h-[440px] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+        class="relative min-h-[60vh] sm:min-h-[65vh] lg:min-h-[72vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
       >
         <transition name="accordion">
           <div
             v-if="!accountsExpanded && !transactionsExpanded"
-            class="flex flex-row justify-between items-center gap-8 w-full h-full p-12"
+            class="flex flex-col items-stretch justify-center gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 w-full h-full p-8 sm:p-10 lg:p-12"
           >
             <button
               @click="expandAccounts"
-              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition"
+              class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
             >
               Expand Accounts Table
             </button>
             <div class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none">or</div>
             <button
               @click="expandTransactions"
-              class="flex-1 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition"
+              class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
             >
               Expand Transactions Table
             </button>
