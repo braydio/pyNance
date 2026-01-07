@@ -221,8 +221,10 @@ function tooltipPositioner(items, eventPosition) {
   if (netIdx === -1) return eventPosition
   const meta = chart.getDatasetMeta(netIdx)
   const point = meta?.data?.[dataIndex]
+  const fallbackPoint = items[0].element
   if (point) return { x: point.x, y: point.y - 8 }
-  return eventPosition
+  if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
+  return eventPosition ?? { x: 0, y: 0 }
 }
 
 function handleBarClick(evt) {
@@ -480,10 +482,6 @@ async function renderChart() {
       responsive: true,
       maintainAspectRatio: false,
       onClick: handleBarClick,
-      interaction: {
-        mode: 'index',
-        intersect: false,
-      },
       scales: {
         x: {
           grid: { display: false },
@@ -512,15 +510,17 @@ async function renderChart() {
           display: false,
         },
         tooltip: {
-          backgroundColor: '#070c16',
-          borderColor: netColor,
-          borderWidth: 2,
-          padding: 10,
+          backgroundColor: getStyle('--theme-bg'),
+          borderColor: getStyle('--color-accent-yellow'),
+          borderWidth: 1,
+          padding: 12,
           displayColors: false,
-          titleColor: getStyle('--color-text-light'),
+          mode: 'nearest',
+          intersect: true,
+          titleColor: getStyle('--color-accent-yellow'),
           bodyColor: getStyle('--color-text-light'),
-          titleFont: { family: fontFamily, weight: '600' },
-          bodyFont: { family: fontFamily },
+          titleFont: { family: "'Fira Code', monospace", weight: '600' },
+          bodyFont: { family: "'Fira Code', monospace" },
           cornerRadius: 10,
           caretPadding: 8,
           caretSize: 7,
