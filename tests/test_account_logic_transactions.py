@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -41,7 +41,14 @@ def app_context():
         db.drop_all()
 
 
-def _seed_transactions():
+def _seed_transactions(amounts: list[Decimal] | None = None):
+    """Insert a single account with dated transactions in reverse chronological order.
+
+    Args:
+        amounts: Ordered list of transaction amounts starting from the most recent.
+            Defaults to three positive amounts to keep the existing expectations intact.
+    """
+
     account = Account(
         account_id="acc-1",
         user_id="user-1",
@@ -51,12 +58,13 @@ def _seed_transactions():
     )
     db.session.add(account)
 
-    timestamps = [
-        datetime(2024, 3, 3, tzinfo=timezone.utc),
-        datetime(2024, 3, 2, tzinfo=timezone.utc),
-        datetime(2024, 3, 1, tzinfo=timezone.utc),
+    amounts = amounts or [
+        Decimal("10.00"),
+        Decimal("20.00"),
+        Decimal("5.00"),
     ]
-    amounts = [Decimal("10.00"), Decimal("20.00"), Decimal("5.00")]
+    base_date = datetime(2024, 3, 3, tzinfo=timezone.utc)
+    timestamps = [base_date - timedelta(days=idx) for idx in range(len(amounts))]
 
     for idx, (ts, amount) in enumerate(zip(timestamps, amounts), start=1):
         db.session.add(
@@ -66,7 +74,6 @@ def _seed_transactions():
                 user_id=account.user_id,
                 amount=amount,
                 date=ts,
-                transaction_type="expense",
                 description=f"Txn {idx}",
             )
         )
@@ -83,7 +90,7 @@ def test_get_paginated_transactions_skips_running_balance_when_disabled(app_cont
 
     event.listen(db.engine, "before_cursor_execute", capture_sql)
     try:
-        rows, total = get_paginated_transactions(
+        rows, total, meta = get_paginated_transactions(
             1,
             2,
             user_id="user-1",
@@ -95,6 +102,7 @@ def test_get_paginated_transactions_skips_running_balance_when_disabled(app_cont
     assert total == 3
     assert len(rows) == 2
     assert all(tx["running_balance"] is None for tx in rows)
+    assert meta["page"] == 1
     assert any("limit" in stmt and "select" in stmt for stmt in statements)
 
 
@@ -107,13 +115,13 @@ def test_get_paginated_transactions_returns_running_balances_per_page(app_contex
 
     event.listen(db.engine, "before_cursor_execute", capture_sql)
     try:
-        page_one, total = get_paginated_transactions(
+        page_one, total, meta = get_paginated_transactions(
             1,
             2,
             user_id="user-1",
             include_running_balance=True,
         )
-        page_two, _ = get_paginated_transactions(
+        page_two, _, _ = get_paginated_transactions(
             2,
             2,
             user_id="user-1",
@@ -123,6 +131,28 @@ def test_get_paginated_transactions_returns_running_balances_per_page(app_contex
         event.remove(db.engine, "before_cursor_execute", capture_sql)
 
     assert total == 3
-    assert [tx["running_balance"] for tx in page_one] == [100.0, 110.0]
-    assert page_two[0]["running_balance"] == pytest.approx(130.0)
+    assert [tx["running_balance"] for tx in page_one] == [100.0, 90.0]
+    assert page_two[0]["running_balance"] == pytest.approx(70.0)
+    assert meta["page_size"] == 2
     assert any("limit" in stmt and "select" in stmt for stmt in statements)
+
+
+def test_get_paginated_transactions_uses_amount_sign_over_type(app_context):
+    _seed_transactions(
+        [
+            Decimal("-25.00"),
+            Decimal("60.00"),
+            Decimal("-15.00"),
+        ]
+    )
+
+    rows, total, meta = get_paginated_transactions(
+        1,
+        5,
+        user_id="user-1",
+        include_running_balance=True,
+    )
+
+    assert total == 3
+    assert [tx["running_balance"] for tx in rows] == [100.0, 125.0, 65.0]
+    assert meta["page"] == 1
