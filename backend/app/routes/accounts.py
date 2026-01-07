@@ -1,5 +1,6 @@
 """Account management and refresh routes."""
 
+import logging
 import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
@@ -639,12 +640,13 @@ def list_accounts():
                     if normalized_balance is not None
                     else None
                 )
-                logger.debug(
-                    "Normalized original balance of %s to %s because account type %s",
-                    a.balance,
-                    normalized_balance,
-                    a.type,
-                )
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.debug(
+                        "Normalized original balance of %s to %s because account type %s",
+                        a.balance,
+                        normalized_balance,
+                        a.type,
+                    )
 
                 data.append(
                     {
