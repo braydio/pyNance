@@ -14,7 +14,6 @@ import { formatAmount } from '@/utils/format'
 
 // Register Chart.js plugins globally
 import {
-  Tooltip,
   Legend,
   LineElement,
   BarElement,
