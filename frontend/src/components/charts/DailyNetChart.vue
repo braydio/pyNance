@@ -343,17 +343,27 @@ async function renderChart() {
 
   if (showAvgIncome.value)
     datasets.push(
-      buildLineDataset('Avg Income', labels.map(() => avgIncome), averageIncomeColor, {
-        borderDash: [6, 6],
-        order: 3,
-      }),
+      buildLineDataset(
+        'Avg Income',
+        labels.map(() => avgIncome),
+        averageIncomeColor,
+        {
+          borderDash: [6, 6],
+          order: 3,
+        },
+      ),
     )
   if (showAvgExpenses.value)
     datasets.push(
-      buildLineDataset('Avg Expenses', labels.map(() => avgExpenses), averageExpensesColor, {
-        borderDash: [4, 8],
-        order: 4,
-      }),
+      buildLineDataset(
+        'Avg Expenses',
+        labels.map(() => avgExpenses),
+        averageExpensesColor,
+        {
+          borderDash: [4, 8],
+          order: 4,
+        },
+      ),
     )
 
   if (showComparisonOverlay.value) {
