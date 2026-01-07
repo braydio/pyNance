@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from app.config import logger
 
+from app.config import logger
 from app.extensions import db
+from app.helpers.plaid_helpers import get_accounts
 from app.models import Institution
 from app.sql import account_logic
 from app.utils.finance_utils import normalize_account_balance
-from app.helpers.plaid_helpers import get_accounts
 from flask import Blueprint, jsonify, request
 
 institutions = Blueprint("institutions", __name__)

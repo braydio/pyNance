@@ -7,9 +7,8 @@ the codebase can remain agnostic to the active database.
 
 from __future__ import annotations
 
-from sqlalchemy import insert as generic_insert
-
 from app.extensions import db
+from sqlalchemy import insert as generic_insert
 
 
 def _current_dialect_name() -> str:

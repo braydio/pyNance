@@ -14,7 +14,7 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, jsonify, request, g, has_request_context
+from flask import Blueprint, g, has_request_context, jsonify, request
 from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
