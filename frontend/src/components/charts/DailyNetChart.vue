@@ -240,6 +240,9 @@ function tooltipPositioner(items, eventPosition) {
   if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
   return eventPosition ?? { x: 0, y: 0 }
 }
+if (Chart.Tooltip?.positioners) {
+  Chart.Tooltip.positioners.netDash = tooltipPositioner
+}
 
 function handleBarClick(evt) {
   if (!chartInstance.value) return
@@ -550,7 +553,7 @@ async function renderChart() {
           bodySpacing: 6,
           titleSpacing: 4,
           titleMarginBottom: 6,
-          position: tooltipPositioner,
+          position: 'netDash',
           callbacks: tooltipCallbacks,
         },
       },
