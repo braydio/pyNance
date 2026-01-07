@@ -1,24 +1,30 @@
 version = 1
 
-[[analyzers]]
+D[[analyzers]]
 name = "test-coverage"
 enabled = true
+  [analyzers.meta]
+  coverage_paths = ["coverage.xml"]
+  coverage_tool = "pytest"
 
 [[analyzers]]
 name = "python"
-
-[analyzers.meta]
-runtime_version = "3.x.x"
+enabled = true
+  [analyzers.meta]
+  runtime_version = "3.11.x" 
+  test_patterns = ["backend/tests/**/"]
 
 [[analyzers]]
 name = "javascript"
-
-[analyzers.meta]
-plugins = ["vue"]
-environment = ["cypress", "nodejs"]
+enabled = true
+  [analyzers.meta]
+  plugins = ["vue"]
+  node_version = "18.x.x"
+  environment = ["cypress", "nodejs"]
+  test_patterns = ["frontend/tests/*"]
 
 [[transformers]]
-name = "prettier"
+name = "black"
 
 [[transformers]]
 name = "isort"
@@ -27,5 +33,4 @@ name = "isort"
 name = "ruff"
 
 [[transformers]]
-name = "black"
-
+name = "prettier"
