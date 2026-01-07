@@ -1,7 +1,7 @@
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
 import pluginCypress from 'eslint-plugin-cypress/flat'
-import skipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import vueConfigPrettier from '@vue/eslint-config-prettier';
 
 export default [
   {
@@ -32,7 +32,7 @@ export default [
       'cypress/support/**/*.{js,ts,jsx,tsx}'
     ],
   },
-  skipFormatting,
+  vueConfigPrettier,
   {
     rules: {
       'vue/multi-word-component-names': 'off',
