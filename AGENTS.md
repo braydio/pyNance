@@ -40,3 +40,8 @@ Use this guide to keep contributions consistent with the project's structure, to
 - Copy `backend/example.env` to `backend/.env` (and `frontend/.env` if needed); never commit secrets.
 - Run `bandit -r backend/app/routes` regularly and treat hits as blockers.
 - Guard optional API responses with try/except or `Promise.allSettled`, providing safe fallbacks across services and UI flows.
+
+## Visual Design Policy
+
+- Do not make visual updates unless the user explicitly requests them; rely on documentation for any approved styling rules.
+- Current visual design guidelines for dashboard charts and similar components live in `docs/devnotes/` (for example `docs/devnotes/daily-net-chart.md` documents the Daily Net chart’s stacking, net indicator, tooltip, legend, trendline, and overlay behavior).

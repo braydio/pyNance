@@ -666,7 +666,9 @@ def _running_balance_expression():
     The expression starts from the normalized account balance (assets positive,
     liabilities negative) and walks backwards through transactions ordered by
     posting date so each row returns the balance immediately after that
-    transaction.
+    transaction. Transaction direction is derived from the sign of
+    ``Transaction.amount`` to avoid relying on potentially stale
+    ``transaction_type`` values.
     """
 
     account_type = func.lower(func.coalesce(Account.type, Account.subtype, "asset"))
@@ -681,10 +683,13 @@ def _running_balance_expression():
         else_=func.abs(balance_value),
     )
 
-    signed_amount = case(
-        (Transaction.amount >= 0, func.abs(Transaction.amount)),
-        else_=-func.abs(Transaction.amount),
+    amount_value = func.coalesce(Transaction.amount, 0)
+    # Use the stored amount sign to decide whether each transaction increases or decreases the balance.
+    amount_direction = case(
+        (amount_value < 0, -1),
+        else_=1,
     )
+    signed_amount = func.abs(amount_value) * amount_direction
 
     cumulative_delta = func.coalesce(
         func.sum(signed_amount).over(

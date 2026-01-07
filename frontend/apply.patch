@@ -1,0 +1,24 @@
+
+diff --git a/frontend/src/components/charts/DailyNetChart.vue b/frontend/src/components/charts/DailyNetChart.vue
+index 20d79f3..tooltips001 100644
+--- a/frontend/src/components/charts/DailyNetChart.vue
++++ b/frontend/src/components/charts/DailyNetChart.vue
+@@ -6,6 +6,15 @@
+ import { fetchDailyNet } from '@/api/charts'
+ import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
+ import { Chart } from 'chart.js/auto'
+ import { formatAmount } from '@/utils/format'
++
++// --- Fix: Ensure tooltips and chart plugins are registered globally ---
++import {
++  Tooltip,
++  Legend,
++  LineElement,
++  BarElement,
++  CategoryScale,
++  LinearScale,
++  PointElement,
++} from 'chart.js'
++
++Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
++// ----------------------------------------------------------------------

@@ -1,10 +1,10 @@
 """Utility helpers for normalizing financial data."""
 
 from decimal import Decimal
-from flask import g, has_request_context
 
 from app.config import logger
 from app.models import Transaction
+from flask import g, has_request_context
 
 TWOPLACES = Decimal("0.01")
 

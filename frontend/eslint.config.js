@@ -1,12 +1,46 @@
 import js from '@eslint/js'
 import pluginVue from 'eslint-plugin-vue'
 import pluginCypress from 'eslint-plugin-cypress/flat'
+import prettierPlugin from 'eslint-plugin-prettier'
 import vueConfigPrettier from '@vue/eslint-config-prettier'
 
 export default [
+  // Base JS and Vue recommendations
+  js.configs.recommended,
+  ...pluginVue.configs['flat/recommended'],
+  ...pluginVue.configs['flat/essential'],
+  vueConfigPrettier,
+
+  // Prettier integration
+  {
+    plugins: {
+      prettier: prettierPlugin,
+    },
+    rules: {
+      'prettier/prettier': 'warn',
+    },
+  },
+
+  // Cypress test configuration
+  {
+    ...pluginCypress.configs.recommended,
+    files: [
+      '**/__tests__/*.{cy,spec}.{js,ts,jsx,tsx}',
+      'cypress/e2e/**/*.{cy,spec}.{js,ts,jsx,tsx}',
+      'cypress/support/**/*.{js,ts,jsx,tsx}',
+    ],
+  },
+
+  // Files to ignore
+  {
+    name: 'app/files-to-ignore',
+    ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
+  },
+
+  // Vue-specific lint settings
   {
     name: 'app/files-to-lint',
-    files: ['**/*.{js,mjs,jsx,vue}'],
+    files: ['**/*.vue'],
     languageOptions: {
       parserOptions: {
         ecmaVersion: 'latest',
@@ -16,28 +50,7 @@ export default [
     },
   },
 
-  {
-    name: 'app/files-to-ignore',
-    ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
-  },
-
-  js.configs.recommended,
-  ...pluginVue.configs['flat/essential'],
-
-  {
-    ...pluginCypress.configs.recommended,
-    files: [
-      '**/__tests__/*.{cy,spec}.{js,ts,jsx,tsx}',
-      'cypress/e2e/**/*.{cy,spec}.{js,ts,jsx,tsx}',
-      'cypress/support/**/*.{js,ts,jsx,tsx}',
-    ],
-  },
-  vueConfigPrettier,
-  {
-    rules: {
-      'vue/multi-word-component-names': 'off',
-    },
-  },
+  // Config files (CommonJS globals)
   {
     files: ['*.config.js', '*.config.cjs'],
     languageOptions: {

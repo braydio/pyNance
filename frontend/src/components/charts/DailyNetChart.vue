@@ -12,11 +12,43 @@ import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { formatAmount } from '@/utils/format'
 
+// Register Chart.js plugins globally
+import {
+  Tooltip,
+  Legend,
+  LineElement,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+} from 'chart.js'
+
+Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
+
+// --- Safe registration for custom tooltip positioner ---
+if (Chart?.Tooltip?.positioners && !Chart.Tooltip.positioners.netDash) {
+  Chart.Tooltip.positioners.netDash = function (items, eventPosition) {
+    if (!items?.length) return eventPosition
+    const chart = items[0].chart
+    const netIdx = chart.data.datasets.findIndex((d) => d.netIndicator)
+    const dataIndex = items[0].dataIndex
+    if (netIdx === -1) return eventPosition
+    const meta = chart.getDatasetMeta(netIdx)
+    const point = meta?.data?.[dataIndex]
+    const fallbackPoint = items[0].element
+    if (point) return { x: point.x, y: point.y - 8 }
+    if (fallbackPoint) return { x: fallbackPoint.x, y: fallbackPoint.y - 8 }
+    return eventPosition ?? { x: 0, y: 0 }
+  }
+}
+// ----------------------------------------------------------------------
+
 /**
  * Render the daily net stacked bar chart with income, expenses, and net overlays.
  * Includes optional moving averages and comparison overlays to contextualize trends.
  */
 
+// Props
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
@@ -112,6 +144,26 @@ function movingAverage(values, window) {
   )
 }
 
+function buildLineDataset(label, data, color, overrides = {}) {
+  return {
+    type: 'line',
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 0,
+    spanGaps: true,
+    fill: false,
+    ...overrides,
+  }
+}
+
+function emphasizeColor(hex, channel = 'g') {
+  return hex
+}
+
 function getZoomedDisplayRange() {
   const end = parseDateKey(props.endDate) ?? new Date()
   const start = parseDateKey(props.startDate) ?? new Date(end)
@@ -164,7 +216,6 @@ function buildComparisonContext() {
 
 function buildComparisonSeries(labels, data, ctx) {
   if (!ctx) return []
-
   if (ctx.mode === 'prior_month_to_date') {
     const byDay = new Map()
     data.forEach((d) => {
@@ -173,7 +224,7 @@ function buildComparisonSeries(labels, data, ctx) {
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
-      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
+      return parsed ? byDay.get(parsed.getDate()) ?? null : null
     })
   }
 
@@ -193,26 +244,11 @@ function buildComparisonSeries(labels, data, ctx) {
   })
 }
 
-function emphasizeColor(hex, channel) {
-  let n = hex.replace('#', '')
-  if (n.length === 3)
-    n = n
-      .split('')
-      .map((c) => c + c)
-      .join('')
-  let r = parseInt(n.slice(0, 2), 16)
-  let g = parseInt(n.slice(2, 4), 16)
-  let b = parseInt(n.slice(4, 6), 16)
-  const d = 20
-  if (channel === 'g') g = Math.min(255, g + d)
-  if (channel === 'r') r = Math.min(255, r + d)
-  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`
-}
-
+// Chart plugin
 const netLinePlugin = {
   id: 'netLinePlugin',
   afterDatasetsDraw(chart) {
-    const idx = chart.data.datasets.findIndex((d) => d.label === 'Net')
+    const idx = chart.data.datasets.findIndex((d) => d.netIndicator)
     if (idx === -1) return
     const meta = chart.getDatasetMeta(idx)
     meta.data.forEach((bar) => {
@@ -266,27 +302,29 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
+  const normalizedExpenses = expenses.map((value) => (value === 0 ? 0 : -value))
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
+  const averageIncomeColor = emphasizeColor(incomeColor, 'g')
+  const averageExpensesColor = emphasizeColor(expenseColor, 'r')
+  const comparisonColor = getStyle('--color-accent-blue') || '#719cd6'
+  const sevenDayColor = getStyle('--color-accent-cyan') || '#63cdcf'
+  const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
-  const stackId = 'daily-net'
-  const netFillColor = emphasizeColor(netColor, 'g')
-
-  const fullLabels = buildDateRangeLabels(
-    requestRange.value.startDate || labels[0],
-    requestRange.value.endDate || labels.at(-1),
-  )
-  const fullNet = padDailyNetData(chartData.value, fullLabels).map((d) => d.net.parsedValue)
-
-  const ma7 = labels.map((l) => movingAverage(fullNet, 7)[fullLabels.indexOf(l)] ?? null)
-  const ma30 = labels.map((l) => movingAverage(fullNet, 30)[fullLabels.indexOf(l)] ?? null)
-
-  const avgIncome = income.length ? income.reduce((a, b) => a + b, 0) / income.length : 0
-  const avgExpenses = expenses.length ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
 
   const datasets = [
+    {
+      type: 'bar',
+      label: 'Expenses',
+      data: normalizedExpenses,
+      barThickness: 18,
+      backgroundColor: expenseColor,
+      borderColor: expenseColor,
+      borderWidth: 1,
+      order: 1,
+    },
     {
       type: 'bar',
       label: 'Income',
@@ -295,134 +333,72 @@ async function renderChart() {
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
-      stack: stackId,
-      order: 1,
+      order: 2,
     },
     {
-      type: 'bar',
-      label: 'Expenses',
-      data: expenses.map((value) => -value),
-      barThickness: 18,
-      backgroundColor: expenseColor,
-      borderColor: expenseColor,
-      borderWidth: 1,
-      stack: stackId,
-      order: 1,
-    },
-    {
-      type: 'bar',
+      type: 'line',
       label: 'Net',
       data: net,
-      barThickness: 12,
-      backgroundColor: netFillColor,
       borderColor: netColor,
-      borderWidth: 1,
-      stack: stackId,
-      order: 2,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      tension: 0.25,
+      pointRadius: 0,
+      netIndicator: true,
+      order: 3,
     },
   ]
 
   if (showAvgIncome.value)
-    datasets.push({ type: 'line', label: 'Avg Income', data: labels.map(() => avgIncome) })
+    datasets.push(
+      buildLineDataset(
+        'Avg Income',
+        labels.map(() => income.reduce((a, b) => a + b, 0) / income.length),
+        averageIncomeColor,
+        { borderDash: [6, 6], order: 4 },
+      ),
+    )
+
   if (showAvgExpenses.value)
-    datasets.push({ type: 'line', label: 'Avg Expenses', data: labels.map(() => avgExpenses) })
-  if (show7Day.value) datasets.push({ type: 'line', label: '7-Day Avg', data: ma7 })
-  if (show30Day.value) datasets.push({ type: 'line', label: '30-Day Avg', data: ma30 })
+    datasets.push(
+      buildLineDataset(
+        'Avg Expenses',
+        labels.map(() => expenses.reduce((a, b) => a + b, 0) / expenses.length),
+        averageExpensesColor,
+        { borderDash: [4, 8], order: 5 },
+      ),
+    )
 
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     const series = buildComparisonSeries(labels, comparisonData.value, ctx)
     const comparisonLabel =
       ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
-    datasets.push({ type: 'line', label: comparisonLabel, data: series })
+    datasets.push(
+      buildLineDataset(comparisonLabel, series, comparisonColor, {
+        borderDash: [2, 6],
+        order: 6,
+      }),
+    )
   }
 
-  const currentLookup = new Map()
-  labels.forEach((label, index) => {
-    currentLookup.set(label, displayData[index])
-  })
+  if (show30Day.value)
+    datasets.push(
+      buildLineDataset('30-Day Avg', movingAverage(net, 30), thirtyDayColor, {
+        borderDash: [8, 4],
+        borderWidth: 3,
+        order: 7,
+      }),
+    )
 
-  let priorLookup = null
-  let priorDateByLabel = null
-  if (showComparisonOverlay.value) {
-    const ctx = buildComparisonContext()
-    if (ctx) {
-      priorLookup = new Map()
-      priorDateByLabel = new Map()
-      if (ctx.mode === 'prior_month_to_date') {
-        const dayMap = new Map()
-        comparisonData.value.forEach((entry) => {
-          const parsed = parseDateKey(entry.date)
-          if (!parsed) return
-          dayMap.set(parsed.getDate(), entry)
-        })
-
-        labels.forEach((label) => {
-          const parsed = parseDateKey(label)
-          if (!parsed) return
-          const day = parsed.getDate()
-          const prior = dayMap.get(day)
-          if (!prior) return
-          const priorDate = new Date(ctx.priorStart.getFullYear(), ctx.priorStart.getMonth(), day)
-          priorLookup.set(label, prior)
-          priorDateByLabel.set(label, priorDate)
-        })
-      } else {
-        const indexMap = new Map()
-        comparisonData.value.forEach((entry) => {
-          const parsed = parseDateKey(entry.date)
-          if (!parsed) return
-          const idx = Math.floor((parsed - ctx.priorStart) / MS_PER_DAY)
-          if (idx >= 0 && idx < 30) indexMap.set(idx, entry)
-        })
-
-        labels.forEach((label) => {
-          const parsed = parseDateKey(label)
-          if (!parsed) return
-          const idx = Math.floor((parsed - ctx.currentStart) / MS_PER_DAY)
-          const prior = indexMap.get(idx)
-          if (!prior) return
-          const priorDate = new Date(ctx.priorStart)
-          priorDate.setDate(priorDate.getDate() + idx)
-          priorLookup.set(label, prior)
-          priorDateByLabel.set(label, priorDate)
-        })
-      }
-    }
-  }
-
-  const tooltipCallbacks = showComparisonOverlay.value
-    ? {
-        title: (items) => formatTooltipTitle(items[0]?.label),
-        label: (ctx) => {
-          if (ctx.datasetIndex !== 0) return null
-          const label = ctx.label
-          const row = currentLookup.get(label)
-          const lines = [
-            `Income: ${formatAmount(row?.income?.parsedValue || 0)}`,
-            `Expenses: ${formatAmount(row?.expenses?.parsedValue || 0)}`,
-            `Net: ${formatAmount(row?.net?.parsedValue || 0)}`,
-          ]
-
-          const prior = priorLookup?.get(label)
-          if (prior) {
-            const priorDate = priorDateByLabel?.get(label)
-            const priorTitle = priorDate
-              ? formatTooltipTitle(formatDateKey(priorDate))
-              : 'Prior period'
-            lines.push(`Prior (${priorTitle}):`)
-            lines.push(`Income: ${formatAmount(prior?.income?.parsedValue || 0)}`)
-            lines.push(`Expenses: ${formatAmount(prior?.expenses?.parsedValue || 0)}`)
-            lines.push(`Net: ${formatAmount(prior?.net?.parsedValue || 0)}`)
-          }
-
-          return lines
-        },
-      }
-    : {
-        title: (items) => formatTooltipTitle(items[0]?.label),
-        label: (ctx) => `${ctx.dataset.label}: ${formatAmount(ctx.raw || 0)}`,
-      }
+  if (show7Day.value)
+    datasets.push(
+      buildLineDataset('7-Day Avg', movingAverage(net, 7), sevenDayColor, {
+        borderDash: [2, 2],
+        borderWidth: 3,
+        order: 8,
+      }),
+    )
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
@@ -434,13 +410,10 @@ async function renderChart() {
       onClick: handleBarClick,
       scales: {
         x: {
-          stacked: true,
           grid: { display: false },
           ticks: {
             autoSkip: true,
             maxTicksLimit: 8,
-            minRotation: 0,
-            maxRotation: 0,
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
             callback: (_, index) => formatAxisLabel(labels[index]),
@@ -448,7 +421,7 @@ async function renderChart() {
         },
         y: {
           stacked: true,
-          grid: { color: getStyle('--divider') || 'rgba(255, 255, 255, 0.08)' },
+          grid: { color: getStyle('--divider') || 'rgba(255,255,255,0.08)' },
           ticks: {
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
@@ -457,14 +430,26 @@ async function renderChart() {
         },
       },
       plugins: {
-        legend: {
-          labels: {
-            color: getStyle('--color-text-light'),
-            font: { family: fontFamily, size: 12 },
-          },
-        },
+        legend: { display: false },
         tooltip: {
-          callbacks: tooltipCallbacks,
+          backgroundColor: getStyle('--theme-bg'),
+          borderColor: getStyle('--color-accent-yellow'),
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          mode: 'nearest',
+          intersect: true,
+          titleColor: getStyle('--color-accent-yellow'),
+          bodyColor: getStyle('--color-text-light'),
+          titleFont: { family: "'Fira Code', monospace", weight: '600' },
+          bodyFont: { family: "'Fira Code', monospace" },
+          cornerRadius: 10,
+          caretPadding: 8,
+          caretSize: 7,
+          bodySpacing: 6,
+          titleSpacing: 4,
+          titleMarginBottom: 6,
+          position: 'netDash',
         },
       },
     },
