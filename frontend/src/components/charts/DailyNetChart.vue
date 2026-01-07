@@ -280,8 +280,6 @@ async function renderChart() {
 
   const avgIncome = income.length ? income.reduce((a, b) => a + b, 0) / income.length : 0
   const avgExpenses = expenses.length ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
-  const avgIncomeColor = getStyle('--color-accent-cyan') || '#4ade80'
-  const avgExpensesColor = getStyle('--color-accent-red') || '#f87171'
   const net7DayColor = getStyle('--color-accent-purple') || '#a855f7'
   const net30DayColor = getStyle('--color-accent-cyan') || '#38bdf8'
 
@@ -322,26 +320,37 @@ async function renderChart() {
     },
   ]
 
-  if (showAvgIncome.value)
+  if (showAvgIncome.value) {
+    const avgIncomeValue =
+      income.length > 0 ? income.reduce((a, b) => a + b, 0) / income.length : 0
     datasets.push({
       type: 'line',
       label: 'Avg Income',
-      data: labels.map(() => avgIncome),
-      borderColor: avgIncomeColor,
+      data: Array(labels.length).fill(avgIncomeValue),
+      borderColor: incomeColor,
       backgroundColor: 'transparent',
       pointRadius: 0,
       borderWidth: 2,
+      borderDash: [6, 4],
+      fill: false,
     })
-  if (showAvgExpenses.value)
+  }
+
+  if (showAvgExpenses.value) {
+    const avgExpensesValue =
+      expenses.length > 0 ? expenses.reduce((a, b) => a + b, 0) / expenses.length : 0
     datasets.push({
       type: 'line',
       label: 'Avg Expenses',
-      data: labels.map(() => avgExpenses),
-      borderColor: avgExpensesColor,
+      data: Array(labels.length).fill(avgExpensesValue),
+      borderColor: expenseColor,
       backgroundColor: 'transparent',
       pointRadius: 0,
       borderWidth: 2,
+      borderDash: [6, 4],
+      fill: false,
     })
+  }
   if (show7Day.value)
     datasets.push({
       type: 'line',
