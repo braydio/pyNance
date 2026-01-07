@@ -266,13 +266,32 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
+  const normalizedExpenses = expenses.map((value) => (value === 0 ? 0 : -value))
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const netColor = getStyle('--color-accent-yellow') || '#eab308'
+  const averageIncomeColor = emphasizeColor(incomeColor, 'g')
+  const averageExpensesColor = emphasizeColor(expenseColor, 'r')
+  const comparisonColor = getStyle('--color-accent-blue') || '#719cd6'
+  const sevenDayColor = getStyle('--color-accent-cyan') || '#63cdcf'
+  const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
   const stackId = 'daily-net'
   const netFillColor = emphasizeColor(netColor, 'g')
+  const buildLineDataset = (label, data, color, overrides = {}) => ({
+    type: 'line',
+    label,
+    data,
+    borderColor: color,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    tension: 0.25,
+    pointRadius: 0,
+    spanGaps: true,
+    fill: false,
+    ...overrides,
+  })
 
   const fullLabels = buildDateRangeLabels(
     requestRange.value.startDate || labels[0],
@@ -301,7 +320,7 @@ async function renderChart() {
     {
       type: 'bar',
       label: 'Expenses',
-      data: expenses.map((value) => -value),
+      data: normalizedExpenses,
       barThickness: 18,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
@@ -323,19 +342,49 @@ async function renderChart() {
   ]
 
   if (showAvgIncome.value)
-    datasets.push({ type: 'line', label: 'Avg Income', data: labels.map(() => avgIncome) })
+    datasets.push(
+      buildLineDataset('Avg Income', labels.map(() => avgIncome), averageIncomeColor, {
+        borderDash: [6, 6],
+        order: 3,
+      }),
+    )
   if (showAvgExpenses.value)
-    datasets.push({ type: 'line', label: 'Avg Expenses', data: labels.map(() => avgExpenses) })
-  if (show7Day.value) datasets.push({ type: 'line', label: '7-Day Avg', data: ma7 })
-  if (show30Day.value) datasets.push({ type: 'line', label: '30-Day Avg', data: ma30 })
+    datasets.push(
+      buildLineDataset('Avg Expenses', labels.map(() => avgExpenses), averageExpensesColor, {
+        borderDash: [4, 8],
+        order: 4,
+      }),
+    )
 
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     const series = buildComparisonSeries(labels, comparisonData.value, ctx)
     const comparisonLabel =
       ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
-    datasets.push({ type: 'line', label: comparisonLabel, data: series })
+    datasets.push(
+      buildLineDataset(comparisonLabel, series, comparisonColor, {
+        borderDash: [2, 6],
+        order: 5,
+      }),
+    )
   }
+
+  if (show30Day.value)
+    datasets.push(
+      buildLineDataset('30-Day Avg', ma30, thirtyDayColor, {
+        borderDash: [8, 4],
+        borderWidth: 3,
+        order: 6,
+      }),
+    )
+  if (show7Day.value)
+    datasets.push(
+      buildLineDataset('7-Day Avg', ma7, sevenDayColor, {
+        borderDash: [2, 2],
+        borderWidth: 3,
+        order: 7,
+      }),
+    )
 
   const currentLookup = new Map()
   labels.forEach((label, index) => {
