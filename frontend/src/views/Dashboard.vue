@@ -14,6 +14,7 @@
           :date-range="dateRange"
           :debounced-range="debouncedRange"
           :net-range="netRange"
+          :net-timeframe="netTimeframe"
           :zoomed-out="zoomedOut"
           :net-summary="netSummary"
           :chart-data="chartData"
@@ -32,6 +33,7 @@
           @update:show-avg-expenses="showAvgExpenses = $event"
           @update:show-comparison-overlay="showComparisonOverlay = $event"
           @update:comparison-mode="comparisonMode = $event"
+          @update:net-timeframe="netTimeframe = $event"
           @net-summary-change="netSummary = $event"
           @net-data-change="chartData = $event"
           @net-bar-click="onNetBarClick"
@@ -319,10 +321,6 @@ const netRange = computed(() => {
     end,
   }
 })
-
-function toggleNetTimeframe() {
-  netTimeframe.value = netTimeframe.value === 'mtd' ? 'rolling_30' : 'mtd'
-}
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const {

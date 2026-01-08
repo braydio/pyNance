@@ -49,11 +49,42 @@
           v-model:show-comparison-overlay="showComparisonOverlayModel"
           v-model:comparison-mode="comparisonModeModel"
         />
-        <div class="flex items-center justify-center mb-4">
-          <h2 class="daily-net-chart-title">
-            <span class="title-text">Net Income</span>
-            <span class="title-subtitle">(Daily)</span>
-          </h2>
+        <div class="flex items-center justify-between mb-4 gap-4">
+          <div class="flex-1 flex justify-center">
+            <h2 class="daily-net-chart-title">
+              <span class="title-text">Net Income</span>
+              <span class="title-subtitle">(Daily)</span>
+            </h2>
+          </div>
+          <div
+            class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
+            data-testid="daily-net-timeframe-toggle"
+          >
+            <button
+              class="px-3 py-1 text-sm transition"
+              :class="
+                netTimeframe === 'mtd'
+                  ? 'bg-[var(--color-accent-cyan)] text-[var(--color-bg)]'
+                  : 'text-muted hover:bg-[var(--color-bg-dark)]'
+              "
+              type="button"
+              @click="emit('update:net-timeframe', 'mtd')"
+            >
+              MTD
+            </button>
+            <button
+              class="px-3 py-1 text-sm transition"
+              :class="
+                netTimeframe === 'rolling_30'
+                  ? 'bg-[var(--color-accent-cyan)] text-[var(--color-bg)]'
+                  : 'text-muted hover:bg-[var(--color-bg-dark)]'
+              "
+              type="button"
+              @click="emit('update:net-timeframe', 'rolling_30')"
+            >
+              Rolling 30
+            </button>
+          </div>
         </div>
 
         <DailyNetChart
@@ -66,6 +97,7 @@
           :show-avg-expenses="showAvgExpenses"
           :show-comparison-overlay="showComparisonOverlay"
           :comparison-mode="comparisonMode"
+          :timeframe="netTimeframe"
           @summary-change="emit('net-summary-change', $event)"
           @data-change="emit('net-data-change', $event)"
           @bar-click="emit('net-bar-click', $event)"
@@ -116,6 +148,11 @@ const props = defineProps({
     type: Object,
     default: null,
   },
+  netTimeframe: {
+    type: String,
+    default: 'mtd',
+    validator: (value) => ['mtd', 'rolling_30'].includes(value),
+  },
   zoomedOut: { type: Boolean, default: false },
   netSummary: { type: Object, required: true },
   chartData: { type: Array, default: () => [] },
@@ -137,6 +174,7 @@ const emit = defineEmits([
   'update:show-avg-expenses',
   'update:show-comparison-overlay',
   'update:comparison-mode',
+  'update:net-timeframe',
   'net-summary-change',
   'net-data-change',
   'net-bar-click',
