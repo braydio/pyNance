@@ -266,4 +266,71 @@ describe('DailyNetChart.vue', () => {
     lastConfig = chartMock.mock.calls.at(-1)[0]
     expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(false)
   })
+
+  it('formats tooltip lines with income, expenses, net, and comparison values', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-05-02',
+            net: { parsedValue: 55 },
+          },
+        ],
+      })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        timeframe: 'mtd',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
+
+    const lines = tooltipCallbacks.label({
+      chart: {
+        $dailyNetRows: [
+          {
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+        ],
+        $comparisonSeries: [55],
+        $comparisonLabel: 'Prior month to-date',
+      },
+      dataIndex: 0,
+      datasetIndex: 0,
+    })
+
+    expect(lines).toEqual([
+      'Income: $100.00',
+      'Expenses: ($40.00)',
+      'Net: $60.00',
+      'Transactions: 2',
+      '',
+      'Prior month to-date: $55.00',
+    ])
+  })
 })

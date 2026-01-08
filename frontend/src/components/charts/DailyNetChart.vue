@@ -7,6 +7,12 @@
 </template>
 
 <script setup>
+/**
+ * DailyNetChart.vue
+ *
+ * Renders the dashboard daily net chart with stacked income/expense bars,
+ * a net indicator dash, and a detail tooltip aligned to the net value.
+ */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js/auto'
@@ -26,10 +32,11 @@ import {
 Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
 // --- Safe registration for custom tooltip positioner ---
-if (Chart?.Tooltip?.positioners && !Chart.Tooltip.positioners.netDash) {
-  Chart.Tooltip.positioners.netDash = function (items, eventPosition) {
+if (Tooltip?.positioners && !Tooltip.positioners.netDash) {
+  Tooltip.positioners.netDash = function (items, eventPosition) {
     if (!items?.length) return eventPosition
-    const chart = items[0].chart
+    const chart = items[0]?.chart
+    if (!chart?.getDatasetMeta) return eventPosition
     const dataIndex = items[0].dataIndex
     const firstMeta = chart.getDatasetMeta(0)
     const bar = firstMeta?.data?.[dataIndex]
@@ -80,6 +87,47 @@ const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
 
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+
+/**
+ * Return the normalized tooltip data for a given chart index.
+ *
+ * @param {import('chart.js').Chart} chart - The chart instance.
+ * @param {number} dataIndex - The active data index.
+ * @returns {Object|null} Tooltip payload with row data and comparison info.
+ */
+function getTooltipPayload(chart, dataIndex) {
+  const row = chart?.$dailyNetRows?.[dataIndex]
+  if (!row) return null
+  return {
+    row,
+    comparisonLabel: chart?.$comparisonLabel || '',
+    comparisonValue: chart?.$comparisonSeries?.[dataIndex] ?? null,
+  }
+}
+
+/**
+ * Build the tooltip body lines for the daily net chart.
+ *
+ * @param {Object} payload - Tooltip payload.
+ * @param {Object} payload.row - Daily net row data.
+ * @param {string} payload.comparisonLabel - Label for the comparison series.
+ * @param {number|null} payload.comparisonValue - Comparison series value.
+ * @returns {string[]} Tooltip lines to render.
+ */
+function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
+  const lines = [
+    `Income: ${formatAmount(row.income.parsedValue)}`,
+    `Expenses: ${formatAmount(row.expenses.parsedValue)}`,
+    `Net: ${formatAmount(row.net.parsedValue)}`,
+    `Transactions: ${row.transaction_count ?? 0}`,
+  ]
+
+  if (comparisonLabel && comparisonValue != null) {
+    lines.push('', `${comparisonLabel}: ${formatAmount(comparisonValue)}`)
+  }
+
+  return lines
+}
 
 function formatDateKey(date) {
   const d = date instanceof Date && !Number.isNaN(date) ? date : new Date()
@@ -248,6 +296,7 @@ function buildComparisonSeries(labels, data, ctx) {
 const netDashPlugin = {
   id: 'netDashPlugin',
   afterDatasetsDraw(chart) {
+    if (!chart?.ctx || !chart?.getDatasetMeta) return
     const netValues = chart.$netValues
     if (!Array.isArray(netValues)) return
     const firstMeta = chart.getDatasetMeta(0)
@@ -261,6 +310,7 @@ const netDashPlugin = {
       const x = bar.x
       const y = yScale.getPixelForValue(netValue)
       const { ctx } = chart
+      if (!ctx?.save) return
       ctx.save()
       ctx.strokeStyle = getStyle('--color-accent-yellow')
       ctx.lineWidth = 2
@@ -284,9 +334,17 @@ function handleBarClick(evt) {
   if (points.length) emit('bar-click', chartInstance.value.data.labels[points[0].index])
 }
 
+/**
+ * Render the Daily Net chart and cache tooltip metadata for hover callbacks.
+ *
+ * @returns {Promise<void>} Resolves after the chart is rendered.
+ */
 async function renderChart() {
   await nextTick()
-  chartInstance.value?.destroy()
+  if (chartInstance.value) {
+    chartInstance.value.stop()
+    chartInstance.value.destroy()
+  }
 
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
@@ -366,13 +424,16 @@ async function renderChart() {
       ),
     )
 
+  let comparisonSeries = null
+  let comparisonLabel = ''
+
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
-    const series = buildComparisonSeries(labels, comparisonData.value, ctx)
-    const comparisonLabel =
+    comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
+    comparisonLabel =
       ctx?.mode === 'prior_month_to_date' ? 'Prior month to-date' : 'Previous 30 days'
     datasets.push(
-      buildLineDataset(comparisonLabel, series, comparisonColor, {
+      buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
         borderDash: [2, 6],
         order: 6,
       }),
@@ -404,6 +465,7 @@ async function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      animation: false,
       onClick: handleBarClick,
       scales: {
         x: {
@@ -434,8 +496,8 @@ async function renderChart() {
           borderWidth: 1,
           padding: 12,
           displayColors: false,
-          mode: 'nearest',
-          intersect: true,
+          mode: 'index',
+          intersect: false,
           titleColor: getStyle('--color-accent-yellow'),
           bodyColor: getStyle('--color-text-light'),
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
@@ -447,10 +509,22 @@ async function renderChart() {
           titleSpacing: 4,
           titleMarginBottom: 6,
           position: 'netDash',
+          callbacks: {
+            title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
+            label: (context) => {
+              if (context.datasetIndex !== 0) return null
+              const payload = getTooltipPayload(context.chart, context.dataIndex)
+              return payload ? buildTooltipLines(payload) : null
+            },
+          },
         },
       },
     },
   })
+  // Cache tooltip-specific metadata on the chart instance for fast lookup.
+  chartInstance.value.$dailyNetRows = displayData
+  chartInstance.value.$comparisonSeries = comparisonSeries
+  chartInstance.value.$comparisonLabel = comparisonLabel
   chartInstance.value.$netValues = net
 }
 
