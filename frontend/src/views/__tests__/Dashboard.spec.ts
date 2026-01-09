@@ -324,6 +324,7 @@ const NetOverviewSectionStub = defineComponent({
     dateRange: { type: Object, required: true },
     debouncedRange: { type: Object, required: true },
     netRange: { type: Object, default: null },
+    netTimeframe: { type: String, default: 'mtd' },
     zoomedOut: { type: Boolean, default: false },
     netSummary: { type: Object, required: true },
     chartData: { type: Array, default: () => [] },
@@ -344,6 +345,7 @@ const NetOverviewSectionStub = defineComponent({
     'update:show-avg-expenses',
     'update:show-comparison-overlay',
     'update:comparison-mode',
+    'update:net-timeframe',
     'net-summary-change',
     'net-data-change',
     'net-bar-click',
@@ -356,8 +358,8 @@ const NetOverviewSectionStub = defineComponent({
   template: `
     <div class="net-overview-section-stub">
       <DailyNetChart
-        :start-date="props.debouncedRange.start || props.dateRange.start"
-        :end-date="props.debouncedRange.end || props.dateRange.end"
+        :start-date="(props.netRange?.start || props.debouncedRange.start || props.dateRange.start)"
+        :end-date="(props.netRange?.end || props.debouncedRange.end || props.dateRange.end)"
         :zoomed-out="props.zoomedOut"
         :show7-day="props.show7Day"
         :show30-day="props.show30Day"
@@ -365,6 +367,7 @@ const NetOverviewSectionStub = defineComponent({
         :show-avg-expenses="props.showAvgExpenses"
         :show-comparison-overlay="props.showComparisonOverlay"
         :comparison-mode="props.comparisonMode"
+        :timeframe="props.netTimeframe"
       />
     </div>
   `,
@@ -577,6 +580,18 @@ describe('Dashboard.vue', () => {
     expect(dailyNetChartProps.startDate).toBe('2024-02-01')
     expect(dailyNetChartProps.endDate).toBe('2024-02-15')
     expect(dailyNetChartProps.timeframe).toBe('mtd')
+  })
+
+  it('updates the daily net timeframe when the net overview emits changes', async () => {
+    const wrapper = createWrapper()
+    await nextTick()
+
+    const netOverview = wrapper.findComponent(NetOverviewSectionStub)
+    netOverview.vm.$emit('update:net-timeframe', 'rolling_30')
+    await nextTick()
+
+    expect(wrapper.vm.netTimeframe).toBe('rolling_30')
+    expect(dailyNetChartProps.timeframe).toBe('rolling_30')
   })
 
   it('surfaces a unified fallback message when initial loading fails', async () => {
