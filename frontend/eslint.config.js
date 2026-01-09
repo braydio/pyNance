@@ -1,19 +1,17 @@
-import js from '@eslint/js';
-import pluginVue from 'eslint-plugin-vue';
-import pluginCypress from 'eslint-plugin-cypress/flat';
-import prettierPlugin from 'eslint-plugin-prettier';
-import { FlatCompat } from '@eslint/eslintrc';
-
-const compat = new FlatCompat();
+import js from '@eslint/js'
+import pluginVue from 'eslint-plugin-vue'
+import pluginCypress from 'eslint-plugin-cypress/flat'
+import prettierPlugin from 'eslint-plugin-prettier'
+import vueConfigPrettier from '@vue/eslint-config-prettier'
 
 export default [
+  // Base JS and Vue recommendations
   js.configs.recommended,
-  pluginVue.configs['flat/recommended'],
-  pluginVue.configs['flat/essential'],
+  ...pluginVue.configs['flat/recommended'],
+  ...pluginVue.configs['flat/essential'],
+  vueConfigPrettier,
 
-  // Wrap legacy prettier config using FlatCompat
-  ...compat.extends('@vee/eslint-config-prettier'),
-
+  // Prettier integration
   {
     plugins: {
       prettier: prettierPlugin,
@@ -23,6 +21,7 @@ export default [
     },
   },
 
+  // Cypress test configuration
   {
     ...pluginCypress.configs.recommended,
     files: [
@@ -32,11 +31,13 @@ export default [
     ],
   },
 
+  // Files to ignore
   {
     name: 'app/files-to-ignore',
     ignores: ['**/dist/**', '**/dist-ssr/**', '**/coverage/**'],
   },
 
+  // Vue-specific lint settings
   {
     name: 'app/files-to-lint',
     files: ['**/*.vue'],
@@ -49,6 +50,7 @@ export default [
     },
   },
 
+  // Config files (CommonJS globals)
   {
     files: ['*.config.js', '*.config.cjs'],
     languageOptions: {
@@ -58,4 +60,5 @@ export default [
       },
     },
   },
-];
+]
+
