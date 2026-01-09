@@ -6,11 +6,15 @@ on:
       package:
         description: "PyPI package name to upgrade"
         required: true
-        default: requests
+        default: "requests"
       requirements_files:
-        description: "Whitespace-separated requirement files to update"
+        description: "Requirements files to update"
         required: false
         default: "requirements.txt requirements-dev.txt requirements-slim.txt"
+
+  schedule:
+    # Runs every Monday at 9am UTC
+    - cron: "0 9 * * 1"
 
 jobs:
   upgrade:
