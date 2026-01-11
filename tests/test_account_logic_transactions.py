@@ -183,3 +183,40 @@ def test_get_paginated_transactions_serializes_tags_with_default(app_context):
     assert rows[1]["tags"] == ["#untagged"]
     assert rows[2]["tags"] == ["#untagged"]
     assert meta["page"] == 1
+
+
+def test_get_paginated_transactions_filters_by_tags(app_context):
+    _seed_transactions(tags={"tx-1": ["#coffee"], "tx-2": ["groceries"]})
+
+    rows, total, _ = get_paginated_transactions(
+        1,
+        5,
+        user_id="user-1",
+        include_running_balance=False,
+        tags=["#coffee"],
+    )
+
+    assert total == 1
+    assert rows[0]["transaction_id"] == "tx-1"
+
+    rows, total, _ = get_paginated_transactions(
+        1,
+        5,
+        user_id="user-1",
+        include_running_balance=False,
+        tags=["#untagged"],
+    )
+
+    assert total == 1
+    assert rows[0]["transaction_id"] == "tx-3"
+
+    rows, total, _ = get_paginated_transactions(
+        1,
+        5,
+        user_id="user-1",
+        include_running_balance=False,
+        tags=["#coffee", "#untagged"],
+    )
+
+    assert total == 2
+    assert {row["transaction_id"] for row in rows} == {"tx-1", "tx-3"}

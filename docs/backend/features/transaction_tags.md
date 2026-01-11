@@ -30,6 +30,13 @@ This keeps downstream consumers consistent without requiring a stored tag row
 for every transaction. The update endpoint can also normalize blank tag edits
 to `#untagged` so the association remains explicit after user edits.
 
+## Filtering and Metrics
+
+- The transactions list endpoint accepts `tag` or `tags` query parameters to
+  scope results to one or more tag names.
+- Tag metrics are exposed via `/api/charts/tag_metrics`, returning total spend
+  and transaction counts per tag for the requested date range.
+
 ## Serialization Notes
 
 `get_paginated_transactions` returns a `tags` field as a list of tag names on
