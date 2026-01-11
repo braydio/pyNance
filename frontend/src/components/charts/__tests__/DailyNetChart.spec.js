@@ -6,6 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { Tooltip } from 'chart.js'
 import DailyNetChart from '../DailyNetChart.vue'
 import { fetchDailyNet } from '@/api/charts'
 
@@ -332,5 +333,19 @@ describe('DailyNetChart.vue', () => {
       '',
       'Prior month to-date: $55.00',
     ])
+  })
+
+  it('anchors the tooltip position to the net indicator dash', () => {
+    const yScale = { getPixelForValue: vi.fn().mockReturnValue(120) }
+    const chart = {
+      getDatasetMeta: vi.fn().mockReturnValue({ data: [{ x: 64 }] }),
+      scales: { y: yScale },
+      $netValues: [42],
+    }
+
+    const position = Tooltip.positioners.netDash([{ chart, dataIndex: 0 }], { x: 0, y: 0 })
+
+    expect(yScale.getPixelForValue).toHaveBeenCalledWith(42)
+    expect(position).toEqual({ x: 64, y: 120 })
   })
 })
