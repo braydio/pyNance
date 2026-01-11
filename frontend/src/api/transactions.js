@@ -20,14 +20,22 @@ import axios from 'axios'
  *
  * @param {Object} params - Query parameters such as `start_date`, `end_date`,
  *   `account_ids` (array or comma-separated string), `tx_type` (credit|debit),
- *   and an optional `category_ids` array or comma-separated string. Set
- *   `include_running_balance` to `true` only when the UI needs running balances
- *   returned. Provide `transaction_id` to fetch a specific transaction without
- *   altering the default pagination window.
+ *   optional `tags` (array or comma-separated string), and an optional
+ *   `category_ids` array or comma-separated string. Set `include_running_balance`
+ *   to `true` only when the UI needs running balances returned. Provide
+ *   `transaction_id` to fetch a specific transaction without altering the
+ *   default pagination window.
  * @returns {Promise<Object>} Result containing a transactions array and total count.
  */
 export const fetchTransactions = async (params = {}) => {
-  const { category_ids, account_ids, include_running_balance = false, ...rest } = params
+  const {
+    category_ids,
+    account_ids,
+    tags,
+    tag,
+    include_running_balance = false,
+    ...rest
+  } = params
   const query = { ...rest }
 
   if (include_running_balance) {
@@ -44,6 +52,12 @@ export const fetchTransactions = async (params = {}) => {
     query.account_ids = account_ids.join(',')
   } else if (account_ids) {
     query.account_ids = account_ids
+  }
+  const tagFilters = tags ?? tag
+  if (Array.isArray(tagFilters)) {
+    query.tags = tagFilters.join(',')
+  } else if (tagFilters) {
+    query.tags = tagFilters
   }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })

@@ -127,18 +127,29 @@
       </div>
 
       <!-- REVIEW TRANSACTIONS CARD -->
-      <div
-        class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-      >
-        <div>
-          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
-          <p class="text-muted">
-            Step through transactions in batches of 10, approve quickly, or edit in place without
-            leaving the dashboard.
-          </p>
+    <div
+      class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+    >
+      <div>
+        <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+        <p class="text-muted">
+          Step through transactions in batches of 10, approve quickly, or edit in place without
+          leaving the dashboard.
+        </p>
+        <div class="mt-3 flex flex-col gap-2 max-w-sm">
+          <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+            Tag filter
+          </label>
+          <input
+            v-model="reviewTagFilter"
+            class="input"
+            type="text"
+            placeholder="Optional tag (e.g., #groceries)"
+          />
         </div>
-        <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
       </div>
+      <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+    </div>
 
       <!-- RESERVED TABLES PANEL -->
       <div
@@ -351,10 +362,19 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
-const reviewFilters = computed(() => ({
-  start_date: debouncedRange.value.start,
-  end_date: debouncedRange.value.end,
-}))
+const reviewTagFilter = ref('')
+const normalizedReviewTag = computed(() => reviewTagFilter.value.trim())
+
+const reviewFilters = computed(() => {
+  const filters = {
+    start_date: debouncedRange.value.start,
+    end_date: debouncedRange.value.end,
+  }
+  if (normalizedReviewTag.value) {
+    filters.tags = normalizedReviewTag.value
+  }
+  return filters
+})
 
 const accountsExpanded = isVisible('accounts')
 const transactionsExpanded = isVisible('transactions')

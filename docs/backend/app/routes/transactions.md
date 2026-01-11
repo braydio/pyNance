@@ -28,7 +28,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
   - **Inputs:** None.
   - **Outputs:** `{ "status": "success", "pairs": [...] }` listing likely transfer pairs.
 - **GET /api/transactions/get_transactions`and`/api/transactions/<account_id>/transactions`**
-  - **Inputs:** Pagination parameters (`page`, `page_size`), optional `start_date`, `end_date`, `category`, `account_ids`, `tx_type`, and `recent=true` for account-specific endpoint (with optional `limit`).
+  - **Inputs:** Pagination parameters (`page`, `page_size`), optional `start_date`, `end_date`, `category`, `account_ids`, `tx_type`, optional `tag`/`tags` for filtering by tag, and `recent=true` for account-specific endpoint (with optional `limit`).
   - **Outputs:** `{ "status": "success", "data": { "transactions": [...], "total": int } }`; when `recent=true`, pagination is bypassed and only the latest `limit` rows are returned.
 - **GET /api/transactions/merchants**
   - **Inputs:** Optional `q` substring filter and `limit` (default 50).

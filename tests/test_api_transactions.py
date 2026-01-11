@@ -39,7 +39,7 @@ sys.modules["app.extensions"] = extensions_stub
 # SQL package and logic
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
-account_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1)
+account_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1, {})
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
@@ -72,7 +72,7 @@ def test_get_transactions_returns_data(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module.account_logic,
         "get_paginated_transactions",
-        lambda *a, **k: ([{"txn": 1, "category_icon_url": "url"}], 1),
+        lambda *a, **k: ([{"txn": 1, "category_icon_url": "url"}], 1, {}),
     )
     resp = client.get("/api/transactions/get_transactions")
     assert resp.status_code == 200
@@ -99,13 +99,18 @@ def test_account_transactions_recent_limited_and_sorted(client, monkeypatch):
         category=None,
         user_id=None,
         account_id=None,
+        account_ids=None,
         recent=False,
         limit=None,
+        tags=None,
+        tx_type=None,
+        transaction_id=None,
+        include_running_balance=False,
     ):
         captured["recent"] = recent
         captured["limit"] = limit
         ordered = sorted(sample, key=lambda x: x["date"], reverse=True)
-        return ordered[: (limit or page_size)], len(sample)
+        return ordered[: (limit or page_size)], len(sample), {}
 
     monkeypatch.setattr(
         transactions_module.account_logic,
@@ -120,6 +125,24 @@ def test_account_transactions_recent_limited_and_sorted(client, monkeypatch):
     assert len(ids) == 2
     assert captured["recent"] is True
     assert captured["limit"] == 2
+
+
+def test_get_transactions_accepts_tag_filters(client, monkeypatch):
+    captured = {}
+
+    def fake_get_paginated(*_args, **kwargs):
+        captured["tags"] = kwargs.get("tags")
+        return ([{"txn": 1}], 1, {})
+
+    monkeypatch.setattr(
+        transactions_module.account_logic,
+        "get_paginated_transactions",
+        fake_get_paginated,
+    )
+
+    resp = client.get("/api/transactions/get_transactions?tag=coffee")
+    assert resp.status_code == 200
+    assert captured["tags"] == ["#coffee", "coffee"]
 
 
 def test_update_transaction_validates_date(client, monkeypatch):

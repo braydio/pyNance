@@ -11,13 +11,13 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
-from app.models import Account, AccountHistory, Category, PlaidAccount, Transaction
+from app.models import Account, AccountHistory, Category, PlaidAccount, Tag, Transaction
 from app.sql import transaction_rules_logic
 from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.utils.finance_utils import display_transaction_amount
 from plaid import ApiException
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
@@ -159,6 +159,7 @@ def _tx_cache_key(
     account_id,
     account_ids,
     tx_type,
+    tags,
     include_running_balance,
     recent,
     limit,
@@ -170,6 +171,9 @@ def _tx_cache_key(
         start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
     )
     end = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
+    tags_key = None
+    if tags:
+        tags_key = tuple(sorted(tags))
     return (
         TX_CACHE_VERSION,
         page,
@@ -181,6 +185,7 @@ def _tx_cache_key(
         account_id or "",
         ids,
         tx_type or "",
+        tags_key,
         bool(include_running_balance),
         bool(recent),
         limit,
@@ -498,6 +503,7 @@ def get_paginated_transactions(
     account_ids=None,
     tx_type=None,
     transaction_id=None,
+    tags=None,
     recent=False,
     limit=None,
     include_running_balance=False,
@@ -522,6 +528,9 @@ def get_paginated_transactions(
         ``"credit"`` or ``"debit"`` to filter by amount sign.
     transaction_id : str, optional
         Specific transaction identifier to target a single record.
+    tags : list[str], optional
+        Filter by tag names. Include ``#untagged`` to match transactions with
+        no associated tags.
     recent : bool, default False
         If ``True`` limit results to the newest records ignoring pagination.
     limit : int, optional
@@ -529,9 +538,12 @@ def get_paginated_transactions(
     include_running_balance : bool, default False
         When ``True``, include a per-transaction running balance computed with a window
         function so pagination does not require loading every row into memory.
-    tags : list[str]
-        Tag names associated with the transaction. When no tags exist, the
-        default ``#untagged`` label is returned.
+
+    Returns
+    -------
+    tuple[list[dict], int, dict]
+        Serialized transactions, total count, and pagination metadata. Each
+        transaction includes a ``tags`` list with ``#untagged`` as a fallback.
     """
 
     query = (
@@ -563,6 +575,16 @@ def get_paginated_transactions(
         query = query.filter(Transaction.amount > 0)
     elif tx_type == "debit":
         query = query.filter(Transaction.amount < 0)
+    if tags:
+        include_untagged = "#untagged" in tags
+        tag_names = [tag for tag in tags if tag != "#untagged"]
+        tag_filters = []
+        if tag_names:
+            tag_filters.append(Transaction.tags.any(Tag.name.in_(tag_names)))
+        if include_untagged:
+            tag_filters.append(~Transaction.tags.any())
+        if tag_filters:
+            query = query.filter(or_(*tag_filters))
 
     total = query.order_by(None).count()
     offset = (page - 1) * page_size
@@ -592,6 +614,7 @@ def get_paginated_transactions(
             account_id,
             account_ids,
             tx_type,
+            tags,
             include_running_balance,
             recent,
             limit,

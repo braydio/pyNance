@@ -8,7 +8,7 @@ from typing import Any, Dict
 
 from app.config import logger
 from app.extensions import db
-from app.models import Account, Category, Transaction
+from app.models import Account, Category, Tag, Transaction, transaction_tags
 from app.services.forecast_orchestrator import ForecastOrchestrator
 from app.utils.finance_utils import (
     display_transaction_amount,
@@ -104,6 +104,66 @@ def category_breakdown():
 
     except Exception as e:
         logger.error("Error in category_breakdown endpoint: %s", e, exc_info=True)
+        traceback.print_exc()
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@charts.route("/tag_metrics", methods=["GET"])
+def tag_metrics() -> Dict[str, Any]:
+    """Return tag totals and counts within a date range."""
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+
+    try:
+        if start_date_str:
+            start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        else:
+            start_date = datetime.now().date() - timedelta(days=30)
+            logger.debug("No start_date provided; defaulting to: %s", start_date)
+
+        if end_date_str:
+            end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
+        else:
+            end_date = datetime.now().date()
+            logger.debug("No end_date provided; defaulting to: %s", end_date)
+
+        tag_label = func.coalesce(Tag.name, "#untagged").label("tag")
+        total_amount = func.sum(func.abs(Transaction.amount)).label("total_amount")
+        transaction_count = func.count(Transaction.id).label("transaction_count")
+
+        rows = (
+            db.session.query(tag_label, total_amount, transaction_count)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .outerjoin(
+                transaction_tags,
+                Transaction.transaction_id == transaction_tags.c.transaction_id,
+            )
+            .outerjoin(Tag, Tag.id == transaction_tags.c.tag_id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+            .group_by(tag_label)
+            .order_by(total_amount.desc(), tag_label.asc())
+            .all()
+        )
+
+        data = [
+            {
+                "tag": tag,
+                "total": round(float(amount or 0), 2),
+                "count": int(count or 0),
+            }
+            for tag, amount, count in rows
+        ]
+
+        return jsonify({"status": "success", "data": data}), 200
+
+    except Exception as e:
+        logger.error("Error in tag_metrics endpoint: %s", e, exc_info=True)
         traceback.print_exc()
         return jsonify({"status": "error", "message": str(e)}), 500
 

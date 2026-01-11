@@ -189,6 +189,9 @@ const filtersRef = computed(() => {
   const nextFilters = { ...(props.filters || {}) }
   if (!nextFilters.start_date) delete nextFilters.start_date
   if (!nextFilters.end_date) delete nextFilters.end_date
+  if (typeof nextFilters.tags === 'string' && !nextFilters.tags.trim()) {
+    delete nextFilters.tags
+  }
   return nextFilters
 })
 

@@ -105,6 +105,17 @@
           Step through transactions in batches of 10, approve quickly, or edit in place without
           leaving the dashboard.
         </p>
+        <div class="mt-3 flex flex-col gap-2 max-w-sm">
+          <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+            Tag filter
+          </label>
+          <input
+            v-model="reviewTagFilter"
+            class="input"
+            type="text"
+            placeholder="Optional tag (e.g., #groceries)"
+          />
+        </div>
       </div>
       <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
     </div>
@@ -354,10 +365,19 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
     onDebouncedChange: onDateRangeChange,
   })
 
-const reviewFilters = computed(() => ({
-  start_date: debouncedRange.value.start,
-  end_date: debouncedRange.value.end,
-}))
+const reviewTagFilter = ref('')
+const normalizedReviewTag = computed(() => reviewTagFilter.value.trim())
+
+const reviewFilters = computed(() => {
+  const filters = {
+    start_date: debouncedRange.value.start,
+    end_date: debouncedRange.value.end,
+  }
+  if (normalizedReviewTag.value) {
+    filters.tags = normalizedReviewTag.value
+  }
+  return filters
+})
 
 /**
  * Perform the dashboard's initial data load in parallel so hero, breakdown,

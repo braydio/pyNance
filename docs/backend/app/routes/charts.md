@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-01-11
 Status: Active
 ---
 
@@ -11,6 +11,7 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 
 ## Endpoints
 - `GET /charts/category_breakdown` – Category spending summary.
+- `GET /charts/tag_metrics` – Tag totals and counts summary.
 - `GET /charts/daily_net` – Net income/expense per day.
 - `GET /charts/cash_flow` – Aggregated income and expenses by day or month.
 - `GET /charts/net_assets` – Net assets, assets, and liabilities over time.
@@ -21,6 +22,9 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 - **GET /charts/category_breakdown**
   - **Inputs:** `start_date`, `end_date` query params.
   - **Outputs:** `{ "status": "success", "data": [{ "category": str, "amount": float, "date": str }] }`.
+- **GET /charts/tag_metrics**
+  - **Inputs:** `start_date`, `end_date` query params.
+  - **Outputs:** `{ "status": "success", "data": [{ "tag": str, "total": float, "count": int }] }`.
 - **GET /charts/daily_net**
   - **Inputs:** Optional date filters depending on client.
   - **Outputs:** `{ "status": "success", "data": [{ "date": str, "net": float, "income": float, "expenses": float, "transaction_count": int }] }`.

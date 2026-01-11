@@ -66,6 +66,38 @@ def _parse_account_ids(args) -> list[str]:
     return account_ids
 
 
+def _parse_tag_filters(args) -> list[str]:
+    """Return normalized tag names supplied via query parameters.
+
+    Accepts ``tag``, ``tags`` (comma-delimited), or repeated ``tags[]``
+    parameters. Normalizes values with ``#`` prefixes and de-duplicates
+    while preserving order. The special tag ``#untagged`` is preserved
+    without adding a raw alias.
+    """
+
+    raw_values: list[str] = []
+    for key in ("tags[]", "tags", "tag"):
+        raw_values.extend(args.getlist(key))
+
+    tags: list[str] = []
+    for raw in raw_values:
+        for candidate in str(raw).split(","):
+            cleaned = candidate.strip()
+            if not cleaned:
+                continue
+            normalized = _normalize_tag_name(cleaned)
+            if normalized == "#untagged":
+                if normalized not in tags:
+                    tags.append(normalized)
+                continue
+            if normalized and normalized not in tags:
+                tags.append(normalized)
+            if cleaned != normalized and cleaned not in tags:
+                tags.append(cleaned)
+
+    return tags
+
+
 def _parse_iso_date(value: str | None, inclusive_end: bool = False) -> datetime | None:
     """Parse a YYYY-MM-DD date string into a timezone-aware ``datetime``.
 
@@ -408,6 +440,7 @@ def get_transactions_paginated():
     (YYYY-MM-DD), ``account_id`` or ``account_ids`` (comma-delimited or
     repeated parameters), ``transaction_id`` for a specific lookup and
     ``tx_type``/``transaction_type`` with values ``credit`` or ``debit``.
+    Tag filters can be supplied through ``tag`` or ``tags`` parameters.
     Unknown or empty parameters are ignored.
     """
     try:
@@ -419,6 +452,7 @@ def get_transactions_paginated():
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
+        tags = _parse_tag_filters(request.args)
         account_ids = _parse_account_ids(request.args)
         account_id_single = request.args.get("account_id")
         if account_id_single and account_id_single not in account_ids:
@@ -446,6 +480,7 @@ def get_transactions_paginated():
             account_ids=account_ids or None,
             tx_type=tx_type,
             transaction_id=transaction_id,
+            tags=tags or None,
             include_running_balance=include_running_balance,
         )
 
