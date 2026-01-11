@@ -315,6 +315,10 @@ const props = defineProps({
     type: Number,
     default: 15,
   },
+  autoEditTransactionId: {
+    type: [String, Number],
+    default: '',
+  },
 })
 
 const MIN_ROW_COUNT = 12
@@ -331,6 +335,7 @@ const selectedSubcategory = ref('')
 const editingIndex = ref(null)
 const editingTransactionId = ref(null)
 const editingTransactionSnapshot = ref(null)
+const lastAutoEditId = ref('')
 const editBuffer = ref({
   date: '',
   amount: null,
@@ -918,11 +923,38 @@ const rowsToRender = computed(() => {
 })
 
 const hasVisibleTransactions = computed(() => filteredTransactions.value.length > 0)
+const normalizedAutoEditId = computed(() =>
+  props.autoEditTransactionId ? String(props.autoEditTransactionId) : '',
+)
 
 // Reset subcategory when primary category changes to avoid stale filters
 watch(selectedPrimaryCategory, () => {
   selectedSubcategory.value = ''
 })
+
+/**
+ * Auto-enter edit mode when a promoted transaction id is provided.
+ *
+ * @param {string} transactionId - Transaction identifier to edit.
+ */
+function openEditForTransaction(transactionId) {
+  if (!transactionId || transactionId === lastAutoEditId.value) return
+  const index = paginatedFilteredTransactions.value.findIndex(
+    (tx) => String(tx.transaction_id || tx.id || '') === transactionId,
+  )
+  if (index < 0) return
+  lastAutoEditId.value = transactionId
+  startEdit(index, paginatedFilteredTransactions.value[index])
+}
+
+watch(
+  [normalizedAutoEditId, paginatedFilteredTransactions],
+  ([transactionId]) => {
+    if (!transactionId) return
+    openEditForTransaction(transactionId)
+  },
+  { immediate: true },
+)
 
 onMounted(async () => {
   try {

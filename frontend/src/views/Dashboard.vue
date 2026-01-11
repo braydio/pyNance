@@ -204,10 +204,37 @@
 
     <!-- TABLES, MODALS, AND REVIEW SECTIONS REMAIN UNCHANGED -->
     <!-- ... -->
+    <TransactionModal
+      :show="showDailyModal"
+      kind="date"
+      :show-date-column="false"
+      :hide-category-visuals="false"
+      :subtitle="dailyModalSubtitle"
+      :transactions="dailyModalTransactions"
+      @close="closeModal('daily')"
+    />
+    <TransactionModal
+      :show="showCategoryModal"
+      kind="category"
+      :show-date-column="true"
+      :hide-category-visuals="false"
+      :subtitle="categoryModalSubtitle"
+      :transactions="categoryModalTransactions"
+      @close="closeModal('category')"
+    />
+    <TransactionReviewModal
+      v-if="showReviewModal"
+      :show="showReviewModal"
+      :filters="reviewFilters"
+      @close="closeReviewModal"
+    />
   </BasePageLayout>
 </template>
 
 <script setup>
+/**
+ * Dashboard view showing financial summaries, charts, and drill-down modals.
+ */
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'

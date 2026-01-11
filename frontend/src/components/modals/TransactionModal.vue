@@ -120,7 +120,9 @@ import { useRouter } from 'vue-router'
 import ModalTransactionsDisplay from '../tables/ModalTransactionsDisplay.vue'
 import { formatAmount } from '@/utils/format'
 
-// Modal dialog displaying a list of transactions with a summary bar and optional prominently displayed subtitle.
+/**
+ * Modal dialog displaying a list of transactions with a summary bar and optional subtitle.
+ */
 
 const props = defineProps({
   show: { type: Boolean, default: false },
@@ -174,7 +176,7 @@ const summary = computed(() => {
 })
 
 /**
- * Navigate to the Transactions route, pre-populating highlight and filters
+ * Navigate to the Transactions route, pre-populating highlight and edit targets
  * based on the clicked transaction.
  *
  * @param {Record<string, unknown>} tx - The transaction that was clicked.
@@ -185,6 +187,7 @@ function onRowClick(tx) {
   const query = {}
 
   if (txid !== undefined && txid !== null && txid !== '') query.promote = String(txid)
+  if (txid !== undefined && txid !== null && txid !== '') query.txid = String(txid)
   if (accountId !== undefined && accountId !== null && accountId !== '')
     query.account_id = String(accountId)
 
