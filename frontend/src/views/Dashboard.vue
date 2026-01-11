@@ -82,7 +82,7 @@
 
         <template #fallback>
           <section
-            data-testid="category-section-skeleton"
+            data-testid="breakdown-skeleton"
             class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
           >
             <div class="h-6 w-40 bg-[var(--divider)] rounded mb-4"></div>
@@ -95,115 +95,119 @@
       </Suspense>
     </InsightsRow>
 
-    <!-- SPENDING ROW -->
+    <!-- REVIEW TRANSACTIONS CARD -->
     <div
-      data-testid="spending-grid"
-      class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 items-stretch"
+      class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
     >
-      <div
-        class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-3 overflow-hidden"
-      >
-        <div class="flex items-center justify-between mb-2">
-          <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
-            Spending by {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
-          </h2>
+      <div>
+        <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+        <p class="text-muted">
+          Step through transactions in batches of 10, approve quickly, or edit in place without
+          leaving the dashboard.
+        </p>
+      </div>
+      <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+    </div>
 
-          <ChartWidgetTopBar>
-            <template #controls>
-              <div
-                data-testid="spending-controls"
-                class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center lg:flex-nowrap lg:gap-4"
-              >
-                <div
-                  class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden w-full sm:w-auto"
-                >
-                  <button
-                    class="px-3 py-1 text-sm transition w-full sm:w-auto"
-                    :class="
-                      breakdownType === 'category'
-                        ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                        : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                    "
-                    @click="setDashboardBreakdownMode('category')"
-                  >
-                    Categories
-                  </button>
-                  <button
-                    class="px-3 py-1 text-sm transition w-full sm:w-auto"
-                    :class="
-                      breakdownType === 'merchant'
-                        ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                        : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                    "
-                    @click="setDashboardBreakdownMode('merchant')"
-                  >
-                    Merchants
-                  </button>
-                </div>
-
-                <GroupedCategoryDropdown
-                  v-if="breakdownType === 'category'"
-                  :groups="categoryGroups"
-                  :modelValue="selectedCategoryIds"
-                  @update:modelValue="updateSelection"
-                  class="w-full sm:w-64 lg:w-72"
-                />
-
-                <button
-                  class="btn btn-outline hover-lift w-full sm:w-auto"
-                  @click="toggleGroupOthers"
-                >
-                  {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
-                </button>
-              </div>
-            </template>
-          </ChartWidgetTopBar>
+    <!-- RESERVED TABLES PANEL -->
+    <div
+      data-testid="tables-panel"
+      class="relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+    >
+      <transition name="accordion">
+        <div
+          v-if="!accountsExpanded && !transactionsExpanded"
+          data-testid="tables-panel-cta"
+          class="flex flex-col items-stretch justify-center gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 w-full h-full p-6 sm:p-10 lg:p-12"
+        >
+          <button
+            @click="expandAccounts"
+            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
+          >
+            Expand Accounts Table
+          </button>
+          <div class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none">or</div>
+          <button
+            @click="expandTransactions"
+            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
+          >
+            Expand Transactions Table
+          </button>
         </div>
-
-        <Suspense>
+      </transition>
+      <transition name="modal-fade-slide">
+        <Suspense v-if="accountsExpanded">
           <template #default>
-            <CategoryBreakdownChart
-              :start-date="debouncedRange.start"
-              :end-date="debouncedRange.end"
-              :selected-category-ids="selectedCategoryIds"
-              :group-others="groupOthers"
-              :breakdown-type="breakdownType"
-              @summary-change="catSummary = $event"
-              @categories-change="onCategoriesChange"
-              @bar-click="onCategoryBarClick"
+            <AccountsSection @close="collapseTables" />
+          </template>
+          <template #fallback>
+            <section
+              data-testid="accounts-skeleton"
+              class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
+              aria-busy="true"
+            >
+              <div class="h-6 w-48 bg-[var(--divider)] rounded mb-4"></div>
+              <div class="h-[55vh] bg-[var(--divider)] rounded"></div>
+            </section>
+          </template>
+        </Suspense>
+      </transition>
+      <transition name="modal-fade-slide">
+        <Suspense v-if="transactionsExpanded">
+          <template #default>
+            <TransactionsSection
+              :transactions="filteredTransactions"
+              :sort-key="sortKey"
+              :sort-order="sortOrder"
+              :search="searchQuery"
+              @sort="setSort"
+              :current-page="currentPage"
+              :total-pages="totalPages"
+              :page-size="pageSize"
+              :total-count="totalCount"
+              @change-page="changePage"
+              @set-page="setPage"
+              @close="collapseTables"
             />
           </template>
           <template #fallback>
-            <div
-              data-testid="spending-chart-skeleton"
-              class="flex flex-col gap-3 bg-[var(--color-bg)]/60 rounded-xl p-2"
+            <section
+              data-testid="transactions-skeleton"
+              class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
+              aria-busy="true"
             >
-              <div class="h-4 w-28 bg-[var(--divider)] rounded"></div>
-              <div class="flex items-end gap-2">
-                <div
-                  v-for="n in 6"
-                  :key="`bar-skeleton-${n}`"
-                  class="flex-1 rounded-md bg-[var(--color-bg-dark)] animate-pulse"
-                  :style="{ height: `${70 + n * 8}px` }"
-                ></div>
-              </div>
-            </div>
+              <div class="h-6 w-56 bg-[var(--divider)] rounded mb-4"></div>
+              <div class="h-[55vh] bg-[var(--divider)] rounded"></div>
+            </section>
           </template>
         </Suspense>
-
-        <div class="mt-1">
-          <span class="font-bold">Total:</span>
-          <span class="ml-1 text-[var(--color-accent-cyan)] font-bold">
-            {{ formatAmount(catSummary.total) }}
-          </span>
-        </div>
-      </div>
-
-      <SpendingInsights />
+      </transition>
     </div>
 
-    <!-- TABLES, MODALS, AND REVIEW SECTIONS REMAIN UNCHANGED -->
-    <!-- ... -->
+    <TransactionModal
+      :show="showDailyModal"
+      kind="date"
+      :show-date-column="false"
+      :hide-category-visuals="false"
+      :subtitle="dailyModalSubtitle"
+      :transactions="dailyModalTransactions"
+      @close="closeModal('daily')"
+    />
+    <TransactionModal
+      :show="showCategoryModal"
+      kind="category"
+      :show-date-column="true"
+      :hide-category-visuals="false"
+      :subtitle="categoryModalSubtitle"
+      :transactions="categoryModalTransactions"
+      @close="closeModal('category')"
+    />
+    <TransactionReviewModal
+      v-if="showReviewModal"
+      :show="showReviewModal"
+      :filters="reviewFilters"
+      @close="closeReviewModal"
+    />
   </BasePageLayout>
 </template>
 
@@ -212,11 +216,7 @@ import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
-import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
-import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
-import SpendingInsights from '@/components/SpendingInsights.vue'
-import { formatAmount } from '@/utils/format'
 import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
@@ -230,9 +230,6 @@ const NetOverviewSection = defineAsyncComponent(
 )
 const CategoryBreakdownSection = defineAsyncComponent(
   () => import('@/components/dashboard/CategoryBreakdownSection.vue'),
-)
-const CategoryBreakdownChart = defineAsyncComponent(
-  () => import('@/components/charts/CategoryBreakdownChart.vue'),
 )
 const InsightsRow = defineAsyncComponent(() => import('@/components/dashboard/InsightsRow.vue'))
 const AccountsSection = defineAsyncComponent(

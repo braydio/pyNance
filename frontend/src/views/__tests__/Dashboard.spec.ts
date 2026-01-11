@@ -175,10 +175,6 @@ const TopAccountSnapshotStub = {
 }
 
 let dailyNetChartProps = null
-const ChartWidgetTopBarStub = {
-  name: 'ChartWidgetTopBar',
-  template: '<div><slot name="controls" /></div>',
-}
 let netOverviewSectionProps = null
 let categoryBreakdownSectionProps = null
 let transactionsSectionProps = null
@@ -280,39 +276,6 @@ const TransactionsSectionStub = defineComponent({
   template:
     '<div class="transactions-section-stub"><div class="flex-1 min-h-[50vh] sm:min-h-[60vh]"></div></div>',
 })
-
-let categoryChartProps = null
-const CategoryBreakdownChartStub = {
-  name: 'CategoryBreakdownChart',
-  props: {
-    startDate: { type: String, required: true },
-    endDate: { type: String, required: true },
-    selectedCategoryIds: { type: Array, default: () => [] },
-    groupOthers: { type: Boolean, default: true },
-    breakdownType: { type: String, default: 'category' },
-  },
-  emits: ['bar-click', 'summary-change', 'categories-change'],
-  template: '<div class="category-breakdown-stub"></div>',
-  setup(props, { emit }) {
-    watch(
-      () => ({
-        startDate: props.startDate,
-        endDate: props.endDate,
-        breakdownType: props.breakdownType,
-        groupOthers: props.groupOthers,
-      }),
-      (val) => {
-        categoryChartProps = val
-      },
-      { immediate: true },
-    )
-
-    return {
-      emitSummaryChange: (payload) => emit('summary-change', payload),
-      emitCategoriesChange: (payload) => emit('categories-change', payload),
-    }
-  },
-}
 
 const NetOverviewSectionStub = defineComponent({
   name: 'NetOverviewSection',
@@ -451,8 +414,6 @@ function createWrapper(options = {}) {
     AppLayout: PassThrough,
     BasePageLayout: PassThrough,
     DailyNetChart: DailyNetChartStub,
-    CategoryBreakdownChart: CategoryBreakdownChartStub,
-    ChartWidgetTopBar: ChartWidgetTopBarStub,
     ChartDetailsSidebar: true,
     DateRangeSelector: true,
     AccountsTable: true,
@@ -513,7 +474,6 @@ beforeEach(async () => {
   fetchTransactions.mockClear()
   receivedProps = null
   dailyNetChartProps = null
-  categoryChartProps = null
   autoSelected = false
   mockBreakdownType.value = 'category'
   mockGroupOthers.value = true
@@ -626,7 +586,7 @@ describe('Dashboard.vue', () => {
 
   it('applies debounced date edits to chart inputs', async () => {
     const wrapper = createWrapper()
-    await nextTick()
+    await resolveAsyncSections(wrapper)
 
     wrapper.vm.dateRange.start = '2024-05-15'
     wrapper.vm.dateRange.end = '2024-05-31'
@@ -635,8 +595,9 @@ describe('Dashboard.vue', () => {
     await vi.advanceTimersByTimeAsync(200)
     await flushPromises()
 
-    expect(categoryChartProps.startDate).toBe('2024-05-01')
-    expect(categoryChartProps.endDate).toBe('2024-05-31')
+    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
+    expect(breakdownSection.props('startDate')).toBe('2024-05-01')
+    expect(breakdownSection.props('endDate')).toBe('2024-05-31')
   })
 
   it('clears selected categories when date range changes', async () => {
@@ -646,8 +607,8 @@ describe('Dashboard.vue', () => {
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
 
-    const chart = wrapper.findComponent(CategoryBreakdownChartStub)
-    chart.vm.emitCategoriesChange(['a', 'b', 'c', 'd', 'e', 'f'])
+    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
+    breakdownSection.vm.$emit('categories-change', ['a', 'b', 'c', 'd', 'e', 'f'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['a', 'b', 'c', 'd', 'e'])
 
@@ -657,7 +618,7 @@ describe('Dashboard.vue', () => {
     await nextTick()
     expect(mockSelectedIds.value).toEqual([])
 
-    chart.vm.emitCategoriesChange(['x', 'y', 'z'])
+    breakdownSection.vm.$emit('categories-change', ['x', 'y', 'z'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['x', 'y', 'z'])
   })
@@ -688,8 +649,9 @@ describe('Dashboard.vue', () => {
     await vi.advanceTimersByTimeAsync(250)
     await nextTick()
 
-    expect(categoryChartProps.startDate).toBe('2024-03-01')
-    expect(categoryChartProps.endDate).toBe('2024-03-15')
+    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
+    expect(breakdownSection.props('startDate')).toBe('2024-03-01')
+    expect(breakdownSection.props('endDate')).toBe('2024-03-15')
   })
 
   it('propagates zoom toggles to charts without altering the debounced dates', async () => {
@@ -710,16 +672,16 @@ describe('Dashboard.vue', () => {
   it('auto-selects top breakdown IDs when the chart emits category data', async () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
-    const chart = wrapper.findComponent(CategoryBreakdownChartStub)
+    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
 
-    chart.vm.emitCategoriesChange(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
+    breakdownSection.vm.$emit('categories-change', ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
     await nextTick()
 
     expect(mockSetAvailableIds).toHaveBeenCalledWith(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
     expect(mockSelectedIds.value).toEqual(['c1', 'c2', 'c3', 'c4', 'c5'])
 
     mockResetSelection()
-    chart.vm.emitCategoriesChange(['m1', 'm2'])
+    breakdownSection.vm.$emit('categories-change', ['m1', 'm2'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['m1', 'm2'])
   })
@@ -727,23 +689,13 @@ describe('Dashboard.vue', () => {
   it('switches grouping mode when toggling consolidation controls', async () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
-    const toggleButton = wrapper
-      .findAll('button')
-      .find(
-        (btn) =>
-          btn.text().includes('Expand All') || btn.text().includes('Consolidate Minor Items'),
-      )
-
-    expect(toggleButton).toBeDefined()
-    expect(toggleButton?.text()).toContain('Expand All')
-
-    await toggleButton?.trigger('click')
+    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
+    breakdownSection.vm.$emit('toggle-group-others')
     await nextTick()
 
     expect(mockToggleGroupOthers).toHaveBeenCalled()
     expect(mockGroupOthers.value).toBe(false)
-    expect(categoryChartProps.groupOthers).toBe(false)
-    expect(toggleButton?.text()).toContain('Consolidate Minor Items')
+    expect(breakdownSection.props('groupOthers')).toBe(false)
   })
 
   it('renders skeleton placeholders while async sections resolve', async () => {
@@ -826,10 +778,7 @@ describe('Dashboard.vue', () => {
 
   it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
     const source = DASHBOARD_SOURCE
-    expect(source.includes('data-testid="spending-grid"')).toBe(true)
-    expect(source.includes('grid-cols-1')).toBe(true)
-    expect(source.includes('sm:grid-cols-2')).toBe(true)
-    expect(source.includes('lg:grid-cols-3')).toBe(true)
+    expect(source.includes('data-testid="tables-panel"')).toBe(true)
     expect(source.includes('min-h-[55vh]')).toBe(true)
     expect(source.includes('sm:min-h-[60vh]')).toBe(true)
     expect(source.includes('lg:min-h-[65vh]')).toBe(true)
