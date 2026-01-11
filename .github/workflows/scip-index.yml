@@ -11,8 +11,10 @@ jobs:
         with: { node-version: '20' }
       - run: npm i -g @sourcegraph/scip-typescript
       - run: npm ci || true
+        working-directory: frontend
       - run: scip-typescript index
-      - run: tar -czf scip-ts.tar.gz index.scip || true
+        working-directory: frontend
+      - run: tar -czf scip-ts.tar.gz -C frontend index.scip || true
 
       # Python
       - uses: actions/setup-python@v5
