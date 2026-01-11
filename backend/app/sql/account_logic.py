@@ -43,6 +43,20 @@ def _now_utc():
     return datetime.now(timezone.utc)
 
 
+def _serialize_transaction_tags(txn: Transaction) -> list[str]:
+    """Return transaction tag names with a default fallback.
+
+    Args:
+        txn: Transaction model instance to read tag relationships from.
+
+    Returns:
+        List of tag names, defaulting to ``["#untagged"]`` when no tags exist.
+    """
+
+    tags = [tag.name for tag in getattr(txn, "tags", []) if tag and tag.name]
+    return tags or ["#untagged"]
+
+
 def _coerce_iso_datetime(value):
     if value is None:
         return None
@@ -515,6 +529,9 @@ def get_paginated_transactions(
     include_running_balance : bool, default False
         When ``True``, include a per-transaction running balance computed with a window
         function so pagination does not require loading every row into memory.
+    tags : list[str]
+        Tag names associated with the transaction. When no tags exist, the
+        default ``#untagged`` label is returned.
     """
 
     query = (
@@ -637,6 +654,7 @@ def get_paginated_transactions(
                 "account_id": acc.account_id or "Unknown",
                 "pending": getattr(txn, "pending", False),
                 "isEditing": False,
+                "tags": _serialize_transaction_tags(txn),
                 "running_balance": (
                     float(running_balance) if running_balance is not None else None
                 ),
