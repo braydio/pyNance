@@ -64,6 +64,8 @@
           <p class="detail-date-helper">Showing activity through {{ viewingDateLabel }}</p>
         </div>
 
+        <DailySpendingPanel :detail-date="detailDate" />
+
         <div class="stats-grid">
           <!-- Averages (Daily + Moving) -->
           <div class="stat-group">
@@ -177,6 +179,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { formatAmount } from '@/utils/format'
+import DailySpendingPanel from './DailySpendingPanel.vue'
 
 /**
  * Format a numeric delta with an explicit sign.
