@@ -161,6 +161,12 @@ onBeforeUnmount(() => {
   pointer-events: none;
 }
 
+.chart-details-sidebar--inline {
+  position: static;
+  align-items: center;
+  pointer-events: auto;
+}
+
 .chart-details-sidebar__toggle {
   pointer-events: auto;
   display: inline-flex;
@@ -178,6 +184,11 @@ onBeforeUnmount(() => {
     background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
+}
+
+.chart-details-sidebar--inline .chart-details-sidebar__toggle {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.65rem;
 }
 
 .chart-details-sidebar__toggle:hover,
@@ -215,6 +226,10 @@ onBeforeUnmount(() => {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   display: grid;
   gap: 0.5rem;
+}
+
+.chart-details-sidebar--inline .chart-details-sidebar__content {
+  align-self: center;
 }
 
 .chart-details-sidebar__heading {

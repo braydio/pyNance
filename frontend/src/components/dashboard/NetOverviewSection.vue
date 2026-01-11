@@ -41,49 +41,41 @@
       <div
         class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
-        <ChartDetailsSidebar
-          v-model:show7-day="show7DayModel"
-          v-model:show30-day="show30DayModel"
-          v-model:show-avg-income="showAvgIncomeModel"
-          v-model:show-avg-expenses="showAvgExpensesModel"
-          v-model:show-comparison-overlay="showComparisonOverlayModel"
-          v-model:comparison-mode="comparisonModeModel"
-        />
-        <div class="flex items-center justify-between mb-4 gap-4">
-          <div class="flex-1 flex justify-center">
-            <h2 class="daily-net-chart-title">
-              <span class="title-text">Net Income</span>
-              <span class="title-subtitle">(Daily)</span>
-            </h2>
-          </div>
-          <div
-            class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden"
-            data-testid="daily-net-timeframe-toggle"
-          >
-            <button
-              class="px-3 py-1 text-sm transition"
-              :class="
-                netTimeframe === 'mtd'
-                  ? 'bg-[var(--color-accent-cyan)] text-[var(--color-bg)]'
-                  : 'text-muted hover:bg-[var(--color-bg-dark)]'
-              "
-              type="button"
-              @click="emit('update:net-timeframe', 'mtd')"
-            >
-              MTD
-            </button>
-            <button
-              class="px-3 py-1 text-sm transition"
-              :class="
-                netTimeframe === 'rolling_30'
-                  ? 'bg-[var(--color-accent-cyan)] text-[var(--color-bg)]'
-                  : 'text-muted hover:bg-[var(--color-bg-dark)]'
-              "
-              type="button"
-              @click="emit('update:net-timeframe', 'rolling_30')"
-            >
-              Rolling 30
-            </button>
+        <div class="daily-net-chart-header">
+          <h2 class="daily-net-chart-title">
+            <span class="title-text">Net Income</span>
+            <span class="title-subtitle">(Daily)</span>
+          </h2>
+          <div class="daily-net-chart-controls">
+            <ChartDetailsSidebar
+              class="chart-details-sidebar--inline"
+              v-model:show7-day="show7DayModel"
+              v-model:show30-day="show30DayModel"
+              v-model:show-avg-income="showAvgIncomeModel"
+              v-model:show-avg-expenses="showAvgExpensesModel"
+              v-model:show-comparison-overlay="showComparisonOverlayModel"
+              v-model:comparison-mode="comparisonModeModel"
+            />
+            <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
+              <button
+                class="gradient-toggle-btn daily-net-timeframe-btn"
+                :class="{ 'is-active': netTimeframe === 'mtd' }"
+                type="button"
+                :aria-pressed="netTimeframe === 'mtd'"
+                @click="emit('update:net-timeframe', 'mtd')"
+              >
+                MTD
+              </button>
+              <button
+                class="gradient-toggle-btn daily-net-timeframe-btn"
+                :class="{ 'is-active': netTimeframe === 'rolling_30' }"
+                type="button"
+                :aria-pressed="netTimeframe === 'rolling_30'"
+                @click="emit('update:net-timeframe', 'rolling_30')"
+              >
+                Rolling 30
+              </button>
+            </div>
           </div>
         </div>
 
@@ -234,6 +226,22 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   text-align: center;
 }
 
+.daily-net-chart-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-net-chart-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
 .title-text {
   background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
   -webkit-background-clip: text;
@@ -247,5 +255,16 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   color: var(--color-text-muted);
   font-weight: 500;
   opacity: 0.8;
+}
+
+.daily-net-timeframe-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.daily-net-timeframe-btn {
+  font-size: 0.78rem;
+  padding: 0.25rem 0.8rem;
 }
 </style>

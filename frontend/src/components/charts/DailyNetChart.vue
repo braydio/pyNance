@@ -15,7 +15,7 @@
  */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
-import { Chart } from 'chart.js/auto'
+import { Chart } from 'chart.js'
 import { formatAmount } from '@/utils/format'
 
 // Register Chart.js plugins globally
@@ -49,8 +49,15 @@ function getNetDashPosition(chart, dataIndex) {
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
 }
 
+function registerTooltipPositioner(name, positioner) {
+  const targets = [Tooltip?.positioners, Chart?.Tooltip?.positioners]
+  targets.forEach((target) => {
+    if (target && !target[name]) target[name] = positioner
+  })
+}
+
 // --- Safe registration for custom tooltip positioner ---
-if (Tooltip?.positioners && !Tooltip.positioners.netDash) {
+registerTooltipPositioner('netDash', function (items, eventPosition) {
   /**
    * Anchor tooltips to the net indicator dash instead of the hover cursor.
    *
@@ -58,14 +65,12 @@ if (Tooltip?.positioners && !Tooltip.positioners.netDash) {
    * @param {{x: number, y: number}} eventPosition - Fallback cursor position.
    * @returns {{x: number, y: number}} Tooltip anchor coordinates.
    */
-  Tooltip.positioners.netDash = function (items, eventPosition) {
-    if (!items?.length) return eventPosition
-    const chart = items[0]?.chart
-    const dataIndex = items[0].dataIndex
-    const position = getNetDashPosition(chart, dataIndex)
-    return position ?? eventPosition
-  }
-}
+  if (!items?.length) return eventPosition
+  const chart = items[0]?.chart
+  const dataIndex = items[0].dataIndex
+  const position = getNetDashPosition(chart, dataIndex)
+  return position ?? eventPosition
+})
 // ----------------------------------------------------------------------
 
 /**
@@ -253,6 +258,22 @@ function getDisplaySeries() {
   return { labels, displayData: padDailyNetData(chartData.value, labels) }
 }
 
+function getExtendedSeries() {
+  const displayRange = getActiveLabelRange()
+  const startDate = requestRange.value.startDate || displayRange.startDate
+  const endDate = requestRange.value.endDate || displayRange.endDate
+  const labels = buildDateRangeLabels(startDate, endDate)
+  return { labels, fullData: padDailyNetData(chartData.value, labels) }
+}
+
+function mapSeriesToDisplay(labels, fullLabels, fullSeries) {
+  const labelIndex = new Map(fullLabels.map((label, index) => [label, index]))
+  return labels.map((label) => {
+    const idx = labelIndex.get(label)
+    return idx == null ? null : fullSeries[idx] ?? null
+  })
+}
+
 function buildComparisonContext() {
   const end = parseDateKey(props.endDate)
   const start = parseDateKey(props.startDate)
@@ -343,6 +364,28 @@ const netDashPlugin = {
   },
 }
 
+const tooltipSnapPlugin = {
+  id: 'tooltipSnapPlugin',
+  /**
+   * Force the tooltip caret to align with the net indicator dash.
+   *
+   * @param {import('chart.js').Chart} chart - Chart instance.
+   * @param {{ tooltip?: { dataPoints?: Array<{ dataIndex: number }>, caretX?: number, caretY?: number, x?: number, y?: number } }} args - Tooltip draw args.
+   * @returns {void}
+   */
+  beforeTooltipDraw(chart, args) {
+    const tooltip = args?.tooltip
+    const dataIndex = tooltip?.dataPoints?.[0]?.dataIndex
+    if (dataIndex == null) return
+    const position = getNetDashPosition(chart, dataIndex)
+    if (!position) return
+    tooltip.caretX = position.x
+    tooltip.caretY = position.y
+    tooltip.x = position.x
+    tooltip.y = position.y
+  },
+}
+
 function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(
@@ -370,6 +413,7 @@ async function renderChart() {
   if (!ctx) return
 
   const { labels, displayData } = getDisplaySeries()
+  const { labels: fullLabels, fullData } = getExtendedSeries()
   if (!labels.length) return
 
   emit(
@@ -388,6 +432,19 @@ async function renderChart() {
   const income = displayData.map((d) => d.income.parsedValue)
   const expenses = displayData.map((d) => d.expenses.parsedValue)
   const net = displayData.map((d) => d.net.parsedValue)
+  const fullNet = fullData.map((d) => d.net.parsedValue)
+  const fullIncome = fullData.map((d) => d.income.parsedValue)
+  const fullExpenses = fullData.map((d) => d.expenses.parsedValue)
+  const full7Day = movingAverage(fullNet, 7)
+  const full30Day = movingAverage(fullNet, 30)
+  const display7Day = mapSeriesToDisplay(labels, fullLabels, full7Day)
+  const display30Day = mapSeriesToDisplay(labels, fullLabels, full30Day)
+  const averageIncome = fullIncome.length
+    ? fullIncome.reduce((a, b) => a + b, 0) / fullIncome.length
+    : 0
+  const averageExpenses = fullExpenses.length
+    ? fullExpenses.reduce((a, b) => a + b, 0) / fullExpenses.length
+    : 0
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
@@ -428,7 +485,7 @@ async function renderChart() {
     datasets.push(
       buildLineDataset(
         'Avg Income',
-        labels.map(() => income.reduce((a, b) => a + b, 0) / income.length),
+        labels.map(() => averageIncome),
         averageIncomeColor,
         { borderDash: [6, 6], order: 4 },
       ),
@@ -438,7 +495,7 @@ async function renderChart() {
     datasets.push(
       buildLineDataset(
         'Avg Expenses',
-        labels.map(() => expenses.reduce((a, b) => a + b, 0) / expenses.length),
+        labels.map(() => averageExpenses),
         averageExpensesColor,
         { borderDash: [4, 8], order: 5 },
       ),
@@ -462,7 +519,7 @@ async function renderChart() {
 
   if (show30Day.value)
     datasets.push(
-      buildLineDataset('30-Day Avg', movingAverage(net, 30), thirtyDayColor, {
+      buildLineDataset('30-Day Avg', display30Day, thirtyDayColor, {
         borderDash: [8, 4],
         borderWidth: 3,
         order: 7,
@@ -471,7 +528,7 @@ async function renderChart() {
 
   if (show7Day.value)
     datasets.push(
-      buildLineDataset('7-Day Avg', movingAverage(net, 7), sevenDayColor, {
+      buildLineDataset('7-Day Avg', display7Day, sevenDayColor, {
         borderDash: [2, 2],
         borderWidth: 3,
         order: 8,
@@ -480,13 +537,17 @@ async function renderChart() {
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    plugins: [netDashPlugin],
+    plugins: [netDashPlugin, tooltipSnapPlugin],
     data: { labels, datasets },
     options: {
       responsive: true,
       maintainAspectRatio: false,
       animation: false,
       onClick: handleBarClick,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
       scales: {
         x: {
           grid: { display: false },
