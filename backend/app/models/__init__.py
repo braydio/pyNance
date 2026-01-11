@@ -34,7 +34,9 @@ from .transaction_models import (
     Category,
     PlaidTransactionMeta,
     RecurringTransaction,
+    Tag,
     Transaction,
+    transaction_tags,
     TransactionRule,
 )
 
@@ -56,7 +58,9 @@ __all__ = [
     "FinancialGoal",
     # Transactions
     "Category",
+    "Tag",
     "Transaction",
+    "transaction_tags",
     "RecurringTransaction",
     "TransactionRule",
     "PlaidTransactionMeta",

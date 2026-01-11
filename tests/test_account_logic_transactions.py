@@ -20,7 +20,7 @@ os.environ.setdefault("CLIENT_NAME", "pyNance Test Suite")
 os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
 
 from app.extensions import db
-from app.models import Account, Transaction
+from app.models import Account, Tag, Transaction
 from app.sql.account_logic import get_paginated_transactions
 
 
@@ -41,12 +41,15 @@ def app_context():
         db.drop_all()
 
 
-def _seed_transactions(amounts: list[Decimal] | None = None):
+def _seed_transactions(
+    amounts: list[Decimal] | None = None, tags: dict[str, list[str]] | None = None
+):
     """Insert a single account with dated transactions in reverse chronological order.
 
     Args:
         amounts: Ordered list of transaction amounts starting from the most recent.
             Defaults to three positive amounts to keep the existing expectations intact.
+        tags: Optional mapping of transaction_id to tag names for association.
     """
 
     account = Account(
@@ -67,16 +70,23 @@ def _seed_transactions(amounts: list[Decimal] | None = None):
     timestamps = [base_date - timedelta(days=idx) for idx in range(len(amounts))]
 
     for idx, (ts, amount) in enumerate(zip(timestamps, amounts), start=1):
-        db.session.add(
-            Transaction(
-                transaction_id=f"tx-{idx}",
-                account_id=account.account_id,
-                user_id=account.user_id,
-                amount=amount,
-                date=ts,
-                description=f"Txn {idx}",
-            )
+        txn_id = f"tx-{idx}"
+        txn = Transaction(
+            transaction_id=txn_id,
+            account_id=account.account_id,
+            user_id=account.user_id,
+            amount=amount,
+            date=ts,
+            description=f"Txn {idx}",
         )
+        if tags and txn_id in tags:
+            for tag_name in tags[txn_id]:
+                tag = Tag.query.filter_by(user_id=account.user_id, name=tag_name).first()
+                if not tag:
+                    tag = Tag(user_id=account.user_id, name=tag_name)
+                    db.session.add(tag)
+                txn.tags.append(tag)
+        db.session.add(txn)
 
     db.session.commit()
 
@@ -155,4 +165,21 @@ def test_get_paginated_transactions_uses_amount_sign_over_type(app_context):
 
     assert total == 3
     assert [tx["running_balance"] for tx in rows] == [100.0, 125.0, 65.0]
+    assert meta["page"] == 1
+
+
+def test_get_paginated_transactions_serializes_tags_with_default(app_context):
+    _seed_transactions(tags={"tx-1": ["groceries", "weekly"]})
+
+    rows, total, meta = get_paginated_transactions(
+        1,
+        3,
+        user_id="user-1",
+        include_running_balance=False,
+    )
+
+    assert total == 3
+    assert rows[0]["tags"] == ["groceries", "weekly"]
+    assert rows[1]["tags"] == ["#untagged"]
+    assert rows[2]["tags"] == ["#untagged"]
     assert meta["page"] == 1

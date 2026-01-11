@@ -1,4 +1,4 @@
-"""Transaction models including categories, recurring schedules, and Plaid metadata."""
+"""Transaction models including categories, tags, recurring schedules, and Plaid metadata."""
 
 from datetime import datetime
 from decimal import Decimal
@@ -37,6 +37,45 @@ class Category(db.Model):
         if self.detailed_category:
             return f"{self.primary_category} > {self.detailed_category}"
         return self.primary_category
+
+
+transaction_tags = db.Table(
+    "transaction_tags",
+    db.Column(
+        "transaction_id",
+        db.String(64),
+        db.ForeignKey("transactions.transaction_id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Column(
+        "tag_id",
+        db.Integer,
+        db.ForeignKey("tags.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    db.Index("ix_transaction_tags_transaction_id", "transaction_id"),
+    db.Index("ix_transaction_tags_tag_id", "tag_id"),
+)
+
+
+class Tag(db.Model, TimestampMixin):
+    """User-defined labels for grouping transactions."""
+
+    __tablename__ = "tags"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.String(64), nullable=False, index=True)
+    name = db.Column(db.String(64), nullable=False)
+
+    transactions = db.relationship(
+        "Transaction",
+        secondary=transaction_tags,
+        back_populates="tags",
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint("user_id", "name", name="uq_tags_user_name"),
+    )
 
 
 ProviderEnum = db.Enum("manual", "plaid", name="provider_type")
@@ -82,6 +121,12 @@ class Transaction(db.Model):
         uselist=False,
         back_populates="transaction",
         cascade="all, delete-orphan",
+    )
+    tags = db.relationship(
+        "Tag",
+        secondary=transaction_tags,
+        back_populates="transactions",
+        lazy="selectin",
     )
 
     def __repr__(self):
