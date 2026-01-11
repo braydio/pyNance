@@ -212,6 +212,9 @@
 </template>
 
 <script setup>
+/**
+ * Dashboard view showing financial summaries, charts, and drill-down modals.
+ */
 import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'

@@ -129,6 +129,7 @@
           :page-size="initialPageSize"
           :sort-key="sortKey"
           :sort-order="sortOrder"
+          :auto-edit-transaction-id="targetTransactionId"
           @sort="setSort"
           @editRecurringFromTransaction="prefillRecurringFromTransaction"
         />
@@ -154,6 +155,7 @@
             :page-size="initialPageSize"
             :sort-key="sortKey"
             :sort-order="sortOrder"
+            :auto-edit-transaction-id="targetTransactionId"
             @sort="setSort"
             @editRecurringFromTransaction="prefillRecurringFromTransaction"
           />
@@ -377,6 +379,7 @@ export default {
       endDate,
       accountFilter,
       txType,
+      targetTransactionId,
       showScanner,
       toggleScanner,
       showControls,

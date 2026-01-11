@@ -239,6 +239,41 @@ describe('UpdateTransactionsTable.vue', () => {
     expect(displayed[0].transaction_id).toBe('t1')
   })
 
+  it('auto-enters edit mode when a promoted transaction id is provided', async () => {
+    const transactions = [
+      {
+        transaction_id: 't1',
+        date: '2024-01-01',
+        amount: 10,
+        description: 'Grocery Market',
+        category: 'Food: Grocery',
+        merchant_name: 'Fresh Foods',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+      {
+        transaction_id: 't2',
+        date: '2024-01-02',
+        amount: 20,
+        description: 'Utility',
+        category: 'Bills: Utilities',
+        merchant_name: 'Power Co',
+        account_name: 'A1',
+        institution_name: 'I1',
+        subtype: 's',
+      },
+    ]
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions, autoEditTransactionId: 't2' },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+    await flushPromises()
+
+    expect(wrapper.vm.editingTransactionId).toBe('t2')
+  })
+
   it('preloads edit inputs with the current transaction values', async () => {
     const transactions = [
       {

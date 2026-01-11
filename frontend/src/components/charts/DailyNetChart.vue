@@ -31,21 +31,39 @@ import {
 
 Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
+/**
+ * Resolve the pixel position for the net indicator at a given label index.
+ *
+ * @param {import('chart.js').Chart} chart - The chart instance.
+ * @param {number} dataIndex - Active label index.
+ * @returns {{x: number, y: number} | null} Pixel coordinates for the net dash.
+ */
+function getNetDashPosition(chart, dataIndex) {
+  if (!chart?.getDatasetMeta) return null
+  const firstMeta = chart.getDatasetMeta(0)
+  const bar = firstMeta?.data?.[dataIndex]
+  const netValues = chart.$netValues
+  const yScale = chart.scales?.y
+  const netValue = netValues?.[dataIndex]
+  if (!bar || netValue == null || !yScale) return null
+  return { x: bar.x, y: yScale.getPixelForValue(netValue) }
+}
+
 // --- Safe registration for custom tooltip positioner ---
 if (Tooltip?.positioners && !Tooltip.positioners.netDash) {
+  /**
+   * Anchor tooltips to the net indicator dash instead of the hover cursor.
+   *
+   * @param {Array} items - Tooltip items for the active index.
+   * @param {{x: number, y: number}} eventPosition - Fallback cursor position.
+   * @returns {{x: number, y: number}} Tooltip anchor coordinates.
+   */
   Tooltip.positioners.netDash = function (items, eventPosition) {
     if (!items?.length) return eventPosition
     const chart = items[0]?.chart
-    if (!chart?.getDatasetMeta) return eventPosition
     const dataIndex = items[0].dataIndex
-    const firstMeta = chart.getDatasetMeta(0)
-    const bar = firstMeta?.data?.[dataIndex]
-    const netValues = chart.$netValues
-    const yScale = chart.scales?.y
-    const netValue = netValues?.[dataIndex]
-    if (!bar || netValue == null || !yScale) return eventPosition
-    const y = yScale.getPixelForValue(netValue)
-    return { x: bar.x, y: y - 8 }
+    const position = getNetDashPosition(chart, dataIndex)
+    return position ?? eventPosition
   }
 }
 // ----------------------------------------------------------------------
@@ -295,20 +313,22 @@ function buildComparisonSeries(labels, data, ctx) {
 // Chart plugin
 const netDashPlugin = {
   id: 'netDashPlugin',
+  /**
+   * Draw the yellow net indicator dash for each bar.
+   *
+   * @param {import('chart.js').Chart} chart - Chart instance.
+   * @returns {void}
+   */
   afterDatasetsDraw(chart) {
     if (!chart?.ctx || !chart?.getDatasetMeta) return
-    const netValues = chart.$netValues
-    if (!Array.isArray(netValues)) return
     const firstMeta = chart.getDatasetMeta(0)
-    const yScale = chart.scales?.y
 
-    if (!firstMeta?.data?.length || !yScale) return
+    if (!firstMeta?.data?.length) return
 
-    firstMeta.data.forEach((bar, index) => {
-      const netValue = netValues[index]
-      if (netValue == null) return
-      const x = bar.x
-      const y = yScale.getPixelForValue(netValue)
+    firstMeta.data.forEach((_, index) => {
+      const position = getNetDashPosition(chart, index)
+      if (!position) return
+      const { x, y } = position
       const { ctx } = chart
       if (!ctx?.save) return
       ctx.save()

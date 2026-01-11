@@ -28,3 +28,4 @@
 
 - [Transactions API](../backend/app/routes/transactions.md) – primary CRUD surface for accounts and transactions.
 - [Transactions Service](../backend/app/services/transactions.md) – ingestion and reconciliation logic powering the Transactions API.
+- [Archived Alembic Revisions](../backend/migrations/versions_archived.md) – historical references for archived migration files.
