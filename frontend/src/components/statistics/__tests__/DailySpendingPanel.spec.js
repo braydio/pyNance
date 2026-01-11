@@ -55,7 +55,7 @@ describe('DailySpendingPanel', () => {
     })
 
     const wrapper = mount(DailySpendingPanel, {
-      props: { detailDate: '2024-06-03' },
+      props: { detailDate: '2024-06-03', minDetailDate: '2024-06-01' },
     })
 
     await flushPromises()
@@ -87,12 +87,65 @@ describe('DailySpendingPanel', () => {
     })
 
     const wrapper = mount(DailySpendingPanel, {
-      props: { detailDate: '2024-06-03' },
+      props: { detailDate: '2024-06-03', minDetailDate: '2024-06-01' },
     })
 
     await flushPromises()
 
     expect(wrapper.text()).toContain('No spending yet today.')
     expect(wrapper.text()).toContain('No transactions found.')
+  })
+
+  it('renders the average overlay only when the toggle is enabled', async () => {
+    chartsApi.fetchCategoryBreakdownTree
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          { id: 'food', label: 'Food', amount: 30 },
+          { id: 'fuel', label: 'Fuel', amount: 12 },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          { id: 'food', label: 'Food', amount: 90 },
+          { id: 'fuel', label: 'Fuel', amount: 24 },
+        ],
+      })
+    transactionsApi.fetchTransactions.mockResolvedValue({ transactions: [] })
+
+    const wrapper = mount(DailySpendingPanel, {
+      props: { detailDate: '2024-06-03', minDetailDate: '2024-06-01' },
+    })
+
+    await flushPromises()
+
+    expect(chartConfig.data.datasets.some((dataset) => dataset.label.includes('(Avg)'))).toBe(false)
+
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await flushPromises()
+
+    const averageDataset = chartConfig.data.datasets.find((dataset) => dataset.label === 'Food (Avg)')
+    expect(averageDataset.data).toEqual([30])
+  })
+
+  it('skips the average overlay when the date range is empty', async () => {
+    chartsApi.fetchCategoryBreakdownTree.mockResolvedValue({
+      status: 'success',
+      data: [{ id: 'food', label: 'Food', amount: 20 }],
+    })
+    transactionsApi.fetchTransactions.mockResolvedValue({ transactions: [] })
+
+    const wrapper = mount(DailySpendingPanel, {
+      props: { detailDate: '2024-06-01', minDetailDate: '2024-06-02' },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await flushPromises()
+
+    expect(chartsApi.fetchCategoryBreakdownTree).toHaveBeenCalledTimes(1)
+    expect(chartConfig.data.datasets.some((dataset) => dataset.label.includes('(Avg)'))).toBe(false)
   })
 })

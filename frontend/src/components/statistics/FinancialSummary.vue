@@ -64,7 +64,7 @@
           <p class="detail-date-helper">Showing activity through {{ viewingDateLabel }}</p>
         </div>
 
-        <DailySpendingPanel :detail-date="detailDate" />
+        <DailySpendingPanel :detail-date="detailDate" :min-detail-date="minDetailDate" />
 
         <div class="stats-grid">
           <!-- Averages (Daily + Moving) -->
