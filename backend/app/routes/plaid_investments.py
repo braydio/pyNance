@@ -1,3 +1,5 @@
+"""Routes for Plaid investments flows and account syncing."""
+
 from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -172,9 +174,9 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 logger.error(
                     "Failed to refresh investments for item %s: %s",

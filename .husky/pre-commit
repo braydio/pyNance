@@ -10,9 +10,13 @@ if echo "$STAGED" | grep -q '^frontend/'; then
 fi
 
 # Backend Python staged
-if echo "$STAGED" | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$|\.pre-commit-config\.yaml'; then
+PY_FILES=$(echo "$STAGED" | grep -E '\.py$' || true)
+if [ -n "$PY_FILES" ] || echo "$STAGED" | grep -q '^\.pre-commit-config\.yaml$'; then
   echo "==> Running backend Python pre-commit hooks..."
-  pre-commit run --files $(echo "$STAGED" | grep -E '\.py$' | tr '\n' ' ')
+  if [ -n "$PY_FILES" ]; then
+    pre-commit run --files $PY_FILES
+  else
+    pre-commit run --all-files
+  fi
   [ $? -ne 0 ] && exit 1
 fi
-

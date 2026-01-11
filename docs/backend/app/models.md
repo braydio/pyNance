@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-01-11
 Status: Active
 ---
 
@@ -15,7 +15,7 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
 ### Dependencies
 
 - `flask_sqlalchemy` via `app.extensions.db`
-- Timestamp mixins for created/updated fields
+- Timestamp mixins for created/updated fields (`backend/app/models/mixins.py`)
 - Relationship mappings for foreign key constraints
 
 ### Key Models

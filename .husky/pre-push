@@ -1,13 +1,22 @@
 # Backend
-if git diff --cached --name-only | grep -E -q '^(backend/|tests/|src/|app/|)[^/]*\.py$'; then
+if git rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1; then
+  CHANGED_FILES=$(git diff --name-only @{u}...HEAD)
+else
+  if git rev-parse HEAD~1 >/dev/null 2>&1; then
+    CHANGED_FILES=$(git diff --name-only HEAD~1..HEAD)
+  else
+    CHANGED_FILES=$(git diff --name-only)
+  fi
+fi
+
+if echo "$CHANGED_FILES" | grep -E -q '^(backend|tests|src|app)/.*\.py$'; then
   echo "==> Running backend pytest..."
   pytest || exit 1
 fi
 
 # Frontend
-if git diff --cached --name-only | grep -q '^frontend/'; then
+if echo "$CHANGED_FILES" | grep -q '^frontend/'; then
   echo "==> Running frontend npm run check..."
   cd frontend && npm run check || exit 1
   cd ..
 fi
-

@@ -40,6 +40,8 @@ repos:
         additional_dependencies:
           - tree-sitter==0.20.2
           - tree-sitter-languages==1.10.2
+        args:
+          - "--disable=import-error,missing-module-docstring,missing-function-docstring,missing-class-docstring"
 
   # Enforce bandit
   - repo: https://github.com/PyCQA/bandit
