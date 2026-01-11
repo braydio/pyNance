@@ -11,7 +11,7 @@ from decimal import Decimal, InvalidOperation
 
 from app.config import logger
 from app.extensions import db
-from app.models import Account, Transaction
+from app.models import Account, Tag, Transaction
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
@@ -93,13 +93,60 @@ def _parse_iso_date(value: str | None, inclusive_end: bool = False) -> datetime 
     return _ensure_utc(parsed)
 
 
+def _normalize_tag_name(value: str) -> str:
+    """Normalize a tag name by trimming whitespace and enforcing a ``#`` prefix.
+
+    Args:
+        value: Raw tag input.
+
+    Returns:
+        Normalized tag name, or an empty string when the input is blank.
+    """
+
+    cleaned = value.strip()
+    if not cleaned:
+        return ""
+    if not cleaned.startswith("#"):
+        return f"#{cleaned}"
+    return cleaned
+
+
+def _normalize_tag_payload(raw_tags) -> list[str]:
+    """Normalize a tag payload into a list of unique tag names.
+
+    Args:
+        raw_tags: A string or list of tags supplied by the client.
+
+    Returns:
+        Normalized tag names with duplicates removed.
+    """
+
+    if raw_tags is None:
+        return []
+    if isinstance(raw_tags, str):
+        candidates = [raw_tags]
+    elif isinstance(raw_tags, list):
+        candidates = raw_tags
+    else:
+        candidates = [str(raw_tags)]
+
+    normalized: list[str] = []
+    for candidate in candidates:
+        if candidate is None:
+            continue
+        name = _normalize_tag_name(str(candidate))
+        if name and name not in normalized:
+            normalized.append(name)
+    return normalized
+
+
 @transactions.route("/update", methods=["PUT"])
 def update_transaction():
     """Update a transaction's editable details.
 
     Allowed fields: ``amount``, ``date``, ``description``, ``category``,
-    ``merchant_name``, ``merchant_type`` and ``is_internal``. Account and
-    provider identifiers remain immutable.
+    ``merchant_name``, ``merchant_type``, ``is_internal``, and optional tag data
+    via ``tag`` or ``tags``. Account and provider identifiers remain immutable.
     """
     try:
         data = request.json
@@ -142,6 +189,38 @@ def update_transaction():
         if "merchant_type" in data:
             txn.merchant_type = data["merchant_type"]
             changed_fields["merchant_type"] = True
+        if "tag" in data or "tags" in data:
+            raw_tags = data.get("tags")
+            if raw_tags is None:
+                raw_tags = data.get("tag")
+            normalized_tags = _normalize_tag_payload(raw_tags)
+            if not normalized_tags:
+                normalized_tags = ["#untagged"]
+
+            user_id = txn.user_id
+            if not user_id:
+                account = Account.query.filter_by(account_id=txn.account_id).first()
+                user_id = account.user_id if account else None
+            if not user_id:
+                return (
+                    jsonify(
+                        {
+                            "status": "error",
+                            "message": "Missing user_id for tag update",
+                        }
+                    ),
+                    400,
+                )
+
+            tag_models = []
+            for name in normalized_tags:
+                tag = Tag.query.filter_by(user_id=user_id, name=name).first()
+                if not tag:
+                    tag = Tag(user_id=user_id, name=name)
+                    db.session.add(tag)
+                tag_models.append(tag)
+            txn.tags = tag_models
+            changed_fields["tags"] = True
         counterpart_id = data.get("counterpart_transaction_id")
         flag_counterpart = data.get("flag_counterpart", False)
         if "is_internal" in data:
@@ -490,6 +569,36 @@ def merchant_suggestions():
         return jsonify({"status": "success", "data": names}), 200
     except Exception as e:
         logger.error("Error fetching merchant suggestions: %s", e, exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/tags", methods=["GET"])
+def tag_suggestions():
+    """Return a list of tag suggestions.
+
+    Query params:
+    - q: optional substring filter (case-insensitive)
+    - limit: max number of results (default 50)
+    - user_id: optional user scope
+    """
+    try:
+        q = (request.args.get("q") or "").strip()
+        limit = min(int(request.args.get("limit", 50)), 200)
+        user_id = request.args.get("user_id")
+
+        query = db.session.query(Tag.name).distinct()
+        if user_id:
+            query = query.filter(Tag.user_id == user_id)
+        if q:
+            query = query.filter(Tag.name.ilike(f"%{q}%"))
+
+        rows = query.order_by(Tag.name.asc()).limit(limit).all()
+        names = [name for (name,) in rows if name]
+        if "#untagged" not in names:
+            names.insert(0, "#untagged")
+        return jsonify({"status": "success", "data": names}), 200
+    except Exception as e:
+        logger.error("Error fetching tag suggestions: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
 
 

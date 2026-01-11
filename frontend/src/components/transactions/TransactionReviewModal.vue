@@ -113,7 +113,13 @@
                     v-if="field.type === 'input'"
                     v-model="editBuffer[field.key]"
                     :type="field.inputType || 'text'"
-                    :list="field.key === 'category' ? 'review-category-suggestions' : undefined"
+                    :list="
+                      field.key === 'category'
+                        ? 'review-category-suggestions'
+                        : field.key === 'tag'
+                          ? 'review-tag-suggestions'
+                          : undefined
+                    "
                     class="input w-full"
                   />
                   <input
@@ -148,6 +154,9 @@
   <datalist id="review-category-suggestions">
     <option v-for="option in categorySuggestions" :key="option" :value="option" />
   </datalist>
+  <datalist id="review-tag-suggestions">
+    <option v-for="option in tagSuggestions" :key="option" :value="option" />
+  </datalist>
 </template>
 
 <script setup>
@@ -162,7 +171,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import Fuse from 'fuse.js'
 import { useToast } from 'vue-toastification'
 import { useTransactions } from '@/composables/useTransactions'
-import { createTransactionRule, updateTransaction } from '@/api/transactions'
+import { createTransactionRule, fetchTagSuggestions, updateTransaction } from '@/api/transactions'
 import { fetchCategoryTree } from '@/api/categories'
 import { formatAmount } from '@/utils/format'
 
@@ -198,6 +207,7 @@ const editingTransactionId = ref('')
 const editBuffer = ref({})
 const batchComplete = ref(false)
 const categoryOptions = ref([])
+const tagOptions = ref([])
 
 const hasNextBatch = computed(() => currentPage.value < totalPages.value)
 
@@ -215,6 +225,13 @@ const displayFields = computed(() => [
     label: 'Category',
     type: 'input',
     value: currentTransaction.value?.category || 'Uncategorized',
+  },
+  {
+    key: 'tag',
+    label: 'Tag',
+    type: 'input',
+    formatter: (tx) => formatTagDisplay(tx),
+    value: formatTagDisplay(currentTransaction.value),
   },
   {
     key: 'merchant_name',
@@ -256,6 +273,18 @@ const categoryFuse = computed(
     ),
 )
 
+const tagFuse = computed(
+  () =>
+    new Fuse(
+      tagOptions.value.map((value) => ({ value })),
+      {
+        keys: ['value'],
+        threshold: 0.3,
+        ignoreLocation: true,
+      },
+    ),
+)
+
 const categorySuggestions = computed(() => {
   if (!categoryOptions.value.length) return []
   const query = (editBuffer.value.category || '').trim()
@@ -276,6 +305,39 @@ const categorySuggestions = computed(() => {
   }
   return suggestions.slice(0, CATEGORY_SUGGESTION_LIMIT)
 })
+
+const tagSuggestions = computed(() => {
+  if (!tagOptions.value.length) return []
+  const query = (editBuffer.value.tag || '').trim()
+  if (!query) {
+    return tagOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
+  const seen = new Set()
+  const matches = tagFuse.value.search(query)
+  const suggestions = []
+  matches.forEach((match) => {
+    if (!seen.has(match.item.value)) {
+      suggestions.push(match.item.value)
+      seen.add(match.item.value)
+    }
+  })
+  if (!suggestions.length) {
+    return tagOptions.value.slice(0, CATEGORY_SUGGESTION_LIMIT)
+  }
+  return suggestions.slice(0, CATEGORY_SUGGESTION_LIMIT)
+})
+
+/**
+ * Normalize tag names for local display updates.
+ *
+ * @param {string} value - Raw tag input.
+ * @returns {string} Normalized tag label.
+ */
+function normalizeTagInput(value) {
+  const trimmed = String(value || '').trim()
+  if (!trimmed) return ''
+  return trimmed.startsWith('#') ? trimmed : `#${trimmed}`
+}
 
 /**
  * Flatten category groups into unique suggestion labels.
@@ -304,6 +366,17 @@ function buildCategoryOptions(groups = []) {
 }
 
 /**
+ * Normalize tag suggestions for the review modal.
+ *
+ * @param {string[]} tags - Raw tag values.
+ * @returns {string[]} Sorted unique tag labels.
+ */
+function buildTagOptions(tags = []) {
+  const unique = Array.from(new Set(tags.filter(Boolean)))
+  return unique.sort((a, b) => a.localeCompare(b))
+}
+
+/**
  * Fetch category groups and populate autocomplete options.
  */
 async function loadCategoryOptions() {
@@ -321,6 +394,20 @@ async function loadCategoryOptions() {
 }
 
 /**
+ * Fetch tag suggestions and populate autocomplete options.
+ */
+async function loadTagOptions() {
+  try {
+    const userId = currentTransaction.value?.user_id || ''
+    const tags = await fetchTagSuggestions('', CATEGORY_SUGGESTION_LIMIT * 3, userId)
+    tagOptions.value = buildTagOptions(tags || [])
+  } catch (error) {
+    console.error('Failed to load tag options', error)
+    tagOptions.value = []
+  }
+}
+
+/**
  * Safely resolve a transaction date from the available fields.
  *
  * @param {Record<string, unknown>} tx - Transaction to inspect.
@@ -329,6 +416,29 @@ async function loadCategoryOptions() {
 function resolveTransactionDate(tx) {
   if (!tx) return ''
   return tx.date || tx.transaction_date || ''
+}
+
+/**
+ * Resolve the primary tag to display or edit.
+ *
+ * @param {Record<string, unknown>} tx - Transaction to inspect.
+ * @returns {string} First non-default tag or an empty string.
+ */
+function resolveTransactionTag(tx) {
+  if (!tx || !Array.isArray(tx.tags)) return ''
+  const filtered = tx.tags.filter((tag) => tag && tag !== '#untagged')
+  return filtered.length ? String(filtered[0]) : ''
+}
+
+/**
+ * Format the transaction tag for display.
+ *
+ * @param {Record<string, unknown>} tx - Transaction to inspect.
+ * @returns {string} Tag label for the UI.
+ */
+function formatTagDisplay(tx) {
+  const resolved = resolveTransactionTag(tx)
+  return resolved || '#untagged'
 }
 
 /**
@@ -345,6 +455,7 @@ function buildEditBuffer(tx) {
     description: tx.description || '',
     category: tx.category || '',
     merchant_name: tx.merchant_name || '',
+    tag: resolveTransactionTag(tx),
   }
 }
 
@@ -395,9 +506,11 @@ function handleEditToggle() {
 async function saveEdits() {
   if (!currentTransaction.value) return
   const payload = { transaction_id: currentTransaction.value.transaction_id }
-  const editableKeys = ['date', 'amount', 'description', 'category', 'merchant_name']
+  const editableKeys = ['date', 'amount', 'description', 'category', 'merchant_name', 'tag']
   editableKeys.forEach((key) => {
-    if (editBuffer.value[key] !== currentTransaction.value[key]) {
+    const currentValue =
+      key === 'tag' ? resolveTransactionTag(currentTransaction.value) : currentTransaction.value[key]
+    if (editBuffer.value[key] !== currentValue) {
       payload[key] = editBuffer.value[key]
     }
   })
@@ -420,6 +533,10 @@ async function saveEdits() {
   try {
     await updateTransaction(payload)
     Object.assign(currentTransaction.value, payload)
+    if ('tag' in payload) {
+      const normalized = normalizeTagInput(payload.tag)
+      currentTransaction.value.tags = [normalized || '#untagged']
+    }
     toast.success('Transaction updated')
     await maybeSaveRule(payload)
   } catch (error) {
@@ -550,6 +667,7 @@ watch(
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   loadCategoryOptions()
+  loadTagOptions()
 })
 
 onUnmounted(() => {

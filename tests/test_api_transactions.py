@@ -46,6 +46,7 @@ sql_pkg.account_logic = account_logic_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
+models_stub.Tag = type("Tag", (), {})
 models_stub.Transaction = type("Transaction", (), {})
 models_stub.AccountHistory = type("AccountHistory", (), {})
 sys.modules["app.models"] = models_stub
@@ -130,6 +131,7 @@ def test_update_transaction_validates_date(client, monkeypatch):
         merchant_name="",
         merchant_type="",
         is_internal=False,
+        user_id="user-1",
         user_modified=False,
         user_modified_fields=None,
     )
@@ -160,3 +162,107 @@ def test_update_transaction_validates_date(client, monkeypatch):
     )
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "success"
+
+
+def test_update_transaction_applies_tag_normalization(client, monkeypatch):
+    added_tags = []
+
+    class TagStub:
+        def __init__(self, user_id, name):
+            self.user_id = user_id
+            self.name = name
+
+    def tag_filter_by(user_id=None, name=None):
+        return types.SimpleNamespace(first=lambda: None)
+
+    txn_stub = types.SimpleNamespace(
+        amount=0.0,
+        date=None,
+        description="",
+        category="",
+        merchant_name="",
+        merchant_type="",
+        is_internal=False,
+        user_id="user-1",
+        user_modified=False,
+        user_modified_fields=None,
+        tags=[],
+    )
+    query_result = types.SimpleNamespace(first=lambda: txn_stub)
+    monkeypatch.setattr(
+        transactions_module.Transaction,
+        "query",
+        types.SimpleNamespace(filter_by=lambda **kwargs: query_result),
+        raising=False,
+    )
+    TagStub.query = types.SimpleNamespace(filter_by=tag_filter_by)
+    monkeypatch.setattr(transactions_module, "Tag", TagStub, raising=False)
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)
+        ),
+        raising=False,
+    )
+
+    resp = client.put(
+        "/api/transactions/update",
+        json={"transaction_id": "tx1", "tag": "  coffee  "},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "success"
+    assert txn_stub.tags[0].name == "#coffee"
+    assert added_tags[0].name == "#coffee"
+
+
+def test_update_transaction_defaults_empty_tag(client, monkeypatch):
+    added_tags = []
+
+    class TagStub:
+        def __init__(self, user_id, name):
+            self.user_id = user_id
+            self.name = name
+
+    def tag_filter_by(user_id=None, name=None):
+        return types.SimpleNamespace(first=lambda: None)
+
+    txn_stub = types.SimpleNamespace(
+        amount=0.0,
+        date=None,
+        description="",
+        category="",
+        merchant_name="",
+        merchant_type="",
+        is_internal=False,
+        user_id="user-1",
+        user_modified=False,
+        user_modified_fields=None,
+        tags=[],
+    )
+    query_result = types.SimpleNamespace(first=lambda: txn_stub)
+    monkeypatch.setattr(
+        transactions_module.Transaction,
+        "query",
+        types.SimpleNamespace(filter_by=lambda **kwargs: query_result),
+        raising=False,
+    )
+    TagStub.query = types.SimpleNamespace(filter_by=tag_filter_by)
+    monkeypatch.setattr(transactions_module, "Tag", TagStub, raising=False)
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)
+        ),
+        raising=False,
+    )
+
+    resp = client.put(
+        "/api/transactions/update",
+        json={"transaction_id": "tx1", "tag": "   "},
+    )
+    assert resp.status_code == 200
+    assert resp.get_json()["status"] == "success"
+    assert txn_stub.tags[0].name == "#untagged"
+    assert added_tags[0].name == "#untagged"
