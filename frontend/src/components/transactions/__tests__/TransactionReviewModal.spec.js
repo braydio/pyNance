@@ -39,6 +39,7 @@ vi.mock('@/composables/useTransactions', () => {
 vi.mock('@/api/transactions', () => ({
   updateTransaction: vi.fn(),
   createTransactionRule: vi.fn(),
+  fetchTagSuggestions: vi.fn(() => Promise.resolve([])),
 }))
 
 function findInputByLabel(wrapper, labelText) {

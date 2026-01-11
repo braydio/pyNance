@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-17
+Last Updated: 2026-01-11
 Status: Active
 ---
 
@@ -27,7 +27,8 @@ Tags are stored per user and associated to transactions through a join table.
 Transactions without tags are serialized with a default `#untagged` label in
 `backend/app/sql/account_logic.get_paginated_transactions`.
 This keeps downstream consumers consistent without requiring a stored tag row
-for every transaction.
+for every transaction. The update endpoint can also normalize blank tag edits
+to `#untagged` so the association remains explicit after user edits.
 
 ## Serialization Notes
 

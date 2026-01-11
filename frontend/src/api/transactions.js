@@ -7,6 +7,7 @@
  * Exposed helpers:
  * - `fetchTransactions(params)` - paginated listing of transactions
  * - `updateTransaction(transactionData)` - modify a transaction
+ * - `fetchTagSuggestions(q, limit?, user_id?)` - tag autocomplete list
  * - `fetchRecentTransactions(accountId, limit?)` - newest transactions for an account
  * - `fetchNetChanges(accountId, params?)` - income/expense totals for an account
  * - `fetchTopMerchants(params?)` - highest spending merchants
@@ -52,8 +53,9 @@ export const fetchTransactions = async (params = {}) => {
 /**
  * Update mutable transaction fields.
  *
- * Only ``date`` (YYYY-MM-DD), ``amount``, ``description``, ``category`` and
- * ``merchant_name`` may be supplied along with ``transaction_id``.
+ * Only ``date`` (YYYY-MM-DD), ``amount``, ``description``, ``category``,
+ * ``merchant_name``, and optional ``tag`` or ``tags`` may be supplied along with
+ * ``transaction_id``.
  *
  * @param {Object} transactionData - Transaction attributes to persist.
  * @returns {Promise<Object>} API response
@@ -61,6 +63,18 @@ export const fetchTransactions = async (params = {}) => {
 export const updateTransaction = async (transactionData) => {
   const response = await axios.put('/api/transactions/update', transactionData)
   return response.data
+}
+
+/**
+ * Retrieve tag suggestions with optional substring filter.
+ */
+export const fetchTagSuggestions = async (q = '', limit = 50, user_id = '') => {
+  const params = { q, limit }
+  if (user_id) {
+    params.user_id = user_id
+  }
+  const response = await axios.get('/api/transactions/tags', { params })
+  return response.data?.status === 'success' ? response.data.data : []
 }
 
 /**

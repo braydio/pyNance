@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-01-11
 Status: Active
 ---
 
@@ -17,11 +17,12 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - `GET /api/transactions/get_transactions` – Paginated transactions across linked accounts.
 - `GET /api/transactions/<account_id>/transactions` – Account-scoped paginated transactions with optional `recent=true` shortcut.
 - `GET /api/transactions/merchants` – Merchant name suggestions for autocomplete.
+- `GET /api/transactions/tags` – Tag name suggestions for autocomplete.
 
 ## Inputs/Outputs
 
 - **PUT /api/transactions/update**
-  - **Inputs:** JSON with `transaction_id` plus editable fields (`amount`, `date`, `description`, `category`, `merchant_name`, `merchant_type`, `is_internal`, `counterpart_transaction_id`, `flag_counterpart`, optional `save_as_rule` metadata).
+  - **Inputs:** JSON with `transaction_id` plus editable fields (`amount`, `date`, `description`, `category`, `merchant_name`, `merchant_type`, `is_internal`, `counterpart_transaction_id`, `flag_counterpart`, optional `tag`/`tags`, optional `save_as_rule` metadata).
   - **Outputs:** `{ "status": "success" }` on success; 4xx/5xx envelopes for validation or lookup errors.
 - **POST /api/transactions/scan-internal**
   - **Inputs:** None.
@@ -32,6 +33,9 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - **GET /api/transactions/merchants**
   - **Inputs:** Optional `q` substring filter and `limit` (default 50).
   - **Outputs:** `{ "status": "success", "data": ["Merchant", ...] }`.
+- **GET /api/transactions/tags**
+  - **Inputs:** Optional `q` substring filter, optional `limit` (default 50), and optional `user_id` scope.
+  - **Outputs:** `{ "status": "success", "data": ["#tag", ...] }`.
 
 ## Auth
 
