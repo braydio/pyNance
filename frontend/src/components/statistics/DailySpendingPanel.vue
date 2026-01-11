@@ -9,6 +9,12 @@
         <h4 class="panel-title">Today's Spending</h4>
         <p class="panel-subtitle">Snapshot for {{ formattedDetailDate }}</p>
       </div>
+      <div class="panel-controls">
+        <label class="average-toggle">
+          <input v-model="compareToAverage" type="checkbox" />
+          <span>Compare to average profile</span>
+        </label>
+      </div>
     </header>
 
     <div class="panel-content">
@@ -62,6 +68,10 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  minDetailDate: {
+    type: String,
+    required: true,
+  },
 })
 
 const chartCanvas = ref(null)
@@ -72,6 +82,8 @@ const categoryError = ref('')
 const transactions = ref([])
 const transactionsLoading = ref(false)
 const transactionsError = ref('')
+const compareToAverage = ref(false)
+const averageRows = ref([])
 
 const formattedDetailDate = computed(() => {
   const parsed = parseISODate(props.detailDate)
@@ -132,6 +144,70 @@ function normalizeCategoryTotals(nodes = []) {
 }
 
 /**
+ * Apply an alpha value to a CSS color string.
+ *
+ * @param {string} color - CSS color value (hex or rgb).
+ * @param {number} alpha - Opacity from 0 to 1.
+ * @returns {string} RGBA color string with the requested alpha.
+ */
+function applyAlphaToColor(color, alpha) {
+  if (!color) {
+    return color
+  }
+  if (color.startsWith('rgb(')) {
+    return color.replace('rgb(', 'rgba(').replace(')', `, ${alpha})`)
+  }
+  if (color.startsWith('#')) {
+    const raw = color.replace('#', '')
+    const hex = raw.length === 3 ? raw.split('').map((ch) => `${ch}${ch}`).join('') : raw
+    const parsed = Number.parseInt(hex, 16)
+    if (!Number.isNaN(parsed) && hex.length === 6) {
+      const r = (parsed >> 16) & 255
+      const g = (parsed >> 8) & 255
+      const b = parsed & 255
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`
+    }
+  }
+  return color
+}
+
+/**
+ * Calculate the number of days in an inclusive date range.
+ *
+ * @param {string} startDate - ISO start date.
+ * @param {string} endDate - ISO end date.
+ * @returns {number} Number of days, or 0 for invalid ranges.
+ */
+function getInclusiveDayCount(startDate, endDate) {
+  const start = parseISODate(startDate)
+  const end = parseISODate(endDate)
+  if (!start || !end) {
+    return 0
+  }
+  const msInDay = 24 * 60 * 60 * 1000
+  const dayDiff = Math.floor((end.getTime() - start.getTime()) / msInDay)
+  return dayDiff >= 0 ? dayDiff + 1 : 0
+}
+
+/**
+ * Align average rows to the ordering of the base rows.
+ *
+ * @param {Array<{ label: string, amount: number }>} baseRows - Today's category totals.
+ * @param {Array<{ label: string, amount: number }>} avgRows - Average category totals.
+ * @returns {Array<{ label: string, amount: number }>} Ordered averages.
+ */
+function alignAverageRows(baseRows, avgRows) {
+  if (!baseRows.length) {
+    return avgRows
+  }
+  const avgMap = new Map(avgRows.map((row) => [row.label, row]))
+  const baseLabels = new Set(baseRows.map((row) => row.label))
+  const ordered = baseRows.map((row) => avgMap.get(row.label)).filter(Boolean)
+  const remaining = avgRows.filter((row) => !baseLabels.has(row.label))
+  return [...ordered, ...remaining]
+}
+
+/**
  * Destroy any existing Chart.js instance before rendering a new one.
  */
 function destroyChart() {
@@ -145,27 +221,59 @@ function destroyChart() {
     if (existing) {
       existing.destroy()
     }
-  }
+ }
 }
 
 /**
- * Render the stacked bar chart for today's category totals.
+ * Render the stacked bar chart for today's category totals and optional averages.
  *
  * @param {Array<{ label: string, amount: number }>} rows - Category totals.
+ * @param {Array<{ label: string, amount: number }>} avgRows - Average category totals.
  * @returns {Promise<void>} Resolves after chart rendering completes.
  */
-async function renderChart(rows) {
+async function renderChart(rows, avgRows) {
   await nextTick()
   const canvasEl = chartCanvas.value
   if (!canvasEl) {
     return
   }
   destroyChart()
-  if (!rows.length) {
+  if (!rows.length && !avgRows.length) {
     return
   }
   const ctx = canvasEl.getContext('2d')
   if (!ctx) {
+    return
+  }
+  const showAverage = compareToAverage.value && avgRows.length
+  const orderedAverageRows = showAverage ? alignAverageRows(rows, avgRows) : []
+  const baseDatasets = rows.map((row, idx) => ({
+    label: row.label,
+    data: [row.amount],
+    backgroundColor: getAccentColor(idx),
+    borderRadius: 8,
+    borderSkipped: false,
+    stack: 'today-stack',
+    order: 1,
+  }))
+  const averageDatasets = orderedAverageRows.map((row, idx) => {
+    const accentColor = getAccentColor(idx)
+    return {
+      label: `${row.label} (Avg)`,
+      data: [row.amount],
+      backgroundColor: applyAlphaToColor(accentColor, 0.35),
+      borderColor: accentColor,
+      borderRadius: 8,
+      borderSkipped: false,
+      borderWidth: 2,
+      stack: 'average-stack',
+      barPercentage: 0.6,
+      categoryPercentage: 0.6,
+      order: 2,
+    }
+  })
+  const datasets = [...baseDatasets, ...averageDatasets]
+  if (!datasets.length) {
     return
   }
 
@@ -173,14 +281,7 @@ async function renderChart(rows) {
     type: 'bar',
     data: {
       labels: ['Today'],
-      datasets: rows.map((row, idx) => ({
-        label: row.label,
-        data: [row.amount],
-        backgroundColor: getAccentColor(idx),
-        borderRadius: 8,
-        borderSkipped: false,
-        stack: 'today-stack',
-      })),
+      datasets,
     },
     options: {
       responsive: true,
@@ -257,7 +358,43 @@ async function loadCategoryTotals() {
     categoryError.value = 'error'
   } finally {
     categoryLoading.value = false
-    await renderChart(categoryRows.value)
+    await renderChart(categoryRows.value, averageRows.value)
+  }
+}
+
+/**
+ * Load average category totals for the active detail range.
+ *
+ * @returns {Promise<void>} Resolves after state updates.
+ */
+async function loadAverageProfile() {
+  const dayCount = getInclusiveDayCount(props.minDetailDate, props.detailDate)
+  if (dayCount <= 0) {
+    averageRows.value = []
+    await renderChart(categoryRows.value, averageRows.value)
+    return
+  }
+
+  try {
+    const response = await fetchCategoryBreakdownTree({
+      start_date: props.minDetailDate,
+      end_date: props.detailDate,
+    })
+    if (response?.status !== 'success') {
+      averageRows.value = []
+      return
+    }
+    const totals = normalizeCategoryTotals(response?.data || [])
+    // Convert total spending into per-day averages for the overlay.
+    averageRows.value = totals.map((row) => ({
+      ...row,
+      amount: row.amount / dayCount,
+    }))
+  } catch (err) {
+    console.error('Error loading average spending profile:', err)
+    averageRows.value = []
+  } finally {
+    await renderChart(categoryRows.value, averageRows.value)
   }
 }
 
@@ -329,12 +466,26 @@ function transactionLabel(transaction) {
 }
 
 watch(
-  () => props.detailDate,
+  [() => props.detailDate, () => props.minDetailDate],
   () => {
     refreshData()
+    if (compareToAverage.value) {
+      loadAverageProfile()
+    } else {
+      averageRows.value = []
+    }
   },
   { immediate: true },
 )
+
+watch(compareToAverage, (enabled) => {
+  if (enabled) {
+    loadAverageProfile()
+  } else {
+    averageRows.value = []
+    renderChart(categoryRows.value, averageRows.value)
+  }
+})
 
 onUnmounted(() => {
   destroyChart()
@@ -353,6 +504,24 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
+}
+
+.panel-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.average-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.average-toggle input {
+  accent-color: var(--color-accent-yellow);
 }
 
 .panel-title {
