@@ -5,6 +5,28 @@ import { nextTick } from 'vue'
 import FinancialSummary from '../FinancialSummary.vue'
 
 describe('FinancialSummary trends', () => {
+  it('shows the daily spending panel only in extended view', async () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 300, totalExpenses: 200, totalNet: 100 },
+        chartData: [],
+      },
+      global: {
+        stubs: {
+          DailySpendingPanel: {
+            template: '<div data-test="daily-spending-panel"></div>',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.find('[data-test="daily-spending-panel"]').exists()).toBe(false)
+
+    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await nextTick()
+
+    expect(wrapper.find('[data-test="daily-spending-panel"]').exists()).toBe(true)
+  })
   it('shows income and expense trend deltas', async () => {
     const wrapper = mount(FinancialSummary, {
       props: {

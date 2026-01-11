@@ -45,6 +45,7 @@ declare module 'vue' {
     ChartDetailsSidebar: typeof import('./components/charts/ChartDetailsSidebar.vue')['default']
     ChartWidgetTopBar: typeof import('./components/ui/ChartWidgetTopBar.vue')['default']
     DailyNetChart: typeof import('./components/charts/DailyNetChart.vue')['default']
+    DailySpendingPanel: typeof import('./components/statistics/DailySpendingPanel.vue')['default']
     DateRangeSelector: typeof import('./components/DateRangeSelector.vue')['default']
     DownloadCSV: typeof import('./components/unused/DownloadCSV.vue')['default']
     FinancialSummary: typeof import('./components/statistics/FinancialSummary.vue')['default']
@@ -102,6 +103,5 @@ declare module 'vue' {
     TypeSelector: typeof import('./components/TypeSelector.vue')['default']
     UpdateTransactionsTable: typeof import('./components/tables/UpdateTransactionsTable.vue')['default']
     UploadCSV: typeof import('./components/unused/UploadCSV.vue')['default']
-    YoutubeEmbed: typeof import('./components/unused/YoutubeEmbed.vue')['default']
   }
 }
