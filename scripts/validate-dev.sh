@@ -11,6 +11,8 @@ YELLOW='\033[1;33m'
 CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
+CI_MODE=0
+
 echo -e "${CYAN}========================================"
 echo -e "pyNance Development Validation Script"
 echo -e "========================================${NC}"
@@ -81,23 +83,28 @@ validate_python_env() {
     echo -e "${YELLOW}[2/7] Validating Python environment...${NC}"
     
     # Check Python version
-    if python --version | grep -q "3.11"; then
-        echo -e "${GREEN}✅ Python 3.11 detected${NC}"
+    if python -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)'; then
+        echo -e "${GREEN}✅ Python 3.11+ detected${NC}"
     else
-        echo -e "${RED}❌ Python 3.11 required, found: $(python --version)${NC}"
+        echo -e "${RED}❌ Python 3.11+ required, found: $(python --version)${NC}"
         return 1
     fi
     
     # Check virtual environment
-    if [ -d ".venv" ]; then
-        echo -e "${GREEN}✅ Virtual environment exists${NC}"
-    else
-        echo -e "${RED}❌ Virtual environment missing${NC}"
-        return 1
+    if [ $CI_MODE -eq 0 ]; then
+        if [ -d ".venv" ]; then
+            echo -e "${GREEN}✅ Virtual environment exists${NC}"
+        else
+            echo -e "${RED}❌ Virtual environment missing${NC}"
+            return 1
+        fi
     fi
     
     # Check required tools
-    local tools=("black" "ruff" "mypy" "pre-commit" "pytest")
+    local tools=("black" "isort" "ruff" "mypy" "pytest")
+    if [ $CI_MODE -eq 0 ]; then
+        tools+=("pre-commit")
+    fi
     for tool in "${tools[@]}"; do
         if command_exists "$tool"; then
             echo -e "${GREEN}✅ $tool installed${NC}"
@@ -137,7 +144,7 @@ validate_python_style() {
     echo -e "${YELLOW}[4/7] Validating Python code style...${NC}"
     
     echo "Running black format check..."
-    if black --check --line-length=120 backend/; then
+    if black --check backend/; then
         echo -e "${GREEN}✅ Black formatting passed${NC}"
     else
         echo -e "${RED}❌ Black formatting failed${NC}"
@@ -153,7 +160,7 @@ validate_python_style() {
     fi
     
     echo "Running ruff check..."
-    if ruff check backend/ --line-length=120; then
+    if ruff check backend/; then
         echo -e "${GREEN}✅ Ruff check passed${NC}"
     else
         echo -e "${RED}❌ Ruff check failed${NC}"
@@ -231,6 +238,11 @@ validate_tests() {
 validate_precommit() {
     echo -e "${YELLOW}[7/7] Running pre-commit checks...${NC}"
     
+    if [ $CI_MODE -eq 1 ]; then
+        echo -e "${YELLOW}Skipping pre-commit checks in CI.${NC}"
+        return 0
+    fi
+
     if pre-commit run --all-files; then
         echo -e "${GREEN}✅ Pre-commit checks passed${NC}"
     else
@@ -261,6 +273,16 @@ validate_env_files() {
 # Main execution
 main() {
     local exit_code=0
+
+    for arg in "$@"; do
+        if [ "$arg" = "--ci" ]; then
+            CI_MODE=1
+        fi
+    done
+
+    if [ "${CI:-}" = "true" ] || [ "${GITHUB_ACTIONS:-}" = "true" ]; then
+        CI_MODE=1
+    fi
     
     # Check if we're in the right directory
     if [ ! -f "CONTRIBUTING.md" ] || [ ! -d "backend" ]; then
