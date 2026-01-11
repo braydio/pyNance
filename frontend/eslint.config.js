@@ -1,67 +1,83 @@
-import js from '@eslint/js'
-import pluginVue from 'eslint-plugin-vue'
-import pluginCypress from 'eslint-plugin-cypress/flat'
-import prettierPlugin from 'eslint-plugin-prettier'
-import vueConfigPrettier from '@vue/eslint-config-prettier'
+// frontend/eslint.config.js
+// ESLint 9+ Flat Config version
+
+import js from "@eslint/js";
+import pluginVue from "eslint-plugin-vue";
+import pluginCypress from "eslint-plugin-cypress/flat";
+import prettierPlugin from "eslint-plugin-prettier";
+import vueConfigPrettier from "@vue/eslint-config-prettier";
 
 export default [
-  // Base JS & Vue recommendations
+  // Base JS + Vue recommended settings
   js.configs.recommended,
-  ...pluginVue.configs['flat/recommended'],
+  ...pluginVue.configs["flat/recommended"],
 
-  // Integrate Prettier (stylistic lint)
+  // Vue + Prettier integration (Flat Config compatible)
   {
-    plugins: { prettier: prettierPlugin },
+    files: ["**/*.js", "**/*.vue", "**/*.ts", "**/*.jsx", "**/*.tsx"],
+    plugins: {
+      vue: pluginVue,
+      cypress: pluginCypress,
+      prettier: prettierPlugin,
+    },
     rules: {
-      'prettier/prettier': 'warn', // Show style warnings but don’t fail build
+      // Prettier
+      "prettier/prettier": "warn",
+
+      // Vue
+      "vue/multi-word-component-names": "off",
+
+      // Cypress globals and rules
+      "no-undef": "off", // Cypress uses globals like cy, describe
     },
   },
 
-  // Cypress test configuration
+  // Cypress-specific config
   {
-    files: ['cypress/e2e/**/*.{js,ts,jsx,tsx}', 'cypress/support/**/*.{js,ts,jsx,tsx}'],
+    files: ["cypress/e2e/**/*.{js,ts,jsx,tsx}", "cypress/support/**/*.{js,ts,jsx,tsx}"],
     ...pluginCypress.configs.recommended,
     rules: {
-      'no-undef': 'off', // Cypress globals like `cy` and `describe`
+      "no-unused-vars": "off",
+      "cypress/no-unnecessary-waiting": "warn",
     },
   },
 
-  // Ignore non-source files
+  // Ignore certain folders
   {
-    name: 'ignore-build-artifacts',
     ignores: [
-      'dist/**',
-      'coverage/**',
-      'node_modules/**',
-      '*.min.js',
+      "dist/**",
+      "coverage/**",
+      "node_modules/**",
+      "*.min.js",
+      "*.config.{js,cjs,mjs}",
     ],
   },
 
-  // Vue-specific options
+  // Vue-specific parser & language options
   {
-    name: 'vue-files',
-    files: ['**/*.vue'],
+    name: "vue-files",
+    files: ["**/*.vue"],
     languageOptions: {
       parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
+        ecmaVersion: "latest",
+        sourceType: "module",
         ecmaFeatures: { jsx: true },
       },
     },
   },
 
-  // Config / globals
+  // Configuration and global files
   {
-    files: ['*.config.{js,cjs,mjs}'],
+    files: ["*.config.{js,cjs,mjs}"],
     languageOptions: {
       globals: {
-        module: 'writable',
-        require: 'readonly',
-        process: 'readonly',
+        module: "writable",
+        require: "readonly",
+        process: "readonly",
       },
     },
   },
 
-  // Prettier final override (disable conflicting rules)
+  // Final Prettier config override (disables conflicting rules)
   vueConfigPrettier,
-]
+];
