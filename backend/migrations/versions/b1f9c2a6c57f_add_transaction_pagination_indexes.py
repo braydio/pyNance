@@ -20,24 +20,30 @@ depends_on = None
 def upgrade() -> None:
     """Create composite indexes aligned to transaction pagination queries."""
 
-    op.create_index(
-        "ix_transactions_user_date_transaction_id_desc",
-        "transactions",
-        ["user_id", sa.text("date DESC"), sa.text("transaction_id DESC")],
-        postgresql_using="btree",
-    )
-    op.create_index(
-        "ix_transactions_account_date_transaction_id_desc",
-        "transactions",
-        ["account_id", sa.text("date DESC"), sa.text("transaction_id DESC")],
-        postgresql_using="btree",
-    )
-    op.create_index(
-        "ix_transactions_account_date",
-        "transactions",
-        ["account_id", "date"],
-        postgresql_using="btree",
-    )
+    bind = op.get_bind()
+    existing_indexes = {index["name"] for index in sa.inspect(bind).get_indexes("transactions")}
+
+    if "ix_transactions_user_date_transaction_id_desc" not in existing_indexes:
+        op.create_index(
+            "ix_transactions_user_date_transaction_id_desc",
+            "transactions",
+            ["user_id", sa.text("date DESC"), sa.text("transaction_id DESC")],
+            postgresql_using="btree",
+        )
+    if "ix_transactions_account_date_transaction_id_desc" not in existing_indexes:
+        op.create_index(
+            "ix_transactions_account_date_transaction_id_desc",
+            "transactions",
+            ["account_id", sa.text("date DESC"), sa.text("transaction_id DESC")],
+            postgresql_using="btree",
+        )
+    if "ix_transactions_account_date" not in existing_indexes:
+        op.create_index(
+            "ix_transactions_account_date",
+            "transactions",
+            ["account_id", "date"],
+            postgresql_using="btree",
+        )
 
 
 def downgrade() -> None:
