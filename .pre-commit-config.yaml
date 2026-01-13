@@ -1,5 +1,5 @@
 default_language_version:
-  python: python3.12
+  python: /home/braydenchaffee/.pyenv/shims/python3.12
 
 repos:
   # Black: A Python code formatter
