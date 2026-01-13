@@ -24,8 +24,8 @@ def get_category_tree():
     grouped: dict[str, list[dict]] = {}
     rows = Category.query.all()
     for cat in rows:
-        primary = cat.primary_category or "Unknown"
-        detailed = cat.detailed_category or cat.display_name or "Other"
+        primary = getattr(cat, "display_primary", None) or "Unknown"
+        detailed = getattr(cat, "display_detailed", None) or "Other"
 
         if primary not in grouped:
             grouped[primary] = []
@@ -63,7 +63,6 @@ def refresh_plaid_categories():
                     parent = Category(
                         plaid_category_id=plaid_cat_id,
                         primary_category=primary,
-                        display_name=primary,
                         detailed_category=None,
                         parent_id=None,
                     )
@@ -78,7 +77,7 @@ def refresh_plaid_categories():
                 parent = (
                     db.session.query(Category)
                     .join(ParentCategory, Category.parent_id == ParentCategory.id)
-                    .filter(ParentCategory.display_name == primary)
+                    .filter(ParentCategory.primary_category == primary)
                     .first()
                 )
 
@@ -86,7 +85,6 @@ def refresh_plaid_categories():
                     parent = Category(
                         plaid_category_id=f"{plaid_cat_id}_primary",
                         primary_category=primary,
-                        display_name=primary,
                     )
                     db.session.add(parent)
                     db.session.flush()
@@ -99,7 +97,6 @@ def refresh_plaid_categories():
                         plaid_category_id=plaid_cat_id,
                         primary_category=primary,
                         detailed_category=detailed,
-                        display_name=detailed,
                         parent_id=parent.id,
                     )
                     db.session.add(child)

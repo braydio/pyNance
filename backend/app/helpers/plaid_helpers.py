@@ -370,7 +370,6 @@ def resolve_or_create_category(category_path):
         category = Category(
             primary_category=primary,
             detailed_category=secondary,
-            display_name=f"{primary} > {secondary}" if secondary else primary,
             plaid_category_id=None,
         )
         db.session.add(category)

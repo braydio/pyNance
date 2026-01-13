@@ -654,10 +654,10 @@ def get_paginated_transactions(
         else:
             txn, acc, cat = row
             running_balance = None
-        # Prefer stored txn.category; fall back to joined Category.display_name
+        # Prefer stored txn.category; fall back to joined Category computed label
         category_label = txn.category
-        if not category_label and cat and getattr(cat, "display_name", None):
-            category_label = cat.display_name
+        if not category_label and cat:
+            category_label = cat.computed_display_name
 
         serialized.append(
             {
@@ -832,7 +832,6 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
             pfc_primary=pfc_primary,
             pfc_detailed=pfc_detailed,
             pfc_icon_url=pfc_icon_url,
-            display_name=f"{pfc_primary} > {pfc_detailed}",
         )
         db.session.add(category)
         db.session.flush()
@@ -840,9 +839,6 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
         # Update icon/display if changed, not primary/detailed if it would collide
         if pfc_icon_url and category.pfc_icon_url != pfc_icon_url:
             category.pfc_icon_url = pfc_icon_url
-        display_name = f"{pfc_primary} > {pfc_detailed}"
-        if category.display_name != display_name:
-            category.display_name = display_name
     return category
 
 
@@ -1010,7 +1006,7 @@ def refresh_data_for_plaid_account(
                     existing_txn.description = description
                     existing_txn.pending = pending
                     existing_txn.category_id = category.id
-                    existing_txn.category = category.display_name
+                    existing_txn.category = category.computed_display_name
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
                     existing_txn.provider = "plaid"
@@ -1035,7 +1031,7 @@ def refresh_data_for_plaid_account(
                     pending=pending,
                     account_id=account_id,
                     category_id=category.id,
-                    category=category.display_name,
+                    category=category.computed_display_name,
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
                     provider="plaid",

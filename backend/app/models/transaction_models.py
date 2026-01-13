@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import sqlalchemy as sa
 from app.extensions import db
+from app.utils.category_display import category_display, humanize_enum, strip_parent
 from sqlalchemy.orm import validates
 
 from .mixins import TimestampMixin
@@ -33,9 +34,25 @@ class Category(db.Model):
     )
 
     @property
+    def display_primary(self) -> str:
+        if self.pfc_primary:
+            return humanize_enum(self.pfc_primary)
+        return self.primary_category or "Unknown"
+
+    @property
+    def display_detailed(self) -> str | None:
+        if self.pfc_detailed:
+            parent = self.pfc_primary or ""
+            detailed = strip_parent(self.pfc_detailed, parent)
+            return humanize_enum(detailed)
+        return self.detailed_category or None
+
+    @property
     def computed_display_name(self):
+        if self.pfc_primary:
+            return category_display(self.pfc_primary, self.pfc_detailed)
         if self.detailed_category:
-            return f"{self.primary_category} > {self.detailed_category}"
+            return f"{self.primary_category} - {self.detailed_category}"
         return self.primary_category
 
 

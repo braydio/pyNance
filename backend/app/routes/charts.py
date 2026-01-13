@@ -68,7 +68,7 @@ def category_breakdown():
         breakdown_map = {}
 
         for tx, category in transactions:
-            key = getattr(category, "display_name", None) or "Uncategorized"
+            key = getattr(category, "computed_display_name", None) or "Uncategorized"
             amount = abs(tx.amount)
 
             if key not in breakdown_map:
@@ -653,8 +653,8 @@ def category_breakdown_tree():
             amount = display_transaction_amount(tx)
             if amount >= 0:
                 continue
-            parent_label = cat.primary_category or "Uncategorized"
-            child_label = cat.detailed_category or "Other"
+            parent_label = getattr(cat, "display_primary", None) or "Uncategorized"
+            child_label = getattr(cat, "display_detailed", None) or "Other"
 
             amt = abs(amount)
             category_breakdown[parent_label]["amount"] += amt

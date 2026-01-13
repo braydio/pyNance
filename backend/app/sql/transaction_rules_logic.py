@@ -76,9 +76,14 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
                     category = Category.query.filter(
                         Category.display_name == value
                     ).first()
+                    if not category:
+                        for candidate in Category.query.all():
+                            if candidate.computed_display_name == value:
+                                category = candidate
+                                break
                 if category:
                     transaction["category_id"] = category.id
-                    transaction["category"] = category.display_name
+                    transaction["category"] = category.computed_display_name
             else:
                 transaction[key] = value
         transaction["updated_by_rule"] = True

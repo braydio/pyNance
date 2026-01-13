@@ -19,10 +19,6 @@ def upsert_categories_from_plaid_data(data: dict) -> int:
 
         primary_name = hierarchy[0]
         detailed_name = hierarchy[1] if len(hierarchy) > 1 else None
-        display_name = (
-            f"{primary_name} > {detailed_name}" if detailed_name else primary_name
-        )
-
         # Ensure parent exists (or is created)
         parent = None
         if detailed_name:
@@ -34,7 +30,6 @@ def upsert_categories_from_plaid_data(data: dict) -> int:
                     plaid_category_id=f"{plaid_cat_id}_primary",
                     primary_category=primary_name,
                     detailed_category=None,
-                    display_name=primary_name,
                     parent_id=None,
                 )
                 db.session.add(parent)
@@ -47,7 +42,6 @@ def upsert_categories_from_plaid_data(data: dict) -> int:
                 plaid_category_id=plaid_cat_id,
                 primary_category=primary_name,
                 detailed_category=detailed_name,
-                display_name=display_name,
                 parent_id=parent.id if parent else None,
             )
             db.session.add(new_cat)
@@ -81,7 +75,6 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
                 ),
                 primary_category=primary,
                 detailed_category=None,
-                display_name=primary,
                 parent_id=None,
             )
             db.session.add(parent)
@@ -93,7 +86,6 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
             plaid_category_id=plaid_category_id,
             primary_category=primary,
             detailed_category=detailed,
-            display_name=f"{primary} > {detailed}" if detailed else primary,
             parent_id=parent.id if parent else None,
         )
         db.session.add(category)
