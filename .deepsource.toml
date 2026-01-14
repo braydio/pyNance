@@ -1,0 +1,36 @@
+version = 1
+
+[[analyzers]]
+name = "test-coverage"
+
+
+[[analyzers]]
+name = "sql"
+
+[[analyzers]]
+name = "python"
+
+  [analyzers.meta]
+  runtime_version = "3.x.x"
+
+[[analyzers]]
+name = "javascript"
+
+  [analyzers.meta]
+  plugins = ["vue"]
+  environment = [
+   "vitest", 
+   "cypress"
+  ]
+
+[[code_formatters]]
+name = "prettier"
+
+[[code_formatters]]
+name = "isort"
+
+[[code_formatters]]
+name = "black"
+
+[[code_formatters]]
+name = "ruff"
