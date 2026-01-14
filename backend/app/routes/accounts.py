@@ -971,7 +971,6 @@ def get_account_history(account_id):
     response exposes the normalized ``balances`` array and a ``history``
     alias for legacy consumers.
     """
-    from datetime import timedelta
 
     from app.services.account_history import compute_balance_history
     from app.services.enhanced_account_history import (
