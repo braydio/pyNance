@@ -280,9 +280,9 @@ def refresh_all_accounts():
                                     == "ITEM_LOGIN_REQUIRED"
                                 ):
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key][
-                                        "update_link_token_endpoint"
-                                    ] = "/api/plaid/transactions/generate_update_link_token"
+                                    error_map[key]["update_link_token_endpoint"] = (
+                                        "/api/plaid/transactions/generate_update_link_token"
+                                    )
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
