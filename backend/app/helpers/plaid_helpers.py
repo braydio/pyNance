@@ -397,7 +397,6 @@ def get_investment_transactions(access_token: str, start_date, end_date):
 
     Paginates using options.count/options.offset similar to transactions.
     """
-    from datetime import date, datetime
 
     def _coerce_to_date(value):
         if isinstance(value, datetime):

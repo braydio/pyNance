@@ -280,9 +280,9 @@ def refresh_all_accounts():
                                     == "ITEM_LOGIN_REQUIRED"
                                 ):
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key][
-                                        "update_link_token_endpoint"
-                                    ] = "/api/plaid/transactions/generate_update_link_token"
+                                    error_map[key]["update_link_token_endpoint"] = (
+                                        "/api/plaid/transactions/generate_update_link_token"
+                                    )
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -971,7 +971,6 @@ def get_account_history(account_id):
     response exposes the normalized ``balances`` array and a ``history``
     alias for legacy consumers.
     """
-    from datetime import timedelta
 
     from app.services.account_history import compute_balance_history
     from app.services.enhanced_account_history import (
