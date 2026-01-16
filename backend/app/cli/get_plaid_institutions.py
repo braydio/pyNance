@@ -3,10 +3,12 @@
 import csv
 import os
 import sys
+from pathlib import Path
 
 sys.path.append(os.path.join(os.path.dirname(__file__), ".."))  # for local imports
 
 from config import logger, plaid_client
+from helpers.path_utils import resolve_data_path
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_request import InstitutionsGetRequest
 
@@ -34,8 +36,15 @@ def fetch_plaid_institutions(count=500, country_codes=None):
     return institutions
 
 
-def save_as_csv(institutions, path="plaid_institutions.csv"):
-    with open(path, "w", newline="", encoding="utf-8") as f:
+def save_as_csv(institutions, path: str | Path = "plaid_institutions.csv"):
+    """Write Plaid institution metadata to a CSV file.
+
+    Args:
+        institutions: Iterable of Plaid institution dictionaries.
+        path: CSV filename or path relative to the backend data directory.
+    """
+    resolved_path = resolve_data_path(path)
+    with open(resolved_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["plaid_institution_id", "name", "type", "url"])
         for inst in institutions:
@@ -47,7 +56,7 @@ def save_as_csv(institutions, path="plaid_institutions.csv"):
                     inst.get("url", ""),
                 ]
             )
-    logger.info("Saved %d institutions to %s", len(institutions), path)
+    logger.info("Saved %d institutions to %s", len(institutions), resolved_path)
 
 
 if __name__ == "__main__":

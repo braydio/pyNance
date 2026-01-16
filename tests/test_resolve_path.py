@@ -36,3 +36,20 @@ def test_resolve_path_rejects_external(tmp_path):
     outside = tmp_path / "data.json"
     with pytest.raises(ValueError):
         path_utils.resolve_path(outside)
+
+
+def test_resolve_data_path_anchors_relative():
+    resolved = path_utils.resolve_data_path("plaid.csv")
+    assert resolved == (paths.DIRECTORIES["DATA_DIR"] / "plaid.csv").resolve()
+
+
+def test_resolve_data_path_allows_data_dir_absolute():
+    target = paths.DIRECTORIES["DATA_DIR"] / "institutions.csv"
+    resolved = path_utils.resolve_data_path(target)
+    assert resolved == target.resolve()
+
+
+def test_resolve_data_path_rejects_external(tmp_path):
+    outside = tmp_path / "plaid.csv"
+    with pytest.raises(ValueError):
+        path_utils.resolve_data_path(outside)

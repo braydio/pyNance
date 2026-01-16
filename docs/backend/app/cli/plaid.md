@@ -14,4 +14,9 @@ The Plaid maintenance scripts live under `backend/app/cli/` and cover:
 
 Each script is safe to invoke with `flask --app backend.run` or via the
 packaged Click entrypoints documented in `scripts/sync.md`.
+
+CSV files read or written by these scripts are resolved under the backend
+data directory (``backend/app/data``). Relative paths are treated as
+data-directory relative and validated to prevent path traversal outside the
+configured backend directories.
 ```
