@@ -22,3 +22,9 @@ name = "javascript"
    "vitest", 
    "cypress"
   ]
+
+[[code_formatters]] name = "prettier"
+[[code_formatters]] name = "isort"
+[[code_formatters]] name = "ruff"
+[[code_formatters]] name = "black"
+
