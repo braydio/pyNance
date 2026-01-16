@@ -1,9 +1,11 @@
 """CLI utilities for mapping and updating Plaid institutions."""
 
 import csv
+from pathlib import Path
 
 from app.config import logger
 from app.extensions import db
+from app.helpers.path_utils import resolve_data_path
 from app.models import Institution, PlaidAccount
 
 
@@ -13,9 +15,18 @@ def get_institution_name_to_id():
 
 
 # --- Step 2: Read Plaid institutions CSV ---
-def load_plaid_institutions(path="data/PlaidInstitutions.csv"):
+def load_plaid_institutions(path: str | Path = "PlaidInstitutions.csv"):
+    """Load Plaid institution mappings from a CSV file.
+
+    Args:
+        path: CSV filename or path relative to the backend data directory.
+
+    Returns:
+        A mapping of lowercase institution names to Plaid institution IDs.
+    """
     plaid_map = {}
-    with open(path, newline="", encoding="utf-8") as f:
+    resolved_path = resolve_data_path(path)
+    with open(resolved_path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             # Map name (lowercased) to Plaid institution_id
@@ -41,7 +52,7 @@ def update_plaid_accounts(institution_name_to_id, plaid_name_to_id):
 
 def main():
     institution_name_to_id = get_institution_name_to_id()
-    plaid_name_to_id = load_plaid_institutions("PlaidInstitutions.csv")
+    plaid_name_to_id = load_plaid_institutions()
 
     update_plaid_accounts(institution_name_to_id, plaid_name_to_id)
 
