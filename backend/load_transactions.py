@@ -36,7 +36,9 @@ def generate_transactions_for_account(
     account: Account, months: int = 6, start_date: Optional[datetime] = None
 ) -> list[Transaction]:
     if start_date is None:
-        start_date = datetime.now(timezone.utc) - timedelta(days=DAYS_PER_MONTH * months)
+        start_date = datetime.now(timezone.utc) - timedelta(
+            days=DAYS_PER_MONTH * months
+        )
 
     transactions = []
     for month_offset in range(months):
@@ -64,8 +66,13 @@ def generate_transactions_for_account(
                 )
 
             # Infrequent spikes
-            if category_name in ("utilities", "entertainment") and random.random() < SPIKE_PROBABILITY:
-                spike = round(amount_range[1] * random.uniform(*SPIKE_MULTIPLIER_RANGE), 2)
+            if (
+                category_name in ("utilities", "entertainment")
+                and random.random() < SPIKE_PROBABILITY
+            ):
+                spike = round(
+                    amount_range[1] * random.uniform(*SPIKE_MULTIPLIER_RANGE), 2
+                )
                 category_id = get_or_create_category(category_name)
                 transactions.append(
                     Transaction(
