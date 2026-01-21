@@ -27,9 +27,14 @@
           <header class="flex items-start justify-between gap-3">
             <div>
               <p class="text-xs uppercase tracking-wide text-muted">Scope Selection</p>
-              <h3 id="link-account-title" class="text-lg font-semibold">Select an Account Type</h3>
+              <h3 id="link-account-title" class="text-lg font-semibold">
+                Select an Account Type
+              </h3>
               <p id="link-account-description" class="text-sm text-muted">
                 Select from the following classifications for your new account link.
+                <span v-if="selectedSummary" class="block text-xs text-muted mt-1">
+                  Selected: {{ selectedSummary }}
+                </span>
               </p>
             </div>
             <button
@@ -43,16 +48,44 @@
             </button>
           </header>
 
-          <div class="mt-4 space-y-4">
-            <PlaidProductScopeSelector v-model="selectedProducts" />
-            <div class="flex flex-wrap items-center justify-end gap-2">
-              <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
-              <LinkProviderLauncher
-                :selected-products="selectedProducts"
-                :user-id="userID"
-                @refresh="handleRefresh"
-              />
-            </div>
+          <div class="mt-4 space-y-6">
+            <section>
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
+                <p class="text-xs text-muted">Choose product scope</p>
+              </div>
+              <PlaidProductScopeSelector v-model="selectedProducts" />
+            </section>
+
+            <section class="border-t border-[var(--divider)] pt-4">
+              <div class="flex items-center justify-between gap-3">
+                <p class="text-xs uppercase tracking-wide text-muted">Step 2</p>
+                <p class="text-xs text-muted">Connect with Plaid</p>
+              </div>
+              <p class="text-sm text-muted mt-2">
+                Each account link requires at least one product scope.
+              </p>
+              <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
+                <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
+                <LinkProviderLauncher
+                  :selected-products="selectedProducts"
+                  :user-id="userID"
+                  @refresh="handleRefresh"
+                >
+                  <template #default="{ linkPlaid, loading, isDisabled }">
+                    <UiButton
+                      variant="primary"
+                      pill
+                      :class="{ 'opacity-50 cursor-not-allowed': isDisabled }"
+                      :disabled="isDisabled"
+                      @click="linkPlaid"
+                    >
+                      {{ loading ? 'Linking…' : 'Link With Selected Scope' }}
+                    </UiButton>
+                  </template>
+                </LinkProviderLauncher>
+              </div>
+            </section>
           </div>
         </div>
       </div>
@@ -61,7 +94,7 @@
 </template>
 
 <script setup>
-import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
@@ -77,89 +110,71 @@ const previousBodyOverflow = ref('')
 
 const emit = defineEmits(['refreshAccount'])
 
+const selectedSummary = computed(() =>
+  selectedProducts.value.length
+    ? selectedProducts.value.map(formatProductLabel).join(', ')
+    : '',
+)
+
+/**
+ * Format Plaid product identifiers for human-readable labels.
+ */
+function formatProductLabel(product) {
+  return product.charAt(0).toUpperCase() + product.slice(1)
+}
+
+// Accessibility focus trapping
 const focusableSelector =
   'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
-/**
- * Returns the focusable elements inside the dialog for keyboard trapping.
- * @returns {HTMLElement[]} Focusable elements in the dialog.
- */
 function getFocusableElements() {
-  if (!dialogRef.value) {
-    return []
-  }
-
+  if (!dialogRef.value) return []
   return Array.from(dialogRef.value.querySelectorAll(focusableSelector)).filter(
-    (element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true',
+    (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true',
   )
 }
 
-/**
- * Keeps focus within the dialog when using Tab/Shift+Tab.
- * @param {KeyboardEvent} event Keyboard event from the document.
- */
 function trapFocus(event) {
-  if (event.key !== 'Tab') {
-    return
-  }
+  if (event.key !== 'Tab') return
+  const focusables = getFocusableElements()
+  if (!focusables.length) return
 
-  const focusableElements = getFocusableElements()
-  if (focusableElements.length === 0) {
-    return
-  }
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  const active = document.activeElement
 
-  const firstElement = focusableElements[0]
-  const lastElement = focusableElements[focusableElements.length - 1]
-  const activeElement = document.activeElement
-
-  if (event.shiftKey && activeElement === firstElement) {
+  if (event.shiftKey && active === first) {
     event.preventDefault()
-    lastElement.focus()
-    return
-  }
-
-  if (!event.shiftKey && activeElement === lastElement) {
+    last.focus()
+  } else if (!event.shiftKey && active === last) {
     event.preventDefault()
-    firstElement.focus()
+    first.focus()
   }
 }
 
-/**
- * Handles keyboard interactions while the dialog is open.
- * @param {KeyboardEvent} event Keyboard event from the document.
- */
 function handleDialogKeydown(event) {
   if (event.key === 'Escape') {
     event.preventDefault()
     closeDialog()
-    return
+  } else {
+    trapFocus(event)
   }
-
-  trapFocus(event)
 }
 
-/**
- * Opens the dialog and prepares focus/scroll management.
- */
 function openDialog() {
   showDialog.value = true
 }
 
-/**
- * Closes the dialog and restores focus/scroll state.
- */
 function closeDialog() {
   showDialog.value = false
 }
 
-/**
- * Emits refresh action and closes the dialog.
- */
 function handleRefresh() {
   emit('refreshAccount')
   closeDialog()
 }
 
+// Manage focus/scroll locking when dialog toggles
 watch(showDialog, async (isOpen) => {
   if (isOpen) {
     previousFocusElement.value = document.activeElement
