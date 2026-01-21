@@ -100,8 +100,9 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 
 #### Current Implementation
 
-- LinkProviderLauncher disables buttons when no products selected
-- Uses opacity and cursor styling for disabled state
+- LinkAccount presents a two-step scope selection and Plaid connection flow
+- LinkProviderLauncher exposes the Plaid link action and disabled state for the CTA
+- CTA uses opacity and cursor styling for disabled state
 
 #### Acceptance Criteria
 

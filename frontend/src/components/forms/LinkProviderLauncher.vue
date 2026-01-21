@@ -1,28 +1,9 @@
 <template>
-  <div class="section-container mt-4">
-    <h3 class="text-md font-medium mb-2">Link accounts with Plaid</h3>
-
-    <p class="text-sm text-neutral-400 mb-3">
-      Each account link requires at least one product scope.
-    </p>
-
-    <div class="flex gap-2">
-      <UiButton
-        variant="primary"
-        pill
-        :class="{ 'opacity-50 cursor-not-allowed': selectedProducts.length === 0 }"
-        :disabled="selectedProducts.length === 0 || loading"
-        @click="linkPlaid"
-      >
-        {{ loading ? 'Linking…' : 'Link With Selected Scope' }}
-      </UiButton>
-    </div>
-  </div>
+  <slot :linkPlaid="linkPlaid" :loading="loading" :isDisabled="isDisabled" />
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import UiButton from '@/components/ui/Button.vue'
+import { computed, ref } from 'vue'
 import accountLinkApi from '@/api/accounts_link'
 
 let plaidScriptPromise = null
@@ -41,7 +22,11 @@ const props = defineProps({
 const emit = defineEmits(['refresh'])
 
 const loading = ref(false)
+const isDisabled = computed(() => props.selectedProducts.length === 0 || loading.value)
 
+/**
+ * Ensure the Plaid Link SDK script is available before opening the flow.
+ */
 async function ensurePlaidScript() {
   if (window.Plaid) return
 
@@ -74,8 +59,11 @@ async function ensurePlaidScript() {
   return plaidScriptPromise
 }
 
+/**
+ * Launch the Plaid link flow for the selected product scopes.
+ */
 const linkPlaid = async () => {
-  if (props.selectedProducts.length === 0 || loading.value) return
+  if (isDisabled.value) return
   loading.value = true
 
   try {
