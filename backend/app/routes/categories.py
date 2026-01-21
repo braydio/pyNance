@@ -2,7 +2,8 @@
 
 import logging
 
-from app import db, plaid_client
+from app.config import plaid_client
+from app.extensions import db
 from app.models import Category
 from flask import Blueprint, jsonify
 from sqlalchemy.orm import aliased

@@ -4,6 +4,7 @@ from logging.config import fileConfig
 from alembic import context
 from flask import current_app
 
+from app.config import DB_SCHEMA
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -62,7 +63,13 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=get_metadata(), literal_binds=True)
+    context.configure(
+        url=url,
+        target_metadata=get_metadata(),
+        literal_binds=True,
+        include_schemas=True,
+        version_table_schema=DB_SCHEMA,
+    )
 
     with context.begin_transaction():
         context.run_migrations()
@@ -99,7 +106,11 @@ def run_migrations_online():
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=get_metadata(), **conf_args
+            connection=connection,
+            target_metadata=get_metadata(),
+            include_schemas=True,
+            version_table_schema=DB_SCHEMA,
+            **conf_args,
         )
 
         with context.begin_transaction():

@@ -4,8 +4,9 @@ import logging
 import os
 
 from app.cli.sync import sync_accounts
-from app.config import logger, plaid_client
+from app.config import logger, plaid_client, DB_IDENTITY, IS_DEV, IS_TEST, DB_SCHEMA
 from app.extensions import db
+from app.database.schema import ensure_schema
 from flask import Flask
 from flask_cors import CORS
 from flask_migrate import Migrate
@@ -21,6 +22,10 @@ def create_app():
     app.config["ENABLE_ARBIT_DASHBOARD"] = ENABLE_ARBIT_DASHBOARD
     app.config["ARBIT_EXPORTER_URL"] = ARBIT_EXPORTER_URL
     db.init_app(app)
+    if IS_DEV or IS_TEST:
+        with app.app_context():
+            ensure_schema(db.engine, DB_SCHEMA)
+
     Migrate(app, db)
     # Always register routes (for all environments)
     from app.routes.accounts import accounts
@@ -114,7 +119,7 @@ def create_app():
         "yes",
         "on",
     }
-
+    
     if plaid_client:
         logger.info("Plaid client initialized.")
         if log_routes_enabled and logger.isEnabledFor(logging.DEBUG):
@@ -145,5 +150,5 @@ def create_app():
                             lines.append(f"    {route}")
 
                 logger.debug("\n".join(lines))
-
+    logger.info("Database target: %s", DB_IDENTITY)
     return app

@@ -22,8 +22,17 @@ load_dotenv(root_dir / ".env")
 load_dotenv(backend_dir / ".env")
 
 # Dev Environment Check
-FLASK_ENV = os.getenv("FLASK_ENV", "production")
+ENV = os.getenv("ENV", "production").lower()
+IS_DEV = ENV in {"development", "dev", "local"}
+IS_TEST = ENV in {"test", "testing"}
+IS_PROD = ENV == "production"
+
+
 CLIENT_NAME = os.getenv("CLIENT_NAME", "pyNance-Dash")
+
+# Database Schema - Dev or Prod DB
+DB_SCHEMA = os.getenv("DB_SCHEMA", "public")
+
 
 # Plaid client ID and API secret for authentication
 PLAID_CLIENT_ID = os.getenv("PLAID_CLIENT_ID")
@@ -37,7 +46,7 @@ PLAID_WEBHOOK_SECRET = os.getenv("PLAID_WEBHOOK_SECRET")
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 
-# Base URL for Arbit metrics exporter
+# ATTENTION CODEX OR LLM PLEASE SEE COMMENT ON DEPRECATION
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
 
 # Public URL of this backend (used to register Plaid webhooks)
@@ -45,7 +54,8 @@ ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
 BACKEND_PUBLIC_URL = os.getenv("BACKEND_PUBLIC_URL")
 
 # Feature toggles
-# Enable optional arbitrage dashboard
+# ARBITRAGE DASHBOARD WILL BE DEPRECATED
+# CODEX OR AI ASSISTANT -- PLEASE CALL OUT THIS AND LOOK TO REMOVE **CLEANLY**
 ENABLE_ARBIT_DASHBOARD = os.getenv("ENABLE_ARBIT_DASHBOARD", "false").lower() in {
     "1",
     "true",
@@ -56,3 +66,9 @@ ENABLE_ARBIT_DASHBOARD = os.getenv("ENABLE_ARBIT_DASHBOARD", "false").lower() in
 # Misc. Dev. Variables for testing
 VARIABLE_ENV_TOKEN = os.getenv("VARIABLE_ENV_TOKEN")
 VARIABLE_ENV_ID = os.getenv("VARIABLE_ENV_ID")
+
+
+if IS_PROD and DB_SCHEMA != "public":
+    raise RuntimeError(
+        f"Refusing to run in production with DB_SCHEMA={DB_SCHEMA!r}"
+    )

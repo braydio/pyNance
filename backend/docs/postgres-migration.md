@@ -5,19 +5,18 @@ This guide documents how to migrate an existing SQLite deployment of pyNance to 
 ## Prerequisites
 
 - PostgreSQL 14+ accessible from your workstation or CI environment.
-- `SQLALCHEMY_DATABASE_URI` configured for the target database (see `backend/example.env`).
-- Legacy SQLite file (default `backend/app/data/dashboard_database.db`) available for export.
+- `SQLALCHEMY_DATABASE_URI` configured for the target database (see `example.env`).
+- Legacy SQLite file (default `app/data/dashboard_database.db`) available for export.
 
 ## Recent migrations
 
-- `backend/migrations/versions/b1f9c2a6c57f_add_transaction_pagination_indexes.py`: Adds
+- `migrations/versions/b1f9c2a6c57f_add_transaction_pagination_indexes.py`: Adds
   composite transaction indexes to accelerate pagination and count queries that
   filter by user or account and order by posting date.
 
 ## 1. Snapshot The SQLite Database
 
 ```bash
-cd backend
 sqlite3 app/data/dashboard_database.db ".backup ./dashboard_database.backup"
 sqlite3 app/data/dashboard_database.db ".dump" > ./sqlite_dump.sql
 ```
@@ -32,16 +31,18 @@ psql -d postgres -c "CREATE USER pynance WITH PASSWORD 'change-me';"
 psql -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE pynance TO pynance;"
 ```
 
-Update `SQLALCHEMY_DATABASE_URI` to `postgresql+psycopg://pynance:change-me@localhost:5432/pynance` (or your managed connection string).
+Update `SQLALCHEMY_DATABASE_URI` to `postgresql+psycopg://pynance:change-me@localhost:5432/pynance`
+(or your managed connection string). If you use a non-public schema in development,
+set `DB_SCHEMA` and keep `ENV` set to `development` so the schema guard can run.
 
 ## 3. Bootstrap Schema With Alembic
 
 ```bash
-cd backend
 flask db upgrade
 ```
 
-The new baseline migration calls `metadata.create_all`, so this step lays down every table defined by the current SQLAlchemy models.
+The new baseline migration calls `metadata.create_all`, so this step lays down every table defined by the
+current SQLAlchemy models. Alembic runs against the active `DB_SCHEMA` and stores `alembic_version` there.
 
 ## 4. Load Data Into PostgreSQL
 

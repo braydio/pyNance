@@ -3,7 +3,8 @@
 from datetime import date, datetime, timedelta, timezone
 
 from app.config import logger  # uses app logger
-from app.models import Account, db
+from app.extensions import db
+from app.models import Account
 from app.services import sync_service
 from app.sql.account_logic import should_throttle_refresh
 

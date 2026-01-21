@@ -23,20 +23,24 @@ from pathlib import Path
 from typing import Dict, List
 
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
 sys.path.insert(0, str(BACKEND_DIR))
 
-# Stub minimal app package and db extension
+# Stub minimal app package and load the real extensions module
 app_pkg = types.ModuleType("app")
-extensions_mod = types.ModuleType("app.extensions")
-db = SQLAlchemy()
-extensions_mod.db = db
-app_pkg.extensions = extensions_mod
 app_pkg.__path__ = []
 sys.modules["app"] = app_pkg
+
+extensions_path = BACKEND_DIR / "app" / "extensions.py"
+extensions_spec = importlib.util.spec_from_file_location(
+    "app.extensions", extensions_path
+)
+extensions_mod = importlib.util.module_from_spec(extensions_spec)  # type: ignore[arg-type]
+extensions_spec.loader.exec_module(extensions_mod)  # type: ignore[arg-type]
 sys.modules["app.extensions"] = extensions_mod
+app_pkg.extensions = extensions_mod
+db = extensions_mod.db
 
 # Load configuration
 config_path = BACKEND_DIR / "app" / "config" / "__init__.py"
@@ -88,14 +92,14 @@ account_spec.loader.exec_module(account_mod)  # type: ignore[arg-type]
 sys.modules["app.sql.account_logic"] = account_mod
 
 
-def create_app(db_uri: str) -> Flask:
-    """Return a minimal Flask application bound to ``db_uri``."""
-
-    app = Flask(__name__)
-    app.config["SQLALCHEMY_DATABASE_URI"] = db_uri
-    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-    db.init_app(app)
-    return app
+def create_app() -> Flask:
+    """Return the standard Flask application instance."""
+    app_factory_path = BACKEND_DIR / "app" / "__init__.py"
+    app_spec = importlib.util.spec_from_file_location("app", app_factory_path)
+    app_mod = importlib.util.module_from_spec(app_spec)  # type: ignore[arg-type]
+    app_spec.loader.exec_module(app_mod)  # type: ignore[arg-type]
+    sys.modules["app"] = app_mod
+    return app_mod.create_app()
 
 
 def load_tokens(path: Path) -> List[Dict[str, str]]:
@@ -154,7 +158,7 @@ def sync_from_token(user_id: str, access_token: str) -> int:
 def main() -> None:
     """Process the token file and sync accounts."""
     token_file = Path(sys.argv[1]) if len(sys.argv) > 1 else FILES["PLAID_TOKENS"]
-    app = create_app(DATABASE_URI)
+    app = create_app()
     total = 0
     with app.app_context():
         tokens = load_tokens(token_file)
