@@ -27,9 +27,7 @@
           <header class="flex items-start justify-between gap-3">
             <div>
               <p class="text-xs uppercase tracking-wide text-muted">Scope Selection</p>
-              <h3 id="link-account-title" class="text-lg font-semibold">
-                Select an Account Type
-              </h3>
+              <h3 id="link-account-title" class="text-lg font-semibold">Select an Account Type</h3>
               <p id="link-account-description" class="text-sm text-muted">
                 Select from the following classifications for your new account link.
                 <span v-if="selectedSummary" class="block text-xs text-muted mt-1">
@@ -111,9 +109,7 @@ const previousBodyOverflow = ref('')
 const emit = defineEmits(['refreshAccount'])
 
 const selectedSummary = computed(() =>
-  selectedProducts.value.length
-    ? selectedProducts.value.map(formatProductLabel).join(', ')
-    : '',
+  selectedProducts.value.length ? selectedProducts.value.map(formatProductLabel).join(', ') : '',
 )
 
 /**
@@ -124,8 +120,7 @@ function formatProductLabel(product) {
 }
 
 // Accessibility focus trapping
-const focusableSelector =
-  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+const focusableSelector = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
 
 function getFocusableElements() {
   if (!dialogRef.value) return []
