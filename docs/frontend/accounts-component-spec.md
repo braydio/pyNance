@@ -248,6 +248,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - Screen reader compatibility
 - Proper ARIA labels and descriptions
 - High contrast mode support
+- Account link modal uses dialog semantics, Escape-to-close, focus trapping, and background scroll lock.
 
 ### Browser Compatibility
 
