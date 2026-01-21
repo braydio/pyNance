@@ -28,9 +28,7 @@ FILES = {
 FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/dist")
 
 SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
-SQLALCHEMY_ENGINE_OPTIONS = {
-    "connect_args": {"options": f"-c search_path={DB_SCHEMA}"}
-}
+SQLALCHEMY_ENGINE_OPTIONS = {"connect_args": {"options": f"-c search_path={DB_SCHEMA}"}}
 if not SQLALCHEMY_DATABASE_URI:
     raise RuntimeError(
         "SQLALCHEMY_DATABASE_URI must be defined when running against PostgreSQL."
@@ -43,7 +41,7 @@ try:
         raise RuntimeError(
             f"Production environment may only use DB_SCHEMA='public' "
             f"(got {DB_SCHEMA!r})"
-                )
+        )
 except ArgumentError as exc:  # pragma: no cover - misconfiguration guard
     raise RuntimeError(
         "SQLALCHEMY_DATABASE_URI is not a valid SQLAlchemy URL."

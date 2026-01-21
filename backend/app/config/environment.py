@@ -69,6 +69,4 @@ VARIABLE_ENV_ID = os.getenv("VARIABLE_ENV_ID")
 
 
 if IS_PROD and DB_SCHEMA != "public":
-    raise RuntimeError(
-        f"Refusing to run in production with DB_SCHEMA={DB_SCHEMA!r}"
-    )
+    raise RuntimeError(f"Refusing to run in production with DB_SCHEMA={DB_SCHEMA!r}")

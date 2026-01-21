@@ -1,4 +1,3 @@
-
 """
 Expose configuration constants and logger setup across the app.
 
@@ -11,20 +10,20 @@ import logging
 
 from .constants import (
     DATABASE_NAME,
+    DB_IDENTITY,
     FILES,
     SQLALCHEMY_DATABASE_URI,
     SQLALCHEMY_ENGINE_OPTIONS,
-    DB_IDENTITY,
 )
 from .environment import (
-    ENV,
-    DB_SCHEMA,
-    IS_DEV,
-    IS_TEST,
-    CLIENT_NAME,
-    ENABLE_ARBIT_DASHBOARD,
     ARBIT_EXPORTER_URL,
     BACKEND_PUBLIC_URL,
+    CLIENT_NAME,
+    DB_SCHEMA,
+    ENABLE_ARBIT_DASHBOARD,
+    ENV,
+    IS_DEV,
+    IS_TEST,
     PLAID_CLIENT_ID,
     PLAID_CLIENT_NAME,
     PLAID_ENV,
@@ -32,7 +31,7 @@ from .environment import (
     PLAID_WEBHOOK_SECRET,
     PRODUCTS,
 )
-from .log_setup import setup_logger, LOG_LEVEL
+from .log_setup import LOG_LEVEL, setup_logger
 from .paths import DIRECTORIES
 from .plaid_config import PLAID_BASE_URL, plaid_client
 
