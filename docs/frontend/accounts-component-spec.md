@@ -103,6 +103,7 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 - LinkAccount presents a two-step scope selection and Plaid connection flow
 - LinkProviderLauncher exposes the Plaid link action and disabled state for the CTA
 - CTA uses opacity and cursor styling for disabled state
+- AccountActionsSidebar owns the selected product scope and passes it into LinkAccount via v-model
 
 #### Acceptance Criteria
 

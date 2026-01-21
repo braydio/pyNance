@@ -44,7 +44,7 @@
                 <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
                 <p class="text-xs text-muted">Choose product scope</p>
               </div>
-              <PlaidProductScopeSelector v-model="selectedProducts" />
+              <PlaidProductScopeSelector v-model="selectedProductsModel" />
             </section>
             <section class="border-t border-[var(--divider)] pt-4">
               <div class="flex items-center justify-between gap-3">
@@ -57,7 +57,7 @@
               <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
                 <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
                 <LinkProviderLauncher
-                  :selected-products="selectedProducts"
+                  :selected-products="selectedProductsModel"
                   :user-id="userID"
                   @refresh="handleRefresh"
                 >
@@ -89,14 +89,26 @@ import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
 import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
 
-const selectedProducts = ref(['transactions'])
+const props = defineProps({
+  selectedProducts: {
+    type: Array,
+    required: true,
+  },
+})
+
+const emit = defineEmits(['refreshAccount', 'update:selectedProducts'])
+
+const selectedProductsModel = computed({
+  get: () => props.selectedProducts,
+  set: (value) => emit('update:selectedProducts', value),
+})
 const showDialog = ref(false)
 const userID = import.meta.env.VITE_USER_ID_PLAID || ''
 
-const emit = defineEmits(['refreshAccount'])
-
 const selectedSummary = computed(() =>
-  selectedProducts.value.length ? selectedProducts.value.map(formatProductLabel).join(', ') : '',
+  selectedProductsModel.value.length
+    ? selectedProductsModel.value.map(formatProductLabel).join(', ')
+    : '',
 )
 
 /**
