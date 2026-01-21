@@ -271,26 +271,33 @@ def upgrade() -> None:
                 pass
 
     # 5) Indexes for common query patterns
-    op.create_index(
-        "ix_transactions_account_date",
-        "transactions",
-        ["account_id", "date"],
-    )
-    op.create_index(
-        "ix_transactions_user_date",
-        "transactions",
-        ["user_id", "date"],
-    )
-    op.create_index(
-        "ix_transactions_category_date",
-        "transactions",
-        ["category_id", "date"],
-    )
-    op.create_index(
-        "ix_account_history_account_date",
-        "account_history",
-        ["account_id", "date"],
-    )
+    existing_tx_indexes = {idx["name"] for idx in inspector.get_indexes("transactions")}
+    existing_ah_indexes = {idx["name"] for idx in inspector.get_indexes("account_history")}
+
+    if "ix_transactions_account_date" not in existing_tx_indexes:
+        op.create_index(
+            "ix_transactions_account_date",
+            "transactions",
+            ["account_id", "date"],
+        )
+    if "ix_transactions_user_date" not in existing_tx_indexes:
+        op.create_index(
+            "ix_transactions_user_date",
+            "transactions",
+            ["user_id", "date"],
+        )
+    if "ix_transactions_category_date" not in existing_tx_indexes:
+        op.create_index(
+            "ix_transactions_category_date",
+            "transactions",
+            ["category_id", "date"],
+        )
+    if "ix_account_history_account_date" not in existing_ah_indexes:
+        op.create_index(
+            "ix_account_history_account_date",
+            "account_history",
+            ["account_id", "date"],
+        )
 
 
 def downgrade() -> None:
