@@ -16,19 +16,29 @@
 
     <transition name="fade">
       <div v-if="showDialog" class="link-dialog-backdrop" @click.self="closeDialog">
-        <div class="link-dialog">
+        <div
+          ref="dialogRef"
+          class="link-dialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="link-account-title"
+          aria-describedby="link-account-description"
+        >
           <header class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-wide text-muted">Link a new account</p>
-              <h3 class="text-lg font-semibold">Choose the scope before you connect</h3>
-              <p class="text-sm text-muted">
-                Pick the product scopes that match the accounts you want to link.
+              <p class="text-xs uppercase tracking-wide text-muted">Scope Selection</p>
+              <h3 id="link-account-title" class="text-lg font-semibold">
+                Select an Account Type
+              </h3>
+              <p id="link-account-description" class="text-sm text-muted">
+                Select from the following classifications for your new account link.
                 <span v-if="selectedSummary" class="block text-xs text-muted mt-1">
                   Selected: {{ selectedSummary }}
                 </span>
               </p>
             </div>
             <button
+              ref="closeButtonRef"
               type="button"
               class="text-muted hover:text-[var(--color-accent-cyan)]"
               @click="closeDialog"
@@ -46,6 +56,7 @@
               </div>
               <PlaidProductScopeSelector v-model="selectedProductsModel" />
             </section>
+
             <section class="border-t border-[var(--divider)] pt-4">
               <div class="flex items-center justify-between gap-3">
                 <p class="text-xs uppercase tracking-wide text-muted">Step 2</p>
@@ -83,7 +94,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
@@ -104,6 +115,10 @@ const selectedProductsModel = computed({
 })
 const showDialog = ref(false)
 const userID = import.meta.env.VITE_USER_ID_PLAID || ''
+const dialogRef = ref(null)
+const closeButtonRef = ref(null)
+const previousFocusElement = ref(null)
+const previousBodyOverflow = ref('')
 
 const selectedSummary = computed(() =>
   selectedProductsModel.value.length
@@ -112,35 +127,86 @@ const selectedSummary = computed(() =>
 )
 
 /**
- * Open the link dialog modal.
+ * Format Plaid product identifiers for human-readable labels.
  */
+function formatProductLabel(product) {
+  return product.charAt(0).toUpperCase() + product.slice(1)
+}
+
+// Accessibility focus trapping
+const focusableSelector =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+
+function getFocusableElements() {
+  if (!dialogRef.value) return []
+  return Array.from(dialogRef.value.querySelectorAll(focusableSelector)).filter(
+    (el) => !el.hasAttribute('disabled') && el.getAttribute('aria-hidden') !== 'true',
+  )
+}
+
+function trapFocus(event) {
+  if (event.key !== 'Tab') return
+  const focusables = getFocusableElements()
+  if (!focusables.length) return
+
+  const first = focusables[0]
+  const last = focusables[focusables.length - 1]
+  const active = document.activeElement
+
+  if (event.shiftKey && active === first) {
+    event.preventDefault()
+    last.focus()
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault()
+    first.focus()
+  }
+}
+
+function handleDialogKeydown(event) {
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeDialog()
+  } else {
+    trapFocus(event)
+  }
+}
+
 function openDialog() {
   showDialog.value = true
 }
 
-/**
- * Close the link dialog modal.
- */
 function closeDialog() {
   showDialog.value = false
 }
 
-/**
- * Emit refresh event after Plaid link flow completes.
- */
 function handleRefresh() {
   emit('refreshAccount')
   closeDialog()
 }
 
-/**
- * Format Plaid product identifiers for human-readable labels.
- * @param {string} product
- * @returns {string}
- */
-function formatProductLabel(product) {
-  return product.charAt(0).toUpperCase() + product.slice(1)
-}
+// Manage focus/scroll locking when dialog toggles
+watch(showDialog, async (isOpen) => {
+  if (isOpen) {
+    previousFocusElement.value = document.activeElement
+    previousBodyOverflow.value = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.addEventListener('keydown', handleDialogKeydown)
+    await nextTick()
+    closeButtonRef.value?.focus()
+  } else {
+    document.removeEventListener('keydown', handleDialogKeydown)
+    document.body.style.overflow = previousBodyOverflow.value
+    const focusTarget = previousFocusElement.value
+    if (focusTarget && typeof focusTarget.focus === 'function') {
+      focusTarget.focus()
+    }
+  }
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('keydown', handleDialogKeydown)
+  document.body.style.overflow = previousBodyOverflow.value
+})
 </script>
 
 <style scoped>
