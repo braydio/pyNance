@@ -53,7 +53,9 @@ def upgrade() -> None:
                 primary_key=True,
             ),
         )
-    existing_tt_indexes = {idx["name"] for idx in inspector.get_indexes("transaction_tags")}
+    existing_tt_indexes = {
+        idx["name"] for idx in inspector.get_indexes("transaction_tags")
+    }
     if "ix_transaction_tags_transaction_id" not in existing_tt_indexes:
         op.create_index(
             "ix_transaction_tags_transaction_id",
