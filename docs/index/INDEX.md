@@ -1,5 +1,7 @@
 # Documentation Index
 
+All documentation lives in Markdown under `docs/` and mirrors the backend structure for easy lookup.
+
 ## Core
 
 - [Backend](../backend/) – server-side code and features

@@ -15,6 +15,7 @@ from app.models import Account, Category, PlaidAccount, Transaction
 from app.sql import transaction_rules_logic
 from app.sql.account_logic import detect_internal_transfer, get_or_create_category
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
+from app.sql.sequence_utils import ensure_transactions_sequence
 
 try:
     # Plaid SDK v13+ style imports
@@ -183,6 +184,7 @@ def sync_account_transactions(account_id: str) -> Dict:
     total_modified = 0
     total_removed = 0
     next_cursor = cursor
+    ensure_transactions_sequence()
 
     while True:
         req_kwargs = {"access_token": access_token}

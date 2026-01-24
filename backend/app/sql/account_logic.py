@@ -15,6 +15,7 @@ from app.models import Account, AccountHistory, Category, PlaidAccount, Tag, Tra
 from app.sql import transaction_rules_logic
 from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
+from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.finance_utils import display_transaction_amount
 from plaid import ApiException
 from sqlalchemy import case, func, or_
@@ -937,6 +938,7 @@ def refresh_data_for_plaid_account(
             "skipped_missing_id": 0,
             "skipped_invalid_date": 0,
         }
+        ensure_transactions_sequence()
 
         for txn in transactions:
             txn_id = txn.get("transaction_id")

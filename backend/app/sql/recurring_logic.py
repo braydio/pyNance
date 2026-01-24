@@ -7,6 +7,7 @@ from typing import Optional
 
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
+from app.sql.sequence_utils import ensure_transactions_sequence
 from sqlalchemy import func
 
 
@@ -57,6 +58,7 @@ def upsert_recurring(
     account_id: str,
 ) -> int:
     """Insert or update a RecurringTransaction linked to a matching Transaction."""
+    ensure_transactions_sequence()
 
     tx = (
         db.session.query(Transaction)

@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from app.extensions import db
 from app.models import Transaction
 from app.sql import transaction_rules_logic
+from app.sql.sequence_utils import ensure_transactions_sequence
 
 
 def upsert_imported_transactions(transactions, user_id=None, account_id=None):
@@ -12,6 +13,7 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
     Optional user_id/account_id can be added if relevant.
     """
     inserted = 0
+    ensure_transactions_sequence()
 
     for tx in transactions:
         tx = transaction_rules_logic.apply_rules(user_id, dict(tx))
