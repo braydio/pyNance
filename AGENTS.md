@@ -7,7 +7,9 @@ Use this guide to keep contributions consistent with the project's structure, to
 - `backend/app/` contains the Flask app factory, HTTP routes in `app/routes/`, and services in `app/services/`; shared extensions live in `app/extensions.py`, with Alembic migrations under `backend/migrations/versions/`.
 - `frontend/` holds the Vue 3 client (script-setup) along with scoped components, stores, and assets.
 - `tests/` stores the pytest suite and fixtures (`tests/conftest.py`); automation scripts sit in `scripts/`, while long-form docs live in `docs/`.
-- Documentation is organized under `docs/` with architecture notes in `docs/architecture/`, workflows in `docs/process/`, and working notes in `docs/devnotes/`.
+- Documentation lives in Markdown under `docs/` and mirrors the backend layout (for example `docs/backend/app/` maps to `backend/app/`).
+- Architecture notes live in `docs/architecture/`, workflows in `docs/process/`, and working notes in `docs/devnotes/`.
+- When adding backend modules, create the matching docs in `docs/backend/` and update the nearest index.
 
 ## Build, Test, and Development Commands
 
@@ -23,6 +25,7 @@ Use this guide to keep contributions consistent with the project's structure, to
 - Follow Black's 120-character formatting; use Isort (Black profile) for imports and Ruff for linting.
 - Naming: `snake_case` for functions/vars, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
 - Vue files lean on script-setup; do not wrap `<draggable>` in `<Transition>`.
+- Review the relevant docs in `docs/` for best practices before changing behavior.
 
 ## Testing Guidelines
 
