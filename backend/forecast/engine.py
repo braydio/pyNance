@@ -7,7 +7,12 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .models import DateLike, ForecastTimelinePoint
+from .models import DateLike, ForecastCashflowItem, ForecastTimelinePoint
+
+DEFAULT_CATEGORY_CONFIDENCE = Decimal("0.6")
+DEFAULT_RECURRING_CONFIDENCE = Decimal("0.85")
+DEFAULT_UNCATEGORIZED_CONFIDENCE = Decimal("0.3")
+DEFAULT_ADJUSTMENT_CONFIDENCE = Decimal("0.95")
 
 
 def _parse_date(value: DateLike | None, fallback: date) -> date:
@@ -35,6 +40,482 @@ def _extract_amount(entry: Mapping[str, Any], keys: Iterable[str]) -> Decimal:
         if key in entry and entry[key] is not None:
             return _to_decimal(entry[key])
     return Decimal("0")
+
+
+def _read_entry_value(entry: Any, key: str, fallback: Any = None) -> Any:
+    """Return a value from a mapping or attribute with a fallback."""
+    if isinstance(entry, Mapping):
+        return entry.get(key, fallback)
+    return getattr(entry, key, fallback)
+
+
+def _normalize_frequency(value: Any) -> str | None:
+    """Normalize frequency values to supported cadence tokens."""
+    if value is None:
+        return None
+    normalized = str(value).strip().lower()
+    if normalized in {"once", "one-time", "onetime", "single"}:
+        return None
+    if normalized in {"daily", "weekly", "monthly"}:
+        return normalized
+    return None
+
+
+def _matches_frequency(
+    current_date: date, start_date: date, frequency: str | None
+) -> bool:
+    """Return True when a date matches a recurring frequency."""
+    if current_date < start_date:
+        return False
+    if frequency is None:
+        return current_date == start_date
+    if frequency == "daily":
+        return True
+    if frequency == "weekly":
+        return (current_date - start_date).days % 7 == 0
+    if frequency == "monthly":
+        return current_date.day == start_date.day
+    return False
+
+
+def _cashflow_direction(amount: Decimal) -> str:
+    """Return the cashflow direction for a signed amount."""
+    return "inflow" if amount >= 0 else "outflow"
+
+
+def _cashflow_type(amount: Decimal) -> str:
+    """Return the cashflow type for a signed amount."""
+    return "income" if amount >= 0 else "expense"
+
+
+def _daily_deltas(
+    timeline: Sequence[ForecastTimelinePoint],
+) -> list[tuple[date, Decimal]]:
+    """Return daily balance deltas keyed by date in timeline order."""
+    deltas: list[tuple[date, Decimal]] = []
+    if not timeline:
+        return deltas
+
+    first_point = timeline[0]
+    first_balance = _to_decimal(first_point.forecast_balance)
+    metadata = first_point.metadata or {}
+    if "starting_balance" in metadata:
+        previous_balance = _to_decimal(metadata.get("starting_balance"))
+    elif "average_inflow" in metadata and "average_outflow" in metadata:
+        average_inflow = _to_decimal(metadata.get("average_inflow"))
+        average_outflow = _to_decimal(metadata.get("average_outflow"))
+        previous_balance = first_balance - (average_inflow - average_outflow)
+    else:
+        previous_balance = first_balance
+
+    for point in timeline:
+        current_date = _parse_date(point.date, fallback=date.today())
+        current_balance = _to_decimal(point.forecast_balance)
+        delta = current_balance - previous_balance
+        deltas.append((current_date, delta))
+        previous_balance = current_balance
+
+    return deltas
+
+
+def _category_sources(
+    category_averages: Sequence[Mapping[str, Any]] | None,
+) -> list[dict[str, Any]]:
+    """Normalize category averages into source dictionaries."""
+    if not category_averages:
+        return []
+
+    sources: list[dict[str, Any]] = []
+    inflow_keys = (
+        "inflow",
+        "inflows",
+        "income",
+        "credit",
+        "average_inflow",
+        "avg_inflow",
+    )
+    outflow_keys = (
+        "outflow",
+        "outflows",
+        "expense",
+        "debit",
+        "average_outflow",
+        "avg_outflow",
+    )
+    amount_keys = ("amount", "average", "avg", "net", "value")
+
+    for entry in category_averages:
+        label = str(
+            entry.get("category")
+            or entry.get("label")
+            or entry.get("name")
+            or "Uncategorized"
+        )
+        confidence = _to_decimal(entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE))
+
+        inflow = _extract_amount(entry, inflow_keys)
+        outflow = _extract_amount(entry, outflow_keys)
+        explicit_amount = _extract_amount(entry, amount_keys)
+
+        if inflow:
+            sources.append(
+                {
+                    "label": label,
+                    "category": label,
+                    "amount": inflow,
+                    "confidence": confidence,
+                    "source": "category_average",
+                }
+            )
+        if outflow:
+            sources.append(
+                {
+                    "label": label,
+                    "category": label,
+                    "amount": -outflow,
+                    "confidence": confidence,
+                    "source": "category_average",
+                }
+            )
+        if not inflow and not outflow and explicit_amount:
+            direction = str(entry.get("direction") or entry.get("type") or "").lower()
+            amount = explicit_amount
+            if direction == "expense" and amount > 0:
+                amount = -amount
+            sources.append(
+                {
+                    "label": label,
+                    "category": label,
+                    "amount": amount,
+                    "confidence": confidence,
+                    "source": "category_average",
+                }
+            )
+
+    return sources
+
+
+def _recurring_sources_by_date(
+    recurring_sources: Sequence[Mapping[str, Any]] | None,
+    timeline_dates: Sequence[date],
+) -> dict[date, list[dict[str, Any]]]:
+    """Expand recurring source labels across timeline dates."""
+    expanded: dict[date, list[dict[str, Any]]] = {day: [] for day in timeline_dates}
+    if not recurring_sources or not timeline_dates:
+        return expanded
+
+    for entry in recurring_sources:
+        start_date = _parse_date(
+            entry.get("date") or entry.get("start_date"),
+            fallback=timeline_dates[0],
+        )
+        frequency = _normalize_frequency(entry.get("frequency"))
+        amount = _to_decimal(entry.get("amount"))
+        if not amount:
+            continue
+
+        label = str(
+            entry.get("label")
+            or entry.get("merchant")
+            or entry.get("description")
+            or "Recurring"
+        )
+        category = str(entry.get("category") or "Recurring")
+        confidence = _to_decimal(entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE))
+        metadata = {
+            "frequency": frequency or "one-time",
+            "recurring_id": entry.get("recurring_id"),
+        }
+
+        for current_date in timeline_dates:
+            if _matches_frequency(current_date, start_date, frequency):
+                expanded[current_date].append(
+                    {
+                        "label": label,
+                        "category": category,
+                        "amount": amount,
+                        "confidence": confidence,
+                        "source": "recurring",
+                        "metadata": metadata,
+                    }
+                )
+                if frequency is None:
+                    break
+
+    return expanded
+
+
+def _scaled_category_items(
+    remaining: Decimal, category_sources: Sequence[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Scale category averages to match the remaining delta."""
+    if not category_sources or remaining == 0:
+        return []
+
+    category_total = sum(
+        (_to_decimal(source.get("amount")) for source in category_sources), Decimal("0")
+    )
+    if category_total == 0:
+        return []
+
+    scale = remaining / category_total
+    scaled_items: list[dict[str, Any]] = []
+    for source in category_sources:
+        amount = _to_decimal(source.get("amount")) * scale
+        if amount == 0:
+            continue
+        scaled_items.append(
+            {
+                "label": source.get("label"),
+                "category": source.get("category"),
+                "amount": amount,
+                "confidence": source.get("confidence", DEFAULT_CATEGORY_CONFIDENCE),
+                "source": source.get("source", "category_average"),
+            }
+        )
+    return scaled_items
+
+
+def build_cashflow_items(
+    timeline: Sequence[ForecastTimelinePoint],
+    *,
+    category_averages: Sequence[Mapping[str, Any]] | None = None,
+    recurring_sources: Sequence[Mapping[str, Any]] | None = None,
+    adjustments: Sequence[Mapping[str, Any]] | None = None,
+    uncategorized_label: str = "Uncategorized",
+) -> list[ForecastCashflowItem]:
+    """Build cashflow items for each balance delta and adjustment.
+
+    Args:
+        timeline: Baseline forecast timeline points.
+        category_averages: Optional category averages used for source labels.
+        recurring_sources: Optional recurring merchant labels to attribute cashflows.
+        adjustments: Optional adjustments to include in the breakdown.
+        uncategorized_label: Label to use when no source attribution exists.
+
+    Returns:
+        List of :class:`ForecastCashflowItem` entries.
+    """
+    cashflows: list[ForecastCashflowItem] = []
+    if not timeline:
+        return cashflows
+
+    daily_deltas = _daily_deltas(timeline)
+    timeline_dates = [day for day, _ in daily_deltas]
+    category_sources = _category_sources(category_averages)
+    recurring_by_date = _recurring_sources_by_date(recurring_sources, timeline_dates)
+
+    for current_date, delta in daily_deltas:
+        day_items: list[tuple[Decimal, ForecastCashflowItem]] = []
+        recurring_items = recurring_by_date.get(current_date, [])
+        recurring_total = sum(
+            (_to_decimal(item.get("amount")) for item in recurring_items), Decimal("0")
+        )
+
+        for entry in recurring_items:
+            amount = _to_decimal(entry.get("amount"))
+            if amount == 0:
+                continue
+            day_items.append(
+                (
+                    amount,
+                    ForecastCashflowItem(
+                        date=current_date,
+                        amount=float(amount),
+                        label=str(entry.get("label")),
+                        category=str(entry.get("category") or "Recurring"),
+                        source=str(entry.get("source") or "recurring"),
+                        type=_cashflow_type(amount),
+                        confidence=float(
+                            entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE)
+                        ),
+                        direction=_cashflow_direction(amount),
+                        metadata=entry.get("metadata", {}),
+                    ),
+                )
+            )
+
+        remaining = delta - recurring_total
+        for entry in _scaled_category_items(remaining, category_sources):
+            amount = _to_decimal(entry.get("amount"))
+            if amount == 0:
+                continue
+            day_items.append(
+                (
+                    amount,
+                    ForecastCashflowItem(
+                        date=current_date,
+                        amount=float(amount),
+                        label=str(entry.get("label")),
+                        category=str(entry.get("category") or uncategorized_label),
+                        source=str(entry.get("source") or "category_average"),
+                        type=_cashflow_type(amount),
+                        confidence=float(
+                            entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE)
+                        ),
+                        direction=_cashflow_direction(amount),
+                        metadata={},
+                    ),
+                )
+            )
+
+        daily_total = sum((amount for amount, _ in day_items), Decimal("0"))
+        remainder = delta - daily_total
+        if remainder != 0:
+            day_items.append(
+                (
+                    remainder,
+                    ForecastCashflowItem(
+                        date=current_date,
+                        amount=float(remainder),
+                        label=uncategorized_label,
+                        category=uncategorized_label,
+                        source="uncategorized",
+                        type=_cashflow_type(remainder),
+                        confidence=float(DEFAULT_UNCATEGORIZED_CONFIDENCE),
+                        direction=_cashflow_direction(remainder),
+                        metadata={"reason": "delta-remainder"},
+                    ),
+                )
+            )
+
+        cashflows.extend(item for _, item in day_items)
+
+    if adjustments:
+        cashflows.extend(_build_adjustment_cashflows(adjustments, timeline_dates))
+
+    return cashflows
+
+
+def _build_adjustment_cashflows(
+    adjustments: Sequence[Mapping[str, Any]], timeline_dates: Sequence[date]
+) -> list[ForecastCashflowItem]:
+    """Return cashflow items derived from adjustments."""
+    cashflows: list[ForecastCashflowItem] = []
+    for adjustment in adjustments:
+        amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
+        if amount == 0:
+            continue
+        label = str(_read_entry_value(adjustment, "label", "Adjustment"))
+        adjustment_type = _read_entry_value(adjustment, "adjustment_type", "manual")
+        reason = _read_entry_value(adjustment, "reason")
+        adjustment_id = _read_entry_value(adjustment, "adjustment_id")
+        frequency = _normalize_frequency(_read_entry_value(adjustment, "frequency"))
+        start_date = _parse_date(
+            _read_entry_value(adjustment, "date")
+            or _read_entry_value(adjustment, "start_date"),
+            fallback=timeline_dates[0],
+        )
+        confidence = float(
+            _read_entry_value(adjustment, "confidence", DEFAULT_ADJUSTMENT_CONFIDENCE)
+        )
+
+        for current_date in timeline_dates:
+            if _matches_frequency(current_date, start_date, frequency):
+                cashflows.append(
+                    ForecastCashflowItem(
+                        date=current_date,
+                        amount=float(amount),
+                        label=label,
+                        category="Adjustment",
+                        source="adjustment",
+                        type=_cashflow_type(amount),
+                        confidence=confidence,
+                        direction=_cashflow_direction(amount),
+                        metadata={
+                            "adjustment_type": adjustment_type,
+                            "adjustment_id": adjustment_id,
+                            "reason": reason,
+                            "frequency": frequency or "one-time",
+                        },
+                    )
+                )
+                if frequency is None:
+                    break
+
+    return cashflows
+
+
+def apply_adjustments(
+    baseline_timeline: Sequence[ForecastTimelinePoint],
+    adjustments: Sequence[Mapping[str, Any]] | None,
+) -> list[ForecastTimelinePoint]:
+    """Apply one-time or recurring adjustments to a baseline forecast timeline.
+
+    Args:
+        baseline_timeline: Baseline projection timeline to adjust.
+        adjustments: Adjustment entries with dates, amounts, and optional frequency.
+
+    Returns:
+        New list of timeline points with adjustments applied.
+    """
+    if not baseline_timeline:
+        return []
+
+    timeline = list(baseline_timeline)
+    timeline_dates = [
+        _parse_date(point.date, fallback=date.today()) for point in timeline
+    ]
+    adjustment_schedule = _build_adjustment_schedule(adjustments or [], timeline_dates)
+    running_adjustment = Decimal("0")
+    adjusted_points: list[ForecastTimelinePoint] = []
+
+    for point, current_date in zip(timeline, timeline_dates):
+        adjustment_delta = adjustment_schedule.get(current_date, Decimal("0"))
+        running_adjustment += adjustment_delta
+
+        base_balance = _to_decimal(point.forecast_balance)
+        adjusted_balance = base_balance + running_adjustment
+        actual_balance = point.actual_balance
+        updated_delta = None
+        if actual_balance is not None:
+            updated_delta = float(adjusted_balance - _to_decimal(actual_balance))
+
+        metadata = dict(point.metadata or {})
+        metadata["baseline_balance"] = float(base_balance)
+        metadata["adjustment_total"] = float(running_adjustment)
+
+        adjusted_points.append(
+            ForecastTimelinePoint(
+                date=point.date,
+                label=point.label,
+                forecast_balance=float(adjusted_balance),
+                actual_balance=actual_balance,
+                delta=updated_delta if updated_delta is not None else point.delta,
+                metadata=metadata,
+            )
+        )
+
+    return adjusted_points
+
+
+def _build_adjustment_schedule(
+    adjustments: Sequence[Mapping[str, Any]],
+    timeline_dates: Sequence[date],
+) -> dict[date, Decimal]:
+    """Build per-date adjustment totals."""
+    schedule: dict[date, Decimal] = {day: Decimal("0") for day in timeline_dates}
+    if not timeline_dates:
+        return schedule
+
+    for adjustment in adjustments:
+        amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
+        if amount == 0:
+            continue
+        frequency = _normalize_frequency(_read_entry_value(adjustment, "frequency"))
+        start_date = _parse_date(
+            _read_entry_value(adjustment, "date")
+            or _read_entry_value(adjustment, "start_date"),
+            fallback=timeline_dates[0],
+        )
+
+        for current_date in timeline_dates:
+            if _matches_frequency(current_date, start_date, frequency):
+                schedule[current_date] += amount
+                if frequency is None:
+                    break
+
+    return schedule
 
 
 def project_balances(

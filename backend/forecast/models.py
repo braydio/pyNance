@@ -71,6 +71,8 @@ class ForecastCashflowItem:
         label: Human-readable label for the cashflow line item.
         category: Normalized category for grouping in breakdowns.
         source: Source system (e.g., recurring, manual, transaction).
+        type: Cashflow type ("income" or "expense") for display.
+        confidence: Confidence score for the source attribution.
         account_id: Optional account identifier.
         recurring_id: Optional recurring transaction identifier.
         direction: Optional direction hint ("inflow" or "outflow").
@@ -82,6 +84,8 @@ class ForecastCashflowItem:
     label: str
     category: str
     source: str
+    type: Optional[str] = None
+    confidence: Optional[float] = None
     account_id: Optional[int] = None
     recurring_id: Optional[int] = None
     direction: Optional[str] = None
@@ -95,6 +99,8 @@ class ForecastCashflowItem:
             "label": self.label,
             "category": self.category,
             "source": self.source,
+            "type": self.type,
+            "confidence": _serialize_value(self.confidence),
             "account_id": self.account_id,
             "recurring_id": self.recurring_id,
             "direction": self.direction,

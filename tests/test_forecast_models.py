@@ -31,6 +31,8 @@ def test_forecast_result_to_dict_serializes_nested_models():
         label="Paycheck",
         category="income",
         source="recurring",
+        type="income",
+        confidence=0.92,
         account_id=42,
         recurring_id=7,
         direction="inflow",
@@ -75,6 +77,8 @@ def test_forecast_result_to_dict_serializes_nested_models():
     assert payload["timeline"][0]["forecast_balance"] == 1200.5
     assert payload["cashflows"][0]["date"].startswith("2026-01-02T08:30:00")
     assert payload["adjustments"][0]["amount"] == -50.0
+    assert payload["cashflows"][0]["type"] == "income"
+    assert payload["cashflows"][0]["confidence"] == 0.92
     assert payload["summary"]["ending_balance"] == 1500.0
     assert payload["summary"]["breakdowns"] == {"income": 800.0, "expenses": 300.0}
     assert payload["metadata"]["generated_at"].startswith("2026-01-01T00:00:00")
