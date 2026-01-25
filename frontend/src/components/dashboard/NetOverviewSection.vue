@@ -288,6 +288,7 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
   color: var(--color-text-light);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  line-height: 1;
   transition:
     background 0.2s ease,
     color 0.2s ease,

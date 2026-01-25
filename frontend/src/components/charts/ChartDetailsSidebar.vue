@@ -187,6 +187,7 @@ onBeforeUnmount(() => {
   color: var(--color-text-light);
   font-size: 0.78rem;
   font-weight: 600;
+  line-height: 1;
   transition:
     background 0.2s ease,
     color 0.2s ease,
@@ -272,7 +273,7 @@ onBeforeUnmount(() => {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 0.2rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 55%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--color-accent-yellow) 45%, transparent);
   color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
   background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
   font-size: 1rem;
