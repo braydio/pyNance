@@ -1,6 +1,6 @@
 # Forecasting Backend Audit & TODOs
 
-*(Grounded in `frontend/src/views/Forecast.vue` + forecast components)*
+_(Grounded in `frontend/src/views/Forecast.vue` + forecast components)_
 
 ---
 
@@ -19,16 +19,15 @@ From `Forecast.vue`:
 
 This tells us:
 
-* Forecasting is:
+- Forecasting is:
+  - Global (not per-account UI)
+  - Predictive
+  - Forward-looking
 
-  * Global (not per-account UI)
-  * Predictive
-  * Forward-looking
-* `ForecastLayout` must be able to:
-
-  * Load initial forecast
-  * Recompute forecast when adjustments change
-  * Display multiple derived views of the same forecast
+- `ForecastLayout` must be able to:
+  - Load initial forecast
+  - Recompute forecast when adjustments change
+  - Display multiple derived views of the same forecast
 
 **Backend implication**:
 Forecasting is **stateful, recomputable, and scenario-aware**.
@@ -41,16 +40,15 @@ Forecasting is **stateful, recomputable, and scenario-aware**.
 
 This file establishes:
 
-* Forecasting is **not read-only**
-* Users can:
+- Forecasting is **not read-only**
+- Users can:
+  - Adjust assumptions
+  - See impact immediately
 
-  * Adjust assumptions
-  * See impact immediately
-* Forecasts must be:
-
-  * Deterministic
-  * Explainable
-  * Repeatable
+- Forecasts must be:
+  - Deterministic
+  - Explainable
+  - Repeatable
 
 **Backend TODO #1**
 
@@ -63,15 +61,14 @@ This file establishes:
 
 Key ideas (paraphrased but faithful):
 
-* Forecast is composed of **layers**:
-
+- Forecast is composed of **layers**:
   1. Baseline projection
   2. Adjustments
   3. Derived summaries
 
-* Forecast data should be returned as a **single structured object**, not many endpoints
+- Forecast data should be returned as a **single structured object**, not many endpoints
 
-* Frontend should not “calculate”, only **visualize**
+- Frontend should not “calculate”, only **visualize**
 
 **Backend TODO #2**
 Create a `ForecastResult` domain object that includes:
@@ -95,9 +92,9 @@ This is where things get concrete.
 
 Expected behaviors:
 
-* Initial load → default forecast
-* User edits → recompute forecast
-* No persistence required *initially*
+- Initial load → default forecast
+- User edits → recompute forecast
+- No persistence required _initially_
 
 **Backend TODO #3**
 Implement **stateless forecast computation**:
@@ -128,16 +125,16 @@ ForecastResult
 
 This doc explicitly calls out:
 
-* Backend is a blocker
-* Forecast engine should start “simple but correct”
-* Recurring detection can be naive initially
+- Backend is a blocker
+- Forecast engine should start “simple but correct”
+- Recurring detection can be naive initially
 
 **Backend TODO #4**
 Phase forecasting into levels:
 
-* Phase 1: deterministic rules
-* Phase 2: recurrence inference
-* Phase 3: scenario persistence
+- Phase 1: deterministic rules
+- Phase 2: recurrence inference
+- Phase 3: scenario persistence
 
 ---
 
@@ -151,9 +148,9 @@ Now let’s **tie each UI component to backend requirements**.
 
 ### What the component expects
 
-* X-axis: future dates
-* Y-axis: projected balances
-* Updates when adjustments change
+- X-axis: future dates
+- Y-axis: projected balances
+- Updates when adjustments change
 
 **Backend TODO #5**
 
@@ -191,9 +188,9 @@ No ML. No guessing. Explainable math.
 
 This component implies:
 
-* Net change
-* Ending balance
-* Risk signals (runway, depletion)
+- Net change
+- Ending balance
+- Risk signals (runway, depletion)
 
 **Backend TODO #6**
 
@@ -201,10 +198,10 @@ Compute a `summary` block:
 
 ```json
 {
-  "starting_balance": 5400.00,
+  "starting_balance": 5400.0,
   "ending_balance": 3200.55,
   "net_change": -2199.45,
-  "min_balance": 1100.00,
+  "min_balance": 1100.0,
   "depletion_date": null
 }
 ```
@@ -223,7 +220,7 @@ else:
 
 ## ForecastBreakdown.vue → Explainability
 
-This component *only makes sense* if the backend provides **causal attribution**.
+This component _only makes sense_ if the backend provides **causal attribution**.
 
 **Backend TODO #7**
 
@@ -286,9 +283,9 @@ Adjustments are applied **after baseline projection**, not baked in.
 
 Why?
 
-* Allows comparison
-* Allows toggling
-* Enables scenarios later
+- Allows comparison
+- Allows toggling
+- Enables scenarios later
 
 ---
 
@@ -296,9 +293,9 @@ Why?
 
 This component assumes:
 
-* One call returns *everything*
-* Recompute is cheap
-* No partial state
+- One call returns _everything_
+- Recompute is cheap
+- No partial state
 
 **Backend TODO #9**
 
@@ -331,18 +328,18 @@ Here is the **exact TODO list** you can drop into GitHub issues.
 
 ### Module: `backend/forecast/engine.py`
 
-* `compute_forecast(...)`
-* `project_balances(...)`
-* `apply_adjustments(...)`
+- `compute_forecast(...)`
+- `project_balances(...)`
+- `apply_adjustments(...)`
 
 ---
 
 ### Module: `backend/forecast/models.py`
 
-* `ForecastResult`
-* `ForecastTimelinePoint`
-* `ForecastCashflowItem`
-* `ForecastAdjustment`
+- `ForecastResult`
+- `ForecastTimelinePoint`
+- `ForecastCashflowItem`
+- `ForecastAdjustment`
 
 ---
 
@@ -350,19 +347,18 @@ Here is the **exact TODO list** you can drop into GitHub issues.
 
 Endpoints:
 
-* `POST /api/forecast/compute`
-* (future) `POST /api/forecast/scenario/save`
+- `POST /api/forecast/compute`
+- (future) `POST /api/forecast/scenario/save`
 
 ---
 
 ### Module: `backend/workers/forecast_refresh.py`
 
-* Recompute cached forecasts when:
+- Recompute cached forecasts when:
+  - Transactions refresh
+  - Snapshots update
 
-  * Transactions refresh
-  * Snapshots update
-
-*(optional in Phase 1)*
+_(optional in Phase 1)_
 
 ---
 
@@ -376,6 +372,4 @@ Endpoints:
 | “Interactive recompute”         | → stateless POST compute              |
 | “Forecast dashboard”            | → already built in frontend           |
 
-
-* Write Alembic migrations for adjustments/scenarios
-
+- Write Alembic migrations for adjustments/scenarios
