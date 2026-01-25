@@ -7,7 +7,14 @@ from datetime import date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from typing import Any
 
-from .models import DateLike, ForecastCashflowItem, ForecastTimelinePoint
+from .models import (
+    DateLike,
+    ForecastAdjustment,
+    ForecastCashflowItem,
+    ForecastResult,
+    ForecastSummary,
+    ForecastTimelinePoint,
+)
 
 DEFAULT_CATEGORY_CONFIDENCE = Decimal("0.6")
 DEFAULT_RECURRING_CONFIDENCE = Decimal("0.85")
@@ -116,6 +123,23 @@ def _daily_deltas(
         previous_balance = current_balance
 
     return deltas
+
+
+def _starting_balance(timeline: Sequence[ForecastTimelinePoint]) -> Decimal:
+    """Return the starting balance for a timeline."""
+    if not timeline:
+        return Decimal("0")
+
+    first_point = timeline[0]
+    first_balance = _to_decimal(first_point.forecast_balance)
+    metadata = first_point.metadata or {}
+    if "starting_balance" in metadata:
+        return _to_decimal(metadata.get("starting_balance"))
+    if "average_inflow" in metadata and "average_outflow" in metadata:
+        average_inflow = _to_decimal(metadata.get("average_inflow"))
+        average_outflow = _to_decimal(metadata.get("average_outflow"))
+        return first_balance - (average_inflow - average_outflow)
+    return first_balance
 
 
 def _category_sources(
@@ -487,6 +511,182 @@ def apply_adjustments(
         )
 
     return adjusted_points
+
+
+def compute_summary(
+    timeline: Sequence[ForecastTimelinePoint],
+) -> ForecastSummary:
+    """Compute summary metrics for a forecast timeline.
+
+    Args:
+        timeline: Forecast timeline points to summarize.
+
+    Returns:
+        Summary metrics including balances, min/max values, and depletion date.
+    """
+    if not timeline:
+        today = date.today()
+        return ForecastSummary(
+            start_date=today,
+            end_date=today,
+            starting_balance=0.0,
+            ending_balance=0.0,
+            net_change=0.0,
+            total_inflows=0.0,
+            total_outflows=0.0,
+            average_daily_change=0.0,
+            min_balance=0.0,
+            max_balance=0.0,
+            depletion_date=None,
+            metadata={"reason": "empty-timeline"},
+        )
+
+    start_date = _parse_date(timeline[0].date, fallback=date.today())
+    end_date = _parse_date(timeline[-1].date, fallback=start_date)
+    starting_balance = _starting_balance(timeline)
+    ending_balance = _to_decimal(timeline[-1].forecast_balance)
+
+    balances = [starting_balance] + [
+        _to_decimal(point.forecast_balance) for point in timeline
+    ]
+    min_balance = min(balances)
+    max_balance = max(balances)
+
+    net_change = ending_balance - starting_balance
+    daily_deltas = _daily_deltas(timeline)
+    total_inflows = sum((delta for _, delta in daily_deltas if delta > 0), Decimal("0"))
+    total_outflows = sum(
+        (-delta for _, delta in daily_deltas if delta < 0), Decimal("0")
+    )
+    average_daily_change = (
+        net_change / Decimal(len(daily_deltas)) if daily_deltas else Decimal("0")
+    )
+
+    depletion_date: date | None = None
+    if starting_balance <= 0:
+        depletion_date = start_date
+    else:
+        for point in timeline:
+            point_balance = _to_decimal(point.forecast_balance)
+            if point_balance <= 0:
+                depletion_date = _parse_date(point.date, fallback=start_date)
+                break
+
+    return ForecastSummary(
+        start_date=start_date,
+        end_date=end_date,
+        starting_balance=float(starting_balance),
+        ending_balance=float(ending_balance),
+        net_change=float(net_change),
+        total_inflows=float(total_inflows),
+        total_outflows=float(total_outflows),
+        average_daily_change=float(average_daily_change),
+        min_balance=float(min_balance),
+        max_balance=float(max_balance),
+        depletion_date=depletion_date,
+    )
+
+
+def _build_adjustment_models(
+    adjustments: Sequence[Mapping[str, Any]] | None,
+) -> list[ForecastAdjustment]:
+    """Normalize adjustment payloads into forecast adjustment models."""
+    models: list[ForecastAdjustment] = []
+    for adjustment in adjustments or []:
+        amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
+        if amount == 0:
+            continue
+        label = str(_read_entry_value(adjustment, "label", "Adjustment"))
+        adjustment_type = str(
+            _read_entry_value(
+                adjustment,
+                "adjustment_type",
+                _read_entry_value(adjustment, "type", "manual"),
+            )
+        )
+        adjustment_date = _read_entry_value(adjustment, "date") or _read_entry_value(
+            adjustment, "start_date"
+        )
+        if adjustment_date is None:
+            adjustment_date = date.today()
+        reason = _read_entry_value(adjustment, "reason")
+        adjustment_id = _read_entry_value(
+            adjustment, "adjustment_id", _read_entry_value(adjustment, "id")
+        )
+        metadata: dict[str, Any] = {}
+        frequency = _read_entry_value(adjustment, "frequency")
+        if frequency:
+            metadata["frequency"] = frequency
+
+        models.append(
+            ForecastAdjustment(
+                label=label,
+                amount=float(amount),
+                date=adjustment_date,
+                adjustment_type=adjustment_type,
+                reason=reason,
+                adjustment_id=adjustment_id,
+                metadata=metadata,
+            )
+        )
+    return models
+
+
+def compute_forecast(
+    *,
+    user_id: int,
+    start_date: DateLike,
+    horizon_days: int,
+    latest_snapshots: Sequence[Mapping[str, Any]],
+    historical_aggregates: Sequence[Mapping[str, Any]],
+    category_averages: Sequence[Mapping[str, Any]] | None = None,
+    recurring_sources: Sequence[Mapping[str, Any]] | None = None,
+    adjustments: Sequence[Mapping[str, Any]] | None = None,
+    currency: str = "USD",
+    metadata: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Compute a full forecast payload for API responses.
+
+    Args:
+        user_id: Identifier for the forecast owner.
+        start_date: First date included in the projection.
+        horizon_days: Number of days to project.
+        latest_snapshots: Latest per-account balance snapshots.
+        historical_aggregates: Historical daily inflow/outflow aggregates.
+        category_averages: Optional category averages for cashflow labels.
+        recurring_sources: Optional recurring transaction labels.
+        adjustments: Optional manual or automated adjustments.
+        currency: ISO currency code for summary display.
+        metadata: Optional metadata to attach to the forecast result.
+
+    Returns:
+        Fully serialized forecast payload.
+    """
+    baseline_timeline = project_balances(
+        user_id=user_id,
+        start_date=start_date,
+        horizon_days=horizon_days,
+        latest_snapshots=latest_snapshots,
+        historical_aggregates=historical_aggregates,
+    )
+    adjusted_timeline = apply_adjustments(baseline_timeline, adjustments)
+    cashflows = build_cashflow_items(
+        baseline_timeline,
+        category_averages=category_averages,
+        recurring_sources=recurring_sources,
+        adjustments=adjustments,
+    )
+    summary = compute_summary(adjusted_timeline)
+    summary.currency = currency
+
+    result = ForecastResult(
+        timeline=adjusted_timeline,
+        summary=summary,
+        cashflows=cashflows,
+        adjustments=_build_adjustment_models(adjustments),
+        metadata=dict(metadata or {}),
+    )
+    return result.to_dict()
 
 
 def _build_adjustment_schedule(

@@ -158,6 +158,7 @@ class ForecastSummary:
         average_daily_change: Average daily delta across the horizon.
         min_balance: Minimum projected balance.
         max_balance: Maximum projected balance.
+        depletion_date: First date where the balance is at or below zero.
         currency: ISO currency code for display.
         breakdowns: Category breakdowns used for summary widgets.
         account_count: Optional number of accounts contributing.
@@ -175,6 +176,7 @@ class ForecastSummary:
     average_daily_change: float
     min_balance: float
     max_balance: float
+    depletion_date: Optional[DateLike] = None
     currency: str = "USD"
     breakdowns: dict[str, float] = field(default_factory=dict)
     account_count: Optional[int] = None
@@ -194,6 +196,7 @@ class ForecastSummary:
             "average_daily_change": _serialize_value(self.average_daily_change),
             "min_balance": _serialize_value(self.min_balance),
             "max_balance": _serialize_value(self.max_balance),
+            "depletion_date": _serialize_value(self.depletion_date),
             "currency": self.currency,
             "breakdowns": _serialize_value(self.breakdowns),
             "account_count": self.account_count,
