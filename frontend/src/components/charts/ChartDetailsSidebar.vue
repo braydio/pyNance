@@ -173,10 +173,10 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 80%, transparent);
-  background: color-mix(in srgb, var(--color-bg-dark) 65%, var(--color-accent-cyan) 35%);
+  padding: 0.35rem 0.8rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
   color: var(--color-text-light);
   font-size: 0.85rem;
   font-weight: 600;
@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
     background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
@@ -194,10 +194,10 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__toggle:hover,
 .chart-details-sidebar__toggle:focus-visible {
-  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-cyan) 55%);
+  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-yellow) 55%);
   color: var(--color-text-light);
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-yellow) 30%, transparent);
 }
 
 .chart-details-sidebar__icon {
@@ -221,12 +221,16 @@ onBeforeUnmount(() => {
   min-width: 14rem;
   max-width: 16rem;
   padding: 0.75rem;
-  border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 70%, transparent);
-  background: color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-cyan) 22%);
-  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-yellow) 22%),
+    color-mix(in srgb, var(--color-bg-sec) 70%, var(--color-accent-green) 30%)
+  );
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   display: grid;
-  gap: 0.5rem;
+  gap: 0.55rem;
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__content {

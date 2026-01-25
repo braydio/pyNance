@@ -43,8 +43,10 @@ function getNetDashPosition(chart, dataIndex) {
   const firstMeta = chart.getDatasetMeta(0)
   const bar = firstMeta?.data?.[dataIndex]
   const netValues = chart.$netValues
+  const netRows = chart.$dailyNetRows
   const yScale = chart.scales?.y
-  const netValue = netValues?.[dataIndex]
+  const netValue =
+    netValues?.[dataIndex] ?? netRows?.[dataIndex]?.net?.parsedValue ?? netRows?.[dataIndex]?.net
   if (!bar || netValue == null || !yScale) return null
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
 }
@@ -584,7 +586,7 @@ async function renderChart() {
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
           bodyFont: { family: "'Fira Code', monospace" },
           cornerRadius: 10,
-          caretPadding: 8,
+          caretPadding: 2,
           caretSize: 7,
           bodySpacing: 6,
           titleSpacing: 4,
