@@ -173,12 +173,12 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.8rem;
+  padding: 0.3rem 0.65rem;
   border-radius: 0.35rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
   background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
   color: var(--color-text-light);
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   transition:
     background 0.2s ease,
@@ -188,8 +188,8 @@ onBeforeUnmount(() => {
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
-  font-size: 0.78rem;
-  padding: 0.25rem 0.65rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
 }
 
 .chart-details-sidebar__toggle:hover,
@@ -218,9 +218,9 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__content {
   pointer-events: auto;
-  min-width: 14rem;
-  max-width: 16rem;
-  padding: 0.75rem;
+  min-width: 12rem;
+  max-width: 14rem;
+  padding: 0.6rem;
   border-radius: 0.35rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
   background: linear-gradient(
@@ -236,13 +236,15 @@ onBeforeUnmount(() => {
 .chart-details-sidebar--inline .chart-details-sidebar__content {
   position: absolute;
   top: calc(100% + 0.45rem);
-  right: 0;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   z-index: 20;
 }
 
 .chart-details-sidebar__heading {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-text-light);
   text-transform: uppercase;
@@ -251,7 +253,7 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__description {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
 }
 
@@ -267,13 +269,13 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   color: var(--color-text-light);
 }
 
 .chart-details-sidebar__fieldset input[type='checkbox'] {
-  width: 1rem;
-  height: 1rem;
+  width: 0.9rem;
+  height: 0.9rem;
   accent-color: var(--color-accent-cyan);
 }
 

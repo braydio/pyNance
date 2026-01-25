@@ -246,9 +246,9 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.75rem;
+  gap: 0.5rem;
   flex-wrap: wrap;
-  padding: 0.6rem 0.9rem;
+  padding: 0.4rem 0.6rem;
   border-radius: 0.35rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
   background: linear-gradient(
@@ -277,17 +277,17 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .daily-net-timeframe-btn {
-  font-size: 0.78rem;
-  padding: 0.3rem 0.85rem;
-  border-radius: 0.35rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 0.3rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
   background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
   color: var(--color-text-light);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
   transition:
     background 0.2s ease,
     color 0.2s ease,

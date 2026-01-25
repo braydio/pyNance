@@ -43,7 +43,7 @@
       <template #fallback>
         <section
           data-testid="net-overview-skeleton"
-          class="flex flex-col gap-4 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
+          class="flex flex-col gap-4 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 animate-pulse"
           aria-busy="true"
         >
           <div class="h-6 w-1/3 bg-[var(--divider)] rounded mb-2"></div>
@@ -83,7 +83,7 @@
         <template #fallback>
           <section
             data-testid="breakdown-skeleton"
-            class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
+            class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 animate-pulse"
           >
             <div class="h-6 w-40 bg-[var(--divider)] rounded mb-4"></div>
             <div class="grid grid-cols-2 gap-3">
@@ -123,7 +123,7 @@
     <!-- RESERVED TABLES PANEL -->
     <div
       data-testid="tables-panel"
-      class="relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+      class="relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-yellow)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
     >
       <transition name="accordion">
         <div
@@ -133,7 +133,7 @@
         >
           <button
             @click="expandAccounts"
-            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
+            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-yellow)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-yellow)] hover:text-[var(--color-bg-sec)] transition text-center"
           >
             Expand Accounts Table
           </button>
