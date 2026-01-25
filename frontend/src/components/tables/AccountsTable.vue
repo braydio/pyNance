@@ -101,7 +101,7 @@
             </td>
             <!-- Name -->
             <td class="cell">{{ formatTitle(account.name) }}</td>
-            <!-- Account Type (capitalize first/last) -->
+            <!-- Account Type (title case) -->
             <td class="cell">
               <span
                 :class="[
@@ -109,7 +109,7 @@
                   'px-3 py-1 text-xs font-semibold text-[color:var(--color-accent-blue)]',
                 ]"
               >
-                {{ capitalizeFirstLast(account.subtype || account.type) }}
+                {{ formatAccountType(account.subtype || account.type) }}
               </span>
             </td>
             <!-- Balance -->
@@ -383,15 +383,10 @@ export default {
       const str = String(value).toLowerCase()
       return str.replace(/(^|[\s/-])([a-z])/g, (_, sep, ch) => `${sep}${ch.toUpperCase()}`)
     },
-    capitalizeFirstLast(type) {
+    formatAccountType(type) {
       if (!type || typeof type !== 'string') return 'Unknown'
-      const clean = type.toLowerCase()
-      if (clean.length < 2) return clean.toUpperCase()
-      return (
-        clean.charAt(0).toUpperCase() +
-        clean.slice(1, -1) +
-        clean.charAt(clean.length - 1).toUpperCase()
-      )
+      const normalized = type.replace(/[_-]+/g, ' ').toLowerCase()
+      return normalized.replace(/(^|[\s/])([a-z])/g, (_, sep, ch) => `${sep}${ch.toUpperCase()}`)
     },
     sortTable(key) {
       if (this.sortKey === key) {
