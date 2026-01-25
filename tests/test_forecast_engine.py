@@ -1,6 +1,6 @@
-from datetime import date
 import os
 import sys
+from datetime import date
 
 BASE_BACKEND = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "backend"))
 if BASE_BACKEND not in sys.path:
