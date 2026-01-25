@@ -33,7 +33,8 @@ changes). These are surfaced in adjustment UI panels for transparency and auditi
 ### `ForecastSummary`
 
 Aggregates top-line forecast metrics such as starting/ending balances, inflows/outflows, and category
-breakdowns. This powers summary tiles and headline statistics in the dashboard.
+breakdowns. This powers summary tiles and headline statistics in the dashboard, including the
+depletion date when balances reach zero or below.
 
 ### `ForecastResult`
 

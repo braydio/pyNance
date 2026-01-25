@@ -11,7 +11,7 @@ Status: Active
 `backend/forecast/engine.py` contains the deterministic, rule-based projection helpers used to
 assemble forecast timelines. The functions operate on pre-aggregated balance snapshots and
 historical inflow/outflow aggregates, returning `ForecastTimelinePoint` entries for downstream API
-responses.
+responses and composing serialized payloads when needed.
 
 ## `project_balances`
 
@@ -86,3 +86,19 @@ the baseline projection.
 - Supports daily, weekly, and monthly adjustment frequencies.
 - Applies each adjustment on its effective date and carries the impact forward through the horizon.
 - Returns a new list of timeline points without mutating the baseline inputs.
+
+## `compute_summary`
+
+`compute_summary(timeline)` aggregates a timeline into `ForecastSummary` metrics, including starting
+and ending balances, net change, min/max balances, and the depletion date (first date where the
+projected balance is at or below zero).
+
+## `compute_forecast`
+
+`compute_forecast(...)` orchestrates the forecast pipeline by:
+
+- Loading snapshot and historical aggregate inputs.
+- Building a baseline projection with `project_balances`.
+- Applying adjustments with `apply_adjustments`.
+- Generating cashflow breakdowns and summary metrics.
+- Returning a fully serialized `ForecastResult` payload for the API layer.
