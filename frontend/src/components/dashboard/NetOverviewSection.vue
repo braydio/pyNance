@@ -42,12 +42,10 @@
         class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
         <div class="daily-net-chart-header">
-          <div class="daily-net-chart-title-panel">
-            <h2 class="daily-net-chart-title">
-              <span class="title-text">Net Income</span>
-              <span class="title-subtitle">(Daily)</span>
-            </h2>
-          </div>
+          <h2 class="daily-net-chart-title">
+            <span class="title-text">Net Income</span>
+            <span class="title-subtitle">(Daily)</span>
+          </h2>
           <div class="daily-net-chart-separator" aria-hidden="true"></div>
           <div class="daily-net-chart-controls">
             <div class="daily-net-chart-toolbar">
@@ -240,31 +238,11 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   width: 100%;
 }
 
-.daily-net-chart-title-panel {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  padding: 0.4rem 0.6rem;
-  border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
-  background: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--color-bg-sec) 85%, var(--color-accent-yellow) 15%),
-    color-mix(in srgb, var(--color-bg-dark) 80%, var(--color-accent-green) 20%)
-  );
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-}
-
 .daily-net-chart-separator {
   width: 85%;
   height: 1px;
   border-radius: 999px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    color-mix(in srgb, var(--color-accent-yellow) 55%, transparent),
-    transparent
-  );
+  background: var(--divider);
 }
 
 .daily-net-chart-controls {
@@ -281,13 +259,9 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   flex-wrap: wrap;
   padding: 0.4rem 0.6rem;
   border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
-  background: linear-gradient(
-    120deg,
-    color-mix(in srgb, var(--color-bg-sec) 85%, var(--color-accent-yellow) 15%),
-    color-mix(in srgb, var(--color-bg-dark) 80%, var(--color-accent-green) 20%)
-  );
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--themed-border);
+  background: var(--themed-bg);
+  backdrop-filter: blur(6px);
 }
 
 .title-text {

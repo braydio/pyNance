@@ -172,6 +172,8 @@ onBeforeUnmount(() => {
   position: relative;
   align-items: center;
   pointer-events: auto;
+  top: auto;
+  right: auto;
 }
 
 .chart-details-sidebar__toggle {
