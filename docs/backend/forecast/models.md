@@ -22,7 +22,8 @@ this for chart series and balance deltas.
 ### `ForecastCashflowItem`
 
 Captures a single cashflow line item that drives the projection. Each item includes the date, amount,
-category, source, and optional account identifiers for breakdown widgets.
+category, source, optional type/confidence annotations, and optional account identifiers for
+breakdown widgets.
 
 ### `ForecastAdjustment`
 

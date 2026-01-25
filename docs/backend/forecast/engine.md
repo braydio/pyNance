@@ -52,3 +52,37 @@ timeline = project_balances(
     historical_aggregates=[{"date": "2023-12-31", "inflow": 80.0, "outflow": 20.0}],
 )
 ```
+
+## `build_cashflow_items`
+
+`build_cashflow_items(timeline, category_averages=None, recurring_sources=None, adjustments=None)`
+generates :class:`ForecastCashflowItem` entries for each daily balance delta and optional
+adjustments.
+
+### Inputs
+
+- **timeline**: Baseline `ForecastTimelinePoint` sequence used for delta calculations.
+- **category_averages**: Optional mappings with category labels and average amounts to attribute
+  daily deltas.
+- **recurring_sources**: Optional mappings with merchant labels and amounts (plus optional
+  frequencies) for recurring cashflows.
+- **adjustments**: Optional adjustment entries that should appear in the cashflow breakdown.
+
+### Behavior
+
+- Computes daily deltas from the baseline timeline without mutating it.
+- Allocates deltas to recurring sources first, then scales category averages to match the remaining
+  delta.
+- Adds an `Uncategorized` fallback item when the delta cannot be fully attributed.
+- Emits adjustment cashflow items so adjustment impacts appear in breakdowns.
+
+## `apply_adjustments`
+
+`apply_adjustments(baseline_timeline, adjustments)` overlays one-time or recurring adjustments onto
+the baseline projection.
+
+### Behavior
+
+- Supports daily, weekly, and monthly adjustment frequencies.
+- Applies each adjustment on its effective date and carries the impact forward through the horizon.
+- Returns a new list of timeline points without mutating the baseline inputs.
