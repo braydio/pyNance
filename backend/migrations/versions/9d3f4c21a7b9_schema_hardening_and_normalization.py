@@ -272,7 +272,9 @@ def upgrade() -> None:
 
     # 5) Indexes for common query patterns
     existing_tx_indexes = {idx["name"] for idx in inspector.get_indexes("transactions")}
-    existing_ah_indexes = {idx["name"] for idx in inspector.get_indexes("account_history")}
+    existing_ah_indexes = {
+        idx["name"] for idx in inspector.get_indexes("account_history")
+    }
 
     if "ix_transactions_account_date" not in existing_tx_indexes:
         op.create_index(

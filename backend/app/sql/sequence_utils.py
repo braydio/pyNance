@@ -1,7 +1,6 @@
-from sqlalchemy import text
-
 from app.config import logger
 from app.extensions import db
+from sqlalchemy import text
 
 
 def ensure_transactions_sequence() -> None:
