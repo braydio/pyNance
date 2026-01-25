@@ -162,7 +162,7 @@ onBeforeUnmount(() => {
 }
 
 .chart-details-sidebar--inline {
-  position: static;
+  position: relative;
   align-items: center;
   pointer-events: auto;
 }
@@ -175,15 +175,16 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   padding: 0.35rem 0.75rem;
   border-radius: 9999px;
-  border: 1px solid var(--color-accent-cyan);
-  background: color-mix(in srgb, var(--color-accent-cyan) 12%, transparent);
-  color: var(--color-accent-cyan);
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 80%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 65%, var(--color-accent-cyan) 35%);
+  color: var(--color-text-light);
   font-size: 0.85rem;
   font-weight: 600;
   transition:
     background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.25);
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
@@ -193,8 +194,8 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__toggle:hover,
 .chart-details-sidebar__toggle:focus-visible {
-  background: color-mix(in srgb, var(--color-accent-cyan) 22%, transparent);
-  color: var(--color-accent-cyan);
+  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-cyan) 55%);
+  color: var(--color-text-light);
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 30%, transparent);
 }
@@ -221,22 +222,25 @@ onBeforeUnmount(() => {
   max-width: 16rem;
   padding: 0.75rem;
   border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 40%, transparent);
-  background: color-mix(in srgb, var(--color-bg) 90%, var(--color-accent-cyan) 10%);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 70%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-cyan) 22%);
+  box-shadow: 0 16px 32px rgba(0, 0, 0, 0.35);
   display: grid;
   gap: 0.5rem;
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__content {
-  align-self: center;
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 20;
 }
 
 .chart-details-sidebar__heading {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-accent-cyan);
+  color: var(--color-text-light);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -244,7 +248,7 @@ onBeforeUnmount(() => {
 .chart-details-sidebar__description {
   margin: 0;
   font-size: 0.8rem;
-  color: var(--color-text-muted);
+  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
 }
 
 .chart-details-sidebar__fieldset {
@@ -260,7 +264,7 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 0.4rem;
   font-size: 0.85rem;
-  color: var(--color-text-muted);
+  color: var(--color-text-light);
 }
 
 .chart-details-sidebar__fieldset input[type='checkbox'] {

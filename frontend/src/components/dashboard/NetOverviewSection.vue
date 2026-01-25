@@ -266,5 +266,30 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-timeframe-btn {
   font-size: 0.78rem;
   padding: 0.25rem 0.8rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 80%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 65%, var(--color-accent-cyan) 35%);
+  color: var(--color-text-light);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.daily-net-timeframe-btn:hover,
+.daily-net-timeframe-btn:focus-visible {
+  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-cyan) 55%);
+  color: var(--color-text-light);
+  border-color: var(--color-accent-cyan);
+  outline: none;
+}
+
+.daily-net-timeframe-btn.is-active {
+  background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
+  color: var(--color-bg-dark);
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.25);
 }
 </style>
