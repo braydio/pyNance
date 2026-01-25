@@ -508,7 +508,7 @@ async function renderChart() {
     const ctx = buildComparisonContext()
     comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
     comparisonLabel =
-      ctx?.mode === 'prior_month_to_date' ? 'Prior period' : 'Previous 30 days'
+      ctx?.mode === 'prior_month_to_date' ? 'This Day Last Month' : 'This Day Last Month'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
         borderDash: [2, 6],
