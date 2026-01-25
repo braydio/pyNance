@@ -33,6 +33,14 @@
       role="region"
       :aria-labelledby="headerId"
     >
+      <button
+        type="button"
+        class="chart-details-sidebar__close"
+        aria-label="Close overlay options"
+        @click="closeSidebar"
+      >
+        &times;
+      </button>
       <h3 class="chart-details-sidebar__heading">Overlay Options</h3>
       <p class="chart-details-sidebar__description">
         Toggle additional metrics directly on the chart.
@@ -127,7 +135,6 @@ const closeSidebar = () => {
 
 const onOptionChange = (eventName, checked) => {
   emit(eventName, checked)
-  closeSidebar()
 }
 
 const handleDocumentClick = (event) => {
@@ -231,6 +238,7 @@ onBeforeUnmount(() => {
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   display: grid;
   gap: 0.55rem;
+  position: relative;
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__content {
@@ -255,6 +263,35 @@ onBeforeUnmount(() => {
   margin: 0;
   font-size: 0.72rem;
   color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+}
+
+.chart-details-sidebar__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 0.2rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 55%, transparent);
+  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chart-details-sidebar__close:hover,
+.chart-details-sidebar__close:focus-visible {
+  color: var(--color-text-light);
+  background: color-mix(in srgb, var(--color-accent-yellow) 22%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-yellow) 50%, transparent);
+  outline: none;
 }
 
 .chart-details-sidebar__fieldset {
