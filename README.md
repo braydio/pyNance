@@ -124,6 +124,7 @@ To surface live R/S arbitrage data in the UI, add the dashboard flag and run the
 
 - Browse `docs/index/INDEX.md` for the structured documentation tree.
 - Product roadmaps now live in `docs/roadmaps/`, keeping planning artifacts versioned with the codebase.
+- Forecast response payloads and serialization models are documented in `docs/backend/forecast/models.md`.
 
 ## Contributing
 

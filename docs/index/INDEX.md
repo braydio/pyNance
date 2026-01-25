@@ -33,3 +33,4 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Transaction Tags](../backend/features/transaction_tags.md) – tag data model and default serialization behavior.
 - [Archived Alembic Revisions](../backend/migrations/versions_archived.md) – historical references for archived migration files.
 - [Path Utilities](../backend/app/helpers/path_utils.md) – safe path resolution helpers for backend file access.
+- [Forecast Response Models](../backend/forecast/models.md) – forecast payload structures for timeline, cashflows, and summary data.
