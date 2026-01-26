@@ -198,25 +198,24 @@ def refresh_all_accounts():
         token_account_cache: dict[str, list] = {}
 
         for account in accounts:
+            inst = account.institution_name or "Unknown"
             if _is_plaid_link_type(account.link_type):
                 access_token = None
                 if account.plaid_account:
                     access_token = account.plaid_account.access_token
                 if not access_token:
                     missing_tokens += 1
-                    logger.warning("No Plaid token for %s", account.account_id)
+                    logger.warning("No Plaid token for institution %s", inst)
                     continue
 
-                logger.debug("Refreshing Plaid account %s", account.account_id)
+                logger.debug("Refreshing Plaid accounts for institution %s", inst)
                 if should_throttle_refresh(account.plaid_account):
                     skipped_rate_limited += 1
                     logger.info(
-                        "Skipping Plaid refresh due to active cooldown | account_id=%s | institution=%s",
-                        account.account_id,
-                        account.institution_name or "Unknown",
+                        "Skipping Plaid refresh due to active cooldown | institution=%s",
+                        inst,
                     )
                     continue
-                inst = account.institution_name or "Unknown"
                 if previous_institution and inst != previous_institution:
                     time.sleep(INSTITUTION_STAGGER_SECONDS)
                 previous_institution = inst
@@ -226,8 +225,7 @@ def refresh_all_accounts():
                     if accounts_data is None:
                         skipped_rate_limited += 1
                         logger.info(
-                            "Skipping refresh due to Plaid rate limit | account_id=%s | institution=%s",
-                            account.account_id,
+                            "Skipping refresh due to Plaid rate limit | institution=%s",
                             inst,
                         )
                         continue
@@ -346,16 +344,16 @@ def refresh_all_accounts():
                             except Exception:
                                 pass
                             logger.error(
-                                "Plaid investments refresh failed for account %s: %s",
-                                account.account_id,
+                                "Plaid investments refresh failed for institution %s: %s",
+                                inst,
                                 exc,
                                 exc_info=True,
                             )
                     else:
                         logger.info(
-                            "Skipping unsupported Plaid product %s for account %s",
+                            "Skipping unsupported Plaid product %s for institution %s",
                             product_name,
-                            account.account_id,
+                            inst,
                         )
 
                 if account_updated:
@@ -444,9 +442,10 @@ def refresh_single_account(account_id):
     if not account:
         return jsonify({"status": "error", "message": "Account not found"}), 404
 
+    inst = account.institution_name or "Unknown"
     logger.info(
-        "[REFRESH][single] starting | account_id=%s | start=%s | end=%s",
-        account_id,
+        "[REFRESH][single] starting | institution=%s | start=%s | end=%s",
+        inst,
         start_date,
         end_date,
     )
@@ -511,9 +510,10 @@ def refresh_single_account(account_id):
                 and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED"
             ):
                 logger.warning(
-                    "Plaid re-auth required for account %s: %s. User must re-auth via Link update mode. "
+                    "Plaid re-auth required for institution %s (account %s): %s. User must re-auth via Link update mode. "
                     "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",
-                    account.account_id,
+                    inst,
+                    account.name,
                     err.get("plaid_error_message"),
                 )
                 return (
@@ -534,8 +534,9 @@ def refresh_single_account(account_id):
                 )
             if err:
                 logger.error(
-                    "Plaid error on single account refresh %s: %s",
-                    account.account_id,
+                    "Plaid error on single account refresh for institution %s (account %s): %s",
+                    inst,
+                    account.name,
                     err,
                 )
                 err_payload = (
@@ -574,8 +575,8 @@ def refresh_single_account(account_id):
                     account.plaid_account.last_refreshed = datetime.now()
             except Exception as exc:
                 logger.error(
-                    "Plaid investments refresh failed for account %s: %s",
-                    account.account_id,
+                    "Plaid investments refresh failed for institution %s: %s",
+                    inst,
                     exc,
                     exc_info=True,
                 )
@@ -591,9 +592,9 @@ def refresh_single_account(account_id):
                 )
         else:
             logger.info(
-                "Skipping unsupported Plaid product %s for account %s",
+                "Skipping unsupported Plaid product %s for institution %s",
                 product_name,
-                account.account_id,
+                inst,
             )
 
     updated = plaid_updated
@@ -604,8 +605,8 @@ def refresh_single_account(account_id):
         db.session.rollback()
 
     logger.info(
-        "[REFRESH][single] completed | account_id=%s | updated=%s | products=%s",
-        account_id,
+        "[REFRESH][single] completed | institution=%s | updated=%s | products=%s",
+        inst,
         updated,
         sorted(products),
     )
@@ -1193,9 +1194,10 @@ def transaction_history(account_id):
         next_offset = offset + limit if has_more else None
 
         logger.info(
-            "Retrieved %d transactions for account %s (offset: %d, total: %d)",
+            "Retrieved %d transactions for institution %s (account %s) (offset: %d, total: %d)",
             len(transaction_data),
-            account.account_id,
+            account.institution_name or "Unknown",
+            account.name,
             offset,
             total_count,
         )
@@ -1219,9 +1221,14 @@ def transaction_history(account_id):
         )
 
     except Exception as e:
+        inst = (
+            (account.institution_name or "Unknown")
+            if "account" in locals() and account
+            else account_id
+        )
         logger.error(
-            "Error in transaction_history for account %s: %s",
-            account_id,
+            "Error in transaction_history for institution %s: %s",
+            inst,
             e,
             exc_info=True,
         )
