@@ -1,8 +1,130 @@
+from datetime import date, datetime, timedelta
+
+from app.config import logger
 from app.extensions import db
+from app.models import Account, AccountHistory, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
 from flask import Blueprint, jsonify, request
+from forecast.engine import compute_forecast
+from sqlalchemy import case, func
 
 forecast = Blueprint("forecast", __name__)
+LOOKBACK_DAYS = 90
+
+
+def _parse_start_date(raw_value: str | None) -> date:
+    """Parse an ISO date string into a date instance with a fallback to today."""
+    if not raw_value:
+        return date.today()
+    try:
+        return datetime.fromisoformat(raw_value).date()
+    except ValueError as exc:
+        raise ValueError("start_date must be ISO-8601 formatted (YYYY-MM-DD).") from exc
+
+
+def _parse_horizon_days(raw_value: object) -> int:
+    """Normalize the horizon_days value into a positive integer."""
+    if raw_value is None:
+        return 30
+    try:
+        horizon = int(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("horizon_days must be an integer.") from exc
+    if horizon <= 0:
+        raise ValueError("horizon_days must be greater than zero.")
+    return horizon
+
+
+def _load_latest_snapshots(user_id: str) -> list[dict[str, object]]:
+    """Return the most recent balance snapshot for each visible account."""
+    accounts_query = db.session.query(Account).filter(
+        (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
+    )
+    if user_id:
+        accounts_query = accounts_query.filter(Account.user_id == user_id)
+    accounts = accounts_query.all()
+
+    account_ids = [account.account_id for account in accounts]
+    latest_history = []
+    if account_ids:
+        subquery = (
+            db.session.query(
+                AccountHistory.account_id,
+                func.max(AccountHistory.date).label("max_date"),
+            )
+            .filter(AccountHistory.account_id.in_(account_ids))
+            .group_by(AccountHistory.account_id)
+            .subquery()
+        )
+        latest_history = (
+            db.session.query(AccountHistory)
+            .join(
+                subquery,
+                (AccountHistory.account_id == subquery.c.account_id)
+                & (AccountHistory.date == subquery.c.max_date),
+            )
+            .all()
+        )
+
+    history_by_account = {row.account_id: row for row in latest_history}
+    today = date.today()
+    snapshots = []
+    for account in accounts:
+        history = history_by_account.get(account.account_id)
+        if history:
+            balance = float(history.balance)
+            snapshot_date = history.date
+        else:
+            balance = float(account.balance)
+            snapshot_date = today
+        snapshots.append(
+            {
+                "account_id": account.account_id,
+                "user_id": account.user_id,
+                "balance": balance,
+                "date": snapshot_date,
+            }
+        )
+
+    return snapshots
+
+
+def _load_historical_aggregates(
+    user_id: str, start_date: date
+) -> list[dict[str, object]]:
+    """Return daily inflow/outflow aggregates for the lookback window."""
+    lookback_start = start_date - timedelta(days=LOOKBACK_DAYS)
+    date_expr = func.date(Transaction.date).label("date")
+    inflow_sum = func.sum(
+        case((Transaction.amount > 0, Transaction.amount), else_=0)
+    ).label("inflow")
+    outflow_sum = func.sum(
+        case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
+    ).label("outflow")
+
+    query = (
+        db.session.query(date_expr, inflow_sum, outflow_sum)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(
+            (Transaction.is_internal.is_(False))
+            | (Transaction.is_internal.is_(None))
+        )
+        .filter(Transaction.date >= lookback_start)
+        .filter(Transaction.date <= start_date)
+    )
+    if user_id:
+        query = query.filter(Transaction.user_id == user_id)
+
+    rows = query.group_by(date_expr).order_by(date_expr).all()
+    return [
+        {
+            "date": row.date,
+            "inflow": float(row.inflow or 0),
+            "outflow": float(row.outflow or 0),
+        }
+        for row in rows
+    ]
 
 
 @forecast.route("", methods=["GET"])
@@ -22,4 +144,46 @@ def get_forecast():
         )
         return jsonify(payload), 200
     except Exception as e:  # pragma: no cover - defensive
-        return jsonify({"error": str(e)}), 500
+        logger.error("Error generating forecast payload: %s", e, exc_info=True)
+        return jsonify({"error": "Unable to load forecast data."}), 500
+
+
+@forecast.route("/compute", methods=["POST"])
+def compute_forecast_route():
+    """Compute a forecast result for the requested horizon and adjustments."""
+    payload = request.get_json(silent=True) or {}
+    user_id = payload.get("user_id") or request.args.get("user_id")
+    if not user_id:
+        return jsonify({"error": "user_id is required."}), 400
+
+    try:
+        start_date = _parse_start_date(payload.get("start_date"))
+        horizon_days = _parse_horizon_days(payload.get("horizon_days"))
+    except ValueError as exc:
+        logger.warning("Invalid forecast compute request: %s", exc)
+        return jsonify({"error": str(exc)}), 400
+
+    adjustments = payload.get("adjustments", [])
+    if adjustments is None:
+        adjustments = []
+    if not isinstance(adjustments, list):
+        return jsonify({"error": "adjustments must be a list."}), 400
+
+    try:
+        latest_snapshots = _load_latest_snapshots(str(user_id))
+        historical_aggregates = _load_historical_aggregates(str(user_id), start_date)
+        result = compute_forecast(
+            user_id=str(user_id),
+            start_date=start_date,
+            horizon_days=horizon_days,
+            latest_snapshots=latest_snapshots,
+            historical_aggregates=historical_aggregates,
+            adjustments=adjustments,
+            metadata={
+                "lookback_days": LOOKBACK_DAYS,
+            },
+        )
+        return jsonify(result), 200
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.error("Forecast compute failed: %s", exc, exc_info=True)
+        return jsonify({"error": "Unable to compute forecast."}), 500
