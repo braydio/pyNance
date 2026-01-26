@@ -51,6 +51,22 @@ function getNetDashPosition(chart, dataIndex) {
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
 }
 
+/**
+ * Resolve the pixel position for the zero line at a given label index.
+ *
+ * @param {import('chart.js').Chart} chart - The chart instance.
+ * @param {number} dataIndex - Active label index.
+ * @returns {{x: number, y: number} | null} Pixel coordinates for y=0.
+ */
+function getZeroLinePosition(chart, dataIndex) {
+  if (!chart?.getDatasetMeta) return null
+  const firstMeta = chart.getDatasetMeta(0)
+  const bar = firstMeta?.data?.[dataIndex]
+  const yScale = chart.scales?.y
+  if (!bar || !yScale) return null
+  return { x: bar.x, y: yScale.getPixelForValue(0) }
+}
+
 function registerTooltipPositioner(name, positioner) {
   const targets = [Tooltip?.positioners, Chart?.Tooltip?.positioners]
   targets.forEach((target) => {
@@ -59,9 +75,9 @@ function registerTooltipPositioner(name, positioner) {
 }
 
 // --- Safe registration for custom tooltip positioner ---
-registerTooltipPositioner('netDash', function (items, eventPosition) {
+registerTooltipPositioner('zeroLine', function (items, eventPosition) {
   /**
-   * Anchor tooltips to the net indicator dash instead of the hover cursor.
+   * Anchor tooltips to the zero line instead of the hover cursor.
    *
    * @param {Array} items - Tooltip items for the active index.
    * @param {{x: number, y: number}} eventPosition - Fallback cursor position.
@@ -70,7 +86,7 @@ registerTooltipPositioner('netDash', function (items, eventPosition) {
   if (!items?.length) return eventPosition
   const chart = items[0]?.chart
   const dataIndex = items[0].dataIndex
-  const position = getNetDashPosition(chart, dataIndex)
+  const position = getZeroLinePosition(chart, dataIndex)
   return position ?? eventPosition
 })
 // ----------------------------------------------------------------------
@@ -369,7 +385,7 @@ const netDashPlugin = {
 const tooltipSnapPlugin = {
   id: 'tooltipSnapPlugin',
   /**
-   * Force the tooltip caret to align with the net indicator dash.
+   * Force the tooltip caret to align with the zero line.
    *
    * @param {import('chart.js').Chart} chart - Chart instance.
    * @param {{ tooltip?: { dataPoints?: Array<{ dataIndex: number }>, caretX?: number, caretY?: number, x?: number, y?: number } }} args - Tooltip draw args.
@@ -379,7 +395,7 @@ const tooltipSnapPlugin = {
     const tooltip = args?.tooltip
     const dataIndex = tooltip?.dataPoints?.[0]?.dataIndex
     if (dataIndex == null) return
-    const position = getNetDashPosition(chart, dataIndex)
+    const position = getZeroLinePosition(chart, dataIndex)
     if (!position) return
     tooltip.caretX = position.x
     tooltip.caretY = position.y
@@ -591,7 +607,7 @@ async function renderChart() {
           bodySpacing: 6,
           titleSpacing: 4,
           titleMarginBottom: 6,
-          position: 'netDash',
+          position: 'zeroLine',
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {
