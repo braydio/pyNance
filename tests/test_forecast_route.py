@@ -19,7 +19,11 @@ sys.modules["app"] = app_pkg
 
 # ---- app.config/environment/extensions stubs ----
 config_stub = types.ModuleType("app.config")
-config_stub.logger = types.SimpleNamespace(info=lambda *a, **k: None)
+config_stub.logger = types.SimpleNamespace(
+    info=lambda *a, **k: None,
+    warning=lambda *a, **k: None,
+    error=lambda *a, **k: None,
+)
 config_stub.plaid_client = None
 config_stub.FLASK_ENV = "test"
 sys.modules["app.config"] = config_stub
@@ -108,6 +112,12 @@ class ColumnStub:
     def __le__(self, other):
         return self
 
+    def __gt__(self, other):
+        return self
+
+    def __lt__(self, other):
+        return self
+
 
 class AccountHistory:
     date = ColumnStub()
@@ -116,6 +126,11 @@ class AccountHistory:
 
 models_stub.AccountHistory = AccountHistory
 models_stub.Account = type("Account", (), {})
+models_stub.Transaction = type(
+    "Transaction",
+    (),
+    {"date": ColumnStub(), "amount": ColumnStub(), "is_internal": ColumnStub()},
+)
 sys.modules["app.models"] = models_stub
 
 # ---- Import and load the blueprint ----
@@ -194,3 +209,116 @@ def test_forecast_route_missing_data(client, monkeypatch):
     resp = client.get("/api/forecast")
     assert resp.status_code == 200
     assert resp.get_json()["labels"] == []
+
+
+def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
+    expected_payload = {
+        "timeline": [],
+        "summary": None,
+        "cashflows": [],
+        "adjustments": [],
+        "metadata": {},
+    }
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["adjustments"] = kwargs["adjustments"]
+        return expected_payload
+
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_latest_snapshots",
+        lambda user_id: [
+            {
+                "account_id": "acc",
+                "user_id": user_id,
+                "balance": 120.0,
+                "date": "2024-01-01",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_historical_aggregates",
+        lambda user_id, start_date: [
+            {"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}
+        ],
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-123",
+            "start_date": "2024-01-01",
+            "horizon_days": 5,
+            "adjustments": [],
+        },
+    )
+
+    assert resp.status_code == 200
+    assert captured["adjustments"] == []
+    assert resp.get_json() == expected_payload
+
+
+def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
+    adjustments = [
+        {
+            "label": "Manual bonus",
+            "amount": 250.0,
+            "date": "2024-01-02",
+            "adjustment_type": "manual",
+        },
+        {
+            "label": "Rent adjustment",
+            "amount": -120.0,
+            "date": "2024-01-05",
+            "adjustment_type": "manual",
+            "frequency": "weekly",
+        },
+    ]
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["adjustments"] = kwargs["adjustments"]
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": [],
+            "metadata": {},
+        }
+
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_latest_snapshots",
+        lambda user_id: [
+            {
+                "account_id": "acc",
+                "user_id": user_id,
+                "balance": 99.0,
+                "date": "2024-01-01",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_historical_aggregates",
+        lambda user_id, start_date: [
+            {"date": "2023-12-30", "inflow": 10.0, "outflow": 2.0}
+        ],
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-456",
+            "start_date": "2024-01-01",
+            "horizon_days": 10,
+            "adjustments": adjustments,
+        },
+    )
+
+    assert resp.status_code == 200
+    assert captured["adjustments"] == adjustments
