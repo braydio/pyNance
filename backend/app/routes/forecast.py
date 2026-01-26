@@ -107,8 +107,7 @@ def _load_historical_aggregates(
         .join(Account, Transaction.account_id == Account.account_id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         .filter(
-            (Transaction.is_internal.is_(False))
-            | (Transaction.is_internal.is_(None))
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
         )
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
