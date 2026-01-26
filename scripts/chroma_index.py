@@ -26,6 +26,8 @@ def parse_args():
     )
     parser.add_argument("--host", default=os.getenv("CHROMA_HOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("CHROMA_PORT", 8055)))
+    parser.add_argument("--tenant", default=os.getenv("CHROMA_TENANT"))
+    parser.add_argument("--database", default=os.getenv("CHROMA_DATABASE"))
     parser.add_argument(
         "--model", default=os.getenv("CHROMA_MODEL", "all-MiniLM-L6-v2")
     )
@@ -36,7 +38,13 @@ def parse_args():
 
 def main():
     args = parse_args()
-    client = chromadb.HttpClient(host=args.host, port=args.port)
+    source_root = os.path.abspath(args.source)
+    client_kwargs = {"host": args.host, "port": args.port}
+    if args.tenant:
+        client_kwargs["tenant"] = args.tenant
+    if args.database:
+        client_kwargs["database"] = args.database
+    client = chromadb.HttpClient(**client_kwargs)
     embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
         model_name=args.model
     )
@@ -67,7 +75,9 @@ def main():
                 if not content.strip():
                     continue
 
-                metadata_base = extract_metadata(path, content)
+                metadata_base = extract_metadata(
+                    os.path.abspath(path), content, source_root=source_root
+                )
                 chunks = chunk_text(content)
                 tags = metadata_base.get("tags", "")
 
