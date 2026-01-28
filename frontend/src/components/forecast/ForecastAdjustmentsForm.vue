@@ -4,6 +4,12 @@
     <form @submit.prevent="submitAdjustment" class="form-grid">
       <input v-model="label" type="text" class="input" placeholder="Label" required />
       <input v-model.number="amount" type="number" class="input" placeholder="Amount" required />
+      <select v-model="frequency" class="input">
+        <option value="once">One-time</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option value="monthly">Monthly</option>
+      </select>
       <button type="submit" class="submit-button">Add</button>
     </form>
   </div>
@@ -16,12 +22,22 @@ const emit = defineEmits(['add-adjustment'])
 
 const label = ref('')
 const amount = ref(0)
+const frequency = ref('once')
 
+/**
+ * Emit the new adjustment payload to the parent layout.
+ */
 function submitAdjustment() {
   if (label.value && amount.value) {
-    emit('add-adjustment', { label: label.value, amount: amount.value })
+    const normalizedFrequency = frequency.value === 'once' ? null : frequency.value
+    emit('add-adjustment', {
+      label: label.value,
+      amount: amount.value,
+      frequency: normalizedFrequency,
+    })
     label.value = ''
     amount.value = 0
+    frequency.value = 'once'
   }
 }
 </script>
@@ -43,7 +59,7 @@ function submitAdjustment() {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr auto;
+  grid-template-columns: 2fr 1fr 1fr auto;
   gap: 0.5rem;
 }
 

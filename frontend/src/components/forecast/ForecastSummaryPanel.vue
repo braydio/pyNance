@@ -8,17 +8,27 @@
       </div>
       <div>
         <p class="label">Manual Income</p>
-        <input type="number" class="input" :value="localIncome"
-          @input="emit('update:manualIncome', +$event.target.value)" />
+        <input
+          type="number"
+          class="input"
+          :value="localIncome"
+          @input="emit('update:manualIncome', +$event.target.value)"
+        />
       </div>
       <div>
         <p class="label">Liability Rate</p>
-        <input type="number" class="input" :value="localRate"
-          @input="emit('update:liabilityRate', +$event.target.value)" />
+        <input
+          type="number"
+          class="input"
+          :value="localRate"
+          @input="emit('update:liabilityRate', +$event.target.value)"
+        />
       </div>
     </div>
     <div class="summary-footer">
-      <p>Net Delta: <strong>{{ netDelta }}</strong></p>
+      <p>
+        Net Delta: <strong>{{ netDelta }}</strong>
+      </p>
     </div>
   </div>
 </template>
@@ -30,7 +40,7 @@ const props = defineProps({
   currentBalance: Number,
   manualIncome: Number,
   liabilityRate: Number,
-  viewType: String
+  viewType: String,
 })
 
 const emit = defineEmits(['update:manualIncome', 'update:liabilityRate'])
@@ -38,9 +48,10 @@ const emit = defineEmits(['update:manualIncome', 'update:liabilityRate'])
 const localIncome = toRef(props, 'manualIncome')
 const localRate = toRef(props, 'liabilityRate')
 
-const netDelta = computed(() => {
-  return ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2)
-})
+/**
+ * Provide a simple net delta hint based on manual adjustments.
+ */
+const netDelta = computed(() => ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2))
 </script>
 
 <style scoped>

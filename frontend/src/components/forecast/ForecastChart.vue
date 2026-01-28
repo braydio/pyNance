@@ -7,23 +7,23 @@
         Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
       </button>
     </div>
-    <canvas ref="chartCanvas"></canvas>
+    <div v-if="!hasData" class="chart-empty">Forecast chart data is not available yet.</div>
+    <canvas v-else ref="chartCanvas"></canvas>
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Chart, registerables } from 'chart.js'
-import { useForecastEngine } from '@/composables/useForecastEngine'
 
 Chart.register(...registerables)
 
 const props = defineProps({
-  forecastItems: Array,
+  timeline: {
+    type: Array,
+    default: () => [],
+  },
   viewType: String,
-  manualIncome: Number,
-  liabilityRate: Number,
-  accountHistory: Array,
 })
 
 const emit = defineEmits(['update:viewType'])
@@ -31,38 +31,48 @@ const emit = defineEmits(['update:viewType'])
 const chartCanvas = ref(null)
 let chartInstance = null
 
-const engine = useForecastEngine(
-  ref(props.viewType),
-  props.forecastItems,
-  props.accountHistory,
-  props.manualIncome,
-  props.liabilityRate
-)
+const labels = computed(() => props.timeline.map((point) => point.label))
+const forecastLine = computed(() => props.timeline.map((point) => point.forecast_balance))
+const actualLine = computed(() => props.timeline.map((point) => point.actual_balance))
+const hasData = computed(() => labels.value.length > 0)
 
 function toggleView() {
   emit('update:viewType', props.viewType === 'Month' ? 'Year' : 'Month')
 }
 
+/**
+ * Tear down chart resources to avoid dangling canvas instances.
+ */
+function destroyChart() {
+  if (chartInstance) {
+    chartInstance.destroy()
+    chartInstance = null
+  }
+}
+
+/**
+ * Render the forecast chart with latest timeline data.
+ */
 function renderChart() {
   if (!chartCanvas.value) return
   const ctx = chartCanvas.value.getContext('2d')
   if (!ctx) return
-  if (chartInstance) chartInstance.destroy()
+  destroyChart()
 
   chartInstance = new Chart(ctx, {
     type: 'line',
     data: {
-      labels: engine.labels.value,
+      labels: labels.value,
       datasets: [
         {
           label: 'Forecast',
-          data: engine.forecastLine.value,
+          data: forecastLine.value,
           borderColor: '#3B82F6',
           tension: 0.3,
         },
         {
           label: 'Actual',
-          data: engine.actualLine.value,
+          data: actualLine.value,
           borderColor: '#10B981',
           tension: 0.3,
         },
@@ -84,10 +94,8 @@ function renderChart() {
 }
 
 onMounted(renderChart)
-watch(
-  () => [engine.labels.value, engine.forecastLine.value, engine.actualLine.value],
-  renderChart
-)
+onBeforeUnmount(destroyChart)
+watch(() => [labels.value, forecastLine.value, actualLine.value], renderChart)
 </script>
 
 <style scoped>
@@ -125,5 +133,12 @@ watch(
 
 .toggle-button:hover {
   background-color: var(--hover-bg);
+}
+
+.chart-empty {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 </style>

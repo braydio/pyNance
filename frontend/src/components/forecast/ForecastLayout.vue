@@ -1,11 +1,28 @@
 <template>
   <div class="forecast-layout p-6 bg-gray-50 space-y-6">
-    <ForecastSummaryPanel :current-balance="currentBalance" :manual-income="manualIncome"
-      :liability-rate="liabilityRate" :view-type="viewType" @update:manualIncome="manualIncome = $event"
-      @update:liabilityRate="liabilityRate = $event" />
+    <div v-if="error" class="card glass text-sm text-red-600">
+      {{ error.message }}
+    </div>
+    <div v-else-if="isLoading" class="card glass text-sm text-gray-500">
+      Loading forecast data...
+    </div>
+    <div v-else-if="!hasForecastData" class="card glass text-sm text-gray-500">
+      Forecast data is not available yet. Add adjustments or try again later.
+    </div>
+    <ForecastSummaryPanel
+      :current-balance="currentBalance"
+      :manual-income="manualIncome"
+      :liability-rate="liabilityRate"
+      :view-type="viewType"
+      @update:manualIncome="manualIncome = $event"
+      @update:liabilityRate="liabilityRate = $event"
+    />
 
-    <ForecastChart :forecast-items="forecastItems" :account-history="accountHistory" :manual-income="manualIncome"
-      :liability-rate="liabilityRate" :view-type="viewType" @update:viewType="viewType = $event" />
+    <ForecastChart
+      :timeline="timeline"
+      :view-type="viewType"
+      @update:viewType="viewType = $event"
+    />
 
     <ForecastBreakdown :forecast-items="forecastItems" :view-type="viewType" />
 
@@ -14,37 +31,53 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import ForecastChart from './ForecastChart.vue'
 import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
-import { useForecastData } from '@/composables/useForecastData'
-import { computed } from 'vue'
+import {
+  type ForecastAdjustmentInput,
+  type ForecastViewType,
+  useForecastData,
+} from '@/composables/useForecastData'
 
-const viewType = ref('Month')
+const viewType = ref<ForecastViewType>('Month')
 const currentBalance = ref(0)
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
+const adjustments = ref<ForecastAdjustmentInput[]>([])
+const userId = ref(import.meta.env.VITE_USER_ID_PLAID || '')
 
-const { labels, forecast, actuals, fetchData } = useForecastData(
+const { timeline, summary, cashflows, loading, error, fetchData } = useForecastData({
   viewType,
   manualIncome,
-  liabilityRate
-)
+  liabilityRate,
+  adjustments,
+  userId,
+})
 
 const forecastItems = computed(() =>
-  labels.value.map((label, i) => ({ label, amount: forecast.value[i] }))
+  cashflows.value.map((item) => ({
+    label: item.label,
+    amount: item.amount,
+  }))
 )
-const accountHistory = computed(() =>
-  labels.value.map((label, i) => ({ date: label, balance: actuals.value[i] ?? 0 }))
-)
+const hasForecastData = computed(() => timeline.value.length > 0)
+const isLoading = computed(() => loading.value)
+
+watch(summary, (value) => {
+  currentBalance.value = value?.starting_balance ?? 0
+})
 
 onMounted(fetchData)
-watch([viewType, manualIncome, liabilityRate], fetchData)
+watch([viewType, manualIncome, liabilityRate, adjustments], fetchData)
 
-function addAdjustment(adjustment) {
-  forecastItems.value.push(adjustment)
+/**
+ * Capture adjustment inputs so the compute request can include them.
+ */
+function addAdjustment(adjustment: ForecastAdjustmentInput) {
+  adjustments.value = [...adjustments.value, adjustment]
 }
 </script>
 
