@@ -36,7 +36,7 @@ The forecasting module projects future account balances and overlays them agains
 - [x] Liability rate override handling
 - [x] Layout + styling integration with `Dashboard.vue`
 - [x] Mock engine hooked to `ForecastPage.vue`
-- [x] `/api/forecast/calculate` (POST) scaffolded
+- [x] `/api/forecast/compute` (POST) scaffolded
 - [ ] Live engine integration w/ real transactions
 - [ ] Add investment return modeling logic
 - [ ] Discrepancy analytics pipeline
@@ -49,7 +49,6 @@ The forecasting module projects future account balances and overlays them agains
 ### `GET /api/forecast/summary`
 
 - **Query Params**:
-
   - `user_id`
   - `viewType`: `'Month' | 'Year'`
   - `manualIncome` (optional)
@@ -57,16 +56,15 @@ The forecasting module projects future account balances and overlays them agains
 
 - **Returns**: Labels, forecast\[], actuals\[], metadata
 
-### `POST /api/forecast/calculate`
+### `POST /api/forecast/compute`
 
 - **Body**:
-
   - `user_id`
-  - `viewType`
-  - `manualIncome`
-  - `liabilityRate`
+  - `start_date`
+  - `horizon_days`
+  - `adjustments`
 
-- **Returns**: Same format as `/summary`, supports advanced input configs
+- **Returns**: `ForecastResult` payload with `timeline`, `summary`, `cashflows`, and `adjustments`
 
 ---
 

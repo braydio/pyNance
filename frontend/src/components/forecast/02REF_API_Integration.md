@@ -10,12 +10,11 @@ This module defines the **forecast engine API design**, backend routing strategy
 
 - Pulls fresh data on every request.
 - Uses:
-
   - `recurring_transactions`
   - `account_history`
   - optional: `transactions` (for fallback actuals)
 
-- Manual inputs like `manualIncome`, `liabilityRate` passed via query params
+- Manual inputs like `manualIncome`, `liabilityRate` sent as adjustments to the compute payload
 
 ### ❌ Optional Later: `forecast_snapshots` Table (for caching)
 
@@ -50,37 +49,58 @@ This module defines the **forecast engine API design**, backend routing strategy
 }
 ```
 
+### `POST /api/forecast/compute`
+
+| Field          | Type   | Description                             |
+| -------------- | ------ | --------------------------------------- |
+| `user_id`      | string | Required user identifier                |
+| `start_date`   | string | Optional ISO start date                 |
+| `horizon_days` | number | Optional horizon length in days         |
+| `adjustments`  | array  | Manual/recurring adjustments (optional) |
+
+#### Example payload:
+
+```json
+{
+  "user_id": "user-123",
+  "start_date": "2024-01-01",
+  "horizon_days": 30,
+  "adjustments": [
+    {
+      "label": "Manual income",
+      "amount": 200,
+      "date": "2024-01-01",
+      "frequency": "daily",
+      "adjustment_type": "manual"
+    }
+  ]
+}
+```
+
 ---
 
 ## ⚙️ Backend Flow
 
 1. 🔐 **Authenticate User**
-
    - Derive `user_id` via token/session
 
 2. 📥 **Pull Inputs**
-
    - From DB:
-
      - `recurring_transactions`
      - `account_history`
      - `transactions` (optional)
 
    - From frontend:
-
      - `manualIncome`, `liabilityRate`
 
 3. 🧠 **Generate Forecast Line**
-
    - Recurrence-based projection per date
 
 4. 🧮 **Generate Actuals Line**
-
    - Prefer `account_history`
    - Fallback to `sum(transactions by date)`
 
 5. 🚀 **Return Aligned Arrays**
-
    - Includes metadata for diagnostics/debug
 
 ---

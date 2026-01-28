@@ -1,19 +1,20 @@
 <template>
   <div class="breakdown-panel">
     <h3 class="breakdown-header">Forecast Breakdown</h3>
-    <ul class="breakdown-list">
+    <ul v-if="forecastItems.length" class="breakdown-list">
       <li v-for="(item, i) in forecastItems" :key="i">
         <span class="label">{{ item.label }}</span>
         <span class="amount">{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount) }}</span>
       </li>
     </ul>
+    <p v-else class="breakdown-empty">No forecast cashflows available.</p>
   </div>
 </template>
 
 <script setup>
 defineProps({
   forecastItems: Array,
-  viewType: String
+  viewType: String,
 })
 </script>
 
@@ -50,5 +51,10 @@ defineProps({
 
 .amount {
   font-weight: bold;
+}
+
+.breakdown-empty {
+  font-size: 0.9rem;
+  color: var(--text-muted);
 }
 </style>
