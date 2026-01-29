@@ -1,7 +1,7 @@
 <template>
-  <div class="section-container mb-4">
-    <h3 class="text-sm font-semibold mb-3">Choose data to share</h3>
-    <div class="grid gap-3">
+  <fieldset class="section-container scope-group">
+    <legend class="text-sm font-semibold">Choose data to share</legend>
+    <div class="scope-options" role="group" aria-label="Choose data to share">
       <button
         v-for="product in availableProducts"
         :key="product.id"
@@ -15,7 +15,7 @@
         <span class="text-xs text-muted">{{ product.helper }}</span>
       </button>
     </div>
-  </div>
+  </fieldset>
 </template>
 
 <script setup>
@@ -23,7 +23,7 @@ const availableProducts = [
   {
     id: 'transactions',
     label: 'Transactions',
-    helper: 'Share account balances and transaction history for cash flow insights.',
+    helper: 'Share balances and transaction history for cash flow insights.',
   },
   {
     id: 'investments',
@@ -64,6 +64,24 @@ function toggle(product) {
 .text-muted {
   color: var(--color-text-muted);
 }
+.scope-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  border: 0;
+  padding: 0;
+}
+
+.scope-group > legend {
+  padding: 0;
+}
+
+.scope-options {
+  display: grid;
+  gap: 0.75rem;
+}
+
 .scope-card {
   display: flex;
   flex-direction: column;

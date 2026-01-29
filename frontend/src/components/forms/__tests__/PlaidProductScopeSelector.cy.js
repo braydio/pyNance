@@ -14,7 +14,7 @@ describe('PlaidProductScopeSelector', () => {
 
     cy.contains('Choose data to share').should('be.visible')
     cy.contains('Transactions').should('be.visible')
-    cy.contains('Share account balances and transaction history for cash flow insights.').should(
+    cy.contains('Share balances and transaction history for cash flow insights.').should(
       'be.visible',
     )
     cy.contains('Investments').should('be.visible')
