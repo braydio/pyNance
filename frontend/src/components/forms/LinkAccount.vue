@@ -52,7 +52,10 @@
                 <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
                 <p class="text-xs text-muted">Choose product scope</p>
               </div>
-              <PlaidProductScopeSelector v-model="selectedProductsModel" />
+              <PlaidProductScopeSelector
+                :model-value="selectedProducts"
+                @update:model-value="updateSelectedProducts"
+              />
             </section>
 
             <section class="border-t border-[var(--divider)] pt-4">
@@ -66,7 +69,7 @@
               <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
                 <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
                 <LinkProviderLauncher
-                  :selected-products="selectedProductsModel"
+                  :selected-products="selectedProducts"
                   :user-id="userID"
                   @refresh="handleRefresh"
                 >
@@ -92,7 +95,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, toRefs, watch } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
@@ -106,11 +109,7 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['refreshAccount', 'update:selectedProducts'])
-
-const selectedProductsModel = computed({
-  get: () => props.selectedProducts,
-  set: (value) => emit('update:selectedProducts', value),
-})
+const { selectedProducts } = toRefs(props)
 const showDialog = ref(false)
 const userID = import.meta.env.VITE_USER_ID_PLAID || ''
 const dialogRef = ref(null)
@@ -119,13 +118,23 @@ const previousFocusElement = ref(null)
 const previousBodyOverflow = ref('')
 
 const selectedSummary = computed(() =>
-  selectedProductsModel.value.length
-    ? selectedProductsModel.value.map(formatProductLabel).join(', ')
-    : '',
+  selectedProducts.value.length ? selectedProducts.value.map(formatProductLabel).join(', ') : '',
 )
 
 /**
+ * Emit updates to the selected Plaid products.
+ *
+ * @param {string[]} products - Updated list of selected products.
+ */
+function updateSelectedProducts(products) {
+  emit('update:selectedProducts', products)
+}
+
+/**
  * Format Plaid product identifiers for human-readable labels.
+ *
+ * @param {string} product - Plaid product identifier.
+ * @returns {string} Readable product label.
  */
 function formatProductLabel(product) {
   return product.charAt(0).toUpperCase() + product.slice(1)
