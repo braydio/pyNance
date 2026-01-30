@@ -212,4 +212,54 @@ describe('TopAccountSnapshot', () => {
     await nextTick()
     expect(wrapper.vm.showGroupMenu).toBe(false)
   })
+
+  it('styles credit balances as negative and non-credit balances by sign', async () => {
+    const customAccounts = [
+      {
+        id: 'credit-pos',
+        account_id: 'credit-pos',
+        name: 'Credit Positive',
+        adjusted_balance: 120,
+        subtype: 'credit card',
+      },
+      {
+        id: 'credit-neg',
+        account_id: 'credit-neg',
+        name: 'Credit Negative',
+        adjusted_balance: -55,
+        type: 'credit',
+      },
+      {
+        id: 'debit-pos',
+        account_id: 'debit-pos',
+        name: 'Checking Positive',
+        adjusted_balance: 45,
+        type: 'depository',
+      },
+      {
+        id: 'debit-neg',
+        account_id: 'debit-neg',
+        name: 'Savings Negative',
+        adjusted_balance: -10,
+        subtype: 'savings',
+      },
+    ]
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: customAccounts }],
+        activeGroupId: 'group-1',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: sparklineStub } },
+    })
+    await nextTick()
+    const amounts = wrapper.findAll('.bs-account-container .bs-amount')
+    expect(amounts).toHaveLength(4)
+    expect(amounts[0].classes()).toContain('bs-balance-neg')
+    expect(amounts[1].classes()).toContain('bs-balance-neg')
+    expect(amounts[2].classes()).toContain('bs-balance-pos')
+    expect(amounts[3].classes()).toContain('bs-balance-neg')
+  })
 })

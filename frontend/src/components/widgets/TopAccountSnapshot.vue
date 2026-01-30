@@ -233,7 +233,9 @@
               <AccountSparkline :account-id="accountId(account)" />
             </div>
             <div class="bs-amount-section">
-              <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+              <span class="bs-amount" :class="balanceClass(account)">{{
+                format(account.adjusted_balance)
+              }}</span>
               <X
                 v-if="isEditingGroups"
                 class="bs-account-delete"
@@ -356,7 +358,9 @@
               <AccountSparkline :account-id="accountId(account)" />
             </div>
             <div class="bs-amount-section">
-              <span class="bs-amount">{{ format(account.adjusted_balance) }}</span>
+              <span class="bs-amount" :class="balanceClass(account)">{{
+                format(account.adjusted_balance)
+              }}</span>
             </div>
           </div>
           <div v-if="openAccountId === accountId(account)" class="bs-details-row">
@@ -679,6 +683,18 @@ const spectrum = [
   'var(--color-accent-blue)',
 ]
 
+/**
+ * Determine whether an account should be treated as a credit account for balance styling.
+ * Credit accounts should always show negative (red) balance styling regardless of amount sign.
+ */
+function isCreditAccount(account) {
+  if (!account || typeof account !== 'object') return false
+  const creditHints = [account.subtype, account.type, account.account_type]
+    .filter(Boolean)
+    .map((value) => String(value).toLowerCase())
+  return creditHints.some((value) => value.includes('credit'))
+}
+
 /** Return accent color for an account */
 function accentColor(account, index) {
   if (props.useSpectrum) {
@@ -693,6 +709,24 @@ function accentColor(account, index) {
     return map[subtype] || spectrum[index % spectrum.length]
   }
   return account.adjusted_balance >= 0 ? 'var(--color-accent-cyan)' : 'var(--color-accent-yellow)'
+}
+
+/**
+ * Provide balance styling based on account type and balance polarity.
+ */
+function balanceClass(account) {
+  const balance = Number(account?.adjusted_balance) || 0
+  if (isCreditAccount(account)) {
+    // Credit accounts represent liabilities, so always render them as negative (red).
+    return 'bs-balance-neg'
+  }
+  if (balance > 0) {
+    return 'bs-balance-pos'
+  }
+  if (balance < 0) {
+    return 'bs-balance-neg'
+  }
+  return ''
 }
 
 function setActiveGroup(id) {
@@ -1904,7 +1938,15 @@ defineExpose({
   padding-right: 0.13em;
   margin-left: 0.2em;
   word-break: keep-all;
-  color: var(--accent, var(--color-accent-cyan));
+  color: var(--color-text-light);
+}
+
+.bs-balance-pos {
+  color: var(--color-accent-green);
+}
+
+.bs-balance-neg {
+  color: var(--color-accent-red);
 }
 
 .bs-empty {
