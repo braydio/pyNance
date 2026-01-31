@@ -68,7 +68,7 @@ charts and widgets. Review the default theme for the full list.
 variables are available everywhere, including in component scoped styles.
 
 ```css
-@import "../../styles/global-colors.css";
+@import '../../styles/global-colors.css';
 @tailwind base;
 ```
 

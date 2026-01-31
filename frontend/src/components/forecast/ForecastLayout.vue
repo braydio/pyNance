@@ -61,7 +61,7 @@ const forecastItems = computed(() =>
   cashflows.value.map((item) => ({
     label: item.label,
     amount: item.amount,
-  }))
+  })),
 )
 const hasForecastData = computed(() => timeline.value.length > 0)
 const isLoading = computed(() => loading.value)
