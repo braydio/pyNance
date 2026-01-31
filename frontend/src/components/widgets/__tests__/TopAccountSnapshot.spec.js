@@ -262,4 +262,60 @@ describe('TopAccountSnapshot', () => {
     expect(amounts[2].classes()).toContain('bs-balance-pos')
     expect(amounts[3].classes()).toContain('bs-balance-neg')
   })
+
+  it('shows utilization only for credit accounts with a limit', async () => {
+    const customAccounts = [
+      {
+        id: 'credit-limit',
+        account_id: 'credit-limit',
+        name: 'Credit Limit',
+        adjusted_balance: -2100,
+        subtype: 'credit card',
+        limit: 6500,
+      },
+      {
+        id: 'credit-no-limit',
+        account_id: 'credit-no-limit',
+        name: 'Credit No Limit',
+        adjusted_balance: -800,
+        type: 'credit',
+      },
+      {
+        id: 'debit-limit',
+        account_id: 'debit-limit',
+        name: 'Checking',
+        adjusted_balance: 500,
+        type: 'depository',
+        credit_limit: 1500,
+      },
+    ]
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: customAccounts }],
+        activeGroupId: 'group-1',
+      }),
+    )
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: sparklineStub } },
+    })
+    await nextTick()
+
+    const utilizationBlocks = wrapper.findAll('.bs-utilization')
+    expect(utilizationBlocks).toHaveLength(1)
+    expect(utilizationBlocks[0].text()).toContain('Utilization')
+    expect(utilizationBlocks[0].text()).toContain('$2,100.00')
+    expect(utilizationBlocks[0].text()).toContain('$6,500.00')
+    expect(utilizationBlocks[0].text()).toContain('32%')
+
+    const creditNoLimitRow = wrapper
+      .findAll('.bs-account-container')
+      .find((row) => row.text().includes('Credit No Limit'))
+    expect(creditNoLimitRow?.find('.bs-utilization').exists()).toBe(false)
+
+    const debitLimitRow = wrapper
+      .findAll('.bs-account-container')
+      .find((row) => row.text().includes('Checking'))
+    expect(debitLimitRow?.find('.bs-utilization').exists()).toBe(false)
+  })
 })
