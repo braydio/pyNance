@@ -1042,12 +1042,7 @@ const totalValueClass = computed(() => {
  * Format a currency value without accounting-style parentheses.
  */
 
-
-
-
-
-
- function formatCurrency(val) {
+function formatCurrency(val) {
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -1061,7 +1056,7 @@ const totalValueClass = computed(() => {
 /**
  * Format a currency value using accounting-style parentheses for negatives.
  */
-  
+
 const format = (val) => {
   if (typeof val !== 'number') return ''
   if (val < 0) {
