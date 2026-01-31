@@ -1,28 +1,64 @@
 name: scip-index
+
 on: [push, workflow_dispatch]
+
 jobs:
   index:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
 
-      # TypeScript/JS
+      # -------------------------
+      # TypeScript / JavaScript
+      # -------------------------
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
-      - run: npm i -g @sourcegraph/scip-typescript
-      - run: npm ci || true
-        working-directory: frontend
-      - run: scip-typescript index
-        working-directory: frontend
-      - run: tar -czf scip-ts.tar.gz -C frontend index.scip || true
+        with:
+          node-version: '18'
 
+      - name: Install frontend dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Install SCIP TypeScript indexer
+        run: npm install -g @sourcegraph/scip-typescript
+
+      - name: Generate TypeScript SCIP index
+        run: scip-typescript index --project tsconfig.json
+        working-directory: frontend
+
+      - name: Package TypeScript SCIP index
+        run: |
+          test -f frontend/index.scip
+          tar -czf scip-ts.tar.gz -C frontend index.scip
+
+      # -------------------------
       # Python
+      # -------------------------
       - uses: actions/setup-python@v5
-        with: { python-version: '3.11' }
-      - run: pip install scip-python
-      - run: scip-python index .
-      - run: tar -czf scip-py.tar.gz index.scip || true
+        with:
+          python-version: '3.11'
 
+      - name: Install Python project dependencies
+        run: |
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          fi
+
+      - name: Install SCIP Python indexer
+        run: pip install scip-python
+
+      - name: Generate Python SCIP index
+        run: scip-python index src
+
+      - name: Package Python SCIP index
+        run: |
+          test -f index.scip
+          tar -czf scip-py.tar.gz index.scip
+
+      # -------------------------
+      # Upload artifacts
+      # -------------------------
       - uses: actions/upload-artifact@v4
         with:
           name: scip-indexes
