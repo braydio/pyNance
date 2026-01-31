@@ -288,7 +288,7 @@ function mapSeriesToDisplay(labels, fullLabels, fullSeries) {
   const labelIndex = new Map(fullLabels.map((label, index) => [label, index]))
   return labels.map((label) => {
     const idx = labelIndex.get(label)
-    return idx == null ? null : fullSeries[idx] ?? null
+    return idx == null ? null : (fullSeries[idx] ?? null)
   })
 }
 
@@ -329,7 +329,7 @@ function buildComparisonSeries(labels, data, ctx) {
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
-      return parsed ? byDay.get(parsed.getDate()) ?? null : null
+      return parsed ? (byDay.get(parsed.getDate()) ?? null) : null
     })
   }
 

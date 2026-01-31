@@ -22,7 +22,9 @@ DEFAULT_LLM_MODEL = os.getenv("OLLAMA_LLM_MODEL")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Query ChromaDB for similar documents.")
+    parser = argparse.ArgumentParser(
+        description="Query ChromaDB for similar documents."
+    )
     parser.add_argument("-q", "--query", help="Run a single query and exit.")
     parser.add_argument("-n", "--count", type=int, default=DEFAULT_COUNT)
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
@@ -161,9 +163,7 @@ def prompt_options():
 
 
 def handle_question(args, collection, question, options_text):
-    documents, metadatas, distances = query_collection(
-        collection, question, args.count
-    )
+    documents, metadatas, distances = query_collection(collection, question, args.count)
     if not documents:
         print("No relevant context found.")
         return

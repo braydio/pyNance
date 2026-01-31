@@ -310,7 +310,11 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 }
 
 .daily-net-timeframe-btn.is-active {
-  background: linear-gradient(135deg, var(--color-accent-yellow) 0%, var(--color-accent-green) 100%);
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-yellow) 0%,
+    var(--color-accent-green) 100%
+  );
   color: var(--color-bg-dark);
   border-color: var(--color-accent-yellow);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
