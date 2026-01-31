@@ -24,7 +24,7 @@ jobs:
         run: npm install -g @sourcegraph/scip-typescript
 
       - name: Generate TypeScript SCIP index
-        run: scip-typescript index --project tsconfig.json
+        run: scip-typescript index
         working-directory: frontend
 
       - name: Package TypeScript SCIP index
