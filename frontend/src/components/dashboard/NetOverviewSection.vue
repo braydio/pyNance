@@ -46,35 +46,38 @@
             <span class="title-text">Net Income</span>
             <span class="title-subtitle">(Daily)</span>
           </h2>
+          <div class="daily-net-chart-separator" aria-hidden="true"></div>
           <div class="daily-net-chart-controls">
-            <ChartDetailsSidebar
-              class="chart-details-sidebar--inline"
-              v-model:show7-day="show7DayModel"
-              v-model:show30-day="show30DayModel"
-              v-model:show-avg-income="showAvgIncomeModel"
-              v-model:show-avg-expenses="showAvgExpensesModel"
-              v-model:show-comparison-overlay="showComparisonOverlayModel"
-              v-model:comparison-mode="comparisonModeModel"
-            />
-            <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
-              <button
-                class="gradient-toggle-btn daily-net-timeframe-btn"
-                :class="{ 'is-active': netTimeframe === 'mtd' }"
-                type="button"
-                :aria-pressed="netTimeframe === 'mtd'"
-                @click="emit('update:net-timeframe', 'mtd')"
-              >
-                MTD
-              </button>
-              <button
-                class="gradient-toggle-btn daily-net-timeframe-btn"
-                :class="{ 'is-active': netTimeframe === 'rolling_30' }"
-                type="button"
-                :aria-pressed="netTimeframe === 'rolling_30'"
-                @click="emit('update:net-timeframe', 'rolling_30')"
-              >
-                Rolling 30
-              </button>
+            <div class="daily-net-chart-toolbar">
+              <ChartDetailsSidebar
+                class="chart-details-sidebar--inline"
+                v-model:show7-day="show7DayModel"
+                v-model:show30-day="show30DayModel"
+                v-model:show-avg-income="showAvgIncomeModel"
+                v-model:show-avg-expenses="showAvgExpensesModel"
+                v-model:show-comparison-overlay="showComparisonOverlayModel"
+                v-model:comparison-mode="comparisonModeModel"
+              />
+              <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
+                <button
+                  class="gradient-toggle-btn daily-net-timeframe-btn"
+                  :class="{ 'is-active': netTimeframe === 'mtd' }"
+                  type="button"
+                  :aria-pressed="netTimeframe === 'mtd'"
+                  @click="emit('update:net-timeframe', 'mtd')"
+                >
+                  MTD
+                </button>
+                <button
+                  class="gradient-toggle-btn daily-net-timeframe-btn"
+                  :class="{ 'is-active': netTimeframe === 'rolling_30' }"
+                  type="button"
+                  :aria-pressed="netTimeframe === 'rolling_30'"
+                  @click="emit('update:net-timeframe', 'rolling_30')"
+                >
+                  Rolling 30
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -230,16 +233,35 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: 0.45rem;
+  margin-bottom: 0.9rem;
+  width: 100%;
+}
+
+.daily-net-chart-separator {
+  width: 85%;
+  height: 1px;
+  border-radius: 999px;
+  background: var(--divider);
 }
 
 .daily-net-chart-controls {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  display: flex;
   justify-content: center;
+  width: 100%;
+}
+
+.daily-net-chart-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.35rem;
+  border: 1px solid var(--themed-border);
+  background: var(--themed-bg);
+  backdrop-filter: blur(6px);
 }
 
 .title-text {
@@ -260,11 +282,37 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .daily-net-timeframe-btn {
-  font-size: 0.78rem;
-  padding: 0.25rem 0.8rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 0.3rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
+  color: var(--color-text-light);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  line-height: 1;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.daily-net-timeframe-btn:hover,
+.daily-net-timeframe-btn:focus-visible {
+  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-yellow) 55%);
+  color: var(--color-text-light);
+  border-color: var(--color-accent-yellow);
+  outline: none;
+}
+
+.daily-net-timeframe-btn.is-active {
+  background: linear-gradient(135deg, var(--color-accent-yellow) 0%, var(--color-accent-green) 100%);
+  color: var(--color-bg-dark);
+  border-color: var(--color-accent-yellow);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
 }
 </style>

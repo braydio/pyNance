@@ -43,10 +43,28 @@ function getNetDashPosition(chart, dataIndex) {
   const firstMeta = chart.getDatasetMeta(0)
   const bar = firstMeta?.data?.[dataIndex]
   const netValues = chart.$netValues
+  const netRows = chart.$dailyNetRows
   const yScale = chart.scales?.y
-  const netValue = netValues?.[dataIndex]
+  const netValue =
+    netValues?.[dataIndex] ?? netRows?.[dataIndex]?.net?.parsedValue ?? netRows?.[dataIndex]?.net
   if (!bar || netValue == null || !yScale) return null
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
+}
+
+/**
+ * Resolve the pixel position for the zero line at a given label index.
+ *
+ * @param {import('chart.js').Chart} chart - The chart instance.
+ * @param {number} dataIndex - Active label index.
+ * @returns {{x: number, y: number} | null} Pixel coordinates for y=0.
+ */
+function getZeroLinePosition(chart, dataIndex) {
+  if (!chart?.getDatasetMeta) return null
+  const firstMeta = chart.getDatasetMeta(0)
+  const bar = firstMeta?.data?.[dataIndex]
+  const yScale = chart.scales?.y
+  if (!bar || !yScale) return null
+  return { x: bar.x, y: yScale.getPixelForValue(0) }
 }
 
 function registerTooltipPositioner(name, positioner) {
@@ -57,9 +75,9 @@ function registerTooltipPositioner(name, positioner) {
 }
 
 // --- Safe registration for custom tooltip positioner ---
-registerTooltipPositioner('netDash', function (items, eventPosition) {
+registerTooltipPositioner('zeroLine', function (items, eventPosition) {
   /**
-   * Anchor tooltips to the net indicator dash instead of the hover cursor.
+   * Anchor tooltips to the zero line instead of the hover cursor.
    *
    * @param {Array} items - Tooltip items for the active index.
    * @param {{x: number, y: number}} eventPosition - Fallback cursor position.
@@ -68,7 +86,7 @@ registerTooltipPositioner('netDash', function (items, eventPosition) {
   if (!items?.length) return eventPosition
   const chart = items[0]?.chart
   const dataIndex = items[0].dataIndex
-  const position = getNetDashPosition(chart, dataIndex)
+  const position = getZeroLinePosition(chart, dataIndex)
   return position ?? eventPosition
 })
 // ----------------------------------------------------------------------
@@ -367,7 +385,7 @@ const netDashPlugin = {
 const tooltipSnapPlugin = {
   id: 'tooltipSnapPlugin',
   /**
-   * Force the tooltip caret to align with the net indicator dash.
+   * Force the tooltip caret to align with the zero line.
    *
    * @param {import('chart.js').Chart} chart - Chart instance.
    * @param {{ tooltip?: { dataPoints?: Array<{ dataIndex: number }>, caretX?: number, caretY?: number, x?: number, y?: number } }} args - Tooltip draw args.
@@ -377,7 +395,7 @@ const tooltipSnapPlugin = {
     const tooltip = args?.tooltip
     const dataIndex = tooltip?.dataPoints?.[0]?.dataIndex
     if (dataIndex == null) return
-    const position = getNetDashPosition(chart, dataIndex)
+    const position = getZeroLinePosition(chart, dataIndex)
     if (!position) return
     tooltip.caretX = position.x
     tooltip.caretY = position.y
@@ -508,7 +526,7 @@ async function renderChart() {
     const ctx = buildComparisonContext()
     comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
     comparisonLabel =
-      ctx?.mode === 'prior_month_to_date' ? 'Prior period' : 'Previous 30 days'
+      ctx?.mode === 'prior_month_to_date' ? 'This Day Last Month' : 'This Day Last Month'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
         borderDash: [2, 6],
@@ -584,12 +602,12 @@ async function renderChart() {
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
           bodyFont: { family: "'Fira Code', monospace" },
           cornerRadius: 10,
-          caretPadding: 8,
-          caretSize: 7,
+          caretPadding: 6,
+          caretSize: 9,
           bodySpacing: 6,
           titleSpacing: 4,
           titleMarginBottom: 6,
-          position: 'netDash',
+          position: 'zeroLine',
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {

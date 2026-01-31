@@ -33,6 +33,14 @@
       role="region"
       :aria-labelledby="headerId"
     >
+      <button
+        type="button"
+        class="chart-details-sidebar__close"
+        aria-label="Close overlay options"
+        @click="closeSidebar"
+      >
+        &times;
+      </button>
       <h3 class="chart-details-sidebar__heading">Overlay Options</h3>
       <p class="chart-details-sidebar__description">
         Toggle additional metrics directly on the chart.
@@ -127,7 +135,6 @@ const closeSidebar = () => {
 
 const onOptionChange = (eventName, checked) => {
   emit(eventName, checked)
-  closeSidebar()
 }
 
 const handleDocumentClick = (event) => {
@@ -162,9 +169,11 @@ onBeforeUnmount(() => {
 }
 
 .chart-details-sidebar--inline {
-  position: static;
+  position: relative;
   align-items: center;
   pointer-events: auto;
+  top: auto;
+  right: auto;
 }
 
 .chart-details-sidebar__toggle {
@@ -173,30 +182,32 @@ onBeforeUnmount(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.35rem 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid var(--color-accent-cyan);
-  background: color-mix(in srgb, var(--color-accent-cyan) 12%, transparent);
-  color: var(--color-accent-cyan);
-  font-size: 0.85rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
+  color: var(--color-text-light);
+  font-size: 0.78rem;
   font-weight: 600;
+  line-height: 1;
   transition:
     background 0.2s ease,
     color 0.2s ease,
     border-color 0.2s ease;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
-  font-size: 0.78rem;
-  padding: 0.25rem 0.65rem;
+  font-size: 0.7rem;
+  padding: 0.2rem 0.55rem;
 }
 
 .chart-details-sidebar__toggle:hover,
 .chart-details-sidebar__toggle:focus-visible {
-  background: color-mix(in srgb, var(--color-accent-cyan) 22%, transparent);
-  color: var(--color-accent-cyan);
+  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-yellow) 55%);
+  color: var(--color-text-light);
   outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 30%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-yellow) 30%, transparent);
 }
 
 .chart-details-sidebar__icon {
@@ -217,34 +228,73 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__content {
   pointer-events: auto;
-  min-width: 14rem;
-  max-width: 16rem;
-  padding: 0.75rem;
-  border-radius: 0.75rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 40%, transparent);
-  background: color-mix(in srgb, var(--color-bg) 90%, var(--color-accent-cyan) 10%);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  min-width: 12rem;
+  max-width: 14rem;
+  padding: 0.6rem;
+  border-radius: 0.35rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-yellow) 22%),
+    color-mix(in srgb, var(--color-bg-sec) 70%, var(--color-accent-green) 30%)
+  );
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   display: grid;
-  gap: 0.5rem;
+  gap: 0.55rem;
+  position: relative;
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__content {
-  align-self: center;
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
+  z-index: 20;
 }
 
 .chart-details-sidebar__heading {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-accent-cyan);
+  color: var(--color-text-light);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .chart-details-sidebar__description {
   margin: 0;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+}
+
+.chart-details-sidebar__close {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 0.2rem;
+  border: 0.5px solid color-mix(in srgb, var(--color-accent-yellow) 45%, transparent);
+  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
+  font-size: 1rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.chart-details-sidebar__close:hover,
+.chart-details-sidebar__close:focus-visible {
+  color: var(--color-text-light);
+  background: color-mix(in srgb, var(--color-accent-yellow) 22%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-yellow) 50%, transparent);
+  outline: none;
 }
 
 .chart-details-sidebar__fieldset {
@@ -259,13 +309,13 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.85rem;
-  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  color: var(--color-text-light);
 }
 
 .chart-details-sidebar__fieldset input[type='checkbox'] {
-  width: 1rem;
-  height: 1rem;
+  width: 0.9rem;
+  height: 0.9rem;
   accent-color: var(--color-accent-cyan);
 }
 

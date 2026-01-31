@@ -12,7 +12,6 @@ import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.vue'
 import AccountsTable from '@/components/tables/AccountsTable.vue'
-import ForecastMock from '@/views/ForecastMock.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
 
 const Investments = () => import('@/views/Investments.vue')
@@ -35,7 +34,6 @@ const routes = [
   { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/summary', name: 'FinancialSummaryDetailed', component: FinancialSummaryDetailed },
-  { path: '/forecast-mock', name: 'ForecastMock', component: ForecastMock },
 ]
 
 const router = createRouter({

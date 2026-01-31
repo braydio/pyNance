@@ -29,9 +29,9 @@ def extract_functions(content):
     return functions
 
 
-def extract_metadata(path, content):
+def extract_metadata(path, content, source_root="backend"):
     ext = os.path.splitext(path)[1]
-    rel_path = os.path.relpath(path, start="backend")
+    rel_path = os.path.relpath(path, start=source_root)
     tags, docstrings = set(), []
 
     if ext == ".py":

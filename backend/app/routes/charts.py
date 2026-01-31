@@ -455,7 +455,15 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     )
 
     for tx in transactions:
-        tx_date = tx.date if isinstance(tx.date, date) else tx.date.date()
+        tx_date = tx.date
+        if isinstance(tx_date, datetime):
+            if tx_date.tzinfo is None:
+                tx_date = tx_date.replace(tzinfo=timezone.utc)
+            else:
+                tx_date = tx_date.astimezone(timezone.utc)
+            tx_date = tx_date.date()
+        elif not isinstance(tx_date, date):
+            continue
         day_str = tx_date.strftime("%Y-%m-%d")
         # Normalize transaction amount for UI: expenses negative, income positive
         amount = display_transaction_amount(tx)
