@@ -30,7 +30,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import ForecastChart from './ForecastChart.vue'

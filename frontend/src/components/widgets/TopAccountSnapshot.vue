@@ -49,13 +49,11 @@
           </template>
         </div>
         <div class="bs-banner-meta">
-          <span class="bs-banner-label">Group</span>
-          <span class="bs-banner-accent"></span>
+          <span class="bs-banner-label">Total Balance</span>
+          <span class="bs-banner-value" :class="totalValueClass">
+            {{ format(visibleTotal) }}
+          </span>
         </div>
-      </div>
-      <div class="bs-total" :style="{ '--accent': groupAccent }">
-        <span class="bs-total-label">Total Balance</span>
-        <span class="bs-total-value">{{ format(visibleTotal) }}</span>
       </div>
     </div>
     <!-- Group Selector -->
@@ -397,8 +395,6 @@
     </div>
   </div>
 </template>
-
-<!-- liabilities section removed -->
 
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
@@ -947,6 +943,13 @@ const visibleTotal = computed(() =>
   visibleAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
 )
 
+const totalValueClass = computed(() => {
+  const total = Number(visibleTotal.value) || 0
+  if (total > 0) return 'bs-total-pos'
+  if (total < 0) return 'bs-total-neg'
+  return 'bs-total-neutral'
+})
+
 const format = (val) => {
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -1391,28 +1394,6 @@ defineExpose({
   justify-content: space-between;
   margin-bottom: 0.35rem;
 }
-.bs-total {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.2rem;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.9rem;
-  background: rgba(255, 255, 255, 0.04);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
-}
-.bs-total-label {
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-}
-.bs-total-value {
-  font-size: 1.4rem;
-  font-weight: 800;
-  color: var(--color-accent-cyan);
-}
 
 .bs-group-banner {
   flex: 1;
@@ -1425,7 +1406,7 @@ defineExpose({
     color-mix(in srgb, var(--color-bg-sec) 80%, transparent);
   border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
   border-radius: 0.9rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 0.9rem;
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.12);
 }
 
@@ -1494,8 +1475,8 @@ defineExpose({
 .bs-banner-meta {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
+  gap: 0.65rem;
+  font-size: 0.8rem;
   color: var(--color-text-muted);
 }
 
@@ -1505,13 +1486,23 @@ defineExpose({
   text-transform: uppercase;
 }
 
-.bs-banner-accent {
-  width: 36px;
-  height: 3px;
-  border-radius: 999px;
-  background: var(--accent);
-  display: inline-block;
-  opacity: 0.8;
+.bs-banner-value {
+  font-weight: 700;
+  font-size: 1.15rem;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--accent) 70%, var(--color-text-light));
+}
+
+.bs-total-pos {
+  color: var(--color-accent-cyan);
+}
+
+.bs-total-neg {
+  color: var(--color-accent-red);
+}
+
+.bs-total-neutral {
+  color: var(--color-text-muted);
 }
 
 .bs-editing-chip {
