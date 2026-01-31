@@ -762,7 +762,8 @@ function creditUtilization(account) {
   if (!isCreditAccount(account)) return null
   const limit = getCreditLimit(account)
   if (!limit) return null
-  const rawBalance = account?.adjusted_balance ?? account?.balances?.current ?? account?.balances?.balance
+  const rawBalance =
+    account?.adjusted_balance ?? account?.balances?.current ?? account?.balances?.balance
   const balanceNumber = Number(rawBalance)
   // Use absolute balance for utilization, since credit balances may be negative.
   const balance = Number.isFinite(balanceNumber) ? Math.abs(balanceNumber) : 0
