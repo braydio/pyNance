@@ -228,6 +228,30 @@
                   >∗</span
                 >
               </div>
+              <div v-if="creditUtilization(account)" class="bs-utilization">
+                <div class="bs-utilization-header">
+                  <span class="bs-utilization-label">Utilization</span>
+                  <span class="bs-utilization-percent">
+                    {{ creditUtilization(account).percentLabel }}
+                  </span>
+                </div>
+                <div
+                  class="bs-utilization-bar"
+                  role="progressbar"
+                  :aria-valuenow="creditUtilization(account).percent"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <div
+                    class="bs-utilization-fill"
+                    :style="{ width: `${creditUtilization(account).barPercent}%` }"
+                  ></div>
+                </div>
+                <div class="bs-utilization-text">
+                  {{ creditUtilization(account).balanceLabel }} of
+                  {{ creditUtilization(account).limitLabel }}
+                </div>
+              </div>
             </div>
             <div class="bs-sparkline">
               <AccountSparkline :account-id="accountId(account)" />
@@ -352,6 +376,30 @@
                   aria-label="Account number unavailable"
                   >∗</span
                 >
+              </div>
+              <div v-if="creditUtilization(account)" class="bs-utilization">
+                <div class="bs-utilization-header">
+                  <span class="bs-utilization-label">Utilization</span>
+                  <span class="bs-utilization-percent">
+                    {{ creditUtilization(account).percentLabel }}
+                  </span>
+                </div>
+                <div
+                  class="bs-utilization-bar"
+                  role="progressbar"
+                  :aria-valuenow="creditUtilization(account).percent"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                >
+                  <div
+                    class="bs-utilization-fill"
+                    :style="{ width: `${creditUtilization(account).barPercent}%` }"
+                  ></div>
+                </div>
+                <div class="bs-utilization-text">
+                  {{ creditUtilization(account).balanceLabel }} of
+                  {{ creditUtilization(account).limitLabel }}
+                </div>
               </div>
             </div>
             <div class="bs-sparkline">
@@ -695,6 +743,45 @@ function isCreditAccount(account) {
   return creditHints.some((value) => value.includes('credit'))
 }
 
+/**
+ * Resolve a credit limit from the account payload, guarding against invalid values.
+ */
+function getCreditLimit(account) {
+  if (!account || typeof account !== 'object') return null
+  const limitValue = account.limit ?? account.credit_limit ?? account.balances?.limit
+  if (limitValue === null || limitValue === undefined) return null
+  const limitNumber = Number(limitValue)
+  if (!Number.isFinite(limitNumber) || limitNumber <= 0) return null
+  return limitNumber
+}
+
+/**
+ * Build credit utilization metadata for display, or return null when unavailable.
+ */
+function creditUtilization(account) {
+  if (!isCreditAccount(account)) return null
+  const limit = getCreditLimit(account)
+  if (!limit) return null
+  const rawBalance = account?.adjusted_balance ?? account?.balances?.current ?? account?.balances?.balance
+  const balanceNumber = Number(rawBalance)
+  // Use absolute balance for utilization, since credit balances may be negative.
+  const balance = Number.isFinite(balanceNumber) ? Math.abs(balanceNumber) : 0
+  const utilizationRaw = (balance / limit) * 100
+  if (!Number.isFinite(utilizationRaw)) return null
+  const percent = Math.round(utilizationRaw)
+  // Clamp the bar fill so overflow balances still render within the indicator.
+  const barPercent = Math.min(Math.max(utilizationRaw, 0), 100)
+  return {
+    balance,
+    limit,
+    percent,
+    barPercent,
+    balanceLabel: formatCurrency(balance),
+    limitLabel: formatCurrency(limit),
+    percentLabel: `${percent}%`,
+  }
+}
+
 /** Return accent color for an account */
 function accentColor(account, index) {
   if (props.useSpectrum) {
@@ -947,7 +1034,10 @@ const visibleTotal = computed(() =>
   visibleAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
 )
 
-const format = (val) => {
+/**
+ * Format a currency value without accounting-style parentheses.
+ */
+function formatCurrency(val) {
   const formatter = new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
@@ -955,10 +1045,18 @@ const format = (val) => {
     maximumFractionDigits: 2,
   })
   if (typeof val !== 'number') return ''
-  if (val < 0) {
-    return `(${formatter.format(Math.abs(val))})`
-  }
   return formatter.format(val)
+}
+
+/**
+ * Format a currency value using accounting-style parentheses for negatives.
+ */
+const format = (val) => {
+  if (typeof val !== 'number') return ''
+  if (val < 0) {
+    return `(${formatCurrency(Math.abs(val))})`
+  }
+  return formatCurrency(val)
 }
 
 function mask(maskString) {
@@ -1921,6 +2019,56 @@ defineExpose({
   max-width: 100%;
 }
 
+.bs-utilization {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.bs-utilization-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.bs-utilization-label {
+  font-size: 0.6rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.bs-utilization-percent {
+  font-size: 0.65rem;
+  color: var(--color-accent-red);
+}
+
+.bs-utilization-bar {
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-sec) 65%, transparent);
+  overflow: hidden;
+}
+
+.bs-utilization-fill {
+  height: 100%;
+  background: var(--color-accent-red);
+  border-radius: inherit;
+}
+
+.bs-utilization-text {
+  font-size: 0.68rem;
+  color: var(--color-text-light);
+  opacity: 0.85;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .bs-amount-section {
   display: flex;
   align-items: flex-end;
@@ -2154,6 +2302,18 @@ defineExpose({
 
   .bs-summary-row {
     padding: 0.12rem 0.08rem 0.09rem 0.04rem;
+  }
+
+  .bs-utilization {
+    font-size: 0.62rem;
+  }
+
+  .bs-utilization-text {
+    font-size: 0.62rem;
+  }
+
+  .bs-utilization-bar {
+    height: 3px;
   }
 }
 </style>

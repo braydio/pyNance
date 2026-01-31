@@ -76,6 +76,8 @@
   - **Acceptance criteria:** All relevant account data displayed, formatted consistently with accounting standards
 - [ ] **Style balance polarity in account snapshot** - Align balance color with account type and sign
   - **Acceptance criteria:** `frontend/src/components/widgets/TopAccountSnapshot.vue` renders credit account balances in red and non-credit balances in green for positives and red for negatives
+- [x] **Show credit utilization for credit accounts** - Provide a compact balance/limit indicator on credit account rows.
+  - **Acceptance criteria:** Credit accounts with a limit render a utilization bar with "$X of $Y" and a percent in `frontend/src/components/widgets/TopAccountSnapshot.vue`; non-credit or limit-less accounts omit the indicator.
 - [x] **Show default accounts when no group is configured** - Prevent the snapshot widget from rendering empty states on first load or while offline.
   - **Acceptance criteria:** `frontend/src/components/widgets/TopAccountSnapshot.vue` renders a fallback list sourced from the top accounts composable, honours offline persistence from `useAccountGroups`, and keeps editing flows intact.
 
