@@ -33,36 +33,6 @@ jobs:
           tar -czf scip-ts.tar.gz -C frontend index.scip
 
       # -------------------------
-      # Python
-      # -------------------------
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install Python project dependencies
-        run: |
-          if [ -f requirements.txt ]; then
-            pip install -r requirements.txt
-          fi
-
-      - name: Install Python project dependencies
-        run: |
-          if [ -f requirements-dev.txt ]; then
-            pip install -r requirements-dev.txt
-          fi
-
-      - name: Install SCIP Python indexer
-        run: pip install scip-python
-
-      - name: Generate Python SCIP index
-        run: scip-python index src
-
-      - name: Package Python SCIP index
-        run: |
-          test -f index.scip
-          tar -czf scip-py.tar.gz index.scip
-
-      # -------------------------
       # Upload artifacts
       # -------------------------
       - uses: actions/upload-artifact@v4
