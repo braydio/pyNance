@@ -821,9 +821,15 @@ function accentColor(account, index) {
 
 /**
  * Provide balance styling based on account type and balance polarity.
+ * Credit accounts always render as negative (red) regardless of balance sign.
+ *
+ * @param {object} account - Account payload containing balance metadata.
+ * @returns {string} CSS class to apply to the account balance.
  */
 function balanceClass(account) {
-  const balance = Number(account?.adjusted_balance) || 0
+  const rawBalance = account?.adjusted_balance
+  const balanceNumber = Number(rawBalance)
+  const balance = Number.isFinite(balanceNumber) ? balanceNumber : 0
   if (isCreditAccount(account)) {
     // Credit accounts represent liabilities, so always render them as negative (red).
     return 'bs-balance-neg'

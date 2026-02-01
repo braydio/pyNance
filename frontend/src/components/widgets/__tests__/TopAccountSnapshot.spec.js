@@ -227,7 +227,7 @@ describe('TopAccountSnapshot', () => {
         account_id: 'credit-neg',
         name: 'Credit Negative',
         adjusted_balance: -55,
-        type: 'credit',
+        account_type: 'credit',
       },
       {
         id: 'debit-pos',
