@@ -107,7 +107,9 @@ const formattedDetailDate = computed(() => {
   })
 })
 
-const isCategoryEmpty = computed(() => !categoryRows.value.length && !categoryLoading.value && !categoryError.value)
+const isCategoryEmpty = computed(
+  () => !categoryRows.value.length && !categoryLoading.value && !categoryError.value,
+)
 const showAverageBreakdown = computed(() => compareToAverage.value && averageRows.value.length > 0)
 const averageDisplayRows = computed(() => {
   if (!showAverageBreakdown.value) {
@@ -153,7 +155,10 @@ function parseISODate(value) {
 function normalizeCategoryTotals(nodes = []) {
   return (nodes || [])
     .map((node) => {
-      const childTotal = (node.children || []).reduce((sum, child) => sum + Number(child.amount || 0), 0)
+      const childTotal = (node.children || []).reduce(
+        (sum, child) => sum + Number(child.amount || 0),
+        0,
+      )
       const amount = Number.isFinite(Number(node.amount)) ? Number(node.amount) : childTotal
       return {
         label: node.label || 'Category',
@@ -180,7 +185,13 @@ function applyAlphaToColor(color, alpha) {
   }
   if (color.startsWith('#')) {
     const raw = color.replace('#', '')
-    const hex = raw.length === 3 ? raw.split('').map((ch) => `${ch}${ch}`).join('') : raw
+    const hex =
+      raw.length === 3
+        ? raw
+            .split('')
+            .map((ch) => `${ch}${ch}`)
+            .join('')
+        : raw
     const parsed = Number.parseInt(hex, 16)
     if (!Number.isNaN(parsed) && hex.length === 6) {
       const r = (parsed >> 16) & 255
@@ -242,7 +253,7 @@ function destroyChart() {
     if (existing) {
       existing.destroy()
     }
- }
+  }
 }
 
 /**
