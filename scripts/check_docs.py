@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -26,6 +27,38 @@ DOC_ROOTS = {
     "frontend": REPO_ROOT / "docs" / "frontend",
 }
 SUPPORTED_SUFFIXES = {".py", ".vue"}
+ANSI_COLORS = {
+    "reset": "\x1b[0m",
+    "bold": "\x1b[1m",
+    "dim": "\x1b[2m",
+    "red": "\x1b[31m",
+    "green": "\x1b[32m",
+    "yellow": "\x1b[33m",
+    "blue": "\x1b[34m",
+    "cyan": "\x1b[36m",
+}
+
+
+def _supports_color() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    if not sys.stdout.isatty():
+        return False
+    term = os.environ.get("TERM", "")
+    return term.lower() != "dumb"
+
+
+def _style(text: str, color: str | None = None, *, bold: bool = False) -> str:
+    if not _supports_color():
+        return text
+    codes = []
+    if bold:
+        codes.append(ANSI_COLORS["bold"])
+    if color:
+        codes.append(ANSI_COLORS[color])
+    if not codes:
+        return text
+    return "".join(codes) + text + ANSI_COLORS["reset"]
 
 
 @dataclass(slots=True)
@@ -148,13 +181,19 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         targets = resolve_target_files(args)
     except subprocess.CalledProcessError as exc:
-        print(f"[docs] Failed to resolve git files: {exc}", file=sys.stderr)
+        print(
+            f"{_style('[docs]', 'red', bold=True)} Failed to resolve git files: {exc}",
+            file=sys.stderr,
+        )
         return 2
 
     filtered = filter_relevant_files(targets)
     if not filtered:
         if not args.json_output:
-            print("[docs] No backend/frontend Python or Vue files to verify.")
+            print(
+                f"{_style('[docs]', 'cyan', bold=True)} "
+                "No backend/frontend Python or Vue files to verify."
+            )
         else:
             print(json.dumps({"checked": [], "missing": []}, indent=2))
         return 0
@@ -190,20 +229,29 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(json.dumps(payload, indent=2))
     else:
         if covered and args.verbose:
-            print("[docs] Verified documentation:")
+            print(f"{_style('[docs]', 'green', bold=True)} Verified documentation:")
             for result in covered:
                 if result.doc_path is None:  # pragma: no cover - defensive
                     continue
                 doc_rel = result.doc_path.relative_to(REPO_ROOT)
                 source_path = result.file_path.as_posix()
                 doc_target = doc_rel.as_posix()
-                print(f"  • {source_path} → {doc_target}")
+                print(
+                    f"  • {_style(source_path, 'blue')} "
+                    f"{_style('→', 'dim')} {_style(doc_target, 'cyan')}"
+                )
         if missing:
-            print("[docs] Missing documentation for:")
+            print(f"{_style('[docs]', 'yellow', bold=True)} Missing documentation for:")
             for result in missing:
-                print(f"  • {result.file_path.as_posix()} ({result.message})")
+                print(
+                    f"  • {_style(result.file_path.as_posix(), 'red')} "
+                    f"{_style(f'({result.message})', 'dim')}"
+                )
         else:
-            print(f"[docs] Verified documentation for {len(covered)} file(s).")
+            print(
+                f"{_style('[docs]', 'green', bold=True)} "
+                f"Verified documentation for {len(covered)} file(s)."
+            )
 
     return 1 if missing else 0
 
