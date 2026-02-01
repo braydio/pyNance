@@ -184,7 +184,7 @@ describe('TopAccountSnapshot', () => {
       global: { stubs: { AccountSparkline: sparklineStub } },
     })
     await nextTick()
-    expect(wrapper.find('.bs-total-value').text()).toContain('$3.00')
+    expect(wrapper.find('.bs-banner-value').text()).toContain('$3.00')
   })
 
   it('toggles edit mode from the group menu and emits update', async () => {

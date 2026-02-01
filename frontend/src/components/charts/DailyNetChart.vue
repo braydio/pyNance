@@ -58,13 +58,14 @@ function getNetDashPosition(chart, dataIndex) {
  * @param {number} dataIndex - Active label index.
  * @returns {{x: number, y: number} | null} Pixel coordinates for y=0.
  */
-function getZeroLinePosition(chart, dataIndex) {
+function getZeroLinePosition(chart, dataIndex, xOverride) {
   if (!chart?.getDatasetMeta) return null
   const firstMeta = chart.getDatasetMeta(0)
   const bar = firstMeta?.data?.[dataIndex]
   const yScale = chart.scales?.y
-  if (!bar || !yScale) return null
-  return { x: bar.x, y: yScale.getPixelForValue(0) }
+  const x = typeof xOverride === 'number' ? xOverride : bar?.x
+  if (x == null || !yScale) return null
+  return { x, y: yScale.getPixelForValue(0) }
 }
 
 function registerTooltipPositioner(name, positioner) {
@@ -84,9 +85,10 @@ registerTooltipPositioner('zeroLine', function (items, eventPosition) {
    * @returns {{x: number, y: number}} Tooltip anchor coordinates.
    */
   if (!items?.length) return eventPosition
-  const chart = items[0]?.chart
-  const dataIndex = items[0].dataIndex
-  const position = getZeroLinePosition(chart, dataIndex)
+  const item = items[0]
+  const chart = item?.chart
+  const dataIndex = item?.dataIndex
+  const position = getZeroLinePosition(chart, dataIndex, item?.element?.x)
   return position ?? eventPosition
 })
 // ----------------------------------------------------------------------
@@ -393,9 +395,10 @@ const tooltipSnapPlugin = {
    */
   beforeTooltipDraw(chart, args) {
     const tooltip = args?.tooltip
-    const dataIndex = tooltip?.dataPoints?.[0]?.dataIndex
+    const point = tooltip?.dataPoints?.[0]
+    const dataIndex = point?.dataIndex
     if (dataIndex == null) return
-    const position = getZeroLinePosition(chart, dataIndex)
+    const position = getZeroLinePosition(chart, dataIndex, point?.element?.x)
     if (!position) return
     tooltip.caretX = position.x
     tooltip.caretY = position.y
@@ -563,8 +566,8 @@ async function renderChart() {
       animation: false,
       onClick: handleBarClick,
       interaction: {
-        mode: 'index',
-        intersect: false,
+        mode: 'nearest',
+        intersect: true,
       },
       scales: {
         x: {
@@ -595,8 +598,8 @@ async function renderChart() {
           borderWidth: 1,
           padding: 12,
           displayColors: false,
-          mode: 'index',
-          intersect: false,
+          mode: 'nearest',
+          intersect: true,
           titleColor: getStyle('--color-accent-yellow'),
           bodyColor: getStyle('--color-text-light'),
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
@@ -611,7 +614,6 @@ async function renderChart() {
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {
-              if (context.datasetIndex !== 0) return null
               const payload = getTooltipPayload(context.chart, context.dataIndex)
               return payload ? buildTooltipLines(payload) : null
             },
