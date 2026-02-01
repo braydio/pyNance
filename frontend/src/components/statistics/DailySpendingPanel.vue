@@ -29,6 +29,16 @@
 
       <div class="transactions-card">
         <h5 class="transactions-title">Latest Transactions</h5>
+        <div v-if="showAverageBreakdown" class="average-breakdown">
+          <div class="average-breakdown-header">Average Profile Breakdown</div>
+          <ol class="average-breakdown-list">
+            <li v-for="row in averageDisplayRows" :key="row.label" class="average-breakdown-row">
+              <span class="average-breakdown-rank">{{ row.rank }}</span>
+              <span class="average-breakdown-label">{{ row.label }}</span>
+              <span class="average-breakdown-amount">{{ formatAmount(row.amount) }}</span>
+            </li>
+          </ol>
+        </div>
         <div v-if="transactionsLoading" class="panel-state">Loading transactions...</div>
         <div v-else-if="transactionsError" class="panel-state panel-state-error">
           Unable to load transactions.
@@ -98,6 +108,17 @@ const formattedDetailDate = computed(() => {
 })
 
 const isCategoryEmpty = computed(() => !categoryRows.value.length && !categoryLoading.value && !categoryError.value)
+const showAverageBreakdown = computed(() => compareToAverage.value && averageRows.value.length > 0)
+const averageDisplayRows = computed(() => {
+  if (!showAverageBreakdown.value) {
+    return []
+  }
+  const ordered = alignAverageRows(categoryRows.value, averageRows.value)
+  return ordered.map((row, index) => ({
+    ...row,
+    rank: index + 1,
+  }))
+})
 
 /**
  * Retrieve a CSS variable value from the document root.
@@ -582,6 +603,55 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+}
+
+.average-breakdown {
+  border-bottom: 1px dashed var(--divider);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.average-breakdown-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.average-breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.average-breakdown-row {
+  display: grid;
+  grid-template-columns: 1.6rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+}
+
+.average-breakdown-rank {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
+}
+
+.average-breakdown-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.average-breakdown-amount {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  color: var(--color-text-light);
 }
 
 .transaction-row {
