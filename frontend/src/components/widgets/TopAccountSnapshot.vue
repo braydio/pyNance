@@ -255,9 +255,21 @@
               <AccountSparkline :account-id="accountId(account)" />
             </div>
             <div class="bs-amount-section">
-              <span class="bs-amount" :class="balanceClass(account)">{{
-                format(account.adjusted_balance)
-              }}</span>
+              <div class="bs-amount-stack">
+                <span class="bs-amount" :class="balanceClass(account)">{{
+                  format(account.adjusted_balance)
+                }}</span>
+                <div v-if="showUtilization(account)" class="bs-utilization">
+                  <span class="bs-utilization-label">Utilization</span>
+                  <span class="bs-utilization-value">{{ formatUtilization(account) }}</span>
+                  <span class="bs-utilization-bar" aria-hidden="true">
+                    <span
+                      class="bs-utilization-fill"
+                      :style="{ width: utilizationWidth(account) }"
+                    ></span>
+                  </span>
+                </div>
+              </div>
               <X
                 v-if="isEditingGroups"
                 class="bs-account-delete"
@@ -404,9 +416,21 @@
               <AccountSparkline :account-id="accountId(account)" />
             </div>
             <div class="bs-amount-section">
-              <span class="bs-amount" :class="balanceClass(account)">{{
-                format(account.adjusted_balance)
-              }}</span>
+              <div class="bs-amount-stack">
+                <span class="bs-amount" :class="balanceClass(account)">{{
+                  format(account.adjusted_balance)
+                }}</span>
+                <div v-if="showUtilization(account)" class="bs-utilization">
+                  <span class="bs-utilization-label">Utilization</span>
+                  <span class="bs-utilization-value">{{ formatUtilization(account) }}</span>
+                  <span class="bs-utilization-bar" aria-hidden="true">
+                    <span
+                      class="bs-utilization-fill"
+                      :style="{ width: utilizationWidth(account) }"
+                    ></span>
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
           <div v-if="openAccountId === accountId(account)" class="bs-details-row">
@@ -811,6 +835,66 @@ function balanceClass(account) {
     return 'bs-balance-neg'
   }
   return ''
+}
+
+function resolveCreditLimit(account) {
+  if (!account || typeof account !== 'object') return null
+  const current = Math.abs(
+    Number(
+      account?.balances?.current ??
+        account?.balance ??
+        account?.adjusted_balance ??
+        account?.balances?.available ??
+        0,
+    ),
+  )
+  const candidates = [
+    account?.limit,
+    account?.credit_limit,
+    account?.creditLimit,
+    account?.balances?.limit,
+    account?.balances?.credit_limit,
+  ]
+  for (const candidate of candidates) {
+    const numeric = Number(candidate)
+    if (!Number.isNaN(numeric) && numeric > 0) {
+      return numeric
+    }
+  }
+  const available = Number(account?.balances?.available)
+  if (!Number.isNaN(available) && available > 0 && current >= 0) {
+    return available + current
+  }
+  return null
+}
+
+function resolveUtilization(account) {
+  if (!isCreditAccount(account)) return null
+  const limit = resolveCreditLimit(account)
+  if (!limit || limit <= 0) return null
+  const balance = Math.abs(
+    Number(account?.balance ?? account?.adjusted_balance ?? account?.balances?.current ?? 0),
+  )
+  if (Number.isNaN(balance)) return null
+  const pct = (balance / limit) * 100
+  return { pct, balance, limit }
+}
+
+function showUtilization(account) {
+  return Boolean(resolveUtilization(account))
+}
+
+function formatUtilization(account) {
+  const utilization = resolveUtilization(account)
+  if (!utilization) return ''
+  return `${utilization.pct.toFixed(0)}%`
+}
+
+function utilizationWidth(account) {
+  const utilization = resolveUtilization(account)
+  if (!utilization) return '0%'
+  const clamped = Math.min(Math.max(utilization.pct, 0), 100)
+  return `${clamped.toFixed(0)}%`
 }
 
 function setActiveGroup(id) {
@@ -2065,10 +2149,18 @@ defineExpose({
 
 .bs-amount-section {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: flex-end;
+  gap: 0.35rem;
   height: 100%;
   z-index: 2;
+}
+
+.bs-amount-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
 }
 
 .bs-amount {
@@ -2081,6 +2173,40 @@ defineExpose({
   margin-left: 0.2em;
   word-break: keep-all;
   color: var(--color-text-light);
+}
+
+.bs-utilization {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.bs-utilization-label {
+  font-weight: 600;
+}
+
+.bs-utilization-value {
+  font-weight: 700;
+  color: var(--color-text-light);
+}
+
+.bs-utilization-bar {
+  width: 54px;
+  height: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-bg-dark) 80%, transparent);
+  overflow: hidden;
+}
+
+.bs-utilization-fill {
+  display: block;
+  height: 100%;
+  background: var(--color-accent-red);
+  border-radius: inherit;
 }
 
 .bs-balance-pos {
