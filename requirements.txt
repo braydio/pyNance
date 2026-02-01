@@ -12,3 +12,6 @@ scikit-learn
 statsmodels
 plaid-python==33.0.0
 pdfplumber==0.10.3
+
+# === DEV REQUIREMENTS
+pytest-cov
