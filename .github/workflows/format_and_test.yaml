@@ -22,7 +22,7 @@ jobs:
       - name: Install format and lint tools
         run: |
           python -m pip install --upgrade pip
-          pip install black isort ruff
+          pip install -r requirements-dev.txt
 
       - name: Check formatting with black
         run: |
