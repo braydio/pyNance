@@ -10,8 +10,8 @@ The backend now exposes live forecast endpoints (`GET /api/forecast`, `POST /api
 
 ### 🌟 Goals – Next Development Phase
 
-* Integrate `transactions`, `account_history`, and `recurring_transactions` into backend logic.
-* Replace manual placeholders with live forecast + actual calculations.
-* Implement delta analysis and proper error handling.
-* Build out input validation and metadata population.
-* Add backend tests for all forecast endpoints.
+- Integrate `transactions`, `account_history`, and `recurring_transactions` into backend logic.
+- Replace manual placeholders with live forecast + actual calculations.
+- Implement delta analysis and proper error handling.
+- Build out input validation and metadata population.
+- Add backend tests for all forecast endpoints.
