@@ -9,17 +9,17 @@ should be archived or rewritten. Status levels:
 
 ## Top-Level Summary
 
-| Path             | Status          | Notes                                                                                | Recommended action                                                                                                                     |
-| ---------------- | --------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `backend/`       | Live            | Flask API, CLI, and migrations registered via `backend/app/__init__.py`.             | Continue routing/module consolidation; audit unregistered route files noted below.                                                     |
-| `frontend/`      | Live            | Vue 3 app with views such as `Dashboard.vue` and `Accounts.vue`.                    | Continue component cleanup and ensure docs match the current `src/` tree.                                                              |
-| `plugins/arbit/` | Needs follow-up | External plugin expected by `arbit_cli.py`; not tracked in this repo.                | Remove the dependency if the arbitrage feature is retired. 【F:backend/app/services/arbit_cli.py†L1-L36】 |
-| `scripts/`       | Needs follow-up | Mix of active helpers (`setup.sh`, `dev-watcher.sh`) and ML/Chroma tooling.          | Tag scripts by owner/purpose; remove unused automation after review.                                                                   |
-| `docs/`          | Live            | Comprehensive documentation tree across backend, frontend, process, and roadmaps.    | Prune superseded reports during upcoming cleanup cycles.                                                                               |
-| `tests/`         | Live            | Pytest suite covering services, routes, and integrations.                            | Keep parity with new routes/services; expand coverage as features evolve.                                                              |
-| `workers/`       | Needs follow-up | Contains Plaid webhook worker used in some deployments.                              | Confirm deployment story or migrate logic into backend tasks.                                                                          |
-| `chromadb`       | Stale           | PostScript snapshot (`ImageMagick` export) with no runtime integration.              | Archive or delete after confirming no one references the image.                                                                        |
-| `tools/`         | Needs follow-up | One-off utilities (`symbol_map.py`).                                                 | Decide whether to fold into `scripts/` or document usage.                                                                              |
+| Path             | Status          | Notes                                                                             | Recommended action                                                                                        |
+| ---------------- | --------------- | --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `backend/`       | Live            | Flask API, CLI, and migrations registered via `backend/app/__init__.py`.          | Continue routing/module consolidation; audit unregistered route files noted below.                        |
+| `frontend/`      | Live            | Vue 3 app with views such as `Dashboard.vue` and `Accounts.vue`.                  | Continue component cleanup and ensure docs match the current `src/` tree.                                 |
+| `plugins/arbit/` | Needs follow-up | External plugin expected by `arbit_cli.py`; not tracked in this repo.             | Remove the dependency if the arbitrage feature is retired. 【F:backend/app/services/arbit_cli.py†L1-L36】 |
+| `scripts/`       | Needs follow-up | Mix of active helpers (`setup.sh`, `dev-watcher.sh`) and ML/Chroma tooling.       | Tag scripts by owner/purpose; remove unused automation after review.                                      |
+| `docs/`          | Live            | Comprehensive documentation tree across backend, frontend, process, and roadmaps. | Prune superseded reports during upcoming cleanup cycles.                                                  |
+| `tests/`         | Live            | Pytest suite covering services, routes, and integrations.                         | Keep parity with new routes/services; expand coverage as features evolve.                                 |
+| `workers/`       | Needs follow-up | Contains Plaid webhook worker used in some deployments.                           | Confirm deployment story or migrate logic into backend tasks.                                             |
+| `chromadb`       | Stale           | PostScript snapshot (`ImageMagick` export) with no runtime integration.           | Archive or delete after confirming no one references the image.                                           |
+| `tools/`         | Needs follow-up | One-off utilities (`symbol_map.py`).                                              | Decide whether to fold into `scripts/` or document usage.                                                 |
 
 ## Backend Notes
 
