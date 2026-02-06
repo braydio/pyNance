@@ -1,4 +1,3 @@
-
 ---
 
 # pyNance State of the Repo and Implementation Roadmap
@@ -224,7 +223,7 @@ The backend already contains signs of performance-aware engineering, but there a
 
 ## Bottom comments (necessary)
 
-1. **Outdated file examples in “dead/legacy modules”**: The report cites `backend/app/routes/product_transactions.py`, `backend/app/routes/fidelity.py`, and `backend/app/routes/plaid_transfer.py`. On the current `main` branch, these specific files **do not appear to exist**. The *concept* (“repo map lists stale modules / dead code exists or existed”) may still be valid, but these are no longer reliable concrete examples.
+1. **Outdated file examples in “dead/legacy modules”**: The report cites `backend/app/routes/product_transactions.py`, `backend/app/routes/fidelity.py`, and `backend/app/routes/plaid_transfer.py`. On the current `main` branch, these specific files **do not appear to exist**. The _concept_ (“repo map lists stale modules / dead code exists or existed”) may still be valid, but these are no longer reliable concrete examples.
 
 2. **`chromadb/` directory callout**: The report states a top-level `chromadb` directory exists and is stale. On current `main`, that directory **does not appear to exist**.
 
@@ -590,7 +589,7 @@ Consistent error reporting and fewer “silent failures” in UI.
 Agentic implementation plan (Codex-ready, PR-sized)
 Branch strategy and PR sequence
 
-Branch naming: chore/*, fix/*, refactor/*, feat/*, docs/*
+Branch naming: chore/_, fix/_, refactor/_, feat/_, docs/\*
 Sequence: land “safety + bootstrap” first, then refactor surfaces with test scaffolding, then features, then perf.
 PR-sized tasks (each ~1–3 hours)
 
