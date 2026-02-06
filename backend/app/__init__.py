@@ -29,7 +29,6 @@ def create_app():
     Migrate(app, db)
     # Always register routes (for all environments)
     from app.routes.accounts import accounts
-    from app.routes.arbitrage import arbitrage
     from app.routes.categories import categories
     from app.routes.charts import charts
     from app.routes.dashboard import dashboard
@@ -41,7 +40,6 @@ def create_app():
     from app.routes.institutions import institutions
     from app.routes.investments import investments
     from app.routes.manual_io import manual_up
-    from app.routes.plaid import plaid_routes
     from app.routes.plaid_investments import plaid_investments
     from app.routes.plaid_transactions import plaid_transactions
     from app.routes.plaid_webhook import plaid_webhooks
@@ -61,12 +59,10 @@ def create_app():
     app.register_blueprint(rules_bp, url_prefix="/api/rules")
     app.register_blueprint(accounts, url_prefix="/api/accounts")
     app.register_blueprint(manual_up, url_prefix="/api/import")
-    app.register_blueprint(arbitrage, url_prefix="/api/arbitrage")
     app.register_blueprint(charts, url_prefix="/api/charts")
     app.register_blueprint(forecast, url_prefix="/api/forecast")
     app.register_blueprint(recurring, url_prefix="/api/recurring")
     app.register_blueprint(goals, url_prefix="/api/goals")
-    app.register_blueprint(plaid_routes, url_prefix="/api/plaid")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_webhooks, url_prefix="/api/webhooks")
     app.register_blueprint(plaid_webhook_admin, url_prefix="/api/plaid/webhook")
