@@ -73,7 +73,7 @@
    - **Deliverables**
      - Implement the `planningMode` toggle and async helpers inside `frontend/src/composables/usePlanning.ts` to call `frontend/src/services/planningService.ts` and reconcile optimistic updates.
      - Ensure `frontend/src/services/planningService.ts` covers all REST verbs used by the planning view, aligned with `backend/app/routes/planning.py` endpoints.
-     - Document the request/response schema additions in `docs/API_REFERENCE.md` and, if introduced, add fixtures under `tests/fixtures/planning/`.
+     - Document the request/response schema additions in `docs/backend/api-reference.md` and, if introduced, add fixtures under `tests/fixtures/planning/`.
    - **Acceptance tests & docs**
      - Expand `tests/test_api_planning.py` to cover happy-path CRUD plus failure responses that the frontend will surface.
      - Add API-mode Cypress specs (or a Playwright alternative) verifying optimistic updates and fallback on API errors.

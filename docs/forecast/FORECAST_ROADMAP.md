@@ -8,7 +8,7 @@ This document provides comprehensive status tracking and implementation roadmap 
 
 The repository now provides a working forecasting implementation. The core design is described in docs/forecast/FORECAST_PURPOSE.md, which introduces forecast_engine.py, forecast_stat_model.py, and forecast_orchestrator.py.
 
-A status summary in docs/BACKEND_STATUS.md notes that the `/api/forecast` endpoint is live via `ForecastOrchestrator`. Further analytics and delta calculations are still pending.
+A status summary in docs/forecast/backend-status.md notes that the `/api/forecast` endpoint is live via `ForecastOrchestrator`. Further analytics and delta calculations are still pending.
 
 The detailed frontend checklist in frontend/src/components/forecast/03REF_Development_Planning.md shows that UI scaffolding and mock integration are complete, while live engine wiring, investment modeling, and error handling remain open tasks.
 

@@ -22,6 +22,8 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
+- [Component Migration Guide](../frontend/component-migration.md) – frontend component organization strategy
+- [Tailwind + Vite Style Reference](../frontend/tailwind-vite-style-reference.md) – CSS utilities and build notes
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
 
 ## High-Traffic Backend References
@@ -33,3 +35,5 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Path Utilities](../backend/app/helpers/path_utils.md) – safe path resolution helpers for backend file access.
 - [Forecast Engine Helpers](../backend/forecast/engine.md) – deterministic projection helpers for forecast timelines.
 - [Forecast Response Models](../backend/forecast/models.md) – forecast payload structures for timeline, cashflows, and summary data.
+- [API Reference](../backend/api-reference.md) – routing conventions and shared API definitions.
+- [Transactions Performance Playbook](../backend/performance/transactions.md) – caching, prefetch, and performance notes.

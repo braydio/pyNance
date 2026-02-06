@@ -54,7 +54,7 @@
 
 ### Documentation
 
-- Update `docs/backend_routing_plan.md` to reflect the non-null constraint and error behaviour.
+- Update `docs/maintenance/deprecated/backend-routing-plan.md` to reflect the non-null constraint and error behaviour.
 
 ## Phase 2 – Provider Transaction Adapters
 

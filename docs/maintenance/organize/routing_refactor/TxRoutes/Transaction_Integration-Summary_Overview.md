@@ -17,7 +17,7 @@ This initiative is complete when:
 1. Product-level routes are in place and callable (e.g. `/transactions/sync`).
 2. Each route defers to a service layer that coordinates logic.
 3. The service layer dispatches to one or more provider implementations.
-4. Documentation is present in `docs/backend_routing_plan.md`.
+4. Documentation is present in `docs/maintenance/deprecated/backend-routing-plan.md`.
 5. Existing provider-specific route files are deprecated and replaced cleanly.
 
 ---
@@ -80,7 +80,7 @@ This initiative is complete when:
 ### Phase 3 – Cleanup
 
 - [ ] Deprecate old route files
-- [ ] Update `docs/backend_routing_plan.md`
+- [ ] Update `docs/maintenance/deprecated/backend-routing-plan.md`
 - [ ] Add test coverage and fallback handling
 
 ---

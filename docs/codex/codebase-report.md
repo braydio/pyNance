@@ -174,7 +174,7 @@ projection)<br>- Incorporate into Forecast summary │
 
 What’s there:
 A draft “product-first” integration plan for Investments under
-RoutingRefactor/Investments_Integration-Summary_Overview.md.
+docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md.
 
     ## 🚧 Execution Plan
 
@@ -195,8 +195,8 @@ RoutingRefactor/Investments_Integration-Summary_Overview.md.
     - [ ] Verify frontend compatibility or simulate requests
     - [ ] Write test payloads with Plaid sandbox data
 
-RoutingRefactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
-pyNance/RoutingRefactor/Investments_Integration-Summary_Overview.md)
+docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
+pyNance/docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md)
 
     ## 📎 Requirements
 
@@ -204,8 +204,8 @@ pyNance/RoutingRefactor/Investments_Integration-Summary_Overview.md)
     - [ ] Response shape schema for investment holdings + transactions
     - [ ] Clarification if investment sync should be merged with transaction sync
 
-RoutingRefactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
-pyNance/RoutingRefactor/Investments_Integration-Summary_Overview.md)
+docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
+pyNance/docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md)
 
     ## 📈 Tracking Criteria
 
@@ -214,8 +214,8 @@ pyNance/RoutingRefactor/Investments_Integration-Summary_Overview.md)
     - [ ] Provider logic responds with valid structure
     - [ ] Docs updated, code tested
 
-RoutingRefactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
-pyNance/RoutingRefactor/Investments_Integration-Summary_Overview.md)
+docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md (/home/braydenchaffee/Projects/
+pyNance/docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md)
 
 Checklist to Complete Investments-Sync Feature:
 
@@ -234,7 +234,7 @@ normalize output, handle errors/timeouts │
 ├───────────────────────────┼──────────────────────────────────────────────────────────────
 ───────────────────────────────────────────────────────────────────┤
 │ 3. Registration & Docs │ Register blueprint in app/**init**.py, update
-docs/backend_routing_plan.md, add response‐schema definition, write sandbox tests │
+docs/maintenance/deprecated/backend-routing-plan.md, add response‐schema definition, write sandbox tests │
 ├───────────────────────────┼──────────────────────────────────────────────────────────────
 ───────────────────────────────────────────────────────────────────┤
 │ 4. Frontend Compatibility │ Ensure Investments view (Investments.vue) consumes the new
@@ -377,7 +377,7 @@ spec in docs/<br>- Record performance/security considerations │
 
 What’s there:
 A “Backend Routing Refactor Plan” doc and a suite of “Transaction Integration” proposals
-under docs/backend_routing_plan.md and RoutingRefactor/TxRoutes/….
+under docs/maintenance/deprecated/backend-routing-plan.md and docs/maintenance/organize/routing_refactor/TxRoutes/….
 
     ## 🔁 Proposed Flow
 
@@ -385,8 +385,8 @@ under docs/backend_routing_plan.md and RoutingRefactor/TxRoutes/….
 
 providers/plaid.py
 
-docs/backend_routing_plan.md
-(/home/braydenchaffee/Projects/pyNance/docs/backend_routing_plan.md)
+docs/maintenance/deprecated/backend-routing-plan.md
+(/home/braydenchaffee/Projects/pyNance/docs/maintenance/deprecated/backend-routing-plan.md)
 
     ### Phase 1 – Bootstrapping
     - [x] Create new route file: `product_transactions.py`
@@ -401,13 +401,13 @@ docs/backend_routing_plan.md
 
     ### Phase 3 – Cleanup
     - [ ] Deprecate old route files
-    - [ ] Update `docs/backend_routing_plan.md`
+    - [ ] Update `docs/maintenance/deprecated/backend-routing-plan.md`
     - [ ] Add test coverage
 
-RoutingRefactor/TxRoutes/Transaction_Integration-Summary_Overview.md
-(/home/braydenchaffee/Projects/pyNance/RoutingRefactor/TxRoutes/Transaction_Integration-Sum
-mary_Overview.md)RoutingRefactor/TxRoutes/Transaction_Integration-Phase2.md (/home/braydenc
-haffee/Projects/pyNance/RoutingRefactor/TxRoutes/Transaction_Integration-Phase2.md)
+docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Summary_Overview.md
+(/home/braydenchaffee/Projects/pyNance/docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Sum
+mary_Overview.md)docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Phase2.md (/home/braydenc
+haffee/Projects/pyNance/docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Phase2.md)
 
 Checklist to Complete Routing Refactor:
 

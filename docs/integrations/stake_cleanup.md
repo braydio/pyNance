@@ -11,7 +11,7 @@ Stake brokerage integration.
   blueprints, or functions referencing "stake".
 - No Flask blueprints, FastAPI routers, or background tasks matching that name
   were found.
-- Existing API documentation (`docs/API_REFERENCE.md`) also contains no Stake
+- Existing API documentation (`docs/backend/api-reference.md`) also contains no Stake
   endpoints.
 
 ## Frontend review

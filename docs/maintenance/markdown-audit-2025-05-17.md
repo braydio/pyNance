@@ -50,20 +50,20 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 
 ## Core Docs (`docs/` root)
 
-- `docs/API_REFERENCE.md` — Keep.
-- `docs/BACKEND_STATUS.md` — Update to reflect current service health if stale. **Update**
-- `docs/CODEX_REPORT.md` — Update or merge into `docs/process/` if still active; content appears archival. **Update/Assess**
-- `docs/COMPONENTS_MIGRATION.md` — Update; migration status likely changed. **Update**
+- `docs/backend/api-reference.md` — Keep.
+- `docs/forecast/backend-status.md` — Update to reflect current service health if stale. **Update**
+- `docs/codex/codebase-report.md` — Update or merge into `docs/process/` if still active; content appears archival. **Update/Assess**
+- `docs/frontend/component-migration.md` — Update; migration status likely changed. **Update**
 - `docs/ENVIRONMENT_REFERENCE.md` — Keep.
-- `docs/PLAID_ERROR_REMEDIATION.md` — Keep.
-- `docs/RAW_PAYLOAD_STORAGE.md` — Keep.
+- `docs/integrations/plaid_error_remediation.md` — Keep.
+- `docs/backend/app/database/raw_payload_storage.md` — Keep.
 - `docs/README.md` — Keep.
-- `docs/TAILWIND_VITE_STYLE_REFERENCE.md` — Keep.
+- `docs/frontend/tailwind-vite-style-reference.md` — Keep.
 - `docs/ToDoCodex.md` — Merge into `docs/frontend/Consolidated_TODO.md` and remove the legacy file. **Move + Update**
 - `docs/arbit_dashboard.md` — Removed with arbitrage feature retirement. **Done**
 - `docs/arbitrage_page.md` — Removed with arbitrage feature retirement. **Done**
-- `docs/backend_routing_plan.md` — Deprecated (already marked); keep as archived note or remove after confirming consumers. **Deprecate**
-- `docs/category_breakdown_component_review.md` — Move to `docs/frontend/` with other component reviews. **Move**
+- `docs/maintenance/deprecated/backend-routing-plan.md` — Deprecated (already marked); keep as archived note or remove after confirming consumers. **Deprecate**
+- `docs/frontend/category-breakdown-component-review.md` — Now under `docs/frontend/` with component reviews. **Done**
 - `docs/codex/review-and-refactor-backend-routes-and-sql-logic_1-of-3.md` — Keep; specialized codex note in codex folder. **Keep**
 - `docs/dataflow/account_history_aggregation.md` — Keep.
 - `docs/dataflow/investment_sync_pipeline.md` — Keep.
@@ -72,7 +72,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/forecast/FORECAST_ROADMAP.md` — Keep.
 - `docs/forecast/RECURRING_TRANSACTIONS.md` — Keep.
 - `docs/forecast/notes.md` — Keep.
-- `docs/frontend_duplicate_component_review.md` — Move into `docs/frontend/` to co-locate with component docs. **Move**
+- `docs/frontend/duplicate-component-review.md` — Now under `docs/frontend/` with component docs. **Done**
 - `docs/index/INDEX.md` — Update after any relocations to keep index accurate. **Update**
 - `docs/integrations/plaid_investments.md` — Keep.
 - `docs/integrations/stake_cleanup.md` — Keep.
@@ -84,9 +84,9 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/latest/recent_transactions_feature.md` — Update if feature evolved. **Update**
 - `docs/maps/link_account_products_map.md` — Keep.
 - `docs/maps/repository_map.md` — Update to reflect current structure. **Update**
-- `docs/migration_plan.md` — Update if migration plans changed. **Update**
-- `docs/organize/CODEX_RECC-MIGRATION.md` — Keep.
-- `docs/organize/routing_refactor/*` (all) — Keep; organizing notes. **Keep**
+- `docs/process/migration-plan.md` — Update if migration plans changed. **Update**
+- `docs/maintenance/organize/CODEX_RECC-MIGRATION.md` — Keep.
+- `docs/maintenance/organize/routing_refactor/*` (all) — Keep; organizing notes. **Keep**
 - `docs/architecture/architecture_notes.md` — Keep.
 - `docs/process/contributor-guide.md` — Keep.
 - `docs/process/execution-plan.md` — Keep.
@@ -95,8 +95,8 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/process/pr-templates.md` — Keep.
 - `docs/process/repo_organization.md` — Keep.
 - `docs/resolved/runtime_context_fix.md` — Keep (resolved note for posterity).
-- `docs/routing_refactor_2025-05-16.md` — Keep.
-- `docs/tasklog_exchange_token_refactor.md` — Update with current status if refactor progressed. **Update**
+- `docs/maintenance/tasklogs/routing-refactor-2025-05-16.md` — Keep.
+- `docs/maintenance/tasklogs/exchange-token-refactor.md` — Update with current status if refactor progressed. **Update**
 - `docs/ui/planning.md` — Keep.
 
 ## Docs – Frontend Subtree
@@ -153,7 +153,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 
 - `docs/architecture/01_DEV-ArchitectureChecks.md` — Keep.
 - `docs/architecture/Plaid_Helpers_Design.md` — Keep.
-- `docs/frontend_duplicate_component_review.md` — Move to `docs/frontend/` (duplicate listing above). **Move**
+- `docs/frontend/duplicate-component-review.md` — Now under `docs/frontend/` (duplicate listing above). **Done**
 
 ## Docs – Arbitrage/Arbit
 
@@ -164,7 +164,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 
 - `docs/maps/link_account_products_map.md` — Keep.
 - `docs/maps/repository_map.md` — Update (see above). **Update**
-- `docs/migration_plan.md` — Update (see above). **Update**
+- `docs/process/migration-plan.md` — Update (see above). **Update**
 
 ## Frontend Repo Files
 

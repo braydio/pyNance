@@ -69,7 +69,7 @@
 - [ ] Mark `plaid_transactions.py` as deprecated
   - 🔍 Located in `backend/app/routes`; contains tightly-coupled logic
 
-- [ ] Update `docs/backend_routing_plan.md`
+- [ ] Update `docs/maintenance/deprecated/backend-routing-plan.md`
   - ✅ File exists with accurate format
 
 - [ ] Add tests or sandbox payload checks

@@ -25,7 +25,7 @@ Implement API and backend support for **Plaid's `/investments/holdings`** and `/
 - Plaid-specific implementation lives in `providers/plaid.py`
 - Route is registered in `__init__.py`
 - Manual and automated test pass for all sync paths
-- Usage instructions are added to `backend_routing_plan.md`
+- Usage instructions are added to `docs/maintenance/deprecated/backend-routing-plan.md`
 
 ---
 

@@ -29,20 +29,20 @@ This document consolidates active development plans across the repository so the
 
 ## Forecast Engine
 
-- **Docs:** `docs/forecast/FORECAST_ROADMAP.md`, `docs/BACKEND_STATUS.md`
+- **Docs:** `docs/forecast/FORECAST_ROADMAP.md`, `docs/forecast/backend-status.md`
 - Integrate `transactions`, `account_history`, and `recurring_transactions` into forecasting logic.
 - Implement delta analysis, input validation, and additional analytics.
 - Complete frontend wiring for live forecast data.
 
 ## Recurring Transactions & Notifications
 
-- **Docs:** `docs/CODEX_REPORT.md`
+- **Docs:** `docs/codex/codebase-report.md`
 - Validate recurring rule edits and provide confirmation dialogs.
 - Add pattern detection and simulate upcoming instances.
 
 ## Routing Refactor
 
-- **Docs:** `docs/CODEX_REPORT.md`, `docs/organize/routing_refactor/TxRoutes/`
+- **Docs:** `docs/codex/codebase-report.md`, `docs/maintenance/organize/routing_refactor/TxRoutes/`
 - Finish `services/transactions.py` and migrate legacy logic.
 - Apply shared middleware and deprecate old routes.
 
