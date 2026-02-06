@@ -42,6 +42,7 @@ env*/
 .coverage
 .coverage.*
 coverage.xml
+coverage-*.xml
 htmlcov/
 __pypackages__/
 *.pyd
@@ -180,6 +181,9 @@ build/
 
 # Node and test coverage
 coverage/
+junit.xml
+junit-*.xml
+test-results/
 .nyc_output/
 lcov.info
 .pnpm-store/
