@@ -35,7 +35,12 @@
             <li v-for="row in averageDisplayRows" :key="row.label" class="average-breakdown-row">
               <span class="average-breakdown-rank">{{ row.rank }}</span>
               <span class="average-breakdown-label">{{ row.label }}</span>
-              <span class="average-breakdown-amount">{{ formatAmount(row.amount) }}</span>
+              <span class="average-breakdown-amount">
+                {{ formatAmount(row.amount) }}
+                <span class="average-breakdown-percent">
+                  {{ row.percentage.toFixed(1) }}%
+                </span>
+              </span>
             </li>
           </ol>
         </div>
@@ -116,9 +121,11 @@ const averageDisplayRows = computed(() => {
     return []
   }
   const ordered = alignAverageRows(categoryRows.value, averageRows.value)
+  const total = ordered.reduce((sum, row) => sum + Number(row.amount || 0), 0)
   return ordered.map((row, index) => ({
     ...row,
     rank: index + 1,
+    percentage: total > 0 ? (Number(row.amount || 0) / total) * 100 : 0,
   }))
 })
 
@@ -663,6 +670,14 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--color-text-light);
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.average-breakdown-percent {
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
 }
 
 .transaction-row {
