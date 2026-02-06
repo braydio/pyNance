@@ -12,8 +12,8 @@ should be archived or rewritten. Status levels:
 | Path             | Status          | Notes                                                                                | Recommended action                                                                                                                     |
 | ---------------- | --------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | `backend/`       | Live            | Flask API, CLI, and migrations registered via `backend/app/__init__.py`.             | Continue routing/module consolidation; audit unregistered route files noted below.                                                     |
-| `frontend/`      | Live            | Vue 3 app with views such as `Dashboard.vue`, `Accounts.vue`, and arbitrage screens. | Continue component cleanup and ensure docs match the current `src/` tree.                                                              |
-| `plugins/arbit/` | Needs follow-up | External plugin expected by `arbit_cli.py`; not tracked in this repo.                | Ensure the Arbit plugin repo is available at `plugins/arbit/` or disable the dashboard. 【F:backend/app/services/arbit_cli.py†L1-L36】 |
+| `frontend/`      | Live            | Vue 3 app with views such as `Dashboard.vue` and `Accounts.vue`.                    | Continue component cleanup and ensure docs match the current `src/` tree.                                                              |
+| `plugins/arbit/` | Needs follow-up | External plugin expected by `arbit_cli.py`; not tracked in this repo.                | Remove the dependency if the arbitrage feature is retired. 【F:backend/app/services/arbit_cli.py†L1-L36】 |
 | `scripts/`       | Needs follow-up | Mix of active helpers (`setup.sh`, `dev-watcher.sh`) and ML/Chroma tooling.          | Tag scripts by owner/purpose; remove unused automation after review.                                                                   |
 | `docs/`          | Live            | Comprehensive documentation tree across backend, frontend, process, and roadmaps.    | Prune superseded reports during upcoming cleanup cycles.                                                                               |
 | `tests/`         | Live            | Pytest suite covering services, routes, and integrations.                            | Keep parity with new routes/services; expand coverage as features evolve.                                                              |
@@ -25,22 +25,16 @@ should be archived or rewritten. Status levels:
 
 - Application factory registers Flask blueprints in `backend/app/__init__.py`; any route not imported here is effectively
   dead code. 【F:backend/app/**init**.py†L14-L78】
-- `backend/app/routes/` contains live blueprints (`accounts.py`, `plaid_transactions.py`, etc.) and several legacy modules
-  that are never registered:
-  - `product_transactions.py` is FastAPI-specific and unused. 【F:backend/app/routes/product_transactions.py†L1-L20】
-  - `fidelity.py` references a missing `FidelityService`. 【F:backend/app/routes/fidelity.py†L1-L10】
-  - `plaid_transfer.py` spins up an ad-hoc Flask app instead of a blueprint. 【F:backend/app/routes/plaid_transfer.py†L1-L60】
-  - Recommend relocating these to an `/archive` folder or rewriting them as proper blueprints.
-- Services under `backend/app/services/` are active, including arbitrage helpers and forecasting orchestration.
-  Ensure future docs reference the SQL-backed services instead of old notebook workflows. 【F:backend/app/services/arbit_cli.py†L1-L36】
+- `backend/app/routes/` contains live blueprints (`accounts.py`, `plaid_transactions.py`, etc.). Keep this list updated
+  when routes are removed or consolidated.
+- Services under `backend/app/services/` are active, including forecasting orchestration.
 - Migrations in `backend/migrations/versions/` define canonical schema; keep `versions_archived/` for historical
   context but exclude from future autogeneration.
 
 ## Frontend Notes
 
 - Vue application structure lives in `frontend/src/`, with views (`views/*.vue`) and shared components (`components/*.vue`).
-  Key entry points include the arbitrage dashboards (`ArbitDashboard.vue`, `ArbitrageLive.vue`) that match backend routes.
-  【F:frontend/src/views/ArbitDashboard.vue†L1-L30】【F:frontend/src/components/ArbitMetrics.vue†L1-L80】
+  Key entry points include core dashboard and accounts views.
 - Legacy directory maps in `docs/maps/` were deleted because they referenced a pre-migration component tree. Maintain this
   document instead and update it when the frontend structure shifts.
 

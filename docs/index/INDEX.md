@@ -21,8 +21,6 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Devnotes](../devnotes/) – working notes and scratch references
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
-- [Arbit Dashboard](../arbit_dashboard.md) – configuration, endpoints, and UI
-- [Arbit Dashboard UI](../frontend/arbit_dashboard.md) – component layout and live log feed
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
 

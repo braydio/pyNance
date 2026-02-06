@@ -1,5 +1,7 @@
 # `arbit_metrics.py`
 
+Status: Deprecated (arbitrage feature retired on February 1, 2026)
+
 Fetch metrics from the Arbit exporter and parse key values for dashboard use.
 
 ## Responsibilities

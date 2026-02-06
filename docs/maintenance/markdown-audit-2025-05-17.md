@@ -11,19 +11,19 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 
 ## Root-Level Files
 
-- `ACCOUNT_SNAPSHOT_FIXES.md` — Move to `docs/maintenance/` and confirm whether tasks are still open; document is a temporary checklist intended for removal once completed. **Move + Update**
+- `docs/maintenance/ACCOUNT_SNAPSHOT_FIXES.md` — Moved to `docs/maintenance/`; confirm whether tasks are still open and remove when done. **Done**
 - `AGENTS.md` — Keep at root; active contributor guidance referenced by automation. **Keep**
 - `CONTRIBUTING.md` — Keep; primary contribution standards. **Keep**
-- `DATABASE_OVERVIEW.md` — Relocate under `docs/backend/` (or `docs/architecture/`) to live with database design notes; refresh against current models. **Move + Update**
-- `ORGANIZATION.md` — Move to `docs/process/`; strategic repo/process plan rather than root reference. **Move**
-- `POSTGRE_CHEAT_SHEET.md` — Move to `docs/backend/` alongside other database docs. **Move**
+- `docs/backend/DATABASE_OVERVIEW.md` — Relocated under `docs/backend/`; refresh against current models. **Done**
+- `docs/process/ORGANIZATION.md` — Moved to `docs/process/`. **Done**
+- `docs/backend/POSTGRE_CHEAT_SHEET.md` — Moved to `docs/backend/`. **Done**
 - `README.md` — Keep; main entry point. **Keep**
-- `SQL_DATABASE_CHANGES.md` — Move to `docs/backend/` and polish incomplete sentences for clarity. **Move + Update**
+- `docs/backend/SQL_DATABASE_CHANGES.md` — Moved to `docs/backend/`; polish incomplete sentences for clarity. **Done**
 
 ## Backend (non-docs) Directory
 
 - `backend/AGENTS.md` — Keep; scoped contributor rules. **Keep**
-- `backend/app/routes/CHARTS_CAT_BREAKDOWN.md` — Route-specific reference is in `backend/app/routes`; location matches scope. **Keep**
+- `backend/app/routes/CHARTS_CAT_BREAKDOWN.md` — Removed with retired route docs cleanup. **Done**
 - `backend/app/services/FORECAST_RECURRING_ROADMAP.md` — Service roadmap fits services context. **Keep**
 - `backend/app/static/README.md` — Static assets README fits location. **Keep**
 
@@ -60,8 +60,8 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/README.md` — Keep.
 - `docs/TAILWIND_VITE_STYLE_REFERENCE.md` — Keep.
 - `docs/ToDoCodex.md` — Merge into `docs/frontend/Consolidated_TODO.md` and remove the legacy file. **Move + Update**
-- `docs/arbit_dashboard.md` — Move to `docs/frontend/` to align with UI focus; duplicate with frontend version. **Move/Consolidate**
-- `docs/arbitrage_page.md` — Move to `docs/frontend/` for UI alignment. **Move**
+- `docs/arbit_dashboard.md` — Removed with arbitrage feature retirement. **Done**
+- `docs/arbitrage_page.md` — Removed with arbitrage feature retirement. **Done**
 - `docs/backend_routing_plan.md` — Deprecated (already marked); keep as archived note or remove after confirming consumers. **Deprecate**
 - `docs/category_breakdown_component_review.md` — Move to `docs/frontend/` with other component reviews. **Move**
 - `docs/codex/review-and-refactor-backend-routes-and-sql-logic_1-of-3.md` — Keep; specialized codex note in codex folder. **Keep**
@@ -115,7 +115,7 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 - `docs/frontend/THEMING_GUIDE.md` — Keep.
 - `docs/frontend/accounts-component-spec.md` — Keep.
 - `docs/frontend/accounts-development-plan.md` — Keep.
-- `docs/frontend/arbit_dashboard.md` — Keep; consider consolidating with root copy. **Keep/Consolidate**
+- `docs/frontend/arbit_dashboard.md` — Removed with arbitrage feature retirement. **Done**
 - `docs/frontend/component-review-tracker.md` — Keep.
 - `docs/frontend/dashboard-component-spec.md` — Keep.
 - `docs/frontend/phase-1-audit-details.md` — Keep.
@@ -157,8 +157,8 @@ Purpose: classify every tracked Markdown file by recommended action (acceptable,
 
 ## Docs – Arbitrage/Arbit
 
-- `docs/arbit_dashboard.md` — Move to `docs/frontend/` (see above). **Move/Consolidate**
-- `docs/arbitrage_page.md` — Move to `docs/frontend/` (see above). **Move**
+- `docs/arbit_dashboard.md` — Removed with arbitrage feature retirement. **Done**
+- `docs/arbitrage_page.md` — Removed with arbitrage feature retirement. **Done**
 
 ## Docs – Miscellaneous
 

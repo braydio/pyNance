@@ -70,7 +70,7 @@ pyNance/
 ├── tests/                   # Integration tests
 ├── .bashrc.example          # ✨ NEW: Shell environment template
 ├── .gitignore               # ✨ UPDATED: Enhanced security rules
-└── ORGANIZATION.md          # ✨ NEW: This document
+└── docs/process/ORGANIZATION.md          # ✨ NEW: This document
 ```
 
 ## Developer Onboarding

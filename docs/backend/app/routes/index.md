@@ -36,8 +36,6 @@ Use the links below to open a specific route reference.
 - [summary.md](summary.md) – Financial aggregates used on the dashboard.
 - [charts.md](charts.md) – Time-series visualizations and chart helpers.
 - [forecast.md](forecast.md) – Cash flow forecasting endpoints.
-- [arbitrage.md](arbitrage.md) – Latest arbitrage snapshot feed.
-- [arbit_dashboard.md](arbit_dashboard.md) – Optional arbitrage dashboard APIs.
 
 ### Planning & Goals
 - [planning.md](planning.md) – Bill planning and allocations.
@@ -50,14 +48,10 @@ Use the links below to open a specific route reference.
 - [institutions.md](institutions.md) – Institution aggregation and refresh.
 - [transactions.md](transactions.md) – Core transaction queries and updates.
 - [categories.md](categories.md) – Category metadata and tagging flows.
-- [product_transactions.md](product_transactions.md) – Product-level transaction views.
 - [export.md](export.md) – Bulk export helpers for downstream analysis.
 - [frontend.md](frontend.md) – Frontend configuration delivery.
 
 ### Integrations & Sync
-- [plaid.md](plaid.md) – Plaid link token exchange and item lifecycle.
 - [plaid_transactions.md](plaid_transactions.md) – Plaid transaction sync APIs.
 - [plaid_investments.md](plaid_investments.md) – Plaid investments data fetchers.
-- [plaid_transfer.md](plaid_transfer.md) – Plaid transfer product orchestration.
 - [plaid_webhook.md](plaid_webhook.md) – Webhook handlers for Plaid events.
-- [fidelity.md](fidelity.md) – Fidelity integration wrapper.

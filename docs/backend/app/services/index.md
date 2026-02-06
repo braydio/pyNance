@@ -31,10 +31,6 @@
 - [`sync_service.py`](sync_service.md): Orchestrates transaction ingestion from APIs or files.
 - [`transactions.py`](transactions.md): Core logic for interacting with transaction data.
 
-### Arbitrage
-
-- [`arbit_metrics.py`](arbit_metrics.md): Retrieves metrics from the Arbit exporter.
-
 ### Planning
 
 - [`planning_service.py`](planning_service.md): In-memory prototype for bills and allocation planning workflows.
