@@ -49,6 +49,7 @@ all of them:
 | `--color-accent-red`                            | danger or expense accent          |
 | `--color-accent-green`                          | positive/earning accent           |
 | `--color-accent-orange`                         | warning or trend accent           |
+| `--color-accent-indigo`                         | fresh highlight accent            |
 | `--primary` / `--primary-dark`                  | generic button colors             |
 | `--hover-bg`                                    | hover background for buttons      |
 | `--hover-glow`                                  | drop shadow for hover effects     |
@@ -57,7 +58,7 @@ all of them:
 | `--color-warning` / `--color-bg-warning`        | warning states                    |
 | `--color-info` / `--color-bg-info`              | informational states              |
 
-Additional variables such as `--color-accent-magenta`, `--color-accent-cyan`,
+Additional variables such as `--color-accent-magenta`, `--color-accent-indigo`,
 `--bar-gradient-end`, `--asset-gradient-start`/`--asset-gradient-end`, and
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.
@@ -92,6 +93,7 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - Table headers use `var(--table-header)` while zebra rows alternate between `var(--table-surface)` and `var(--table-surface-alt)`; hover states rely on `var(--table-hover)`.
 - Filters and inline controls should reuse `var(--table-control)` to stay neutral and avoid drawing focus away from gradient cards.
 - Accent colors remain on chips and badges, but gradient fills are reserved for hero metrics and summary cards.
+- Use `--color-accent-indigo` for “active edit” or “fresh highlight” states when you need a distinct, non-critical accent.
 - Reference implementations live in `frontend/src/components/tables/AccountsTable.vue`, `frontend/src/components/tables/TransactionsTable.vue`, and the modal/inline tables in `frontend/src/components/tables/UpdateTransactionsTable.vue` and `ModalTransactionsDisplay.vue`.
 
 ## Conclusion
