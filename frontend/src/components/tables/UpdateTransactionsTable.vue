@@ -137,54 +137,111 @@
               </template>
               <template v-else>
                 <td class="col-date">
-                  <input
-                    v-if="editingIndex === row.renderIndex"
-                    v-model="editBuffer.date"
-                    type="date"
-                    class="input"
-                  />
+                  <div v-if="editingIndex === row.renderIndex" class="edit-cell">
+                    <span class="edit-original">
+                      {{ formatDate(editingOriginalValues.date) }}
+                    </span>
+                    <div class="input-group">
+                      <span class="input-prefix" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" role="img">
+                          <path
+                            d="M5 4.5h1.5V3h2v1.5h3V3h2v1.5H15a2 2 0 0 1 2 2V15a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6.5a2 2 0 0 1 2-2Z"
+                            stroke="currentColor"
+                            stroke-width="1.3"
+                          />
+                          <path d="M6 9h8M6 12h5" stroke="currentColor" stroke-width="1.3" />
+                        </svg>
+                      </span>
+                      <input v-model="editBuffer.date" type="date" class="input input-with-prefix" />
+                    </div>
+                  </div>
                   <span v-else class="truncate">{{
                     formatDate(row.tx.date || row.tx.transaction_date)
                   }}</span>
                 </td>
                 <td class="col-amount">
-                  <input
-                    v-if="editingIndex === row.renderIndex"
-                    v-model.number="editBuffer.amount"
-                    type="number"
-                    step="0.01"
-                    class="input"
-                  />
-                  <span v-else class="truncate">{{ formatAmount(row.tx.amount) }}</span>
+                  <div v-if="editingIndex === row.renderIndex" class="edit-cell">
+                    <span class="edit-original">{{ formatAmount(editingOriginalValues.amount) }}</span>
+                    <div class="input-group">
+                      <span class="input-prefix" aria-hidden="true">$</span>
+                      <input
+                        v-model.number="editBuffer.amount"
+                        type="number"
+                        step="0.01"
+                        class="input input-with-prefix amount-input"
+                        :class="amountTone(editBuffer.amount)"
+                      />
+                    </div>
+                  </div>
+                  <span v-else class="truncate" :class="amountTone(row.tx.amount)">
+                    {{ formatAmount(row.tx.amount) }}
+                  </span>
                 </td>
                 <td class="col-description">
-                  <input
-                    v-if="editingIndex === row.renderIndex"
-                    v-model="editBuffer.description"
-                    type="text"
-                    class="input"
-                  />
+                  <div v-if="editingIndex === row.renderIndex" class="edit-cell">
+                    <span class="edit-original">{{ editingOriginalValues.description || '—' }}</span>
+                    <div class="input-group">
+                      <span class="input-prefix" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" role="img">
+                          <path
+                            d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 16 15.5H4A1.5 1.5 0 0 1 2.5 14V6A1.5 1.5 0 0 1 4 4.5Z"
+                            stroke="currentColor"
+                            stroke-width="1.3"
+                          />
+                          <path d="M6 8h8M6 11h5" stroke="currentColor" stroke-width="1.3" />
+                        </svg>
+                      </span>
+                      <input v-model="editBuffer.description" type="text" class="input input-with-prefix" />
+                    </div>
+                  </div>
                   <span v-else class="truncate">{{ row.tx.description }}</span>
                 </td>
                 <td class="col-category">
-                  <input
-                    v-if="editingIndex === row.renderIndex"
-                    v-model="editBuffer.category"
-                    type="text"
-                    list="category-suggestions"
-                    class="input"
-                    placeholder="Select or type category"
-                  />
+                  <div v-if="editingIndex === row.renderIndex" class="edit-cell">
+                    <span class="edit-original">{{ editingOriginalValues.category || '—' }}</span>
+                    <div class="input-group">
+                      <span class="input-prefix" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" role="img">
+                          <path
+                            d="M4 4.5h12a1.5 1.5 0 0 1 1.5 1.5v2.5a2 2 0 0 1-2 2H8.5l-3.3 3.3a.6.6 0 0 1-1-.4V10A2 2 0 0 1 2.5 8V6A1.5 1.5 0 0 1 4 4.5Z"
+                            stroke="currentColor"
+                            stroke-width="1.3"
+                          />
+                        </svg>
+                      </span>
+                      <input
+                        v-model="editBuffer.category"
+                        type="text"
+                        list="category-suggestions"
+                        class="input input-with-prefix"
+                        placeholder="Select or type category"
+                      />
+                    </div>
+                  </div>
                   <span v-else>{{ row.tx.category }}</span>
                 </td>
                 <td class="px-4 py-3">
-                  <input
-                    v-if="editingIndex === row.renderIndex"
-                    v-model="editBuffer.merchant_name"
-                    type="text"
-                    list="merchant-suggestions"
-                    class="input"
-                  />
+                  <div v-if="editingIndex === row.renderIndex" class="edit-cell">
+                    <span class="edit-original">{{ editingOriginalValues.merchant_name || '—' }}</span>
+                    <div class="input-group">
+                      <span class="input-prefix" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" role="img">
+                          <path
+                            d="M3.5 7.5 10 3l6.5 4.5v7a1.5 1.5 0 0 1-1.5 1.5H5a1.5 1.5 0 0 1-1.5-1.5v-7Z"
+                            stroke="currentColor"
+                            stroke-width="1.3"
+                          />
+                          <path d="M6.5 10.5h7M6.5 13h5" stroke="currentColor" stroke-width="1.3" />
+                        </svg>
+                      </span>
+                      <input
+                        v-model="editBuffer.merchant_name"
+                        type="text"
+                        list="merchant-suggestions"
+                        class="input input-with-prefix"
+                      />
+                    </div>
+                  </div>
                   <span v-else class="truncate">{{ row.tx.merchant_name }}</span>
                 </td>
                 <td class="col-account truncate">{{ row.tx.account_name || 'N/A' }}</td>
@@ -335,6 +392,13 @@ const selectedSubcategory = ref('')
 const editingIndex = ref(null)
 const editingTransactionId = ref(null)
 const editingTransactionSnapshot = ref(null)
+const editingOriginalValues = ref({
+  date: '',
+  amount: null,
+  description: '',
+  category: '',
+  merchant_name: '',
+})
 const lastAutoEditId = ref('')
 const editBuffer = ref({
   date: '',
@@ -568,6 +632,13 @@ function buildEditBuffer(tx) {
 function startEdit(index, tx) {
   editingTransactionId.value = tx?.transaction_id || null
   editingTransactionSnapshot.value = buildRuleContext(tx)
+  editingOriginalValues.value = {
+    date: resolveTransactionDate(tx),
+    amount: tx?.amount ?? null,
+    description: tx?.description || '',
+    category: tx?.category || '',
+    merchant_name: tx?.merchant_name || '',
+  }
   editBuffer.value = buildEditBuffer(tx)
   editingIndex.value = index
 }
@@ -579,6 +650,13 @@ function cancelEdit() {
   editingIndex.value = null
   editingTransactionId.value = null
   editingTransactionSnapshot.value = null
+  editingOriginalValues.value = {
+    date: '',
+    amount: null,
+    description: '',
+    category: '',
+    merchant_name: '',
+  }
   editBuffer.value = {
     date: '',
     amount: null,
@@ -586,6 +664,15 @@ function cancelEdit() {
     category: '',
     merchant_name: '',
   }
+}
+
+function amountTone(value) {
+  if (value == null || value === '') return 'amount-neutral'
+  const numeric = Number(value)
+  if (Number.isNaN(numeric)) return 'amount-neutral'
+  if (numeric < 0) return 'amount-negative'
+  if (numeric > 0) return 'amount-positive'
+  return 'amount-neutral'
 }
 
 function isValidDate(value) {
@@ -1037,6 +1124,50 @@ async function loadCategoryData() {
   border-color: var(--divider);
 }
 
+.edit-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.edit-original {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, var(--color-text-light) 55%, transparent);
+  text-transform: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix {
+  position: absolute;
+  left: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  color: color-mix(in srgb, var(--color-accent-indigo) 75%, var(--color-text-muted));
+  pointer-events: none;
+}
+
+.input-prefix svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.input-with-prefix {
+  padding-left: 2.2rem;
+}
+
 .input:focus {
   outline: none;
   box-shadow: 0 0 0 2px rgba(113, 156, 214, 0.35);
@@ -1112,6 +1243,28 @@ async function loadCategoryData() {
   font-variant-numeric: tabular-nums;
 }
 
+.date-input {
+  text-align: left;
+  font-weight: 600;
+}
+
+.amount-input {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.amount-positive {
+  color: var(--color-accent-green);
+}
+
+.amount-negative {
+  color: var(--color-accent-red);
+}
+
+.amount-neutral {
+  color: var(--color-text-light);
+}
+
 .col-description {
   width: 240px;
 }
@@ -1138,6 +1291,7 @@ async function loadCategoryData() {
 
 .row-editing {
   background: rgba(113, 156, 214, 0.12);
+  box-shadow: inset 3px 0 0 var(--color-accent-indigo);
 }
 
 .row-even {
