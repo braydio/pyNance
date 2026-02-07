@@ -58,7 +58,7 @@ Repo documentation calls out stale/unregistered modules. Examples **in the origi
 
 **Comments:**
 
-- These specific files **do not appear to exist** on current `main`. The *concept* of stale references still matters, but examples must be refreshed before actioning.
+- These specific files **do not appear to exist** on current `main`. The _concept_ of stale references still matters, but examples must be refreshed before actioning.
 
 ### Requirements Duplication
 
