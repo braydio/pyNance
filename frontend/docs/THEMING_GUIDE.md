@@ -49,6 +49,7 @@ all of them:
 | `--color-accent-red`                            | danger or expense accent          |
 | `--color-accent-green`                          | positive/earning accent           |
 | `--color-accent-orange`                         | warning or trend accent           |
+| `--color-accent-indigo`                         | fresh highlight accent            |
 | `--primary` / `--primary-dark`                  | generic button colors             |
 | `--hover-bg`                                    | hover background for buttons      |
 | `--hover-glow`                                  | drop shadow for hover effects     |
@@ -57,7 +58,7 @@ all of them:
 | `--color-warning` / `--color-bg-warning`        | warning states                    |
 | `--color-info` / `--color-bg-info`              | informational states              |
 
-Additional variables such as `--color-accent-magenta`, `--color-accent-cyan`,
+Additional variables such as `--color-accent-magenta`, `--color-accent-indigo`,
 `--bar-gradient-end`, `--asset-gradient-start`/`--asset-gradient-end`, and
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.
@@ -100,6 +101,7 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - Keep accents to borders, headings, or small highlights; avoid repainting large panels with new accent blends.
 - Pair related controls (title + toolbar) using the same surface tokens and a neutral separator (`--divider`).
 - Prefer existing accent tokens over new color mixes; if a new mix is needed, document the reason and scope.
+- Use `--color-accent-indigo` for “active edit” or “fresh highlight” states when you need a distinct, non-critical accent.
 
 ## Conclusion
 
