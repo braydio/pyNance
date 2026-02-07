@@ -13,10 +13,12 @@ export const ACCENT_COLOR_VARS = [
   '--color-accent-blue',
   '--color-accent-orange',
   '--color-accent-green',
+  '--color-accent-indigo',
   '--color-accent-purple',
   '--color-accent-red',
   // Repeat a second pass for larger palettes without adjacent similarity
   '--color-accent-cyan',
+  '--color-accent-indigo',
   '--color-accent-magenta',
 ] as const
 
