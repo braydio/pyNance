@@ -16,13 +16,13 @@ cd "$REPO_ROOT"
 USE_SLIM=0
 for arg in "$@"; do
   case "$arg" in
-    --slim)
-      USE_SLIM=1
-      ;;
-    *)
-      echo "Usage: $0 [--slim]"
-      exit 1
-      ;;
+  --slim)
+    USE_SLIM=1
+    ;;
+  *)
+    echo "Usage: $0 [--slim]"
+    exit 1
+    ;;
   esac
 done
 
@@ -63,8 +63,8 @@ fi
 
 ## 3. Create .env if missing
 if [ ! -f backend/.env ]; then
-  echo "Creating .env file from backend/example.env..."
-  cp backend/example.env backend/.env
+  echo "Creating .env file from backend/.env.example..."
+  cp backend/.env.example backend/.env
 fi
 
 ## 4. Set up Git hooks
