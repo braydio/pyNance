@@ -100,7 +100,15 @@
       class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
     >
       <div>
-        <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+        <div class="flex flex-wrap items-center gap-3">
+          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+          <span
+            class="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-indigo)]/50 bg-[var(--color-bg-dark)]/40 px-3 py-1 text-xs font-semibold text-[var(--color-text-light)]"
+          >
+            <span class="h-2 w-2 rounded-full bg-[var(--color-accent-indigo)]"></span>
+            {{ reviewCountLabel }}
+          </span>
+        </div>
         <p class="text-muted">
           Step through transactions in batches of 10, approve quickly, or edit in place without
           leaving the dashboard.
@@ -226,7 +234,7 @@
 /**
  * Dashboard view showing financial summaries, charts, and drill-down modals.
  */
-import { ref, computed, onMounted, defineAsyncComponent } from 'vue'
+import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
@@ -367,6 +375,10 @@ const { dateRange = ref({ start: '', end: '' }), debouncedRange = ref({ start: '
 
 const reviewTagFilter = ref('')
 const normalizedReviewTag = computed(() => reviewTagFilter.value.trim())
+const reviewCount = ref(0)
+const reviewCountLoading = ref(false)
+const reviewCountError = ref(false)
+let reviewCountToken = 0
 
 const reviewFilters = computed(() => {
   const filters = {
@@ -378,6 +390,38 @@ const reviewFilters = computed(() => {
   }
   return filters
 })
+
+const reviewCountLabel = computed(() => {
+  if (reviewCountLoading.value) return 'Loading…'
+  if (reviewCountError.value) return 'Count unavailable'
+  return `${reviewCount.value} to review`
+})
+
+async function loadReviewCount(filters = reviewFilters.value) {
+  const token = ++reviewCountToken
+  reviewCountLoading.value = true
+  reviewCountError.value = false
+
+  try {
+    const result = await fetchTransactionsApi({
+      page: 1,
+      page_size: 1,
+      ...filters,
+    })
+    if (token !== reviewCountToken) return
+    const total = Number(result.total ?? result.total_count ?? result.count ?? 0)
+    reviewCount.value = Number.isFinite(total) ? total : 0
+  } catch (error) {
+    if (token !== reviewCountToken) return
+    console.error('Failed to load review count', error)
+    reviewCountError.value = true
+    reviewCount.value = 0
+  } finally {
+    if (token === reviewCountToken) {
+      reviewCountLoading.value = false
+    }
+  }
+}
 
 /**
  * Perform the dashboard's initial data load in parallel so hero, breakdown,
@@ -410,6 +454,7 @@ async function loadDashboardData(range = debouncedRange.value) {
       refreshOptions(params).catch(recordFailure),
       loadTransactions(1, { force: true }).catch(recordFailure),
     ])
+    loadReviewCount(reviewFilters.value)
 
     if (loadToken !== activeLoadToken) {
       return
@@ -568,6 +613,7 @@ async function setDashboardBreakdownMode(mode) {
 }
 
 onMounted(loadDashboardData)
+watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
 
 /**
  * The modal manager in `useDashboardModals` keeps overlays mutually exclusive so
