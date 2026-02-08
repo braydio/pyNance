@@ -37,9 +37,7 @@
               <span class="average-breakdown-label">{{ row.label }}</span>
               <span class="average-breakdown-amount">
                 {{ formatAmount(row.amount) }}
-                <span class="average-breakdown-percent">
-                  {{ row.percentage.toFixed(1) }}%
-                </span>
+                <span class="average-breakdown-percent"> {{ row.percentage.toFixed(1) }}% </span>
               </span>
             </li>
           </ol>
