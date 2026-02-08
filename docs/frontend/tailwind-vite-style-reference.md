@@ -38,10 +38,10 @@ npm install -D @tailwindcss/postcss
 ```js
 module.exports = {
   plugins: {
-    '@tailwindcss/postcss': {},
+    "@tailwindcss/postcss": {},
     autoprefixer: {},
   },
-}
+};
 ```
 
 **Why not `@tailwindcss/vite`:**
