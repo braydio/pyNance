@@ -152,7 +152,11 @@
                           <path d="M6 9h8M6 12h5" stroke="currentColor" stroke-width="1.3" />
                         </svg>
                       </span>
-                      <input v-model="editBuffer.date" type="date" class="input input-with-prefix" />
+                      <input
+                        v-model="editBuffer.date"
+                        type="date"
+                        class="input input-with-prefix"
+                      />
                     </div>
                   </div>
                   <span v-else class="truncate">{{
@@ -161,7 +165,9 @@
                 </td>
                 <td class="col-amount">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
-                    <span class="edit-original">{{ formatAmount(editingOriginalValues.amount) }}</span>
+                    <span class="edit-original">{{
+                      formatAmount(editingOriginalValues.amount)
+                    }}</span>
                     <div class="input-group">
                       <span class="input-prefix" aria-hidden="true">$</span>
                       <input
@@ -179,7 +185,9 @@
                 </td>
                 <td class="col-description">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
-                    <span class="edit-original">{{ editingOriginalValues.description || '—' }}</span>
+                    <span class="edit-original">{{
+                      editingOriginalValues.description || '—'
+                    }}</span>
                     <div class="input-group">
                       <span class="input-prefix" aria-hidden="true">
                         <svg viewBox="0 0 20 20" fill="none" role="img">
@@ -191,7 +199,11 @@
                           <path d="M6 8h8M6 11h5" stroke="currentColor" stroke-width="1.3" />
                         </svg>
                       </span>
-                      <input v-model="editBuffer.description" type="text" class="input input-with-prefix" />
+                      <input
+                        v-model="editBuffer.description"
+                        type="text"
+                        class="input input-with-prefix"
+                      />
                     </div>
                   </div>
                   <span v-else class="truncate">{{ row.tx.description }}</span>
@@ -222,7 +234,9 @@
                 </td>
                 <td class="px-4 py-3">
                   <div v-if="editingIndex === row.renderIndex" class="edit-cell">
-                    <span class="edit-original">{{ editingOriginalValues.merchant_name || '—' }}</span>
+                    <span class="edit-original">{{
+                      editingOriginalValues.merchant_name || '—'
+                    }}</span>
                     <div class="input-group">
                       <span class="input-prefix" aria-hidden="true">
                         <svg viewBox="0 0 20 20" fill="none" role="img">
