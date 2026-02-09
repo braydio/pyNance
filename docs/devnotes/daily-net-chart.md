@@ -1,4 +1,5 @@
 # Daily Net Chart Guidelines
+
 **Purpose.** The Daily Net chart in `DailyNetChart.vue` tracks three interrelated metrics for each date: gross income, gross expenses, and the net delta. It lives on the dashboard and drives `FinancialSummary` data via emitted events.
 
 **Visual rules.**
@@ -10,7 +11,7 @@
 - **Scaling.** The y-axis is configured with `stacked: true` so the bars grow from zero in appropriate directions. Do not convert expenses to positive values or change the axis stacking without a clear reason.
 - **Tooltip.** The hover tooltip uses the same treatment as the categories chart: theme card background (`--theme-bg`), yellow outline (`--color-accent-yellow`), and `Fira Code`-style typography for title/body. It lists Income, Expenses, Net, and Transaction count, plus the “Prior …” block when the comparison overlay is active, and the card now snaps to the yellow net dash.
 - **Tooltip pointer.** Tooltips now snap to the yellow net dash using a custom `positioner` so the arrow always points at the net indicator, creating a tighter visual relationship between the hover card and the metric.
-- **Legend.** The default Chart.js legend is hidden (`display: false`) to keep the card clean.
+- **Legend.** The default Chart.js legend remains hidden (`display: false`), and the component renders a lightweight responsive legend row above the canvas only for active overlay lines (for example `Avg Income`, `Avg Expenses`, `This Day Last Month`, `30-Day Avg`, `7-Day Avg`) with matching color/dash swatches in draw order.
 
 **Why it matters.** The combination of stacked income/expense bars with a front-facing net line supports the “what you earned vs what you spent vs what you kept” story we want everywhere, while the consistent tooltip and absence of redundant legend keeps the card uncluttered.
 

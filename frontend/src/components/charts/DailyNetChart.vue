@@ -1,5 +1,19 @@
 <template>
   <div class="daily-net-chart">
+    <div
+      v-if="legendItems.length"
+      class="daily-net-chart__legend"
+      aria-label="Active chart overlays"
+    >
+      <div v-for="item in legendItems" :key="item.label" class="daily-net-chart__legend-item">
+        <span
+          class="daily-net-chart__legend-swatch"
+          :style="item.swatchStyle"
+          aria-hidden="true"
+        ></span>
+        <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+      </div>
+    </div>
     <div style="height: 400px">
       <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
     </div>
@@ -124,6 +138,7 @@ const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
 const comparisonData = ref([])
+const legendItems = ref([])
 const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
 
 const MS_PER_DAY = 86400000
@@ -250,6 +265,27 @@ function buildLineDataset(label, data, color, overrides = {}) {
     ...overrides,
   }
 }
+
+const buildLegendItems = (datasets) =>
+  [...datasets]
+    .map((dataset, index) => ({ ...dataset, index }))
+    .filter((dataset) => dataset.type === 'line')
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.index - b.index)
+    .map((dataset) => {
+      const dash = dataset.borderDash || []
+      const swatchStyle = {
+        borderColor: dataset.borderColor,
+      }
+
+      if (dash.length >= 2) {
+        swatchStyle.backgroundImage = `repeating-linear-gradient(to right, ${dataset.borderColor}, ${dataset.borderColor} ${dash[0]}px, transparent ${dash[0]}px, transparent ${dash[0] + dash[1]}px)`
+      }
+
+      return {
+        label: dataset.label,
+        swatchStyle,
+      }
+    })
 
 function emphasizeColor(hex, channel = 'g') {
   return hex
@@ -627,6 +663,7 @@ async function renderChart() {
   chartInstance.value.$comparisonSeries = comparisonSeries
   chartInstance.value.$comparisonLabel = comparisonLabel
   chartInstance.value.$netValues = net
+  legendItems.value = buildLegendItems(datasets)
 }
 
 async function fetchData() {
@@ -675,3 +712,28 @@ onMounted(() => {
 })
 onUnmounted(() => chartInstance.value?.destroy())
 </script>
+
+<style scoped>
+.daily-net-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-net-chart__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.daily-net-chart__legend-swatch {
+  width: 1.75rem;
+  height: 0;
+  border-top: 2px solid var(--color-text-muted);
+  background-repeat: repeat-x;
+}
+</style>
