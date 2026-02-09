@@ -1,4 +1,5 @@
 # Daily Net Chart Guidelines
+
 **Purpose.** The Daily Net chart in `DailyNetChart.vue` tracks three interrelated metrics for each date: gross income, gross expenses, and the net delta. It lives on the dashboard and drives `FinancialSummary` data via emitted events.
 
 **Visual rules.**
