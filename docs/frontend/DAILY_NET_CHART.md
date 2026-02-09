@@ -16,3 +16,13 @@ The dashboard overlay sidebar now supports a comparison series that fetches a pr
 
 The comparison series renders as a faint, dashed line so it is visible without overpowering the primary
 income and expense bars.
+
+## Loading, Empty, and Error States
+
+The chart now manages explicit request/UI state with local reactive flags:
+
+- `isLoading`: shows an inline loading state while primary or comparison requests are in flight.
+- `isEmpty`: displays "No transactions found for the selected date range." when the resolved daily series has no transactional activity for the selected window.
+- `hasError`: shows an error banner with a retry action when either API request fails or returns a non-success status.
+
+When `hasError` or `isEmpty` is active, chart rendering is deferred and the canvas/legend are hidden to avoid stale visuals.

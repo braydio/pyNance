@@ -1,7 +1,26 @@
 <template>
   <div class="daily-net-chart">
     <div
-      v-if="legendItems.length"
+      v-if="isLoading"
+      class="daily-net-chart__state daily-net-chart__state--loading"
+      role="status"
+    >
+      <div class="daily-net-chart__spinner" aria-hidden="true"></div>
+      <p>Loading daily net activity...</p>
+    </div>
+    <div
+      v-else-if="hasError"
+      class="daily-net-chart__state daily-net-chart__state--error"
+      role="alert"
+    >
+      <p>Unable to load daily net data right now. Please try again.</p>
+      <button type="button" class="daily-net-chart__retry" @click="retryFetch">Retry</button>
+    </div>
+    <div v-else-if="isEmpty" class="daily-net-chart__state daily-net-chart__state--empty">
+      <p>No transactions found for the selected date range.</p>
+    </div>
+    <div
+      v-if="legendItems.length && !hasError && !isEmpty"
       class="daily-net-chart__legend"
       aria-label="Active chart overlays"
     >
@@ -14,8 +33,8 @@
         <span class="daily-net-chart__legend-label">{{ item.label }}</span>
       </div>
     </div>
-    <div style="height: 400px">
-      <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
+    <div v-if="!hasError && !isEmpty" style="height: 400px">
+      <canvas ref="chartCanvas" style="width: 100%; height: 100%" :aria-busy="isLoading"></canvas>
     </div>
   </div>
 </template>
@@ -139,7 +158,11 @@ const chartCanvas = ref(null)
 const chartData = ref([])
 const comparisonData = ref([])
 const legendItems = ref([])
+const isLoading = ref(false)
+const hasError = ref(false)
+const isEmpty = ref(false)
 const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
+const pendingRequests = ref(0)
 
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
@@ -509,6 +532,17 @@ function handleBarClick(evt) {
  */
 async function renderChart() {
   await nextTick()
+
+  if (hasError.value || isEmpty.value || isLoading.value) {
+    if (chartInstance.value) {
+      chartInstance.value.stop()
+      chartInstance.value.destroy()
+      chartInstance.value = null
+    }
+    legendItems.value = []
+    return
+  }
+
   if (chartInstance.value) {
     chartInstance.value.stop()
     chartInstance.value.destroy()
@@ -722,6 +756,28 @@ async function renderChart() {
   legendItems.value = buildLegendItems(datasets)
 }
 
+function beginFetch() {
+  pendingRequests.value += 1
+  isLoading.value = true
+}
+
+function endFetch() {
+  pendingRequests.value = Math.max(0, pendingRequests.value - 1)
+  isLoading.value = pendingRequests.value > 0
+}
+
+function updateIsEmptyState(data) {
+  isEmpty.value =
+    !data.length ||
+    data.every(
+      (row) =>
+        (row.transaction_count ?? 0) === 0 &&
+        (row.income?.parsedValue ?? 0) === 0 &&
+        (row.expenses?.parsedValue ?? 0) === 0 &&
+        (row.net?.parsedValue ?? 0) === 0,
+    )
+}
+
 async function fetchData() {
   const display = props.zoomedOut ? getZoomedDisplayRange() : props
   const start = parseDateKey(display.startDate) ?? new Date()
@@ -734,12 +790,31 @@ async function fetchData() {
     displayEnd: display.endDate,
   }
 
-  const res = await fetchDailyNet({
-    start_date: requestRange.value.startDate,
-    end_date: requestRange.value.endDate,
-  })
+  beginFetch()
+  hasError.value = false
 
-  if (res.status === 'success') chartData.value = res.data
+  try {
+    const res = await fetchDailyNet({
+      start_date: requestRange.value.startDate,
+      end_date: requestRange.value.endDate,
+    })
+
+    if (res.status === 'success') {
+      chartData.value = res.data
+      updateIsEmptyState(res.data)
+      return
+    }
+
+    hasError.value = true
+    chartData.value = []
+    isEmpty.value = false
+  } catch {
+    hasError.value = true
+    chartData.value = []
+    isEmpty.value = false
+  } finally {
+    endFetch()
+  }
 }
 
 async function fetchComparisonData() {
@@ -747,12 +822,32 @@ async function fetchComparisonData() {
   const ctx = buildComparisonContext()
   if (!ctx) return (comparisonData.value = [])
 
-  const res = await fetchDailyNet({
-    start_date: formatDateKey(ctx.priorStart),
-    end_date: formatDateKey(ctx.priorEnd),
-  })
+  beginFetch()
 
-  if (res.status === 'success') comparisonData.value = res.data
+  try {
+    const res = await fetchDailyNet({
+      start_date: formatDateKey(ctx.priorStart),
+      end_date: formatDateKey(ctx.priorEnd),
+    })
+
+    if (res.status === 'success') {
+      comparisonData.value = res.data
+      return
+    }
+
+    hasError.value = true
+    comparisonData.value = []
+  } catch {
+    hasError.value = true
+    comparisonData.value = []
+  } finally {
+    endFetch()
+  }
+}
+
+function retryFetch() {
+  fetchData()
+  fetchComparisonData()
 }
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
@@ -791,5 +886,47 @@ onUnmounted(() => chartInstance.value?.destroy())
   height: 0;
   border-top: 2px solid var(--color-text-muted);
   background-repeat: repeat-x;
+}
+
+.daily-net-chart__state {
+  min-height: 5rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+}
+
+.daily-net-chart__state--error {
+  justify-content: space-between;
+  border-color: var(--color-accent-red);
+}
+
+.daily-net-chart__retry {
+  border: 1px solid var(--color-accent-red);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  color: var(--color-text-light);
+  cursor: pointer;
+}
+
+.daily-net-chart__spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--divider);
+  border-top-color: var(--color-accent-cyan);
+  animation: daily-net-chart-spin 0.8s linear infinite;
+}
+
+@keyframes daily-net-chart-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>
