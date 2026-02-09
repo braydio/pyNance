@@ -471,7 +471,7 @@ async function renderChart() {
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
   const averageIncomeColor = emphasizeColor(incomeColor, 'g')
   const averageExpensesColor = emphasizeColor(expenseColor, 'r')
-  const comparisonColor = getStyle('--color-accent-blue') || '#719cd6'
+  const comparisonColor = getStyle('--color-text-light') || '#f8fafc'
   const sevenDayColor = getStyle('--color-accent-cyan') || '#63cdcf'
   const thirtyDayColor = getStyle('--color-accent-purple') || '#9d79d6'
   const fontFamily = getStyle('--font-chart') || 'ui-sans-serif, system-ui, sans-serif'
@@ -532,7 +532,8 @@ async function renderChart() {
       ctx?.mode === 'prior_month_to_date' ? 'This Day Last Month' : 'This Day Last Month'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
-        borderDash: [2, 6],
+        borderDash: [12, 8],
+        borderWidth: 2,
         order: 6,
       }),
     )
