@@ -22,6 +22,19 @@ This guide documents the editable transactions table used on the Transactions vi
 - Zero or empty values fall back to `--color-text-light`.
 - The amount input displays a `$` prefix to indicate currency units.
 
+## Filter Summary Overview
+
+When any top-level filter is active on `Transactions.vue` (date range, account, or transaction type), the page renders a summary card above the table with metrics derived from the currently filtered transaction list:
+
+- Total transaction count
+- Total summed amount
+- Count of unique categories
+- Count of unique merchants
+- Count of unique accounts
+- Count of unique institutions
+
+The summary card is hidden while loading, while showing an error state, or when no top-level filter is selected.
+
 ## Visual Accents
 
 - Active edit rows use a subtle `--color-accent-indigo` edge highlight to differentiate from standard row zebra striping.

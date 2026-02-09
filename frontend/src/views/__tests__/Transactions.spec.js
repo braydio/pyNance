@@ -5,27 +5,31 @@ import { ref } from 'vue'
 import Transactions from '../Transactions.vue'
 
 const useTransactionsMock = vi.fn()
+const useRouteMock = vi.fn(() => ({ query: {} }))
 
 vi.mock('@/composables/useTransactions.js', () => ({
   useTransactions: (...args) => useTransactionsMock(...args),
 }))
 
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ query: {} }),
+  useRoute: () => useRouteMock(),
 }))
 
 describe('Transactions.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    useRouteMock.mockReturnValue({ query: {} })
   })
 
-  function mountView({ isLoading = false, error = null } = {}) {
+  function mountView({ isLoading = false, error = null, query = {}, filtered = [] } = {}) {
+    useRouteMock.mockReturnValue({ query })
+
     const searchQuery = ref('')
     const currentPage = ref(1)
     const totalPages = ref(1)
-    const totalCount = ref(0)
-    const filteredTransactions = ref([])
-    const paginatedTransactions = ref([])
+    const totalCount = ref(filtered.length)
+    const filteredTransactions = ref(filtered)
+    const paginatedTransactions = ref(filtered)
     const sortKey = ref(null)
     const sortOrder = ref(1)
     const isLoadingRef = ref(isLoading)
@@ -111,5 +115,61 @@ describe('Transactions.vue', () => {
     await retryButton.trigger('click')
 
     expect(fetchTransactions).toHaveBeenCalled()
+  })
+
+  it('shows summary metrics when a filter is active', async () => {
+    const filtered = [
+      {
+        transaction_id: 'tx-1',
+        amount: '-10.5',
+        category: 'Food',
+        merchant_name: 'Grocer',
+        account_name: 'Checking',
+        institution_name: 'Bank A',
+      },
+      {
+        transaction_id: 'tx-2',
+        amount: '25',
+        category: 'Travel',
+        merchant_name: 'Airline',
+        account_name: 'Checking',
+        institution_name: 'Bank A',
+      },
+      {
+        transaction_id: 'tx-3',
+        amount: 4.5,
+        category: 'Food',
+        merchant_name: 'Grocer',
+        account_name: 'Savings',
+        institution_name: 'Bank B',
+      },
+    ]
+
+    const { wrapper } = mountView({ query: { tx_type: 'debit' }, filtered })
+
+    await flushPromises()
+
+    const summary = wrapper.find('[data-testid="filter-summary"]')
+    expect(summary.exists()).toBe(true)
+    const text = summary.text()
+
+    expect(text).toContain('Transactions')
+    expect(text).toContain('3')
+    expect(text).toContain('$19.00')
+    expect(text).toContain('Unique categories')
+    expect(text).toContain('2')
+    expect(text).toContain('Unique merchants')
+    expect(text).toContain('Unique accounts')
+    expect(text).toContain('Unique institutions')
+  })
+
+  it('hides summary metrics when no filter is active', async () => {
+    const { wrapper } = mountView({
+      filtered: [{ transaction_id: 'tx-1', amount: 12 }],
+    })
+
+    await flushPromises()
+
+    expect(wrapper.find('[data-testid="filter-summary"]').exists()).toBe(false)
   })
 })

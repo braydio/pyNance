@@ -108,6 +108,69 @@
       </div>
     </Card>
 
+    <Card
+      v-if="hasActiveFilters && !isLoading && !error"
+      class="p-6 rounded-3xl card-surface space-y-4"
+      data-testid="filter-summary"
+    >
+      <div>
+        <p class="eyebrow">Summary</p>
+        <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
+          Selected filter overview
+        </h3>
+      </div>
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Transactions
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ filterSummary.transactionCount }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Total amount
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ formatCurrency(filterSummary.totalAmount) }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Unique categories
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ filterSummary.uniqueCounts.categories }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Unique merchants
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ filterSummary.uniqueCounts.merchants }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Unique accounts
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ filterSummary.uniqueCounts.accounts }}
+          </p>
+        </div>
+        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+            Unique institutions
+          </p>
+          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+            {{ filterSummary.uniqueCounts.institutions }}
+          </p>
+        </div>
+      </div>
+    </Card>
+
     <!-- Main Table -->
     <Card class="p-6 space-y-4 rounded-3xl card-surface">
       <div class="flex items-center justify-between">
@@ -333,6 +396,75 @@ export default {
     const activeTab = ref('Activity')
 
     /**
+     * Determine whether a top-level transaction filter is currently active.
+     *
+     * @returns {boolean}
+     */
+    const hasActiveFilters = computed(() =>
+      Boolean(startDate.value || endDate.value || accountFilter.value || txType.value),
+    )
+
+    /**
+     * Convert a transaction amount value to a safe numeric value.
+     *
+     * @param {number | string | null | undefined} amount
+     * @returns {number}
+     */
+    function toNumericAmount(amount) {
+      const parsed = Number(amount)
+      return Number.isFinite(parsed) ? parsed : 0
+    }
+
+    /**
+     * Build summary metrics for currently filtered transactions.
+     *
+     * @returns {{transactionCount: number, totalAmount: number, uniqueCounts: Record<string, number>}}
+     */
+    const filterSummary = computed(() => {
+      const transactions = Array.isArray(filteredTransactions.value)
+        ? filteredTransactions.value
+        : []
+      const uniqueCategories = new Set()
+      const uniqueMerchants = new Set()
+      const uniqueAccounts = new Set()
+      const uniqueInstitutions = new Set()
+
+      const totalAmount = transactions.reduce((sum, tx) => {
+        if (tx?.category) uniqueCategories.add(tx.category)
+        if (tx?.merchant_name) uniqueMerchants.add(tx.merchant_name)
+        if (tx?.account_name) uniqueAccounts.add(tx.account_name)
+        if (tx?.institution_name) uniqueInstitutions.add(tx.institution_name)
+        return sum + toNumericAmount(tx?.amount)
+      }, 0)
+
+      return {
+        transactionCount: transactions.length,
+        totalAmount,
+        uniqueCounts: {
+          categories: uniqueCategories.size,
+          merchants: uniqueMerchants.size,
+          accounts: uniqueAccounts.size,
+          institutions: uniqueInstitutions.size,
+        },
+      }
+    })
+
+    /**
+     * Format a numeric amount as a localized USD string.
+     *
+     * @param {number} value
+     * @returns {string}
+     */
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(value)
+    }
+
+    /**
      * Toggle the visibility of the internal transfer scanner widget.
      */
     function toggleScanner() {
@@ -383,6 +515,9 @@ export default {
       showScanner,
       toggleScanner,
       showControls,
+      hasActiveFilters,
+      filterSummary,
+      formatCurrency,
     }
   },
 }
