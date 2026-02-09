@@ -12,17 +12,26 @@ import { fetchDailyNet } from '@/api/charts'
 
 const chartMock = vi.fn()
 
-vi.mock('chart.js/auto', () => ({
-  Chart: vi.fn().mockImplementation((_ctx, config) => {
+vi.mock('chart.js', async () => {
+  const actual = await vi.importActual('chart.js')
+  const ChartMock = vi.fn().mockImplementation((_ctx, config) => {
     chartMock(config)
     return {
       destroy: vi.fn(),
+      stop: vi.fn(),
       data: config.data,
       getElementsAtEventForMode: vi.fn().mockReturnValue([]),
       getDatasetMeta: vi.fn().mockReturnValue({ data: [] }),
     }
-  }),
-}))
+  })
+  ChartMock.register = vi.fn()
+  ChartMock.Tooltip = actual.Tooltip
+
+  return {
+    ...actual,
+    Chart: ChartMock,
+  }
+})
 
 vi.mock('@/api/charts', () => ({
   fetchDailyNet: vi.fn(),
@@ -100,15 +109,12 @@ describe('DailyNetChart.vue', () => {
 
     const income = lastConfig.data.datasets.find((d) => d.label === 'Income')
     const expenses = lastConfig.data.datasets.find((d) => d.label === 'Expenses')
-    const net = lastConfig.data.datasets.find((d) => d.label === 'Net')
 
     expect(income.data).toHaveLength(30)
     expect(expenses.data).toHaveLength(30)
-    expect(net.data).toHaveLength(30)
 
     expect(income.data[0]).toBe(0)
     expect(expenses.data[0]).toBe(0)
-    expect(net.data[0]).toBe(0)
 
     const juneSecondIndex = labels.indexOf('2024-06-02')
     expect(income.data[juneSecondIndex]).toBe(100)
@@ -231,7 +237,7 @@ describe('DailyNetChart.vue', () => {
 
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
-    const comparison = lastConfig.data.datasets.find((d) => d.label === 'Prior month to-date')
+    const comparison = lastConfig.data.datasets.find((d) => d.label === 'This Day Last Month')
 
     expect(comparison).toBeTruthy()
 
@@ -258,14 +264,14 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     let lastConfig = chartMock.mock.calls.at(-1)[0]
-    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(true)
+    expect(lastConfig.data.datasets.some((d) => d.label === 'This Day Last Month')).toBe(true)
 
     await wrapper.setProps({ showComparisonOverlay: false })
     await flushRender()
     await flushRender()
 
     lastConfig = chartMock.mock.calls.at(-1)[0]
-    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(false)
+    expect(lastConfig.data.datasets.some((d) => d.label === 'This Day Last Month')).toBe(false)
   })
 
   it('formats tooltip lines with income, expenses, net, and comparison values', async () => {
@@ -319,7 +325,7 @@ describe('DailyNetChart.vue', () => {
           },
         ],
         $comparisonSeries: [55],
-        $comparisonLabel: 'Prior month to-date',
+        $comparisonLabel: 'This Day Last Month',
       },
       dataIndex: 0,
       datasetIndex: 0,
@@ -331,11 +337,11 @@ describe('DailyNetChart.vue', () => {
       'Net: $60.00',
       'Transactions: 2',
       '',
-      'Prior month to-date: $55.00',
+      'This Day Last Month: $55.00',
     ])
   })
 
-  it('anchors the tooltip position to the net indicator dash', () => {
+  it('anchors the tooltip position to the zero line', () => {
     const yScale = { getPixelForValue: vi.fn().mockReturnValue(120) }
     const chart = {
       getDatasetMeta: vi.fn().mockReturnValue({ data: [{ x: 64 }] }),
@@ -343,9 +349,31 @@ describe('DailyNetChart.vue', () => {
       $netValues: [42],
     }
 
-    const position = Tooltip.positioners.netDash([{ chart, dataIndex: 0 }], { x: 0, y: 0 })
+    const position = Tooltip.positioners.zeroLine([{ chart, dataIndex: 0 }], { x: 0, y: 0 })
 
-    expect(yScale.getPixelForValue).toHaveBeenCalledWith(42)
+    expect(yScale.getPixelForValue).toHaveBeenCalledWith(0)
     expect(position).toEqual({ x: 64, y: 120 })
+  })
+
+  it('renders a legend row for active overlays in dataset order', async () => {
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showAvgIncome: true,
+        show30Day: true,
+        show7Day: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const legendLabels = wrapper
+      .findAll('.daily-net-chart__legend-label')
+      .map((node) => node.text())
+
+    expect(legendLabels).toEqual(['Avg Income', '30-Day Avg', '7-Day Avg'])
   })
 })
