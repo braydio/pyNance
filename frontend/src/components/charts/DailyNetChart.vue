@@ -192,9 +192,57 @@ const formatTooltipTitle = (label) => {
     : label
 }
 
-function formatAxisLabel(label) {
+/**
+ * Format x-axis labels using a short or dense date template.
+ *
+ * @param {string} label - Date key label in YYYY-MM-DD format.
+ * @param {'day'|'month'} [formatStyle='day'] - Preferred output density.
+ * @returns {string} Localized axis label.
+ */
+function formatAxisLabel(label, formatStyle = 'day') {
   const parsed = parseDateKey(label)
-  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : label
+  if (!parsed) return label
+  if (formatStyle === 'month') return parsed.toLocaleDateString(undefined, { month: 'short' })
+  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+}
+
+/**
+ * Resolve chart spacing and tick density from the number of labels.
+ *
+ * @param {number} labelCount - Number of bars/labels in the active series.
+ * @returns {{barThickness: number, maxBarThickness: number, categoryPercentage: number, barPercentage: number, maxTicksLimit: number, labelFormat: 'day' | 'month'}} Density-aware chart config.
+ */
+function getDensityConfig(labelCount) {
+  if (labelCount > 120) {
+    return {
+      barThickness: 5,
+      maxBarThickness: 8,
+      categoryPercentage: 0.92,
+      barPercentage: 0.8,
+      maxTicksLimit: 6,
+      labelFormat: 'month',
+    }
+  }
+
+  if (labelCount > 45) {
+    return {
+      barThickness: 10,
+      maxBarThickness: 14,
+      categoryPercentage: 0.86,
+      barPercentage: 0.8,
+      maxTicksLimit: 8,
+      labelFormat: 'day',
+    }
+  }
+
+  return {
+    barThickness: 18,
+    maxBarThickness: 24,
+    categoryPercentage: 0.76,
+    barPercentage: 0.92,
+    maxTicksLimit: 10,
+    labelFormat: 'day',
+  }
 }
 
 function buildDateRangeLabels(startDate, endDate) {
@@ -436,6 +484,7 @@ async function renderChart() {
   const { labels, displayData } = getDisplaySeries()
   const { labels: fullLabels, fullData } = getExtendedSeries()
   if (!labels.length) return
+  const densityConfig = getDensityConfig(labels.length)
 
   emit(
     'summary-change',
@@ -482,7 +531,10 @@ async function renderChart() {
       type: 'bar',
       label: 'Expenses',
       data: expenses,
-      barThickness: 18,
+      barThickness: densityConfig.barThickness,
+      maxBarThickness: densityConfig.maxBarThickness,
+      categoryPercentage: densityConfig.categoryPercentage,
+      barPercentage: densityConfig.barPercentage,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
       borderWidth: 1,
@@ -493,7 +545,10 @@ async function renderChart() {
       type: 'bar',
       label: 'Income',
       data: income,
-      barThickness: 18,
+      barThickness: densityConfig.barThickness,
+      maxBarThickness: densityConfig.maxBarThickness,
+      categoryPercentage: densityConfig.categoryPercentage,
+      barPercentage: densityConfig.barPercentage,
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
@@ -574,10 +629,10 @@ async function renderChart() {
           grid: { display: false },
           ticks: {
             autoSkip: true,
-            maxTicksLimit: 8,
+            maxTicksLimit: densityConfig.maxTicksLimit,
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
-            callback: (_, index) => formatAxisLabel(labels[index]),
+            callback: (_, index) => formatAxisLabel(labels[index], densityConfig.labelFormat),
           },
         },
         y: {
