@@ -268,7 +268,7 @@ describe('DailyNetChart.vue', () => {
     expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(false)
   })
 
-  it('formats tooltip lines with income, expenses, net, and comparison values', async () => {
+  it('formats tooltip lines with net-first ordering and comparison deltas', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({
         status: 'success',
@@ -326,13 +326,71 @@ describe('DailyNetChart.vue', () => {
     })
 
     expect(lines).toEqual([
+      'Net: $60.00',
       'Income: $100.00',
       'Expenses: ($40.00)',
-      'Net: $60.00',
       'Transactions: 2',
       '',
       'Prior month to-date: $55.00',
+      'vs prior: +$5.00 (+9.1%)',
     ])
+  })
+
+  it('suppresses percent deltas when comparison baseline is zero', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: null,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [],
+      })
+
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        timeframe: 'mtd',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
+
+    const lines = tooltipCallbacks.label({
+      chart: {
+        $dailyNetRows: [
+          {
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: null,
+          },
+        ],
+        $comparisonSeries: [0],
+        $comparisonLabel: 'Prior month to-date',
+      },
+      dataIndex: 0,
+      datasetIndex: 0,
+    })
+
+    expect(lines).toContain('Transactions: 0')
+    expect(lines).toContain('vs prior: +$60.00')
+    expect(lines.join(' ')).not.toContain('n/a')
   })
 
   it('anchors the tooltip position to the net indicator dash', () => {
