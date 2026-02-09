@@ -247,7 +247,18 @@ describe('DailyNetChart.vue', () => {
 
   it('removes comparison dataset when overlay is disabled', async () => {
     fetchDailyNet
-      .mockResolvedValueOnce({ status: 'success', data: [] })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+        ],
+      })
       .mockResolvedValueOnce({ status: 'success', data: [] })
 
     const wrapper = mount(DailyNetChart, {
@@ -375,5 +386,64 @@ describe('DailyNetChart.vue', () => {
       .map((node) => node.text())
 
     expect(legendLabels).toEqual(['Avg Income', '30-Day Avg', '7-Day Avg'])
+  })
+
+  it('renders an empty state and skips chart creation when range has no transactions', async () => {
+    fetchDailyNet.mockResolvedValueOnce({ status: 'success', data: [] })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.text()).toContain('No transactions found for the selected date range.')
+    expect(wrapper.find('canvas').exists()).toBe(false)
+    expect(chartMock).not.toHaveBeenCalled()
+  })
+
+  it('renders an error banner with retry action when data fetch fails', async () => {
+    fetchDailyNet.mockRejectedValueOnce(new Error('request failed')).mockResolvedValueOnce({
+      status: 'success',
+      data: [
+        {
+          date: '2024-06-02',
+          income: { parsedValue: 100 },
+          expenses: { parsedValue: -40 },
+          net: { parsedValue: 60 },
+          transaction_count: 2,
+        },
+      ],
+    })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.text()).toContain('Unable to load daily net data right now. Please try again.')
+    expect(wrapper.find('button.daily-net-chart__retry').exists()).toBe(true)
+    expect(chartMock).not.toHaveBeenCalled()
+
+    await wrapper.find('button.daily-net-chart__retry').trigger('click')
+    await flushRender()
+    await flushRender()
+
+    expect(fetchDailyNet).toHaveBeenCalledTimes(2)
+    expect(chartMock.mock.calls.length).toBeGreaterThanOrEqual(1)
+    expect(wrapper.text()).not.toContain(
+      'Unable to load daily net data right now. Please try again.',
+    )
   })
 })
