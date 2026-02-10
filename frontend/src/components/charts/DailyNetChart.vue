@@ -260,6 +260,28 @@ function getDensityConfig(labelCount) {
   }
 }
 
+/**
+ * Normalize a daily net row for chart rendering.
+ *
+ * The chart's visual contract in docs/devnotes/daily-net-chart.md requires
+ * income bars to render above zero and expense bars to render below zero,
+ * regardless of how upstream values are signed.
+ *
+ * @param {Object} row - Daily net API row.
+ * @returns {{income: number, expenses: number, net: number}} Normalized values for Chart.js datasets.
+ */
+function normalizeDailyNetRowForChart(row) {
+  const incomeValue = Number(row?.income?.parsedValue ?? 0)
+  const expenseValue = Number(row?.expenses?.parsedValue ?? 0)
+  const rawNetValue = Number(row?.net?.parsedValue)
+
+  const income = Math.abs(incomeValue)
+  const expenses = -Math.abs(expenseValue)
+  const net = Number.isFinite(rawNetValue) ? rawNetValue : income + expenses
+
+  return { income, expenses, net }
+}
+
 function buildDateRangeLabels(startDate, endDate) {
   const start = parseDateKey(startDate)
   const end = parseDateKey(endDate)
@@ -535,9 +557,12 @@ async function renderChart() {
   )
   emit('data-change', displayData)
 
-  const income = displayData.map((d) => d.income.parsedValue)
-  const expenses = displayData.map((d) => d.expenses.parsedValue)
-  const net = displayData.map((d) => d.net.parsedValue)
+  // Defensive normalization: keep bars aligned with the documented stacked visual
+  // rules in docs/devnotes/daily-net-chart.md (income above zero, expenses below).
+  const normalizedDisplayData = displayData.map(normalizeDailyNetRowForChart)
+  const income = normalizedDisplayData.map((d) => d.income)
+  const expenses = normalizedDisplayData.map((d) => d.expenses)
+  const net = normalizedDisplayData.map((d) => d.net)
   const fullNet = fullData.map((d) => d.net.parsedValue)
   const fullIncome = fullData.map((d) => d.income.parsedValue)
   const fullExpenses = fullData.map((d) => d.expenses.parsedValue)
@@ -714,6 +739,9 @@ async function renderChart() {
       },
     },
   })
+  // Keep tooltip rows unmodified so hover labels preserve original business meaning
+  // (Income / Expenses / Net) while bar geometry stays normalization-safe.
+  // See docs/devnotes/daily-net-chart.md for the tooltip + stacking expectations.
   // Cache tooltip-specific metadata on the chart instance for fast lookup.
   chartInstance.value.$dailyNetRows = displayData
   chartInstance.value.$comparisonSeries = comparisonSeries
