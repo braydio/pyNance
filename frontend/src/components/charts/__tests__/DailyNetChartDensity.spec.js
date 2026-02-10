@@ -49,7 +49,18 @@ describe('DailyNetChart density config', () => {
   beforeEach(() => {
     chartCtor.mockClear()
     fetchDailyNet.mockReset()
-    fetchDailyNet.mockResolvedValue({ status: 'success', data: [] })
+    fetchDailyNet.mockResolvedValue({
+      status: 'success',
+      data: [
+        {
+          date: '2024-01-01',
+          income: { parsedValue: 120 },
+          expenses: { parsedValue: -40 },
+          net: { parsedValue: 80 },
+          transaction_count: 2,
+        },
+      ],
+    })
 
     Object.defineProperty(HTMLCanvasElement.prototype, 'getContext', {
       value: () => ({ canvas: {} }),
