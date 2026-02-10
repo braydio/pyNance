@@ -274,7 +274,7 @@ describe('DailyNetChart.vue', () => {
     expect(lastConfig.data.datasets.some((d) => d.label === 'This Day Last Month')).toBe(false)
   })
 
-  it('formats tooltip lines with income, expenses, net, and comparison values', async () => {
+  it('formats tooltip lines with net-first details and comparison deltas', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({
         status: 'success',
@@ -314,7 +314,7 @@ describe('DailyNetChart.vue', () => {
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
 
-    const lines = tooltipCallbacks.label({
+    const primaryLine = tooltipCallbacks.label({
       chart: {
         $dailyNetRows: [
           {
@@ -331,13 +331,77 @@ describe('DailyNetChart.vue', () => {
       datasetIndex: 0,
     })
 
-    expect(lines).toEqual([
+    const detailLines = tooltipCallbacks.footer([
+      {
+        chart: {
+          $dailyNetRows: [
+            {
+              income: { parsedValue: 100 },
+              expenses: { parsedValue: -40 },
+              net: { parsedValue: 60 },
+              transaction_count: 2,
+            },
+          ],
+          $comparisonSeries: [55],
+          $comparisonLabel: 'This Day Last Month',
+        },
+        dataIndex: 0,
+        datasetIndex: 0,
+      },
+    ])
+
+    expect(primaryLine).toBe('Net: $60.00')
+    expect(detailLines).toEqual([
       'Income: $100.00',
       'Expenses: ($40.00)',
-      'Net: $60.00',
       'Transactions: 2',
       '',
       'This Day Last Month: $55.00',
+      'vs prior: +$5.00 (+9.1%)',
+    ])
+  })
+
+  it('omits noisy percent text when comparison value is zero', async () => {
+    mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
+
+    const detailLines = tooltipCallbacks.footer([
+      {
+        chart: {
+          $dailyNetRows: [
+            {
+              income: null,
+              expenses: null,
+              net: { parsedValue: 60 },
+              transaction_count: null,
+            },
+          ],
+          $comparisonSeries: [0],
+          $comparisonLabel: 'This Day Last Month',
+        },
+        dataIndex: 0,
+        datasetIndex: 0,
+      },
+    ])
+
+    expect(detailLines).toEqual([
+      'Income: $0.00',
+      'Expenses: $0.00',
+      'Transactions: 0',
+      '',
+      'This Day Last Month: $0.00',
+      'vs prior: +$60.00',
     ])
   })
 

@@ -164,27 +164,43 @@ function getTooltipPayload(chart, dataIndex) {
 }
 
 /**
- * Build the tooltip body lines for the daily net chart.
+ * Build the tooltip lines for the daily net chart.
  *
  * @param {Object} payload - Tooltip payload.
  * @param {Object} payload.row - Daily net row data.
  * @param {string} payload.comparisonLabel - Label for the comparison series.
  * @param {number|null} payload.comparisonValue - Comparison series value.
- * @returns {string[]} Tooltip lines to render.
+ * @returns {{primaryLine: string, detailLines: string[]}} Tooltip copy to render.
  */
 function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
-  const lines = [
-    `Income: ${formatAmount(row.income.parsedValue)}`,
-    `Expenses: ${formatAmount(row.expenses.parsedValue)}`,
-    `Net: ${formatAmount(row.net.parsedValue)}`,
-    `Transactions: ${row.transaction_count ?? 0}`,
+  const netValue = row?.net?.parsedValue ?? 0
+  const incomeValue = row?.income?.parsedValue ?? 0
+  const expenseValue = row?.expenses?.parsedValue ?? 0
+  const transactionCount = Number.isFinite(row?.transaction_count) ? row.transaction_count : 0
+
+  const detailLines = [
+    `Income: ${formatAmount(incomeValue)}`,
+    `Expenses: ${formatAmount(expenseValue)}`,
+    `Transactions: ${transactionCount}`,
   ]
 
   if (comparisonLabel && comparisonValue != null) {
-    lines.push('', `${comparisonLabel}: ${formatAmount(comparisonValue)}`)
+    const delta = netValue - comparisonValue
+    const signedDelta = `${delta >= 0 ? '+' : '-'}${formatAmount(Math.abs(delta))}`
+    const percentDelta =
+      comparisonValue === 0
+        ? null
+        : `${delta >= 0 ? '+' : '-'}${Math.abs((delta / comparisonValue) * 100).toFixed(1)}%`
+    const deltaSuffix = percentDelta ? ` (${percentDelta})` : ''
+
+    detailLines.push('', `${comparisonLabel}: ${formatAmount(comparisonValue)}`)
+    detailLines.push(`vs prior: ${signedDelta}${deltaSuffix}`)
   }
 
-  return lines
+  return {
+    primaryLine: `Net: ${formatAmount(netValue)}`,
+    detailLines,
+  }
 }
 
 function formatDateKey(date) {
@@ -693,21 +709,30 @@ async function renderChart() {
           mode: 'nearest',
           intersect: true,
           titleColor: getStyle('--color-accent-yellow'),
-          bodyColor: getStyle('--color-text-light'),
+          bodyColor: getStyle('--color-text-primary') || getStyle('--color-text-light'),
+          footerColor: getStyle('--color-text-muted'),
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
-          bodyFont: { family: "'Fira Code', monospace" },
+          bodyFont: { family: "'Fira Code', monospace", size: 13, weight: '700' },
+          footerFont: { family: "'Fira Code', monospace", size: 12, weight: '500' },
           cornerRadius: 10,
           caretPadding: 6,
           caretSize: 9,
-          bodySpacing: 6,
+          bodySpacing: 8,
+          footerSpacing: 5,
           titleSpacing: 4,
-          titleMarginBottom: 6,
+          titleMarginBottom: 8,
           position: 'zeroLine',
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {
               const payload = getTooltipPayload(context.chart, context.dataIndex)
-              return payload ? buildTooltipLines(payload) : null
+              return payload ? buildTooltipLines(payload).primaryLine : null
+            },
+            footer: (items) => {
+              const context = items?.[0]
+              if (!context) return null
+              const payload = getTooltipPayload(context.chart, context.dataIndex)
+              return payload ? buildTooltipLines(payload).detailLines : null
             },
           },
         },
