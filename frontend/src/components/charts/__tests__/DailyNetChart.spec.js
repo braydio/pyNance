@@ -12,17 +12,26 @@ import { fetchDailyNet } from '@/api/charts'
 
 const chartMock = vi.fn()
 
-vi.mock('chart.js/auto', () => ({
-  Chart: vi.fn().mockImplementation((_ctx, config) => {
+vi.mock('chart.js', async () => {
+  const actual = await vi.importActual('chart.js')
+  const ChartMock = vi.fn().mockImplementation((_ctx, config) => {
     chartMock(config)
     return {
       destroy: vi.fn(),
+      stop: vi.fn(),
       data: config.data,
       getElementsAtEventForMode: vi.fn().mockReturnValue([]),
       getDatasetMeta: vi.fn().mockReturnValue({ data: [] }),
     }
-  }),
-}))
+  })
+  ChartMock.register = vi.fn()
+  ChartMock.Tooltip = actual.Tooltip
+
+  return {
+    ...actual,
+    Chart: ChartMock,
+  }
+})
 
 vi.mock('@/api/charts', () => ({
   fetchDailyNet: vi.fn(),
@@ -100,15 +109,12 @@ describe('DailyNetChart.vue', () => {
 
     const income = lastConfig.data.datasets.find((d) => d.label === 'Income')
     const expenses = lastConfig.data.datasets.find((d) => d.label === 'Expenses')
-    const net = lastConfig.data.datasets.find((d) => d.label === 'Net')
 
     expect(income.data).toHaveLength(30)
     expect(expenses.data).toHaveLength(30)
-    expect(net.data).toHaveLength(30)
 
     expect(income.data[0]).toBe(0)
     expect(expenses.data[0]).toBe(0)
-    expect(net.data[0]).toBe(0)
 
     const juneSecondIndex = labels.indexOf('2024-06-02')
     expect(income.data[juneSecondIndex]).toBe(100)
@@ -231,7 +237,7 @@ describe('DailyNetChart.vue', () => {
 
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const labels = lastConfig.data.labels
-    const comparison = lastConfig.data.datasets.find((d) => d.label === 'Prior month to-date')
+    const comparison = lastConfig.data.datasets.find((d) => d.label === 'This Day Last Month')
 
     expect(comparison).toBeTruthy()
 
@@ -241,7 +247,18 @@ describe('DailyNetChart.vue', () => {
 
   it('removes comparison dataset when overlay is disabled', async () => {
     fetchDailyNet
-      .mockResolvedValueOnce({ status: 'success', data: [] })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -40 },
+            net: { parsedValue: 60 },
+            transaction_count: 2,
+          },
+        ],
+      })
       .mockResolvedValueOnce({ status: 'success', data: [] })
 
     const wrapper = mount(DailyNetChart, {
@@ -258,17 +275,17 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
 
     let lastConfig = chartMock.mock.calls.at(-1)[0]
-    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(true)
+    expect(lastConfig.data.datasets.some((d) => d.label === 'This Day Last Month')).toBe(true)
 
     await wrapper.setProps({ showComparisonOverlay: false })
     await flushRender()
     await flushRender()
 
     lastConfig = chartMock.mock.calls.at(-1)[0]
-    expect(lastConfig.data.datasets.some((d) => d.label === 'Prior month to-date')).toBe(false)
+    expect(lastConfig.data.datasets.some((d) => d.label === 'This Day Last Month')).toBe(false)
   })
 
-  it('formats tooltip lines with net-first ordering and comparison deltas', async () => {
+  it('formats tooltip lines with net-first details and comparison deltas', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({
         status: 'success',
@@ -308,7 +325,7 @@ describe('DailyNetChart.vue', () => {
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
 
-    const lines = tooltipCallbacks.label({
+    const primaryLine = tooltipCallbacks.label({
       chart: {
         $dailyNetRows: [
           {
@@ -319,49 +336,48 @@ describe('DailyNetChart.vue', () => {
           },
         ],
         $comparisonSeries: [55],
-        $comparisonLabel: 'Prior month to-date',
+        $comparisonLabel: 'This Day Last Month',
       },
       dataIndex: 0,
       datasetIndex: 0,
     })
 
-    expect(lines).toEqual([
-      'Net: $60.00',
+    const detailLines = tooltipCallbacks.footer([
+      {
+        chart: {
+          $dailyNetRows: [
+            {
+              income: { parsedValue: 100 },
+              expenses: { parsedValue: -40 },
+              net: { parsedValue: 60 },
+              transaction_count: 2,
+            },
+          ],
+          $comparisonSeries: [55],
+          $comparisonLabel: 'This Day Last Month',
+        },
+        dataIndex: 0,
+        datasetIndex: 0,
+      },
+    ])
+
+    expect(primaryLine).toBe('Net: $60.00')
+    expect(detailLines).toEqual([
       'Income: $100.00',
       'Expenses: ($40.00)',
       'Transactions: 2',
       '',
-      'Prior month to-date: $55.00',
+      'This Day Last Month: $55.00',
       'vs prior: +$5.00 (+9.1%)',
     ])
   })
 
-  it('suppresses percent deltas when comparison baseline is zero', async () => {
-    fetchDailyNet
-      .mockResolvedValueOnce({
-        status: 'success',
-        data: [
-          {
-            date: '2024-06-02',
-            income: { parsedValue: 100 },
-            expenses: { parsedValue: -40 },
-            net: { parsedValue: 60 },
-            transaction_count: null,
-          },
-        ],
-      })
-      .mockResolvedValueOnce({
-        status: 'success',
-        data: [],
-      })
-
+  it('omits noisy percent text when comparison value is zero', async () => {
     mount(DailyNetChart, {
       props: {
         startDate: '2024-06-01',
         endDate: '2024-06-30',
         zoomedOut: false,
-        showComparisonOverlay: true,
-        timeframe: 'mtd',
       },
     })
 
@@ -371,29 +387,36 @@ describe('DailyNetChart.vue', () => {
     const lastConfig = chartMock.mock.calls.at(-1)[0]
     const tooltipCallbacks = lastConfig.options.plugins.tooltip.callbacks
 
-    const lines = tooltipCallbacks.label({
-      chart: {
-        $dailyNetRows: [
-          {
-            income: { parsedValue: 100 },
-            expenses: { parsedValue: -40 },
-            net: { parsedValue: 60 },
-            transaction_count: null,
-          },
-        ],
-        $comparisonSeries: [0],
-        $comparisonLabel: 'Prior month to-date',
+    const detailLines = tooltipCallbacks.footer([
+      {
+        chart: {
+          $dailyNetRows: [
+            {
+              income: null,
+              expenses: null,
+              net: { parsedValue: 60 },
+              transaction_count: null,
+            },
+          ],
+          $comparisonSeries: [0],
+          $comparisonLabel: 'This Day Last Month',
+        },
+        dataIndex: 0,
+        datasetIndex: 0,
       },
-      dataIndex: 0,
-      datasetIndex: 0,
-    })
+    ])
 
-    expect(lines).toContain('Transactions: 0')
-    expect(lines).toContain('vs prior: +$60.00')
-    expect(lines.join(' ')).not.toContain('n/a')
+    expect(detailLines).toEqual([
+      'Income: $0.00',
+      'Expenses: $0.00',
+      'Transactions: 0',
+      '',
+      'This Day Last Month: $0.00',
+      'vs prior: +$60.00',
+    ])
   })
 
-  it('anchors the tooltip position to the net indicator dash', () => {
+  it('anchors the tooltip position to the zero line', () => {
     const yScale = { getPixelForValue: vi.fn().mockReturnValue(120) }
     const chart = {
       getDatasetMeta: vi.fn().mockReturnValue({ data: [{ x: 64 }] }),
@@ -401,9 +424,90 @@ describe('DailyNetChart.vue', () => {
       $netValues: [42],
     }
 
-    const position = Tooltip.positioners.netDash([{ chart, dataIndex: 0 }], { x: 0, y: 0 })
+    const position = Tooltip.positioners.zeroLine([{ chart, dataIndex: 0 }], { x: 0, y: 0 })
 
-    expect(yScale.getPixelForValue).toHaveBeenCalledWith(42)
+    expect(yScale.getPixelForValue).toHaveBeenCalledWith(0)
     expect(position).toEqual({ x: 64, y: 120 })
+  })
+
+  it('renders a legend row for active overlays in dataset order', async () => {
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showAvgIncome: true,
+        show30Day: true,
+        show7Day: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const legendLabels = wrapper
+      .findAll('.daily-net-chart__legend-label')
+      .map((node) => node.text())
+
+    expect(legendLabels).toEqual(['Avg Income', '30-Day Avg', '7-Day Avg'])
+  })
+
+  it('renders an empty state and skips chart creation when range has no transactions', async () => {
+    fetchDailyNet.mockResolvedValueOnce({ status: 'success', data: [] })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.text()).toContain('No transactions found for the selected date range.')
+    expect(wrapper.find('canvas').exists()).toBe(false)
+    expect(chartMock).not.toHaveBeenCalled()
+  })
+
+  it('renders an error banner with retry action when data fetch fails', async () => {
+    fetchDailyNet.mockRejectedValueOnce(new Error('request failed')).mockResolvedValueOnce({
+      status: 'success',
+      data: [
+        {
+          date: '2024-06-02',
+          income: { parsedValue: 100 },
+          expenses: { parsedValue: -40 },
+          net: { parsedValue: 60 },
+          transaction_count: 2,
+        },
+      ],
+    })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.text()).toContain('Unable to load daily net data right now. Please try again.')
+    expect(wrapper.find('button.daily-net-chart__retry').exists()).toBe(true)
+    expect(chartMock).not.toHaveBeenCalled()
+
+    await wrapper.find('button.daily-net-chart__retry').trigger('click')
+    await flushRender()
+    await flushRender()
+
+    expect(fetchDailyNet).toHaveBeenCalledTimes(2)
+    expect(chartMock.mock.calls.length).toBeGreaterThanOrEqual(1)
+    expect(wrapper.text()).not.toContain(
+      'Unable to load daily net data right now. Please try again.',
+    )
   })
 })

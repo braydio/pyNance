@@ -1,7 +1,40 @@
 <template>
   <div class="daily-net-chart">
-    <div style="height: 400px">
-      <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
+    <div
+      v-if="isLoading"
+      class="daily-net-chart__state daily-net-chart__state--loading"
+      role="status"
+    >
+      <div class="daily-net-chart__spinner" aria-hidden="true"></div>
+      <p>Loading daily net activity...</p>
+    </div>
+    <div
+      v-else-if="hasError"
+      class="daily-net-chart__state daily-net-chart__state--error"
+      role="alert"
+    >
+      <p>Unable to load daily net data right now. Please try again.</p>
+      <button type="button" class="daily-net-chart__retry" @click="retryFetch">Retry</button>
+    </div>
+    <div v-else-if="isEmpty" class="daily-net-chart__state daily-net-chart__state--empty">
+      <p>No transactions found for the selected date range.</p>
+    </div>
+    <div
+      v-if="legendItems.length && !hasError && !isEmpty"
+      class="daily-net-chart__legend"
+      aria-label="Active chart overlays"
+    >
+      <div v-for="item in legendItems" :key="item.label" class="daily-net-chart__legend-item">
+        <span
+          class="daily-net-chart__legend-swatch"
+          :style="item.swatchStyle"
+          aria-hidden="true"
+        ></span>
+        <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+      </div>
+    </div>
+    <div v-if="!hasError && !isEmpty" style="height: 400px">
+      <canvas ref="chartCanvas" style="width: 100%; height: 100%" :aria-busy="isLoading"></canvas>
     </div>
   </div>
 </template>
@@ -124,7 +157,12 @@ const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
 const comparisonData = ref([])
+const legendItems = ref([])
+const isLoading = ref(false)
+const hasError = ref(false)
+const isEmpty = ref(false)
 const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
+const pendingRequests = ref(0)
 
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
@@ -149,13 +187,13 @@ function getTooltipPayload(chart, dataIndex) {
 }
 
 /**
- * Build the tooltip body lines for the daily net chart.
+ * Build the tooltip lines for the daily net chart.
  *
  * @param {Object} payload - Tooltip payload.
  * @param {Object} payload.row - Daily net row data.
  * @param {string} payload.comparisonLabel - Label for the comparison series.
  * @param {number|null} payload.comparisonValue - Comparison series value.
- * @returns {string[]} Tooltip lines to render.
+ * @returns {{primaryLine: string, detailLines: string[]}} Tooltip copy to render.
  */
 function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
   const netValue = Number(row?.net?.parsedValue)
@@ -196,7 +234,10 @@ function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
     )
   }
 
-  return lines
+  return {
+    primaryLine: `Net: ${formatAmount(netValue)}`,
+    detailLines,
+  }
 }
 
 function formatDateKey(date) {
@@ -272,6 +313,28 @@ function getDensityConfig(labelCount) {
   }
 }
 
+/**
+ * Normalize a daily net row for chart rendering.
+ *
+ * The chart's visual contract in docs/devnotes/daily-net-chart.md requires
+ * income bars to render above zero and expense bars to render below zero,
+ * regardless of how upstream values are signed.
+ *
+ * @param {Object} row - Daily net API row.
+ * @returns {{income: number, expenses: number, net: number}} Normalized values for Chart.js datasets.
+ */
+function normalizeDailyNetRowForChart(row) {
+  const incomeValue = Number(row?.income?.parsedValue ?? 0)
+  const expenseValue = Number(row?.expenses?.parsedValue ?? 0)
+  const rawNetValue = Number(row?.net?.parsedValue)
+
+  const income = Math.abs(incomeValue)
+  const expenses = -Math.abs(expenseValue)
+  const net = Number.isFinite(rawNetValue) ? rawNetValue : income + expenses
+
+  return { income, expenses, net }
+}
+
 function buildDateRangeLabels(startDate, endDate) {
   const start = parseDateKey(startDate)
   const end = parseDateKey(endDate)
@@ -325,6 +388,27 @@ function buildLineDataset(label, data, color, overrides = {}) {
     ...overrides,
   }
 }
+
+const buildLegendItems = (datasets) =>
+  [...datasets]
+    .map((dataset, index) => ({ ...dataset, index }))
+    .filter((dataset) => dataset.type === 'line')
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.index - b.index)
+    .map((dataset) => {
+      const dash = dataset.borderDash || []
+      const swatchStyle = {
+        borderColor: dataset.borderColor,
+      }
+
+      if (dash.length >= 2) {
+        swatchStyle.backgroundImage = `repeating-linear-gradient(to right, ${dataset.borderColor}, ${dataset.borderColor} ${dash[0]}px, transparent ${dash[0]}px, transparent ${dash[0] + dash[1]}px)`
+      }
+
+      return {
+        label: dataset.label,
+        swatchStyle,
+      }
+    })
 
 function emphasizeColor(hex, channel = 'g') {
   return hex
@@ -500,6 +584,17 @@ function handleBarClick(evt) {
  */
 async function renderChart() {
   await nextTick()
+
+  if (hasError.value || isEmpty.value || isLoading.value) {
+    if (chartInstance.value) {
+      chartInstance.value.stop()
+      chartInstance.value.destroy()
+      chartInstance.value = null
+    }
+    legendItems.value = []
+    return
+  }
+
   if (chartInstance.value) {
     chartInstance.value.stop()
     chartInstance.value.destroy()
@@ -526,9 +621,12 @@ async function renderChart() {
   )
   emit('data-change', displayData)
 
-  const income = displayData.map((d) => d.income.parsedValue)
-  const expenses = displayData.map((d) => d.expenses.parsedValue)
-  const net = displayData.map((d) => d.net.parsedValue)
+  // Defensive normalization: keep bars aligned with the documented stacked visual
+  // rules in docs/devnotes/daily-net-chart.md (income above zero, expenses below).
+  const normalizedDisplayData = displayData.map(normalizeDailyNetRowForChart)
+  const income = normalizedDisplayData.map((d) => d.income)
+  const expenses = normalizedDisplayData.map((d) => d.expenses)
+  const net = normalizedDisplayData.map((d) => d.net)
   const fullNet = fullData.map((d) => d.net.parsedValue)
   const fullIncome = fullData.map((d) => d.income.parsedValue)
   const fullExpenses = fullData.map((d) => d.expenses.parsedValue)
@@ -684,32 +782,67 @@ async function renderChart() {
           mode: 'nearest',
           intersect: true,
           titleColor: getStyle('--color-accent-yellow'),
-          bodyColor: getStyle('--color-text-light'),
-          titleFont: { family: "'Fira Code', monospace", weight: '600', size: 12 },
-          bodyFont: { family: "'Fira Code', monospace", size: 12, weight: '500' },
+          bodyColor: getStyle('--color-text-primary') || getStyle('--color-text-light'),
+          footerColor: getStyle('--color-text-muted'),
+          titleFont: { family: "'Fira Code', monospace", weight: '600' },
+          bodyFont: { family: "'Fira Code', monospace", size: 13, weight: '700' },
+          footerFont: { family: "'Fira Code', monospace", size: 12, weight: '500' },
           cornerRadius: 10,
           caretPadding: 6,
           caretSize: 9,
-          bodySpacing: 5,
+          bodySpacing: 8,
+          footerSpacing: 5,
           titleSpacing: 4,
-          titleMarginBottom: 6,
+          titleMarginBottom: 8,
           position: 'zeroLine',
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {
               const payload = getTooltipPayload(context.chart, context.dataIndex)
-              return payload ? buildTooltipLines(payload) : null
+              return payload ? buildTooltipLines(payload).primaryLine : null
+            },
+            footer: (items) => {
+              const context = items?.[0]
+              if (!context) return null
+              const payload = getTooltipPayload(context.chart, context.dataIndex)
+              return payload ? buildTooltipLines(payload).detailLines : null
             },
           },
         },
       },
     },
   })
+  // Keep tooltip rows unmodified so hover labels preserve original business meaning
+  // (Income / Expenses / Net) while bar geometry stays normalization-safe.
+  // See docs/devnotes/daily-net-chart.md for the tooltip + stacking expectations.
   // Cache tooltip-specific metadata on the chart instance for fast lookup.
   chartInstance.value.$dailyNetRows = displayData
   chartInstance.value.$comparisonSeries = comparisonSeries
   chartInstance.value.$comparisonLabel = comparisonLabel
   chartInstance.value.$netValues = net
+  legendItems.value = buildLegendItems(datasets)
+}
+
+function beginFetch() {
+  pendingRequests.value += 1
+  isLoading.value = true
+}
+
+function endFetch() {
+  pendingRequests.value = Math.max(0, pendingRequests.value - 1)
+  isLoading.value = pendingRequests.value > 0
+}
+
+function updateIsEmptyState(data) {
+  isEmpty.value =
+    !data.length ||
+    data.every(
+      (row) =>
+        (row.transaction_count ?? 0) === 0 &&
+        (row.income?.parsedValue ?? 0) === 0 &&
+        (row.expenses?.parsedValue ?? 0) === 0 &&
+        (row.net?.parsedValue ?? 0) === 0,
+    )
 }
 
 async function fetchData() {
@@ -724,12 +857,31 @@ async function fetchData() {
     displayEnd: display.endDate,
   }
 
-  const res = await fetchDailyNet({
-    start_date: requestRange.value.startDate,
-    end_date: requestRange.value.endDate,
-  })
+  beginFetch()
+  hasError.value = false
 
-  if (res.status === 'success') chartData.value = res.data
+  try {
+    const res = await fetchDailyNet({
+      start_date: requestRange.value.startDate,
+      end_date: requestRange.value.endDate,
+    })
+
+    if (res.status === 'success') {
+      chartData.value = res.data
+      updateIsEmptyState(res.data)
+      return
+    }
+
+    hasError.value = true
+    chartData.value = []
+    isEmpty.value = false
+  } catch {
+    hasError.value = true
+    chartData.value = []
+    isEmpty.value = false
+  } finally {
+    endFetch()
+  }
 }
 
 async function fetchComparisonData() {
@@ -737,12 +889,32 @@ async function fetchComparisonData() {
   const ctx = buildComparisonContext()
   if (!ctx) return (comparisonData.value = [])
 
-  const res = await fetchDailyNet({
-    start_date: formatDateKey(ctx.priorStart),
-    end_date: formatDateKey(ctx.priorEnd),
-  })
+  beginFetch()
 
-  if (res.status === 'success') comparisonData.value = res.data
+  try {
+    const res = await fetchDailyNet({
+      start_date: formatDateKey(ctx.priorStart),
+      end_date: formatDateKey(ctx.priorEnd),
+    })
+
+    if (res.status === 'success') {
+      comparisonData.value = res.data
+      return
+    }
+
+    hasError.value = true
+    comparisonData.value = []
+  } catch {
+    hasError.value = true
+    comparisonData.value = []
+  } finally {
+    endFetch()
+  }
+}
+
+function retryFetch() {
+  fetchData()
+  fetchComparisonData()
 }
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
@@ -758,3 +930,70 @@ onMounted(() => {
 })
 onUnmounted(() => chartInstance.value?.destroy())
 </script>
+
+<style scoped>
+.daily-net-chart__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.daily-net-chart__legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.daily-net-chart__legend-swatch {
+  width: 1.75rem;
+  height: 0;
+  border-top: 2px solid var(--color-text-muted);
+  background-repeat: repeat-x;
+}
+
+.daily-net-chart__state {
+  min-height: 5rem;
+  margin-bottom: 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 0.5rem;
+  padding: 0.875rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  color: var(--color-text-muted);
+  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+}
+
+.daily-net-chart__state--error {
+  justify-content: space-between;
+  border-color: var(--color-accent-red);
+}
+
+.daily-net-chart__retry {
+  border: 1px solid var(--color-accent-red);
+  border-radius: 0.375rem;
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  color: var(--color-text-light);
+  cursor: pointer;
+}
+
+.daily-net-chart__spinner {
+  width: 1rem;
+  height: 1rem;
+  border-radius: 999px;
+  border: 2px solid var(--divider);
+  border-top-color: var(--color-accent-cyan);
+  animation: daily-net-chart-spin 0.8s linear infinite;
+}
+
+@keyframes daily-net-chart-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+</style>
