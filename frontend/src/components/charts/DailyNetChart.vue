@@ -196,28 +196,42 @@ function getTooltipPayload(chart, dataIndex) {
  * @returns {{primaryLine: string, detailLines: string[]}} Tooltip copy to render.
  */
 function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
-  const netValue = row?.net?.parsedValue ?? 0
-  const incomeValue = row?.income?.parsedValue ?? 0
-  const expenseValue = row?.expenses?.parsedValue ?? 0
-  const transactionCount = Number.isFinite(row?.transaction_count) ? row.transaction_count : 0
+  const netValue = Number(row?.net?.parsedValue)
+  const incomeValue = Number(row?.income?.parsedValue)
+  const expenseValue = Number(row?.expenses?.parsedValue)
+  const txCount = Number(row?.transaction_count)
 
-  const detailLines = [
-    `Income: ${formatAmount(incomeValue)}`,
-    `Expenses: ${formatAmount(expenseValue)}`,
-    `Transactions: ${transactionCount}`,
+  const safeCurrency = (value) => formatAmount(Number.isFinite(value) ? value : 0)
+  const safeCount = Number.isFinite(txCount) && txCount >= 0 ? txCount : 0
+
+  const lines = [
+    `Net: ${safeCurrency(netValue)}`,
+    `Income: ${safeCurrency(incomeValue)}`,
+    `Expenses: ${safeCurrency(expenseValue)}`,
+    `Transactions: ${safeCount}`,
   ]
 
-  if (comparisonLabel && comparisonValue != null) {
-    const delta = netValue - comparisonValue
-    const signedDelta = `${delta >= 0 ? '+' : '-'}${formatAmount(Math.abs(delta))}`
-    const percentDelta =
-      comparisonValue === 0
-        ? null
-        : `${delta >= 0 ? '+' : '-'}${Math.abs((delta / comparisonValue) * 100).toFixed(1)}%`
-    const deltaSuffix = percentDelta ? ` (${percentDelta})` : ''
+  const hasComparison = comparisonLabel && comparisonValue != null
+  const baseForDelta = Number.isFinite(netValue) ? netValue : 0
+  const comparisonAmount = Number(comparisonValue)
 
-    detailLines.push('', `${comparisonLabel}: ${formatAmount(comparisonValue)}`)
-    detailLines.push(`vs prior: ${signedDelta}${deltaSuffix}`)
+  if (hasComparison && Number.isFinite(comparisonAmount)) {
+    const delta = baseForDelta - comparisonAmount
+    const hasPercentBaseline = Math.abs(comparisonAmount) > 0
+    const percentDelta = hasPercentBaseline ? (delta / Math.abs(comparisonAmount)) * 100 : null
+    const deltaPrefix = delta >= 0 ? '+' : '-'
+    const absDelta = Math.abs(delta)
+    const deltaText = `${deltaPrefix}${safeCurrency(absDelta)}`
+    const percentText =
+      percentDelta == null
+        ? ''
+        : ` (${percentDelta >= 0 ? '+' : '-'}${Math.abs(percentDelta).toFixed(1)}%)`
+
+    lines.push(
+      '',
+      `${comparisonLabel}: ${safeCurrency(comparisonAmount)}`,
+      `vs prior: ${deltaText}${percentText}`,
+    )
   }
 
   return {
@@ -763,7 +777,7 @@ async function renderChart() {
           backgroundColor: getStyle('--theme-bg'),
           borderColor: getStyle('--color-accent-yellow'),
           borderWidth: 1,
-          padding: 12,
+          padding: { top: 12, right: 14, bottom: 13, left: 14 },
           displayColors: false,
           mode: 'nearest',
           intersect: true,
