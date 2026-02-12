@@ -17,6 +17,15 @@ The dashboard overlay sidebar now supports a comparison series that fetches a pr
 The comparison series renders as a faint, dashed line so it is visible without overpowering the primary
 income and expense bars.
 
+## Tooltip Behavior
+
+The daily net tooltip now uses an anchored custom positioner that snaps to the bar's zero-line x-position,
+while clamping tooltip coordinates to the chart area. This prevents tooltip boxes from rendering partially
+outside the canvas when hovering bars near chart boundaries.
+
+Interaction mode uses index-based hover along the x-axis (`mode: index`, `axis: x`, `intersect: false`) so
+the tooltip consistently follows the hovered date bucket rather than switching between stacked datasets.
+
 ## Loading, Empty, and Error States
 
 The chart now manages explicit request/UI state with local reactive flags:

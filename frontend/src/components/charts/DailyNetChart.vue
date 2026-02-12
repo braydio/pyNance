@@ -1,41 +1,37 @@
 <template>
   <div class="daily-net-chart">
-    <div
-      v-if="isLoading"
-      class="daily-net-chart__state daily-net-chart__state--loading"
-      role="status"
-    >
-      <div class="daily-net-chart__spinner" aria-hidden="true"></div>
-      <p>Loading daily net activity...</p>
-    </div>
-    <div
-      v-else-if="hasError"
-      class="daily-net-chart__state daily-net-chart__state--error"
-      role="alert"
-    >
+    <div v-if="hasError" class="daily-net-chart__state daily-net-chart__state--error">
       <p>Unable to load daily net data right now. Please try again.</p>
-      <button type="button" class="daily-net-chart__retry" @click="retryFetch">Retry</button>
+      <button class="daily-net-chart__retry" type="button" @click="retryFetch">Retry</button>
     </div>
-    <div v-else-if="isEmpty" class="daily-net-chart__state daily-net-chart__state--empty">
-      <p>No transactions found for the selected date range.</p>
+
+    <div v-else-if="isLoading" class="daily-net-chart__state">Loading daily net chart…</div>
+
+    <div v-else-if="isEmpty" class="daily-net-chart__state">
+      No transactions found for the selected date range.
     </div>
-    <div
-      v-if="legendItems.length && !hasError && !isEmpty"
-      class="daily-net-chart__legend"
-      aria-label="Active chart overlays"
-    >
-      <div v-for="item in legendItems" :key="item.label" class="daily-net-chart__legend-item">
+
+    <template v-else>
+      <div
+        v-if="legendItems.length"
+        class="daily-net-chart__legend"
+        aria-label="Active chart overlays"
+      >
         <span
-          class="daily-net-chart__legend-swatch"
-          :style="item.swatchStyle"
-          aria-hidden="true"
-        ></span>
-        <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+          v-for="item in legendItems"
+          :key="item.label"
+          class="daily-net-chart__legend-item"
+          :style="{ '--legend-color': item.color }"
+        >
+          <span class="daily-net-chart__legend-swatch" />
+          <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+        </span>
       </div>
-    </div>
-    <div v-if="!hasError && !isEmpty" style="height: 400px">
-      <canvas ref="chartCanvas" style="width: 100%; height: 100%" :aria-busy="isLoading"></canvas>
-    </div>
+
+      <div style="height: 400px">
+        <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -44,14 +40,13 @@
  * DailyNetChart.vue
  *
  * Renders the dashboard daily net chart with stacked income/expense bars,
- * a net indicator dash, and a detail tooltip aligned to the net value.
+ * a net indicator dash, and a detail tooltip aligned to the zero line.
  */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js'
 import { formatAmount } from '@/utils/format'
 
-// Register Chart.js plugins globally
 import {
   Tooltip,
   Legend,
@@ -64,6 +59,16 @@ import {
 
 Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
+function toParsedValue(value) {
+  if (value && typeof value === 'object' && typeof value.parsedValue === 'number')
+    return value.parsedValue
+  return typeof value === 'number' ? value : 0
+}
+
+function normalizeZero(value) {
+  return Object.is(value, -0) ? 0 : value
+}
+
 /**
  * Resolve the pixel position for the net indicator at a given label index.
  *
@@ -75,12 +80,11 @@ function getNetDashPosition(chart, dataIndex) {
   if (!chart?.getDatasetMeta) return null
   const firstMeta = chart.getDatasetMeta(0)
   const bar = firstMeta?.data?.[dataIndex]
-  const netValues = chart.$netValues
-  const netRows = chart.$dailyNetRows
   const yScale = chart.scales?.y
-  const netValue =
-    netValues?.[dataIndex] ?? netRows?.[dataIndex]?.net?.parsedValue ?? netRows?.[dataIndex]?.net
-  if (!bar || netValue == null || !yScale) return null
+  const netValue = toParsedValue(
+    chart?.$netValues?.[dataIndex] ?? chart?.$dailyNetRows?.[dataIndex]?.net,
+  )
+  if (!bar || !yScale) return null
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
 }
 
@@ -89,6 +93,7 @@ function getNetDashPosition(chart, dataIndex) {
  *
  * @param {import('chart.js').Chart} chart - The chart instance.
  * @param {number} dataIndex - Active label index.
+ * @param {number|undefined} xOverride - Optional x override from hovered element.
  * @returns {{x: number, y: number} | null} Pixel coordinates for y=0.
  */
 function getZeroLinePosition(chart, dataIndex, xOverride) {
@@ -101,6 +106,34 @@ function getZeroLinePosition(chart, dataIndex, xOverride) {
   return { x, y: yScale.getPixelForValue(0) }
 }
 
+/**
+ * Clamp a tooltip anchor point so the tooltip box stays within the chart drawing area.
+ *
+ * @param {import('chart.js').Chart} chart - Active chart.
+ * @param {number} x - Candidate x coordinate.
+ * @param {number} y - Candidate y coordinate.
+ * @param {{width?: number, height?: number}} tooltip - Tooltip model instance.
+ * @returns {{x: number, y: number}} Clamped coordinates.
+ */
+function clampTooltipToChartArea(chart, x, y, tooltip) {
+  const area = chart?.chartArea
+  if (!area) return { x, y }
+
+  const width = tooltip?.width ?? 0
+  const height = tooltip?.height ?? 0
+  const padding = 12
+
+  const minX = area.left + width / 2 + padding
+  const maxX = area.right - width / 2 - padding
+  const minY = area.top + height / 2 + padding
+  const maxY = area.bottom - height / 2 - padding
+
+  return {
+    x: Math.min(maxX, Math.max(minX, x)),
+    y: Math.min(maxY, Math.max(minY, y)),
+  }
+}
+
 function registerTooltipPositioner(name, positioner) {
   const targets = [Tooltip?.positioners, Chart?.Tooltip?.positioners]
   targets.forEach((target) => {
@@ -108,30 +141,16 @@ function registerTooltipPositioner(name, positioner) {
   })
 }
 
-// --- Safe registration for custom tooltip positioner ---
 registerTooltipPositioner('zeroLine', function (items, eventPosition) {
-  /**
-   * Anchor tooltips to the zero line instead of the hover cursor.
-   *
-   * @param {Array} items - Tooltip items for the active index.
-   * @param {{x: number, y: number}} eventPosition - Fallback cursor position.
-   * @returns {{x: number, y: number}} Tooltip anchor coordinates.
-   */
   if (!items?.length) return eventPosition
   const item = items[0]
   const chart = item?.chart
   const dataIndex = item?.dataIndex
   const position = getZeroLinePosition(chart, dataIndex, item?.element?.x)
-  return position ?? eventPosition
+  if (!position) return eventPosition
+  return clampTooltipToChartArea(chart, position.x, position.y, this)
 })
-// ----------------------------------------------------------------------
 
-/**
- * Render the daily net stacked bar chart with income, expenses, and net overlays.
- * Includes optional moving averages and comparison overlays to contextualize trends.
- */
-
-// Props
 const props = defineProps({
   startDate: { type: String, required: true },
   endDate: { type: String, required: true },
@@ -157,12 +176,11 @@ const chartInstance = ref(null)
 const chartCanvas = ref(null)
 const chartData = ref([])
 const comparisonData = ref([])
-const legendItems = ref([])
+const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
 const isLoading = ref(false)
 const hasError = ref(false)
 const isEmpty = ref(false)
-const requestRange = ref({ startDate: null, endDate: null, displayStart: null, displayEnd: null })
-const pendingRequests = ref(0)
+const legendItems = ref([])
 
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
@@ -187,57 +205,41 @@ function getTooltipPayload(chart, dataIndex) {
 }
 
 /**
- * Build the tooltip lines for the daily net chart.
+ * Build detailed tooltip lines for the daily net chart.
  *
  * @param {Object} payload - Tooltip payload.
  * @param {Object} payload.row - Daily net row data.
  * @param {string} payload.comparisonLabel - Label for the comparison series.
  * @param {number|null} payload.comparisonValue - Comparison series value.
- * @returns {{primaryLine: string, detailLines: string[]}} Tooltip copy to render.
+ * @returns {string[]} Tooltip detail lines.
  */
 function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
-  const netValue = Number(row?.net?.parsedValue)
-  const incomeValue = Number(row?.income?.parsedValue)
-  const expenseValue = Number(row?.expenses?.parsedValue)
-  const txCount = Number(row?.transaction_count)
-
-  const safeCurrency = (value) => formatAmount(Number.isFinite(value) ? value : 0)
-  const safeCount = Number.isFinite(txCount) && txCount >= 0 ? txCount : 0
+  const netValue = toParsedValue(row?.net)
+  const incomeValue = toParsedValue(row?.income)
+  const expensesValue = toParsedValue(row?.expenses)
 
   const lines = [
-    `Net: ${safeCurrency(netValue)}`,
-    `Income: ${safeCurrency(incomeValue)}`,
-    `Expenses: ${safeCurrency(expenseValue)}`,
-    `Transactions: ${safeCount}`,
+    `Income: ${formatAmount(incomeValue)}`,
+    `Expenses: ${formatAmount(expensesValue)}`,
+    `Transactions: ${row?.transaction_count ?? 0}`,
   ]
 
-  const hasComparison = comparisonLabel && comparisonValue != null
-  const baseForDelta = Number.isFinite(netValue) ? netValue : 0
-  const comparisonAmount = Number(comparisonValue)
-
-  if (hasComparison && Number.isFinite(comparisonAmount)) {
-    const delta = baseForDelta - comparisonAmount
-    const hasPercentBaseline = Math.abs(comparisonAmount) > 0
-    const percentDelta = hasPercentBaseline ? (delta / Math.abs(comparisonAmount)) * 100 : null
-    const deltaPrefix = delta >= 0 ? '+' : '-'
-    const absDelta = Math.abs(delta)
-    const deltaText = `${deltaPrefix}${safeCurrency(absDelta)}`
-    const percentText =
-      percentDelta == null
+  if (comparisonLabel && comparisonValue != null) {
+    const delta = netValue - comparisonValue
+    const deltaPrefix = delta >= 0 ? '+' : ''
+    const percentage =
+      comparisonValue === 0
         ? ''
-        : ` (${percentDelta >= 0 ? '+' : '-'}${Math.abs(percentDelta).toFixed(1)}%)`
+        : ` (${deltaPrefix}${((delta / Math.abs(comparisonValue)) * 100).toFixed(1)}%)`
 
     lines.push(
       '',
-      `${comparisonLabel}: ${safeCurrency(comparisonAmount)}`,
-      `vs prior: ${deltaText}${percentText}`,
+      `${comparisonLabel}: ${formatAmount(comparisonValue)}`,
+      `vs prior: ${deltaPrefix}${formatAmount(delta)}${percentage}`,
     )
   }
 
-  return {
-    primaryLine: `Net: ${formatAmount(netValue)}`,
-    detailLines,
-  }
+  return lines
 }
 
 function formatDateKey(date) {
@@ -260,79 +262,47 @@ const formatTooltipTitle = (label) => {
     : label
 }
 
-/**
- * Format x-axis labels using a short or dense date template.
- *
- * @param {string} label - Date key label in YYYY-MM-DD format.
- * @param {'day'|'month'} [formatStyle='day'] - Preferred output density.
- * @returns {string} Localized axis label.
- */
-function formatAxisLabel(label, formatStyle = 'day') {
+function formatAxisLabel(label) {
   const parsed = parseDateKey(label)
-  if (!parsed) return label
-  if (formatStyle === 'month') return parsed.toLocaleDateString(undefined, { month: 'short' })
-  return parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : label
 }
 
-/**
- * Resolve chart spacing and tick density from the number of labels.
- *
- * @param {number} labelCount - Number of bars/labels in the active series.
- * @returns {{barThickness: number, maxBarThickness: number, categoryPercentage: number, barPercentage: number, maxTicksLimit: number, labelFormat: 'day' | 'month'}} Density-aware chart config.
- */
+function formatAxisMonthLabel(label) {
+  const parsed = parseDateKey(label)
+  return parsed ? parsed.toLocaleDateString(undefined, { month: 'short' }) : label
+}
+
 function getDensityConfig(labelCount) {
-  if (labelCount > 120) {
+  if (labelCount >= 120) {
     return {
       barThickness: 5,
       maxBarThickness: 8,
       categoryPercentage: 0.92,
       barPercentage: 0.8,
       maxTicksLimit: 6,
-      labelFormat: 'month',
+      axisFormatter: formatAxisMonthLabel,
     }
   }
 
-  if (labelCount > 45) {
+  if (labelCount >= 45) {
     return {
       barThickness: 10,
       maxBarThickness: 14,
-      categoryPercentage: 0.86,
-      barPercentage: 0.8,
+      categoryPercentage: 0.88,
+      barPercentage: 0.82,
       maxTicksLimit: 8,
-      labelFormat: 'day',
+      axisFormatter: formatAxisLabel,
     }
   }
 
   return {
     barThickness: 18,
-    maxBarThickness: 24,
-    categoryPercentage: 0.76,
-    barPercentage: 0.92,
-    maxTicksLimit: 10,
-    labelFormat: 'day',
+    maxBarThickness: 22,
+    categoryPercentage: 0.85,
+    barPercentage: 0.9,
+    maxTicksLimit: 8,
+    axisFormatter: formatAxisLabel,
   }
-}
-
-/**
- * Normalize a daily net row for chart rendering.
- *
- * The chart's visual contract in docs/devnotes/daily-net-chart.md requires
- * income bars to render above zero and expense bars to render below zero,
- * regardless of how upstream values are signed.
- *
- * @param {Object} row - Daily net API row.
- * @returns {{income: number, expenses: number, net: number}} Normalized values for Chart.js datasets.
- */
-function normalizeDailyNetRowForChart(row) {
-  const incomeValue = Number(row?.income?.parsedValue ?? 0)
-  const expenseValue = Number(row?.expenses?.parsedValue ?? 0)
-  const rawNetValue = Number(row?.net?.parsedValue)
-
-  const income = Math.abs(incomeValue)
-  const expenses = -Math.abs(expenseValue)
-  const net = Number.isFinite(rawNetValue) ? rawNetValue : income + expenses
-
-  return { income, expenses, net }
 }
 
 function buildDateRangeLabels(startDate, endDate) {
@@ -388,27 +358,6 @@ function buildLineDataset(label, data, color, overrides = {}) {
     ...overrides,
   }
 }
-
-const buildLegendItems = (datasets) =>
-  [...datasets]
-    .map((dataset, index) => ({ ...dataset, index }))
-    .filter((dataset) => dataset.type === 'line')
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.index - b.index)
-    .map((dataset) => {
-      const dash = dataset.borderDash || []
-      const swatchStyle = {
-        borderColor: dataset.borderColor,
-      }
-
-      if (dash.length >= 2) {
-        swatchStyle.backgroundImage = `repeating-linear-gradient(to right, ${dataset.borderColor}, ${dataset.borderColor} ${dash[0]}px, transparent ${dash[0]}px, transparent ${dash[0] + dash[1]}px)`
-      }
-
-      return {
-        label: dataset.label,
-        swatchStyle,
-      }
-    })
 
 function emphasizeColor(hex, channel = 'g') {
   return hex
@@ -470,14 +419,12 @@ function buildComparisonContext() {
   }
 
   const currentStart = start
-  const currentEnd = end
   const priorEnd = new Date(currentStart)
   priorEnd.setDate(priorEnd.getDate() - 1)
-
   const priorStart = new Date(priorEnd)
   priorStart.setDate(priorStart.getDate() - 29)
 
-  return { mode: 'rolling_30', priorStart, priorEnd, currentStart, currentEnd }
+  return { mode: 'rolling_30', priorStart, priorEnd, currentStart }
 }
 
 function buildComparisonSeries(labels, data, ctx) {
@@ -486,7 +433,7 @@ function buildComparisonSeries(labels, data, ctx) {
     const byDay = new Map()
     data.forEach((d) => {
       const parsed = parseDateKey(d.date)
-      if (parsed) byDay.set(parsed.getDate(), d.net.parsedValue)
+      if (parsed) byDay.set(parsed.getDate(), toParsedValue(d.net))
     })
     return labels.map((l) => {
       const parsed = parseDateKey(l)
@@ -499,7 +446,7 @@ function buildComparisonSeries(labels, data, ctx) {
     const parsed = parseDateKey(d.date)
     if (!parsed) return
     const idx = Math.floor((parsed - ctx.priorStart) / MS_PER_DAY)
-    if (idx >= 0 && idx < 30) byIndex.set(idx, d.net.parsedValue)
+    if (idx >= 0 && idx < 30) byIndex.set(idx, toParsedValue(d.net))
   })
 
   return labels.map((l) => {
@@ -510,19 +457,11 @@ function buildComparisonSeries(labels, data, ctx) {
   })
 }
 
-// Chart plugin
 const netDashPlugin = {
   id: 'netDashPlugin',
-  /**
-   * Draw the yellow net indicator dash for each bar.
-   *
-   * @param {import('chart.js').Chart} chart - Chart instance.
-   * @returns {void}
-   */
   afterDatasetsDraw(chart) {
     if (!chart?.ctx || !chart?.getDatasetMeta) return
     const firstMeta = chart.getDatasetMeta(0)
-
     if (!firstMeta?.data?.length) return
 
     firstMeta.data.forEach((_, index) => {
@@ -543,29 +482,6 @@ const netDashPlugin = {
   },
 }
 
-const tooltipSnapPlugin = {
-  id: 'tooltipSnapPlugin',
-  /**
-   * Force the tooltip caret to align with the zero line.
-   *
-   * @param {import('chart.js').Chart} chart - Chart instance.
-   * @param {{ tooltip?: { dataPoints?: Array<{ dataIndex: number }>, caretX?: number, caretY?: number, x?: number, y?: number } }} args - Tooltip draw args.
-   * @returns {void}
-   */
-  beforeTooltipDraw(chart, args) {
-    const tooltip = args?.tooltip
-    const point = tooltip?.dataPoints?.[0]
-    const dataIndex = point?.dataIndex
-    if (dataIndex == null) return
-    const position = getZeroLinePosition(chart, dataIndex, point?.element?.x)
-    if (!position) return
-    tooltip.caretX = position.x
-    tooltip.caretY = position.y
-    tooltip.x = position.x
-    tooltip.y = position.y
-  },
-}
-
 function handleBarClick(evt) {
   if (!chartInstance.value) return
   const points = chartInstance.value.getElementsAtEventForMode(
@@ -577,28 +493,14 @@ function handleBarClick(evt) {
   if (points.length) emit('bar-click', chartInstance.value.data.labels[points[0].index])
 }
 
-/**
- * Render the Daily Net chart and cache tooltip metadata for hover callbacks.
- *
- * @returns {Promise<void>} Resolves after the chart is rendered.
- */
 async function renderChart() {
   await nextTick()
-
-  if (hasError.value || isEmpty.value || isLoading.value) {
-    if (chartInstance.value) {
-      chartInstance.value.stop()
-      chartInstance.value.destroy()
-      chartInstance.value = null
-    }
-    legendItems.value = []
-    return
-  }
-
   if (chartInstance.value) {
     chartInstance.value.stop()
     chartInstance.value.destroy()
   }
+
+  if (hasError.value || isLoading.value) return
 
   const ctx = chartCanvas.value?.getContext('2d')
   if (!ctx) return
@@ -606,30 +508,30 @@ async function renderChart() {
   const { labels, displayData } = getDisplaySeries()
   const { labels: fullLabels, fullData } = getExtendedSeries()
   if (!labels.length) return
-  const densityConfig = getDensityConfig(labels.length)
+
+  const hasTransactions = chartData.value.length > 0
+  isEmpty.value = !hasTransactions
+  if (isEmpty.value) return
 
   emit(
     'summary-change',
     displayData.reduce(
       (a, r) => ({
-        totalIncome: a.totalIncome + r.income.parsedValue,
-        totalExpenses: a.totalExpenses + r.expenses.parsedValue,
-        totalNet: a.totalNet + r.net.parsedValue,
+        totalIncome: a.totalIncome + toParsedValue(r.income),
+        totalExpenses: a.totalExpenses + toParsedValue(r.expenses),
+        totalNet: a.totalNet + toParsedValue(r.net),
       }),
       { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
     ),
   )
   emit('data-change', displayData)
 
-  // Defensive normalization: keep bars aligned with the documented stacked visual
-  // rules in docs/devnotes/daily-net-chart.md (income above zero, expenses below).
-  const normalizedDisplayData = displayData.map(normalizeDailyNetRowForChart)
-  const income = normalizedDisplayData.map((d) => d.income)
-  const expenses = normalizedDisplayData.map((d) => d.expenses)
-  const net = normalizedDisplayData.map((d) => d.net)
-  const fullNet = fullData.map((d) => d.net.parsedValue)
-  const fullIncome = fullData.map((d) => d.income.parsedValue)
-  const fullExpenses = fullData.map((d) => d.expenses.parsedValue)
+  const income = displayData.map((d) => normalizeZero(toParsedValue(d.income)))
+  const expenses = displayData.map((d) => normalizeZero(toParsedValue(d.expenses)))
+  const net = displayData.map((d) => toParsedValue(d.net))
+  const fullNet = fullData.map((d) => toParsedValue(d.net))
+  const fullIncome = fullData.map((d) => toParsedValue(d.income))
+  const fullExpenses = fullData.map((d) => toParsedValue(d.expenses))
   const full7Day = movingAverage(fullNet, 7)
   const full30Day = movingAverage(fullNet, 30)
   const display7Day = mapSeriesToDisplay(labels, fullLabels, full7Day)
@@ -640,6 +542,7 @@ async function renderChart() {
   const averageExpenses = fullExpenses.length
     ? fullExpenses.reduce((a, b) => a + b, 0) / fullExpenses.length
     : 0
+  const density = getDensityConfig(labels.length)
 
   const incomeColor = getStyle('--color-accent-green') || '#22c55e'
   const expenseColor = getStyle('--color-accent-red') || '#ef4444'
@@ -656,10 +559,10 @@ async function renderChart() {
       type: 'bar',
       label: 'Expenses',
       data: expenses,
-      barThickness: densityConfig.barThickness,
-      maxBarThickness: densityConfig.maxBarThickness,
-      categoryPercentage: densityConfig.categoryPercentage,
-      barPercentage: densityConfig.barPercentage,
+      barThickness: density.barThickness,
+      maxBarThickness: density.maxBarThickness,
+      categoryPercentage: density.categoryPercentage,
+      barPercentage: density.barPercentage,
       backgroundColor: expenseColor,
       borderColor: expenseColor,
       borderWidth: 1,
@@ -670,10 +573,10 @@ async function renderChart() {
       type: 'bar',
       label: 'Income',
       data: income,
-      barThickness: densityConfig.barThickness,
-      maxBarThickness: densityConfig.maxBarThickness,
-      categoryPercentage: densityConfig.categoryPercentage,
-      barPercentage: densityConfig.barPercentage,
+      barThickness: density.barThickness,
+      maxBarThickness: density.maxBarThickness,
+      categoryPercentage: density.categoryPercentage,
+      barPercentage: density.barPercentage,
       backgroundColor: incomeColor,
       borderColor: incomeColor,
       borderWidth: 1,
@@ -682,25 +585,33 @@ async function renderChart() {
     },
   ]
 
-  if (showAvgIncome.value)
+  if (showAvgIncome.value) {
     datasets.push(
       buildLineDataset(
         'Avg Income',
         labels.map(() => averageIncome),
         averageIncomeColor,
-        { borderDash: [6, 6], order: 4 },
+        {
+          borderDash: [6, 6],
+          order: 4,
+        },
       ),
     )
+  }
 
-  if (showAvgExpenses.value)
+  if (showAvgExpenses.value) {
     datasets.push(
       buildLineDataset(
         'Avg Expenses',
         labels.map(() => averageExpenses),
         averageExpensesColor,
-        { borderDash: [4, 8], order: 5 },
+        {
+          borderDash: [4, 8],
+          order: 5,
+        },
       ),
     )
+  }
 
   let comparisonSeries = null
   let comparisonLabel = ''
@@ -708,18 +619,16 @@ async function renderChart() {
   if (showComparisonOverlay.value) {
     const ctx = buildComparisonContext()
     comparisonSeries = buildComparisonSeries(labels, comparisonData.value, ctx)
-    comparisonLabel =
-      ctx?.mode === 'prior_month_to_date' ? 'This Day Last Month' : 'This Day Last Month'
+    comparisonLabel = 'This Day Last Month'
     datasets.push(
       buildLineDataset(comparisonLabel, comparisonSeries, comparisonColor, {
-        borderDash: [12, 8],
-        borderWidth: 2,
+        borderDash: [8, 8],
         order: 6,
       }),
     )
   }
 
-  if (show30Day.value)
+  if (show30Day.value) {
     datasets.push(
       buildLineDataset('30-Day Avg', display30Day, thirtyDayColor, {
         borderDash: [8, 4],
@@ -727,8 +636,9 @@ async function renderChart() {
         order: 7,
       }),
     )
+  }
 
-  if (show7Day.value)
+  if (show7Day.value) {
     datasets.push(
       buildLineDataset('7-Day Avg', display7Day, sevenDayColor, {
         borderDash: [2, 2],
@@ -736,10 +646,18 @@ async function renderChart() {
         order: 8,
       }),
     )
+  }
+
+  legendItems.value = datasets
+    .filter((dataset) =>
+      ['Avg Income', 'Avg Expenses', '30-Day Avg', '7-Day Avg'].includes(dataset.label),
+    )
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map((dataset) => ({ label: dataset.label, color: dataset.borderColor || '#fff' }))
 
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
-    plugins: [netDashPlugin, tooltipSnapPlugin],
+    plugins: [netDashPlugin],
     data: { labels, datasets },
     options: {
       responsive: true,
@@ -747,18 +665,19 @@ async function renderChart() {
       animation: false,
       onClick: handleBarClick,
       interaction: {
-        mode: 'nearest',
-        intersect: true,
+        mode: 'index',
+        axis: 'x',
+        intersect: false,
       },
       scales: {
         x: {
           grid: { display: false },
           ticks: {
             autoSkip: true,
-            maxTicksLimit: densityConfig.maxTicksLimit,
+            maxTicksLimit: density.maxTicksLimit,
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
-            callback: (_, index) => formatAxisLabel(labels[index], densityConfig.labelFormat),
+            callback: (_, index) => density.axisFormatter(labels[index]),
           },
         },
         y: {
@@ -777,75 +696,49 @@ async function renderChart() {
           backgroundColor: getStyle('--theme-bg'),
           borderColor: getStyle('--color-accent-yellow'),
           borderWidth: 1,
-          padding: { top: 12, right: 14, bottom: 13, left: 14 },
+          padding: 12,
           displayColors: false,
-          mode: 'nearest',
-          intersect: true,
+          mode: 'index',
+          intersect: false,
           titleColor: getStyle('--color-accent-yellow'),
-          bodyColor: getStyle('--color-text-primary') || getStyle('--color-text-light'),
-          footerColor: getStyle('--color-text-muted'),
+          bodyColor: getStyle('--color-text-light'),
           titleFont: { family: "'Fira Code', monospace", weight: '600' },
-          bodyFont: { family: "'Fira Code', monospace", size: 13, weight: '700' },
-          footerFont: { family: "'Fira Code', monospace", size: 12, weight: '500' },
+          bodyFont: { family: "'Fira Code', monospace" },
           cornerRadius: 10,
           caretPadding: 6,
           caretSize: 9,
-          bodySpacing: 8,
-          footerSpacing: 5,
+          bodySpacing: 6,
           titleSpacing: 4,
-          titleMarginBottom: 8,
+          titleMarginBottom: 6,
           position: 'zeroLine',
           callbacks: {
             title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
             label: (context) => {
               const payload = getTooltipPayload(context.chart, context.dataIndex)
-              return payload ? buildTooltipLines(payload).primaryLine : null
+              return payload ? `Net: ${formatAmount(toParsedValue(payload.row?.net))}` : null
             },
             footer: (items) => {
-              const context = items?.[0]
-              if (!context) return null
-              const payload = getTooltipPayload(context.chart, context.dataIndex)
-              return payload ? buildTooltipLines(payload).detailLines : null
+              const first = items?.[0]
+              if (!first) return null
+              const payload = getTooltipPayload(first.chart, first.dataIndex)
+              return payload ? buildTooltipLines(payload) : null
             },
           },
         },
       },
     },
   })
-  // Keep tooltip rows unmodified so hover labels preserve original business meaning
-  // (Income / Expenses / Net) while bar geometry stays normalization-safe.
-  // See docs/devnotes/daily-net-chart.md for the tooltip + stacking expectations.
-  // Cache tooltip-specific metadata on the chart instance for fast lookup.
+
   chartInstance.value.$dailyNetRows = displayData
   chartInstance.value.$comparisonSeries = comparisonSeries
   chartInstance.value.$comparisonLabel = comparisonLabel
   chartInstance.value.$netValues = net
-  legendItems.value = buildLegendItems(datasets)
-}
-
-function beginFetch() {
-  pendingRequests.value += 1
-  isLoading.value = true
-}
-
-function endFetch() {
-  pendingRequests.value = Math.max(0, pendingRequests.value - 1)
-  isLoading.value = pendingRequests.value > 0
-}
-
-function updateIsEmptyState(data) {
-  isEmpty.value =
-    !data.length ||
-    data.every(
-      (row) =>
-        (row.transaction_count ?? 0) === 0 &&
-        (row.income?.parsedValue ?? 0) === 0 &&
-        (row.expenses?.parsedValue ?? 0) === 0 &&
-        (row.net?.parsedValue ?? 0) === 0,
-    )
 }
 
 async function fetchData() {
+  isLoading.value = true
+  hasError.value = false
+
   const display = props.zoomedOut ? getZoomedDisplayRange() : props
   const start = parseDateKey(display.startDate) ?? new Date()
   start.setDate(start.getDate() - 30)
@@ -857,9 +750,6 @@ async function fetchData() {
     displayEnd: display.endDate,
   }
 
-  beginFetch()
-  hasError.value = false
-
   try {
     const res = await fetchDailyNet({
       start_date: requestRange.value.startDate,
@@ -868,28 +758,30 @@ async function fetchData() {
 
     if (res.status === 'success') {
       chartData.value = res.data
-      updateIsEmptyState(res.data)
       return
     }
 
     hasError.value = true
     chartData.value = []
-    isEmpty.value = false
-  } catch {
+  } catch (_error) {
     hasError.value = true
     chartData.value = []
-    isEmpty.value = false
   } finally {
-    endFetch()
+    isLoading.value = false
   }
 }
 
 async function fetchComparisonData() {
-  if (!showComparisonOverlay.value) return (comparisonData.value = [])
-  const ctx = buildComparisonContext()
-  if (!ctx) return (comparisonData.value = [])
+  if (!showComparisonOverlay.value) {
+    comparisonData.value = []
+    return
+  }
 
-  beginFetch()
+  const ctx = buildComparisonContext()
+  if (!ctx) {
+    comparisonData.value = []
+    return
+  }
 
   try {
     const res = await fetchDailyNet({
@@ -904,17 +796,15 @@ async function fetchComparisonData() {
 
     hasError.value = true
     comparisonData.value = []
-  } catch {
+  } catch (_error) {
     hasError.value = true
     comparisonData.value = []
-  } finally {
-    endFetch()
   }
 }
 
-function retryFetch() {
-  fetchData()
-  fetchComparisonData()
+async function retryFetch() {
+  await fetchData()
+  await fetchComparisonData()
 }
 
 watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
@@ -932,68 +822,49 @@ onUnmounted(() => chartInstance.value?.destroy())
 </script>
 
 <style scoped>
+.daily-net-chart__state {
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-chart__state--error {
+  color: var(--color-accent-red);
+}
+
+.daily-net-chart__retry {
+  border: 1px solid var(--divider);
+  border-radius: 6px;
+  padding: 0.375rem 0.75rem;
+  background: var(--theme-bg-surface, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+
 .daily-net-chart__legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
+  gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
 
 .daily-net-chart__legend-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  white-space: nowrap;
+  gap: 0.375rem;
 }
 
 .daily-net-chart__legend-swatch {
-  width: 1.75rem;
-  height: 0;
-  border-top: 2px solid var(--color-text-muted);
-  background-repeat: repeat-x;
-}
-
-.daily-net-chart__state {
-  min-height: 5rem;
-  margin-bottom: 0.75rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.5rem;
-  padding: 0.875rem 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-  color: var(--color-text-muted);
-  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
-}
-
-.daily-net-chart__state--error {
-  justify-content: space-between;
-  border-color: var(--color-accent-red);
-}
-
-.daily-net-chart__retry {
-  border: 1px solid var(--color-accent-red);
-  border-radius: 0.375rem;
-  padding: 0.35rem 0.65rem;
-  background: transparent;
-  color: var(--color-text-light);
-  cursor: pointer;
-}
-
-.daily-net-chart__spinner {
   width: 1rem;
-  height: 1rem;
-  border-radius: 999px;
-  border: 2px solid var(--divider);
-  border-top-color: var(--color-accent-cyan);
-  animation: daily-net-chart-spin 0.8s linear infinite;
+  border-top: 2px dashed var(--legend-color);
 }
 
-@keyframes daily-net-chart-spin {
-  to {
-    transform: rotate(360deg);
-  }
+.daily-net-chart__legend-label {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
 }
 </style>
