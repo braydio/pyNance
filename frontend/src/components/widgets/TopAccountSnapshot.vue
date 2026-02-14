@@ -257,7 +257,7 @@
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
-                  format(account.adjusted_balance)
+                  format(resolveAccountBalance(account))
                 }}</span>
                 <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
@@ -418,7 +418,7 @@
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
-                  format(account.adjusted_balance)
+                  format(resolveAccountBalance(account))
                 }}</span>
                 <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
@@ -752,6 +752,29 @@ const spectrum = [
 ]
 
 /**
+ * Resolve the first valid numeric account balance using the preferred precedence order.
+ *
+ * @param {object} account - Account payload containing one or more balance fields.
+ * @returns {number} First valid numeric value, or 0 when no valid balance is available.
+ */
+function resolveAccountBalance(account) {
+  if (!account || typeof account !== 'object') return 0
+  const candidates = [
+    account.adjusted_balance,
+    account.balance,
+    account.balances?.current,
+    account.balances?.available,
+  ]
+  for (const candidate of candidates) {
+    const numeric = Number(candidate)
+    if (Number.isFinite(numeric)) {
+      return numeric
+    }
+  }
+  return 0
+}
+
+/**
  * Determine whether an account should be treated as a credit account for balance styling.
  * Credit accounts should always show negative (red) balance styling regardless of amount sign.
  */
@@ -827,9 +850,7 @@ function accentColor(account, index) {
  * @returns {string} CSS class to apply to the account balance.
  */
 function balanceClass(account) {
-  const rawBalance = account?.adjusted_balance
-  const balanceNumber = Number(rawBalance)
-  const balance = Number.isFinite(balanceNumber) ? balanceNumber : 0
+  const balance = resolveAccountBalance(account)
   if (isCreditAccount(account)) {
     // Credit accounts represent liabilities, so always render them as negative (red).
     return 'bs-balance-neg'
@@ -1118,7 +1139,7 @@ function removeAccount(id) {
 }
 
 const visibleTotal = computed(() =>
-  visibleAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
+  visibleAccounts.value.reduce((sum, account) => sum + resolveAccountBalance(account), 0),
 )
 
 const totalValueClass = computed(() => {
