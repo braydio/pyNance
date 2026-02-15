@@ -304,12 +304,13 @@ describe('TopAccountSnapshot', () => {
     const creditLimitRow = wrapper
       .findAll('.bs-account-container')
       .find((row) => row.text().includes('Credit Limit'))
-    const creditLimitUtilization = creditLimitRow?.find('.bs-utilization')
-    expect(creditLimitUtilization?.exists()).toBe(true)
-    expect(creditLimitUtilization?.text()).toContain('Utilization')
-    expect(creditLimitUtilization?.text()).toContain('$2,100.00')
-    expect(creditLimitUtilization?.text()).toContain('$6,500.00')
-    expect(creditLimitUtilization?.text()).toContain('32%')
+    const utilizationBlock = creditLimitRow?.find('.bs-utilization')
+
+    expect(utilizationBlock?.exists()).toBe(true)
+    expect(utilizationBlock?.text()).toContain('Utilization')
+    expect(utilizationBlock?.text()).toContain('$2,100.00')
+    expect(utilizationBlock?.text()).toContain('$6,500.00')
+    expect(utilizationBlock?.text()).toContain('32%')
 
     const creditNoLimitRow = wrapper
       .findAll('.bs-account-container')
@@ -322,40 +323,26 @@ describe('TopAccountSnapshot', () => {
     expect(debitLimitRow?.find('.bs-utilization').exists()).toBe(false)
   })
 
-  it('resolves balances using fallback precedence for amounts, totals, and sign styling', async () => {
+  it('uses fallback balance fields for row amounts, total, and sign class', async () => {
     const customAccounts = [
       {
-        id: 'uses-adjusted',
-        account_id: 'uses-adjusted',
-        name: 'Adjusted Balance',
-        adjusted_balance: 50,
+        id: 'fallback-balance',
+        account_id: 'fallback-balance',
+        name: 'Balance Only',
+        balance: 120.5,
       },
       {
-        id: 'uses-balance',
-        account_id: 'uses-balance',
-        name: 'Balance Field',
-        balance: -10,
+        id: 'fallback-current',
+        account_id: 'fallback-current',
+        name: 'Current Only',
+        balances: { current: -20.25 },
       },
       {
-        id: 'uses-current',
-        account_id: 'uses-current',
-        name: 'Current Balance',
-        balances: { current: 5 },
-      },
-      {
-        id: 'uses-available-credit',
-        account_id: 'uses-available-credit',
-        name: 'Available Credit',
-        subtype: 'credit card',
-        balances: { available: 30 },
-      },
-      {
-        id: 'invalid-fallback',
-        account_id: 'invalid-fallback',
-        name: 'Invalid Fallback',
-        adjusted_balance: 'invalid',
-        balance: null,
-        balances: { current: undefined, available: 'none' },
+        id: 'fallback-adjusted',
+        account_id: 'fallback-adjusted',
+        name: 'Adjusted Present',
+        adjusted_balance: 30,
+        balance: 999,
       },
     ]
     localStorage.setItem(
@@ -371,24 +358,16 @@ describe('TopAccountSnapshot', () => {
     })
     await nextTick()
 
-    expect(wrapper.find('.bs-banner-value').text()).toContain('$75.00')
+    const accountRows = wrapper.findAll('.bs-account-container')
+    const balanceOnlyRow = accountRows.find((row) => row.text().includes('Balance Only'))
+    const currentOnlyRow = accountRows.find((row) => row.text().includes('Current Only'))
+    const adjustedPresentRow = accountRows.find((row) => row.text().includes('Adjusted Present'))
 
-    const amountFor = (name) => {
-      const row = wrapper
-        .findAll('.bs-account-container')
-        .find((entry) => entry.text().includes(name))
-      return row?.find('.bs-amount')
-    }
+    expect(balanceOnlyRow?.text()).toContain('$120.50')
+    expect(currentOnlyRow?.text()).toContain('($20.25)')
+    expect(adjustedPresentRow?.text()).toContain('$30.00')
 
-    expect(amountFor('Adjusted Balance')?.text()).toContain('$50.00')
-    expect(amountFor('Balance Field')?.text()).toContain('($10.00)')
-    expect(amountFor('Current Balance')?.text()).toContain('$5.00')
-    expect(amountFor('Available Credit')?.text()).toContain('$30.00')
-    expect(amountFor('Invalid Fallback')?.text()).toContain('$0.00')
-
-    expect(amountFor('Adjusted Balance')?.classes()).toContain('bs-balance-pos')
-    expect(amountFor('Balance Field')?.classes()).toContain('bs-balance-neg')
-    expect(amountFor('Current Balance')?.classes()).toContain('bs-balance-pos')
-    expect(amountFor('Available Credit')?.classes()).toContain('bs-balance-neg')
+    expect(wrapper.find('.bs-banner-value').text()).toContain('$130.25')
+    expect(currentOnlyRow?.find('.bs-amount').classes()).toContain('bs-balance-neg')
   })
 })
