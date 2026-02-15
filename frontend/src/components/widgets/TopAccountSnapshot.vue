@@ -257,7 +257,7 @@
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
-                  format(account.adjusted_balance)
+                  format(resolveAccountBalance(account))
                 }}</span>
                 <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
@@ -418,7 +418,7 @@
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
-                  format(account.adjusted_balance)
+                  format(resolveAccountBalance(account))
                 }}</span>
                 <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
@@ -827,7 +827,7 @@ function accentColor(account, index) {
  * @returns {string} CSS class to apply to the account balance.
  */
 function balanceClass(account) {
-  const rawBalance = account?.adjusted_balance
+  const rawBalance = resolveAccountBalance(account)
   const balanceNumber = Number(rawBalance)
   const balance = Number.isFinite(balanceNumber) ? balanceNumber : 0
   if (isCreditAccount(account)) {
@@ -841,6 +841,19 @@ function balanceClass(account) {
     return 'bs-balance-neg'
   }
   return ''
+}
+
+/**
+ * Resolve account balance used in display and aggregate calculations.
+ * Falls back in priority order when adjusted balances are unavailable.
+ *
+ * @param {object} account - Account payload containing possible balance fields.
+ * @returns {number} Parsed numeric balance value, or 0 when invalid/missing.
+ */
+function resolveAccountBalance(account) {
+  const rawBalance = account?.adjusted_balance ?? account?.balance ?? account?.balances?.current
+  const numericBalance = Number(rawBalance)
+  return Number.isFinite(numericBalance) ? numericBalance : 0
 }
 
 function resolveCreditLimit(account) {
@@ -1118,7 +1131,7 @@ function removeAccount(id) {
 }
 
 const visibleTotal = computed(() =>
-  visibleAccounts.value.reduce((sum, a) => sum + (Number(a.adjusted_balance) || 0), 0),
+  visibleAccounts.value.reduce((sum, account) => sum + resolveAccountBalance(account), 0),
 )
 
 const totalValueClass = computed(() => {

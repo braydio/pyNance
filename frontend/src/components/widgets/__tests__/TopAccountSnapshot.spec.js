@@ -301,12 +301,16 @@ describe('TopAccountSnapshot', () => {
     })
     await nextTick()
 
-    const utilizationBlocks = wrapper.findAll('.bs-utilization')
-    expect(utilizationBlocks).toHaveLength(1)
-    expect(utilizationBlocks[0].text()).toContain('Utilization')
-    expect(utilizationBlocks[0].text()).toContain('$2,100.00')
-    expect(utilizationBlocks[0].text()).toContain('$6,500.00')
-    expect(utilizationBlocks[0].text()).toContain('32%')
+    const creditLimitRow = wrapper
+      .findAll('.bs-account-container')
+      .find((row) => row.text().includes('Credit Limit'))
+    const utilizationBlock = creditLimitRow?.find('.bs-utilization')
+
+    expect(utilizationBlock?.exists()).toBe(true)
+    expect(utilizationBlock?.text()).toContain('Utilization')
+    expect(utilizationBlock?.text()).toContain('$2,100.00')
+    expect(utilizationBlock?.text()).toContain('$6,500.00')
+    expect(utilizationBlock?.text()).toContain('32%')
 
     const creditNoLimitRow = wrapper
       .findAll('.bs-account-container')
@@ -317,5 +321,53 @@ describe('TopAccountSnapshot', () => {
       .findAll('.bs-account-container')
       .find((row) => row.text().includes('Checking'))
     expect(debitLimitRow?.find('.bs-utilization').exists()).toBe(false)
+  })
+
+  it('uses fallback balance fields for row amounts, total, and sign class', async () => {
+    const customAccounts = [
+      {
+        id: 'fallback-balance',
+        account_id: 'fallback-balance',
+        name: 'Balance Only',
+        balance: 120.5,
+      },
+      {
+        id: 'fallback-current',
+        account_id: 'fallback-current',
+        name: 'Current Only',
+        balances: { current: -20.25 },
+      },
+      {
+        id: 'fallback-adjusted',
+        account_id: 'fallback-adjusted',
+        name: 'Adjusted Present',
+        adjusted_balance: 30,
+        balance: 999,
+      },
+    ]
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: customAccounts }],
+        activeGroupId: 'group-1',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      global: { stubs: { AccountSparkline: sparklineStub } },
+    })
+    await nextTick()
+
+    const accountRows = wrapper.findAll('.bs-account-container')
+    const balanceOnlyRow = accountRows.find((row) => row.text().includes('Balance Only'))
+    const currentOnlyRow = accountRows.find((row) => row.text().includes('Current Only'))
+    const adjustedPresentRow = accountRows.find((row) => row.text().includes('Adjusted Present'))
+
+    expect(balanceOnlyRow?.text()).toContain('$120.50')
+    expect(currentOnlyRow?.text()).toContain('($20.25)')
+    expect(adjustedPresentRow?.text()).toContain('$30.00')
+
+    expect(wrapper.find('.bs-banner-value').text()).toContain('$130.25')
+    expect(currentOnlyRow?.find('.bs-amount').classes()).toContain('bs-balance-neg')
   })
 })
