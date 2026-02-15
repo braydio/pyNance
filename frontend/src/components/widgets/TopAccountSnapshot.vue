@@ -752,6 +752,29 @@ const spectrum = [
 ]
 
 /**
+ * Resolve the first valid numeric account balance using the preferred precedence order.
+ *
+ * @param {object} account - Account payload containing one or more balance fields.
+ * @returns {number} First valid numeric value, or 0 when no valid balance is available.
+ */
+function resolveAccountBalance(account) {
+  if (!account || typeof account !== 'object') return 0
+  const candidates = [
+    account.adjusted_balance,
+    account.balance,
+    account.balances?.current,
+    account.balances?.available,
+  ]
+  for (const candidate of candidates) {
+    const numeric = Number(candidate)
+    if (Number.isFinite(numeric)) {
+      return numeric
+    }
+  }
+  return 0
+}
+
+/**
  * Determine whether an account should be treated as a credit account for balance styling.
  * Credit accounts should always show negative (red) balance styling regardless of amount sign.
  */
