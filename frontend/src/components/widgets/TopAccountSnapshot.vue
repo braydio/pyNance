@@ -850,7 +850,9 @@ function accentColor(account, index) {
  * @returns {string} CSS class to apply to the account balance.
  */
 function balanceClass(account) {
-  const balance = resolveAccountBalance(account)
+  const rawBalance = resolveAccountBalance(account)
+  const balanceNumber = Number(rawBalance)
+  const balance = Number.isFinite(balanceNumber) ? balanceNumber : 0
   if (isCreditAccount(account)) {
     // Credit accounts represent liabilities, so always render them as negative (red).
     return 'bs-balance-neg'
@@ -862,6 +864,19 @@ function balanceClass(account) {
     return 'bs-balance-neg'
   }
   return ''
+}
+
+/**
+ * Resolve account balance used in display and aggregate calculations.
+ * Falls back in priority order when adjusted balances are unavailable.
+ *
+ * @param {object} account - Account payload containing possible balance fields.
+ * @returns {number} Parsed numeric balance value, or 0 when invalid/missing.
+ */
+function resolveAccountBalance(account) {
+  const rawBalance = account?.adjusted_balance ?? account?.balance ?? account?.balances?.current
+  const numericBalance = Number(rawBalance)
+  return Number.isFinite(numericBalance) ? numericBalance : 0
 }
 
 function resolveCreditLimit(account) {
