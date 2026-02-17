@@ -48,7 +48,7 @@ jobs:
           import os
           import re
 
-          package = os.environ["INPUT_PACKAGE"].strip()
+          package = os.environ.get("INPUT_PACKAGE", "").strip() or "requests"
           files = os.environ.get("INPUT_FILES", "").strip()
 
           sanitized = re.sub(r"[^a-z0-9._-]+", "-", package.lower())
