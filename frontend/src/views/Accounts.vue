@@ -23,6 +23,28 @@
       <div
         class="mt-6 h-1 w-full rounded-full bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)]"
       />
+      <div
+        class="mt-4 flex flex-col gap-2 rounded-xl border border-[var(--divider)] bg-[var(--themed-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <label class="text-sm font-medium text-muted" for="account-context-selector"
+          >Viewing account</label
+        >
+        <select
+          id="account-context-selector"
+          class="input w-full sm:w-80"
+          :value="accountId || ''"
+          :disabled="accountsLoading || !hasAccounts"
+          data-testid="account-context-selector"
+          @change="handleAccountSelection"
+        >
+          <option value="" :disabled="hasAccounts">
+            {{ hasAccounts ? 'Select an account' : 'No accounts available' }}
+          </option>
+          <option v-for="account in accounts" :key="account.account_id" :value="account.account_id">
+            {{ account.mask ? `${account.name} •••• ${account.mask}` : account.name }}
+          </option>
+        </select>
+      </div>
     </template>
 
     <template #sidebar>
@@ -31,77 +53,100 @@
 
     <template #Summary>
       <section class="space-y-8">
-        <Card class="summary-card space-y-6 rounded-2xl border p-6 shadow-xl">
-          <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-                Net Change Summary
-              </h2>
-              <p class="text-sm text-muted">
-                Performance for the selected date range across your linked accounts.
-              </p>
-            </div>
-            <UiButton
-              variant="outline"
-              class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
-              @click="loadData"
-            >
-              Refresh Overview
-            </UiButton>
-          </header>
-
-          <SkeletonCard v-if="loadingSummary" />
-          <RetryError v-else-if="summaryError" message="Failed to load summary" @retry="loadData" />
-          <div v-else class="grid gap-4 md:grid-cols-3" data-testid="net-summary-cards">
-            <article
-              v-for="stat in netSummaryStats"
-              :key="stat.key"
-              class="summary-card__stat rounded-xl border p-4 shadow-inner transition hover:shadow-lg"
-              :class="stat.containerClass"
-            >
-              <p class="text-xs font-semibold uppercase tracking-wide text-muted">
-                {{ stat.label }}
-              </p>
-              <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">{{ stat.value }}</p>
-              <p v-if="stat.helper" class="mt-2 text-xs text-muted">{{ stat.helper }}</p>
-            </article>
-          </div>
-        </Card>
-
         <Card
-          class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          v-if="!hasAccounts"
+          class="rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          data-testid="accounts-summary-empty"
         >
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
-                Balance History
-              </h2>
-              <p class="text-sm text-muted">
-                Track balances across your preferred reporting window.
-              </p>
-            </div>
-            <label class="flex items-center gap-3 text-sm text-muted">
-              <span>Range</span>
-              <select v-model="selectedRange" class="input w-32" data-testid="history-range-select">
-                <option v-for="range in ranges" :key="range" :value="range">
-                  {{ range }}
-                </option>
-              </select>
-            </label>
-          </div>
-          <SkeletonCard v-if="loadingHistory" />
-          <RetryError
-            v-else-if="historyError"
-            message="Failed to load history"
-            @retry="loadHistory"
-          />
-          <AccountBalanceHistoryChart
-            v-else
-            :history-data="accountHistory"
-            :selected-range="selectedRange"
-            data-testid="history-chart"
-          />
+          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">No accounts linked</h2>
+          <p class="mt-2 text-sm text-muted">
+            Link an account to view summary, transactions, and chart data.
+          </p>
         </Card>
+
+        <template v-else>
+          <Card class="summary-card space-y-6 rounded-2xl border p-6 shadow-xl">
+            <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
+                  Net Change Summary
+                </h2>
+                <p class="text-sm text-muted">
+                  Performance for the selected date range across your linked accounts.
+                </p>
+              </div>
+              <UiButton
+                variant="outline"
+                class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+                @click="refreshSelectedAccountData"
+                :disabled="!canFetchAccountData"
+              >
+                Refresh Overview
+              </UiButton>
+            </header>
+
+            <SkeletonCard v-if="loadingSummary" />
+            <RetryError
+              v-else-if="summaryError"
+              message="Failed to load summary"
+              @retry="refreshSelectedAccountData"
+            />
+            <div v-else class="grid gap-4 md:grid-cols-3" data-testid="net-summary-cards">
+              <article
+                v-for="stat in netSummaryStats"
+                :key="stat.key"
+                class="summary-card__stat rounded-xl border p-4 shadow-inner transition hover:shadow-lg"
+                :class="stat.containerClass"
+              >
+                <p class="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {{ stat.label }}
+                </p>
+                <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">{{ stat.value }}</p>
+                <p v-if="stat.helper" class="mt-2 text-xs text-muted">{{ stat.helper }}</p>
+              </article>
+            </div>
+          </Card>
+
+          <Card
+            class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          >
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
+                  Balance History
+                </h2>
+                <p class="text-sm text-muted">
+                  Track balances across your preferred reporting window.
+                </p>
+              </div>
+              <label class="flex items-center gap-3 text-sm text-muted">
+                <span>Range</span>
+                <select
+                  v-model="selectedRange"
+                  class="input w-32"
+                  data-testid="history-range-select"
+                  :disabled="!canFetchAccountData"
+                >
+                  <option v-for="range in ranges" :key="range" :value="range">
+                    {{ range }}
+                  </option>
+                </select>
+              </label>
+            </div>
+            <SkeletonCard v-if="loadingHistory" />
+            <RetryError
+              v-else-if="historyError"
+              message="Failed to load history"
+              @retry="loadHistory"
+            />
+            <AccountBalanceHistoryChart
+              v-else
+              :history-data="accountHistory"
+              :selected-range="selectedRange"
+              data-testid="history-chart"
+            />
+          </Card>
+        </template>
       </section>
     </template>
 
@@ -119,7 +164,8 @@
           <UiButton
             variant="outline"
             class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
-            @click="loadData"
+            @click="refreshSelectedAccountData"
+            :disabled="!canFetchAccountData"
           >
             Refresh List
           </UiButton>
@@ -128,7 +174,7 @@
         <RetryError
           v-else-if="transactionsError"
           message="Failed to load transactions"
-          @retry="loadData"
+          @retry="refreshSelectedAccountData"
         />
         <TransactionsTable v-else :transactions="recentTransactions" />
       </Card>
@@ -226,29 +272,42 @@ import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistor
 // Routing
 const route = useRoute()
 const router = useRouter()
-// Default to route param; if absent, we'll resolve a real account on mount
-const accountId = ref(route.params.accountId || 'acc1')
+const accountId = ref(route.query.accountId?.toString() || null)
 const accountPrefs = useAccountPreferences()
 
 // Tabs
-const tabs = [
-  { label: 'Account Details', slot: 'AccountDetails' },
-  'Summary',
-  'Transactions',
-  'Charts',
-]
 const activeTab = ref('Summary')
 
 // Refs
 const reorderChart = ref(null)
 
 // Data
+const accounts = ref([])
+const accountsLoading = ref(false)
 const netSummary = ref({ income: 0, expense: 0, net: 0 })
 const recentTransactions = ref([])
 const accountHistory = ref([])
-const selectedRange = ref(accountPrefs.getSelectedRange(accountId.value))
-accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
 const ranges = ['7d', '30d', '90d', '365d']
+const selectedRange = ref('30d')
+
+// Loading/Error States
+const loadingSummary = ref(false)
+const loadingTransactions = ref(false)
+const loadingHistory = ref(false)
+const summaryError = ref(null)
+const transactionsError = ref(null)
+const historyError = ref(null)
+
+const hasAccounts = computed(() => accounts.value.length > 0)
+const hasSelectedAccount = computed(() => Boolean(accountId.value))
+const canFetchAccountData = computed(() => hasAccounts.value && hasSelectedAccount.value)
+
+const tabs = computed(() => [
+  { label: 'Account Details', slot: 'AccountDetails' },
+  'Summary',
+  { label: 'Transactions', slot: 'Transactions', disabled: !canFetchAccountData.value },
+  { label: 'Charts', slot: 'Charts', disabled: !canFetchAccountData.value },
+])
 
 const netSummaryStats = computed(() => [
   {
@@ -277,40 +336,119 @@ const netSummaryStats = computed(() => [
   },
 ])
 
-// Loading/Error States
-const loadingSummary = ref(false)
-const loadingTransactions = ref(false)
-const loadingHistory = ref(false)
-const summaryError = ref(null)
-const transactionsError = ref(null)
-const historyError = ref(null)
+function resetDataState() {
+  netSummary.value = { income: 0, expense: 0, net: 0 }
+  recentTransactions.value = []
+  accountHistory.value = []
+}
 
-// Methods
+function syncRangePreference(id) {
+  if (!id) {
+    selectedRange.value = '30d'
+    return
+  }
+  selectedRange.value = accountPrefs.getSelectedRange(id)
+  accountPrefs.setSelectedRange(id, selectedRange.value)
+}
+
 function refreshCharts() {
   reorderChart.value?.refresh?.()
 }
 
 function navigateToPlanning() {
+  if (!accountId.value) {
+    return
+  }
   router.push({ name: 'Planning', query: { accountId: accountId.value } })
 }
 
+function handleAccountSelection(event) {
+  const nextAccountId = event.target.value || null
+  if (!nextAccountId || nextAccountId === accountId.value) {
+    return
+  }
+  accountId.value = nextAccountId
+}
+
+async function loadAccounts() {
+  accountsLoading.value = true
+  try {
+    const resp = await api.getAccounts({ include_hidden: true })
+    accounts.value = resp?.accounts || []
+  } catch (_) {
+    accounts.value = []
+  } finally {
+    accountsLoading.value = false
+  }
+}
+
+function resolveInitialAccountId() {
+  if (!accounts.value.length) {
+    accountId.value = null
+    return
+  }
+
+  const accountIds = new Set(accounts.value.map((entry) => entry.account_id))
+  const routeAccountId = route.query.accountId?.toString() || null
+  if (routeAccountId && accountIds.has(routeAccountId)) {
+    accountId.value = routeAccountId
+    return
+  }
+
+  if (accountId.value && accountIds.has(accountId.value)) {
+    return
+  }
+
+  accountId.value = accounts.value[0].account_id
+}
+
+function syncRouteQuery() {
+  const currentQueryAccountId = route.query.accountId?.toString() || null
+  if (currentQueryAccountId === accountId.value) {
+    return
+  }
+
+  const nextQuery = { ...route.query }
+  if (accountId.value) {
+    nextQuery.accountId = accountId.value
+  } else {
+    delete nextQuery.accountId
+  }
+
+  router.replace({ query: nextQuery })
+}
+
 async function loadHistory() {
-  if (!accountId.value) return
+  if (!canFetchAccountData.value) {
+    return
+  }
+
   historyError.value = null
   loadingHistory.value = true
+
   try {
     const { start, end } = rangeToDates(selectedRange.value)
     const res = await fetchAccountHistory(accountId.value, start, end)
     accountHistory.value = res.balances || []
-  } catch (e) {
-    historyError.value = e
+  } catch (error) {
+    historyError.value = error
   } finally {
     loadingHistory.value = false
   }
 }
 
-async function loadData() {
-  if (!accountId.value) return
+async function refreshSelectedAccountData() {
+  if (!canFetchAccountData.value) {
+    summaryError.value = null
+    transactionsError.value = null
+    historyError.value = null
+    loadingSummary.value = false
+    loadingTransactions.value = false
+    loadingHistory.value = false
+    resetDataState()
+    return
+  }
+
   summaryError.value = null
   transactionsError.value = null
   historyError.value = null
@@ -327,8 +465,8 @@ async function loadData() {
     if (res?.status === 'success') {
       netSummary.value = res.data
     }
-  } catch (e) {
-    summaryError.value = e
+  } catch (error) {
+    summaryError.value = error
   } finally {
     loadingSummary.value = false
   }
@@ -337,8 +475,8 @@ async function loadData() {
     const res = await fetchRecentTransactions(accountId.value, 10)
     const payload = res.data || res
     recentTransactions.value = payload.transactions || []
-  } catch (e) {
-    transactionsError.value = e
+  } catch (error) {
+    transactionsError.value = error
   } finally {
     loadingTransactions.value = false
   }
@@ -346,51 +484,59 @@ async function loadData() {
   await loadHistory()
 }
 
-// Resolve a valid account on mount if the current ID is unknown
-async function initAccount() {
-  try {
-    const resp = await api.getAccounts({ include_hidden: true })
-    const accounts = resp?.accounts || []
-    if (!accounts.length) {
-      // No accounts; leave accountId as-is and just attempt loadData (will show errors)
-      await loadData()
-      return
-    }
-    const ids = new Set(accounts.map((a) => a.account_id))
-    if (!ids.has(accountId.value)) {
-      // Prefer first visible account
-      accountId.value = accounts[0].account_id
-      // Sync range preference for the resolved account
-      selectedRange.value = accountPrefs.getSelectedRange(accountId.value)
-      accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
-    }
-  } catch (_) {
-    // Ignore account list failures; fall back to existing ID
-  } finally {
-    await loadData()
-  }
+async function initializeAccountsView() {
+  await loadAccounts()
+  resolveInitialAccountId()
+  syncRangePreference(accountId.value)
+  syncRouteQuery()
+  await refreshSelectedAccountData()
 }
 
-// Lifecycle and watchers
-onMounted(initAccount)
+onMounted(initializeAccountsView)
 
-watch(selectedRange, (range) => {
-  accountPrefs.setSelectedRange(accountId.value, range)
-  loadHistory()
-})
-
-// Reload when account ID changes
 watch(
-  () => route.params.accountId,
-  (newAccountId) => {
-    if (newAccountId) {
-      accountId.value = newAccountId
-      selectedRange.value = accountPrefs.getSelectedRange(newAccountId)
-      accountPrefs.setSelectedRange(newAccountId, selectedRange.value)
-      loadData()
+  () => route.query.accountId,
+  (newQueryAccountId) => {
+    const normalizedAccountId = newQueryAccountId?.toString() || null
+    if (normalizedAccountId === accountId.value) {
+      return
+    }
+
+    if (!normalizedAccountId) {
+      if (!accounts.value.length) {
+        accountId.value = null
+      }
+      return
+    }
+
+    const accountExists = accounts.value.some((entry) => entry.account_id === normalizedAccountId)
+    if (accountExists) {
+      accountId.value = normalizedAccountId
     }
   },
 )
+
+watch(accountId, async (newAccountId, previousAccountId) => {
+  if (newAccountId === previousAccountId) {
+    return
+  }
+
+  syncRangePreference(newAccountId)
+  syncRouteQuery()
+  await refreshSelectedAccountData()
+})
+
+watch(selectedRange, async (range, previousRange) => {
+  if (range === previousRange) {
+    return
+  }
+
+  if (accountId.value) {
+    accountPrefs.setSelectedRange(accountId.value, range)
+  }
+
+  await refreshSelectedAccountData()
+})
 </script>
 
 <style scoped>
