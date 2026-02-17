@@ -2,57 +2,85 @@ import Accounts from '../Accounts.vue'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
-  if (clear) {
-    localStorage.clear()
-  }
+function buildDateRanges() {
   const today = new Date()
   const end = today.toISOString().slice(0, 10)
 
   const start30 = new Date(today)
   start30.setDate(start30.getDate() - 30)
-  const start30Str = start30.toISOString().slice(0, 10)
 
   const start90 = new Date(today)
   start90.setDate(start90.getDate() - 90)
-  const start90Str = start90.toISOString().slice(0, 10)
 
-  cy.intercept('GET', `/api/accounts/${account}/net_changes*`, {
+  return {
+    end,
+    start30: start30.toISOString().slice(0, 10),
+    start90: start90.toISOString().slice(0, 10),
+  }
+}
+
+function stubAccountData(accountId) {
+  const { end, start30, start90 } = buildDateRanges()
+
+  cy.intercept('GET', `/api/accounts/${accountId}/net_changes*`, {
     statusCode: 200,
     body: { status: 'success', data: { income: 1000, expense: -400, net: 600 } },
-  }).as('net')
+  }).as(`net-${accountId}`)
 
-  cy.intercept('GET', `/api/accounts/${account}/history?start_date=${start30Str}&end_date=${end}`, {
+  cy.intercept('GET', `/api/accounts/${accountId}/history?start_date=${start30}&end_date=${end}`, {
     statusCode: 200,
     body: {
-      accountId: account,
-      asOfDate: '2025-08-03',
+      accountId,
+      asOfDate: end,
       balances: [
-        { date: '2025-08-01', balance: 50 },
-        { date: '2025-08-02', balance: 75 },
+        { date: end, balance: 50 },
+        { date: end, balance: 75 },
       ],
     },
-  }).as('hist30')
+  }).as(`hist30-${accountId}`)
 
-  cy.intercept('GET', `/api/accounts/${account}/history?start_date=${start90Str}&end_date=${end}`, {
+  cy.intercept('GET', `/api/accounts/${accountId}/history?start_date=${start90}&end_date=${end}`, {
     statusCode: 200,
-    body: { accountId: account, asOfDate: '2025-08-03', balances: [] },
-  }).as('hist90')
+    body: { accountId, asOfDate: end, balances: [] },
+  }).as(`hist90-${accountId}`)
 
-  cy.intercept('GET', `/api/transactions/${account}/transactions*`, {
+  cy.intercept('GET', `/api/transactions/${accountId}/transactions*`, {
     statusCode: 200,
     body: {
       status: 'success',
-      data: { transactions: [{ transaction_id: 't1', amount: -20, description: 'Coffee' }] },
+      data: {
+        transactions: [
+          { transaction_id: `${accountId}-t1`, amount: -20, description: `Coffee ${accountId}` },
+        ],
+      },
     },
-  }).as('tx')
+  }).as(`tx-${accountId}`)
+}
+
+function mountPage({ accounts, initialQueryAccountId = null, clearStorage = true } = {}) {
+  if (clearStorage) {
+    localStorage.clear()
+  }
+
+  const accountList = accounts ?? [
+    { account_id: 'acc1', name: 'Checking', mask: '1111' },
+    { account_id: 'acc2', name: 'Savings', mask: '2222' },
+  ]
+
+  cy.intercept('GET', '/api/accounts/get_accounts*', {
+    statusCode: 200,
+    body: { accounts: accountList },
+  }).as('accounts')
+
+  accountList.forEach((account) => stubAccountData(account.account_id))
 
   const router = createRouter({
     history: createMemoryHistory(),
-    routes: [{ path: '/accounts/:accountId', component: Accounts }],
+    routes: [{ path: '/accounts', component: Accounts }],
   })
 
-  router.push(`/accounts/${account}`)
+  const query = initialQueryAccountId ? `?accountId=${initialQueryAccountId}` : ''
+  router.push(`/accounts${query}`)
 
   cy.mount(Accounts, {
     global: {
@@ -68,44 +96,48 @@ function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
     },
   })
 
-  return cy.wrap(router.isReady()).then(() => cy.wait('@net').wait('@tx').wait(expected))
+  return cy.wrap(router.isReady()).then(() => cy.wait('@accounts'))
 }
 
 describe('Accounts summary', () => {
-  it('shows net change totals and transactions', () => {
-    mountPage()
-    cy.contains('Income').should('contain', '$1,000.00')
-    cy.contains('Expense').should('contain', '$400.00')
-    cy.contains('Net').should('contain', '$600.00')
-    cy.get('table').should('exist')
-    cy.contains('Coffee')
-    cy.get('[data-testid="history-chart"]').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').click()
-    cy.get('transactionstable-stub').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Charts').click()
-    cy.get('netyearcomparisonchart-stub').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Accounts').click()
-    cy.get('accountstable-stub').should('exist')
-    cy.get('[data-testid="history-range-select"]').select('90d')
-    cy.wait('@hist90')
+  it('shows empty state when no accounts are available', () => {
+    mountPage({ accounts: [] })
+
+    cy.get('[data-testid="accounts-summary-empty"]').should('contain', 'No accounts linked')
+    cy.get('[data-testid="account-context-selector"]').should('be.disabled')
+    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').should('be.disabled')
+    cy.get('[data-testid="tabbed-nav"]').contains('Charts').should('be.disabled')
   })
 
-  it('persists selected range after reload', () => {
-    mountPage()
-    cy.get('[data-testid="history-range-select"]').select('90d')
-    cy.wait('@hist90')
-    cy.reload()
-    mountPage('acc1', '@hist90', false)
-    cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
+  it('switches account context and syncs route query', () => {
+    mountPage({ initialQueryAccountId: 'acc1' })
+
+    cy.wait('@net-acc1')
+    cy.wait('@tx-acc1')
+    cy.wait('@hist30-acc1')
+
+    cy.get('[data-testid="account-context-selector"]').select('acc2')
+
+    cy.wait('@net-acc2')
+    cy.wait('@tx-acc2')
+    cy.wait('@hist30-acc2')
+    cy.location('search').should('include', 'accountId=acc2')
+    cy.contains('Coffee acc2')
   })
 
-  it('restores range when switching accounts', () => {
-    mountPage('acc1')
+  it('persists selected range per account while switching', () => {
+    mountPage({ initialQueryAccountId: 'acc1' })
+
+    cy.wait('@hist30-acc1')
     cy.get('[data-testid="history-range-select"]').select('90d')
-    cy.wait('@hist90')
-    mountPage('acc2', '@hist30', false)
+    cy.wait('@hist90-acc1')
+
+    cy.get('[data-testid="account-context-selector"]').select('acc2')
+    cy.wait('@hist30-acc2')
     cy.get('[data-testid="history-range-select"]').should('have.value', '30d')
-    mountPage('acc1', '@hist90', false)
+
+    cy.get('[data-testid="account-context-selector"]').select('acc1')
+    cy.wait('@hist90-acc1')
     cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 })

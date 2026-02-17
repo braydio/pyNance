@@ -336,3 +336,20 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 **Status:** Specification Complete - Ready for Implementation
 **Priority:** High
 **Estimated Effort:** 2-3 sprints
+
+## 5. Account Context and Empty-State Behavior
+
+### Current Behavior
+
+- Accounts view loads the account list once on mount using `api.getAccounts({ include_hidden: true })`.
+- The header includes a context selector labeled **Viewing account** for switching active account context.
+- The selected account ID is synced to the route query (`?accountId=`) for deep-linking.
+- Summary, Transactions, and Charts data fetches are gated so no placeholder account IDs are used when no accounts exist.
+- Summary tab renders an explicit empty state when there are no accounts.
+- Range preferences are persisted per-account via `useAccountPreferences`, and account switches restore the saved range before triggering a consolidated refresh.
+
+### Acceptance Criteria
+
+- No API requests are sent for account-scoped endpoints when no account is selected.
+- Account switching performs one consolidated refresh for summary, transactions, and history.
+- Switching back to a previously selected account restores that account's last range selection.

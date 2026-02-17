@@ -10,6 +10,7 @@
                 :variant="activeTab === tab.slot ? 'primary' : 'outline'"
                 :pill="true"
                 class="tabbed-nav__button"
+                :disabled="tab.disabled"
                 @click="selectTab(tab.slot)"
               >
                 {{ tab.label }}
@@ -35,6 +36,7 @@
  *
  * Props:
  * - tabs: array of tab labels or objects ({ label, slot }) displayed in navigation
+ *   with optional `disabled` state ({ label, slot, disabled })
  * - modelValue: currently active tab (used with v-model)
  */
 import { computed } from 'vue'
@@ -54,15 +56,17 @@ const emit = defineEmits(['update:modelValue'])
 
 /**
  * Normalize any provided tab definitions into a shared object shape so the
- * layout can support both simple string labels and explicit slot mappings.
+ * layout can support both simple string labels and explicit slot mappings,
+ * including optional disabled state per tab.
  */
 const normalizedTabs = computed(() =>
   props.tabs.map((tab) =>
     typeof tab === 'string'
-      ? { label: tab, slot: tab }
+      ? { label: tab, slot: tab, disabled: false }
       : {
           label: tab.label ?? tab.slot ?? '',
           slot: tab.slot ?? tab.label ?? '',
+          disabled: Boolean(tab.disabled),
         },
   ),
 )
@@ -73,6 +77,10 @@ const activeTab = computed({
 })
 
 function selectTab(tabSlot) {
+  const tab = normalizedTabs.value.find((candidate) => candidate.slot === tabSlot)
+  if (tab?.disabled) {
+    return
+  }
   activeTab.value = tabSlot
 }
 
