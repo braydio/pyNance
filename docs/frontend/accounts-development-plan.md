@@ -105,7 +105,6 @@ When a user clicks "View Details" on any account:
 | [Add Account] [Download CSV]
 ```
 
-
 ## Current IA and Tab Flow
 
 The Accounts route is organized in four user-facing tabs to reduce control duplication and improve discoverability:
