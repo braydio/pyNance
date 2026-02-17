@@ -2,7 +2,7 @@ import Accounts from '../Accounts.vue'
 import { createPinia } from 'pinia'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
+function mountPage(account = 'acc1', clear = true) {
   if (clear) {
     localStorage.clear()
   }
@@ -16,6 +16,21 @@ function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
   const start90 = new Date(today)
   start90.setDate(start90.getDate() - 90)
   const start90Str = start90.toISOString().slice(0, 10)
+
+  cy.intercept('GET', `/api/accounts/get_accounts*`, {
+    statusCode: 200,
+    body: {
+      status: 'success',
+      accounts: [
+        {
+          account_id: account,
+          institution_name: 'Test Bank',
+          is_hidden: false,
+          last_refreshed: new Date().toISOString(),
+        },
+      ],
+    },
+  }).as('accounts')
 
   cy.intercept('GET', `/api/accounts/${account}/net_changes*`, {
     statusCode: 200,
@@ -39,14 +54,6 @@ function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
     body: { accountId: account, asOfDate: '2025-08-03', balances: [] },
   }).as('hist90')
 
-  cy.intercept('GET', `/api/transactions/${account}/transactions*`, {
-    statusCode: 200,
-    body: {
-      status: 'success',
-      data: { transactions: [{ transaction_id: 't1', amount: -20, description: 'Coffee' }] },
-    },
-  }).as('tx')
-
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [{ path: '/accounts/:accountId', component: Accounts }],
@@ -64,27 +71,26 @@ function mountPage(account = 'acc1', expected = '@hist30', clear = true) {
         AccountsReorderChart: true,
         AccountsTable: true,
         InstitutionTable: true,
+        TransactionsTable: true,
       },
     },
   })
 
-  return cy.wrap(router.isReady()).then(() => cy.wait('@net').wait('@tx').wait(expected))
+  return cy.wrap(router.isReady()).then(() => cy.wait('@accounts').wait('@net').wait('@hist30'))
 }
 
 describe('Accounts summary', () => {
-  it('shows net change totals and transactions', () => {
+  it('shows overview cards and updated tab navigation', () => {
     mountPage()
     cy.contains('Income').should('contain', '$1,000.00')
     cy.contains('Expense').should('contain', '$400.00')
-    cy.contains('Net').should('contain', '$600.00')
-    cy.get('table').should('exist')
-    cy.contains('Coffee')
-    cy.get('[data-testid="history-chart"]').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').click()
+    cy.contains('Net Change').should('contain', '$600.00')
+    cy.get('[data-testid="quick-status-chips"]').should('exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Activity').click()
     cy.get('transactionstable-stub').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Charts').click()
+    cy.get('[data-testid="tabbed-nav"]').contains('Analysis').click()
     cy.get('netyearcomparisonchart-stub').should('exist')
-    cy.get('[data-testid="tabbed-nav"]').contains('Accounts').click()
+    cy.get('[data-testid="tabbed-nav"]').contains('Manage').click()
     cy.get('accountstable-stub').should('exist')
     cy.get('[data-testid="history-range-select"]').select('90d')
     cy.wait('@hist90')
@@ -95,7 +101,8 @@ describe('Accounts summary', () => {
     cy.get('[data-testid="history-range-select"]').select('90d')
     cy.wait('@hist90')
     cy.reload()
-    mountPage('acc1', '@hist90', false)
+    mountPage('acc1', false)
+    cy.wait('@hist90')
     cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 
@@ -103,9 +110,10 @@ describe('Accounts summary', () => {
     mountPage('acc1')
     cy.get('[data-testid="history-range-select"]').select('90d')
     cy.wait('@hist90')
-    mountPage('acc2', '@hist30', false)
+    mountPage('acc2', false)
     cy.get('[data-testid="history-range-select"]').should('have.value', '30d')
-    mountPage('acc1', '@hist90', false)
+    mountPage('acc1', false)
+    cy.wait('@hist90')
     cy.get('[data-testid="history-range-select"]').should('have.value', '90d')
   })
 })

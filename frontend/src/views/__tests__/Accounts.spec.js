@@ -6,14 +6,21 @@ import { vi } from 'vitest'
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {} }),
-  useRouter: () => ({}),
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
+vi.mock('@/services/api', () => ({
+  default: {
+    getAccounts: vi.fn().mockResolvedValue({ accounts: [] }),
+  },
 }))
 
 vi.mock('@/api/accounts', () => ({
   fetchNetChanges: vi
     .fn()
     .mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
-  fetchRecentTransactions: vi.fn().mockResolvedValue({ data: { transactions: [] } }),
+  fetchAccountHistory: vi.fn().mockResolvedValue({ balances: [] }),
+  rangeToDates: vi.fn().mockReturnValue({ start: '2025-01-01', end: '2025-01-31' }),
 }))
 
 vi.mock('@/stores/useAccountPreferences', () => ({

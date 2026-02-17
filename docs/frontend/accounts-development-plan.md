@@ -104,3 +104,15 @@ When a user clicks "View Details" on any account:
 |
 | [Add Account] [Download CSV]
 ```
+
+
+## Current IA and Tab Flow
+
+The Accounts route is organized in four user-facing tabs to reduce control duplication and improve discoverability:
+
+- **Overview**: KPI summary cards, balance history, and quick status chips (linked institutions, last refresh age, hidden accounts).
+- **Activity**: Transaction-focused workspace with date/account controls and a single refresh action scoped to this tab.
+- **Analysis**: Three analysis charts grouped beneath shared range/account filters to avoid repeated card-level controls.
+- **Manage**: Account linking and table management workflows (`LinkedAccountsSection` + `AccountsTable`) with edit/visibility tooling.
+
+The planning CTA (`Plan Account`) is intentionally scoped to **Overview** and **Manage**, and navigation passes the selected account in query params so the planning page can hydrate context directly.

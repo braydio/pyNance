@@ -10,26 +10,17 @@
       <PageHeader :icon="Wallet">
         <template #title>Accounts</template>
         <template #subtitle>Link and refresh your accounts</template>
-        <template #actions>
-          <UiButton
-            variant="primary"
-            class="shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
-            @click="navigateToPlanning"
-          >
-            Plan Account
-          </UiButton>
-        </template>
       </PageHeader>
       <div
         class="mt-6 h-1 w-full rounded-full bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)]"
       />
     </template>
 
-    <template #sidebar>
+    <template #sidebar v-if="showActionsSidebar">
       <AccountActionsSidebar />
     </template>
 
-    <template #Summary>
+    <template #Overview>
       <section class="space-y-8">
         <Card class="summary-card space-y-6 rounded-2xl border p-6 shadow-xl">
           <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -41,13 +32,22 @@
                 Performance for the selected date range across your linked accounts.
               </p>
             </div>
-            <UiButton
-              variant="outline"
-              class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
-              @click="loadData"
-            >
-              Refresh Overview
-            </UiButton>
+            <div class="flex flex-wrap items-center gap-2">
+              <UiButton
+                variant="outline"
+                class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+                @click="loadData"
+              >
+                Refresh Overview
+              </UiButton>
+              <UiButton
+                variant="primary"
+                class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
+                @click="navigateToPlanning"
+              >
+                Plan Account
+              </UiButton>
+            </div>
           </header>
 
           <SkeletonCard v-if="loadingSummary" />
@@ -64,6 +64,32 @@
               </p>
               <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">{{ stat.value }}</p>
               <p v-if="stat.helper" class="mt-2 text-xs text-muted">{{ stat.helper }}</p>
+            </article>
+          </div>
+        </Card>
+
+        <Card
+          class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+        >
+          <h2 class="text-lg font-semibold text-[var(--color-accent-cyan)]">Quick Status</h2>
+          <div class="grid gap-3 md:grid-cols-3" data-testid="quick-status-chips">
+            <article
+              class="rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)] p-4"
+            >
+              <p class="text-xs uppercase tracking-wide text-muted">Linked institutions</p>
+              <p class="mt-2 text-2xl font-semibold">{{ linkedInstitutionsCount }}</p>
+            </article>
+            <article
+              class="rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)] p-4"
+            >
+              <p class="text-xs uppercase tracking-wide text-muted">Last refresh</p>
+              <p class="mt-2 text-2xl font-semibold">{{ lastRefreshAge }}</p>
+            </article>
+            <article
+              class="rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)] p-4"
+            >
+              <p class="text-xs uppercase tracking-wide text-muted">Hidden accounts</p>
+              <p class="mt-2 text-2xl font-semibold">{{ hiddenAccountsCount }}</p>
             </article>
           </div>
         </Card>
@@ -105,36 +131,30 @@
       </section>
     </template>
 
-    <template #Transactions>
+    <template #Activity>
       <Card
         class="space-y-6 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
       >
         <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-              Recent Transactions
-            </h2>
-            <p class="text-sm text-muted">Latest activity from accounts linked to your profile.</p>
+            <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Activity</h2>
+            <p class="text-sm text-muted">
+              Review transactions with shared date and account controls.
+            </p>
           </div>
           <UiButton
             variant="outline"
             class="btn-sm whitespace-nowrap shadow-sm transition hover:-translate-y-0.5"
-            @click="loadData"
+            @click="refreshActivity"
           >
-            Refresh List
+            Refresh Activity
           </UiButton>
         </div>
-        <SkeletonCard v-if="loadingTransactions" />
-        <RetryError
-          v-else-if="transactionsError"
-          message="Failed to load transactions"
-          @retry="loadData"
-        />
-        <TransactionsTable v-else :transactions="recentTransactions" />
+        <TransactionsTable :key="activityRefreshKey" />
       </Card>
     </template>
 
-    <template #Charts>
+    <template #Analysis>
       <section class="space-y-8">
         <header class="space-y-2">
           <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">Account Analysis</h2>
@@ -142,6 +162,35 @@
             Visualize account health, year-over-year change, and asset distribution.
           </p>
         </header>
+        <Card
+          class="rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-4 shadow-lg"
+        >
+          <div class="flex flex-wrap items-center gap-3">
+            <label class="flex items-center gap-2 text-sm text-muted">
+              <span>Range</span>
+              <select
+                v-model="analysisRange"
+                class="input w-32"
+                data-testid="analysis-range-select"
+              >
+                <option v-for="range in ranges" :key="`analysis-${range}`" :value="range">
+                  {{ range }}
+                </option>
+              </select>
+            </label>
+            <label class="flex items-center gap-2 text-sm text-muted">
+              <span>Account</span>
+              <select
+                v-model="analysisAccount"
+                class="input min-w-48"
+                data-testid="analysis-account-select"
+              >
+                <option :value="accountId">Selected account</option>
+                <option value="all">All linked accounts</option>
+              </select>
+            </label>
+          </div>
+        </Card>
         <div class="grid gap-6 lg:grid-cols-3">
           <Card
             class="space-y-4 rounded-2xl border border-[var(--divider)] bg-gradient-to-br from-[rgba(99,205,207,0.08)] to-[rgba(113,156,214,0.05)] p-6 shadow-lg"
@@ -167,8 +216,13 @@
       </section>
     </template>
 
-    <template #AccountDetails>
+    <template #Manage>
       <section class="space-y-8">
+        <div class="flex justify-end">
+          <UiButton variant="primary" class="btn-sm" @click="navigateToPlanning"
+            >Plan Account</UiButton
+          >
+        </div>
         <LinkedAccountsSection />
         <Card
           class="space-y-4 rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
@@ -192,12 +246,7 @@ import { computed, ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { Wallet } from 'lucide-vue-next'
-import {
-  fetchNetChanges,
-  fetchRecentTransactions,
-  fetchAccountHistory,
-  rangeToDates,
-} from '@/api/accounts'
+import { fetchNetChanges, fetchAccountHistory, rangeToDates } from '@/api/accounts'
 import { formatAmount } from '@/utils/format'
 import { useAccountPreferences } from '@/stores/useAccountPreferences'
 
@@ -231,24 +280,55 @@ const accountId = ref(route.params.accountId || 'acc1')
 const accountPrefs = useAccountPreferences()
 
 // Tabs
-const tabs = [
-  { label: 'Account Details', slot: 'AccountDetails' },
-  'Summary',
-  'Transactions',
-  'Charts',
-]
-const activeTab = ref('Summary')
+const tabs = ['Overview', 'Activity', 'Analysis', 'Manage']
+const activeTab = ref('Overview')
 
 // Refs
 const reorderChart = ref(null)
 
 // Data
+const accountsMetadata = ref([])
 const netSummary = ref({ income: 0, expense: 0, net: 0 })
-const recentTransactions = ref([])
 const accountHistory = ref([])
 const selectedRange = ref(accountPrefs.getSelectedRange(accountId.value))
 accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
+const analysisRange = ref(selectedRange.value)
+const analysisAccount = ref(accountId.value)
+const activityRefreshKey = ref(0)
 const ranges = ['7d', '30d', '90d', '365d']
+
+const showActionsSidebar = computed(
+  () => activeTab.value === 'Overview' || activeTab.value === 'Manage',
+)
+const linkedInstitutionsCount = computed(() => {
+  const names = accountsMetadata.value
+    .map((account) => account.institution_name || account.institution_id)
+    .filter(Boolean)
+  return new Set(names).size
+})
+const hiddenAccountsCount = computed(
+  () => accountsMetadata.value.filter((account) => account.is_hidden).length,
+)
+const lastRefreshAge = computed(() => {
+  const lastRefreshed = accountsMetadata.value
+    .map((account) => account.last_refreshed)
+    .filter(Boolean)
+    .map((value) => new Date(value).getTime())
+    .filter((value) => Number.isFinite(value))
+    .sort((a, b) => b - a)[0]
+
+  if (!lastRefreshed) {
+    return 'Unavailable'
+  }
+
+  const minutesAgo = Math.max(0, Math.round((Date.now() - lastRefreshed) / (1000 * 60)))
+  if (minutesAgo < 60) {
+    return `${minutesAgo}m ago`
+  }
+
+  const hoursAgo = Math.round(minutesAgo / 60)
+  return `${hoursAgo}h ago`
+})
 
 const netSummaryStats = computed(() => [
   {
@@ -279,10 +359,8 @@ const netSummaryStats = computed(() => [
 
 // Loading/Error States
 const loadingSummary = ref(false)
-const loadingTransactions = ref(false)
 const loadingHistory = ref(false)
 const summaryError = ref(null)
-const transactionsError = ref(null)
 const historyError = ref(null)
 
 // Methods
@@ -291,7 +369,14 @@ function refreshCharts() {
 }
 
 function navigateToPlanning() {
-  router.push({ name: 'Planning', query: { accountId: accountId.value } })
+  router.push({
+    name: 'Planning',
+    query: { accountId: accountId.value, selectedAccount: accountId.value },
+  })
+}
+
+function refreshActivity() {
+  activityRefreshKey.value += 1
 }
 
 async function loadHistory() {
@@ -312,10 +397,8 @@ async function loadHistory() {
 async function loadData() {
   if (!accountId.value) return
   summaryError.value = null
-  transactionsError.value = null
   historyError.value = null
   loadingSummary.value = true
-  loadingTransactions.value = true
   loadingHistory.value = true
 
   try {
@@ -333,24 +416,19 @@ async function loadData() {
     loadingSummary.value = false
   }
 
-  try {
-    const res = await fetchRecentTransactions(accountId.value, 10)
-    const payload = res.data || res
-    recentTransactions.value = payload.transactions || []
-  } catch (e) {
-    transactionsError.value = e
-  } finally {
-    loadingTransactions.value = false
-  }
-
   await loadHistory()
+}
+
+async function loadAccountsMetadata() {
+  const resp = await api.getAccounts({ include_hidden: true })
+  accountsMetadata.value = resp?.accounts || []
+  return accountsMetadata.value
 }
 
 // Resolve a valid account on mount if the current ID is unknown
 async function initAccount() {
   try {
-    const resp = await api.getAccounts({ include_hidden: true })
-    const accounts = resp?.accounts || []
+    const accounts = await loadAccountsMetadata()
     if (!accounts.length) {
       // No accounts; leave accountId as-is and just attempt loadData (will show errors)
       await loadData()
@@ -366,6 +444,7 @@ async function initAccount() {
     }
   } catch (_) {
     // Ignore account list failures; fall back to existing ID
+    accountsMetadata.value = []
   } finally {
     await loadData()
   }
@@ -376,6 +455,7 @@ onMounted(initAccount)
 
 watch(selectedRange, (range) => {
   accountPrefs.setSelectedRange(accountId.value, range)
+  analysisRange.value = range
   loadHistory()
 })
 
@@ -386,6 +466,7 @@ watch(
     if (newAccountId) {
       accountId.value = newAccountId
       selectedRange.value = accountPrefs.getSelectedRange(newAccountId)
+      analysisAccount.value = newAccountId
       accountPrefs.setSelectedRange(newAccountId, selectedRange.value)
       loadData()
     }
