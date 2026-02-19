@@ -89,7 +89,7 @@
             <RetryError
               v-else-if="summaryError"
               message="Failed to load summary"
-              @retry="refreshSelectedAccountData"
+              @retry="retrySummary"
             />
             <div v-else class="grid gap-4 md:grid-cols-3" data-testid="net-summary-cards">
               <article
@@ -137,7 +137,7 @@
             <RetryError
               v-else-if="historyError"
               message="Failed to load history"
-              @retry="loadHistory"
+              @retry="retryHistory"
             />
             <AccountBalanceHistoryChart
               v-else
@@ -174,7 +174,7 @@
         <RetryError
           v-else-if="transactionsError"
           message="Failed to load transactions"
-          @retry="refreshSelectedAccountData"
+          @retry="retryTransactions"
         />
         <TransactionsTable v-else :transactions="recentTransactions" />
       </Card>
@@ -294,9 +294,23 @@ const selectedRange = ref('30d')
 const loadingSummary = ref(false)
 const loadingTransactions = ref(false)
 const loadingHistory = ref(false)
+const isRefreshing = ref(false)
 const summaryError = ref(null)
 const transactionsError = ref(null)
 const historyError = ref(null)
+const REQUEST_KEYS = {
+  summary: 'summary',
+  transactions: 'transactions',
+  history: 'history',
+}
+const requestStatus = ref({
+  [REQUEST_KEYS.summary]: 'idle',
+  [REQUEST_KEYS.transactions]: 'idle',
+  [REQUEST_KEYS.history]: 'idle',
+})
+
+let activeRequestId = 0
+let queuedRefreshId = null
 
 const hasAccounts = computed(() => accounts.value.length > 0)
 const hasSelectedAccount = computed(() => Boolean(accountId.value))
@@ -340,6 +354,51 @@ function resetDataState() {
   netSummary.value = { income: 0, expense: 0, net: 0 }
   recentTransactions.value = []
   accountHistory.value = []
+}
+
+function parseSummaryPayload(payload) {
+  return {
+    income: Number(payload?.data?.income ?? payload?.income ?? 0),
+    expense: Number(payload?.data?.expense ?? payload?.expense ?? 0),
+    net: Number(payload?.data?.net ?? payload?.net ?? 0),
+  }
+}
+
+function parseTransactionsPayload(payload) {
+  const normalizedPayload = payload?.data ?? payload
+  return normalizedPayload?.transactions ?? []
+}
+
+function parseHistoryPayload(payload) {
+  const normalizedPayload = payload?.data ?? payload
+  return normalizedPayload?.balances ?? []
+}
+
+function applyRequestState(key, status, error = null) {
+  requestStatus.value = { ...requestStatus.value, [key]: status }
+
+  if (key === REQUEST_KEYS.summary) {
+    summaryError.value = error
+  }
+  if (key === REQUEST_KEYS.transactions) {
+    transactionsError.value = error
+  }
+  if (key === REQUEST_KEYS.history) {
+    historyError.value = error
+  }
+}
+
+function syncLoadingFlagsFromRequestState() {
+  if (!isRefreshing.value) {
+    loadingSummary.value = false
+    loadingTransactions.value = false
+    loadingHistory.value = false
+    return
+  }
+
+  loadingSummary.value = requestStatus.value[REQUEST_KEYS.summary] === 'loading'
+  loadingTransactions.value = requestStatus.value[REQUEST_KEYS.transactions] === 'loading'
+  loadingHistory.value = requestStatus.value[REQUEST_KEYS.history] === 'loading'
 }
 
 function syncRangePreference(id) {
@@ -418,70 +477,86 @@ function syncRouteQuery() {
   router.replace({ query: nextQuery })
 }
 
-async function loadHistory() {
+async function loadData(requestedQueries = Object.values(REQUEST_KEYS)) {
   if (!canFetchAccountData.value) {
-    return
-  }
-
-  historyError.value = null
-  loadingHistory.value = true
-
-  try {
-    const { start, end } = rangeToDates(selectedRange.value)
-    const res = await fetchAccountHistory(accountId.value, start, end)
-    accountHistory.value = res.balances || []
-  } catch (error) {
-    historyError.value = error
-  } finally {
-    loadingHistory.value = false
-  }
-}
-
-async function refreshSelectedAccountData() {
-  if (!canFetchAccountData.value) {
-    summaryError.value = null
-    transactionsError.value = null
-    historyError.value = null
-    loadingSummary.value = false
-    loadingTransactions.value = false
-    loadingHistory.value = false
+    applyRequestState(REQUEST_KEYS.summary, 'idle')
+    applyRequestState(REQUEST_KEYS.transactions, 'idle')
+    applyRequestState(REQUEST_KEYS.history, 'idle')
+    isRefreshing.value = false
+    syncLoadingFlagsFromRequestState()
     resetDataState()
     return
   }
 
-  summaryError.value = null
-  transactionsError.value = null
-  historyError.value = null
-  loadingSummary.value = true
-  loadingTransactions.value = true
-  loadingHistory.value = true
+  const { start, end } = rangeToDates(selectedRange.value)
+  const handlers = {
+    [REQUEST_KEYS.summary]: async () => {
+      const payload = await fetchNetChanges(accountId.value, {
+        start_date: start,
+        end_date: end,
+      })
+      netSummary.value = parseSummaryPayload(payload)
+    },
+    [REQUEST_KEYS.transactions]: async () => {
+      const payload = await fetchRecentTransactions(accountId.value, 10)
+      recentTransactions.value = parseTransactionsPayload(payload)
+    },
+    [REQUEST_KEYS.history]: async () => {
+      const payload = await fetchAccountHistory(accountId.value, start, end)
+      accountHistory.value = parseHistoryPayload(payload)
+    },
+  }
 
-  try {
-    const { start, end } = rangeToDates(selectedRange.value)
-    const res = await fetchNetChanges(accountId.value, {
-      start_date: start,
-      end_date: end,
-    })
-    if (res?.status === 'success') {
-      netSummary.value = res.data
+  const requestId = ++activeRequestId
+  isRefreshing.value = true
+  requestedQueries.forEach((query) => applyRequestState(query, 'loading'))
+  syncLoadingFlagsFromRequestState()
+
+  const results = await Promise.allSettled(requestedQueries.map((query) => handlers[query]()))
+
+  if (requestId !== activeRequestId) {
+    return
+  }
+
+  requestedQueries.forEach((query, index) => {
+    const result = results[index]
+    if (result.status === 'fulfilled') {
+      applyRequestState(query, 'success')
+      return
     }
-  } catch (error) {
-    summaryError.value = error
-  } finally {
-    loadingSummary.value = false
+
+    applyRequestState(query, 'error', result.reason)
+  })
+
+  isRefreshing.value = false
+  syncLoadingFlagsFromRequestState()
+}
+
+async function refreshSelectedAccountData() {
+  await loadData()
+}
+
+async function retrySummary() {
+  await loadData([REQUEST_KEYS.summary])
+}
+
+async function retryTransactions() {
+  await loadData([REQUEST_KEYS.transactions])
+}
+
+async function retryHistory() {
+  await loadData([REQUEST_KEYS.history])
+}
+
+function debouncedRefreshSelectedAccountData() {
+  if (queuedRefreshId) {
+    window.clearTimeout(queuedRefreshId)
   }
 
-  try {
-    const res = await fetchRecentTransactions(accountId.value, 10)
-    const payload = res.data || res
-    recentTransactions.value = payload.transactions || []
-  } catch (error) {
-    transactionsError.value = error
-  } finally {
-    loadingTransactions.value = false
-  }
-
-  await loadHistory()
+  queuedRefreshId = window.setTimeout(() => {
+    queuedRefreshId = null
+    refreshSelectedAccountData()
+  }, 250)
 }
 
 async function initializeAccountsView() {
@@ -523,7 +598,7 @@ watch(accountId, async (newAccountId, previousAccountId) => {
 
   syncRangePreference(newAccountId)
   syncRouteQuery()
-  await refreshSelectedAccountData()
+  debouncedRefreshSelectedAccountData()
 })
 
 watch(selectedRange, async (range, previousRange) => {
@@ -535,7 +610,7 @@ watch(selectedRange, async (range, previousRange) => {
     accountPrefs.setSelectedRange(accountId.value, range)
   }
 
-  await refreshSelectedAccountData()
+  debouncedRefreshSelectedAccountData()
 })
 </script>
 
