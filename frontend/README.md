@@ -85,3 +85,8 @@ restored on reload.
    ```
 
 3. Navigate to `http://localhost:5173/arbit` to view the dashboard.
+
+
+### Accounts view loading behavior
+
+Accounts view data-loading behavior (parallel fetch, retry scope, debounce, and payload normalization) is documented in `frontend/docs/accounts-data-loading.md`.
