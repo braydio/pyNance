@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-01-11
+Last Updated: 2026-02-18
 Status: Active
 ---
 
@@ -16,7 +16,7 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 - `GET /charts/cash_flow` – Aggregated income and expenses by day or month.
 - `GET /charts/net_assets` – Net assets, assets, and liabilities over time.
 - `GET /charts/accounts-snapshot` – Current visible account balances.
-- `GET|POST /charts/forecast` – Forecast vs. actual balance timeseries.
+- `GET /charts/forecast` – Forecast vs. actual balance timeseries.
 
 ## Inputs/Outputs
 - **GET /charts/category_breakdown**
@@ -35,7 +35,7 @@ Provide chart-ready financial summaries for dashboard components, covering categ
   - **Outputs:** `{ "status": "success", "data": [{ "date": str, "net_assets": float, "assets": float, "liabilities": float }] }`.
 - **GET /charts/accounts-snapshot**
   - **Outputs:** `[ { "account_id": str, "name": str, "institution_name": str, "balance": float, "type": str, "subtype": str } ]`.
-- **GET|POST /charts/forecast**
+- **GET /charts/forecast**
   - **Inputs:** `view_type` (`Month` or `Year`), optional `manual_income`, optional `liability_rate`.
   - **Outputs:** `{ "labels": [str], "forecast": [float], "actuals": [float], "metadata": { ... } }`.
 
