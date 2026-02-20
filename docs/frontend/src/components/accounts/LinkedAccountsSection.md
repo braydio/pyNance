@@ -1,31 +1,38 @@
 ## LinkedAccountsSection.vue
 
-Overview card that groups linked accounts by type and institution with optional rewards metadata. Defaults to a demo dataset if no accounts are provided.
+Overview card that groups linked accounts by type and institution with optional rewards metadata.
 
 ### Props
 
 - `accounts: Array` – Optional list of account objects `{ id, name, institution, type, subtype?, mask?, apr?, balance?, limit?, status?, promotions? }`.
+- `useDemoFallback: Boolean` (default `false`) – Controls whether demo accounts are shown when `accounts` is empty.
+- `enablePromotionEditor: Boolean` (default `false`) – Controls whether the inline add-promotion form is rendered.
 
 ### Data & Derived State
 
-- `resolvedAccounts` sorts provided accounts by a preferred type order (`Credit Card`, `Deposit Account`, `Investment`) then name; falls back to defaults.
+- `resolvedAccounts` sorts provided accounts by a preferred type order (`Credit Card`, `Deposit Account`, `Investment`) then name.
+- If `accounts` is empty and `useDemoFallback` is `true`, `resolvedAccounts` uses the internal demo dataset.
+- If `accounts` is empty and `useDemoFallback` is `false`, the section renders the empty real-data state.
 - `groupedAccounts` maps accounts into `{ type, label, institutions: [{ name, accounts }] }`.
 - `promotionEntries`/`promotionForms` track per-account reward rows and input state.
 
 ### UI & Interactions
 
-- Renders type sections → institution cards → account rows.
-- Each account shows balance/limit/status, then an always-open “Rewards & Promotions” details block:
-  - Existing promotions listed from `promotions` prop or added entries.
-  - Inline form to add a promotion (category picker with optional custom, rate input). Submits to local state only; no API call.
+- Renders type sections, then institution cards, then account rows.
+- Each account shows balance/limit/status and a “Rewards & Promotions” details block.
+- Promotion list entries are always rendered from incoming `promotions` and any local additions in current component state.
+- Promotion editor behavior:
+  - Hidden by default (`enablePromotionEditor=false`) for non-persistent integrations.
+  - When shown, displays a local-state notice: “Local draft only. Promotions are not persisted yet.”
+  - Allows category + optional custom category + rate input.
 
-### Helpers
+### Emits & Persistence
 
-- `formatApr`, `formatBalance`, `formatPercentage` provide display-friendly strings.
-- `addPromotion(accountId)` pushes a validated reward entry; rejects empty category or negative/NaN rates.
+- Emits `add-promotion` with payload `{ accountId, category, rate }` after local validation and insertion.
+- The component itself does not call APIs. Parent views are responsible for persistence, toasts, and rollback/error handling when connected to backend support.
 
 ### Integration Notes
 
-- To persist promotions, listen for a new emit (not currently emitted) or extend the component with an `@submit` hook to call your API.
-- Provide real `accounts` data to avoid the demo dataset; ensure each account has a unique `id`.
-- If you change account types, update `typeSortOrder` and `accountTypeLabels` so grouping labels stay consistent.\*\*\*
+- Accounts route usage should pass real mapped account data and explicitly set `:use-demo-fallback="false"`.
+- Keep the editor hidden until backend persistence exists, or enable it and handle `@add-promotion` in the parent with success/error feedback.
+- If account types change, update `typeSortOrder` and `accountTypeLabels` so grouping labels stay consistent.
