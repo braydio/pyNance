@@ -14,20 +14,30 @@
       >
         <div class="text-sm">
           <p class="font-medium">
-            {{ pair.description }} ({{ formatAmount(pair.amount) }})
+            From:
+            {{ formatAccount(pair) }}
+            | {{ flowLabel(pair.amount) }} {{ formatSignedAmount(pair.amount) }}
           </p>
           <p class="text-gray-500">
-            ↔
+            {{ pair.description }}
+          </p>
+          <p class="font-medium mt-2">
+            To:
+            {{ formatAccount(pair.counterpart) }}
+            | {{ flowLabel(pair.counterpart.amount) }}
+            {{ formatSignedAmount(pair.counterpart.amount) }}
+          </p>
+          <p class="text-gray-500">
             {{ pair.counterpart.description }}
-            ({{ formatAmount(pair.counterpart.amount) }})
+          </p>
+          <p class="text-xs text-gray-500 mt-2">
+            Match score: {{ pair.match_score }} | Time delta: {{ pair.time_delta_hours }}h
           </p>
         </div>
         <UiButton variant="primary" @click="confirm(pair)">Mark Internal</UiButton>
       </div>
     </div>
-    <p v-else-if="scanned" class="text-sm text-gray-500">
-      No internal transfers found.
-    </p>
+    <p v-else-if="scanned" class="text-sm text-gray-500">No internal transfers found.</p>
   </div>
 </template>
 
@@ -35,7 +45,6 @@
 import { ref } from 'vue'
 import api from '@/services/api.js'
 import UiButton from '@/components/ui/Button.vue'
-import { formatAmount } from '@/utils/format'
 
 const pairs = ref([])
 const loading = ref(false)
@@ -62,12 +71,27 @@ async function confirm(pair) {
       counterpart_transaction_id: pair.counterpart_id,
       flag_counterpart: true,
     })
-    pairs.value = pairs.value.filter(
-      (p) => p.transaction_id !== pair.transaction_id
-    )
+    pairs.value = pairs.value.filter((p) => p.transaction_id !== pair.transaction_id)
   } catch (err) {
     console.error('Failed to mark transaction as internal:', err)
   }
 }
-</script>
 
+function formatSignedAmount(amount) {
+  const numeric = Number(amount) || 0
+  const absolute = Math.abs(numeric)
+  const symbol = numeric >= 0 ? '+' : '-'
+  return `${symbol}$${absolute.toFixed(2)}`
+}
+
+function flowLabel(amount) {
+  const numeric = Number(amount) || 0
+  return numeric >= 0 ? 'Inflow' : 'Outflow'
+}
+
+function formatAccount(side) {
+  const institution = side?.institution_name || 'Unknown Institution'
+  const account = side?.account_name || side?.account_id || 'Unknown Account'
+  return `${institution} / ${account}`
+}
+</script>

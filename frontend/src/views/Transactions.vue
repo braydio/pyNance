@@ -177,11 +177,12 @@
         <h2 class="section-title">Recent Transactions</h2>
         <div class="flex items-center gap-2">
           <button
-            class="btn btn-outline px-3 py-1 text-sm"
+            class="pill md:text-sm"
+            data-testid="transactions-export-csv"
             :disabled="isExporting || isLoading"
             @click="exportFilteredTransactionsCsv"
           >
-            {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+            {{ isExporting ? 'Exporting CSV...' : 'Export CSV (All Filtered Rows)' }}
           </button>
           <span class="pill pill-subtle">Updated feed</span>
         </div>
@@ -211,7 +212,17 @@
     <!-- Activity Tab -->
     <template #Activity>
       <Card class="p-6 space-y-4 rounded-3xl card-surface">
-        <h2 class="section-title">Recent Transactions</h2>
+        <div class="flex items-center justify-between">
+          <h2 class="section-title">Recent Transactions</h2>
+          <button
+            class="pill md:text-sm"
+            data-testid="transactions-export-csv-activity"
+            :disabled="isExporting || isLoading"
+            @click="exportFilteredTransactionsCsv"
+          >
+            {{ isExporting ? 'Exporting CSV...' : 'Export CSV (All Filtered Rows)' }}
+          </button>
+        </div>
         <transition name="fade-in-up" mode="out-in">
           <SkeletonCard v-if="isLoading" key="loading-activity" />
           <RetryError

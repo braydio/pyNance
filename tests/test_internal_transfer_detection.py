@@ -67,13 +67,31 @@ sql_pkg = types.ModuleType("app.sql")
 sql_pkg.__path__ = []
 sql_pkg.transaction_rules_logic = transaction_rules_logic
 sql_pkg.refresh_metadata = refresh_metadata
+sql_pkg.__path__ = []
 sys.modules["app.sql"] = sql_pkg
 app_pkg.sql = sql_pkg
+
+dialect_utils = types.ModuleType("app.sql.dialect_utils")
+dialect_utils.dialect_insert = lambda _db, table: None
+sequence_utils = types.ModuleType("app.sql.sequence_utils")
+sequence_utils.ensure_transactions_sequence = lambda: None
+sys.modules["app.sql.dialect_utils"] = dialect_utils
+sys.modules["app.sql.sequence_utils"] = sequence_utils
 
 utils_pkg = types.ModuleType("app.utils")
 utils_pkg.__path__ = []
 finance_utils = types.ModuleType("app.utils.finance_utils")
 finance_utils.display_transaction_amount = lambda txn: txn.amount
+category_display = types.ModuleType("app.utils.category_display")
+category_display.category_display = lambda primary, detailed=None: (
+    f"{primary} - {detailed}" if detailed else primary
+)
+category_display.humanize_enum = lambda value: str(value).replace("_", " ").title()
+category_display.strip_parent = lambda detailed, parent: (
+    detailed.replace(f"{parent}_", "", 1)
+    if isinstance(detailed, str) and isinstance(parent, str)
+    else detailed
+)
 sys.modules["app.utils.finance_utils"] = finance_utils
 utils_cat = types.ModuleType("app.utils.category_canonical")
 utils_cat.canonicalize_category = lambda *a, **k: ("UNKNOWN", "Unknown")
@@ -97,6 +115,7 @@ utils_merch.resolve_merchant = lambda **kwargs: types.SimpleNamespace(
 )
 sys.modules["app.utils.merchant_normalization"] = utils_merch
 utils_pkg.finance_utils = finance_utils
+utils_pkg.category_display = category_display
 sys.modules["app.utils"] = utils_pkg
 app_pkg.utils = utils_pkg
 
