@@ -104,10 +104,17 @@
                   </ul>
 
                   <form
+                    v-if="enablePromotionEditor"
                     class="grid gap-3 rounded-md border border-dashed border-surface-300 p-3 text-sm dark:border-surface-600"
                     @submit.prevent="addPromotion(account.id)"
                     :data-testid="`promo-form-${account.id}`"
                   >
+                    <p
+                      class="text-xs text-muted-foreground"
+                      :data-testid="`promo-draft-label-${account.id}`"
+                    >
+                      Local draft only. Promotions are not persisted yet.
+                    </p>
                     <div class="grid gap-2 md:grid-cols-3 md:items-end">
                       <div class="space-y-1">
                         <label
@@ -258,7 +265,17 @@ const props = defineProps({
     type: Array,
     default: () => [],
   },
+  useDemoFallback: {
+    type: Boolean,
+    default: false,
+  },
+  enablePromotionEditor: {
+    type: Boolean,
+    default: false,
+  },
 })
+
+const emit = defineEmits(['add-promotion'])
 
 const promotionEntries = reactive({})
 const promotionForms = reactive({})
@@ -280,7 +297,12 @@ const resolvedAccounts = computed(() => {
       return a.name.localeCompare(b.name)
     })
   }
-  return [...defaultAccounts]
+
+  if (props.useDemoFallback) {
+    return [...defaultAccounts]
+  }
+
+  return []
 })
 
 const groupedAccounts = computed(() => {
@@ -410,6 +432,13 @@ function addPromotion(accountId) {
     category,
     rate: numericRate,
   })
+
+  emit('add-promotion', {
+    accountId,
+    category,
+    rate: numericRate,
+  })
+
   resetPromotionForm(accountId)
 }
 </script>

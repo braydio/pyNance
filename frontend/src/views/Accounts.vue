@@ -32,14 +32,8 @@
             {{ hasAccounts ? 'Select an account' : 'No accounts available' }}
           </option>
 
-          <option
-            v-for="account in accounts"
-            :key="account.account_id"
-            :value="account.account_id"
-          >
-            {{ account.mask
-              ? `${account.name} •••• ${account.mask}`
-              : account.name }}
+          <option v-for="account in accounts" :key="account.account_id" :value="account.account_id">
+            {{ account.mask ? `${account.name} •••• ${account.mask}` : account.name }}
           </option>
         </select>
       </div>
@@ -52,9 +46,7 @@
           v-if="!hasAccounts"
           class="rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
         >
-          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-            No accounts linked
-          </h2>
+          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">No accounts linked</h2>
           <p class="mt-2 text-sm text-muted">
             Link an account to view summary, transactions, and chart data.
           </p>
@@ -67,9 +59,7 @@
                 <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
                   Net Change Summary
                 </h2>
-                <p class="text-sm text-muted">
-                  Performance for the selected date range.
-                </p>
+                <p class="text-sm text-muted">Performance for the selected date range.</p>
               </div>
 
               <UiButton
@@ -111,11 +101,7 @@
                 Balance History
               </h2>
 
-              <select
-                v-model="selectedRange"
-                class="input w-32"
-                :disabled="!canFetchAccountData"
-              >
+              <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
                 <option v-for="range in ranges" :key="range" :value="range">
                   {{ range }}
                 </option>
@@ -135,6 +121,13 @@
               :selected-range="selectedRange"
             />
           </Card>
+
+          <LinkedAccountsSection
+            :accounts="linkedAccounts"
+            :use-demo-fallback="false"
+            :enable-promotion-editor="false"
+            @add-promotion="handleAddPromotion"
+          />
         </template>
       </section>
     </template>
@@ -143,9 +136,7 @@
     <template #Transactions>
       <Card class="space-y-6 rounded-2xl border p-6 shadow-xl">
         <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-            Activity
-          </h2>
+          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Activity</h2>
 
           <UiButton
             variant="outline"
@@ -164,10 +155,7 @@
           @retry="retryTransactions"
         />
 
-        <TransactionsTable
-          v-else
-          :transactions="recentTransactions"
-        />
+        <TransactionsTable v-else :transactions="recentTransactions" />
       </Card>
     </template>
 
@@ -192,6 +180,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
+import { useToast } from 'vue-toastification'
 import { useRoute } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
 
@@ -204,8 +193,6 @@ import {
 } from '@/api/accounts'
 
 import { formatAmount } from '@/utils/format'
-import { useAccountPreferences } from '@/stores/useAccountPreferences'
-
 import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -217,9 +204,10 @@ import NetYearComparisonChart from '@/components/charts/NetYearComparisonChart.v
 import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
+import LinkedAccountsSection from '@/components/accounts/LinkedAccountsSection.vue'
 
 const route = useRoute()
-const accountPrefs = useAccountPreferences()
+const toast = useToast()
 
 const accounts = ref([])
 const accountsLoading = ref(false)
@@ -243,9 +231,22 @@ const transactionsError = ref(null)
 const activeTab = ref('Summary')
 
 const hasAccounts = computed(() => accounts.value.length > 0)
-const canFetchAccountData = computed(
-  () => hasAccounts.value && Boolean(accountId.value),
+const linkedAccounts = computed(() =>
+  accounts.value.map((account) => ({
+    id: String(account.account_id),
+    name: account.name || 'Unnamed account',
+    institution: account.institution_name || account.institution || 'Unknown Institution',
+    type: account.type || account.account_type || 'Other',
+    subtype: account.subtype || account.account_subtype || '',
+    mask: account.mask || '',
+    apr: account.apr,
+    balance: account.current_balance ?? account.balance,
+    limit: account.limit,
+    status: account.status,
+    promotions: account.promotions || [],
+  })),
 )
+const canFetchAccountData = computed(() => hasAccounts.value && Boolean(accountId.value))
 
 const tabs = computed(() => [
   'Summary',
@@ -337,6 +338,10 @@ function retryHistory() {
 
 function retryTransactions() {
   loadData()
+}
+
+function handleAddPromotion() {
+  toast.error('Promotion persistence is not available yet. Changes remain local drafts.')
 }
 
 onMounted(async () => {
