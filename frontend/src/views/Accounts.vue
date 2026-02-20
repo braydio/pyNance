@@ -62,7 +62,7 @@
 
         <template v-else>
           <Card class="space-y-6 rounded-2xl border p-6 shadow-xl">
-            <header class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <header class="flex justify-between items-center">
               <div>
                 <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
                   Net Change Summary
@@ -89,10 +89,7 @@
               @retry="retrySummary"
             />
 
-            <div
-              v-else
-              class="grid gap-4 md:grid-cols-3"
-            >
+            <div v-else class="grid gap-4 md:grid-cols-3">
               <article
                 v-for="stat in netSummaryStats"
                 :key="stat.key"
@@ -195,7 +192,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
 
 import api from '@/services/api'
@@ -222,7 +219,6 @@ import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
 
 const route = useRoute()
-const router = useRouter()
 const accountPrefs = useAccountPreferences()
 
 const accounts = ref([])
@@ -279,8 +275,7 @@ const netSummaryStats = computed(() => [
 ])
 
 function handleAccountSelection(e) {
-  const id = e.target.value || null
-  accountId.value = id
+  accountId.value = e.target.value || null
 }
 
 async function loadAccounts() {
@@ -352,21 +347,9 @@ onMounted(async () => {
   await loadData()
 })
 
-watch(accountId, () => {
-  if (accountId.value) {
-    accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
-  }
-  loadData()
-})
-
-watch(selectedRange, () => {
-  if (accountId.value) {
-    accountPrefs.setSelectedRange(accountId.value, selectedRange.value)
-  }
-  loadData()
-})
+watch(accountId, loadData)
+watch(selectedRange, loadData)
 </script>
-
 <style scoped>
 .summary-card {
   background: var(--accounts-summary-card-bg);
