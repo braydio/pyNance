@@ -40,12 +40,14 @@ sys.modules["app.extensions"] = extensions_stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 account_logic_stub.get_paginated_transactions = lambda *a, **k: ([{"id": "t1"}], 1, {})
+account_logic_stub.invalidate_tx_cache = lambda: None
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
 
 models_stub = types.ModuleType("app.models")
 models_stub.Account = type("Account", (), {})
+models_stub.Category = type("Category", (), {})
 models_stub.Tag = type("Tag", (), {})
 models_stub.Transaction = type("Transaction", (), {})
 models_stub.AccountHistory = type("AccountHistory", (), {})
@@ -55,6 +57,26 @@ ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "transactions.py")
 spec = importlib.util.spec_from_file_location("app.routes.transactions", ROUTE_PATH)
 transactions_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(transactions_module)
+
+
+class _Expr:
+    def is_(self, *_args, **_kwargs):
+        return self
+
+    def in_(self, *_args, **_kwargs):
+        return self
+
+    def __or__(self, _other):
+        return self
+
+    def __ge__(self, _other):
+        return self
+
+    def __le__(self, _other):
+        return self
+
+    def __eq__(self, _other):
+        return self
 
 
 @pytest.fixture
@@ -289,3 +311,195 @@ def test_update_transaction_defaults_empty_tag(client, monkeypatch):
     assert resp.get_json()["status"] == "success"
     assert txn_stub.tags[0].name == "#untagged"
     assert added_tags[0].name == "#untagged"
+
+
+def test_top_merchants_returns_frontend_shape(client, monkeypatch):
+    rows = [
+        (
+            types.SimpleNamespace(
+                amount=10,
+                date=transactions_module.datetime(
+                    2026, 2, 5, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Coffee Shop",
+                description="Coffee",
+                category="Food",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+        (
+            types.SimpleNamespace(
+                amount=15,
+                date=transactions_module.datetime(
+                    2026, 1, 10, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Coffee Shop",
+                description="Coffee",
+                category="Food",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+        (
+            types.SimpleNamespace(
+                amount=20,
+                date=transactions_module.datetime(
+                    2026, 2, 3, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Grocery Mart",
+                description="Groceries",
+                category="Groceries",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+    ]
+
+    class QueryStub:
+        def join(self, *_args, **_kwargs):
+            return self
+
+        def outerjoin(self, *_args, **_kwargs):
+            return self
+
+        def filter(self, *_args, **_kwargs):
+            return self
+
+        def all(self):
+            return rows
+
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "is_hidden", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "is_internal", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "pending", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module.Transaction, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "category_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
+    )
+
+    resp = client.get("/api/transactions/top_merchants?trend_points=3")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "success"
+    assert data["data"][0]["name"] == "Coffee Shop"
+    assert data["data"][0]["total"] == 25.0
+    assert len(data["data"][0]["trend"]) == 3
+
+
+def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
+    rows = [
+        (
+            types.SimpleNamespace(
+                amount=30,
+                date=transactions_module.datetime(
+                    2026, 2, 1, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="A",
+                description="A",
+                category="",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            types.SimpleNamespace(computed_display_name="Bills - Utilities"),
+        ),
+        (
+            types.SimpleNamespace(
+                amount=10,
+                date=transactions_module.datetime(
+                    2026, 2, 2, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="B",
+                description="B",
+                category="Dining",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            types.SimpleNamespace(computed_display_name="Ignored"),
+        ),
+    ]
+
+    class QueryStub:
+        def join(self, *_args, **_kwargs):
+            return self
+
+        def outerjoin(self, *_args, **_kwargs):
+            return self
+
+        def filter(self, *_args, **_kwargs):
+            return self
+
+        def all(self):
+            return rows
+
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "is_hidden", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "is_internal", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "pending", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module.Transaction, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "category_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
+    )
+
+    resp = client.get("/api/transactions/top_categories?top_n=1&trend_points=4")
+    assert resp.status_code == 200
+    data = resp.get_json()
+    assert data["status"] == "success"
+    assert len(data["data"]) == 1
+    assert data["data"][0]["name"] == "Bills - Utilities"
+    assert data["data"][0]["total"] == 30.0
+    assert len(data["data"][0]["trend"]) == 4

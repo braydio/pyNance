@@ -127,8 +127,22 @@ export const fetchNetChanges = async (accountId, params = {}) => {
  * @returns {Promise<Array>} Array of merchant summaries.
  */
 export const fetchTopMerchants = async (params = {}) => {
-  const response = await axios.get('/api/transactions/top_merchants', { params })
-  return response.data?.data || []
+  try {
+    const response = await axios.get('/api/transactions/top_merchants', { params })
+    return response.data?.data || []
+  } catch (error) {
+    if (error?.response?.status !== 404) {
+      throw error
+    }
+    // Backward-compatible fallback for backends that only expose charts routes.
+    const response = await axios.get('/api/charts/merchant_breakdown', { params })
+    const items = Array.isArray(response.data?.data) ? response.data.data : []
+    return items.map((item) => ({
+      name: item.label || 'Unknown',
+      total: Number(item.amount) || 0,
+      trend: [],
+    }))
+  }
 }
 
 /**
@@ -138,6 +152,20 @@ export const fetchTopMerchants = async (params = {}) => {
  * @returns {Promise<Array>} Array of category summaries.
  */
 export const fetchTopCategories = async (params = {}) => {
-  const response = await axios.get('/api/transactions/top_categories', { params })
-  return response.data?.data || []
+  try {
+    const response = await axios.get('/api/transactions/top_categories', { params })
+    return response.data?.data || []
+  } catch (error) {
+    if (error?.response?.status !== 404) {
+      throw error
+    }
+    // Backward-compatible fallback for backends that only expose charts routes.
+    const response = await axios.get('/api/charts/category_breakdown', { params })
+    const items = Array.isArray(response.data?.data) ? response.data.data : []
+    return items.map((item) => ({
+      name: item.category || 'Uncategorized',
+      total: Number(item.amount) || 0,
+      trend: [],
+    }))
+  }
 }

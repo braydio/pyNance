@@ -6,12 +6,13 @@ records across all linked accounts.
 
 import json
 import traceback
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 
 from app.config import logger
 from app.extensions import db
-from app.models import Account, Tag, Transaction
+from app.models import Account, Category, Tag, Transaction
 from app.sql import account_logic
 from flask import Blueprint, jsonify, request
 from sqlalchemy import func
@@ -170,6 +171,155 @@ def _normalize_tag_payload(raw_tags) -> list[str]:
         if name and name not in normalized:
             normalized.append(name)
     return normalized
+
+
+def display_transaction_amount(txn: Transaction) -> float:
+    """Return signed transaction amount used by charting and spending insights."""
+
+    amount = Decimal(str(txn.amount)).quantize(TWOPLACES)
+
+    raw_type = getattr(txn, "transaction_type", "") or ""
+    txn_type = raw_type.lower()
+    if txn_type == "expense":
+        return float((-abs(amount)).quantize(TWOPLACES))
+    if txn_type == "income":
+        return float(abs(amount).quantize(TWOPLACES))
+
+    return float((-amount).quantize(TWOPLACES))
+
+
+def _month_floor(value: datetime) -> datetime:
+    """Return the UTC month start for ``value``."""
+
+    value = _ensure_utc(value) or datetime.now(UTC)
+    return value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+
+def _shift_month(value: datetime, delta_months: int) -> datetime:
+    """Shift ``value`` by ``delta_months`` months, preserving month-floor semantics."""
+
+    year = value.year + ((value.month - 1 + delta_months) // 12)
+    month = ((value.month - 1 + delta_months) % 12) + 1
+    return value.replace(year=year, month=month)
+
+
+def _trend_months(end_date: datetime, window_months: int) -> list[datetime]:
+    """Return month-start buckets ending in the month of ``end_date``."""
+
+    end_month = _month_floor(end_date)
+    return [
+        _shift_month(end_month, -offset) for offset in range(window_months - 1, -1, -1)
+    ]
+
+
+def _coerce_positive_int(
+    raw_value: str | None, default: int, minimum: int, maximum: int
+) -> int:
+    """Parse and clamp an integer query parameter."""
+
+    if raw_value is None:
+        return default
+    try:
+        parsed = int(raw_value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(parsed, maximum))
+
+
+def _top_spending_breakdown(group_by: str):
+    """Return top spending entities grouped by merchant or category.
+
+    Args:
+        group_by: ``merchant`` or ``category``.
+    """
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    account_ids = _parse_account_ids(request.args)
+    top_n = _coerce_positive_int(
+        request.args.get("top_n"), default=5, minimum=1, maximum=50
+    )
+    trend_points = _coerce_positive_int(
+        request.args.get("trend_points"), default=6, minimum=2, maximum=24
+    )
+
+    try:
+        start_date = _parse_iso_date(start_date_str)
+        end_date = _parse_iso_date(end_date_str, inclusive_end=True)
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+
+    if end_date is None:
+        end_date = datetime.now(UTC)
+    if start_date is None:
+        start_date = end_date - timedelta(days=180)
+
+    month_buckets = _trend_months(end_date, trend_points)
+    month_index = {bucket: idx for idx, bucket in enumerate(month_buckets)}
+    lower_month_bound = month_buckets[0]
+
+    try:
+        query = (
+            db.session.query(Transaction, Account, Category)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .outerjoin(Category, Transaction.category_id == Category.id)
+            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(
+                (Transaction.is_internal.is_(False))
+                | (Transaction.is_internal.is_(None))
+            )
+            .filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
+            .filter(Transaction.date >= start_date)
+            .filter(Transaction.date <= end_date)
+        )
+        if account_ids:
+            query = query.filter(Transaction.account_id.in_(account_ids))
+
+        rows = query.all()
+        totals: dict[str, float] = defaultdict(float)
+        trends: dict[str, list[float]] = defaultdict(lambda: [0.0] * trend_points)
+
+        for txn, _account, category in rows:
+            normalized_amount = display_transaction_amount(txn)
+            if normalized_amount >= 0:
+                continue
+            spend = abs(float(normalized_amount))
+
+            if group_by == "merchant":
+                key = (
+                    txn.merchant_name or txn.description or "Unknown"
+                ).strip() or "Unknown"
+            else:
+                category_label = txn.category or getattr(
+                    category, "computed_display_name", None
+                )
+                key = (category_label or "Uncategorized").strip() or "Uncategorized"
+
+            totals[key] += spend
+
+            txn_month = _month_floor(_ensure_utc(txn.date) or txn.date)
+            if txn_month < lower_month_bound:
+                continue
+            idx = month_index.get(txn_month)
+            if idx is not None:
+                trends[key][idx] += spend
+
+        data = [
+            {
+                "name": name,
+                "total": round(total, 2),
+                "trend": [round(value, 2) for value in trends[name]],
+            }
+            for name, total in sorted(
+                totals.items(), key=lambda item: item[1], reverse=True
+            )[:top_n]
+        ]
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as exc:
+        logger.error(
+            "Error building %s spending breakdown: %s", group_by, exc, exc_info=True
+        )
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @transactions.route("/update", methods=["PUT"])
@@ -605,6 +755,20 @@ def merchant_suggestions():
     except Exception as e:
         logger.error("Error fetching merchant suggestions: %s", e, exc_info=True)
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@transactions.route("/top_merchants", methods=["GET"])
+def top_merchants():
+    """Return top spending merchants with trend points for sparklines."""
+
+    return _top_spending_breakdown("merchant")
+
+
+@transactions.route("/top_categories", methods=["GET"])
+def top_categories():
+    """Return top spending categories with trend points for sparklines."""
+
+    return _top_spending_breakdown("category")
 
 
 @transactions.route("/tags", methods=["GET"])

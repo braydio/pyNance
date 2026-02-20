@@ -866,19 +866,6 @@ function balanceClass(account) {
   return ''
 }
 
-/**
- * Resolve account balance used in display and aggregate calculations.
- * Falls back in priority order when adjusted balances are unavailable.
- *
- * @param {object} account - Account payload containing possible balance fields.
- * @returns {number} Parsed numeric balance value, or 0 when invalid/missing.
- */
-function resolveAccountBalance(account) {
-  const rawBalance = account?.adjusted_balance ?? account?.balance ?? account?.balances?.current
-  const numericBalance = Number(rawBalance)
-  return Number.isFinite(numericBalance) ? numericBalance : 0
-}
-
 function resolveCreditLimit(account) {
   if (!account || typeof account !== 'object') return null
   const current = Math.abs(

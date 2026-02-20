@@ -81,7 +81,9 @@ def _seed_transactions(
         )
         if tags and txn_id in tags:
             for tag_name in tags[txn_id]:
-                tag = Tag.query.filter_by(user_id=account.user_id, name=tag_name).first()
+                tag = Tag.query.filter_by(
+                    user_id=account.user_id, name=tag_name
+                ).first()
                 if not tag:
                     tag = Tag(user_id=account.user_id, name=tag_name)
                     db.session.add(tag)
