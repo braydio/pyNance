@@ -3,7 +3,7 @@ Routes providing aggregated financial summary metrics.
 """
 
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from app.extensions import db
 from app.models import Account, Transaction
@@ -42,9 +42,9 @@ def fetch_transaction_data(start_date: datetime, end_date: datetime):
     return (
         db.session.query(
             Transaction.date.label("date"),
-            func.sum(
-                case((Transaction.amount > 0, Transaction.amount), else_=0)
-            ).label("income"),
+            func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label(
+                "income"
+            ),
             func.sum(
                 case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
             ).label("expenses"),
@@ -130,15 +130,11 @@ def compute_volatility_metrics(stats: Dict[str, Any], rows) -> Dict[str, Any]:
     sum_xy = sum(x[i] * net_vals[i] for i in range(n))
     sum_xx = sum(xi * xi for xi in x)
 
-    trend = (
-        (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x)
-        if n > 1
-        else 0
-    )
+    trend = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x) if n > 1 else 0
 
     mean_net = stats["totalNet"] / n
     variance = sum((v - mean_net) ** 2 for v in net_vals) / n
-    volatility = variance ** 0.5 * 0.5
+    volatility = variance**0.5 * 0.5
     threshold = 2 * volatility
 
     outlier_dates = [

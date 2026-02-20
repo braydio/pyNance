@@ -90,9 +90,7 @@ class Tag(db.Model, TimestampMixin):
         back_populates="tags",
     )
 
-    __table_args__ = (
-        db.UniqueConstraint("user_id", "name", name="uq_tags_user_name"),
-    )
+    __table_args__ = (db.UniqueConstraint("user_id", "name", name="uq_tags_user_name"),)
 
 
 ProviderEnum = db.Enum("manual", "plaid", name="provider_type")
