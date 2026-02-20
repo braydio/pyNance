@@ -9,10 +9,9 @@ This document defines how `TopAccountSnapshot` resolves and displays balances fo
 1. `account.adjusted_balance`
 2. `account.balance`
 3. `account.balances?.current`
-4. `account.balances?.available`
-5. fallback to `0` if none of the above are valid numbers
+4. fallback to `0` if none of the above are valid numbers
 
-This precedence is implemented in `resolveAccountBalance(account)`.
+This precedence is implemented in `resolveAccountBalance(account)` and is shared by per-account display and group aggregation logic.
 
 ## Negative Presentation
 

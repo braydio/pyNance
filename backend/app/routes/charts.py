@@ -542,7 +542,7 @@ def accounts_snapshot():
     return jsonify(result)
 
 
-@charts.route("/forecast", methods=["GET", "POST"])
+@charts.route("/forecast", methods=["GET"])
 def forecast_route():
     """Return forecast vs actual lines for the authenticated user."""
     try:
