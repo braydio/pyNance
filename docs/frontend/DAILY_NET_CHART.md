@@ -17,14 +17,21 @@ The dashboard overlay sidebar now supports a comparison series that fetches a pr
 The comparison series renders as a faint, dashed line so it is visible without overpowering the primary
 income and expense bars.
 
-## Tooltip Behavior
+## Details Panel Behavior
 
-The daily net tooltip now uses an anchored custom positioner that snaps to the bar's zero-line x-position,
-while clamping tooltip coordinates to the chart area. This prevents tooltip boxes from rendering partially
-outside the canvas when hovering bars near chart boundaries.
+The chart disables the built-in Chart.js tooltip (`plugins.tooltip.enabled = false`) and renders a persistent
+details panel directly above the canvas so metric context remains visible without occluding bars/lines.
 
-Interaction mode uses index-based hover along the x-axis (`mode: index`, `axis: x`, `intersect: false`) so
-the tooltip consistently follows the hovered date bucket rather than switching between stacked datasets.
+The panel always tracks an active date index, initialized to the latest visible non-empty date (or a stable
+fallback), and uses index-based hover/click interactions (`mode: index`, `axis: x`, `intersect: false`) to
+keep details synchronized with the hovered date bucket.
+
+Panel hierarchy mirrors prior tooltip semantics:
+
+- Header date (formatted with the same date formatter).
+- Primary metric: Net.
+- Secondary metrics: Income, Expenses, Transactions.
+- Conditional comparison block: prior value + `vs prior` delta + percent when calculable.
 
 ## Loading, Empty, and Error States
 
