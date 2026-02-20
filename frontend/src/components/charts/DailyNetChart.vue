@@ -28,6 +28,42 @@
         </span>
       </div>
 
+      <section
+        v-if="activeDetails"
+        class="daily-net-chart__details"
+        aria-live="polite"
+        aria-label="Active day details"
+      >
+        <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
+        <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
+        <dl class="daily-net-chart__details-metrics">
+          <div>
+            <dt>Income</dt>
+            <dd>{{ formatAmount(activeDetails.income) }}</dd>
+          </div>
+          <div>
+            <dt>Expenses</dt>
+            <dd>{{ formatAmount(activeDetails.expenses) }}</dd>
+          </div>
+          <div>
+            <dt>Transactions</dt>
+            <dd>{{ activeDetails.transactions }}</dd>
+          </div>
+        </dl>
+
+        <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
+          <p>
+            {{ activeDetails.comparison.label }}: {{ formatAmount(activeDetails.comparison.value) }}
+          </p>
+          <p>
+            vs prior:
+            {{ activeDetails.comparison.deltaPrefix
+            }}{{ formatAmount(activeDetails.comparison.delta)
+            }}{{ activeDetails.comparison.percentage }}
+          </p>
+        </div>
+      </section>
+
       <div style="height: 400px">
         <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
       </div>
@@ -40,24 +76,16 @@
  * DailyNetChart.vue
  *
  * Renders the dashboard daily net chart with stacked income/expense bars,
- * a net indicator dash, and a detail tooltip aligned to the zero line.
+ * a net indicator dash, and a persistent details panel for the active day.
  */
 import { fetchDailyNet } from '@/api/charts'
 import { ref, onMounted, onUnmounted, nextTick, watch, toRefs } from 'vue'
 import { Chart } from 'chart.js'
 import { formatAmount } from '@/utils/format'
 
-import {
-  Tooltip,
-  Legend,
-  LineElement,
-  BarElement,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-} from 'chart.js'
+import { Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement } from 'chart.js'
 
-Chart.register(Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
+Chart.register(Legend, LineElement, BarElement, CategoryScale, LinearScale, PointElement)
 
 function toParsedValue(value) {
   if (value && typeof value === 'object' && typeof value.parsedValue === 'number')
@@ -87,69 +115,6 @@ function getNetDashPosition(chart, dataIndex) {
   if (!bar || !yScale) return null
   return { x: bar.x, y: yScale.getPixelForValue(netValue) }
 }
-
-/**
- * Resolve the pixel position for the zero line at a given label index.
- *
- * @param {import('chart.js').Chart} chart - The chart instance.
- * @param {number} dataIndex - Active label index.
- * @param {number|undefined} xOverride - Optional x override from hovered element.
- * @returns {{x: number, y: number} | null} Pixel coordinates for y=0.
- */
-function getZeroLinePosition(chart, dataIndex, xOverride) {
-  if (!chart?.getDatasetMeta) return null
-  const firstMeta = chart.getDatasetMeta(0)
-  const bar = firstMeta?.data?.[dataIndex]
-  const yScale = chart.scales?.y
-  const x = typeof xOverride === 'number' ? xOverride : bar?.x
-  if (x == null || !yScale) return null
-  return { x, y: yScale.getPixelForValue(0) }
-}
-
-/**
- * Clamp a tooltip anchor point so the tooltip box stays within the chart drawing area.
- *
- * @param {import('chart.js').Chart} chart - Active chart.
- * @param {number} x - Candidate x coordinate.
- * @param {number} y - Candidate y coordinate.
- * @param {{width?: number, height?: number}} tooltip - Tooltip model instance.
- * @returns {{x: number, y: number}} Clamped coordinates.
- */
-function clampTooltipToChartArea(chart, x, y, tooltip) {
-  const area = chart?.chartArea
-  if (!area) return { x, y }
-
-  const width = tooltip?.width ?? 0
-  const height = tooltip?.height ?? 0
-  const padding = 12
-
-  const minX = area.left + width / 2 + padding
-  const maxX = area.right - width / 2 - padding
-  const minY = area.top + height / 2 + padding
-  const maxY = area.bottom - height / 2 - padding
-
-  return {
-    x: Math.min(maxX, Math.max(minX, x)),
-    y: Math.min(maxY, Math.max(minY, y)),
-  }
-}
-
-function registerTooltipPositioner(name, positioner) {
-  const targets = [Tooltip?.positioners, Chart?.Tooltip?.positioners]
-  targets.forEach((target) => {
-    if (target && !target[name]) target[name] = positioner
-  })
-}
-
-registerTooltipPositioner('zeroLine', function (items, eventPosition) {
-  if (!items?.length) return eventPosition
-  const item = items[0]
-  const chart = item?.chart
-  const dataIndex = item?.dataIndex
-  const position = getZeroLinePosition(chart, dataIndex, item?.element?.x)
-  if (!position) return eventPosition
-  return clampTooltipToChartArea(chart, position.x, position.y, this)
-})
 
 const props = defineProps({
   startDate: { type: String, required: true },
@@ -181,6 +146,8 @@ const isLoading = ref(false)
 const hasError = ref(false)
 const isEmpty = ref(false)
 const legendItems = ref([])
+const activeIndex = ref(null)
+const activeDetails = ref(null)
 
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
@@ -188,58 +155,62 @@ const DEFAULT_ZOOM_MONTHS = 6
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
 /**
- * Return the normalized tooltip data for a given chart index.
+ * Create comparison details for the active point using the existing tooltip math.
  *
- * @param {import('chart.js').Chart} chart - The chart instance.
- * @param {number} dataIndex - The active data index.
- * @returns {Object|null} Tooltip payload with row data and comparison info.
+ * @param {number} netValue - Current period net value.
+ * @param {string} comparisonLabel - Prior-series label.
+ * @param {number|null} comparisonValue - Prior-series value at the same aligned index.
+ * @returns {{label: string, value: number, delta: number, deltaPrefix: string, percentage: string}|null}
+ * Comparison details used by the persistent details panel.
  */
-function getTooltipPayload(chart, dataIndex) {
-  const row = chart?.$dailyNetRows?.[dataIndex]
-  if (!row) return null
-  return {
-    row,
-    comparisonLabel: chart?.$comparisonLabel || '',
-    comparisonValue: chart?.$comparisonSeries?.[dataIndex] ?? null,
-  }
+function buildComparisonDetails(netValue, comparisonLabel, comparisonValue) {
+  if (!comparisonLabel || comparisonValue == null) return null
+
+  const delta = netValue - comparisonValue
+  const deltaPrefix = delta >= 0 ? '+' : ''
+  const percentage =
+    comparisonValue === 0
+      ? ''
+      : ` (${deltaPrefix}${((delta / Math.abs(comparisonValue)) * 100).toFixed(1)}%)`
+
+  return { label: comparisonLabel, value: comparisonValue, delta, deltaPrefix, percentage }
 }
 
-/**
- * Build detailed tooltip lines for the daily net chart.
- *
- * @param {Object} payload - Tooltip payload.
- * @param {Object} payload.row - Daily net row data.
- * @param {string} payload.comparisonLabel - Label for the comparison series.
- * @param {number|null} payload.comparisonValue - Comparison series value.
- * @returns {string[]} Tooltip detail lines.
- */
-function buildTooltipLines({ row, comparisonLabel, comparisonValue }) {
-  const netValue = toParsedValue(row?.net)
-  const incomeValue = toParsedValue(row?.income)
-  const expensesValue = toParsedValue(row?.expenses)
+function isNonEmptyDailyRow(row) {
+  return (
+    toParsedValue(row?.income) !== 0 ||
+    toParsedValue(row?.expenses) !== 0 ||
+    toParsedValue(row?.net) !== 0 ||
+    (row?.transaction_count ?? 0) > 0
+  )
+}
 
-  const lines = [
-    `Income: ${formatAmount(incomeValue)}`,
-    `Expenses: ${formatAmount(expensesValue)}`,
-    `Transactions: ${row?.transaction_count ?? 0}`,
-  ]
+function resolveInitialActiveIndex(displayData) {
+  if (!displayData.length) return null
+  const latestIndex = displayData.length - 1
+  if (isNonEmptyDailyRow(displayData[latestIndex])) return latestIndex
+  const firstNonEmptyIndex = displayData.findIndex((row) => isNonEmptyDailyRow(row))
+  return firstNonEmptyIndex >= 0 ? firstNonEmptyIndex : latestIndex
+}
 
-  if (comparisonLabel && comparisonValue != null) {
-    const delta = netValue - comparisonValue
-    const deltaPrefix = delta >= 0 ? '+' : ''
-    const percentage =
-      comparisonValue === 0
-        ? ''
-        : ` (${deltaPrefix}${((delta / Math.abs(comparisonValue)) * 100).toFixed(1)}%)`
+function setActivePoint(index, labels, displayData, comparisonSeries, comparisonLabel) {
+  const row = displayData[index]
+  const label = labels[index]
+  if (row == null || !label) return
 
-    lines.push(
-      '',
-      `${comparisonLabel}: ${formatAmount(comparisonValue)}`,
-      `vs prior: ${deltaPrefix}${formatAmount(delta)}${percentage}`,
-    )
+  const netValue = toParsedValue(row.net)
+  const comparisonValue = comparisonSeries?.[index] ?? null
+  const comparison = buildComparisonDetails(netValue, comparisonLabel, comparisonValue)
+
+  activeIndex.value = index
+  activeDetails.value = {
+    date: formatTooltipTitle(label),
+    net: netValue,
+    income: toParsedValue(row.income),
+    expenses: toParsedValue(row.expenses),
+    transactions: row?.transaction_count ?? 0,
+    comparison,
   }
-
-  return lines
 }
 
 function formatDateKey(date) {
@@ -490,7 +461,17 @@ function handleBarClick(evt) {
     { intersect: true },
     false,
   )
-  if (points.length) emit('bar-click', chartInstance.value.data.labels[points[0].index])
+  if (points.length) {
+    const index = points[0].index
+    emit('bar-click', chartInstance.value.data.labels[index])
+    setActivePoint(
+      index,
+      chartInstance.value.data.labels,
+      chartInstance.value.$dailyNetRows || [],
+      chartInstance.value.$comparisonSeries,
+      chartInstance.value.$comparisonLabel,
+    )
+  }
 }
 
 async function renderChart() {
@@ -655,6 +636,14 @@ async function renderChart() {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((dataset) => ({ label: dataset.label, color: dataset.borderColor || '#fff' }))
 
+  const nextActiveIndex =
+    activeIndex.value != null && activeIndex.value < labels.length
+      ? activeIndex.value
+      : resolveInitialActiveIndex(displayData)
+  if (nextActiveIndex != null) {
+    setActivePoint(nextActiveIndex, labels, displayData, comparisonSeries, comparisonLabel)
+  }
+
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     plugins: [netDashPlugin],
@@ -664,6 +653,11 @@ async function renderChart() {
       maintainAspectRatio: false,
       animation: false,
       onClick: handleBarClick,
+      onHover: (_event, elements) => {
+        const index = elements?.[0]?.index
+        if (index == null || index === activeIndex.value) return
+        setActivePoint(index, labels, displayData, comparisonSeries, comparisonLabel)
+      },
       interaction: {
         mode: 'index',
         axis: 'x',
@@ -693,37 +687,7 @@ async function renderChart() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: getStyle('--theme-bg'),
-          borderColor: getStyle('--color-accent-yellow'),
-          borderWidth: 1,
-          padding: 12,
-          displayColors: false,
-          mode: 'index',
-          intersect: false,
-          titleColor: getStyle('--color-accent-yellow'),
-          bodyColor: getStyle('--color-text-light'),
-          titleFont: { family: "'Fira Code', monospace", weight: '600' },
-          bodyFont: { family: "'Fira Code', monospace" },
-          cornerRadius: 10,
-          caretPadding: 6,
-          caretSize: 9,
-          bodySpacing: 6,
-          titleSpacing: 4,
-          titleMarginBottom: 6,
-          position: 'zeroLine',
-          callbacks: {
-            title: (items) => formatTooltipTitle(items[0]?.label ?? ''),
-            label: (context) => {
-              const payload = getTooltipPayload(context.chart, context.dataIndex)
-              return payload ? `Net: ${formatAmount(toParsedValue(payload.row?.net))}` : null
-            },
-            footer: (items) => {
-              const first = items?.[0]
-              if (!first) return null
-              const payload = getTooltipPayload(first.chart, first.dataIndex)
-              return payload ? buildTooltipLines(payload) : null
-            },
-          },
+          enabled: false,
         },
       },
     },
@@ -866,5 +830,68 @@ onUnmounted(() => chartInstance.value?.destroy())
 .daily-net-chart__legend-label {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.daily-net-chart__details {
+  margin-bottom: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--divider);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+}
+
+.daily-net-chart__details-date {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-chart__details-net {
+  margin: 0.25rem 0 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-accent-yellow);
+}
+
+.daily-net-chart__details-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+}
+
+.daily-net-chart__details-metrics div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.daily-net-chart__details-metrics dt {
+  margin: 0;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+}
+
+.daily-net-chart__details-metrics dd {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--color-text-light);
+}
+
+.daily-net-chart__details-comparison {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--divider);
+  font-size: 0.75rem;
+  color: var(--color-text-light);
+}
+
+.daily-net-chart__details-comparison p {
+  margin: 0;
+}
+
+.daily-net-chart__details-comparison p + p {
+  margin-top: 0.125rem;
+  color: var(--color-accent-yellow);
 }
 </style>
