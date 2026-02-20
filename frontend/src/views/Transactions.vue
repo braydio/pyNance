@@ -175,7 +175,16 @@
     <Card class="p-6 space-y-4 rounded-3xl card-surface">
       <div class="flex items-center justify-between">
         <h2 class="section-title">Recent Transactions</h2>
-        <span class="pill pill-subtle">Updated feed</span>
+        <div class="flex items-center gap-2">
+          <button
+            class="btn btn-outline px-3 py-1 text-sm"
+            :disabled="isExporting || isLoading"
+            @click="exportFilteredTransactionsCsv"
+          >
+            {{ isExporting ? 'Exporting...' : 'Export CSV' }}
+          </button>
+          <span class="pill pill-subtle">Updated feed</span>
+        </div>
       </div>
       <transition name="fade-in-up" mode="out-in">
         <SkeletonCard v-if="isLoading" key="loading" />
@@ -259,6 +268,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useTransactions } from '@/composables/useTransactions.js'
+import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
@@ -321,6 +331,7 @@ export default {
     const targetTransactionId = ref(txidParam)
     const showScanner = ref(false)
     const showControls = ref(true)
+    const isExporting = ref(false)
 
     /**
      * Keep the provided ref synchronized with vue-router query parameters.
@@ -481,6 +492,111 @@ export default {
       }
     }
 
+    /**
+     * Convert rows to CSV-safe text.
+     *
+     * @param {Array<Record<string, unknown>>} rows
+     * @returns {string}
+     */
+    function toCsv(rows) {
+      const columns = [
+        ['transaction_id', 'Transaction ID'],
+        ['date', 'Date'],
+        ['amount', 'Amount'],
+        ['description', 'Description'],
+        ['category', 'Category'],
+        ['merchant_name', 'Merchant'],
+        ['account_name', 'Account Name'],
+        ['institution_name', 'Institution'],
+        ['subtype', 'Subtype'],
+        ['running_balance', 'Running Balance'],
+      ]
+
+      const escapeCell = (value) => {
+        if (value == null) return '""'
+        const text = String(value).replace(/"/g, '""')
+        return `"${text}"`
+      }
+
+      const lines = [columns.map(([, header]) => escapeCell(header)).join(',')]
+      rows.forEach((row) => {
+        const line = columns.map(([key]) => escapeCell(row[key])).join(',')
+        lines.push(line)
+      })
+      return lines.join('\n')
+    }
+
+    /**
+     * Download all transactions matching the active server-side filters.
+     * This bypasses dashboard pagination by paging through the full result set.
+     */
+    async function exportFilteredTransactionsCsv() {
+      if (isExporting.value) return
+      isExporting.value = true
+
+      try {
+        const exportPageSize = 500
+        const activeFilters = {
+          ...(filters.value || {}),
+          include_running_balance: true,
+        }
+        let page = 1
+        let expectedTotal = 0
+        const allRows = []
+
+        while (true) {
+          const response = await fetchTransactionsApi({
+            ...activeFilters,
+            page,
+            page_size: exportPageSize,
+          })
+          const batch = Array.isArray(response?.transactions) ? response.transactions : []
+          expectedTotal = Number(response?.total || 0)
+          allRows.push(...batch)
+
+          if (!batch.length) break
+          if (expectedTotal > 0 && allRows.length >= expectedTotal) break
+          page += 1
+        }
+
+        const search = searchQuery.value.trim().toLowerCase()
+        const rowsForExport = !search
+          ? allRows
+          : allRows.filter((tx) =>
+              [
+                tx.transaction_id,
+                tx.date,
+                tx.description,
+                tx.category,
+                tx.merchant_name,
+                tx.account_name,
+                tx.institution_name,
+              ].some((value) =>
+                String(value || '')
+                  .toLowerCase()
+                  .includes(search),
+              ),
+            )
+
+        const csv = toCsv(rowsForExport)
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+        const url = URL.createObjectURL(blob)
+        const timestamp = new Date().toISOString().replace(/[:]/g, '-').replace(/\..+/, '')
+        const link = document.createElement('a')
+        link.href = url
+        link.download = `transactions-export-${timestamp}.csv`
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        URL.revokeObjectURL(url)
+      } catch (err) {
+        console.error('Failed to export filtered transactions', err)
+        window.alert('Failed to export transactions CSV. Please try again.')
+      } finally {
+        isExporting.value = false
+      }
+    }
+
     onMounted(() => {
       if (txidParam) {
         searchQuery.value = txidParam
@@ -515,6 +631,8 @@ export default {
       showScanner,
       toggleScanner,
       showControls,
+      isExporting,
+      exportFilteredTransactionsCsv,
       hasActiveFilters,
       filterSummary,
       formatCurrency,
