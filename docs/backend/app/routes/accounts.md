@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-02-21
 Status: Active
 ---
 
@@ -26,7 +26,7 @@ Manages account lifecycle operations including institution linking, metadata upd
   - **Inputs:** JSON `{ "public_token": str, "provider": "plaid" }`.
   - **Outputs:** `{ "account_id": str, "status": str }` describing the new linkage.
 - **GET /accounts**
-  - **Outputs:** Array of linked accounts with balances, institution names, and link status metadata.
+  - **Outputs:** Array of linked accounts with balances, institution names, and link status metadata. Each account includes both raw `name` and canonical `display_name`; clients should prefer `display_name` for UI labels and keep `name` for edit/history compatibility.
 - **GET /accounts/<account_id>/net_changes**
   - **Inputs:** `start_date` and `end_date` query params to bound the range.
   - **Outputs:** `{ "status": "success", "data": { "income", "expense", "net" } }` plus legacy fields `{account_id, net_change, period: {start, end}}` for backward compatibility.

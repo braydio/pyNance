@@ -315,6 +315,7 @@ def get_accounts_from_db(include_hidden: bool = False):
                 "account_id": acc.account_id,
                 "user_id": acc.user_id,
                 "name": acc.name,
+                "display_name": acc.display_name,
                 "type": acc.type,
                 "subtype": acc.subtype,
                 "institution_name": acc.institution_name,

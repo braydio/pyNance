@@ -36,8 +36,8 @@ from .transaction_models import (
     RecurringTransaction,
     Tag,
     Transaction,
-    transaction_tags,
     TransactionRule,
+    transaction_tags,
 )
 
 __all__ = [
