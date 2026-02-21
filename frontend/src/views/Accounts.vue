@@ -33,7 +33,10 @@
           </option>
 
           <option v-for="account in accounts" :key="account.account_id" :value="account.account_id">
-            {{ account.display_name || (account.mask ? `${account.name} •••• ${account.mask}` : account.name) }}
+            {{
+              account.display_name ||
+              (account.mask ? `${account.name} •••• ${account.mask}` : account.name)
+            }}
           </option>
         </select>
       </div>

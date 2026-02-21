@@ -59,7 +59,6 @@ Contains SQL-level helpers and routines related to the user account system. Prim
 
 Ready for `category_logic.py`?
 
-
 ## Account serialization note
 
 `get_accounts_from_db` and route payload builders now emit both `name` and `display_name`. `display_name` is the canonical UI label from `Account.display_name`, while `name` remains unchanged for compatibility-sensitive flows (edits/history).
