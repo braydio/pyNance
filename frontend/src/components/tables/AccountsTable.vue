@@ -100,7 +100,7 @@
               </span>
             </td>
             <!-- Name -->
-            <td class="cell">{{ formatTitle(account.name) }}</td>
+            <td class="cell">{{ formatTitle(account.display_name || account.name) }}</td>
             <!-- Account Type (title case) -->
             <td class="cell">
               <span
@@ -226,7 +226,7 @@ export default {
       if (this.searchQuery.trim()) {
         const query = this.searchQuery.toLowerCase()
         results = results.filter((acc) => {
-          const fields = [acc.institution_name, acc.name, acc.type, acc.subtype, acc.status].map(
+          const fields = [acc.institution_name, acc.display_name, acc.name, acc.type, acc.subtype, acc.status].map(
             (val) => (val || '').toLowerCase(),
           )
           return fields.some((f) => f.includes(query))
@@ -255,8 +255,8 @@ export default {
       if (!this.accountPendingDelete) {
         return 'this account'
       }
-      const { name, institution_name: institutionName } = this.accountPendingDelete
-      return name || institutionName || 'this account'
+      const { display_name: displayName, name, institution_name: institutionName } = this.accountPendingDelete
+      return displayName || name || institutionName || 'this account'
     },
     activeFilters() {
       const filters = []

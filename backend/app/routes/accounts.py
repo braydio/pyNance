@@ -656,6 +656,7 @@ def list_accounts():
                         "id": a.account_id,
                         "account_id": a.account_id,
                         "name": a.name,
+                        "display_name": a.display_name,
                         "institution_name": a.institution_name,
                         "type": a.type,
                         "balance": balance_value,
@@ -715,6 +716,7 @@ def refresh_status():
             {
                 "account_id": acc.account_id,
                 "account_name": acc.name,
+                "display_name": acc.display_name,
                 "institution_name": acc.institution_name,
                 "last_refreshed": _to_iso(last_refreshed),
                 "refresh_status": status,
@@ -864,6 +866,7 @@ def match_account_by_fields():
                 {
                     "account_id": acc.account_id,
                     "name": acc.name,
+                    "display_name": acc.display_name,
                     "institution_name": acc.institution_name,
                     "type": acc.type,
                     "subtype": acc.subtype,

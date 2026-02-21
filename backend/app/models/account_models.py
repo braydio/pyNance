@@ -44,6 +44,67 @@ class Account(db.Model, TimestampMixin):
     )
     institution = db.relationship("Institution", back_populates="accounts")
 
+    @staticmethod
+    def _normalize_display_segment(value: str | None) -> str | None:
+        """Normalize a display-name segment and drop unknown placeholders."""
+
+        cleaned = (value or "").strip()
+        if not cleaned:
+            return None
+        if cleaned.lower() in {
+            "unknown",
+            "unknown institution",
+            "unknown account type",
+        }:
+            return None
+        return cleaned
+
+    @staticmethod
+    def _format_account_type(
+        subtype: str | None, account_type: str | None
+    ) -> str | None:
+        """Return a title-cased account type label from subtype or type values."""
+
+        source = Account._normalize_display_segment(
+            subtype
+        ) or Account._normalize_display_segment(account_type)
+        if not source:
+            return None
+        return source.replace("_", " ").replace("-", " ").title()
+
+    def format_display_name(
+        self, mask: str | None = None, last4: str | None = None
+    ) -> str:
+        """Build a canonical display name from institution/type metadata and optional mask.
+
+        Args:
+            mask: Optional account mask value supplied by external providers.
+            last4: Optional final four digits when ``mask`` is unavailable.
+
+        Returns:
+            Canonical account label that prefers institution and subtype/type metadata,
+            appending a masked suffix when available. Falls back to raw ``name``.
+        """
+
+        institution = self._normalize_display_segment(self.institution_name)
+        account_type = self._format_account_type(self.subtype, self.type)
+        suffix = (mask or last4 or "").strip()
+
+        parts = [part for part in (institution, account_type) if part]
+        label = " • ".join(parts)
+        if suffix:
+            masked = f"•••• {suffix}"
+            return f"{label} • {masked}" if label else masked
+        if label:
+            return label
+        return (self.name or "Unnamed Account").strip() or "Unnamed Account"
+
+    @property
+    def display_name(self) -> str:
+        """Return the canonical account label for API presentation."""
+
+        return self.format_display_name()
+
     @hybrid_property
     def is_visible(self):
         return not self.is_hidden

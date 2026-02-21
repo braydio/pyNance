@@ -33,7 +33,7 @@
           </option>
 
           <option v-for="account in accounts" :key="account.account_id" :value="account.account_id">
-            {{ account.mask ? `${account.name} •••• ${account.mask}` : account.name }}
+            {{ account.display_name || (account.mask ? `${account.name} •••• ${account.mask}` : account.name) }}
           </option>
         </select>
       </div>
@@ -234,7 +234,7 @@ const hasAccounts = computed(() => accounts.value.length > 0)
 const linkedAccounts = computed(() =>
   accounts.value.map((account) => ({
     id: String(account.account_id),
-    name: account.name || 'Unnamed account',
+    name: account.display_name || account.name || 'Unnamed account',
     institution: account.institution_name || account.institution || 'Unknown Institution',
     type: account.type || account.account_type || 'Other',
     subtype: account.subtype || account.account_subtype || '',

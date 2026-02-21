@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-17
+Last Updated: 2026-02-21
 Status: Active
 ---
 
@@ -20,7 +20,7 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
 
 ### Key Models
 
-- **Account**: Core account entity with provider-agnostic fields
+- **Account**: Core account entity with provider-agnostic fields, including a canonical computed `display_name` derived from institution + subtype/type (and optional masked suffix when available) while preserving raw `name` as the editable source value.
 - **PlaidAccount**: Plaid-specific account extensions
 - **Transaction**: Universal transaction records across all providers
 - **AccountHistory**: Historical balance snapshots

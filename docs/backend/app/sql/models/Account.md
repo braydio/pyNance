@@ -11,7 +11,8 @@ Represents a financial account belonging to a user. Each account can be linked t
 
 - `id`: Primary key (UUID or autoincrement)
 - `user_id`: Owner of the account
-- `name`: Display name (e.g., "Chase Checking")
+- `name`: Raw account name retained for edits/history compatibility (e.g., "Chase Checking")
+- `display_name` (computed): Canonical UI label derived from `institution_name`, `subtype`/`type`, and optional masked suffix metadata when present in serializers
 - `provider`: Source system (`plaid`, `manual`, etc.)
 - `provider_account_id`: External reference ID
 - `institution_name`: Bank or provider name
@@ -29,6 +30,7 @@ Represents a financial account belonging to a user. Each account can be linked t
 ## Behaviors
 
 - `is_synced`: True if provider != "manual"
+- `display_name` formatter centralizes account labeling so API payloads can keep `name` stable while presenting consistent UI text
 - Soft-deleted records are filtered from most queries
 - Auto-sync flags used for webhook requery
 
