@@ -351,6 +351,126 @@ describe('DailyNetChart.vue', () => {
     expect(details.text()).toContain('vs prior: +$5.00 (+9.1%)')
   })
 
+  it('updates details on hover and keeps last selection when hover exits', async () => {
+    fetchDailyNet.mockResolvedValueOnce({
+      status: 'success',
+      data: [
+        {
+          date: '2024-06-01',
+          income: { parsedValue: 10 },
+          expenses: { parsedValue: -2 },
+          net: { parsedValue: 8 },
+          transaction_count: 1,
+        },
+        {
+          date: '2024-06-02',
+          income: { parsedValue: 100 },
+          expenses: { parsedValue: -40 },
+          net: { parsedValue: 60 },
+          transaction_count: 2,
+        },
+      ],
+    })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-02',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 02, 2024')
+
+    lastConfig.options.onHover({}, [{ index: 0 }])
+    await flushRender()
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+
+    lastConfig.options.onHover({}, [])
+    await flushRender()
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+  })
+
+  it('keeps selected index through overlay rerenders and recomputes comparison details', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-01',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: -10 },
+            net: { parsedValue: 90 },
+            transaction_count: 1,
+          },
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 120 },
+            expenses: { parsedValue: -20 },
+            net: { parsedValue: 100 },
+            transaction_count: 2,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          { date: '2024-05-01', net: { parsedValue: 80 } },
+          { date: '2024-05-02', net: { parsedValue: 70 } },
+        ],
+      })
+      .mockResolvedValue({
+        status: 'success',
+        data: [
+          { date: '2024-05-01', net: { parsedValue: 80 } },
+          { date: '2024-05-02', net: { parsedValue: 70 } },
+        ],
+      })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-02',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        timeframe: 'mtd',
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+    await flushRender()
+
+    let lastConfig = chartMock.mock.calls.at(-1)[0]
+    lastConfig.options.onHover({}, [{ index: 0 }])
+    await flushRender()
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain(
+      'This Day Last Month: $80.00',
+    )
+
+    await wrapper.setProps({ showComparisonOverlay: false })
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 01, 2024')
+    expect(wrapper.find('.daily-net-chart__details').text()).not.toContain('This Day Last Month')
+
+    await wrapper.setProps({ showComparisonOverlay: true })
+    await flushRender()
+    await flushRender()
+
+    lastConfig = chartMock.mock.calls.at(-1)[0]
+    lastConfig.options.onHover({}, [{ index: 0 }])
+    await flushRender()
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain(
+      'This Day Last Month: $80.00',
+    )
+  })
+
   it('omits noisy percent text when comparison value is zero in details panel', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({
