@@ -300,11 +300,18 @@ describe('DailyNetChart.vue', () => {
     expect(lastConfig.options.plugins.tooltip.enabled).toBe(false)
   })
 
-  it('renders persistent details with comparison metrics for the active day', async () => {
+  it('renders persistent details panel content for selected indices with comparison deltas', async () => {
     fetchDailyNet
       .mockResolvedValueOnce({
         status: 'success',
         data: [
+          {
+            date: '2024-06-01',
+            income: { parsedValue: 80 },
+            expenses: { parsedValue: -20 },
+            net: { parsedValue: 60 },
+            transaction_count: 1,
+          },
           {
             date: '2024-06-02',
             income: { parsedValue: 100 },
@@ -317,6 +324,10 @@ describe('DailyNetChart.vue', () => {
       .mockResolvedValueOnce({
         status: 'success',
         data: [
+          {
+            date: '2024-05-01',
+            net: { parsedValue: 90 },
+          },
           {
             date: '2024-05-02',
             net: { parsedValue: 55 },
@@ -337,8 +348,23 @@ describe('DailyNetChart.vue', () => {
     await flushRender()
     await flushRender()
 
+    const lastConfig = chartMock.mock.calls.at(-1)[0]
     const details = wrapper.find('.daily-net-chart__details')
     expect(details.exists()).toBe(true)
+    expect(details.text()).toContain('Jun 01, 2024')
+    expect(details.text()).toContain('Net: $60.00')
+    expect(details.text()).toContain('Income')
+    expect(details.text()).toContain('$80.00')
+    expect(details.text()).toContain('Expenses')
+    expect(details.text()).toContain('($20.00)')
+    expect(details.text()).toContain('Transactions')
+    expect(details.text()).toContain('1')
+    expect(details.text()).toContain('This Day Last Month: $90.00')
+    expect(details.text()).toContain('vs prior: ($30.00) (-33.3%)')
+
+    lastConfig.options.onHover({}, [{ index: 1 }])
+    await flushRender()
+
     expect(details.text()).toContain('Jun 02, 2024')
     expect(details.text()).toContain('Net: $60.00')
     expect(details.text()).toContain('Income')
@@ -349,6 +375,20 @@ describe('DailyNetChart.vue', () => {
     expect(details.text()).toContain('2')
     expect(details.text()).toContain('This Day Last Month: $55.00')
     expect(details.text()).toContain('vs prior: +$5.00 (+9.1%)')
+
+    lastConfig.options.onHover({}, [{ index: 0 }])
+    await flushRender()
+
+    expect(details.text()).toContain('Jun 01, 2024')
+    expect(details.text()).toContain('Net: $60.00')
+    expect(details.text()).toContain('Income')
+    expect(details.text()).toContain('$80.00')
+    expect(details.text()).toContain('Expenses')
+    expect(details.text()).toContain('($20.00)')
+    expect(details.text()).toContain('Transactions')
+    expect(details.text()).toContain('1')
+    expect(details.text()).toContain('This Day Last Month: $90.00')
+    expect(details.text()).toContain('vs prior: ($30.00) (-33.3%)')
   })
 
   it('updates details on hover and keeps last selection when hover exits', async () => {
@@ -469,6 +509,57 @@ describe('DailyNetChart.vue', () => {
     expect(wrapper.find('.daily-net-chart__details').text()).toContain(
       'This Day Last Month: $80.00',
     )
+  })
+
+  it('defaults to latest non-empty day on first render and clamps selection after range changes', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-30',
+            income: { parsedValue: 10 },
+            expenses: { parsedValue: 0 },
+            net: { parsedValue: 10 },
+            transaction_count: 1,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-07-02',
+            income: { parsedValue: 200 },
+            expenses: { parsedValue: -50 },
+            net: { parsedValue: 150 },
+            transaction_count: 4,
+          },
+        ],
+      })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    expect(wrapper.find('.daily-net-chart__details').text()).toContain('Jun 30, 2024')
+
+    await wrapper.setProps({ startDate: '2024-07-01', endDate: '2024-07-02' })
+    await flushRender()
+    await flushRender()
+
+    const detailsText = wrapper.find('.daily-net-chart__details').text()
+    expect(detailsText).toContain('Jul 02, 2024')
+    expect(detailsText).toContain('Net: $150.00')
+    expect(detailsText).toContain('Transactions')
+    expect(detailsText).toContain('4')
   })
 
   it('omits noisy percent text when comparison value is zero in details panel', async () => {
