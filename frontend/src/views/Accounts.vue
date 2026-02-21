@@ -44,24 +44,22 @@
 
     <!-- SUMMARY TAB -->
     <template #Summary>
-      <section class="space-y-8">
+      <section class="accounts-tab-panel space-y-8">
         <Card
           v-if="!hasAccounts"
-          class="rounded-2xl border border-[var(--divider)] bg-[var(--themed-bg)] p-6 shadow-xl"
+          class="accounts-card accounts-card--secondary rounded-2xl p-6 shadow-xl"
         >
-          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">No accounts linked</h2>
+          <h2 class="accounts-panel-title">No accounts linked</h2>
           <p class="mt-2 text-sm text-muted">
             Link an account to view summary, transactions, and chart data.
           </p>
         </Card>
 
         <template v-else>
-          <Card class="space-y-6 rounded-2xl border p-6 shadow-xl">
+          <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
             <header class="flex justify-between items-center">
               <div>
-                <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">
-                  Net Change Summary
-                </h2>
+                <h2 class="accounts-panel-title">Net Change Summary</h2>
                 <p class="text-sm text-muted">Performance for the selected date range.</p>
               </div>
 
@@ -86,7 +84,7 @@
               <article
                 v-for="stat in netSummaryStats"
                 :key="stat.key"
-                class="rounded-xl border p-4 shadow-inner"
+                class="accounts-kpi-card rounded-xl p-4"
               >
                 <p class="text-xs uppercase text-muted">
                   {{ stat.label }}
@@ -98,11 +96,9 @@
             </div>
           </Card>
 
-          <Card class="space-y-6 rounded-2xl border p-6 shadow-xl">
+          <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
             <div class="flex items-center justify-between">
-              <h2 class="text-2xl font-semibold text-[var(--color-accent-purple)]">
-                Balance History
-              </h2>
+              <h2 class="accounts-panel-title">Balance History</h2>
 
               <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
                 <option v-for="range in ranges" :key="range" :value="range">
@@ -125,58 +121,75 @@
             />
           </Card>
 
-          <LinkedAccountsSection
-            :accounts="linkedAccounts"
-            :use-demo-fallback="false"
-            :enable-promotion-editor="false"
-            @add-promotion="handleAddPromotion"
-          />
+          <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
+            <h2 class="accounts-panel-title">Manage Linked Accounts</h2>
+            <LinkedAccountsSection
+              :accounts="linkedAccounts"
+              :use-demo-fallback="false"
+              :enable-promotion-editor="false"
+              @add-promotion="handleAddPromotion"
+            />
+          </Card>
         </template>
       </section>
     </template>
 
     <!-- TRANSACTIONS TAB -->
     <template #Transactions>
-      <Card class="space-y-6 rounded-2xl border p-6 shadow-xl">
-        <div class="flex justify-between items-center">
-          <h2 class="text-2xl font-semibold text-[var(--color-accent-cyan)]">Activity</h2>
+      <section class="accounts-tab-panel">
+        <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
+          <div class="flex justify-between items-center">
+            <h2 class="accounts-panel-title">Activity</h2>
 
-          <UiButton
-            variant="outline"
-            class="btn-sm"
-            @click="retryTransactions"
-            :disabled="!canFetchAccountData"
-          >
-            Refresh
-          </UiButton>
-        </div>
+            <UiButton
+              variant="outline"
+              class="btn-sm"
+              @click="retryTransactions"
+              :disabled="!canFetchAccountData"
+            >
+              Refresh
+            </UiButton>
+          </div>
 
-        <SkeletonCard v-if="loadingTransactions" />
-        <RetryError
-          v-else-if="transactionsError"
-          message="Failed to load transactions"
-          @retry="retryTransactions"
-        />
+          <SkeletonCard v-if="loadingTransactions" />
+          <RetryError
+            v-else-if="transactionsError"
+            message="Failed to load transactions"
+            @retry="retryTransactions"
+          />
 
-        <TransactionsTable v-else :transactions="recentTransactions" />
-      </Card>
+          <TransactionsTable v-else :transactions="recentTransactions" />
+        </Card>
+      </section>
     </template>
 
     <!-- CHARTS TAB -->
     <template #Charts>
-      <div class="grid gap-6 lg:grid-cols-3">
-        <Card class="p-6">
-          <NetYearComparisonChart />
-        </Card>
+      <section class="accounts-tab-panel space-y-8">
+        <header class="space-y-2">
+          <h2 class="accounts-panel-title">Analysis</h2>
+          <p class="text-sm text-muted">
+            Utilities and comparisons for deeper account trend analysis.
+          </p>
+        </header>
 
-        <Card class="p-6">
-          <AssetsBarTrended />
-        </Card>
+        <div class="grid gap-6 lg:grid-cols-3">
+          <Card class="accounts-card accounts-card--tertiary space-y-4 p-6">
+            <h3 class="accounts-subpanel-title">Net Year Comparison</h3>
+            <NetYearComparisonChart />
+          </Card>
 
-        <Card class="p-6">
-          <AccountsReorderChart />
-        </Card>
-      </div>
+          <Card class="accounts-card accounts-card--tertiary space-y-4 p-6">
+            <h3 class="accounts-subpanel-title">Asset Trend</h3>
+            <AssetsBarTrended />
+          </Card>
+
+          <Card class="accounts-card accounts-card--tertiary space-y-4 p-6">
+            <h3 class="accounts-subpanel-title">Account Order Insights</h3>
+            <AccountsReorderChart />
+          </Card>
+        </div>
+      </section>
     </template>
   </TabbedPageLayout>
 </template>
@@ -359,148 +372,51 @@ watch(accountId, loadData)
 watch(selectedRange, loadData)
 </script>
 <style scoped>
-.summary-card {
-  background: var(--accounts-summary-card-bg);
-  border-color: var(--accounts-summary-card-border);
-  backdrop-filter: blur(8px);
+.accounts-tab-panel {
+  margin-top: var(--space-8, 2rem);
 }
 
-.summary-card__stat {
-  background: var(--accounts-summary-stat-bg);
-  border-color: var(--accounts-summary-stat-border);
-  backdrop-filter: blur(10px);
+.accounts-panel-title {
+  font-size: var(--font-size-4xl, 2rem);
+  font-weight: var(--font-weight-bold, 700);
+  line-height: 1.2;
+  color: var(--theme-fg);
 }
 
-.summary-card--income {
-  background: var(--summary-card-income-bg);
-  border-color: var(--summary-card-income-border);
+.accounts-subpanel-title {
+  font-size: var(--font-size-2xl, 1.5rem);
+  font-weight: var(--font-weight-semibold, 600);
+  line-height: 1.3;
+  color: var(--theme-fg);
 }
 
-.summary-card--expense {
-  background: var(--summary-card-expense-bg);
-  border-color: var(--summary-card-expense-border);
+.accounts-card {
+  border: 1px solid var(--themed-border);
+  background: var(--themed-bg);
 }
 
-.summary-card--net {
-  background: var(--summary-card-net-bg);
-  border-color: var(--summary-card-net-border);
-}
-
-.accounts-hero {
-  position: relative;
-}
-
-.accounts-hero__card {
-  position: relative;
-  overflow: hidden;
-  border-radius: 1.75rem;
-  border: 2px solid var(--color-accent-cyan);
-  padding: clamp(1.75rem, 3vw, 2.5rem);
+.accounts-card--primary {
   background:
     linear-gradient(
       135deg,
-      rgba(99, 205, 207, 0.18) 0%,
-      rgba(113, 156, 214, 0.08) 42%,
-      rgba(214, 122, 210, 0.12) 100%
+      color-mix(in srgb, var(--color-accent-cyan) 20%, transparent),
+      color-mix(in srgb, var(--color-accent-purple) 14%, transparent)
     ),
-    var(--color-bg-sec);
+    var(--themed-bg);
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 35%, var(--themed-border));
 }
 
-.accounts-hero__card::before,
-.accounts-hero__card::after {
-  content: '';
-  position: absolute;
-  pointer-events: none;
+.accounts-card--secondary {
+  border-color: var(--themed-border);
 }
 
-.accounts-hero__card::before {
-  inset: -30% auto auto -20%;
-  width: 60%;
-  height: 140%;
-  background: radial-gradient(
-    65% 65% at 50% 50%,
-    rgba(99, 205, 207, 0.45) 0%,
-    rgba(99, 205, 207, 0) 100%
-  );
-  filter: blur(0.5rem);
+.accounts-card--tertiary {
+  background: var(--table-surface-strong);
+  border-color: var(--table-border);
 }
 
-.accounts-hero__card::after {
-  inset: auto -25% -55% auto;
-  width: 55%;
-  height: 120%;
-  background: radial-gradient(
-    65% 65% at 50% 50%,
-    rgba(214, 122, 210, 0.4) 0%,
-    rgba(214, 122, 210, 0) 100%
-  );
-  filter: blur(0.5rem);
-}
-
-.accounts-hero__card :deep(.flex) {
-  flex-wrap: wrap;
-  gap: 1.5rem;
-}
-
-.accounts-hero__card :deep(h1) {
-  font-size: clamp(2rem, 3vw, 2.75rem);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.accounts-hero__card :deep(p) {
-  font-size: 0.95rem;
-}
-
-.accounts-hero__cta {
-  padding-inline: clamp(1.5rem, 3.5vw, 2.5rem);
-  padding-block: 0.9rem;
-  font-size: 0.95rem;
-  border-radius: 999px;
-  box-shadow: 0 14px 34px rgba(99, 205, 207, 0.35);
-  transition:
-    transform 0.25s ease,
-    box-shadow 0.25s ease;
-}
-
-.accounts-hero__cta:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 18px 36px rgba(99, 205, 207, 0.45);
-}
-
-.accounts-hero__divider {
-  position: relative;
-  height: 12px;
-  border-radius: 999px;
-  overflow: hidden;
-  background: linear-gradient(
-    90deg,
-    rgba(99, 205, 207, 0.18) 0%,
-    rgba(113, 156, 214, 0.25) 55%,
-    rgba(214, 122, 210, 0.22) 100%
-  );
-  border: 1px solid rgba(99, 205, 207, 0.35);
-}
-
-.accounts-hero__divider-glow {
-  position: absolute;
-  inset: -60% -20% -60% -20%;
-  background: radial-gradient(
-    60% 60% at 50% 50%,
-    rgba(99, 205, 207, 0.45) 0%,
-    rgba(214, 122, 210, 0.32) 35%,
-    rgba(25, 32, 56, 0) 100%
-  );
-  opacity: 0.8;
-}
-
-@media (max-width: 640px) {
-  .accounts-hero__card {
-    padding-inline: 1.5rem;
-  }
-
-  .accounts-hero__card :deep(.flex) {
-    align-items: flex-start;
-  }
+.accounts-kpi-card {
+  border: 1px solid var(--themed-border);
+  background: var(--table-surface);
 }
 </style>

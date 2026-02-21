@@ -96,6 +96,17 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - Use `--color-accent-indigo` for “active edit” or “fresh highlight” states when you need a distinct, non-critical accent.
 - Reference implementations live in `frontend/src/components/tables/AccountsTable.vue`, `frontend/src/components/tables/TransactionsTable.vue`, and the modal/inline tables in `frontend/src/components/tables/UpdateTransactionsTable.vue` and `ModalTransactionsDisplay.vue`.
 
+## Accounts page surface hierarchy example
+
+Use the Accounts page as the baseline pattern for preventing accent overuse:
+
+- **Primary emphasis only**: apply a restrained gradient overlay on the top KPI/overview card (`Net Change Summary`) and keep the base as `var(--themed-bg)` with a themed border.
+- **Secondary panels**: history and activity panels should use `var(--themed-bg)` + `var(--themed-border)` with no gradient fill.
+- **Tertiary utility panels**: analysis/manage cards should use neutral table surfaces (`var(--table-surface-strong)` / `var(--table-surface)` and `var(--table-border)`) so charts and controls do not compete with KPI emphasis.
+- **Tables and dense controls**: continue using `table-panel` and `table-shell` tokenized surfaces for visual consistency.
+
+This hierarchy keeps accents purposeful: gradients communicate primary KPI focus, while secondary and tertiary surfaces remain calm and readable.
+
 ## Conclusion
 
 This guide establishes a foundation for consistent theming. By defining all
