@@ -10,6 +10,30 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 
 ---
 
+## Accounts page design system
+
+The Accounts page follows a strict surface and hierarchy model so accent gradients remain focused on KPI emphasis.
+
+### Surface token usage
+
+- Default panels use `var(--themed-bg)` with `var(--themed-border)`.
+- Data-heavy and utility containers (tables, analysis/manage surfaces) should use neutral table tokens: `var(--table-surface)`, `var(--table-surface-strong)`, and `var(--table-border)`.
+- Gradients are reserved for primary emphasis surfaces only (for example, the overview KPI summary card). Secondary and tertiary panels stay neutral.
+
+### Card hierarchy
+
+1. **Primary card**: overview KPI summary (`Net Change Summary`) with restrained accent gradient overlay.
+2. **Secondary cards**: history and activity containers (`Balance History`, `Activity`) using neutral themed surfaces.
+3. **Tertiary cards**: analysis/manage utilities (`Manage Linked Accounts`, chart utility cards) using table-neutral surfaces.
+
+### Typography and spacing conventions
+
+- Tab-panel sections should start with consistent vertical rhythm (`space-y-8` / section-level spacing token equivalent).
+- Section titles in tab panels should follow H2 scale (`var(--font-size-4xl)`), and nested chart utility titles should follow H3 scale (`var(--font-size-2xl)`).
+- Supporting text uses body and small text scales from `frontend/docs/typography-spacing-guide.md`.
+
+---
+
 ## 1. Header Greeting Typography and Theming
 
 ### Tasks
