@@ -193,17 +193,16 @@ function resolveInitialActiveIndex(displayData) {
   return firstNonEmptyIndex >= 0 ? firstNonEmptyIndex : latestIndex
 }
 
-function setActivePoint(index, labels, displayData, comparisonSeries, comparisonLabel) {
+function resolveDetailsFromIndex(index, labels, displayData, comparisonSeries, comparisonLabel) {
   const row = displayData[index]
   const label = labels[index]
-  if (row == null || !label) return
+  if (row == null || !label) return null
 
   const netValue = toParsedValue(row.net)
   const comparisonValue = comparisonSeries?.[index] ?? null
   const comparison = buildComparisonDetails(netValue, comparisonLabel, comparisonValue)
 
-  activeIndex.value = index
-  activeDetails.value = {
+  return {
     date: formatTooltipTitle(label),
     net: netValue,
     income: toParsedValue(row.income),
@@ -211,6 +210,40 @@ function setActivePoint(index, labels, displayData, comparisonSeries, comparison
     transactions: row?.transaction_count ?? 0,
     comparison,
   }
+}
+
+function clampActiveIndex(index, size) {
+  if (!Number.isFinite(index) || size <= 0) return null
+  return Math.min(Math.max(Math.trunc(index), 0), size - 1)
+}
+
+function getChartPayloadAtIndex(index) {
+  const chart = chartInstance.value
+  const labels = chart?.data?.labels ?? []
+  const displayData = chart?.$dailyNetRows ?? []
+  const comparisonSeries = chart?.$comparisonSeries
+  const comparisonLabel = chart?.$comparisonLabel
+  const clampedIndex = clampActiveIndex(index, labels.length)
+
+  if (clampedIndex == null) return null
+
+  const details = resolveDetailsFromIndex(
+    clampedIndex,
+    labels,
+    displayData,
+    comparisonSeries,
+    comparisonLabel,
+  )
+  return details ? { index: clampedIndex, details } : null
+}
+
+function setActivePoint(index) {
+  const payload = getChartPayloadAtIndex(index)
+  if (!payload) return false
+
+  activeIndex.value = payload.index
+  activeDetails.value = payload.details
+  return true
 }
 
 function formatDateKey(date) {
@@ -464,13 +497,7 @@ function handleBarClick(evt) {
   if (points.length) {
     const index = points[0].index
     emit('bar-click', chartInstance.value.data.labels[index])
-    setActivePoint(
-      index,
-      chartInstance.value.data.labels,
-      chartInstance.value.$dailyNetRows || [],
-      chartInstance.value.$comparisonSeries,
-      chartInstance.value.$comparisonLabel,
-    )
+    setActivePoint(index)
   }
 }
 
@@ -636,14 +663,6 @@ async function renderChart() {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((dataset) => ({ label: dataset.label, color: dataset.borderColor || '#fff' }))
 
-  const nextActiveIndex =
-    activeIndex.value != null && activeIndex.value < labels.length
-      ? activeIndex.value
-      : resolveInitialActiveIndex(displayData)
-  if (nextActiveIndex != null) {
-    setActivePoint(nextActiveIndex, labels, displayData, comparisonSeries, comparisonLabel)
-  }
-
   chartInstance.value = new Chart(ctx, {
     type: 'bar',
     plugins: [netDashPlugin],
@@ -655,8 +674,9 @@ async function renderChart() {
       onClick: handleBarClick,
       onHover: (_event, elements) => {
         const index = elements?.[0]?.index
-        if (index == null || index === activeIndex.value) return
-        setActivePoint(index, labels, displayData, comparisonSeries, comparisonLabel)
+        if (index == null) return
+        if (index === activeIndex.value) return
+        setActivePoint(index)
       },
       interaction: {
         mode: 'index',
@@ -697,6 +717,15 @@ async function renderChart() {
   chartInstance.value.$comparisonSeries = comparisonSeries
   chartInstance.value.$comparisonLabel = comparisonLabel
   chartInstance.value.$netValues = net
+
+  const nextActiveIndex =
+    activeIndex.value == null
+      ? resolveInitialActiveIndex(displayData)
+      : clampActiveIndex(activeIndex.value, labels.length)
+
+  if (nextActiveIndex != null) {
+    setActivePoint(nextActiveIndex)
+  }
 }
 
 async function fetchData() {
@@ -771,7 +800,19 @@ async function retryFetch() {
   await fetchComparisonData()
 }
 
-watch([chartData, comparisonData, show7Day, show30Day, showAvgIncome, showAvgExpenses], renderChart)
+watch(
+  [
+    chartData,
+    comparisonData,
+    show7Day,
+    show30Day,
+    showAvgIncome,
+    showAvgExpenses,
+    showComparisonOverlay,
+    timeframe,
+  ],
+  renderChart,
+)
 watch(() => [props.startDate, props.endDate, props.zoomedOut], fetchData)
 watch(
   () => [timeframe.value, showComparisonOverlay.value, props.startDate, props.endDate],
