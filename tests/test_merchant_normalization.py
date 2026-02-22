@@ -1,15 +1,13 @@
 """Tests for merchant normalization and ingestion wiring."""
 
+import importlib.util
 import os
 import sys
 from datetime import datetime, timezone
 from decimal import Decimal
-
-import pytest
-
-import importlib.util
 from pathlib import Path
 
+import pytest
 from flask import Flask
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")

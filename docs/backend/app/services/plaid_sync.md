@@ -24,7 +24,6 @@
 - Sync cursors are persisted per Plaid item, so subsequent accounts linked to the same item reuse progress and benefit from incremental fetches.
 - Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
 
-
 ## Merchant normalization
 
 Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_merchant` to enforce a shared fallback order (`merchant_name` -> `name` -> `description` -> `Unknown`). The helper strips common processor prefixes (for example `POS`, `SQ *`, and `PAYPAL *`), normalizes case/spacing, and emits a canonical `merchant_slug`. Ingestion preserves the raw source description in `Transaction.description` while persisting normalized merchant fields and metadata.
