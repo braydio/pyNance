@@ -62,3 +62,8 @@ Ready for `category_logic.py`?
 ## Account serialization note
 
 `get_accounts_from_db` and route payload builders now emit both `name` and `display_name`. `display_name` is the canonical UI label from `Account.display_name`, while `name` remains unchanged for compatibility-sensitive flows (edits/history).
+
+
+## Merchant normalization
+
+Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_merchant` to enforce a shared fallback order (`merchant_name` -> `name` -> `description` -> `Unknown`). The helper strips common processor prefixes (for example `POS`, `SQ *`, and `PAYPAL *`), normalizes case/spacing, and emits a canonical `merchant_slug`. Ingestion preserves the raw source description in `Transaction.description` while persisting normalized merchant fields and metadata.

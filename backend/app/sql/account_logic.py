@@ -17,6 +17,7 @@ from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.finance_utils import display_transaction_amount
+from app.utils.merchant_normalization import resolve_merchant
 from plaid import ApiException
 from sqlalchemy import case, func, or_
 from sqlalchemy.orm import aliased
@@ -981,11 +982,19 @@ def refresh_data_for_plaid_account(
                 primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url
             )
 
-            merchant_name = txn.get("merchant_name") or "Unknown"
+            description = (
+                txn.get("name") or txn.get("description") or "[no description]"
+            )
+            merchant = resolve_merchant(
+                merchant_name=txn.get("merchant_name"),
+                name=txn.get("name"),
+                description=txn.get("description"),
+            )
+            merchant_name = merchant.display_name
             merchant_type = (
                 txn.get("payment_meta", {}).get("payment_method") or "Unknown"
             )
-            description = txn.get("name") or "[no description]"
+            txn["merchant_slug"] = merchant.merchant_slug
             pending = txn.get("pending", False)
             txn_amount = process_transaction_amount(txn.get("amount") or 0)
 

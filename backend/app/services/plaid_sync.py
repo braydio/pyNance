@@ -16,6 +16,7 @@ from app.sql import transaction_rules_logic
 from app.sql.account_logic import detect_internal_transfer, get_or_create_category
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.sql.sequence_utils import ensure_transactions_sequence
+from app.utils.merchant_normalization import resolve_merchant
 
 try:
     # Plaid SDK v13+ style imports
@@ -70,7 +71,13 @@ def _upsert_transaction(
     # Normalize core fields
     txn_date = _parse_txn_date(tx.get("date"))
     description = tx.get("name") or tx.get("description") or "[no description]"
-    merchant_name = tx.get("merchant_name") or "Unknown"
+    merchant = resolve_merchant(
+        merchant_name=tx.get("merchant_name"),
+        name=tx.get("name"),
+        description=tx.get("description"),
+    )
+    merchant_name = merchant.display_name
+    tx["merchant_slug"] = merchant.merchant_slug
     merchant_type = (tx.get("payment_meta", {}) or {}).get(
         "payment_method"
     ) or "Unknown"
