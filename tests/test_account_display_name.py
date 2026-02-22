@@ -13,9 +13,9 @@ if BASE_BACKEND not in sys.path:
 
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 
-from app.extensions import db
-from app.models import Account
-from app.sql.account_logic import get_accounts_from_db
+from app.extensions import db  # noqa: E402
+from app.models import Account  # noqa: E402
+from app.sql.account_logic import get_accounts_from_db  # noqa: E402
 
 
 @pytest.fixture()
@@ -76,6 +76,34 @@ def test_display_name_uses_type_when_subtype_is_missing(app_context):
     )
 
     assert account.display_name == "Capital One • Credit"
+
+
+def test_display_name_uses_last4_when_mask_not_provided(app_context):
+    account = Account(
+        account_id="acc-3b",
+        user_id="user-1",
+        name="Travel Card",
+        institution_name="AmEx",
+        type="credit",
+        subtype="credit card",
+        balance=Decimal("10.00"),
+    )
+
+    assert account.format_display_name(last4="9876") == "AmEx • Credit Card • •••• 9876"
+
+
+def test_display_name_handles_missing_name_and_metadata(app_context):
+    account = Account(
+        account_id="acc-3c",
+        user_id="user-1",
+        name="",
+        institution_name=None,
+        type=None,
+        subtype=None,
+        balance=Decimal("0.00"),
+    )
+
+    assert account.display_name == "Unnamed Account"
 
 
 def test_get_accounts_from_db_includes_display_name(app_context):
