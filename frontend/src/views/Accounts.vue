@@ -191,6 +191,10 @@
         </div>
       </section>
     </template>
+
+    <template #sidebar>
+      <AccountActionsSidebar />
+    </template>
   </TabbedPageLayout>
 </template>
 
@@ -221,6 +225,7 @@ import AssetsBarTrended from '@/components/charts/AssetsBarTrended.vue'
 import AccountsReorderChart from '@/components/charts/AccountsReorderChart.vue'
 import AccountBalanceHistoryChart from '@/components/charts/AccountBalanceHistoryChart.vue'
 import LinkedAccountsSection from '@/components/accounts/LinkedAccountsSection.vue'
+import AccountActionsSidebar from '@/components/forms/AccountActionsSidebar.vue'
 
 const route = useRoute()
 const toast = useToast()

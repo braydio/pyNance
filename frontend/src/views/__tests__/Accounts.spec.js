@@ -37,4 +37,20 @@ describe('Accounts.vue', () => {
     })
     expect(wrapper.html()).toMatchSnapshot()
   })
+
+  it('passes AccountActionsSidebar into the tab layout sidebar slot', () => {
+    const wrapper = shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: {
+            template: '<div><slot name="sidebar" /></div>',
+          },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+        },
+      },
+    })
+
+    expect(wrapper.find('account-actions-sidebar-stub').exists()).toBe(true)
+  })
 })
