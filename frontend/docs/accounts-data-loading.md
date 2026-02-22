@@ -3,6 +3,12 @@
 This document describes how `frontend/src/views/Accounts.vue` loads account summary, transactions,
 and history data.
 
+## Sidebar refresh controls
+
+The Accounts view renders `AccountActionsSidebar` in the `TabbedPageLayout` sidebar slot. This exposes
+the "Refresh Plaid Accounts" panel, including the manual "Sync Account Activity" action used to run a
+bulk Plaid account refresh from the Accounts page.
+
 ## Parallel loading model
 
 The Accounts view uses a single `loadData()` function to request all account panels in parallel via
