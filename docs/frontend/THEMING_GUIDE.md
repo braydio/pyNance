@@ -104,6 +104,16 @@ Use the Accounts page as the baseline pattern for preventing accent overuse:
 - **Secondary panels**: history and activity panels should use `var(--themed-bg)` + `var(--themed-border)` with no gradient fill.
 - **Tertiary utility panels**: analysis/manage cards should use neutral table surfaces (`var(--table-surface-strong)` / `var(--table-surface)` and `var(--table-border)`) so charts and controls do not compete with KPI emphasis.
 - **Tables and dense controls**: continue using `table-panel` and `table-shell` tokenized surfaces for visual consistency.
+- **Header separators and rails**: default to neutral border tokens (`var(--themed-border)`) unless the element is part of a primary KPI surface.
+
+### Accounts anti-drift checklist
+
+When shipping Accounts page UI updates, validate these rules in review:
+
+1. No gradient backgrounds on secondary or tertiary cards.
+2. No accent-gradient horizontal rules outside primary KPI emphasis.
+3. `Net Change Summary` remains the only gradient-emphasis surface in tab content.
+4. Headings and spacing follow `frontend/docs/typography-spacing-guide.md` scales and spacing tokens.
 
 This hierarchy keeps accents purposeful: gradients communicate primary KPI focus, while secondary and tertiary surfaces remain calm and readable.
 
