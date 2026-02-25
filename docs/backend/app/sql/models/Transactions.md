@@ -29,7 +29,7 @@ forecasting features.
 | `category_id`                        | Integer FK, nullable          | Optional FK to `Category.id`; nullified on category deletion.                 |
 | `category`                           | String(128)                   | Denormalized category label maintained beside `category_id`.                  |
 | `category_slug`                      | String(128), indexed          | Canonical category key used for analytics grouping stability.                 |
-| `category_display`                   | String(256)                   | Canonical UI label paired with `category_slug`.                              |
+| `category_display`                   | String(256)                   | Canonical UI label paired with `category_slug`.                               |
 | `personal_finance_category`          | JSON                          | Raw Plaid personal finance category payload.                                  |
 | `personal_finance_category_icon_url` | String                        | Icon URL associated with Plaid personal finance category.                     |
 | `pending`                            | Boolean                       | True while Plaid reports the entry as unsettled.                              |

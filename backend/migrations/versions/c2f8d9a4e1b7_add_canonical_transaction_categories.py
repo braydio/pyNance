@@ -60,7 +60,7 @@ def _canonicalize(
             slug = f"{legacy_primary}_{slug}"
         display = _humanize(legacy_primary or slug)
         if legacy_primary and slug.startswith(f"{legacy_primary}_"):
-            display = f"{_humanize(legacy_primary)} - {_humanize(slug[len(legacy_primary)+1:])}"
+            display = f"{_humanize(legacy_primary)} - {_humanize(slug[len(legacy_primary) + 1 :])}"
         elif not legacy_primary:
             display = _humanize(slug)
         return slug, display

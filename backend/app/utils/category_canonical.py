@@ -10,7 +10,6 @@ import re
 
 from app.utils.category_display import category_display, humanize_enum, strip_parent
 
-
 UNKNOWN_SLUG = "UNKNOWN"
 UNKNOWN_DISPLAY = "Unknown"
 
