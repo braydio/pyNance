@@ -64,8 +64,17 @@
         </div>
       </section>
 
-      <div style="height: 400px">
+      <div class="daily-net-chart__canvas-wrap">
         <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
+        <div
+          v-show="hoverIndicator.visible"
+          class="daily-net-chart__hover-indicator"
+          :style="{ left: `${hoverIndicator.x}px`, top: `${hoverIndicator.y}px` }"
+          aria-hidden="true"
+        >
+          <span class="daily-net-chart__hover-dot" />
+          <span class="daily-net-chart__hover-label">{{ hoverIndicator.label }}</span>
+        </div>
       </div>
     </template>
   </div>
@@ -148,6 +157,7 @@ const isEmpty = ref(false)
 const legendItems = ref([])
 const activeIndex = ref(null)
 const activeDetails = ref(null)
+const hoverIndicator = ref({ x: 0, y: 0, visible: false, label: '' })
 
 const MS_PER_DAY = 86400000
 const DEFAULT_ZOOM_MONTHS = 6
@@ -244,6 +254,46 @@ function setActivePoint(index) {
   activeIndex.value = payload.index
   activeDetails.value = payload.details
   return true
+}
+
+function resolveEventPoint(event) {
+  const native = event?.native ?? event
+  const x = Number.isFinite(native?.offsetX) ? native.offsetX : null
+  const y = Number.isFinite(native?.offsetY) ? native.offsetY : null
+  return { x, y }
+}
+
+function updateHoverIndicator(event, index) {
+  const chart = chartInstance.value
+  if (!chart) return
+
+  const meta = chart.getDatasetMeta(0)
+  const bar = meta?.data?.[index]
+  if (!bar) {
+    hoverIndicator.value.visible = false
+    return
+  }
+
+  const labels = chart.data?.labels ?? []
+  const label = typeof labels[index] === 'string' ? labels[index] : ''
+  const { x: eventX, y: eventY } = resolveEventPoint(event)
+  const chartArea = chart.chartArea
+  const barTop = Math.min(bar.y, bar.base)
+  const offsetY = Number.isFinite(eventY) ? Math.min(eventY, barTop) : barTop
+  const rawX = Number.isFinite(eventX) ? eventX : bar.x
+  const rawY = offsetY - 12
+  const minX = (chartArea?.left ?? 0) + 8
+  const maxX = (chartArea?.right ?? rawX) - 8
+  const minY = (chartArea?.top ?? 0) + 8
+  const clampedX = Math.min(Math.max(rawX, minX), maxX)
+  const clampedY = Math.max(rawY, minY)
+
+  hoverIndicator.value = {
+    x: clampedX,
+    y: clampedY,
+    visible: true,
+    label: formatTooltipTitle(label),
+  }
 }
 
 function formatDateKey(date) {
@@ -672,11 +722,17 @@ async function renderChart() {
       maintainAspectRatio: false,
       animation: false,
       onClick: handleBarClick,
-      onHover: (_event, elements) => {
+      onHover: (event, elements) => {
         const index = elements?.[0]?.index
-        if (index == null) return
-        if (index === activeIndex.value) return
+        if (index == null) {
+          hoverIndicator.value.visible = false
+          return
+        }
         setActivePoint(index)
+        updateHoverIndicator(event, index)
+      },
+      onLeave: () => {
+        hoverIndicator.value.visible = false
       },
       interaction: {
         mode: 'index',
@@ -874,22 +930,22 @@ onUnmounted(() => chartInstance.value?.destroy())
 }
 
 .daily-net-chart__details {
-  margin-bottom: 0.75rem;
-  padding: 0.625rem 0.75rem;
+  margin-bottom: 0.5rem;
+  padding: 0.5rem 0.65rem;
   border: 1px solid var(--divider);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--theme-bg) 90%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 88%, transparent);
 }
 
 .daily-net-chart__details-date {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--color-text-muted);
 }
 
 .daily-net-chart__details-net {
-  margin: 0.25rem 0 0;
-  font-size: 1rem;
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-accent-yellow);
 }
@@ -897,8 +953,8 @@ onUnmounted(() => chartInstance.value?.destroy())
 .daily-net-chart__details-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.5rem;
-  margin: 0.5rem 0 0;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
 }
 
 .daily-net-chart__details-metrics div {
@@ -909,21 +965,21 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__details-metrics dt {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   color: var(--color-text-muted);
 }
 
 .daily-net-chart__details-metrics dd {
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--color-text-light);
 }
 
 .daily-net-chart__details-comparison {
-  margin-top: 0.5rem;
-  padding-top: 0.5rem;
+  margin-top: 0.4rem;
+  padding-top: 0.4rem;
   border-top: 1px solid var(--divider);
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--color-text-light);
 }
 
@@ -934,5 +990,41 @@ onUnmounted(() => chartInstance.value?.destroy())
 .daily-net-chart__details-comparison p + p {
   margin-top: 0.125rem;
   color: var(--color-accent-yellow);
+}
+
+.daily-net-chart__canvas-wrap {
+  position: relative;
+  height: 400px;
+}
+
+.daily-net-chart__hover-indicator {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid var(--divider);
+  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 92%, transparent);
+  color: var(--color-text-light);
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.daily-net-chart__hover-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 999px;
+  background: var(--color-accent-cyan);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 25%, transparent);
+}
+
+.daily-net-chart__hover-label {
+  color: var(--color-text-light);
 }
 </style>
