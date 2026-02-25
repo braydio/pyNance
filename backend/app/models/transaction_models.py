@@ -5,6 +5,7 @@ from decimal import Decimal
 
 import sqlalchemy as sa
 from app.extensions import db
+from app.utils.category_canonical import canonical_display_for_slug
 from app.utils.category_display import category_display, humanize_enum, strip_parent
 from sqlalchemy.orm import validates
 
@@ -12,6 +13,8 @@ from .mixins import TimestampMixin
 
 
 class Category(db.Model):
+    """Canonical transaction category with legacy and PFC provenance fields."""
+
     __tablename__ = "categories"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -21,6 +24,8 @@ class Category(db.Model):
     pfc_primary = db.Column(db.String(64), nullable=True)
     pfc_detailed = db.Column(db.String(64), nullable=True)
     pfc_icon_url = db.Column(db.String(256), nullable=True)
+    category_slug = db.Column(db.String(128), nullable=True, unique=True, index=True)
+    category_display = db.Column(db.String(256), nullable=True)
     display_name = db.Column(db.String(256), default="Unknown")
     parent_id = db.Column(
         db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
@@ -49,6 +54,10 @@ class Category(db.Model):
 
     @property
     def computed_display_name(self):
+        if self.category_display:
+            return self.category_display
+        if self.category_slug:
+            return canonical_display_for_slug(self.category_slug)
         if self.pfc_primary:
             return category_display(self.pfc_primary, self.pfc_detailed)
         if self.detailed_category:
@@ -125,6 +134,8 @@ class Transaction(db.Model):
         db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL")
     )
     category = db.Column(db.String(128))
+    category_slug = db.Column(db.String(128), nullable=True, index=True)
+    category_display = db.Column(db.String(256), nullable=True)
     personal_finance_category = db.Column(db.JSON, nullable=True)
     personal_finance_category_icon_url = db.Column(db.String, nullable=True)
     pending = db.Column(db.Boolean, default=False)

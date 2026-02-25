@@ -1,42 +1,25 @@
-# 📘 `Category` Model
-
-```markdown
 # Category Model
 
 ## Purpose
 
-Represents a labeled classification used to group transactions. Can be system-defined (e.g. "Groceries", "Utilities") or user-defined. Enables budget planning, filtering, and analytic aggregation.
+`Category` stores canonical transaction category identity while preserving source
+provenance from Plaid legacy paths and personal-finance-category (PFC) enums.
 
-## Fields
+## Core Fields
 
-- `id`: Primary key (UUID or integer)
-- `user_id`: Optional — null means global/shared category
-- `name`: String label (e.g. "Dining Out")
-- `parent_id`: Nullable FK to allow subcategory hierarchies
-- `icon`: Optional emoji or glyph for UI
-- `color`: Hex or theme color ID
-- `is_default`: Boolean, used to prevent deletion of system categories
-- `created_at`, `updated_at`: Audit timestamps
-
-## Relationships
-
-- One-to-many with `Transaction`
-- May group into parent/child trees for nesting
+- `id`: Integer primary key.
+- `category_slug`: Stable internal key (e.g., `FOOD_AND_DRINK_COFFEE`) used for
+  grouping and deduplication.
+- `category_display`: UI label derived from the canonical slug (e.g.,
+  `Food and Drink - Coffee`).
+- `primary_category`, `detailed_category`: Legacy Plaid category path values.
+- `pfc_primary`, `pfc_detailed`, `pfc_icon_url`: Raw PFC values retained for
+  provenance and display assets.
+- `parent_id`: Optional hierarchical parent relationship.
 
 ## Behaviors
 
-- Global categories are shared across users
-- Custom categories can override the same name
-- Used as a budget key when computing limits
-
-## Related Logic
-
-- [`category_logic.py`](../../backend/app/sql/category_logic.py)
-- [`forecast_stat_model.py`](../../backend/app/services/forecast_stat_model.py)
-- [`transactions_logic.py`](../../backend/app/sql/transactions_logic.py)
-
-## Related Docs
-
-- [`docs/dataflow/category_matching.md`](../../docs/dataflow/category_matching.md)
-- [`docs/sql/CategoryQueryPatterns.md`](../../docs/sql/CategoryQueryPatterns.md)
-```
+- Category resolution is canonical-slug-first via
+  `app.sql.account_logic.get_or_create_category`.
+- Legacy category strings and PFC enum variants map into a single canonical
+  category row whenever their normalized slug matches.

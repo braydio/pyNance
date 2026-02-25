@@ -16,6 +16,7 @@ from app.sql import transaction_rules_logic
 from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
 from app.sql.sequence_utils import ensure_transactions_sequence
+from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
 from app.utils.merchant_normalization import resolve_merchant
 from plaid import ApiException
@@ -661,6 +662,8 @@ def get_paginated_transactions(
         category_label = txn.category
         if not category_label and cat:
             category_label = cat.computed_display_name
+        category_slug = txn.category_slug or getattr(cat, "category_slug", None)
+        category_display = txn.category_display or category_label
 
         serialized.append(
             {
@@ -669,6 +672,8 @@ def get_paginated_transactions(
                 "amount": display_transaction_amount(txn),
                 "description": txn.description or txn.merchant_name or "N/A",
                 "category": category_label or "Uncategorized",
+                "category_slug": category_slug,
+                "category_display": category_display or "Uncategorized",
                 "category_id": getattr(cat, "id", None),
                 "category_icon_url": getattr(cat, "pfc_icon_url", None),
                 "merchant_name": txn.merchant_name or "Unknown",
@@ -801,33 +806,38 @@ def get_net_change(account_id: str, start_date: pydate, end_date: pydate) -> dic
 
 
 def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url):
-    """
-    Ensures no duplicate (primary, detailed). Returns the correct Category row.
-    """
-    # Try PFC first
-    category = (
-        db.session.query(Category)
-        .filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed)
-        .first()
+    """Resolve or create categories by canonical slug while keeping provenance."""
+
+    category_slug, category_display = canonicalize_category(
+        primary=primary,
+        detailed=detailed,
+        pfc_primary=pfc_primary,
+        pfc_detailed=pfc_detailed,
     )
-    # Fallback legacy
+
+    category = db.session.query(Category).filter_by(category_slug=category_slug).first()
+
+    if not category and (pfc_primary or pfc_detailed):
+        category = (
+            db.session.query(Category)
+            .filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed)
+            .first()
+        )
+
     if not category:
         category = (
             db.session.query(Category)
             .filter_by(primary_category=primary, detailed_category=detailed)
             .first()
         )
-    # If another Category exists for this (primary, detailed), use it instead of updating!
-    if category and (
-        category.primary_category != primary or category.detailed_category != detailed
-    ):
+
+    if category and category.category_slug and category.category_slug != category_slug:
         duplicate = (
-            db.session.query(Category)
-            .filter_by(primary_category=primary, detailed_category=detailed)
-            .first()
+            db.session.query(Category).filter_by(category_slug=category_slug).first()
         )
         if duplicate and duplicate.id != category.id:
-            return duplicate  # point to the duplicate!
+            return duplicate
+
     if not category:
         category = Category(
             primary_category=primary,
@@ -835,13 +845,30 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
             pfc_primary=pfc_primary,
             pfc_detailed=pfc_detailed,
             pfc_icon_url=pfc_icon_url,
+            category_slug=category_slug,
+            category_display=category_display,
         )
         db.session.add(category)
         db.session.flush()
     else:
-        # Update icon/display if changed, not primary/detailed if it would collide
+        if primary and (
+            not category.primary_category or category.primary_category == "Unknown"
+        ):
+            category.primary_category = primary
+        if detailed and (
+            not category.detailed_category or category.detailed_category == "Unknown"
+        ):
+            category.detailed_category = detailed
+        if pfc_primary:
+            category.pfc_primary = pfc_primary
+        if pfc_detailed:
+            category.pfc_detailed = pfc_detailed
         if pfc_icon_url and category.pfc_icon_url != pfc_icon_url:
             category.pfc_icon_url = pfc_icon_url
+        if category.category_slug != category_slug:
+            category.category_slug = category_slug
+        if category.category_display != category_display:
+            category.category_display = category_display
     return category
 
 
@@ -1019,6 +1046,8 @@ def refresh_data_for_plaid_account(
                     existing_txn.pending = pending
                     existing_txn.category_id = category.id
                     existing_txn.category = category.computed_display_name
+                    existing_txn.category_slug = category.category_slug
+                    existing_txn.category_display = category.computed_display_name
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
                     existing_txn.provider = "plaid"
@@ -1044,6 +1073,8 @@ def refresh_data_for_plaid_account(
                     account_id=account_id,
                     category_id=category.id,
                     category=category.computed_display_name,
+                    category_slug=category.category_slug,
+                    category_display=category.computed_display_name,
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
                     provider="plaid",

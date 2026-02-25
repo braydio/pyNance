@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-21
+Last Updated: 2026-02-25
 Status: Active
 ---
 
@@ -25,4 +25,7 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
 - **Transaction**: Universal transaction records across all providers
 - **AccountHistory**: Historical balance snapshots
 - **Category**: Transaction categorization taxonomy
+- **Category canonicalization**: Categories include a stable `category_slug` plus
+  `category_display`, while preserving raw Plaid legacy and PFC fields for
+  provenance.
 - **Tag**: User-defined labels tied to transactions; names are unique per user and default to `#untagged` in serialization when no tags exist.
