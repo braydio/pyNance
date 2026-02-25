@@ -46,7 +46,6 @@
             <span class="title-text">Net Income</span>
             <span class="title-subtitle">(Daily)</span>
           </h2>
-          <div class="daily-net-chart-separator" aria-hidden="true"></div>
           <div class="daily-net-chart-controls">
             <div class="daily-net-chart-toolbar">
               <ChartDetailsSidebar
@@ -222,42 +221,36 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-chart-title {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 1.4rem;
+  gap: 0.35rem;
+  font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
-  text-align: center;
+  text-align: left;
 }
 
 .daily-net-chart-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 0.45rem;
-  margin-bottom: 0.9rem;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.4rem;
   width: 100%;
-}
-
-.daily-net-chart-separator {
-  width: 85%;
-  height: 1px;
-  border-radius: 999px;
-  background: var(--divider);
 }
 
 .daily-net-chart-controls {
   display: flex;
-  justify-content: center;
-  width: 100%;
+  justify-content: flex-end;
+  flex: 0 0 auto;
 }
 
 .daily-net-chart-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.35rem;
   flex-wrap: wrap;
-  padding: 0.4rem 0.6rem;
+  padding: 0.25rem 0.45rem;
   border-radius: 0.35rem;
   border: 1px solid var(--themed-border);
   background: var(--themed-bg);
@@ -273,7 +266,7 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 }
 
 .title-subtitle {
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
   font-weight: 500;
   opacity: 0.8;
@@ -282,12 +275,12 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: 0.25rem;
 }
 
 .daily-net-timeframe-btn {
-  font-size: 0.7rem;
-  padding: 0.2rem 0.7rem;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.55rem;
   border-radius: 0.3rem;
   border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
   background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);

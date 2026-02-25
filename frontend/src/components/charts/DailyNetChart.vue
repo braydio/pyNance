@@ -28,44 +28,45 @@
         </span>
       </div>
 
-      <section
-        v-if="activeDetails"
-        class="daily-net-chart__details"
-        aria-live="polite"
-        aria-label="Active day details"
-      >
-        <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
-        <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
-        <dl class="daily-net-chart__details-metrics">
-          <div>
-            <dt>Income</dt>
-            <dd>{{ formatAmount(activeDetails.income) }}</dd>
-          </div>
-          <div>
-            <dt>Expenses</dt>
-            <dd>{{ formatAmount(activeDetails.expenses) }}</dd>
-          </div>
-          <div>
-            <dt>Transactions</dt>
-            <dd>{{ activeDetails.transactions }}</dd>
-          </div>
-        </dl>
-
-        <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
-          <p>
-            {{ activeDetails.comparison.label }}: {{ formatAmount(activeDetails.comparison.value) }}
-          </p>
-          <p>
-            vs prior:
-            {{ activeDetails.comparison.deltaPrefix
-            }}{{ formatAmount(activeDetails.comparison.delta)
-            }}{{ activeDetails.comparison.percentage }}
-          </p>
-        </div>
-      </section>
-
       <div class="daily-net-chart__canvas-wrap">
         <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
+        <section
+          v-if="activeDetails"
+          class="daily-net-chart__details"
+          aria-live="polite"
+          aria-label="Active day details"
+        >
+          <div class="daily-net-chart__details-header">
+            <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
+            <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
+          </div>
+          <dl class="daily-net-chart__details-metrics">
+            <div>
+              <dt>Income</dt>
+              <dd>{{ formatAmount(activeDetails.income) }}</dd>
+            </div>
+            <div>
+              <dt>Expenses</dt>
+              <dd>{{ formatAmount(activeDetails.expenses) }}</dd>
+            </div>
+            <div>
+              <dt>Transactions</dt>
+              <dd>{{ activeDetails.transactions }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
+            <p>
+              {{ activeDetails.comparison.label }}: {{ formatAmount(activeDetails.comparison.value) }}
+            </p>
+            <p>
+              vs prior:
+              {{ activeDetails.comparison.deltaPrefix
+              }}{{ formatAmount(activeDetails.comparison.delta)
+              }}{{ activeDetails.comparison.percentage }}
+            </p>
+          </div>
+        </section>
         <div
           v-show="hoverIndicator.visible"
           class="daily-net-chart__hover-indicator"
@@ -930,11 +931,23 @@ onUnmounted(() => chartInstance.value?.destroy())
 }
 
 .daily-net-chart__details {
-  margin-bottom: 0.5rem;
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 2;
+  max-width: min(280px, 70%);
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--divider);
   border-radius: 10px;
   background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 88%, transparent);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(6px);
+}
+
+.daily-net-chart__details-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .daily-net-chart__details-date {
@@ -944,7 +957,7 @@ onUnmounted(() => chartInstance.value?.destroy())
 }
 
 .daily-net-chart__details-net {
-  margin: 0.2rem 0 0;
+  margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--color-accent-yellow);
