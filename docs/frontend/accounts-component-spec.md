@@ -16,20 +16,22 @@ The Accounts page follows a strict surface and hierarchy model so accent gradien
 
 ### Surface token usage
 
-- Default panels use `var(--themed-bg)` with `var(--themed-border)`.
-- Data-heavy and utility containers (tables, analysis/manage surfaces) should use neutral table tokens: `var(--table-surface)`, `var(--table-surface-strong)`, and `var(--table-border)`.
-- Gradients are reserved for primary emphasis surfaces only (for example, the overview KPI summary card). Secondary and tertiary panels stay neutral.
+- Default panel containers use `var(--themed-bg)` with `var(--themed-border)`.
+- Data-heavy and utility containers (tables, analysis/manage surfaces) use neutral table tokens: `var(--table-surface)`, `var(--table-surface-strong)`, and `var(--table-border)`.
+- Gradients are reserved for primary emphasis surfaces only (the overview KPI summary card). Secondary and tertiary panels stay neutral.
+- Header separators and panel dividers should default to `var(--themed-border)` instead of accent gradients.
 
 ### Card hierarchy
 
-1. **Primary card**: overview KPI summary (`Net Change Summary`) with restrained accent gradient overlay.
-2. **Secondary cards**: history and activity containers (`Balance History`, `Activity`) using neutral themed surfaces.
-3. **Tertiary cards**: analysis/manage utilities (`Manage Linked Accounts`, chart utility cards) using table-neutral surfaces.
+1. **Primary card (overview KPI):** `Net Change Summary` with a restrained accent gradient overlay on top of `var(--themed-bg)`.
+2. **Secondary cards (history/activity):** `Balance History` and `Activity` on `var(--themed-bg)` + `var(--themed-border)`.
+3. **Tertiary cards (analysis/manage):** `Manage Linked Accounts` and chart utility cards on `var(--table-surface-strong)`/`var(--table-surface)` + `var(--table-border)`.
 
 ### Typography and spacing conventions
 
-- Tab-panel sections should start with consistent vertical rhythm (`space-y-8` / section-level spacing token equivalent).
-- Section titles in tab panels should follow H2 scale (`var(--font-size-4xl)`), and nested chart utility titles should follow H3 scale (`var(--font-size-2xl)`).
+- Tab-panel sections should use section-level spacing tokens (`--space-8`) for consistent vertical rhythm between cards and headings.
+- Section titles in tab panels should follow H2 scale (`var(--font-size-4xl)` desktop, `var(--font-size-3xl)` tablet), and chart utility titles should follow H3 scale (`var(--font-size-2xl)` desktop, `var(--font-size-xl)` tablet).
+- Heading line-height should align to typography tokens (`--line-height-tight` for H2, `--line-height-snug` for H3).
 - Supporting text uses body and small text scales from `frontend/docs/typography-spacing-guide.md`.
 
 ---

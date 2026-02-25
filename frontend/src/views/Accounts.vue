@@ -14,7 +14,7 @@
       </PageHeader>
 
       <div
-        class="mt-6 h-1 w-full rounded-full bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)]"
+        class="mt-6 h-px w-full rounded-full bg-[var(--themed-border)]"
       />
 
       <div
@@ -44,7 +44,7 @@
 
     <!-- SUMMARY TAB -->
     <template #Summary>
-      <section class="accounts-tab-panel space-y-8">
+      <section class="accounts-tab-panel">
         <Card
           v-if="!hasAccounts"
           class="accounts-card accounts-card--secondary rounded-2xl p-6 shadow-xl"
@@ -165,7 +165,7 @@
 
     <!-- CHARTS TAB -->
     <template #Charts>
-      <section class="accounts-tab-panel space-y-8">
+      <section class="accounts-tab-panel">
         <header class="space-y-2">
           <h2 class="accounts-panel-title">Analysis</h2>
           <p class="text-sm text-muted">
@@ -379,19 +379,22 @@ watch(selectedRange, loadData)
 <style scoped>
 .accounts-tab-panel {
   margin-top: var(--space-8, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8, 2rem);
 }
 
 .accounts-panel-title {
   font-size: var(--font-size-4xl, 2rem);
   font-weight: var(--font-weight-bold, 700);
-  line-height: 1.2;
+  line-height: var(--line-height-tight, 1.2);
   color: var(--theme-fg);
 }
 
 .accounts-subpanel-title {
   font-size: var(--font-size-2xl, 1.5rem);
   font-weight: var(--font-weight-semibold, 600);
-  line-height: 1.3;
+  line-height: var(--line-height-snug, 1.3);
   color: var(--theme-fg);
 }
 
@@ -423,5 +426,15 @@ watch(selectedRange, loadData)
 .accounts-kpi-card {
   border: 1px solid var(--themed-border);
   background: var(--table-surface);
+}
+
+@media (max-width: 768px) {
+  .accounts-panel-title {
+    font-size: var(--font-size-3xl, 1.875rem);
+  }
+
+  .accounts-subpanel-title {
+    font-size: var(--font-size-xl, 1.25rem);
+  }
 }
 </style>
