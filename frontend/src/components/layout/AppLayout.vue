@@ -8,7 +8,9 @@
       <slot name="header" />
     </header>
     <main class="flex-1">
-      <slot />
+      <div class="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        <slot />
+      </div>
     </main>
     <footer class="glass border-t" style="border-color: var(--divider)">
       <div class="container py-4 text-center text-gray-600 text-sm">
