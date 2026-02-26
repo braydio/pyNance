@@ -59,9 +59,23 @@ async function maybeVueDevtools() {
   }
 }
 
+function maybeVisualizer() {
+  const enableVisualizer = process.env.BUNDLE_ANALYZE === '1'
+  if (!enableVisualizer) {
+    return null
+  }
+
+  return visualizer({
+    filename: 'stats.html',
+    template: 'treemap',
+    open: false,
+  })
+}
+
 export default defineConfig(async () => {
   const pwa = await maybePWA()
   const devtools = await maybeVueDevtools()
+  const bundleVisualizer = maybeVisualizer()
 
   return {
     plugins: [
@@ -79,11 +93,7 @@ export default defineConfig(async () => {
         imports: ['vue', 'vue-router'],
         dts: 'src/auto-imports.d.ts',
       }),
-      visualizer({
-        filename: 'stats.html',
-        template: 'treemap',
-        open: false, // set to true only when analyzing
-      }),
+      ...(bundleVisualizer ? [bundleVisualizer] : []),
       ...(pwa ? [pwa] : []),
     ],
     resolve: {

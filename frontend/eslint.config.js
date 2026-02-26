@@ -3,7 +3,6 @@
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
 import pluginCypress from "eslint-plugin-cypress/flat";
-import prettierPlugin from "eslint-plugin-prettier";
 
 export default [
   js.configs.recommended,
@@ -14,10 +13,8 @@ export default [
     plugins: {
       vue: pluginVue,
       cypress: pluginCypress,
-      prettier: prettierPlugin,
     },
     rules: {
-      "prettier/prettier": "warn",
       "vue/multi-word-component-names": "off",
       "no-undef": "off",
     },
