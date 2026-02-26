@@ -278,9 +278,9 @@ def refresh_all_accounts():
                                     == "ITEM_LOGIN_REQUIRED"
                                 ):
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key]["update_link_token_endpoint"] = (
-                                        "/api/plaid/transactions/generate_update_link_token"
-                                    )
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -976,13 +976,7 @@ def get_account_history(account_id):
     alias for legacy consumers.
     """
 
-    from app.services.account_history import compute_balance_history
-    from app.services.enhanced_account_history import (
-        cache_history,
-        get_cached_history,
-        get_or_compute_account_history,
-    )
-    from sqlalchemy import func
+    from app.services.enhanced_account_history import get_or_compute_account_history
 
     try:
         range_param = request.args.get("range", "30d")
@@ -1030,35 +1024,13 @@ def get_account_history(account_id):
             )
             return jsonify({"error": "Account not found"}), 404
 
-        balances = []
-        if start_date and end_date:
-            cached = get_cached_history(account.account_id, start_date, end_date)
-            if cached:
-                balances = cached
-            else:
-                tx_rows = (
-                    db.session.query(
-                        func.date(Transaction.date), func.sum(Transaction.amount)
-                    )
-                    .filter(Transaction.account_id == account.account_id)
-                    .filter(Transaction.date >= start_date)
-                    .filter(Transaction.date <= end_date)
-                    .group_by(func.date(Transaction.date))
-                    .all()
-                )
-
-                # Keep Decimal amounts for precise currency math in services
-                txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
-
-                # Use Decimal end-to-end for currency-safe math
-                balances = compute_balance_history(
-                    account.balance, txs, start_date, end_date
-                )
-
-                if balances:
-                    cache_history(account.account_id, account.user_id, balances)
-        else:
-            balances = get_or_compute_account_history(account.account_id, days=days)
+        balances = get_or_compute_account_history(
+            account.account_id,
+            days=days,
+            start_date=start_date,
+            end_date=end_date,
+            include_internal=False,
+        )
 
         response_payload = {
             "accountId": account.account_id,

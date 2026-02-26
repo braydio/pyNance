@@ -7,8 +7,9 @@
 
 ## Key Functions
 
-- [`get_or_compute_account_history(account_id, days, force_recompute)`](../../../../backend/app/services/enhanced_account_history.py): Retrieves cached history within the requested window or triggers a recomputation when entries are stale or incomplete.
-- [`compute_fresh_history(account_id, current_balance, start_date, end_date)`](../../../../backend/app/services/enhanced_account_history.py): Aggregates `Transaction` activity and delegates balance reconstruction to [`compute_balance_history`](./account_history.md).
+- [`get_or_compute_account_history(account_id, days, force_recompute, start_date, end_date, include_internal)`](../../../../backend/app/services/enhanced_account_history.py): Retrieves cached history within the requested window or triggers a recomputation when entries are stale or incomplete. Explicit date bounds and the `include_internal` policy now flow through one service entrypoint.
+- [`get_daily_transaction_totals(account_id, start_date, end_date, include_internal)`](../../../../backend/app/services/enhanced_account_history.py): Aggregates transaction totals with a single filter policy for internal transfers used by both cache miss and explicit recompute paths.
+- [`compute_fresh_history(account_id, current_balance, start_date, end_date, include_internal)`](../../../../backend/app/services/enhanced_account_history.py): Aggregates `Transaction` activity and delegates balance reconstruction to [`compute_balance_history`](./account_history.md).
 - [`cache_history(account_id, user_id, history)`](../../../../backend/app/services/enhanced_account_history.py): Replaces persisted history rows with freshly generated data, rounding via `Decimal("0.01")` precision.
 - [`update_account_balance_history(account_id, force_update)`](../../../../backend/app/services/enhanced_account_history.py): Convenience wrapper that refreshes the cache across standard timeframes.
 
@@ -21,4 +22,4 @@
 ## Usage Notes
 
 - Cached histories are considered stale when their most recent `updated_at` timestamp is older than 24 hours.
-- `Transaction.is_internal` rows are filtered out to avoid double-counting transfers when recomputing histories.
+- `Transaction.is_internal` rows are excluded by default (`include_internal=False`) to avoid double-counting transfers; opting in to include internal transfers bypasses cache writes so cached snapshots remain policy-consistent.
