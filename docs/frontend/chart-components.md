@@ -32,3 +32,14 @@ This reference covers the three chart components currently rendered on the dashb
   - Ensures the canvas element is present before calling `ctx.getContext('2d')` to avoid Chart.js errors when the component renders on the server or during rapid navigation.
 
 Including these references satisfies the documentation linter by making the component paths discoverable inside `docs/frontend`.
+
+## Accounts view net-change summary data contract
+
+- **File:** `frontend/src/views/Accounts.vue`
+- **Purpose:** The Accounts summary panel consumes the net-change response from `fetchNetChanges` and renders Income, Expense, and Net KPI values.
+- **Expected response shape:**
+  - Preferred: `{ status: 'success', data: { income: number, expense: number, net: number } }`
+  - Legacy fallback: `{ income: number, expense: number, net: number }`
+- **View behavior:**
+  - `loadData()` reads from `summary?.data` first and falls back to the legacy root-level fields.
+  - Missing values are coerced to `0` before formatting.
