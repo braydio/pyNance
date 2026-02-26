@@ -63,7 +63,6 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - Legacy compatibility: `/api/transactions/user_modify/update` mirrors the update contract.
 - When `recent=true`, transactions are returned in descending date order without pagination; sorting relies on `Transaction.date`, which may lag insertion time for backfilled data.
 
-
 ## Analytics Grouping Semantics
 
 - `top_merchants` aggregates spend by `merchant_slug` first, then falls back to a slug derived from merchant display text when historical rows are missing canonical keys.
