@@ -140,6 +140,7 @@ class Transaction(db.Model):
     personal_finance_category_icon_url = db.Column(db.String, nullable=True)
     pending = db.Column(db.Boolean, default=False)
     is_internal = db.Column(db.Boolean, default=False, index=True)
+    transfer_type = db.Column(db.String(32), nullable=True, index=True)
     internal_match_id = db.Column(db.String(64), nullable=True)
 
     plaid_meta = db.relationship(
@@ -159,6 +160,18 @@ class Transaction(db.Model):
         return (
             f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
         )
+
+    @property
+    def internal_transfer_flag(self) -> bool:
+        """Backward-compatible alias for ``is_internal`` transfer classification."""
+
+        return bool(self.is_internal)
+
+    @internal_transfer_flag.setter
+    def internal_transfer_flag(self, value: bool) -> None:
+        """Set internal transfer state via the compatibility alias."""
+
+        self.is_internal = bool(value)
 
     __table_args__ = (
         db.UniqueConstraint("transaction_id"),

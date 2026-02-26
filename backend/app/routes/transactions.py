@@ -419,17 +419,23 @@ def update_transaction():
         flag_counterpart = data.get("flag_counterpart", False)
         if "is_internal" in data:
             is_internal = bool(data["is_internal"])
+            transfer_type = data.get("transfer_type")
             txn.is_internal = is_internal
+            txn.transfer_type = (transfer_type if is_internal else None) or (
+                "manual_internal" if is_internal else None
+            )
             txn.internal_match_id = (
                 counterpart_id if is_internal and counterpart_id else None
             )
             changed_fields["is_internal"] = True
+            changed_fields["transfer_type"] = True
             if counterpart_id:
                 other = Transaction.query.filter_by(
                     transaction_id=counterpart_id
                 ).first()
                 if other and flag_counterpart:
                     other.is_internal = is_internal
+                    other.transfer_type = txn.transfer_type if is_internal else None
                     other.internal_match_id = (
                         txn.transaction_id if is_internal else None
                     )

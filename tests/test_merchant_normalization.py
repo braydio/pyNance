@@ -185,3 +185,131 @@ def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(
     assert saved.description == "POS PAYPAL *NETFLIX.COM"
     assert saved.merchant_name == "Netflix.com"
     assert saved.plaid_meta.raw["merchant_slug"] == "netflix-com"
+
+
+def test_sync_paths_share_transfer_classifier_for_brokerage_funding(
+    app_context, monkeypatch
+):
+    """Legacy and sync ingestion paths should classify brokerage funding consistently."""
+
+    checking = Account(
+        account_id="acc-shared-checking",
+        user_id="user-shared",
+        name="Checking",
+        type="depository",
+        subtype="checking",
+        balance=Decimal("1200.00"),
+    )
+    brokerage = Account(
+        account_id="acc-shared-brokerage",
+        user_id="user-shared",
+        name="Brokerage",
+        type="investment",
+        subtype="brokerage",
+        balance=Decimal("5000.00"),
+    )
+    plaid_checking = PlaidAccount(
+        account_id="acc-shared-checking",
+        item_id="item-shared",
+        access_token="token-shared",
+    )
+    plaid_brokerage = PlaidAccount(
+        account_id="acc-shared-brokerage",
+        item_id="item-shared",
+        access_token="token-shared",
+    )
+    db.session.add_all([checking, brokerage, plaid_checking, plaid_brokerage])
+    db.session.commit()
+
+    plaid_sync = _load_backend_module(
+        "app/services/plaid_sync.py", "transfer_shared_plaid_sync"
+    )
+    account_logic = _load_backend_module(
+        "app/sql/account_logic.py", "transfer_shared_account_logic"
+    )
+
+    plaid_sync._upsert_transaction(
+        {
+            "transaction_id": "tx-sync-out",
+            "account_id": "acc-shared-checking",
+            "amount": -300.0,
+            "date": "2024-04-15",
+            "name": "Transfer to Fidelity",
+            "description": "Transfer to Fidelity brokerage",
+            "merchant_name": "Fidelity",
+            "category": ["Transfer", "Transfer Out"],
+            "payment_meta": {"payment_method": "ach"},
+        },
+        checking,
+        plaid_checking,
+    )
+    plaid_sync._upsert_transaction(
+        {
+            "transaction_id": "tx-sync-in",
+            "account_id": "acc-shared-brokerage",
+            "amount": 300.0,
+            "date": "2024-04-15",
+            "name": "Cash transfer",
+            "description": "Cash transfer from checking",
+            "merchant_name": "",
+            "category": ["Transfer", "Transfer In"],
+            "payment_meta": {"payment_method": "ach"},
+        },
+        brokerage,
+        plaid_brokerage,
+    )
+    db.session.commit()
+
+    via_sync = Transaction.query.filter_by(transaction_id="tx-sync-out").first()
+    assert via_sync is not None
+    assert via_sync.transfer_type == "brokerage_funding"
+    assert via_sync.is_internal is True
+
+    db.session.add(
+        Transaction(
+            transaction_id="tx-refresh-in",
+            account_id="acc-shared-brokerage",
+            user_id="user-shared",
+            amount=Decimal("350.00"),
+            date=datetime(2024, 4, 16, tzinfo=timezone.utc),
+            description="Cash transfer from checking",
+            merchant_name="Fidelity",
+        )
+    )
+    db.session.commit()
+
+    monkeypatch.setattr(
+        account_logic,
+        "get_transactions",
+        lambda *args, **kwargs: [
+            {
+                "transaction_id": "tx-refresh-out",
+                "account_id": "acc-shared-checking",
+                "amount": -350.0,
+                "date": "2024-04-16",
+                "name": "Transfer to Fidelity",
+                "description": "Transfer to Fidelity brokerage",
+                "merchant_name": "Fidelity",
+                "category": ["Transfer", "Transfer Out"],
+                "pending": False,
+                "payment_meta": {"payment_method": "ach"},
+            },
+        ],
+    )
+
+    updated, error = account_logic.refresh_data_for_plaid_account(
+        access_token="token-shared",
+        account_or_id=checking,
+        accounts_data=[
+            {"account_id": "acc-shared-checking", "balances": {"current": 1200.0}},
+            {"account_id": "acc-shared-brokerage", "balances": {"current": 5000.0}},
+        ],
+    )
+
+    assert updated is True
+    assert error is None
+
+    via_refresh = Transaction.query.filter_by(transaction_id="tx-refresh-out").first()
+    assert via_refresh is not None
+    assert via_refresh.transfer_type == "brokerage_funding"
+    assert via_refresh.is_internal is True

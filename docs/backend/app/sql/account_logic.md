@@ -76,3 +76,17 @@ Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_m
 - Original Plaid category payload fields (`primary_category`, `detailed_category`, `pfc_*`)
 
 Transaction upsert paths in this module persist canonical category fields on each transaction row (`category_slug`, `category_display`) in addition to the existing denormalized `category` string and raw `personal_finance_category` payload.
+
+## Internal transfer classification policy
+
+Internal transfer detection keeps amount/date matching as the baseline candidate filter (equal and opposite amount across different user accounts within the date tolerance), then applies shared heuristics to classify transfer intent and avoid spend-analytics false positives.
+
+Classification behavior:
+
+- Uses merchant/description keyword heuristics (`transfer`, `zelle`, `ach`, `wire`, and brokerage funding terms).
+- Uses account context heuristics (`checking`, `savings`, `brokerage`) derived from account type/subtype/name.
+- Rejects suspicious purchase-like pairs (`purchase`, `debit card`, `restaurant`, and related tokens) unless transfer signals are present.
+- Writes explicit metadata to `Transaction.transfer_type` while preserving `Transaction.is_internal` for existing consumers.
+- Exposes `internal_transfer_flag` as a compatibility alias for clients that prefer transfer-specific naming.
+
+Spend analytics and summary endpoints continue to exclude rows where `is_internal` is true, so transfer classification metadata augments observability without changing existing exclusion filters.

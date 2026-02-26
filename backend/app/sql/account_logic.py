@@ -253,28 +253,140 @@ def normalize_account_status(status: Optional[str]) -> str:
     return "active"
 
 
+TRANSFER_KEYWORDS = {
+    "transfer",
+    "xfer",
+    "zelle",
+    "venmo",
+    "wire",
+    "ach",
+    "payment",
+    "deposit",
+    "withdrawal",
+    "brokerage",
+    "fidelity",
+    "schwab",
+    "vanguard",
+}
+NON_TRANSFER_KEYWORDS = {
+    "purchase",
+    "pos",
+    "debit card",
+    "apple.com/bill",
+    "card ending",
+    "restaurant",
+    "grocery",
+    "uber",
+    "lyft",
+}
+ACCOUNT_CONTEXT_KEYWORDS = {
+    "brokerage": {"funding", "cash journal", "securities transfer", "sweep"},
+    "checking": {"transfer", "online transfer", "ach", "zelle"},
+    "savings": {"transfer", "online transfer", "ach"},
+}
+TRANSFER_HEURISTIC_MIN_SCORE = 1
+
+
+def _normalize_transfer_text(*parts: str | None) -> str:
+    return " ".join(str(p).strip().lower() for p in parts if p).strip()
+
+
+def _account_transfer_context(account: Account | None) -> str:
+    profile = _normalize_transfer_text(
+        getattr(account, "type", None),
+        getattr(account, "subtype", None),
+        getattr(account, "name", None),
+    )
+    if any(
+        keyword in profile for keyword in ("brokerage", "investment", "ira", "401k")
+    ):
+        return "brokerage"
+    if "saving" in profile:
+        return "savings"
+    if any(
+        keyword in profile for keyword in ("checking", "depository", "cash management")
+    ):
+        return "checking"
+    return "other"
+
+
+def _transfer_keyword_score(txn: Transaction, account_context: str) -> int:
+    text = _normalize_transfer_text(txn.description, txn.merchant_name)
+    score = 1 if any(keyword in text for keyword in TRANSFER_KEYWORDS) else 0
+    for keyword in ACCOUNT_CONTEXT_KEYWORDS.get(account_context, set()):
+        if keyword in text:
+            score += 1
+    if account_context == "brokerage" and any(
+        word in text for word in ("fund", "settlement", "sweep")
+    ):
+        score += 1
+    return score
+
+
+def _appears_non_transfer_pair(left: Transaction, right: Transaction) -> bool:
+    left_text = _normalize_transfer_text(left.description, left.merchant_name)
+    right_text = _normalize_transfer_text(right.description, right.merchant_name)
+    has_negative = any(token in left_text for token in NON_TRANSFER_KEYWORDS) or any(
+        token in right_text for token in NON_TRANSFER_KEYWORDS
+    )
+    has_positive = any(token in left_text for token in TRANSFER_KEYWORDS) or any(
+        token in right_text for token in TRANSFER_KEYWORDS
+    )
+    return has_negative and not has_positive
+
+
+def classify_transfer_pair(
+    txn: Transaction,
+    counterpart: Transaction,
+    source_account: Account | None,
+    counterpart_account: Account | None,
+) -> str | None:
+    """Return transfer classification for ``txn`` and ``counterpart``.
+
+    The baseline requirement is still equal-and-opposite amount and near-date
+    matching from ``detect_internal_transfer``. Heuristics add account-context
+    and keyword weighting to reduce false positives and emit a transfer type.
+    """
+
+    left_context = _account_transfer_context(source_account)
+    right_context = _account_transfer_context(counterpart_account)
+    left_score = _transfer_keyword_score(txn, left_context)
+    right_score = _transfer_keyword_score(counterpart, right_context)
+    total_score = left_score + right_score
+
+    if _appears_non_transfer_pair(txn, counterpart):
+        return None
+
+    if total_score < TRANSFER_HEURISTIC_MIN_SCORE:
+        return None
+
+    contexts = {left_context, right_context}
+    if "brokerage" in contexts and ("checking" in contexts or "savings" in contexts):
+        return "brokerage_funding"
+    if contexts == {"checking", "savings"}:
+        return "checking_savings_transfer"
+    return "internal_transfer"
+
+
 def detect_internal_transfer(
     txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")
 ) -> None:
     """Flag ``txn`` and a matching counterpart as an internal transfer.
 
-    A counterpart is any transaction for the same user in a different account
-    with an equal and opposite amount within ``date_epsilon`` days. The
-    closest date match is selected when multiple candidates exist. Monetary
-    comparisons use ``Decimal`` values to avoid floating point drift.
+    Candidates are selected using amount/date baseline matching and then
+    classified using shared transfer heuristics.
     """
 
     account = Account.query.filter_by(account_id=txn.account_id).first()
     if not account or txn.is_internal:
         return
 
-    # Normalize to date for robust comparisons (handles datetime/date mix)
     txn_base_date = txn.date.date() if hasattr(txn.date, "date") else txn.date
     start = txn_base_date - timedelta(days=date_epsilon)
     end = txn_base_date + timedelta(days=date_epsilon)
 
     candidates = (
-        db.session.query(Transaction)
+        db.session.query(Transaction, Account)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter(Account.user_id == account.user_id)
         .filter(Transaction.account_id != txn.account_id)
@@ -287,20 +399,35 @@ def detect_internal_transfer(
 
     best = None
     best_diff = None
-    for other in candidates:
-        # Compute diff in days using normalized dates
+    best_score = None
+    best_type = None
+    for other, other_account in candidates:
+        transfer_type = classify_transfer_pair(txn, other, account, other_account)
+        if not transfer_type:
+            continue
         other_base_date = (
             other.date.date() if hasattr(other.date, "date") else other.date
         )
         diff = abs((txn_base_date - other_base_date).days)
-        if best is None or diff < best_diff:
+        heuristic_score = _transfer_keyword_score(
+            txn, _account_transfer_context(account)
+        ) + _transfer_keyword_score(other, _account_transfer_context(other_account))
+        if (
+            best is None
+            or heuristic_score > best_score
+            or (heuristic_score == best_score and diff < best_diff)
+        ):
             best = other
             best_diff = diff
+            best_score = heuristic_score
+            best_type = transfer_type
 
-    if best:
+    if best and best_type:
         txn.is_internal = True
+        txn.transfer_type = best_type
         txn.internal_match_id = best.transaction_id
         best.is_internal = True
+        best.transfer_type = best_type
         best.internal_match_id = txn.transaction_id
 
 
@@ -684,6 +811,8 @@ def get_paginated_transactions(
                 "subtype": acc.subtype or "Unknown",
                 "account_id": acc.account_id or "Unknown",
                 "pending": getattr(txn, "pending", False),
+                "transfer_type": getattr(txn, "transfer_type", None),
+                "internal_transfer_flag": bool(getattr(txn, "is_internal", False)),
                 "isEditing": False,
                 "tags": _serialize_transaction_tags(txn),
                 "running_balance": (
