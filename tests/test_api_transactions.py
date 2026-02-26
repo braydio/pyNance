@@ -322,6 +322,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
                     2026, 2, 5, tzinfo=transactions_module.UTC
                 ),
                 merchant_name="Coffee Shop",
+                merchant_slug="coffee-shop",
                 description="Coffee",
                 category="Food",
                 pending=False,
@@ -337,6 +338,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
                     2026, 1, 10, tzinfo=transactions_module.UTC
                 ),
                 merchant_name="Coffee Shop",
+                merchant_slug="coffee-shop",
                 description="Coffee",
                 category="Food",
                 pending=False,
@@ -352,6 +354,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
                     2026, 2, 3, tzinfo=transactions_module.UTC
                 ),
                 merchant_name="Grocery Mart",
+                merchant_slug="grocery-mart",
                 description="Groceries",
                 category="Groceries",
                 pending=False,
@@ -425,6 +428,7 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
                     2026, 2, 1, tzinfo=transactions_module.UTC
                 ),
                 merchant_name="A",
+                merchant_slug="a",
                 description="A",
                 category="",
                 pending=False,
@@ -440,6 +444,7 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
                     2026, 2, 2, tzinfo=transactions_module.UTC
                 ),
                 merchant_name="B",
+                merchant_slug="b",
                 description="B",
                 category="Dining",
                 pending=False,
@@ -503,3 +508,188 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
     assert data["data"][0]["name"] == "Bills - Utilities"
     assert data["data"][0]["total"] == 30.0
     assert len(data["data"][0]["trend"]) == 4
+
+
+def test_top_merchants_groups_by_canonical_slug(client, monkeypatch):
+    rows = [
+        (
+            types.SimpleNamespace(
+                amount=12,
+                date=transactions_module.datetime(
+                    2026, 2, 5, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Joe's Coffee",
+                merchant_slug="joes-coffee",
+                description="POS JOE'S COFFEE #123",
+                category="Food",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+        (
+            types.SimpleNamespace(
+                amount=8,
+                date=transactions_module.datetime(
+                    2026, 2, 10, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Joes Coffee",
+                merchant_slug="joes-coffee",
+                description="DEBIT JOES COFFEE",
+                category="Food",
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+    ]
+
+    class QueryStub:
+        def join(self, *_args, **_kwargs):
+            return self
+
+        def outerjoin(self, *_args, **_kwargs):
+            return self
+
+        def filter(self, *_args, **_kwargs):
+            return self
+
+        def all(self):
+            return rows
+
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "is_hidden", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "is_internal", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "pending", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module.Transaction, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "category_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
+    )
+
+    resp = client.get("/api/transactions/top_merchants?trend_points=3")
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload["status"] == "success"
+    assert len(payload["data"]) == 1
+    assert payload["data"][0]["name"] == "Joe's Coffee"
+    assert payload["data"][0]["total"] == 20.0
+
+
+def test_top_categories_groups_equivalent_variants_without_slug(client, monkeypatch):
+    rows = [
+        (
+            types.SimpleNamespace(
+                amount=9,
+                date=transactions_module.datetime(
+                    2026, 2, 1, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Shop A",
+                merchant_slug="shop-a",
+                description="A",
+                category="Food & Drink: Coffee",
+                category_slug=None,
+                category_display=None,
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+        (
+            types.SimpleNamespace(
+                amount=11,
+                date=transactions_module.datetime(
+                    2026, 2, 2, tzinfo=transactions_module.UTC
+                ),
+                merchant_name="Shop B",
+                merchant_slug="shop-b",
+                description="B",
+                category="Food and Drink Coffee",
+                category_slug=None,
+                category_display=None,
+                pending=False,
+                is_internal=False,
+            ),
+            types.SimpleNamespace(),
+            None,
+        ),
+    ]
+
+    class QueryStub:
+        def join(self, *_args, **_kwargs):
+            return self
+
+        def outerjoin(self, *_args, **_kwargs):
+            return self
+
+        def filter(self, *_args, **_kwargs):
+            return self
+
+        def all(self):
+            return rows
+
+    monkeypatch.setattr(
+        transactions_module,
+        "db",
+        types.SimpleNamespace(
+            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
+        ),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "is_hidden", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "is_internal", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "pending", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module.Transaction, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Transaction, "category_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(
+        transactions_module.Account, "account_id", _Expr(), raising=False
+    )
+    monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
+    monkeypatch.setattr(
+        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
+    )
+
+    resp = client.get("/api/transactions/top_categories?trend_points=3")
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload["status"] == "success"
+    assert len(payload["data"]) == 1
+    assert payload["data"][0]["slug"] == "FOOD_AND_DRINK_COFFEE"
+    assert payload["data"][0]["name"] == "Food & Drink: Coffee"
+    assert payload["data"][0]["total"] == 20.0
