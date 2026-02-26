@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-25
+Last Updated: 2026-02-26
 Status: Active
 ---
 
@@ -17,6 +17,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - `GET /api/transactions/get_transactions` – Paginated transactions across linked accounts.
 - `GET /api/transactions/<account_id>/transactions` – Account-scoped paginated transactions with optional `recent=true` shortcut.
 - `GET /api/transactions/merchants` – Merchant name suggestions for autocomplete.
+- `GET /api/transactions/top_merchants` – Top spending merchants grouped by canonical merchant slug.
 - `GET /api/transactions/top_categories` – Top spending categories grouped by canonical category slug.
 - `GET /api/transactions/tags` – Tag name suggestions for autocomplete.
 
@@ -34,6 +35,9 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - **GET /api/transactions/merchants**
   - **Inputs:** Optional `q` substring filter and `limit` (default 50).
   - **Outputs:** `{ "status": "success", "data": ["Merchant", ...] }`.
+- **GET /api/transactions/top_merchants**
+  - **Inputs:** Optional `start_date`, `end_date`, `account_ids`, `top_n`, `trend_points`.
+  - **Outputs:** `{ "status": "success", "data": [{ "name": "Coffee Shop", "total": 123.45, "trend": [...] }] }`.
 - **GET /api/transactions/top_categories**
   - **Inputs:** Optional `start_date`, `end_date`, `account_ids`, `top_n`, `trend_points`.
   - **Outputs:** `{ "status": "success", "data": [{ "slug": "FOOD_AND_DRINK_COFFEE", "name": "Food and Drink - Coffee", "total": 123.45, "trend": [...] }] }`.
@@ -50,6 +54,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - Decimal helpers (`TWOPLACES`, `AMOUNT_EPSILON`) for currency precision.
 - `transaction_rules_logic` for optional rule creation.
 - Date parsing helpers (`_parse_iso_datetime`, `_ensure_utc`) to normalize filters.
+- Canonical grouping keys (`merchant_slug`, `category_slug`) persisted on transactions for stable analytics buckets.
 
 ## Behaviors/Edge Cases
 
@@ -57,6 +62,14 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - Internal transfer scanning looks ±1 day for negating amounts within `±0.01`.
 - Legacy compatibility: `/api/transactions/user_modify/update` mirrors the update contract.
 - When `recent=true`, transactions are returned in descending date order without pagination; sorting relies on `Transaction.date`, which may lag insertion time for backfilled data.
+
+
+## Analytics Grouping Semantics
+
+- `top_merchants` aggregates spend by `merchant_slug` first, then falls back to a slug derived from merchant display text when historical rows are missing canonical keys.
+- `top_categories` aggregates spend by `category_slug` first, then falls back to a normalized slug derived from category display text for legacy rows.
+- Response shape stays backward compatible: each bucket still returns `name`, `total`, and `trend`; category buckets additionally include `slug`.
+- Bucket labels are representative display names from the first matching row to preserve UI readability while canonical keys enforce stable grouping.
 
 ## Recent Transactions Shortcut
 

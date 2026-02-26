@@ -5,6 +5,7 @@ records across all linked accounts.
 """
 
 import json
+import re
 import traceback
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -226,6 +227,50 @@ def _coerce_positive_int(
     return max(minimum, min(parsed, maximum))
 
 
+def _slugify_merchant(value: str | None) -> str:
+    """Return a stable merchant slug from a display value."""
+
+    slug = re.sub(r"[^a-z0-9]+", "-", (value or "").strip().lower()).strip("-")
+    return slug or "unknown"
+
+
+def _normalize_category_slug(value: str | None) -> str:
+    """Normalize free-form category text into canonical uppercase underscore slug."""
+
+    cleaned = (value or "").replace("&", " and ")
+    normalized = re.sub(r"[^A-Za-z0-9]+", "_", cleaned.strip())
+    normalized = re.sub(r"_+", "_", normalized).strip("_")
+    return normalized.upper() or "UNCATEGORIZED"
+
+
+def _resolve_grouping_key_and_label(
+    txn: Transaction, category: Category | None, group_by: str
+) -> tuple[str, str]:
+    """Return canonical grouping key and representative display label for a transaction."""
+
+    if group_by == "merchant":
+        merchant_slug = (getattr(txn, "merchant_slug", None) or "").strip()
+        merchant_label = (getattr(txn, "merchant_name", None) or "").strip()
+        fallback_label = (getattr(txn, "description", None) or "").strip()
+        label = merchant_label or fallback_label or "Unknown"
+        return merchant_slug or _slugify_merchant(label), label
+
+    raw_slug = (
+        getattr(txn, "category_slug", None)
+        or getattr(category, "category_slug", None)
+        or ""
+    )
+    raw_label = (
+        getattr(txn, "category_display", None)
+        or getattr(txn, "category", None)
+        or getattr(category, "computed_display_name", None)
+        or "Uncategorized"
+    )
+
+    key = raw_slug.strip() or _normalize_category_slug(raw_label)
+    return key, raw_label.strip() or "Uncategorized"
+
+
 def _top_spending_breakdown(group_by: str):
     """Return top spending entities grouped by merchant or category.
 
@@ -286,24 +331,8 @@ def _top_spending_breakdown(group_by: str):
                 continue
             spend = abs(float(normalized_amount))
 
-            if group_by == "merchant":
-                key = (
-                    txn.merchant_name or txn.description or "Unknown"
-                ).strip() or "Unknown"
-            else:
-                category_slug = (
-                    txn.category_slug
-                    or getattr(category, "category_slug", None)
-                    or "UNCATEGORIZED"
-                )
-                category_label = (
-                    txn.category_display
-                    or txn.category
-                    or getattr(category, "computed_display_name", None)
-                    or "Uncategorized"
-                )
-                key = category_slug.strip() or "UNCATEGORIZED"
-                labels.setdefault(key, category_label.strip() or "Uncategorized")
+            key, label = _resolve_grouping_key_and_label(txn, category, group_by)
+            labels.setdefault(key, label)
 
             totals[key] += spend
 
@@ -319,7 +348,7 @@ def _top_spending_breakdown(group_by: str):
             totals.items(), key=lambda item: item[1], reverse=True
         )[:top_n]:
             entry = {
-                "name": labels.get(name, name) if group_by == "category" else name,
+                "name": labels.get(name, name),
                 "total": round(total, 2),
                 "trend": [round(value, 2) for value in trends[name]],
             }

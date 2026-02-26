@@ -91,6 +91,7 @@ def _upsert_transaction(
             or existing.description != description
             or existing.pending != pending
             or existing.category_id != category.id
+            or existing.merchant_slug != tx.get("merchant_slug")
             or existing.merchant_name != merchant_name
             or existing.merchant_type != merchant_type
         )
@@ -103,6 +104,7 @@ def _upsert_transaction(
             existing.category = category.computed_display_name
             existing.category_slug = category.category_slug
             existing.category_display = category.computed_display_name
+            existing.merchant_slug = tx.get("merchant_slug")
             existing.merchant_name = merchant_name
             existing.merchant_type = merchant_type
             existing.provider = "plaid"
@@ -124,6 +126,7 @@ def _upsert_transaction(
             category=category.computed_display_name,
             category_slug=category.category_slug,
             category_display=category.computed_display_name,
+            merchant_slug=tx.get("merchant_slug"),
             merchant_name=merchant_name,
             merchant_type=merchant_type,
             provider="plaid",

@@ -1036,6 +1036,7 @@ def refresh_data_for_plaid_account(
                     or existing_txn.description != description
                     or existing_txn.pending != pending
                     or existing_txn.category_id != category.id
+                    or existing_txn.merchant_slug != txn.get("merchant_slug")
                     or existing_txn.merchant_name != merchant_name
                     or existing_txn.merchant_type != merchant_type
                 )
@@ -1048,6 +1049,7 @@ def refresh_data_for_plaid_account(
                     existing_txn.category = category.computed_display_name
                     existing_txn.category_slug = category.category_slug
                     existing_txn.category_display = category.computed_display_name
+                    existing_txn.merchant_slug = txn.get("merchant_slug")
                     existing_txn.merchant_name = merchant_name
                     existing_txn.merchant_type = merchant_type
                     existing_txn.provider = "plaid"
@@ -1075,6 +1077,7 @@ def refresh_data_for_plaid_account(
                     category=category.computed_display_name,
                     category_slug=category.category_slug,
                     category_display=category.computed_display_name,
+                    merchant_slug=txn.get("merchant_slug"),
                     merchant_name=merchant_name,
                     merchant_type=merchant_type,
                     provider="plaid",
