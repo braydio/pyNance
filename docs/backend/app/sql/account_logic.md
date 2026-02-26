@@ -77,7 +77,6 @@ Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_m
 
 Transaction upsert paths in this module persist canonical category fields on each transaction row (`category_slug`, `category_display`) in addition to the existing denormalized `category` string and raw `personal_finance_category` payload.
 
-
 ## Internal transfer classification policy
 
 Internal transfer detection keeps amount/date matching as the baseline candidate filter (equal and opposite amount across different user accounts within the date tolerance), then applies shared heuristics to classify transfer intent and avoid spend-analytics false positives.

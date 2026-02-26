@@ -77,7 +77,6 @@ Content-Type: application/json
 { "status": "success" }
 ```
 
-
 ## Transfer classification and analytics
 
 - `GET /api/transactions/top_spending_categories` and summary analytics exclude internal transfers using `is_internal`.

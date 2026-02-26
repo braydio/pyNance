@@ -32,7 +32,6 @@ Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_m
 
 `_upsert_transaction` writes canonical category fields (`category_slug`, `category_display`) on every inserted/updated `Transaction`, sourced from `get_or_create_category`. It also keeps the full Plaid `personal_finance_category` payload and icon URL for provenance and auditability.
 
-
 ## Shared transfer classifier contract
 
 `_upsert_transaction` delegates transfer detection to `app.sql.account_logic.detect_internal_transfer`, which now performs both pair matching and transfer-type classification (`transfer_type`). This keeps `/transactions/sync` behavior aligned with the legacy refresh path in `account_logic.refresh_data_for_plaid_account`.
