@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-01-11
+Last Updated: 2026-02-25
 Status: Active
 ---
 
@@ -17,6 +17,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - `GET /api/transactions/get_transactions` – Paginated transactions across linked accounts.
 - `GET /api/transactions/<account_id>/transactions` – Account-scoped paginated transactions with optional `recent=true` shortcut.
 - `GET /api/transactions/merchants` – Merchant name suggestions for autocomplete.
+- `GET /api/transactions/top_categories` – Top spending categories grouped by canonical category slug.
 - `GET /api/transactions/tags` – Tag name suggestions for autocomplete.
 
 ## Inputs/Outputs
@@ -33,6 +34,9 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 - **GET /api/transactions/merchants**
   - **Inputs:** Optional `q` substring filter and `limit` (default 50).
   - **Outputs:** `{ "status": "success", "data": ["Merchant", ...] }`.
+- **GET /api/transactions/top_categories**
+  - **Inputs:** Optional `start_date`, `end_date`, `account_ids`, `top_n`, `trend_points`.
+  - **Outputs:** `{ "status": "success", "data": [{ "slug": "FOOD_AND_DRINK_COFFEE", "name": "Food and Drink - Coffee", "total": 123.45, "trend": [...] }] }`.
 - **GET /api/transactions/tags**
   - **Inputs:** Optional `q` substring filter, optional `limit` (default 50), and optional `user_id` scope.
   - **Outputs:** `{ "status": "success", "data": ["#tag", ...] }`.

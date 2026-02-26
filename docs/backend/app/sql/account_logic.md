@@ -66,3 +66,13 @@ Ready for `category_logic.py`?
 ## Merchant normalization
 
 Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_merchant` to enforce a shared fallback order (`merchant_name` -> `name` -> `description` -> `Unknown`). The helper strips common processor prefixes (for example `POS`, `SQ *`, and `PAYPAL *`), normalizes case/spacing, and emits a canonical `merchant_slug`. Ingestion preserves the raw source description in `Transaction.description` while persisting normalized merchant fields and metadata.
+
+## Canonical category resolution contract
+
+`get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url)` now resolves categories by canonical slug first, then uses PFC and legacy paths as provenance fallbacks. The function persists:
+
+- `Category.category_slug` (stable internal key)
+- `Category.category_display` (UI label)
+- Original Plaid category payload fields (`primary_category`, `detailed_category`, `pfc_*`)
+
+Transaction upsert paths in this module persist canonical category fields on each transaction row (`category_slug`, `category_display`) in addition to the existing denormalized `category` string and raw `personal_finance_category` payload.

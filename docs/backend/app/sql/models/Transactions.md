@@ -28,6 +28,8 @@ forecasting features.
 | `updated_by_rule`                    | Boolean                       | Indicates a `TransactionRule` mutation applied during sync.                   |
 | `category_id`                        | Integer FK, nullable          | Optional FK to `Category.id`; nullified on category deletion.                 |
 | `category`                           | String(128)                   | Denormalized category label maintained beside `category_id`.                  |
+| `category_slug`                      | String(128), indexed          | Canonical category key used for analytics grouping stability.                 |
+| `category_display`                   | String(256)                   | Canonical UI label paired with `category_slug`.                               |
 | `personal_finance_category`          | JSON                          | Raw Plaid personal finance category payload.                                  |
 | `personal_finance_category_icon_url` | String                        | Icon URL associated with Plaid personal finance category.                     |
 | `pending`                            | Boolean                       | True while Plaid reports the entry as unsettled.                              |
@@ -52,6 +54,8 @@ forecasting features.
   `internal_match_id` pairs to prevent double-counting balances.
 - The provider validator keeps `provider` constrained to `manual`/`plaid`, defaulting
   to `manual` when unknown values arrive.
+- Plaid ingestion paths persist canonical category metadata (`category_slug` and
+  `category_display`) alongside the legacy/raw category payload for provenance.
 
 ## Related Logic
 

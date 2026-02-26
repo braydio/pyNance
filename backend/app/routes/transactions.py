@@ -278,6 +278,7 @@ def _top_spending_breakdown(group_by: str):
         rows = query.all()
         totals: dict[str, float] = defaultdict(float)
         trends: dict[str, list[float]] = defaultdict(lambda: [0.0] * trend_points)
+        labels: dict[str, str] = {}
 
         for txn, _account, category in rows:
             normalized_amount = display_transaction_amount(txn)
@@ -290,10 +291,19 @@ def _top_spending_breakdown(group_by: str):
                     txn.merchant_name or txn.description or "Unknown"
                 ).strip() or "Unknown"
             else:
-                category_label = txn.category or getattr(
-                    category, "computed_display_name", None
+                category_slug = (
+                    txn.category_slug
+                    or getattr(category, "category_slug", None)
+                    or "UNCATEGORIZED"
                 )
-                key = (category_label or "Uncategorized").strip() or "Uncategorized"
+                category_label = (
+                    txn.category_display
+                    or txn.category
+                    or getattr(category, "computed_display_name", None)
+                    or "Uncategorized"
+                )
+                key = category_slug.strip() or "UNCATEGORIZED"
+                labels.setdefault(key, category_label.strip() or "Uncategorized")
 
             totals[key] += spend
 
@@ -304,16 +314,18 @@ def _top_spending_breakdown(group_by: str):
             if idx is not None:
                 trends[key][idx] += spend
 
-        data = [
-            {
-                "name": name,
+        data = []
+        for name, total in sorted(
+            totals.items(), key=lambda item: item[1], reverse=True
+        )[:top_n]:
+            entry = {
+                "name": labels.get(name, name) if group_by == "category" else name,
                 "total": round(total, 2),
                 "trend": [round(value, 2) for value in trends[name]],
             }
-            for name, total in sorted(
-                totals.items(), key=lambda item: item[1], reverse=True
-            )[:top_n]
-        ]
+            if group_by == "category":
+                entry["slug"] = name
+            data.append(entry)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:
         logger.error(

@@ -101,6 +101,8 @@ def _upsert_transaction(
             existing.pending = pending
             existing.category_id = category.id
             existing.category = category.computed_display_name
+            existing.category_slug = category.category_slug
+            existing.category_display = category.computed_display_name
             existing.merchant_name = merchant_name
             existing.merchant_type = merchant_type
             existing.provider = "plaid"
@@ -120,6 +122,8 @@ def _upsert_transaction(
             account_id=account.account_id,
             category_id=category.id,
             category=category.computed_display_name,
+            category_slug=category.category_slug,
+            category_display=category.computed_display_name,
             merchant_name=merchant_name,
             merchant_type=merchant_type,
             provider="plaid",

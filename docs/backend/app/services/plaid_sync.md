@@ -27,3 +27,7 @@
 ## Merchant normalization
 
 Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_merchant` to enforce a shared fallback order (`merchant_name` -> `name` -> `description` -> `Unknown`). The helper strips common processor prefixes (for example `POS`, `SQ *`, and `PAYPAL *`), normalizes case/spacing, and emits a canonical `merchant_slug`. Ingestion preserves the raw source description in `Transaction.description` while persisting normalized merchant fields and metadata.
+
+## Category persistence contract
+
+`_upsert_transaction` writes canonical category fields (`category_slug`, `category_display`) on every inserted/updated `Transaction`, sourced from `get_or_create_category`. It also keeps the full Plaid `personal_finance_category` payload and icon URL for provenance and auditability.

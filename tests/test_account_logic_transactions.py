@@ -21,7 +21,8 @@ os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
 
 from app.extensions import db
 from app.models import Account, Tag, Transaction
-from app.sql.account_logic import get_paginated_transactions
+from app.routes.transactions import transactions as transactions_blueprint
+from app.sql.account_logic import get_or_create_category, get_paginated_transactions
 
 
 @pytest.fixture()
@@ -37,6 +38,25 @@ def app_context():
     with app.app_context():
         db.create_all()
         yield
+        db.session.remove()
+        db.drop_all()
+
+
+@pytest.fixture()
+def app_client():
+    """Provide a transactions API test client with isolated in-memory state."""
+
+    app = Flask(__name__)
+    app.config.update(
+        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
+        SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    )
+    db.init_app(app)
+    app.register_blueprint(transactions_blueprint, url_prefix="/transactions")
+    with app.app_context():
+        db.create_all()
+        with app.test_client() as client:
+            yield client
         db.session.remove()
         db.drop_all()
 
@@ -222,3 +242,89 @@ def test_get_paginated_transactions_filters_by_tags(app_context):
 
     assert total == 2
     assert {row["transaction_id"] for row in rows} == {"tx-1", "tx-3"}
+
+
+def test_get_or_create_category_merges_pfc_and_legacy_variants(app_context):
+    """Ensure legacy and PFC category variants resolve to one canonical row."""
+
+    canonical = get_or_create_category(
+        primary="Food and Drink",
+        detailed="Coffee",
+        pfc_primary="FOOD_AND_DRINK",
+        pfc_detailed="FOOD_AND_DRINK_COFFEE",
+        pfc_icon_url=None,
+    )
+    legacy = get_or_create_category(
+        primary="Food and Drink",
+        detailed="Coffee",
+        pfc_primary=None,
+        pfc_detailed=None,
+        pfc_icon_url=None,
+    )
+
+    assert canonical.id == legacy.id
+    assert canonical.category_slug == "FOOD_AND_DRINK_COFFEE"
+
+
+def test_top_categories_aggregates_by_canonical_slug(app_client):
+    """Verify top category breakdown groups by canonical category slug."""
+
+    account = Account(
+        account_id="acc-top-1",
+        user_id="user-top-1",
+        name="Checking",
+        type="depository",
+        balance=Decimal("250.00"),
+    )
+    db.session.add(account)
+
+    category = get_or_create_category(
+        primary="Food and Drink",
+        detailed="Coffee",
+        pfc_primary="FOOD_AND_DRINK",
+        pfc_detailed="FOOD_AND_DRINK_COFFEE",
+        pfc_icon_url=None,
+    )
+
+    db.session.add_all(
+        [
+            Transaction(
+                transaction_id="top-tx-1",
+                account_id=account.account_id,
+                user_id=account.user_id,
+                amount=Decimal("5.00"),
+                date=datetime(2024, 4, 1, tzinfo=timezone.utc),
+                description="Coffee Shop",
+                category_id=category.id,
+                category="Food and Drink - Coffee",
+                category_slug="FOOD_AND_DRINK_COFFEE",
+                category_display="Food and Drink - Coffee",
+            ),
+            Transaction(
+                transaction_id="top-tx-2",
+                account_id=account.account_id,
+                user_id=account.user_id,
+                amount=Decimal("7.00"),
+                date=datetime(2024, 4, 2, tzinfo=timezone.utc),
+                description="Cafe",
+                category_id=category.id,
+                category="FOOD_AND_DRINK_COFFEE",
+                category_slug="FOOD_AND_DRINK_COFFEE",
+                category_display="Food and Drink - Coffee",
+            ),
+        ]
+    )
+    db.session.commit()
+
+    response = app_client.get(
+        "/transactions/top_categories",
+        query_string={"start_date": "2024-04-01", "end_date": "2024-04-30"},
+    )
+
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "success"
+    assert len(payload["data"]) == 1
+    assert payload["data"][0]["slug"] == "FOOD_AND_DRINK_COFFEE"
+    assert payload["data"][0]["name"] == "Food and Drink - Coffee"
+    assert payload["data"][0]["total"] == pytest.approx(12.0)
