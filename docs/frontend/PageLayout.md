@@ -4,7 +4,7 @@ Use `BasePageLayout` and `PageHeader` to keep view structure and spacing consist
 
 ## App shell
 
-`AppLayout` now wraps the entire client from `App.vue`, providing the global navbar and footer slots in one place. Views should not nest `AppLayout`; instead, rely on the page-level layouts below so spacing and framing stay consistent without double wrapping.
+`AppLayout` now wraps the entire client from `App.vue`, providing the global navbar and footer slots in one place. Its `<main>` region applies a centered `max-w-7xl` wrapper so every routed page shares the same horizontal alignment by default. Views should not nest `AppLayout`; instead, rely on the page-level layouts below so spacing and framing stay consistent without double wrapping.
 
 ## BasePageLayout
 
