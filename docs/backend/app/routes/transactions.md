@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-25
+Last Updated: 2026-02-26
 Status: Active
 ---
 
@@ -23,7 +23,7 @@ Provide controlled updates, internal transfer discovery, and paginated retrieval
 ## Inputs/Outputs
 
 - **PUT /api/transactions/update**
-  - **Inputs:** JSON with `transaction_id` plus editable fields (`amount`, `date`, `description`, `category`, `merchant_name`, `merchant_type`, `is_internal`, `counterpart_transaction_id`, `flag_counterpart`, optional `tag`/`tags`, optional `save_as_rule` metadata).
+  - **Inputs:** JSON with `transaction_id` plus editable fields (`amount`, `date`, `description`, `category`, `merchant_name`, `merchant_type`, `is_internal`, `transfer_type`, `counterpart_transaction_id`, `flag_counterpart`, optional `tag`/`tags`, optional `save_as_rule` metadata).
   - **Outputs:** `{ "status": "success" }` on success; 4xx/5xx envelopes for validation or lookup errors.
 - **POST /api/transactions/scan-internal**
   - **Inputs:** None.
@@ -76,3 +76,9 @@ Content-Type: application/json
 ```json
 { "status": "success" }
 ```
+
+
+## Transfer classification and analytics
+
+- `GET /api/transactions/top_spending_categories` and summary analytics exclude internal transfers using `is_internal`.
+- Transaction payloads now include `transfer_type` and `internal_transfer_flag` for explicit transfer semantics while preserving existing consumers of `is_internal`.

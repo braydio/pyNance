@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-02-26
 Status: Active
 ---
 
@@ -36,3 +36,8 @@ GET /api/summary/financial?start_date=2024-04-01&end_date=2024-04-30 HTTP/1.1
 ```json
 { "status": "success", "data": { "income": 5000, "expenses": 3200, "net": 1800 } }
 ```
+
+
+## Transfer analytics exclusion
+
+Transfer-classified transactions remain excluded from summary totals via the `is_internal` filter. New `transfer_type` metadata is diagnostic only and does not alter the exclusion contract.

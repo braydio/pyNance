@@ -55,16 +55,47 @@ sys.modules["app.sql.transaction_rules_logic"] = transaction_rules_logic
 refresh_metadata = types.ModuleType("app.sql.refresh_metadata")
 refresh_metadata.refresh_or_insert_plaid_metadata = lambda *a, **k: None
 sys.modules["app.sql.refresh_metadata"] = refresh_metadata
+
+dialect_utils = types.ModuleType("app.sql.dialect_utils")
+dialect_utils.dialect_insert = lambda *a, **k: None
+sys.modules["app.sql.dialect_utils"] = dialect_utils
+
+sequence_utils = types.ModuleType("app.sql.sequence_utils")
+sequence_utils.ensure_transactions_sequence = lambda *a, **k: None
+sys.modules["app.sql.sequence_utils"] = sequence_utils
 sql_pkg = types.ModuleType("app.sql")
+sql_pkg.__path__ = []
 sql_pkg.transaction_rules_logic = transaction_rules_logic
 sql_pkg.refresh_metadata = refresh_metadata
 sys.modules["app.sql"] = sql_pkg
 app_pkg.sql = sql_pkg
 
 utils_pkg = types.ModuleType("app.utils")
+utils_pkg.__path__ = []
 finance_utils = types.ModuleType("app.utils.finance_utils")
 finance_utils.display_transaction_amount = lambda txn: txn.amount
 sys.modules["app.utils.finance_utils"] = finance_utils
+utils_cat = types.ModuleType("app.utils.category_canonical")
+utils_cat.canonicalize_category = lambda *a, **k: ("UNKNOWN", "Unknown")
+utils_cat.canonical_display_for_slug = lambda slug: (
+    "Unknown" if not slug else str(slug).replace("_", " ").title()
+)
+sys.modules["app.utils.category_canonical"] = utils_cat
+
+utils_display = types.ModuleType("app.utils.category_display")
+utils_display.category_display = lambda *a, **k: "Unknown"
+utils_display.humanize_enum = lambda value: (
+    str(value).replace("_", " ").title() if value else "Unknown"
+)
+utils_display.strip_parent = lambda value: value
+sys.modules["app.utils.category_display"] = utils_display
+
+utils_merch = types.ModuleType("app.utils.merchant_normalization")
+utils_merch.resolve_merchant = lambda **kwargs: types.SimpleNamespace(
+    display_name=(kwargs.get("merchant_name") or kwargs.get("name") or "Unknown"),
+    merchant_slug="unknown",
+)
+sys.modules["app.utils.merchant_normalization"] = utils_merch
 utils_pkg.finance_utils = finance_utils
 sys.modules["app.utils"] = utils_pkg
 app_pkg.utils = utils_pkg
@@ -222,3 +253,102 @@ def test_scan_internal_transfers_endpoint():
         assert len(data["pairs"]) == 1
         assert data["pairs"][0]["transaction_id"] == "Y1"
         assert models.Transaction.query.filter_by(is_internal=True).count() == 0
+
+
+def test_detect_internal_transfer_brokerage_funding_classification():
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+        checking = models.Account(
+            account_id="D1",
+            user_id="u2",
+            name="Primary Checking",
+            type="depository",
+            subtype="checking",
+        )
+        brokerage = models.Account(
+            account_id="D2",
+            user_id="u2",
+            name="Brokerage",
+            type="investment",
+            subtype="brokerage",
+        )
+        db.session.add_all([checking, brokerage])
+        t1 = models.Transaction(
+            transaction_id="B1",
+            account_id="D1",
+            user_id="u2",
+            amount=-250.0,
+            date=datetime(2024, 4, 10, tzinfo=timezone.utc),
+            description="Transfer to Fidelity brokerage",
+            merchant_name="Fidelity",
+        )
+        t2 = models.Transaction(
+            transaction_id="B2",
+            account_id="D2",
+            user_id="u2",
+            amount=250.0,
+            date=datetime(2024, 4, 10, tzinfo=timezone.utc),
+            description="Cash transfer from checking",
+            merchant_name="",
+        )
+        db.session.add_all([t1, t2])
+        db.session.commit()
+
+        account_logic.detect_internal_transfer(t1)
+        db.session.commit()
+
+        assert t1.is_internal is True
+        assert t2.is_internal is True
+        assert t1.transfer_type == "brokerage_funding"
+        assert t2.transfer_type == "brokerage_funding"
+        assert t1.internal_transfer_flag is True
+
+
+def test_detect_internal_transfer_avoids_false_positive_purchase_pairs():
+    app = Flask(__name__)
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
+    db.init_app(app)
+    with app.app_context():
+        db.create_all()
+        checking = models.Account(
+            account_id="E1", user_id="u3", name="Checking", type="depository"
+        )
+        savings = models.Account(
+            account_id="E2",
+            user_id="u3",
+            name="Savings",
+            type="depository",
+            subtype="savings",
+        )
+        db.session.add_all([checking, savings])
+        t1 = models.Transaction(
+            transaction_id="FP1",
+            account_id="E1",
+            user_id="u3",
+            amount=-42.0,
+            date=datetime(2024, 4, 12, tzinfo=timezone.utc),
+            description="POS Grocery purchase",
+            merchant_name="Local Market",
+        )
+        t2 = models.Transaction(
+            transaction_id="FP2",
+            account_id="E2",
+            user_id="u3",
+            amount=42.0,
+            date=datetime(2024, 4, 12, tzinfo=timezone.utc),
+            description="Card ending 1234",
+            merchant_name="Local Market",
+        )
+        db.session.add_all([t1, t2])
+        db.session.commit()
+
+        account_logic.detect_internal_transfer(t1)
+        db.session.commit()
+
+        assert t1.is_internal is False
+        assert t2.is_internal is False
+        assert t1.transfer_type is None
+        assert t2.transfer_type is None
