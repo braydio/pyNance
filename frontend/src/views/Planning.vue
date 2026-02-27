@@ -14,9 +14,20 @@
           <h3 class="text-2xl font-bold">Here are a handful of notes and ideas I have for this
             page</h3>
 
-          <p1 class="text-xs font-muted">A different form /p1>
-          <p1 class="text-xs font-muted">Examples of a filled out plan. Each form type shown several
-              times over and a complete 'Planning' example of fully utilizing every feature here.</p1>
+          <p1 class="text-xs font-muted">A different form available to fill in with different fields
+            for each 'type' (bills, allocations, scenarios). Provided examples of a filled out plan
+            where each form type is shown several
+              times over. This demonstrates a complete 'Planning' example of fully utilizing every feature here.</p1>
+        <div></div>
+          <p1 class="text-xs font-muted">And also</p1>
+        <div></div>
+          <p1 class="text-xs font-muted"> - Bullet Point</p1>
+        <div></div>
+          <p1 class="text-xs font-muted"> - Bullet Point</p1>
+        <div></div>
+          <p1 class="text-xs font-muted"> - Bullet Point</p1>
+        <div></div>
+          <p1 class="text-xs font-muted"> - Bullet Point</p1>
           <BillList
             :bills="billsForScenario"
             :currency-code="currencyCode"
