@@ -60,6 +60,7 @@ Exchange a Plaid public token, persist linked accounts, and upsert Plaid item me
   - `500` with `{ "error": "..." }` for other unexpected exchange/sync failures.
 
 Notes:
+
 - The route upserts accounts via `upsert_accounts(...)`, stores Plaid account link rows with `save_plaid_account(...)`, and attempts to upsert a `PlaidItem` row.
 - Failure in the internal `PlaidItem` upsert block is logged but does not change the success response if the exchange itself succeeds.
 
@@ -123,6 +124,7 @@ Refresh holdings/securities and transactions for all active Plaid investment acc
   - `500` with `{ "error": "..." }` for top-level failures.
 
 Notes:
+
 - Per-item refresh errors are logged and skipped (`continue`), so the route can still return `200` with partial aggregate results.
 
 ## Auth
