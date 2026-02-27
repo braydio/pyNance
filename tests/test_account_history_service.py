@@ -1,6 +1,6 @@
 import os
 import sys
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -17,10 +17,11 @@ os.environ.setdefault("PLAID_SECRET_KEY", "sandbox-secret")
 os.environ.setdefault("CLIENT_NAME", "pyNance Test Suite")
 os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
 
-from app.extensions import db
-from app.models import Account
-from app.services.account_history import compute_balance_history
-from app.sql.account_logic import upsert_accounts
+import app.services.enhanced_account_history as enhanced_account_history  # noqa: E402
+from app.extensions import db  # noqa: E402
+from app.models import Account, AccountHistory, Transaction  # noqa: E402
+from app.services.account_history import compute_balance_history  # noqa: E402
+from app.sql.account_logic import upsert_accounts  # noqa: E402
 
 
 @pytest.fixture()
@@ -101,3 +102,135 @@ def test_upsert_accounts_normalizes_status(app_context):
         "acct-2": "active",
         "acct-3": "active",
     }
+
+
+def test_cache_history_upserts_only_requested_window(app_context):
+    """Cache updates should only modify rows inside the requested date window."""
+
+    today = datetime.now(timezone.utc).date()
+    start_365 = today - timedelta(days=364)
+
+    account = Account(
+        account_id="acct-history-window",
+        user_id="user-window",
+        name="Savings",
+        type="depository",
+        balance=Decimal("365.00"),
+        link_type="manual",
+    )
+    db.session.add(account)
+
+    original_rows = []
+    original_balances = {}
+    for offset in range(365):
+        row_date = start_365 + timedelta(days=offset)
+        balance_value = Decimal(str(1000 + offset)).quantize(Decimal("0.01"))
+        history_row = AccountHistory(
+            account_id=account.account_id,
+            user_id=account.user_id,
+            date=row_date,
+            balance=balance_value,
+            is_hidden=False,
+        )
+        original_rows.append(history_row)
+        original_balances[row_date] = balance_value
+
+    db.session.add_all(original_rows)
+    db.session.commit()
+
+    target_start = today - timedelta(days=29)
+    replacement_history = []
+    for offset in range(30):
+        row_date = target_start + timedelta(days=offset)
+        replacement_history.append(
+            {
+                "date": row_date.isoformat(),
+                "balance": float(Decimal(str(5000 + offset)).quantize(Decimal("0.01"))),
+            }
+        )
+
+    enhanced_account_history.cache_history(
+        account.account_id,
+        account.user_id,
+        replacement_history,
+    )
+
+    all_rows = (
+        AccountHistory.query.filter_by(account_id=account.account_id)
+        .order_by(AccountHistory.date.asc())
+        .all()
+    )
+    assert len(all_rows) == 365
+
+    for row in all_rows:
+        if target_start <= row.date <= today:
+            expected_balance = Decimal(
+                str(5000 + (row.date - target_start).days)
+            ).quantize(Decimal("0.01"))
+            assert row.balance == expected_balance
+        else:
+            assert row.balance == original_balances[row.date]
+
+
+def test_get_or_compute_account_history_cache_matches_first_compute(app_context):
+    """Ensure compute and cache-hit paths return identical balances for the same range."""
+
+    today = datetime.now(timezone.utc).date()
+    start = today - timedelta(days=2)
+
+    account = Account(
+        account_id="acct-history-1",
+        user_id="user-1",
+        name="Checking",
+        type="depository",
+        balance=Decimal("100.00"),
+        link_type="manual",
+    )
+    db.session.add(account)
+
+    db.session.add_all(
+        [
+            Transaction(
+                transaction_id="tx-ext-1",
+                account_id=account.account_id,
+                user_id=account.user_id,
+                amount=Decimal("10.00"),
+                date=datetime.combine(start, datetime.min.time(), tzinfo=timezone.utc),
+                description="External deposit",
+                provider="manual",
+                is_internal=False,
+            ),
+            Transaction(
+                transaction_id="tx-int-1",
+                account_id=account.account_id,
+                user_id=account.user_id,
+                amount=Decimal("5.00"),
+                date=datetime.combine(
+                    start + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc
+                ),
+                description="Internal transfer",
+                provider="manual",
+                is_internal=True,
+            ),
+        ]
+    )
+    db.session.commit()
+
+    first_result = enhanced_account_history.get_or_compute_account_history(
+        account.account_id,
+        start_date=start,
+        end_date=today,
+        include_internal=False,
+    )
+
+    cached_rows = AccountHistory.query.filter_by(account_id=account.account_id).all()
+    assert len(cached_rows) == 3
+
+    second_result = enhanced_account_history.get_or_compute_account_history(
+        account.account_id,
+        start_date=start,
+        end_date=today,
+        include_internal=False,
+    )
+
+    assert first_result == second_result

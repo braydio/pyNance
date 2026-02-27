@@ -39,6 +39,26 @@ sys.modules["app.config.environment"] = env_stub
 sql_pkg = types.ModuleType("app.sql")
 account_logic_stub = types.ModuleType("app.sql.account_logic")
 account_logic_stub.refresh_data_for_plaid_account = lambda *a, **k: (True, None)
+account_logic_stub.upsert_accounts = lambda *a, **k: None
+account_logic_stub.save_plaid_account = lambda *a, **k: None
+account_logic_stub.serialize_plaid_products = lambda value: ",".join(
+    sorted(
+        {
+            str(item).strip()
+            for item in (
+                value
+                if isinstance(value, (list, set, tuple))
+                else str(value or "").split(",")
+            )
+            if str(item).strip()
+        }
+    )
+)
+account_logic_stub.merge_plaid_products = (
+    lambda existing, incoming: account_logic_stub.serialize_plaid_products(
+        list(set(str(existing or "").split(",")) | set(str(incoming or "").split(",")))
+    )
+)
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
@@ -80,12 +100,35 @@ class DummyColumn:
 
 class DummyPlaidAcct:
     account = None
+    _records = {}
 
-    def __init__(self, token, account=None):
+    def __init__(
+        self,
+        token=None,
+        account=None,
+        account_id=None,
+        item_id=None,
+        product=None,
+        **kwargs,
+    ):
         self.access_token = token
         self.account = account
-        self.account_id = getattr(account, "account_id", None)
-        self.last_refreshed = None
+        self.account_id = account_id or getattr(account, "account_id", None)
+        self.item_id = item_id
+        self.product = product
+        self.institution_id = kwargs.get("institution_id")
+        self.last_refreshed = kwargs.get("last_refreshed")
+
+
+class _DummyPlaidAccountQuery:
+    def filter_by(self, **kwargs):
+        account_id = kwargs.get("account_id")
+        return types.SimpleNamespace(
+            first=lambda: DummyPlaidAcct._records.get(account_id)
+        )
+
+
+DummyPlaidAcct.query = _DummyPlaidAccountQuery()
 
 
 class DummyAccount:
@@ -134,7 +177,28 @@ class QueryStub:
 
 models_stub.Account = DummyAccount
 models_stub.PlaidAccount = DummyPlaidAcct
-models_stub.PlaidItem = type("PlaidItem", (), {})
+
+
+class DummyPlaidItem:
+    _records = {}
+
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+
+class _DummyPlaidItemQuery:
+    def filter_by(self, **kwargs):
+        item_id = kwargs.get("item_id")
+        record = DummyPlaidItem._records.get(item_id)
+        return types.SimpleNamespace(
+            first=lambda: record, all=lambda: [record] if record else []
+        )
+
+
+DummyPlaidItem.query = _DummyPlaidItemQuery()
+models_stub.PlaidItem = DummyPlaidItem
+
 sys.modules["app.models"] = models_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "plaid_transactions.py")
@@ -155,6 +219,111 @@ def client():
         yield c
 
 
+class SessionStubAddCommit:
+    def __init__(self):
+        self.added = []
+        self.commits = 0
+
+    def add(self, obj):
+        self.added.append(obj)
+        if isinstance(obj, DummyPlaidItem):
+            DummyPlaidItem._records[obj.item_id] = obj
+        if isinstance(obj, DummyPlaidAcct):
+            DummyPlaidAcct._records[obj.account_id] = obj
+
+    def commit(self):
+        self.commits += 1
+
+
+def test_exchange_public_token_products_scope_variants(client, monkeypatch):
+    """Persist canonical item/account scopes for products and legacy product payloads."""
+
+    DummyPlaidItem._records = {}
+    DummyPlaidAcct._records = {}
+
+    session = SessionStubAddCommit()
+    plaid_module.db = types.SimpleNamespace(session=session)
+
+    monkeypatch.setattr(
+        plaid_module,
+        "exchange_public_token",
+        lambda *_: {"access_token": "tok", "item_id": "item-1"},
+    )
+    monkeypatch.setattr(
+        plaid_module, "get_item", lambda *_: {"institution_id": "ins_1"}
+    )
+    monkeypatch.setattr(plaid_module, "get_institution_name", lambda *_: "Bank")
+    monkeypatch.setattr(
+        plaid_module,
+        "get_accounts",
+        lambda *_: [
+            {
+                "account_id": "acct-1",
+                "name": "Main",
+                "type": "depository",
+                "subtype": "checking",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        plaid_module.account_logic, "upsert_accounts", lambda *_, **__: None
+    )
+
+    def fake_save(account_id, item_id, access_token, product):
+        existing = DummyPlaidAcct._records.get(account_id)
+        if existing:
+            scopes = (
+                set((existing.product or "").split(",")) if existing.product else set()
+            )
+            scopes.update(set((product or "").split(",")) if product else set())
+            existing.product = ",".join(sorted(filter(None, scopes)))
+            return existing
+        record = DummyPlaidAcct(
+            token=access_token,
+            account_id=account_id,
+            item_id=item_id,
+            product=product,
+        )
+        DummyPlaidAcct._records[account_id] = record
+        return record
+
+    monkeypatch.setattr(plaid_module.account_logic, "save_plaid_account", fake_save)
+
+    resp = client.post(
+        "/api/accounts/exchange_public_token",
+        json={"user_id": "u1", "public_token": "pub", "products": ["transactions"]},
+    )
+    assert resp.status_code == 200
+    assert DummyPlaidItem._records["item-1"].product == "transactions"
+    assert DummyPlaidAcct._records["acct-1"].product == "transactions"
+
+    resp = client.post(
+        "/api/accounts/exchange_public_token",
+        json={"user_id": "u1", "public_token": "pub", "products": ["investments"]},
+    )
+    assert resp.status_code == 200
+    assert DummyPlaidItem._records["item-1"].product == "investments,transactions"
+    assert DummyPlaidAcct._records["acct-1"].product == "investments,transactions"
+
+    resp = client.post(
+        "/api/accounts/exchange_public_token",
+        json={
+            "user_id": "u1",
+            "public_token": "pub",
+            "products": ["transactions", "investments"],
+        },
+    )
+    assert resp.status_code == 200
+    assert DummyPlaidItem._records["item-1"].product == "investments,transactions"
+
+    resp = client.post(
+        "/api/accounts/exchange_public_token",
+        json={"user_id": "u1", "public_token": "pub", "product": "transactions"},
+    )
+    assert resp.status_code == 200
+    assert DummyPlaidItem._records["item-1"].product == "investments,transactions"
+
+
 def test_refresh_accounts_filters_and_dates(client, monkeypatch):
     accounts = [
         DummyAccount("a1", "u1", "A1"),
@@ -164,7 +333,15 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
 
     captured = []
 
-    def fake_refresh(access_token, account_id, start_date=None, end_date=None):
+    def fake_refresh(
+        access_token=None,
+        account_or_id=None,
+        accounts_data=None,
+        start_date=None,
+        end_date=None,
+        **_kwargs,
+    ):
+        account_id = getattr(account_or_id, "account_id", account_or_id)
         captured.append((account_id, start_date, end_date))
         return True, None
 
@@ -195,14 +372,30 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
         plaid_module, "remove_item", lambda tok: called.setdefault("token", tok)
     )
 
-    plaid_module.PlaidAccount.query = types.SimpleNamespace(
-        filter_by=lambda **kw: types.SimpleNamespace(
-            first=lambda: types.SimpleNamespace(access_token="tok123")
+    def plaid_account_filter_by(**kw):
+        if "item_id" in kw:
+            return types.SimpleNamespace(
+                all=lambda: [types.SimpleNamespace(account_id="acct")]
+            )
+        return types.SimpleNamespace(
+            first=lambda: types.SimpleNamespace(
+                access_token="tok123", item_id="item-1", account_id="acct"
+            )
         )
+
+    plaid_module.PlaidAccount.query = types.SimpleNamespace(
+        filter_by=plaid_account_filter_by
     )
 
+    plaid_module.PlaidItem.query = types.SimpleNamespace(
+        filter_by=lambda **kw: types.SimpleNamespace(
+            first=lambda: None,
+            delete=lambda: 1,
+            all=lambda: [types.SimpleNamespace(account_id="acct", item_id="item")],
+        )
+    )
     plaid_module.Account.query = types.SimpleNamespace(
-        filter_by=lambda **kw: types.SimpleNamespace(delete=lambda: 1)
+        filter=lambda *a, **kw: types.SimpleNamespace(delete=lambda **_kwargs: 1)
     )
 
     plaid_module.db = types.SimpleNamespace(
@@ -252,8 +445,9 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
 
     plaid_module.PlaidAccount.query = Query(plaid_account)
 
-    def fake_refresh(access_token, account_id):
+    def fake_refresh(access_token=None, account_or_id=None, **_kwargs):
         assert access_token == plaid_account.access_token
+        account_id = getattr(account_or_id, "account_id", account_or_id)
         account.balance += 25.0
         history.append((account_id, account.balance))
         history_entry.balance = account.balance

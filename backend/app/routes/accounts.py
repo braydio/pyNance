@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
+    canonicalize_plaid_products,
     refresh_is_stale,
     serialized_refresh_status,
     should_throttle_refresh,
@@ -67,19 +68,16 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
 
 
 def _normalize_products(value) -> set[str]:
-    """Return Plaid product identifiers from a persisted value."""
+    """Return Plaid product identifiers from canonical or legacy storage."""
 
-    if value is None:
-        return set()
-    if isinstance(value, str):
-        return {item.strip() for item in value.split(",") if item.strip()}
-    if isinstance(value, (set, list, tuple)):
-        return {str(item).strip() for item in value if str(item).strip()}
-    return {str(value).strip()}
+    return set(canonicalize_plaid_products(value))
 
 
 def _plaid_products_for_account(account: Account) -> set[str]:
-    """Return Plaid products enabled for the provided account."""
+    """Return Plaid products enabled for the provided account.
+
+    Unions account-level and item-level scopes using canonical scope parsing.
+    """
 
     products = set()
     plaid_rel = getattr(account, "plaid_account", None)
@@ -976,13 +974,7 @@ def get_account_history(account_id):
     alias for legacy consumers.
     """
 
-    from app.services.account_history import compute_balance_history
-    from app.services.enhanced_account_history import (
-        cache_history,
-        get_cached_history,
-        get_or_compute_account_history,
-    )
-    from sqlalchemy import func
+    from app.services.enhanced_account_history import get_or_compute_account_history
 
     try:
         range_param = request.args.get("range", "30d")
@@ -1030,35 +1022,13 @@ def get_account_history(account_id):
             )
             return jsonify({"error": "Account not found"}), 404
 
-        balances = []
-        if start_date and end_date:
-            cached = get_cached_history(account.account_id, start_date, end_date)
-            if cached:
-                balances = cached
-            else:
-                tx_rows = (
-                    db.session.query(
-                        func.date(Transaction.date), func.sum(Transaction.amount)
-                    )
-                    .filter(Transaction.account_id == account.account_id)
-                    .filter(Transaction.date >= start_date)
-                    .filter(Transaction.date <= end_date)
-                    .group_by(func.date(Transaction.date))
-                    .all()
-                )
-
-                # Keep Decimal amounts for precise currency math in services
-                txs = [{"date": row[0], "amount": row[1]} for row in tx_rows]
-
-                # Use Decimal end-to-end for currency-safe math
-                balances = compute_balance_history(
-                    account.balance, txs, start_date, end_date
-                )
-
-                if balances:
-                    cache_history(account.account_id, account.user_id, balances)
-        else:
-            balances = get_or_compute_account_history(account.account_id, days=days)
+        balances = get_or_compute_account_history(
+            account.account_id,
+            days=days,
+            start_date=start_date,
+            end_date=end_date,
+            include_internal=False,
+        )
 
         response_payload = {
             "accountId": account.account_id,

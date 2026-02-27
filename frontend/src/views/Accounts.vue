@@ -13,9 +13,7 @@
         <template #subtitle>Link and refresh your accounts</template>
       </PageHeader>
 
-      <div
-        class="mt-6 h-px w-full rounded-full bg-[var(--themed-border)]"
-      />
+      <div class="mt-6 h-px w-full rounded-full bg-[var(--themed-border)]" />
 
       <div
         class="mt-4 flex flex-col gap-2 rounded-xl border border-[var(--divider)] bg-[var(--themed-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
@@ -326,10 +324,14 @@ async function loadData() {
       fetchRecentTransactions(accountId.value, 10),
     ])
 
+    // Support both the current API envelope (`{ status, data: {...} }`) and
+    // the legacy shape where metrics are returned at the root response level.
+    const summaryData = summary?.data ?? summary ?? {}
+
     netSummary.value = {
-      income: Number(summary?.income ?? 0),
-      expense: Number(summary?.expense ?? 0),
-      net: Number(summary?.net ?? 0),
+      income: Number(summaryData?.income ?? 0),
+      expense: Number(summaryData?.expense ?? 0),
+      net: Number(summaryData?.net ?? 0),
     }
 
     accountHistory.value = history?.balances ?? []

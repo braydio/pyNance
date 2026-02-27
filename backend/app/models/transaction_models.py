@@ -126,6 +126,7 @@ class Transaction(db.Model):
     description = db.Column(db.String(256))
     provider = db.Column(ProviderEnum, nullable=False, server_default="manual")
     merchant_name = db.Column(db.String(128), default="Unknown")
+    merchant_slug = db.Column(db.String(128), nullable=True, index=True)
     merchant_type = db.Column(db.String(64), default="Unknown")
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)
