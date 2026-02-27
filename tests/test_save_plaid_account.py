@@ -118,18 +118,19 @@ def test_save_plaid_account_inserts_and_updates(db_ctx):
         account_id="acct1",
         item_id="item123",
         access_token="tok1",
-        product="investments",
+        product=["transactions"],
     )
     assert account.id
-    assert account.product == "investments"
+    assert account.product == "transactions"
     assert db.session.query(models.PlaidAccount).count() == 1
 
     account2 = logic.save_plaid_account(
         account_id="acct1",
         item_id="item123",
         access_token="tok2",
-        product="investments",
+        product=["transactions", "investments"],
     )
     assert account2.id == account.id
     assert account2.access_token == "tok2"
+    assert account2.product == "investments,transactions"
     assert db.session.query(models.PlaidAccount).count() == 1

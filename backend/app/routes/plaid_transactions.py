@@ -16,6 +16,7 @@ from app.helpers.plaid_helpers import (
 )
 from app.models import Account, PlaidAccount, PlaidItem
 from app.sql import account_logic  # for upserting accounts and processing transactions
+from app.sql.account_logic import merge_plaid_products, serialize_plaid_products
 from flask import Blueprint, jsonify, request
 from plaid.model.country_code import CountryCode
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
@@ -104,6 +105,12 @@ def exchange_public_token_endpoint():
         logger.warning("Missing user_id or public_token in request")
         return jsonify({"error": "Missing user_id or public_token"}), 400
 
+    products = data.get("products")
+    if products is None:
+        products = data.get("product")
+
+    canonical_products = serialize_plaid_products(products or ["transactions"])
+
     try:
         exchange_resp = exchange_public_token(public_token)
         logger.debug("Exchange response item_id=%s", exchange_resp.get("item_id"))
@@ -133,13 +140,14 @@ def exchange_public_token_endpoint():
 
         # --- Persist 1 row per Item in secure table ---
         try:
-            product = (data.get("product") or "transactions").strip() or "transactions"
             existing_item = PlaidItem.query.filter_by(item_id=item_id).first()
             if existing_item:
                 existing_item.access_token = access_token
                 existing_item.user_id = str(user_id)
                 existing_item.institution_name = institution_name
-                existing_item.product = product
+                existing_item.product = merge_plaid_products(
+                    existing_item.product, canonical_products
+                )
                 existing_item.is_active = True
             else:
                 db.session.add(
@@ -148,14 +156,14 @@ def exchange_public_token_endpoint():
                         item_id=item_id,
                         access_token=access_token,
                         institution_name=institution_name,
-                        product=product,
+                        product=canonical_products,
                         is_active=True,
                     )
                 )
             logger.debug(
-                "Upserted PlaidItem for item_id=%s (product=%s)",
+                "Upserted PlaidItem for item_id=%s (products=%s)",
                 item_id,
-                product,
+                canonical_products,
             )
         except Exception as e:
             logger.error("Failed to upsert PlaidItem: %s", e)
@@ -180,20 +188,19 @@ def exchange_public_token_endpoint():
             if not account_id:
                 continue
 
-            exists = PlaidAccount.query.filter_by(account_id=account_id).first()
-            if exists:
-                logger.debug("PlaidAccount already exists for %s", account_id)
-                continue
-
-            new_plaid_account = PlaidAccount(
+            account_logic.save_plaid_account(
                 account_id=account_id,
-                access_token=access_token,
                 item_id=item_id,
-                institution_id=institution_id,
-                # Store naive timestamp to match column type
-                last_refreshed=datetime.now(),
+                access_token=access_token,
+                product=canonical_products,
             )
-            db.session.add(new_plaid_account)
+
+            exists = PlaidAccount.query.filter_by(account_id=account_id).first()
+            if exists and not getattr(exists, "institution_id", None):
+                exists.institution_id = institution_id
+            if exists and not getattr(exists, "last_refreshed", None):
+                # Store naive timestamp to match column type
+                exists.last_refreshed = datetime.now()
 
         db.session.commit()
 

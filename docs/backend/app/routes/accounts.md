@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-21
+Last Updated: 2026-02-27
 Status: Active
 ---
 
@@ -132,3 +132,9 @@ Content-Type: application/json
 ```json
 { "success": true, "updated": 2 }
 ```
+
+
+### Plaid refresh scope resolution
+
+- Refresh endpoints union account-level (`PlaidAccount.product`) and item-level (`PlaidItem.product`) scopes.
+- Scope parsing accepts canonical comma-delimited values and legacy payload formats while always resolving to canonical product identifiers before refresh routing.

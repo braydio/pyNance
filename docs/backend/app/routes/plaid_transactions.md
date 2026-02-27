@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-02-27
 Status: Active
 ---
 
@@ -51,3 +51,10 @@ Content-Type: application/json
 ```json
 { "status": "success", "updated_accounts": ["Checking"] }
 ```
+
+
+## Canonical product scopes
+
+- `POST /exchange_public_token` now reads `products` first and falls back to legacy `product` for backward compatibility.
+- Persisted Plaid scopes are normalized to a canonical sorted, de-duplicated comma-delimited value (for example `investments,transactions`).
+- Item-level and account-level scope persistence both merge with existing scopes so relink operations expand capability without dropping prior scopes.
