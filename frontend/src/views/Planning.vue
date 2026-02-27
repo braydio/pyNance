@@ -3,7 +3,6 @@
     <PageHeader :icon="Calendar">
       <template #title>Planning</template>
       <template #subtitle>Manage bills, allocations, and scenario balances. </template>
-      <div> Also here is notes. </div>
       <template #actions>
         <UiButton variant="primary" @click="startCreating">Create bill</UiButton>
       </template>
@@ -12,6 +11,10 @@
     <section class="grid gap-6 xl:grid-cols-[2fr,1fr]">
       <div class="space-y-6">
         <Card class="p-6">
+          <h1 class="text-lg font-semibold">Here are a handful of notes and ideas I have for this
+            page</h1>
+
+          <p1 class="text-sm font-light">NOTES</p1>
           <BillList
             :bills="billsForScenario"
             :currency-code="currencyCode"
