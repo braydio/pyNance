@@ -1,21 +1,24 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-02-27
 Status: Active
 ---
 
 # Plaid Transactions Route (`plaid_transactions.py`)
 
 ## Purpose
+
 Synchronize and expose transaction data retrieved via the Plaid API, supporting fetches, detail lookups, and manual refreshes.
 
 ## Endpoints
+
 - `GET /plaid/transactions` – Retrieve synced transactions with optional filters.
 - `GET /plaid/transactions/<id>` – Fetch a specific transaction by ID.
 - `POST /plaid/transactions/sync` – Force-refresh Plaid transactions.
 - `POST /plaid/transactions/refresh_accounts` – Refresh Plaid accounts and transactions with optional date scoping.
 
 ## Inputs/Outputs
+
 - **GET /plaid/transactions**
   - **Inputs:** Optional `start_date`, `end_date`, and `account_ids[]` query params.
   - **Outputs:** Array of transaction objects with dates, amounts, names, and categories.
@@ -30,17 +33,21 @@ Synchronize and expose transaction data retrieved via the Plaid API, supporting 
   - **Outputs:** `{ "status": "success", "updated_accounts": ["name"] }` with refresh counts.
 
 ## Auth
+
 - Requires authenticated user; transactions are scoped to linked Plaid items for that user.
 
 ## Dependencies
+
 - `services.plaid_transaction_service` for sync logic.
 - `models.Transaction` and date filtering utilities.
 
 ## Behaviors/Edge Cases
+
 - Automatically paginates Plaid transactions and applies deduplication across manual/synced data.
 - Categorization occurs post-ingestion.
 
 ## Sample Request/Response
+
 ```http
 POST /plaid/transactions/refresh_accounts HTTP/1.1
 Content-Type: application/json
@@ -51,3 +58,9 @@ Content-Type: application/json
 ```json
 { "status": "success", "updated_accounts": ["Checking"] }
 ```
+
+## Canonical product scopes
+
+- `POST /exchange_public_token` now reads `products` first and falls back to legacy `product` for backward compatibility.
+- Persisted Plaid scopes are normalized to a canonical sorted, de-duplicated comma-delimited value (for example `investments,transactions`).
+- Item-level and account-level scope persistence both merge with existing scopes so relink operations expand capability without dropping prior scopes.

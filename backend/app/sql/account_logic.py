@@ -46,6 +46,52 @@ def _now_utc():
     return datetime.now(timezone.utc)
 
 
+def canonicalize_plaid_products(value) -> list[str]:
+    """Return canonical Plaid product scopes as a sorted unique list.
+
+    The helper accepts legacy single-string values (``"transactions"``),
+    comma-delimited strings, JSON-encoded arrays, and iterable containers.
+    Empty values are filtered from the result.
+    """
+
+    if value is None:
+        return []
+
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return []
+        if raw.startswith("["):
+            try:
+                parsed = json.loads(raw)
+            except json.JSONDecodeError:
+                parsed = None
+            if isinstance(parsed, list):
+                return canonicalize_plaid_products(parsed)
+        values = raw.split(",")
+    elif isinstance(value, (set, list, tuple)):
+        values = list(value)
+    else:
+        values = [value]
+
+    normalized = {str(item).strip() for item in values if str(item).strip()}
+    return sorted(normalized)
+
+
+def serialize_plaid_products(value) -> str:
+    """Serialize Plaid scopes into canonical comma-delimited storage format."""
+
+    return ",".join(canonicalize_plaid_products(value))
+
+
+def merge_plaid_products(existing, incoming) -> str:
+    """Merge existing and incoming Plaid scopes into canonical storage format."""
+
+    merged = set(canonicalize_plaid_products(existing))
+    merged.update(canonicalize_plaid_products(incoming))
+    return serialize_plaid_products(merged)
+
+
 def _serialize_transaction_tags(txn: Transaction) -> list[str]:
     """Return transaction tag names with a default fallback.
 
@@ -456,20 +502,25 @@ def get_accounts_from_db(include_hidden: bool = False):
 
 
 def save_plaid_account(account_id, item_id, access_token, product):
-    """Insert or update a :class:`PlaidAccount` row."""
+    """Insert or update a :class:`PlaidAccount` row.
+
+    Product scopes are merged with any existing scopes and persisted in canonical
+    comma-delimited order.
+    """
 
     plaid_acct = PlaidAccount.query.filter_by(account_id=account_id).first()
+    merged_product = merge_plaid_products(None, product)
     if plaid_acct:
         plaid_acct.access_token = access_token
         plaid_acct.item_id = item_id
-        plaid_acct.product = product
+        plaid_acct.product = merge_plaid_products(plaid_acct.product, merged_product)
         plaid_acct.updated_at = datetime.now(timezone.utc)
     else:
         plaid_acct = PlaidAccount(
             account_id=account_id,
             access_token=access_token,
             item_id=item_id,
-            product=product,
+            product=merged_product,
         )
         db.session.add(plaid_acct)
     db.session.commit()

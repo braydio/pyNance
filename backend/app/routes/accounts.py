@@ -10,6 +10,7 @@ from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
+    canonicalize_plaid_products,
     refresh_is_stale,
     serialized_refresh_status,
     should_throttle_refresh,
@@ -67,19 +68,16 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
 
 
 def _normalize_products(value) -> set[str]:
-    """Return Plaid product identifiers from a persisted value."""
+    """Return Plaid product identifiers from canonical or legacy storage."""
 
-    if value is None:
-        return set()
-    if isinstance(value, str):
-        return {item.strip() for item in value.split(",") if item.strip()}
-    if isinstance(value, (set, list, tuple)):
-        return {str(item).strip() for item in value if str(item).strip()}
-    return {str(value).strip()}
+    return set(canonicalize_plaid_products(value))
 
 
 def _plaid_products_for_account(account: Account) -> set[str]:
-    """Return Plaid products enabled for the provided account."""
+    """Return Plaid products enabled for the provided account.
+
+    Unions account-level and item-level scopes using canonical scope parsing.
+    """
 
     products = set()
     plaid_rel = getattr(account, "plaid_account", None)
