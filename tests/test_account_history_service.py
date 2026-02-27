@@ -104,6 +104,74 @@ def test_upsert_accounts_normalizes_status(app_context):
     }
 
 
+def test_cache_history_upserts_only_requested_window(app_context):
+    """Cache updates should only modify rows inside the requested date window."""
+
+    today = datetime.now(timezone.utc).date()
+    start_365 = today - timedelta(days=364)
+
+    account = Account(
+        account_id="acct-history-window",
+        user_id="user-window",
+        name="Savings",
+        type="depository",
+        balance=Decimal("365.00"),
+        link_type="manual",
+    )
+    db.session.add(account)
+
+    original_rows = []
+    original_balances = {}
+    for offset in range(365):
+        row_date = start_365 + timedelta(days=offset)
+        balance_value = Decimal(str(1000 + offset)).quantize(Decimal("0.01"))
+        history_row = AccountHistory(
+            account_id=account.account_id,
+            user_id=account.user_id,
+            date=row_date,
+            balance=balance_value,
+            is_hidden=False,
+        )
+        original_rows.append(history_row)
+        original_balances[row_date] = balance_value
+
+    db.session.add_all(original_rows)
+    db.session.commit()
+
+    target_start = today - timedelta(days=29)
+    replacement_history = []
+    for offset in range(30):
+        row_date = target_start + timedelta(days=offset)
+        replacement_history.append(
+            {
+                "date": row_date.isoformat(),
+                "balance": float(Decimal(str(5000 + offset)).quantize(Decimal("0.01"))),
+            }
+        )
+
+    enhanced_account_history.cache_history(
+        account.account_id,
+        account.user_id,
+        replacement_history,
+    )
+
+    all_rows = (
+        AccountHistory.query.filter_by(account_id=account.account_id)
+        .order_by(AccountHistory.date.asc())
+        .all()
+    )
+    assert len(all_rows) == 365
+
+    for row in all_rows:
+        if target_start <= row.date <= today:
+            expected_balance = Decimal(
+                str(5000 + (row.date - target_start).days)
+            ).quantize(Decimal("0.01"))
+            assert row.balance == expected_balance
+        else:
+            assert row.balance == original_balances[row.date]
+
+
 def test_get_or_compute_account_history_cache_matches_first_compute(app_context):
     """Ensure compute and cache-hit paths return identical balances for the same range."""
 
