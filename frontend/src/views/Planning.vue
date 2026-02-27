@@ -2,7 +2,8 @@
   <BasePageLayout>
     <PageHeader :icon="Calendar">
       <template #title>Planning</template>
-      <template #subtitle>Manage bills, allocations, and scenario balances.</template>
+      <template #subtitle>Manage bills, allocations, and scenario balances. </template>
+      <div> Also here is notes. </div>
       <template #actions>
         <UiButton variant="primary" @click="startCreating">Create bill</UiButton>
       </template>
