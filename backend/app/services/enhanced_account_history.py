@@ -186,33 +186,67 @@ def compute_fresh_history(
 
 
 def cache_history(account_id: str, user_id: str, history: List[Dict[str, float]]):
-    """Cache balance history in the database for future retrieval."""
+    """Cache balance history with non-destructive date-window upserts.
+
+    Existing rows for the account are only touched when they fall within the
+    requested history window. Rows outside that window are left intact.
+
+    Args:
+        account_id: Account business identifier.
+        user_id: Owner identifier associated with the account history rows.
+        history: Daily balance entries (ISO date + numeric balance) to persist.
+    """
 
     try:
+        if not history:
+            return
+
         now = datetime.now(timezone.utc)
+        window_dates = [
+            datetime.fromisoformat(record["date"]).date() for record in history
+        ]
+        window_start = min(window_dates)
+        window_end = max(window_dates)
 
-        AccountHistory.query.filter(AccountHistory.account_id == account_id).delete()
+        existing_records = (
+            AccountHistory.query.filter(AccountHistory.account_id == account_id)
+            .filter(AccountHistory.date >= window_start)
+            .filter(AccountHistory.date <= window_end)
+            .all()
+        )
+        existing_by_date = {existing.date: existing for existing in existing_records}
 
-        history_records = []
-        for record in history:
-            record_date = datetime.fromisoformat(record["date"]).date()
-            balance_value = Decimal(str(record["balance"]))
+        inserted_count = 0
+        updated_count = 0
+        for record, record_date in zip(history, window_dates):
+            balance_value = Decimal(str(record["balance"])).quantize(TWOPLACES)
+            existing_record = existing_by_date.get(record_date)
+
+            if existing_record:
+                existing_record.balance = balance_value
+                existing_record.user_id = user_id
+                existing_record.is_hidden = False
+                existing_record.updated_at = now
+                updated_count += 1
+                continue
+
             history_record = AccountHistory(
                 account_id=account_id,
                 user_id=user_id,
                 date=record_date,
-                balance=balance_value.quantize(TWOPLACES),
+                balance=balance_value,
                 is_hidden=False,
                 created_at=now,
                 updated_at=now,
             )
-            history_records.append(history_record)
+            db.session.add(history_record)
+            inserted_count += 1
 
-        db.session.add_all(history_records)
         db.session.commit()
 
         print(
-            f"Cached {len(history_records)} balance history records for account {account_id}"
+            "Cached balance history records for account "
+            f"{account_id} ({inserted_count} inserted, {updated_count} updated)"
         )
 
     except Exception as e:
