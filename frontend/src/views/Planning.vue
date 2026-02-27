@@ -11,10 +11,12 @@
     <section class="grid gap-6 xl:grid-cols-[2fr,1fr]">
       <div class="space-y-6">
         <Card class="p-6">
-          <h1 class="text-lg font-semibold">Here are a handful of notes and ideas I have for this
-            page</h1>
+          <h3 class="text-2xl font-bold">Here are a handful of notes and ideas I have for this
+            page</h3>
 
-          <p1 class="text-sm font-light">NOTES</p1>
+          <p1 class="text-xs font-muted">A different form /p1>
+          <p1 class="text-xs font-muted">Examples of a filled out plan. Each form type shown several
+              times over and a complete 'Planning' example of fully utilizing every feature here.</p1>
           <BillList
             :bills="billsForScenario"
             :currency-code="currencyCode"
