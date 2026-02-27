@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-02-27
 Status: Active
 ---
 
@@ -64,5 +64,6 @@ Use the links below to open a specific route reference.
 ### Integrations & Sync
 
 - [plaid_transactions.md](plaid_transactions.md) – Plaid transaction sync APIs.
-- [plaid_investments.md](plaid_investments.md) – Plaid investments data fetchers.
+- [investments.md](investments.md) – Persisted investment accounts, holdings, and transaction queries.
+- [plaid_investments.md](plaid_investments.md) – Plaid investments link and refresh flows.
 - [plaid_webhook.md](plaid_webhook.md) – Webhook handlers for Plaid events.
