@@ -21,6 +21,9 @@ describe('AppLayout', () => {
     expect(mainContainer.classes()).toContain('mx-auto')
     expect(mainContainer.classes()).toContain('w-full')
     expect(mainContainer.classes()).toContain('max-w-7xl')
+    expect(mainContainer.classes()).toContain('px-4')
+    expect(mainContainer.classes()).toContain('sm:px-6')
+    expect(mainContainer.classes()).toContain('lg:px-8')
   })
 
   it('omits the header element when no header slot is provided', () => {
