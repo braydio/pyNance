@@ -18,6 +18,7 @@ Manages account lifecycle operations including institution linking, metadata upd
 - `POST /accounts/link` – Initiate account linking via external aggregators such as Plaid.
 - `PATCH /accounts/<account_id>` – Update stored account metadata.
 - `DELETE /accounts/<account_id>` – Remove a linked account.
+- `GET /accounts/<account_id>/history` – Return daily reverse-mapped balances for an account/date window.
 - `GET /accounts/<account_id>/net_changes` – Compute income, expense, and net movement between two dates.
 
 ### Inputs/Outputs
@@ -27,6 +28,10 @@ Manages account lifecycle operations including institution linking, metadata upd
   - **Outputs:** `{ "account_id": str, "status": str }` describing the new linkage.
 - **GET /accounts**
   - **Outputs:** Array of linked accounts with balances, institution names, and link status metadata. Each account includes both raw `name` and canonical `display_name`; clients should prefer `display_name` for UI labels and keep `name` for edit/history compatibility.
+- **GET /accounts/<account_id>/history**
+  - **Inputs:** Optional `range`, `start_date`, and `end_date` query params to bound the series.
+  - **Outputs:** `{ "accountId": str, "asOfDate": str, "balances": [{"date": str, "balance": number}], "history": [...] }`.
+
 - **GET /accounts/<account_id>/net_changes**
   - **Inputs:** `start_date` and `end_date` query params to bound the range.
   - **Outputs:** `{ "status": "success", "data": { "income", "expense", "net" } }` plus legacy fields `{account_id, net_change, period: {start, end}}` for backward compatibility.
@@ -45,6 +50,7 @@ Manages account lifecycle operations including institution linking, metadata upd
 - Triggers metadata sync jobs when a link succeeds.
 - Validates token payloads before invoking Plaid.
 - Deletions cascade to associated metadata according to model constraints.
+- History endpoint delegates balance reconstruction to the cache-aware account-history service so cache-hit and cache-miss paths use identical internal-transfer filtering.
 - Net change calculations rely on balance snapshots in `AccountHistory` and fall back to transaction aggregation when snapshots are incomplete; ensure balance-history backfills are healthy to avoid gaps.
 
 ### Net Changes Logic
