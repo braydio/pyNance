@@ -133,7 +133,6 @@ Content-Type: application/json
 { "success": true, "updated": 2 }
 ```
 
-
 ### Plaid refresh scope resolution
 
 - Refresh endpoints union account-level (`PlaidAccount.product`) and item-level (`PlaidItem.product`) scopes.
