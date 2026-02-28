@@ -111,23 +111,38 @@ Response body on success:
 
 **GET /api/accounts/<id>/history**
 
-Returns daily balances for the specified account. The `<id>` segment accepts
-either the external `account_id` or the numeric primary key. An optional `range`
-query parameter such as `7d`, `30d`, `90d`, or `365d` limits how many days are
-returned.
+Returns daily balances for the specified account.
+
+Accepted path identifier formats for `<id>`:
+
+- External `account_id` string (for example, a provider UUID-like identifier)
+- Internal numeric primary key (`id`) as either an integer path segment or numeric string
 
 **Query Parameters**
 
-- `range` – number of days of history to return (default: `30d`)
+- `range` – optional day-window shorthand (`7d`, `30d`, `90d`, `365d`); default is `30d`
+- `start_date` – optional ISO `YYYY-MM-DD` lower bound
+- `end_date` – optional ISO `YYYY-MM-DD` upper bound
 
-**Response Body**
+Precedence and window resolution rules:
 
-````json
+- If both `start_date` and `end_date` are provided, they define the exact window and `range` only controls the internal service `days` parameter.
+- If `start_date` is provided without `end_date`, `end_date` is derived as `start_date + (range_days - 1)`.
+- If `end_date` is provided without `start_date`, `start_date` is derived as `end_date - (range_days - 1)`.
+- If neither date is provided, the route returns the trailing `range_days` ending on the current UTC date.
+
+**Canonical Response Body**
+
+```json
 {
   "accountId": "uuid",
   "asOfDate": "YYYY-MM-DD",
-  "balances": [{ "date": "YYYY-MM-DD", "balance": 1523.21 }]
+  "balances": [{ "date": "YYYY-MM-DD", "balance": 1523.21 }],
+  "history": [{ "date": "YYYY-MM-DD", "balance": 1523.21 }]
 }
+```
+
+`balances` is the canonical field. `history` is a legacy alias currently returned with the same array for backward compatibility.
 
 **GET /api/accounts/<account_id>/net_changes**
 
@@ -148,14 +163,12 @@ Response Body
   "net_change": 269.5,
   "period": { "start": "YYYY-MM-DD", "end": "YYYY-MM-DD" }
 }
-````
+```
 
 Notes:
 
 - `income` and `expense` are magnitudes; `net = income - expense`.
 - Legacy fields (`account_id`, `net_change`, `period`) are preserved for backward compatibility.
-
-````
 
 **GET /api/accounts/<account_id>/transaction_history**
 
@@ -195,7 +208,7 @@ Returns a paginated list of transactions for the specified account. The `<accoun
     "next_offset": 100
   }
 }
-````
+```
 
 **PUT /api/transactions/update**
 
