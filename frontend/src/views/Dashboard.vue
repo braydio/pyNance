@@ -3,6 +3,8 @@
   Main application dashboard showing snapshots, charts, and financial summaries.
 -->
 <template>
+  <!-- Page title for accessibility (screen-reader only) -->
+  <h1 class="sr-only">Dashboard - Financial Overview</h1>
   <BasePageLayout gap="gap-8">
     <!-- NET OVERVIEW -->
     <Suspense>
@@ -101,7 +103,7 @@
     >
       <div>
         <div class="flex flex-wrap items-center gap-3">
-          <h2 class="text-xl font-bold text-[var(--color-accent-purple)]">Review Transactions</h2>
+          <h2 class="text-xl font-bold text-[var(--color-text-light)]">Review Transactions</h2>
           <span
             class="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-indigo)]/50 bg-[var(--color-bg-dark)]/40 px-3 py-1 text-xs font-semibold text-[var(--color-text-light)]"
           >
@@ -141,16 +143,18 @@
         >
           <button
             @click="expandAccounts"
-            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
+            class="flex-1 w-full sm:w-auto flex items-center justify-center gap-3 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
           >
-            Expand Accounts Table
+            <Wallet class="w-7 h-7" />
+            <span>Accounts</span>
           </button>
-          <div class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none">or</div>
+          <span class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none" aria-hidden="true">or</span>
           <button
             @click="expandTransactions"
-            class="flex-1 w-full sm:w-auto text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
+            class="flex-1 w-full sm:w-auto flex items-center justify-center gap-3 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
           >
-            Expand Transactions Table
+            <CreditCard class="w-7 h-7" />
+            <span>Transactions</span>
           </button>
         </div>
       </transition>
@@ -235,6 +239,7 @@
  * Dashboard view showing financial summaries, charts, and drill-down modals.
  */
 import { ref, computed, onMounted, defineAsyncComponent, watch } from 'vue'
+import { Wallet, CreditCard } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
