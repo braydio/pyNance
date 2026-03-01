@@ -129,12 +129,32 @@
       <div class="filters">
         <label>
           <span>Account</span>
-          <select v-model="txAccountId" @change="loadTransactions(1)">
+          <select v-model="txAccountId" data-testid="tx-filter-account">
             <option value="">All</option>
             <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
               {{ accDisplay(acc) }}
             </option>
           </select>
+        </label>
+        <label>
+          <span>Security ID</span>
+          <input v-model="txSecurityId" data-testid="tx-filter-security-id" type="text" />
+        </label>
+        <label>
+          <span>Type</span>
+          <input v-model="txType" data-testid="tx-filter-type" type="text" />
+        </label>
+        <label>
+          <span>Subtype</span>
+          <input v-model="txSubtype" data-testid="tx-filter-subtype" type="text" />
+        </label>
+        <label>
+          <span>Start Date</span>
+          <input v-model="txStartDate" data-testid="tx-filter-start-date" type="date" />
+        </label>
+        <label>
+          <span>End Date</span>
+          <input v-model="txEndDate" data-testid="tx-filter-end-date" type="date" />
         </label>
       </div>
       <div v-if="txLoading" class="text-muted">Loading transactions…</div>
@@ -182,7 +202,7 @@
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import Card from '@/components/ui/Card.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
+import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
 import {
   fetchHoldings,
   refreshInvestmentsAll,
@@ -357,14 +377,71 @@ const txTotal = ref(0)
 const txData = ref([])
 const txLoading = ref(false)
 const txAccountId = ref('')
+const txSecurityId = ref('')
+const txType = ref('')
+const txSubtype = ref('')
+const txStartDate = ref('')
+const txEndDate = ref('')
+const TX_FILTER_STORAGE_KEY = 'investments.transactionFilters'
+const txFilterRestoreInProgress = ref(false)
 const txTotalPages = computed(() => Math.max(1, Math.ceil(txTotal.value / txPageSize)))
+
+/**
+ * Build the transactions filter payload using backend query parameter names.
+ *
+ * @returns {Record<string, string>} API-ready filter params.
+ */
+function buildTransactionFilters() {
+  const filters = {}
+  if (txAccountId.value) filters.account_id = txAccountId.value
+  if (txSecurityId.value) filters.security_id = txSecurityId.value
+  if (txType.value) filters.type = txType.value
+  if (txSubtype.value) filters.subtype = txSubtype.value
+  if (txStartDate.value) filters.start_date = txStartDate.value
+  if (txEndDate.value) filters.end_date = txEndDate.value
+  return filters
+}
+
+/**
+ * Persist investment transaction filters to local storage.
+ */
+function persistTransactionFilters() {
+  try {
+    localStorage.setItem(TX_FILTER_STORAGE_KEY, JSON.stringify(buildTransactionFilters()))
+  } catch {}
+}
+
+/**
+ * Restore persisted transaction filters from local storage.
+ */
+function restoreTransactionFilters() {
+  txFilterRestoreInProgress.value = true
+  try {
+    const raw = localStorage.getItem(TX_FILTER_STORAGE_KEY)
+    const stored = raw ? JSON.parse(raw) : {}
+    txAccountId.value = stored.account_id || ''
+    txSecurityId.value = stored.security_id || ''
+    txType.value = stored.type || ''
+    txSubtype.value = stored.subtype || ''
+    txStartDate.value = stored.start_date || ''
+    txEndDate.value = stored.end_date || ''
+  } catch {
+    txAccountId.value = ''
+    txSecurityId.value = ''
+    txType.value = ''
+    txSubtype.value = ''
+    txStartDate.value = ''
+    txEndDate.value = ''
+  } finally {
+    txFilterRestoreInProgress.value = false
+  }
+}
 
 async function loadTransactions(page = 1) {
   txLoading.value = true
   try {
     txPage.value = page
-    const filters = {}
-    if (txAccountId.value) filters.account_id = txAccountId.value
+    const filters = buildTransactionFilters()
     const res = await fetchInvestmentTransactions(page, txPageSize, filters)
     const payload = res?.data || res || {}
     txData.value = payload.transactions || payload.data?.transactions || []
@@ -374,8 +451,15 @@ async function loadTransactions(page = 1) {
   }
 }
 
+watch([txAccountId, txSecurityId, txType, txSubtype, txStartDate, txEndDate], async () => {
+  if (txFilterRestoreInProgress.value) return
+  persistTransactionFilters()
+  await loadTransactions(1)
+})
+
 onMounted(async () => {
   window.addEventListener('scroll', handleScroll, { passive: true })
+  restoreTransactionFilters()
   await Promise.all([load(), loadAccounts()])
   await loadTransactions(1)
   handleScroll()
@@ -529,7 +613,8 @@ function onLinked() {
   gap: 0.25rem;
   align-items: center;
 }
-.filters select {
+.filters select,
+.filters input {
   padding: 0.25rem 0.4rem;
   border: 1px solid var(--divider);
   background: var(--themed-bg);
