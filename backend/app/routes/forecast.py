@@ -83,6 +83,12 @@ def _load_latest_snapshots(user_id: str) -> list[dict[str, object]]:
                 "user_id": account.user_id,
                 "balance": balance,
                 "date": snapshot_date,
+                "account_type": account.account_type,
+                "is_investment": bool(account.is_investment),
+                "investment_has_holdings": bool(account.investment_has_holdings),
+                "investment_has_transactions": bool(
+                    account.investment_has_transactions
+                ),
             }
         )
 

@@ -234,3 +234,84 @@ def test_get_or_compute_account_history_cache_matches_first_compute(app_context)
     )
 
     assert first_result == second_result
+
+
+def test_upsert_accounts_sets_investment_flags_from_product_scopes(app_context):
+    accounts = [
+        {
+            "account_id": "acct-investment",
+            "name": "Brokerage",
+            "type": "depository",
+            "subtype": "checking",
+            "balances": {"current": 1500},
+        }
+    ]
+
+    upsert_accounts(
+        "user-1",
+        accounts,
+        provider="plaid",
+        enabled_products=["investments"],
+    )
+
+    account = Account.query.filter_by(account_id="acct-investment").one()
+    assert account.type == "investment"
+    assert account.account_type == "investment"
+    assert account.is_investment is True
+    assert account.investment_has_holdings is True
+    assert account.investment_has_transactions is False
+    assert account.product_provenance == "product_scope"
+
+
+def test_upsert_accounts_sets_dual_scope_flags_for_investment_accounts(app_context):
+    accounts = [
+        {
+            "account_id": "acct-dual",
+            "name": "Dual Scope Brokerage",
+            "type": "investment",
+            "subtype": "brokerage",
+            "balances": {"current": 2500},
+        }
+    ]
+
+    upsert_accounts(
+        "user-1",
+        accounts,
+        provider="plaid",
+        enabled_products=["transactions", "investments"],
+    )
+
+    account = Account.query.filter_by(account_id="acct-dual").one()
+    assert account.type == "investment"
+    assert account.account_type == "investment"
+    assert account.is_investment is True
+    assert account.investment_has_holdings is True
+    assert account.investment_has_transactions is True
+    assert account.product_provenance == "product_scope"
+
+
+def test_upsert_accounts_keeps_transactional_accounts_non_investment(app_context):
+    accounts = [
+        {
+            "account_id": "acct-transactional",
+            "name": "Checking",
+            "type": "depository",
+            "subtype": "checking",
+            "balances": {"current": 350},
+        }
+    ]
+
+    upsert_accounts(
+        "user-1",
+        accounts,
+        provider="plaid",
+        enabled_products=["transactions"],
+    )
+
+    account = Account.query.filter_by(account_id="acct-transactional").one()
+    assert account.type == "depository"
+    assert account.account_type == "depository"
+    assert account.is_investment is False
+    assert account.investment_has_holdings is False
+    assert account.investment_has_transactions is False
+    assert account.product_provenance == "none"

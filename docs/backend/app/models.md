@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-25
+Last Updated: 2026-02-28
 Status: Active
 ---
 
@@ -21,6 +21,7 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
 ### Key Models
 
 - **Account**: Core account entity with provider-agnostic fields, including a canonical computed `display_name` derived from institution + subtype/type (and optional masked suffix when available) while preserving raw `name` as the editable source value.
+- **Investment flags on Account**: `is_investment`, `investment_has_holdings`, `investment_has_transactions`, and `product_provenance` are persisted explicitly so routes can serialize deterministic investment semantics without inferring from free-form strings.
 - **PlaidAccount**: Plaid-specific account extensions
 - **Transaction**: Universal transaction records across all providers
 - **AccountHistory**: Historical balance snapshots

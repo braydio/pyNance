@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-27
+Last Updated: 2026-02-28
 Status: Active
 ---
 
@@ -20,7 +20,7 @@ Expose persisted investment account, holdings, and transaction data under `/api/
 
 ### `GET /api/investments/accounts`
 
-Return all accounts linked for Plaid investments.
+Return all accounts with explicit `Account.is_investment` flags. Responses normalize investment semantics via `account_type = "investment"`.
 
 - Query parameters: none.
 - Success response (`200`):

@@ -38,6 +38,22 @@ class Account(db.Model, TimestampMixin):
     is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     link_type = db.Column(LinkTypeEnum, nullable=False, server_default="manual")
+    is_investment = db.Column(
+        db.Boolean, nullable=False, default=False, server_default=db.text("false")
+    )
+    investment_has_holdings = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("false"),
+    )
+    investment_has_transactions = db.Column(
+        db.Boolean,
+        nullable=False,
+        default=False,
+        server_default=db.text("false"),
+    )
+    product_provenance = db.Column(db.String(64), nullable=True)
 
     plaid_account = db.relationship(
         "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"
@@ -104,6 +120,16 @@ class Account(db.Model, TimestampMixin):
         """Return the canonical account label for API presentation."""
 
         return self.format_display_name()
+
+    @property
+    def account_type(self) -> str:
+        """Return API-level account type semantics.
+
+        Investment-linked accounts are always normalized to ``investment`` even
+        when upstream providers emit brokerage subtype/type variants.
+        """
+
+        return "investment" if self.is_investment else (self.type or "unknown")
 
     @hybrid_property
     def is_visible(self):

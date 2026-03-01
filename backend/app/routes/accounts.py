@@ -276,9 +276,9 @@ def refresh_all_accounts():
                                     == "ITEM_LOGIN_REQUIRED"
                                 ):
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key]["update_link_token_endpoint"] = (
-                                        "/api/plaid/transactions/generate_update_link_token"
-                                    )
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
                                     error_map[key]["affected_account_ids"] = [
                                         account.account_id
                                     ]
@@ -866,8 +866,15 @@ def match_account_by_fields():
                     "name": acc.name,
                     "display_name": acc.display_name,
                     "institution_name": acc.institution_name,
-                    "type": acc.type,
+                    "type": acc.account_type,
+                    "account_type": acc.account_type,
                     "subtype": acc.subtype,
+                    "is_investment": bool(acc.is_investment),
+                    "investment_has_holdings": bool(acc.investment_has_holdings),
+                    "investment_has_transactions": bool(
+                        acc.investment_has_transactions
+                    ),
+                    "product_provenance": acc.product_provenance,
                 }
                 for acc in matches
             ]
