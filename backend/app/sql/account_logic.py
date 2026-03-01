@@ -689,6 +689,7 @@ def get_paginated_transactions(
     recent=False,
     limit=None,
     include_running_balance=False,
+    merchant=None,
 ):
     """Return paginated transaction rows with optional filtering.
 
@@ -757,6 +758,12 @@ def get_paginated_transactions(
         query = query.filter(Transaction.amount > 0)
     elif tx_type == "debit":
         query = query.filter(Transaction.amount < 0)
+    if merchant:
+        # Filter by merchant_slug (indexed) or merchant_name as fallback
+        query = query.filter(
+            (Transaction.merchant_slug == merchant)
+            | (Transaction.merchant_name == merchant)
+        )
     if tags:
         include_untagged = "#untagged" in tags
         tag_names = [tag for tag in tags if tag != "#untagged"]

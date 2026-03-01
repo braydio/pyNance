@@ -885,6 +885,9 @@ def get_transactions_paginated():
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
+        merchant = request.args.get(
+            "merchant"
+        )  # Filter by merchant_name or merchant_slug
         tags = _parse_tag_filters(request.args)
         account_ids = _parse_account_ids(request.args)
         account_id_single = request.args.get("account_id")
@@ -910,6 +913,7 @@ def get_transactions_paginated():
             start_date=start_date,
             end_date=end_date,
             category=category,
+            merchant=merchant,
             account_ids=account_ids or None,
             tx_type=tx_type,
             transaction_id=transaction_id,

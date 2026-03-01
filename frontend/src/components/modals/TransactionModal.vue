@@ -128,6 +128,7 @@ const props = defineProps({
   show: { type: Boolean, default: false },
   transactions: { type: Array, default: () => [] },
   subtitle: { type: String, default: '' },
+  subtitlePrefix: { type: String, default: '' }, // Override prefix (e.g., 'Merchant')
   kind: { type: String, default: 'date' }, // 'date' | 'category'
   showDateColumn: { type: Boolean, default: true },
   hideCategoryVisuals: { type: Boolean, default: true },
@@ -149,7 +150,9 @@ function emitClose() {
 const titleLabel = computed(() =>
   props.kind === 'category' ? 'Category Transactions' : 'Transactions',
 )
-const subtitlePrefix = computed(() => (props.kind === 'category' ? 'Category' : 'Date'))
+const subtitlePrefix = computed(() => 
+  props.subtitlePrefix || (props.kind === 'category' ? 'Category' : 'Date')
+)
 
 /**
  * Ensure category visuals remain visible unless explicitly hidden by the

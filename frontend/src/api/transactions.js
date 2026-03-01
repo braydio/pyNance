@@ -33,6 +33,7 @@ export const fetchTransactions = async (params = {}) => {
     account_ids,
     tags,
     tag,
+    merchant,
     include_running_balance = false,
     ...rest
   } = params
@@ -58,6 +59,10 @@ export const fetchTransactions = async (params = {}) => {
     query.tags = tagFilters.join(',')
   } else if (tagFilters) {
     query.tags = tagFilters
+  }
+  // Pass merchant filter directly to API
+  if (merchant) {
+    query.merchant = merchant
   }
 
   const response = await axios.get('/api/transactions/get_transactions', { params: query })

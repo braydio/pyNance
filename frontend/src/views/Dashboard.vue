@@ -222,6 +222,7 @@
       :show-date-column="true"
       :hide-category-visuals="false"
       :subtitle="categoryModalSubtitle"
+      :subtitle-prefix="categoryModalSubtitlePrefix"
       :transactions="categoryModalTransactions"
       @close="closeModal('category')"
     />
@@ -292,6 +293,7 @@ const showReviewModal = isVisible('review')
 const showCategoryModal = isVisible('category')
 const categoryModalTransactions = ref([])
 const categoryModalSubtitle = ref('')
+const categoryModalSubtitlePrefix = ref('')
 const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
@@ -563,7 +565,7 @@ async function onNetBarClick(label) {
 /**
  * Handle clicks on the category breakdown chart.
  *
- * Fetches transactions for the clicked category within the active
+ * Fetches transactions for the clicked category (or merchant) within the active
  * date range and displays them in a modal dialog. If the clicked bar
  * does not correspond to any user-selected categories, no modal is shown.
  *
@@ -573,8 +575,14 @@ async function onNetBarClick(label) {
 async function onCategoryBarClick(payload) {
   const { label, ids = [] } = typeof payload === 'object' ? payload : { label: payload, ids: [] }
 
+  // If merchant mode, handle with dedicated merchant handler
+  if (breakdownType.value === 'merchant') {
+    await onMerchantBarClick({ label, merchantId: ids[0] })
+    return
+  }
+
   // Only display the modal when the clicked bar corresponds to selected categories
-  if (!ids.length || breakdownType.value === 'merchant') return
+  if (!ids.length) return
 
   // Determine the date range in effect for the category chart. The chart emits
   // `summary-change` events that populate `catSummary` with the actual start
@@ -590,6 +598,33 @@ async function onCategoryBarClick(payload) {
   })
   categoryModalTransactions.value = result.transactions || []
   categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
+  categoryModalSubtitlePrefix.value = 'Category'
+  openModal('category')
+}
+
+/**
+ * Handle clicks on merchant bars in the breakdown chart.
+ *
+ * Fetches all transactions for the selected merchant within the active
+ * date range and displays them in a modal.
+ *
+ * @param {object} payload - Click payload containing merchant label and ID.
+ */
+async function onMerchantBarClick({ label, merchantId }) {
+  if (!merchantId) return
+
+  const start = catSummary.value.startDate || debouncedRange.value.start
+  const end = catSummary.value.endDate || debouncedRange.value.end
+
+  const result = await fetchTransactionsApi({
+    merchant: merchantId,
+    start_date: start,
+    end_date: end,
+  })
+
+  categoryModalTransactions.value = result.transactions || []
+  categoryModalSubtitle.value = label
+  categoryModalSubtitlePrefix.value = 'Merchant'
   openModal('category')
 }
 
