@@ -90,3 +90,15 @@ Classification behavior:
 - Exposes `internal_transfer_flag` as a compatibility alias for clients that prefer transfer-specific naming.
 
 Spend analytics and summary endpoints continue to exclude rows where `is_internal` is true, so transfer classification metadata augments observability without changing existing exclusion filters.
+
+
+## Investment scope normalization
+
+`upsert_accounts` now accepts optional `enabled_products` scope data and persists explicit account flags:
+
+- `is_investment`
+- `investment_has_holdings`
+- `investment_has_transactions`
+- `product_provenance` (`product_scope`, `payload_type`, or `none`)
+
+Account serialization (`get_accounts_from_db`) now emits these flags and a normalized `account_type` value. Investment-linked rows always serialize with `account_type = "investment"` even when upstream type values vary (for example `brokerage`).

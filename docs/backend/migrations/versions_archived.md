@@ -15,3 +15,7 @@ historical context and auditability.
   – merge for heads 3eb1ade5cfec and 7343a4630d46.
 - `backend/migrations/versions_archived/f71197d4f032_legacy_models_py_move.py`
   – no-op migration documenting the legacy `models.py` move.
+
+## Recent active revision references
+
+- `backend/migrations/versions/e7b9f1c2a4d3_add_investment_account_flags.py` – adds explicit investment account flags (`is_investment`, holdings/transactions flags) and provenance metadata.

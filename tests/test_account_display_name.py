@@ -106,21 +106,48 @@ def test_display_name_handles_missing_name_and_metadata(app_context):
     assert account.display_name == "Unnamed Account"
 
 
-def test_get_accounts_from_db_includes_display_name(app_context):
-    db.session.add(
-        Account(
-            account_id="acc-4",
-            user_id="user-1",
-            name="Joint",
-            institution_name="SoFi",
-            type="depository",
-            subtype="savings",
-            balance=Decimal("55.50"),
-        )
+def test_get_accounts_from_db_includes_display_name_and_investment_semantics(
+    app_context,
+):
+    db.session.add_all(
+        [
+            Account(
+                account_id="acc-4",
+                user_id="user-1",
+                name="Joint",
+                institution_name="SoFi",
+                type="depository",
+                subtype="savings",
+                balance=Decimal("55.50"),
+            ),
+            Account(
+                account_id="acc-5",
+                user_id="user-1",
+                name="Brokerage",
+                institution_name="Fidelity",
+                type="brokerage",
+                subtype="brokerage",
+                balance=Decimal("1055.50"),
+                is_investment=True,
+                investment_has_holdings=True,
+                investment_has_transactions=True,
+                product_provenance="product_scope",
+            ),
+        ]
     )
     db.session.commit()
 
     accounts = get_accounts_from_db()
 
-    assert accounts[0]["name"] == "Joint"
-    assert accounts[0]["display_name"] == "SoFi • Savings"
+    by_id = {account["account_id"]: account for account in accounts}
+
+    assert by_id["acc-4"]["name"] == "Joint"
+    assert by_id["acc-4"]["display_name"] == "SoFi • Savings"
+    assert by_id["acc-4"]["account_type"] == "depository"
+    assert by_id["acc-4"]["is_investment"] is False
+
+    assert by_id["acc-5"]["type"] == "investment"
+    assert by_id["acc-5"]["account_type"] == "investment"
+    assert by_id["acc-5"]["is_investment"] is True
+    assert by_id["acc-5"]["investment_has_holdings"] is True
+    assert by_id["acc-5"]["investment_has_transactions"] is True

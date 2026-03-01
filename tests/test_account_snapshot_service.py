@@ -23,7 +23,7 @@ models_stub.AccountSnapshotPreference = type("AccountSnapshotPreference", (), {}
 sys.modules["app.models"] = models_stub
 
 finance_stub = types.ModuleType("app.utils.finance_utils")
-finance_stub.normalize_account_balance = lambda balance, _: balance
+finance_stub.normalize_account_balance = lambda balance, *_args, **_kwargs: balance
 sys.modules["app.utils.finance_utils"] = finance_stub
 
 
@@ -41,9 +41,14 @@ def make_accounts():
             name=name,
             institution_name="Bank",
             type="depository",
+            account_type="depository",
             subtype="checking",
             link_type="Plaid",
             balance=balance,
+            is_investment=False,
+            investment_has_holdings=False,
+            investment_has_transactions=False,
+            product_provenance="none",
             is_hidden=False,
             plaid_account=types.SimpleNamespace(last_refreshed=None),
         )
@@ -109,9 +114,14 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
             name=f"Account {idx}",
             institution_name="Bank",
             type=account_type,
+            account_type=account_type,
             subtype="checking",
             link_type="Plaid",
             balance=balance,
+            is_investment=False,
+            investment_has_holdings=False,
+            investment_has_transactions=False,
+            product_provenance="none",
             is_hidden=False,
             plaid_account=types.SimpleNamespace(last_refreshed=None),
         )

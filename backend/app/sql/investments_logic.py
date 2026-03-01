@@ -39,7 +39,7 @@ def get_investment_accounts() -> List[Dict[str, object]]:
     """Return accounts linked for Plaid investments."""
     query = Account.query.join(
         PlaidAccount, Account.account_id == PlaidAccount.account_id
-    ).filter(PlaidAccount.product == "investments")
+    ).filter(Account.is_investment.is_(True))
     accounts = []
     for acc in query.all():
         accounts.append(
@@ -47,8 +47,15 @@ def get_investment_accounts() -> List[Dict[str, object]]:
                 "account_id": acc.account_id,
                 "user_id": acc.user_id,
                 "name": acc.name,
-                "balance": acc.balance,
+                "display_name": acc.display_name,
+                "balance": float(acc.balance) if acc.balance is not None else None,
                 "institution_name": acc.institution_name,
+                "type": acc.account_type,
+                "account_type": acc.account_type,
+                "is_investment": bool(acc.is_investment),
+                "investment_has_holdings": bool(acc.investment_has_holdings),
+                "investment_has_transactions": bool(acc.investment_has_transactions),
+                "product_provenance": acc.product_provenance,
             }
         )
     return accounts

@@ -178,7 +178,11 @@ def exchange_public_token_endpoint():
 
         logger.debug("[CHECK] Calling upsert_accounts() with user_id=%s", user_id)
         account_logic.upsert_accounts(
-            user_id, accounts, provider="plaid", access_token=access_token
+            user_id,
+            accounts,
+            provider="plaid",
+            access_token=access_token,
+            enabled_products=canonical_products,
         )
         logger.info("Upserted %d accounts for user %s", len(accounts), user_id)
 

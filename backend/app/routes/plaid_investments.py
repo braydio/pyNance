@@ -52,7 +52,13 @@ def exchange_public_token_investments():
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
         accounts = get_accounts(access_token, user_id)
-        upsert_accounts(user_id, accounts, provider="plaid", access_token=access_token)
+        upsert_accounts(
+            user_id,
+            accounts,
+            provider="plaid",
+            access_token=access_token,
+            enabled_products=["investments"],
+        )
         for acct in accounts:
             acct_id = acct.get("account_id")
             if acct_id:

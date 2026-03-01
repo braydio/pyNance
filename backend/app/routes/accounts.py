@@ -866,8 +866,15 @@ def match_account_by_fields():
                     "name": acc.name,
                     "display_name": acc.display_name,
                     "institution_name": acc.institution_name,
-                    "type": acc.type,
+                    "type": acc.account_type,
+                    "account_type": acc.account_type,
                     "subtype": acc.subtype,
+                    "is_investment": bool(acc.is_investment),
+                    "investment_has_holdings": bool(acc.investment_has_holdings),
+                    "investment_has_transactions": bool(
+                        acc.investment_has_transactions
+                    ),
+                    "product_provenance": acc.product_provenance,
                 }
                 for acc in matches
             ]

@@ -92,6 +92,55 @@ def merge_plaid_products(existing, incoming) -> str:
     return serialize_plaid_products(merged)
 
 
+def _is_investment_type(account_type: str | None, subtype: str | None) -> bool:
+    """Return True when Plaid type/subtype indicate investment semantics."""
+
+    normalized_type = str(account_type or "").strip().lower()
+    normalized_subtype = str(subtype or "").strip().lower()
+    investment_tokens = {
+        "investment",
+        "brokerage",
+        "ira",
+        "401k",
+        "403b",
+        "pension",
+        "retirement",
+    }
+    return (
+        normalized_type in investment_tokens or normalized_subtype in investment_tokens
+    )
+
+
+def _derive_investment_flags(
+    account_payload: dict, plaid_products
+) -> dict[str, object]:
+    """Derive deterministic account investment metadata from payload + scopes."""
+
+    products = set(canonicalize_plaid_products(plaid_products))
+    payload_type = account_payload.get("type")
+    payload_subtype = account_payload.get("subtype")
+
+    has_investment_scope = "investments" in products
+    has_transaction_scope = "transactions" in products
+    investment_from_type = _is_investment_type(payload_type, payload_subtype)
+
+    is_investment = has_investment_scope or investment_from_type
+    if is_investment:
+        effective_type = "investment"
+        provenance = "product_scope" if has_investment_scope else "payload_type"
+    else:
+        effective_type = str(payload_type or "Unknown")
+        provenance = "none"
+
+    return {
+        "effective_type": effective_type,
+        "is_investment": is_investment,
+        "investment_has_holdings": has_investment_scope,
+        "investment_has_transactions": has_transaction_scope and is_investment,
+        "product_provenance": provenance,
+    }
+
+
 def _serialize_transaction_tags(txn: Transaction) -> list[str]:
     """Return transaction tag names with a default fallback.
 
@@ -491,7 +540,12 @@ def get_accounts_from_db(include_hidden: bool = False):
                 "user_id": acc.user_id,
                 "name": acc.name,
                 "display_name": acc.display_name,
-                "type": acc.type,
+                "type": acc.account_type,
+                "account_type": acc.account_type,
+                "is_investment": bool(acc.is_investment),
+                "investment_has_holdings": bool(acc.investment_has_holdings),
+                "investment_has_transactions": bool(acc.investment_has_transactions),
+                "product_provenance": acc.product_provenance,
                 "subtype": acc.subtype,
                 "institution_name": acc.institution_name,
                 "balance": float(acc.balance) if acc.balance is not None else None,
@@ -527,7 +581,13 @@ def save_plaid_account(account_id, item_id, access_token, product):
     return plaid_acct
 
 
-def upsert_accounts(user_id, account_list, provider, access_token=None):
+def upsert_accounts(
+    user_id,
+    account_list,
+    provider,
+    access_token=None,
+    enabled_products=None,
+):
     processed_ids = set()
     count = 0
     logger.debug("[CHECK] upsert_accounts received user_id=%s", user_id)
@@ -543,7 +603,8 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
             processed_ids.add(account_id)
 
             name = account.get("name") or "Unnamed Account"
-            acc_type = str(account.get("type") or "Unknown")
+            investment_flags = _derive_investment_flags(account, enabled_products)
+            acc_type = investment_flags["effective_type"]
 
             # ✅ Corrected Plaid balance parsing
             balance_raw = (
@@ -593,6 +654,12 @@ def upsert_accounts(user_id, account_list, provider, access_token=None):
                 "balance": balance,
                 # Normalize provider/link type to lowercase to match DB enum values
                 "link_type": str(provider or "").lower() or "manual",
+                "is_investment": investment_flags["is_investment"],
+                "investment_has_holdings": investment_flags["investment_has_holdings"],
+                "investment_has_transactions": investment_flags[
+                    "investment_has_transactions"
+                ],
+                "product_provenance": investment_flags["product_provenance"],
             }
 
             existing_account = Account.query.filter_by(account_id=account_id).first()
