@@ -68,6 +68,8 @@ type UseForecastDataOptions = {
   liabilityRate: Ref<number>
   adjustments: Ref<ForecastAdjustmentInput[]>
   userId: Ref<string>
+  includedAccountIds: Ref<string[]>
+  excludedAccountIds: Ref<string[]>
 }
 
 /**
@@ -79,6 +81,8 @@ export function useForecastData({
   liabilityRate,
   adjustments,
   userId,
+  includedAccountIds,
+  excludedAccountIds,
 }: UseForecastDataOptions) {
   const timeline = ref<ForecastTimelinePoint[]>([])
   const summary = ref<ForecastSummary | null>(null)
@@ -125,6 +129,14 @@ export function useForecastData({
     return [...entries, ...manualEntries].filter((entry) => entry.amount !== 0)
   }
 
+  /**
+   * Build account include/exclude lists for compute requests.
+   */
+  const buildAccountFilters = () => ({
+    included_account_ids: [...includedAccountIds.value],
+    excluded_account_ids: [...excludedAccountIds.value],
+  })
+
   const fetchData = async () => {
     loading.value = true
     error.value = null
@@ -149,6 +161,7 @@ export function useForecastData({
           start_date: startDate,
           horizon_days: horizonDays,
           adjustments: adjustmentPayload,
+          ...buildAccountFilters(),
         }),
       })
 

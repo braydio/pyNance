@@ -14,7 +14,7 @@ describe('useForecastData', () => {
     vi.restoreAllMocks()
   })
 
-  it('posts adjustments to the compute endpoint and maps response data', async () => {
+  it('posts account filters and adjustments to the compute endpoint and maps response data', async () => {
     const viewType = ref<'Month' | 'Year'>('Month')
     const manualIncome = ref(150)
     const liabilityRate = ref(20)
@@ -26,6 +26,8 @@ describe('useForecastData', () => {
       },
     ])
     const userId = ref('user-123')
+    const includedAccountIds = ref(['acc-1', 'acc-2'])
+    const excludedAccountIds = ref(['acc-3'])
 
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
@@ -45,7 +47,10 @@ describe('useForecastData', () => {
         },
         cashflows: [{ label: 'Manual bonus', amount: 200 }],
         adjustments: [],
-        metadata: {},
+        metadata: {
+          included_account_ids: ['acc-1', 'acc-2'],
+          excluded_account_ids: ['acc-3'],
+        },
       }),
     })
 
@@ -55,6 +60,8 @@ describe('useForecastData', () => {
       liabilityRate,
       adjustments,
       userId,
+      includedAccountIds,
+      excludedAccountIds,
     })
 
     await fetchData()
@@ -73,6 +80,8 @@ describe('useForecastData', () => {
     expect(callBody).toMatchObject({
       user_id: 'user-123',
       horizon_days: 30,
+      included_account_ids: ['acc-1', 'acc-2'],
+      excluded_account_ids: ['acc-3'],
     })
     expect(callBody.adjustments).toEqual(
       expect.arrayContaining([
@@ -92,6 +101,8 @@ describe('useForecastData', () => {
     const liabilityRate = ref(0)
     const adjustments = ref([])
     const userId = ref('')
+    const includedAccountIds = ref([])
+    const excludedAccountIds = ref([])
 
     const { fetchData, error, timeline } = useForecastData({
       viewType,
@@ -99,6 +110,8 @@ describe('useForecastData', () => {
       liabilityRate,
       adjustments,
       userId,
+      includedAccountIds,
+      excludedAccountIds,
     })
 
     await fetchData()

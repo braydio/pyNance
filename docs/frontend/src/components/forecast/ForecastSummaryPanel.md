@@ -19,3 +19,12 @@
 ## Notes
 
 - The panel surfaces a simple net delta hint based on the two manual inputs.
+
+
+## Account Selector
+
+- The current balance value is clickable and opens an account contribution selector panel.
+- The selector supports account-level include and exclude toggles and emits:
+  - `update:includedAccountIds`
+  - `update:excludedAccountIds`
+- Layout/composable integrations use these toggles to recompute forecast outputs with scoped account sets.
