@@ -2,8 +2,15 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import { vi } from 'vitest'
+import { ref } from 'vue'
 import Accounts from '../Accounts.vue'
 import { fetchNetChanges } from '@/api/accounts'
+
+const normalizedHistory = ref([
+  { date: '2024-01-01', balance: 120 },
+  { date: '2024-01-02', balance: 135.5 },
+])
+const loadHistoryMock = vi.fn().mockResolvedValue(normalizedHistory.value)
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {}, query: {} }),
@@ -22,11 +29,21 @@ vi.mock('@/services/api', () => ({
   },
 }))
 
+vi.mock('@/composables/useAccountHistory', () => ({
+  useAccountHistory: () => ({
+    history: normalizedHistory,
+    balances: normalizedHistory,
+    loading: ref(false),
+    error: ref(null),
+    isReady: ref(true),
+    loadHistory: loadHistoryMock,
+  }),
+}))
+
 vi.mock('@/api/accounts', () => ({
   fetchNetChanges: vi
     .fn()
     .mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
-  fetchAccountHistory: vi.fn().mockResolvedValue({ balances: [] }),
   fetchRecentTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
   rangeToDates: vi.fn().mockReturnValue({ start: '2024-01-01', end: '2024-01-30' }),
 }))
@@ -34,6 +51,11 @@ vi.mock('@/api/accounts', () => ({
 describe('Accounts.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    loadHistoryMock.mockResolvedValue(normalizedHistory.value)
+    normalizedHistory.value = [
+      { date: '2024-01-01', balance: 120 },
+      { date: '2024-01-02', balance: 135.5 },
+    ]
   })
 
   it('matches snapshot', () => {
@@ -102,5 +124,44 @@ describe('Accounts.vue', () => {
     expect(text).toContain('$1,250.55')
     expect(text).toContain('$300.10')
     expect(text).toContain('$950.45')
+  })
+
+  it('passes normalized composable history into the balance chart', async () => {
+    const wrapper = shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: {
+            template: '<div><slot name="Summary" /></div>',
+          },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+          Card: {
+            template: '<div><slot /></div>',
+          },
+          PageHeader: {
+            template: '<div><slot name="title" /><slot name="subtitle" /></div>',
+          },
+          UiButton: {
+            template: '<button><slot /></button>',
+          },
+          SkeletonCard: true,
+          RetryError: true,
+          AccountBalanceHistoryChart: {
+            name: 'AccountBalanceHistoryChart',
+            template: '<div data-testid="history-chart-proxy" />',
+            props: ['historyData'],
+          },
+          TransactionsTable: true,
+          NetYearComparisonChart: true,
+          AssetsBarTrended: true,
+          AccountsReorderChart: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const chart = wrapper.getComponent({ name: 'AccountBalanceHistoryChart' })
+    expect(chart.props('historyData')).toEqual(normalizedHistory.value)
   })
 })

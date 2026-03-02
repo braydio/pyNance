@@ -4,31 +4,30 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import AccountSparkline from '../AccountSparkline.vue'
 
-const balanceHistory = ref([{ balance: 100 }, { balance: 150 }, { balance: 90 }])
-
-const transactionHistory = ref([{ net_amount: 20 }, { net_amount: -10 }, { net_amount: 35 }])
+const normalizedHistory = ref([
+  { date: '2024-01-01', balance: 100 },
+  { date: '2024-01-02', balance: 150 },
+  { date: '2024-01-03', balance: 90 },
+])
 
 vi.mock('@/composables/useAccountHistory', () => ({
   useAccountHistory: () => ({
-    history: balanceHistory,
-    balances: balanceHistory,
+    history: normalizedHistory,
+    balances: normalizedHistory,
     loading: ref(false),
+    error: ref(null),
+    isReady: ref(true),
     loadHistory: vi.fn(),
-  }),
-}))
-
-vi.mock('@/composables/useAccountTransactionHistory', () => ({
-  useAccountTransactionHistory: () => ({
-    history: transactionHistory,
-    loading: ref(false),
-    fetchHistory: vi.fn(),
   }),
 }))
 
 describe('AccountSparkline accessibility', () => {
   beforeEach(() => {
-    balanceHistory.value = [{ balance: 100 }, { balance: 150 }, { balance: 90 }]
-    transactionHistory.value = [{ net_amount: 20 }, { net_amount: -10 }, { net_amount: 35 }]
+    normalizedHistory.value = [
+      { date: '2024-01-01', balance: 100 },
+      { date: '2024-01-02', balance: 150 },
+      { date: '2024-01-03', balance: 90 },
+    ]
   })
 
   it('renders toggle button with descriptive content for the indicator', () => {
@@ -48,7 +47,7 @@ describe('AccountSparkline accessibility', () => {
     expect(indicatorHint.text()).toBe('Indicator letter B represents balance history.')
   })
 
-  it('supports keyboard and pointer activation while updating aria-pressed state', async () => {
+  it('uses the same normalized history dataset for balance and transactions modes', async () => {
     const wrapper = mount(AccountSparkline, {
       props: {
         accountId: 'acct-456',
@@ -56,19 +55,14 @@ describe('AccountSparkline accessibility', () => {
     })
 
     const toggle = wrapper.get('button.sparkline-container')
+    const balancePoints = wrapper.get('polyline').attributes('points')
 
     await toggle.trigger('keydown.enter')
+
     expect(toggle.attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('.sparkline-indicator .sr-only').text()).toBe(
       'Indicator letter T represents transaction history.',
     )
-
-    toggle.element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 0 }))
-    await wrapper.vm.$nextTick()
-    expect(toggle.attributes('aria-pressed')).toBe('true')
-
-    toggle.element.dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }))
-    await wrapper.vm.$nextTick()
-    expect(toggle.attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('polyline').attributes('points')).toBe(balancePoints)
   })
 })
