@@ -14,8 +14,13 @@
       :manual-income="manualIncome"
       :liability-rate="liabilityRate"
       :view-type="viewType"
+      :account-options="forecastAccounts"
+      :included-account-ids="includedAccountIds"
+      :excluded-account-ids="excludedAccountIds"
       @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event"
+      @update:includedAccountIds="includedAccountIds = $event"
+      @update:excludedAccountIds="excludedAccountIds = $event"
     />
 
     <ForecastChart
@@ -41,6 +46,13 @@ import {
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
+import api from '@/services/api'
+
+type ForecastAccountOption = {
+  account_id: string
+  name: string
+  institution_name?: string
+}
 
 const viewType = ref<ForecastViewType>('Month')
 const currentBalance = ref(0)
@@ -48,6 +60,9 @@ const manualIncome = ref(0)
 const liabilityRate = ref(0)
 const adjustments = ref<ForecastAdjustmentInput[]>([])
 const userId = ref(import.meta.env.VITE_USER_ID_PLAID || '')
+const forecastAccounts = ref<ForecastAccountOption[]>([])
+const includedAccountIds = ref<string[]>([])
+const excludedAccountIds = ref<string[]>([])
 
 const { timeline, summary, cashflows, loading, error, fetchData } = useForecastData({
   viewType,
@@ -55,6 +70,8 @@ const { timeline, summary, cashflows, loading, error, fetchData } = useForecastD
   liabilityRate,
   adjustments,
   userId,
+  includedAccountIds,
+  excludedAccountIds,
 })
 
 const forecastItems = computed(() =>
@@ -70,8 +87,35 @@ watch(summary, (value) => {
   currentBalance.value = value?.starting_balance ?? 0
 })
 
-onMounted(fetchData)
-watch([viewType, manualIncome, liabilityRate, adjustments], fetchData)
+onMounted(async () => {
+  await fetchForecastAccounts()
+  await fetchData()
+})
+
+watch(
+  [viewType, manualIncome, liabilityRate, adjustments, includedAccountIds, excludedAccountIds],
+  fetchData,
+)
+
+/**
+ * Load forecast account options and default to including all visible accounts.
+ */
+async function fetchForecastAccounts() {
+  try {
+    const response = await api.getAccounts()
+    const accounts = Array.isArray(response.accounts) ? response.accounts : []
+    forecastAccounts.value = accounts.map((account) => ({
+      account_id: account.account_id,
+      name: account.name,
+      institution_name: account.institution_name,
+    }))
+    if (includedAccountIds.value.length === 0) {
+      includedAccountIds.value = forecastAccounts.value.map((account) => account.account_id)
+    }
+  } catch {
+    forecastAccounts.value = []
+  }
+}
 
 /**
  * Capture adjustment inputs so the compute request can include them.

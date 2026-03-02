@@ -12,6 +12,51 @@ forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
 
 
+def _parse_account_filters(
+    payload: dict[str, object],
+) -> tuple[list[str] | None, list[str]]:
+    """Normalize include/exclude account filters from a compute payload.
+
+    Returns:
+        A tuple of ``(included_account_ids, excluded_account_ids)`` where
+        ``included_account_ids`` is ``None`` when no explicit inclusion list was
+        provided.
+    """
+
+    included_raw = payload.get("included_account_ids")
+    excluded_raw = payload.get("excluded_account_ids")
+
+    if included_raw is not None and not isinstance(included_raw, list):
+        raise ValueError("included_account_ids must be a list.")
+    if excluded_raw is not None and not isinstance(excluded_raw, list):
+        raise ValueError("excluded_account_ids must be a list.")
+
+    included_ids = (
+        [str(account_id) for account_id in included_raw if str(account_id).strip()]
+        if isinstance(included_raw, list)
+        else None
+    )
+    excluded_ids = (
+        [str(account_id) for account_id in excluded_raw if str(account_id).strip()]
+        if isinstance(excluded_raw, list)
+        else []
+    )
+
+    if included_ids is not None:
+        deduped: list[str] = []
+        for account_id in included_ids:
+            if account_id not in deduped:
+                deduped.append(account_id)
+        included_ids = deduped
+
+    deduped_excluded: list[str] = []
+    for account_id in excluded_ids:
+        if account_id not in deduped_excluded:
+            deduped_excluded.append(account_id)
+
+    return included_ids, deduped_excluded
+
+
 def _parse_start_date(raw_value: str | None) -> date:
     """Parse an ISO date string into a date instance with a fallback to today."""
     if not raw_value:
@@ -35,13 +80,24 @@ def _parse_horizon_days(raw_value: object) -> int:
     return horizon
 
 
-def _load_latest_snapshots(user_id: str) -> list[dict[str, object]]:
+def _load_latest_snapshots(
+    user_id: str,
+    included_account_ids: list[str] | None = None,
+    excluded_account_ids: list[str] | None = None,
+) -> list[dict[str, object]]:
     """Return the most recent balance snapshot for each visible account."""
+    included_ids = included_account_ids or []
+    excluded_ids = excluded_account_ids or []
+
     accounts_query = db.session.query(Account).filter(
         (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
     )
     if user_id:
         accounts_query = accounts_query.filter(Account.user_id == user_id)
+    if included_ids:
+        accounts_query = accounts_query.filter(Account.account_id.in_(included_ids))
+    if excluded_ids:
+        accounts_query = accounts_query.filter(~Account.account_id.in_(excluded_ids))
     accounts = accounts_query.all()
 
     account_ids = [account.account_id for account in accounts]
@@ -96,9 +152,15 @@ def _load_latest_snapshots(user_id: str) -> list[dict[str, object]]:
 
 
 def _load_historical_aggregates(
-    user_id: str, start_date: date
+    user_id: str,
+    start_date: date,
+    included_account_ids: list[str] | None = None,
+    excluded_account_ids: list[str] | None = None,
 ) -> list[dict[str, object]]:
     """Return daily inflow/outflow aggregates for the lookback window."""
+    included_ids = included_account_ids or []
+    excluded_ids = excluded_account_ids or []
+
     lookback_start = start_date - timedelta(days=LOOKBACK_DAYS)
     date_expr = func.date(Transaction.date).label("date")
     inflow_sum = func.sum(
@@ -120,6 +182,10 @@ def _load_historical_aggregates(
     )
     if user_id:
         query = query.filter(Transaction.user_id == user_id)
+    if included_ids:
+        query = query.filter(Transaction.account_id.in_(included_ids))
+    if excluded_ids:
+        query = query.filter(~Transaction.account_id.in_(excluded_ids))
 
     rows = query.group_by(date_expr).order_by(date_expr).all()
     return [
@@ -164,6 +230,7 @@ def compute_forecast_route():
     try:
         start_date = _parse_start_date(payload.get("start_date"))
         horizon_days = _parse_horizon_days(payload.get("horizon_days"))
+        included_account_ids, excluded_account_ids = _parse_account_filters(payload)
     except ValueError as exc:
         logger.warning("Invalid forecast compute request: %s", exc)
         return jsonify({"error": str(exc)}), 400
@@ -175,8 +242,27 @@ def compute_forecast_route():
         return jsonify({"error": "adjustments must be a list."}), 400
 
     try:
-        latest_snapshots = _load_latest_snapshots(str(user_id))
-        historical_aggregates = _load_historical_aggregates(str(user_id), start_date)
+        latest_snapshots = _load_latest_snapshots(
+            str(user_id),
+            included_account_ids=included_account_ids,
+            excluded_account_ids=excluded_account_ids,
+        )
+        historical_aggregates = _load_historical_aggregates(
+            str(user_id),
+            start_date,
+            included_account_ids=included_account_ids,
+            excluded_account_ids=excluded_account_ids,
+        )
+
+        net_snapshot_balance = sum(
+            float(snapshot.get("balance", 0) or 0) for snapshot in latest_snapshots
+        )
+        total_inflow = sum(
+            float(item.get("inflow", 0) or 0) for item in historical_aggregates
+        )
+        total_outflow = sum(
+            float(item.get("outflow", 0) or 0) for item in historical_aggregates
+        )
         result = compute_forecast(
             user_id=str(user_id),
             start_date=start_date,
@@ -186,6 +272,13 @@ def compute_forecast_route():
             adjustments=adjustments,
             metadata={
                 "lookback_days": LOOKBACK_DAYS,
+                "included_account_ids": included_account_ids,
+                "excluded_account_ids": excluded_account_ids,
+                "contribution_totals": {
+                    "snapshot_balance": net_snapshot_balance,
+                    "historical_inflow": total_inflow,
+                    "historical_outflow": total_outflow,
+                },
             },
         )
         return jsonify(result), 200

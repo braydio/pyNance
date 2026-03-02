@@ -228,7 +228,7 @@ def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_latest_snapshots",
-        lambda user_id: [
+        lambda user_id, **_: [
             {
                 "account_id": "acc",
                 "user_id": user_id,
@@ -240,7 +240,7 @@ def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_historical_aggregates",
-        lambda user_id, start_date: [
+        lambda user_id, start_date, **_: [
             {"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}
         ],
     )
@@ -292,7 +292,7 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_latest_snapshots",
-        lambda user_id: [
+        lambda user_id, **_: [
             {
                 "account_id": "acc",
                 "user_id": user_id,
@@ -304,7 +304,7 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_historical_aggregates",
-        lambda user_id, start_date: [
+        lambda user_id, start_date, **_: [
             {"date": "2023-12-30", "inflow": 10.0, "outflow": 2.0}
         ],
     )
@@ -322,3 +322,103 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
 
     assert resp.status_code == 200
     assert captured["adjustments"] == adjustments
+
+
+def test_forecast_compute_includes_account_filters_and_contribution_metadata(
+    client, monkeypatch
+):
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["metadata"] = kwargs["metadata"]
+        captured["latest_snapshots"] = kwargs["latest_snapshots"]
+        captured["historical_aggregates"] = kwargs["historical_aggregates"]
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": [],
+            "metadata": {},
+        }
+
+    def fake_snapshots(user_id, included_account_ids=None, excluded_account_ids=None):
+        captured["snapshot_filters"] = {
+            "user_id": user_id,
+            "included": included_account_ids,
+            "excluded": excluded_account_ids,
+        }
+        return [
+            {
+                "account_id": "acc-1",
+                "balance": 150.0,
+                "date": "2024-01-01",
+                "user_id": user_id,
+            },
+            {
+                "account_id": "acc-2",
+                "balance": 50.0,
+                "date": "2024-01-01",
+                "user_id": user_id,
+            },
+        ]
+
+    def fake_aggregates(
+        user_id, start_date, included_account_ids=None, excluded_account_ids=None
+    ):
+        captured["aggregate_filters"] = {
+            "user_id": user_id,
+            "included": included_account_ids,
+            "excluded": excluded_account_ids,
+        }
+        return [
+            {"date": "2023-12-31", "inflow": 25.0, "outflow": 10.0},
+            {"date": "2023-12-30", "inflow": 15.0, "outflow": 5.0},
+        ]
+
+    monkeypatch.setattr(forecast_module, "_load_latest_snapshots", fake_snapshots)
+    monkeypatch.setattr(forecast_module, "_load_historical_aggregates", fake_aggregates)
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-789",
+            "start_date": "2024-01-01",
+            "horizon_days": 7,
+            "adjustments": [],
+            "included_account_ids": ["acc-1", "acc-2"],
+            "excluded_account_ids": ["acc-3"],
+        },
+    )
+
+    assert resp.status_code == 200
+    assert captured["snapshot_filters"] == {
+        "user_id": "user-789",
+        "included": ["acc-1", "acc-2"],
+        "excluded": ["acc-3"],
+    }
+    assert captured["aggregate_filters"] == {
+        "user_id": "user-789",
+        "included": ["acc-1", "acc-2"],
+        "excluded": ["acc-3"],
+    }
+    assert captured["metadata"]["included_account_ids"] == ["acc-1", "acc-2"]
+    assert captured["metadata"]["excluded_account_ids"] == ["acc-3"]
+    assert captured["metadata"]["contribution_totals"] == {
+        "snapshot_balance": 200.0,
+        "historical_inflow": 40.0,
+        "historical_outflow": 15.0,
+    }
+
+
+def test_forecast_compute_rejects_invalid_account_filter_types(client):
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-101",
+            "included_account_ids": "acc-1",
+        },
+    )
+
+    assert resp.status_code == 400
+    assert resp.get_json() == {"error": "included_account_ids must be a list."}

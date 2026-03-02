@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-28
+Last Updated: 2026-03-02
 Status: Active
 ---
 
@@ -13,7 +13,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
 ## Endpoints
 
 - `GET /api/forecast` – Returns projected balances, labels, and supporting metadata for either monthly or yearly horizons.
-- `POST /api/forecast/compute` – Computes a full `ForecastResult` payload with optional adjustments.
+- `POST /api/forecast/compute` – Computes a full `ForecastResult` payload with optional adjustments and account include/exclude filters.
 
 ## Inputs/Outputs
 
@@ -26,7 +26,9 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `start_date` (ISO date string, optional; defaults to today)
     - `horizon_days` (integer, optional; defaults to 30)
     - `adjustments` (list, optional; supports empty list or multiple adjustments)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`.
+    - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
+    - `excluded_account_ids` (list of account IDs, optional; applied after includes)
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`) and aggregate contribution totals for the selected accounts.
 
 ## Auth
 
@@ -87,3 +89,15 @@ Content-Type: application/json
 ## Serialization notes
 
 Latest snapshot serialization now includes explicit account investment metadata (`account_type`, `is_investment`, `investment_has_holdings`, `investment_has_transactions`) so forecast computation and downstream consumers do not need to infer investment semantics from `type` strings.
+
+
+```json
+{
+  "user_id": "user-123",
+  "start_date": "2024-01-01",
+  "horizon_days": 30,
+  "included_account_ids": ["acc-1", "acc-2"],
+  "excluded_account_ids": ["acc-3"],
+  "adjustments": []
+}
+```
