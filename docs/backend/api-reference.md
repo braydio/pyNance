@@ -25,7 +25,7 @@ static markdown reference.
 
 ### 🔸 Shared Resources
 
-```
+```text
 GET    /api/transactions/get_transactions
 PUT    /api/transactions/update
 POST   /api/transactions/scan-internal
@@ -124,9 +124,9 @@ Accepted path identifier formats for `<id>`:
 - `start_date` – optional ISO `YYYY-MM-DD` lower bound
 - `end_date` – optional ISO `YYYY-MM-DD` upper bound
 
-Precedence and window resolution rules:
+Precedence and window resolution rules (`start_date`/`end_date` take precedence over `range` for explicit bounds):
 
-- If both `start_date` and `end_date` are provided, they define the exact window and `range` only controls the internal service `days` parameter.
+- If both `start_date` and `end_date` are provided, they define the exact window and `range` does not override either bound.
 - If `start_date` is provided without `end_date`, `end_date` is derived as `start_date + (range_days - 1)`.
 - If `end_date` is provided without `start_date`, `start_date` is derived as `end_date - (range_days - 1)`.
 - If neither date is provided, the route returns the trailing `range_days` ending on the current UTC date.
@@ -142,7 +142,7 @@ Precedence and window resolution rules:
 }
 ```
 
-`balances` is the canonical field. `history` is a legacy alias currently returned with the same array for backward compatibility.
+`balances` is the canonical field. `history` is a legacy alias (when present) and mirrors the same array for backward compatibility.
 
 **GET /api/accounts/<account_id>/net_changes**
 
@@ -257,7 +257,7 @@ endpoint returns candidate matches but does not modify any transaction flags.
 
 ### 🔹 Provider-Specific Resources
 
-```
+```text
 POST   /api/plaid/transactions/exchange_public_token
 POST   /api/plaid/transactions/refresh_accounts
 POST   /api/plaid/transactions/sync

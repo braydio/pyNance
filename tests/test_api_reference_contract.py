@@ -31,12 +31,34 @@ def test_accounts_history_docs_capture_query_precedence_and_response_alias():
     assert "`end_date`" in section
     assert "`range`" in section
     assert "Precedence and window resolution rules" in section
+    assert "take precedence over `range`" in section
+    assert "does not override either bound" in section
     assert "Accepted path identifier formats" in section
     assert "External `account_id` string" in section
     assert "Internal numeric primary key" in section
     assert '"balances"' in section
     assert '"history"' in section
     assert "legacy alias" in section
+
+
+def test_api_reference_has_balanced_markdown_fences_in_accounts_history_neighborhood():
+    """Surrounding endpoint listings should retain valid fenced code blocks."""
+
+    doc_text = _read(DOC_PATH)
+
+    shared_start = "### 🔸 Shared Resources"
+    provider_end = "**POST /api/plaid/transactions/refresh_accounts**"
+    start_index = doc_text.index(shared_start)
+    end_index = doc_text.index(provider_end)
+    neighborhood = doc_text[start_index:end_index]
+
+    assert "```text\nGET    /api/transactions/get_transactions" in neighborhood
+    assert "```text\nPOST   /api/plaid/transactions/exchange_public_token" in neighborhood
+
+    fence_lines = [line.strip() for line in neighborhood.splitlines() if line.strip().startswith("```")]
+    opened = sum(1 for line in fence_lines if line != "```")
+    closed = fence_lines.count("```")
+    assert opened == closed
 
 
 def test_accounts_history_docs_match_route_contract_markers():
