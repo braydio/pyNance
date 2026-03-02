@@ -22,7 +22,8 @@ Expose persisted investment account, holdings, and transaction data under `/api/
 
 Return all accounts with explicit `Account.is_investment` flags. Responses normalize investment semantics via `account_type = "investment"`.
 
-- Query parameters: none.
+- Query parameters:
+  - `user_id` (required unless provided by auth/session context).
 - Success response (`200`):
 
 ```json
@@ -49,7 +50,8 @@ Return all accounts with explicit `Account.is_investment` flags. Responses norma
 
 Return holdings joined with security metadata.
 
-- Query parameters: none.
+- Query parameters:
+  - `user_id` (required unless provided by auth/session context).
 - Success response (`200`):
 
 ```json
@@ -84,6 +86,7 @@ Return holdings joined with security metadata.
 Return paginated investment transactions with optional filters.
 
 - Query parameters:
+  - `user_id` (required unless provided by auth/session context)
   - Pagination:
     - `page` (optional, default `1`, integer)
     - `page_size` (optional, default `25`, integer)
@@ -135,14 +138,15 @@ Return paginated investment transactions with optional filters.
 
 - Error responses:
   - `400` with shape `{ "status": "error", "error": "..." }` when:
+    - `user_id` cannot be resolved from query/auth/session context.
     - `start_date` or `end_date` is not in `YYYY-MM-DD` format.
     - `end_date` is before `start_date`.
   - Non-integer `page` or `page_size` is not explicitly handled in-route and can bubble as an unhandled exception.
 
 ## Auth
 
-- No route-level auth checks are implemented in this module.
-- Access control, if required, must be enforced by upstream middleware, blueprint wrapping, or deployment boundary.
+- Each endpoint resolves a user scope from `user_id` (query param), Flask request context (`g.user_id`), or session values (`session.user_id`/`session.auth_user_id`).
+- Responses are constrained to accounts owned by the scoped user that are investment-eligible (`Account.is_investment = true`) and linked to Plaid account product scopes containing `investments`.
 
 ## Dependencies
 

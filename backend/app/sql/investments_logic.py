@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from app.extensions import db
 from app.models import (
@@ -35,11 +35,21 @@ def _json_safe(obj: Any) -> Any:
     return obj
 
 
-def get_investment_accounts() -> List[Dict[str, object]]:
-    """Return accounts linked for Plaid investments."""
+def get_investment_accounts(user_id: Optional[str] = None) -> List[Dict[str, object]]:
+    """Return accounts linked for Plaid investments within an optional user scope.
+
+    Args:
+        user_id: Optional user identifier used to constrain account visibility.
+
+    Returns:
+        Serialized investment account records eligible for the investments APIs.
+    """
     query = Account.query.join(
         PlaidAccount, Account.account_id == PlaidAccount.account_id
     ).filter(Account.is_investment.is_(True))
+    if user_id:
+        query = query.filter(Account.user_id == user_id)
+    query = query.filter(PlaidAccount.product.ilike("%investments%"))
     accounts = []
     for acc in query.all():
         accounts.append(

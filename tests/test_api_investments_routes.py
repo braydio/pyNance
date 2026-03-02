@@ -71,6 +71,9 @@ class QueryListStub:
     def all(self):
         return list(self._rows)
 
+    def join(self, *_args, **_kwargs):
+        return self
+
 
 @dataclass
 class Txn:
@@ -157,6 +160,17 @@ class WebhookLogStub:
         self.payload = kwargs
 
 
+class AccountScopeStub:
+    """Minimal account model for user and investment scope assertions."""
+
+    account_id = FilterColumn("account_id")
+
+    def __init__(self, account_id: str, user_id: str, is_investment: bool):
+        self.account_id = account_id
+        self.user_id = user_id
+        self.is_investment = is_investment
+
+
 def _load_module(
     module_name: str, route_path: str, models_stub, sql_pkg, helpers_stub=None
 ):
@@ -201,6 +215,8 @@ def _load_module(
 @pytest.fixture
 def investments_client():
     models_stub = types.ModuleType("app.models")
+    models_stub.Account = AccountScopeStub
+    models_stub.PlaidAccount = PlaidAccountStub
     models_stub.InvestmentHolding = type(
         "InvestmentHolding", (), {"security_id": FilterColumn("security_id")}
     )
@@ -221,8 +237,23 @@ def investments_client():
         "Security", (), {"security_id": FilterColumn("security_id")}
     )
 
+    scoped_account_rows = [
+        {
+            "account_id": "acc-1",
+            "user_id": "u1",
+            "name": "Brokerage 1",
+            "institution_name": "Inst 1",
+        }
+    ]
+    captured_scope = {"user_id": None}
+
     investments_logic_stub = types.ModuleType("app.sql.investments_logic")
-    investments_logic_stub.get_investment_accounts = lambda: [{"account_id": "inv-1"}]
+
+    def _get_accounts(user_id=None):
+        captured_scope["user_id"] = user_id
+        return [row for row in scoped_account_rows if row["user_id"] == user_id]
+
+    investments_logic_stub.get_investment_accounts = _get_accounts
 
     sql_pkg = types.ModuleType("app.sql")
     sql_pkg.investments_logic = investments_logic_stub
@@ -236,16 +267,71 @@ def investments_client():
     )
 
     holding = Holding("acc-1", "sec-1", 2.0, 10.0, 30.0, date(2024, 5, 2))
+    cross_user_holding = Holding("acc-2", "sec-2", 3.0, 11.0, 33.0, date(2024, 5, 2))
+    non_investment_holding = Holding(
+        "acc-3", "sec-3", 4.0, 12.0, 48.0, date(2024, 5, 2)
+    )
+    no_scope_holding = Holding("acc-4", "sec-4", 5.0, 13.0, 65.0, date(2024, 5, 2))
     security = Sec(
         "sec-1", "Security One", "SEC1", "equity", "USD", 15.0, date(2024, 5, 2)
     )
+    security_two = Sec(
+        "sec-2", "Security Two", "SEC2", "equity", "USD", 16.0, date(2024, 5, 2)
+    )
+    security_three = Sec(
+        "sec-3", "Security Three", "SEC3", "equity", "USD", 17.0, date(2024, 5, 2)
+    )
+    security_four = Sec(
+        "sec-4", "Security Four", "SEC4", "equity", "USD", 18.0, date(2024, 5, 2)
+    )
+
+    allowed_account = AccountScopeStub("acc-1", "u1", True)
+    cross_user_account = AccountScopeStub("acc-2", "u2", True)
+    non_investment_account = AccountScopeStub("acc-3", "u1", False)
+    no_scope_account = AccountScopeStub("acc-4", "u1", True)
+
+    plaid_investments = PlaidAccountStub(
+        "acc-1", "item-1", "token-1", product="investments"
+    )
+    plaid_investments_two = PlaidAccountStub(
+        "acc-2", "item-2", "token-2", product="investments"
+    )
+    plaid_non_investments = PlaidAccountStub(
+        "acc-3", "item-3", "token-3", product="transactions"
+    )
+    plaid_missing_scope = PlaidAccountStub(
+        "acc-4", "item-4", "token-4", product="liabilities"
+    )
 
     class SessionQuery:
+        def __init__(self):
+            self.rows = [
+                (holding, security, allowed_account, plaid_investments),
+                (
+                    cross_user_holding,
+                    security_two,
+                    cross_user_account,
+                    plaid_investments_two,
+                ),
+                (
+                    non_investment_holding,
+                    security_three,
+                    non_investment_account,
+                    plaid_non_investments,
+                ),
+                (
+                    no_scope_holding,
+                    security_four,
+                    no_scope_account,
+                    plaid_missing_scope,
+                ),
+            ]
+
         def join(self, *_args, **_kwargs):
             return self
 
         def all(self):
-            return [(holding, security)]
+            return list(self.rows)
 
     module.db = types.SimpleNamespace(
         session=types.SimpleNamespace(query=lambda *_: SessionQuery())
@@ -294,36 +380,87 @@ def investments_client():
             0.0,
             "USD",
         ),
+        Txn(
+            "t4",
+            "acc-3",
+            "sec-3",
+            date(2024, 1, 4),
+            40.0,
+            4.0,
+            10.0,
+            "buy",
+            "trade",
+            "fourth",
+            0.0,
+            "USD",
+        ),
+        Txn(
+            "t5",
+            "acc-4",
+            "sec-4",
+            date(2024, 1, 5),
+            50.0,
+            5.0,
+            10.0,
+            "buy",
+            "trade",
+            "fifth",
+            0.0,
+            "USD",
+        ),
     ]
-    models_stub.InvestmentTransaction.query = QueryListStub(txns)
+
+    class JoinedTxnQuery(QueryListStub):
+        def all(self):
+            account_by_id = {
+                "acc-1": allowed_account,
+                "acc-2": cross_user_account,
+                "acc-3": non_investment_account,
+                "acc-4": no_scope_account,
+            }
+            plaid_by_id = {
+                "acc-1": plaid_investments,
+                "acc-2": plaid_investments_two,
+                "acc-3": plaid_non_investments,
+                "acc-4": plaid_missing_scope,
+            }
+            return [
+                (txn, account_by_id[txn.account_id], plaid_by_id[txn.account_id])
+                for txn in self._rows
+            ]
+
+    models_stub.InvestmentTransaction.query = JoinedTxnQuery(txns)
 
     app = Flask(__name__)
     app.register_blueprint(module.investments, url_prefix="/api/investments")
     with app.test_client() as client:
-        yield client, module, models_stub, txns
+        yield client, module, models_stub, txns, captured_scope
 
 
 def test_investments_success_endpoints(investments_client):
-    client, _module, _models_stub, _txns = investments_client
+    client, _module, _models_stub, _txns, captured_scope = investments_client
 
-    accounts_resp = client.get("/api/investments/accounts")
-    holdings_resp = client.get("/api/investments/holdings")
-    tx_resp = client.get("/api/investments/transactions")
+    accounts_resp = client.get("/api/investments/accounts?user_id=u1")
+    holdings_resp = client.get("/api/investments/holdings?user_id=u1")
+    tx_resp = client.get("/api/investments/transactions?user_id=u1")
 
     assert accounts_resp.status_code == 200
     assert holdings_resp.status_code == 200
     assert tx_resp.status_code == 200
-    assert accounts_resp.get_json()["data"][0]["account_id"] == "inv-1"
+    assert captured_scope["user_id"] == "u1"
+    assert accounts_resp.get_json()["data"][0]["account_id"] == "acc-1"
     assert holdings_resp.get_json()["data"][0]["security"]["ticker_symbol"] == "SEC1"
-    assert tx_resp.get_json()["data"]["total"] == 3
+    assert tx_resp.get_json()["data"]["total"] == 2
 
 
 def test_investments_transactions_date_validation_errors(investments_client):
     client, *_ = investments_client
 
-    bad_format = client.get("/api/investments/transactions?start_date=2024/01/01")
+    bad_format = client.get(
+        "/api/investments/transactions?user_id=u1&start_date=2024/01/01"
+    )
     reversed_range = client.get(
-        "/api/investments/transactions?start_date=2024-02-02&end_date=2024-01-01"
+        "/api/investments/transactions?user_id=u1&start_date=2024-02-02&end_date=2024-01-01"
     )
 
     assert bad_format.status_code == 400
@@ -335,11 +472,13 @@ def test_investments_transactions_date_validation_errors(investments_client):
 
 
 def test_investments_transactions_combined_filters_and_pagination(investments_client):
-    client, _module, models_stub, txns = investments_client
-    models_stub.InvestmentTransaction.query = QueryListStub(txns)
+    client, _module, models_stub, txns, _captured_scope = investments_client
+    models_stub.InvestmentTransaction.query = (
+        models_stub.InvestmentTransaction.query.__class__(txns)
+    )
 
     resp = client.get(
-        "/api/investments/transactions?account_id=acc-1&security_id=sec-1&type=trade&subtype=buy"
+        "/api/investments/transactions?user_id=u1&account_id=acc-1&security_id=sec-1&type=trade&subtype=buy"
         "&start_date=2024-01-01&end_date=2024-01-03&page=1&page_size=1"
     )
 
@@ -357,6 +496,33 @@ def test_investments_transactions_combined_filters_and_pagination(investments_cl
     assert [txn["investment_transaction_id"] for txn in payload["transactions"]] == [
         "t3"
     ]
+
+
+def test_investments_endpoints_require_user_scope(investments_client):
+    client, *_ = investments_client
+
+    accounts_resp = client.get("/api/investments/accounts")
+    holdings_resp = client.get("/api/investments/holdings")
+    tx_resp = client.get("/api/investments/transactions")
+
+    assert accounts_resp.status_code == 400
+    assert holdings_resp.status_code == 400
+    assert tx_resp.status_code == 400
+
+
+def test_investments_filters_cross_user_and_non_investment_results(investments_client):
+    client, *_ = investments_client
+
+    holdings_resp = client.get("/api/investments/holdings?user_id=u1")
+    tx_resp = client.get("/api/investments/transactions?user_id=u1")
+
+    holding_accounts = [row["account_id"] for row in holdings_resp.get_json()["data"]]
+    tx_accounts = [
+        row["account_id"] for row in tx_resp.get_json()["data"]["transactions"]
+    ]
+
+    assert holding_accounts == ["acc-1"]
+    assert tx_accounts == ["acc-1", "acc-1"]
 
 
 @pytest.fixture
