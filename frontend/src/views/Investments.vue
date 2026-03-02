@@ -222,7 +222,7 @@ const today = new Date().toISOString().slice(0, 10)
 const startDefault = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().slice(0, 10)
 const startDate = ref(startDefault)
 const endDate = ref(today)
-const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
+const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || import.meta.env.VITE_USER_ID || ''
 
 const sectionNavItems = [
   { key: 'overview', label: 'Portfolio Overview', target: 'portfolio-overview' },
@@ -351,7 +351,7 @@ const totalsByInstitution = computed(() => {
 async function load() {
   loading.value = true
   try {
-    const res = await fetchHoldings()
+    const res = await fetchHoldings(plaidUserId)
     holdings.value = res?.data || []
   } finally {
     loading.value = false
@@ -360,14 +360,16 @@ async function load() {
 
 async function loadAccounts() {
   try {
-    const res = await fetchInvestmentAccounts()
+    const res = await fetchInvestmentAccounts(plaidUserId)
     const data = res?.data || res?.data?.accounts || res?.accounts || []
     accounts.value = (Array.isArray(data) ? data : []).map((a) => ({
       account_id: a.account_id,
       name: a.name,
       institution_name: a.institution_name,
     }))
-  } catch {}
+  } catch (_error) {
+    // Ignore and keep existing account list when request fails.
+  }
 }
 
 // Transactions (paginated)
@@ -408,7 +410,9 @@ function buildTransactionFilters() {
 function persistTransactionFilters() {
   try {
     localStorage.setItem(TX_FILTER_STORAGE_KEY, JSON.stringify(buildTransactionFilters()))
-  } catch {}
+  } catch (_error) {
+    // Ignore storage write failures (e.g., private mode restrictions).
+  }
 }
 
 /**
@@ -425,7 +429,8 @@ function restoreTransactionFilters() {
     txSubtype.value = stored.subtype || ''
     txStartDate.value = stored.start_date || ''
     txEndDate.value = stored.end_date || ''
-  } catch {
+  } catch (_error) {
+    // Ignore malformed local storage payloads and reset filters.
     txAccountId.value = ''
     txSecurityId.value = ''
     txType.value = ''
@@ -442,7 +447,7 @@ async function loadTransactions(page = 1) {
   try {
     txPage.value = page
     const filters = buildTransactionFilters()
-    const res = await fetchInvestmentTransactions(page, txPageSize, filters)
+    const res = await fetchInvestmentTransactions(plaidUserId, page, txPageSize, filters)
     const payload = res?.data || res || {}
     txData.value = payload.transactions || payload.data?.transactions || []
     txTotal.value = payload.total || payload.data?.total || 0

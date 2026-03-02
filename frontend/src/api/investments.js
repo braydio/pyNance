@@ -1,17 +1,17 @@
 import axios from 'axios'
 
-export const fetchInvestmentAccounts = async () => {
-  const res = await axios.get('/api/investments/accounts')
+export const fetchInvestmentAccounts = async (userId) => {
+  const res = await axios.get('/api/investments/accounts', { params: { user_id: userId } })
   return res.data
 }
 
-export const fetchHoldings = async () => {
-  const res = await axios.get('/api/investments/holdings')
+export const fetchHoldings = async (userId) => {
+  const res = await axios.get('/api/investments/holdings', { params: { user_id: userId } })
   return res.data
 }
 
-export const fetchInvestmentTransactions = async (page = 1, pageSize = 25, filters = {}) => {
-  const params = { page, page_size: pageSize, ...filters }
+export const fetchInvestmentTransactions = async (userId, page = 1, pageSize = 25, filters = {}) => {
+  const params = { user_id: userId, page, page_size: pageSize, ...filters }
   const res = await axios.get('/api/investments/transactions', { params })
   return res.data
 }

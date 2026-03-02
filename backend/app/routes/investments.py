@@ -4,14 +4,63 @@ from datetime import date, datetime
 from typing import Dict, Mapping, Optional
 
 from app.extensions import db
-from app.models import InvestmentHolding, InvestmentTransaction, Security
+from app.models import (
+    Account,
+    InvestmentHolding,
+    InvestmentTransaction,
+    PlaidAccount,
+    Security,
+)
 from app.sql import investments_logic
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request, session
 
 investments = Blueprint("investments", __name__)
 
 
 DATE_PARAM_FORMAT = "%Y-%m-%d"
+
+
+def _resolve_user_scope(args: Mapping[str, str]) -> str:
+    """Resolve and validate the user scope for investment reads.
+
+    The route accepts an explicit ``user_id`` query parameter, but can also
+    fall back to auth/session-provided values.
+
+    Args:
+        args: Incoming request args mapping.
+
+    Returns:
+        Normalized user identifier string.
+
+    Raises:
+        ValueError: If no scope is provided or the value is invalid.
+    """
+
+    user_id = (
+        args.get("user_id")
+        or getattr(g, "user_id", None)
+        or session.get("user_id")
+        or session.get("auth_user_id")
+    )
+    if not isinstance(user_id, str) or not user_id.strip():
+        raise ValueError("user_id is required")
+
+    normalized = user_id.strip()
+    if len(normalized) > 64:
+        raise ValueError("user_id is invalid")
+
+    return normalized
+
+
+def _has_investments_scope(product: str | None) -> bool:
+    """Return ``True`` when a Plaid product string includes investments scope."""
+
+    if not product:
+        return False
+    scopes = {
+        segment.strip().lower() for segment in product.split(",") if segment.strip()
+    }
+    return "investments" in scopes
 
 
 def parse_transaction_filter_params(
@@ -79,18 +128,38 @@ def _parse_iso_date(value: str) -> date:
 @investments.route("/accounts", methods=["GET"])
 def list_investment_accounts():
     """Return all accounts linked with the Plaid investments product."""
-    accounts = investments_logic.get_investment_accounts()
+    try:
+        user_id = _resolve_user_scope(request.args)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+
+    accounts = investments_logic.get_investment_accounts(user_id=user_id)
     return jsonify({"status": "success", "data": accounts}), 200
 
 
 @investments.route("/holdings", methods=["GET"])
 def list_holdings():
     """List current holdings with basic security info."""
-    q = db.session.query(InvestmentHolding, Security).join(
-        Security, InvestmentHolding.security_id == Security.security_id
+    try:
+        user_id = _resolve_user_scope(request.args)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+
+    q = (
+        db.session.query(InvestmentHolding, Security, Account, PlaidAccount)
+        .join(Account, InvestmentHolding.account_id == Account.account_id)
+        .join(PlaidAccount, Account.account_id == PlaidAccount.account_id)
+        .join(Security, InvestmentHolding.security_id == Security.security_id)
     )
     results = []
-    for holding, sec in q.all():
+    for holding, sec, account, plaid_account in q.all():
+        if account.user_id != user_id:
+            continue
+        if not bool(account.is_investment):
+            continue
+        if not _has_investments_scope(getattr(plaid_account, "product", None)):
+            continue
+
         results.append(
             {
                 "account_id": holding.account_id,
@@ -128,6 +197,11 @@ def list_investment_transactions():
     - subtype (optional)
     - start_date / end_date (optional, ISO ``YYYY-MM-DD``)
     """
+    try:
+        user_id = _resolve_user_scope(request.args)
+    except ValueError as exc:
+        return jsonify({"status": "error", "error": str(exc)}), 400
+
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 25))
 
@@ -136,7 +210,9 @@ def list_investment_transactions():
     except ValueError as exc:
         return jsonify({"status": "error", "error": str(exc)}), 400
 
-    q = InvestmentTransaction.query
+    q = InvestmentTransaction.query.join(
+        Account, InvestmentTransaction.account_id == Account.account_id
+    ).join(PlaidAccount, Account.account_id == PlaidAccount.account_id)
     account_id = filters["account_id"]
     if account_id:
         q = q.filter(InvestmentTransaction.account_id == account_id)
@@ -156,8 +232,19 @@ def list_investment_transactions():
     if end_date:
         q = q.filter(InvestmentTransaction.date <= end_date)
     q = q.order_by(InvestmentTransaction.date.desc())
-    total = q.count()
-    items = q.offset((page - 1) * page_size).limit(page_size).all()
+    scoped_items = []
+    for item, account, plaid_account in q.all():
+        if account.user_id != user_id:
+            continue
+        if not bool(account.is_investment):
+            continue
+        if not _has_investments_scope(getattr(plaid_account, "product", None)):
+            continue
+        scoped_items.append(item)
+
+    total = len(scoped_items)
+    start = (page - 1) * page_size
+    items = scoped_items[start : start + page_size]
     data = [
         {
             "investment_transaction_id": t.investment_transaction_id,
