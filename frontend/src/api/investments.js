@@ -10,7 +10,12 @@ export const fetchHoldings = async (userId) => {
   return res.data
 }
 
-export const fetchInvestmentTransactions = async (userId, page = 1, pageSize = 25, filters = {}) => {
+export const fetchInvestmentTransactions = async (
+  userId,
+  page = 1,
+  pageSize = 25,
+  filters = {},
+) => {
   const params = { user_id: userId, page, page_size: pageSize, ...filters }
   const res = await axios.get('/api/investments/transactions', { params })
   return res.data
