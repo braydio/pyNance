@@ -203,12 +203,8 @@ import { useRoute } from 'vue-router'
 import { Wallet } from 'lucide-vue-next'
 
 import api from '@/services/api'
-import {
-  fetchNetChanges,
-  fetchAccountHistory,
-  fetchRecentTransactions,
-  rangeToDates,
-} from '@/api/accounts'
+import { fetchNetChanges, fetchRecentTransactions, rangeToDates } from '@/api/accounts'
+import { useAccountHistory } from '@/composables/useAccountHistory'
 
 import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
@@ -233,18 +229,22 @@ const accountsLoading = ref(false)
 const accountId = ref(route.query.accountId?.toString() || null)
 
 const netSummary = ref({ income: 0, expense: 0, net: 0 })
-const accountHistory = ref([])
 const recentTransactions = ref([])
 
 const ranges = ['7d', '30d', '90d', '365d']
 const selectedRange = ref('30d')
 
+const {
+  history: accountHistory,
+  loading: loadingHistory,
+  error: historyError,
+  loadHistory,
+} = useAccountHistory(accountId, selectedRange)
+
 const loadingSummary = ref(false)
-const loadingHistory = ref(false)
 const loadingTransactions = ref(false)
 
 const summaryError = ref(null)
-const historyError = ref(null)
 const transactionsError = ref(null)
 
 const activeTab = ref('Summary')
@@ -314,18 +314,17 @@ async function loadData() {
   const { start, end } = rangeToDates(selectedRange.value)
 
   loadingSummary.value = true
-  loadingHistory.value = true
   loadingTransactions.value = true
+  summaryError.value = null
+  transactionsError.value = null
 
   try {
-    const [summary, history, transactions] = await Promise.all([
+    const [summary, transactions] = await Promise.all([
       fetchNetChanges(accountId.value, { start_date: start, end_date: end }),
-      fetchAccountHistory(accountId.value, start, end),
       fetchRecentTransactions(accountId.value, 10),
+      loadHistory(start, end),
     ])
 
-    // Support both the current API envelope (`{ status, data: {...} }`) and
-    // the legacy shape where metrics are returned at the root response level.
     const summaryData = summary?.data ?? summary ?? {}
 
     netSummary.value = {
@@ -334,15 +333,12 @@ async function loadData() {
       net: Number(summaryData?.net ?? 0),
     }
 
-    accountHistory.value = history?.balances ?? []
     recentTransactions.value = transactions?.transactions ?? []
   } catch (err) {
     summaryError.value = err
-    historyError.value = err
     transactionsError.value = err
   } finally {
     loadingSummary.value = false
-    loadingHistory.value = false
     loadingTransactions.value = false
   }
 }
@@ -356,7 +352,7 @@ function retrySummary() {
 }
 
 function retryHistory() {
-  loadData()
+  loadHistory()
 }
 
 function retryTransactions() {

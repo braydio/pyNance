@@ -34,7 +34,6 @@
 <script setup>
 import { ref, computed, toRef } from 'vue'
 import { useAccountHistory } from '@/composables/useAccountHistory'
-import { useAccountTransactionHistory } from '@/composables/useAccountTransactionHistory'
 
 const props = defineProps({
   accountId: { type: String, required: true },
@@ -43,21 +42,9 @@ const props = defineProps({
 // Data type: 'balance' or 'transactions'
 const dataType = ref('balance')
 
-// Fetch both types of data
+// Fetch normalized account history through the shared composable.
 const range = ref('30d')
 const { history: balanceHistory } = useAccountHistory(toRef(props, 'accountId'), range)
-
-// Only fetch transaction history if the composable is available
-// For now, fall back to balance data to ensure functionality
-let transactionHistory
-try {
-  const { history } = useAccountTransactionHistory(toRef(props, 'accountId'))
-  transactionHistory = history
-} catch {
-  // Fallback to balance history if transaction history composable fails
-  console.warn('Transaction history not available, using balance history as fallback')
-  transactionHistory = balanceHistory
-}
 
 // Toggle between data types
 function toggleDataType(event) {
@@ -150,9 +137,9 @@ const balanceValues = computed(() =>
 )
 
 const transactionValues = computed(() =>
-  Array.isArray(transactionHistory?.value)
-    ? transactionHistory.value.map((entry) =>
-        resolveNumericValue(entry, ['net_amount', 'amount', 'value', 'net']),
+  Array.isArray(balanceHistory.value)
+    ? balanceHistory.value.map((entry) =>
+        resolveNumericValue(entry, ['balance', 'amount', 'value', 'net']),
       )
     : [],
 )
@@ -160,12 +147,9 @@ const transactionValues = computed(() =>
 const balancePoints = computed(() => toPoints(balanceValues.value))
 const transactionPoints = computed(() => toPoints(transactionValues.value))
 
-const points = computed(() => {
-  if (dataType.value === 'transactions') {
-    return transactionPoints.value || balancePoints.value
-  }
-  return balancePoints.value
-})
+const points = computed(() =>
+  dataType.value === 'transactions' ? transactionPoints.value : balancePoints.value,
+)
 </script>
 
 <style scoped>

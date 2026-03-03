@@ -1,7 +1,21 @@
 # Accounts view data loading and retry behavior
 
-This document describes how `frontend/src/views/Accounts.vue` loads account summary, transactions,
-and history data.
+This document describes how `frontend/src/views/Accounts.vue` and sparkline widgets load account summary,
+transactions, and history data.
+
+## Shared account history path
+
+`useAccountHistory` is the single retrieval path for account balance history used by:
+
+- `frontend/src/views/Accounts.vue` (Balance History chart)
+- `frontend/src/components/widgets/AccountSparkline.vue` (balance/transaction toggle sparkline)
+
+The composable owns the shared contract for all account-history consumers:
+
+- payload normalization,
+- date-range conversion,
+- request caching and de-duplication,
+- loading/error state.
 
 ## Sidebar refresh controls
 
@@ -12,44 +26,33 @@ bulk Plaid account refresh from the Accounts page.
 ## Parallel loading model
 
 The Accounts view uses a single `loadData()` function to request all account panels in parallel via
-`Promise.allSettled()`.
+`Promise.all()`.
 
 - `summary` uses `fetchNetChanges()`
 - `transactions` uses `fetchRecentTransactions()`
-- `history` uses `fetchAccountHistory()`
-
-Because `Promise.allSettled()` is used, one failure does not block successful panels from rendering.
+- `history` uses `useAccountHistory().loadHistory()`
 
 ## Loading and error state policy
 
-The view keeps one global refresh state (`isRefreshing`) and derives panel loading flags from
-request status entries.
+The view keeps one refresh state for summary/transactions and delegates history state to the composable.
 
-- `loadingSummary`, `loadingTransactions`, and `loadingHistory` are synchronized from
-  `requestStatus` while a refresh is active.
-- Errors are panel-specific and attached through `applyRequestState()`.
+- `loadingSummary` and `loadingTransactions` are view-level flags.
+- `loadingHistory` and `historyError` come directly from `useAccountHistory`.
+- Errors are panel-specific and attached through retry components.
 
 ## Retry policy
 
 Retry actions are scoped by panel:
 
-- Summary retry triggers only the summary request.
-- Transactions retry triggers only the transactions request.
-- History retry triggers only the history request.
+- Summary retry triggers `loadData()`.
+- Transactions retry triggers `loadData()`.
+- History retry triggers `loadHistory()` in the shared composable.
 
 Top-level refresh buttons still request all three queries.
 
-## Debounce behavior
-
-When account selection or range changes rapidly, refresh calls are debounced (250 ms) to prevent
-request bursts and stale response churn.
-
 ## Payload normalization
 
-All API payload shape handling is centralized in parser helpers:
+All account-history payload shape handling is centralized in `useAccountHistory`.
 
-- `parseSummaryPayload()`
-- `parseTransactionsPayload()`
-- `parseHistoryPayload()`
-
-This keeps response-shape branching out of template and call sites.
+The composable normalizes known response variants into sorted `{ date, balance }` records so chart and
+sparkline consumers operate on the same data model.
