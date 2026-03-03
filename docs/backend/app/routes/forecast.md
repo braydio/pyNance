@@ -25,7 +25,10 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `user_id` (string, required)
     - `start_date` (ISO date string, optional; defaults to today)
     - `horizon_days` (integer, optional; defaults to 30)
-    - `adjustments` (list, optional; supports empty list or multiple adjustments)
+    - `adjustments` (list, optional; supports empty list or multiple adjustments, with optional `distribution`, `range_start`, and `range_end` for spread entries)
+    - `moving_average_window` (integer, optional; 7, 30, 60, or 90; defaults to 30)
+    - `normalize` (boolean, optional; normalizes historical aggregates before projection)
+    - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
   - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`) and aggregate contribution totals for the selected accounts.

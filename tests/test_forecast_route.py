@@ -422,3 +422,47 @@ def test_forecast_compute_rejects_invalid_account_filter_types(client):
 
     assert resp.status_code == 400
     assert resp.get_json() == {"error": "included_account_ids must be a list."}
+
+
+def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatch):
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured.update(kwargs)
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": [],
+            "metadata": {},
+        }
+
+    monkeypatch.setattr(forecast_module, "_load_latest_snapshots", lambda *a, **k: [])
+    monkeypatch.setattr(
+        forecast_module, "_load_historical_aggregates", lambda *a, **k: []
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-1",
+            "moving_average_window": 60,
+            "normalize": True,
+            "graph_mode": "historical",
+            "adjustments": [
+                {
+                    "label": "Spread",
+                    "amount": 90,
+                    "distribution": "spread",
+                    "range_start": "2024-01-01",
+                    "range_end": "2024-01-03",
+                }
+            ],
+        },
+    )
+
+    assert resp.status_code == 200
+    assert captured["moving_average_window"] == 60
+    assert captured["normalize"] is True
+    assert captured["graph_mode"] == "historical"

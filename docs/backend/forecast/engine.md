@@ -102,3 +102,10 @@ projected balance is at or below zero).
 - Applying adjustments with `apply_adjustments`.
 - Generating cashflow breakdowns and summary metrics.
 - Returning a fully serialized `ForecastResult` payload for the API layer.
+
+
+## Extended compute options
+
+`compute_forecast` supports optional `moving_average_window` (7/30/60/90), `normalize`, and `graph_mode` controls.
+Manual adjustments may include `distribution: "spread"` plus `range_start` and `range_end` to distribute an amount evenly across a date range.
+Response metadata now includes `projected_amount`, change metrics, and `realized_history` for centered historical + forecast chart rendering.

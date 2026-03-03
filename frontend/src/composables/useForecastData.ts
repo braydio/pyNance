@@ -11,6 +11,9 @@ export type ForecastAdjustmentInput = {
   frequency?: 'daily' | 'weekly' | 'monthly' | null
   adjustment_type?: string
   reason?: string
+  distribution?: 'single' | 'spread'
+  range_start?: string
+  range_end?: string
 }
 
 export type ForecastTimelinePoint = {
@@ -62,6 +65,8 @@ type ForecastComputeResponse = {
   metadata: Record<string, unknown>
 }
 
+export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
+
 type UseForecastDataOptions = {
   viewType: Ref<ForecastViewType>
   manualIncome: Ref<number>
@@ -70,6 +75,9 @@ type UseForecastDataOptions = {
   userId: Ref<string>
   includedAccountIds: Ref<string[]>
   excludedAccountIds: Ref<string[]>
+  movingAverageWindow: Ref<7 | 30 | 60 | 90>
+  normalize: Ref<boolean>
+  graphMode: Ref<ForecastGraphMode>
 }
 
 /**
@@ -83,6 +91,9 @@ export function useForecastData({
   userId,
   includedAccountIds,
   excludedAccountIds,
+  movingAverageWindow,
+  normalize,
+  graphMode,
 }: UseForecastDataOptions) {
   const timeline = ref<ForecastTimelinePoint[]>([])
   const summary = ref<ForecastSummary | null>(null)
@@ -161,6 +172,9 @@ export function useForecastData({
           start_date: startDate,
           horizon_days: horizonDays,
           adjustments: adjustmentPayload,
+          moving_average_window: movingAverageWindow.value,
+          normalize: normalize.value,
+          graph_mode: graphMode.value,
           ...buildAccountFilters(),
         }),
       })

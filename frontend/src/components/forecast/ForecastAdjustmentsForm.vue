@@ -10,6 +10,12 @@
         <option value="weekly">Weekly</option>
         <option value="monthly">Monthly</option>
       </select>
+      <select v-model="distribution" class="input">
+        <option value="single">Single date</option>
+        <option value="spread">Spread over range</option>
+      </select>
+      <input v-model="rangeStart" type="date" class="input" />
+      <input v-model="rangeEnd" type="date" class="input" />
       <button type="submit" class="submit-button">Add</button>
     </form>
   </div>
@@ -23,6 +29,9 @@ const emit = defineEmits(['add-adjustment'])
 const label = ref('')
 const amount = ref(0)
 const frequency = ref('once')
+const distribution = ref('single')
+const rangeStart = ref('')
+const rangeEnd = ref('')
 
 /**
  * Emit the new adjustment payload to the parent layout.
@@ -34,10 +43,16 @@ function submitAdjustment() {
       label: label.value,
       amount: amount.value,
       frequency: normalizedFrequency,
+      distribution: distribution.value,
+      range_start: rangeStart.value || undefined,
+      range_end: rangeEnd.value || undefined,
     })
     label.value = ''
     amount.value = 0
     frequency.value = 'once'
+    distribution.value = 'single'
+    rangeStart.value = ''
+    rangeEnd.value = ''
   }
 }
 </script>
@@ -59,7 +74,7 @@ function submitAdjustment() {
 
 .form-grid {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr auto;
   gap: 0.5rem;
 }
 
