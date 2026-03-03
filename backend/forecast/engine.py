@@ -68,6 +68,24 @@ def _normalize_frequency(value: Any) -> str | None:
     return None
 
 
+def _normalize_graph_mode(value: Any) -> str:
+    """Normalize graph mode values used by frontend chart switching."""
+    normalized = str(value or "combined").strip().lower()
+    if normalized not in {"combined", "forecast", "historical"}:
+        return "combined"
+    return normalized
+
+
+def _normalize_window(value: Any) -> int:
+    """Normalize moving average window to one of the supported API values."""
+    allowed = {7, 30, 60, 90}
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 30
+    return parsed if parsed in allowed else 30
+
+
 def _matches_frequency(
     current_date: date, start_date: date, frequency: str | None
 ) -> bool:
@@ -642,6 +660,9 @@ def compute_forecast(
     category_averages: Sequence[Mapping[str, Any]] | None = None,
     recurring_sources: Sequence[Mapping[str, Any]] | None = None,
     adjustments: Sequence[Mapping[str, Any]] | None = None,
+    moving_average_window: int = 30,
+    normalize: bool = False,
+    graph_mode: str = "combined",
     currency: str = "USD",
     metadata: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -656,19 +677,75 @@ def compute_forecast(
         category_averages: Optional category averages for cashflow labels.
         recurring_sources: Optional recurring transaction labels.
         adjustments: Optional manual or automated adjustments.
+        moving_average_window: Number of historical days to average (7/30/60/90).
+        normalize: Whether to normalize historical amounts before projection.
+        graph_mode: Chart mode hint (combined, forecast, historical).
         currency: ISO currency code for summary display.
         metadata: Optional metadata to attach to the forecast result.
 
     Returns:
         Fully serialized forecast payload.
     """
+    window = _normalize_window(moving_average_window)
+    sorted_aggregates = sorted(
+        historical_aggregates,
+        key=lambda item: _parse_date(item.get("date"), fallback=date.today()),
+    )
+    historical_window = sorted_aggregates[-window:] if sorted_aggregates else []
+
+    normalization_factor = Decimal("1")
+    normalized_aggregates = historical_window
+    if normalize and historical_window:
+        magnitudes = [
+            abs(_extract_amount(item, ("inflow", "income", "credit")))
+            + abs(_extract_amount(item, ("outflow", "expense", "debit")))
+            for item in historical_window
+        ]
+        non_zero = [value for value in magnitudes if value > 0]
+        if non_zero:
+            normalization_factor = max(non_zero)
+            normalized_aggregates = []
+            for item in historical_window:
+                normalized_aggregates.append(
+                    {
+                        **item,
+                        "inflow": float(
+                            _extract_amount(item, ("inflow", "income", "credit"))
+                            / normalization_factor
+                        ),
+                        "outflow": float(
+                            _extract_amount(item, ("outflow", "expense", "debit"))
+                            / normalization_factor
+                        ),
+                    }
+                )
+
     baseline_timeline = project_balances(
         user_id=user_id,
         start_date=start_date,
         horizon_days=horizon_days,
         latest_snapshots=latest_snapshots,
-        historical_aggregates=historical_aggregates,
+        historical_aggregates=normalized_aggregates,
     )
+    if normalize and normalization_factor != Decimal("1"):
+        denormalized_timeline: list[ForecastTimelinePoint] = []
+        for point in baseline_timeline:
+            point_metadata = dict(point.metadata or {})
+            point_metadata["normalization_factor"] = float(normalization_factor)
+            denormalized_timeline.append(
+                ForecastTimelinePoint(
+                    date=point.date,
+                    label=point.label,
+                    forecast_balance=float(
+                        _to_decimal(point.forecast_balance) * normalization_factor
+                    ),
+                    actual_balance=point.actual_balance,
+                    delta=point.delta,
+                    metadata=point_metadata,
+                )
+            )
+        baseline_timeline = denormalized_timeline
+
     adjusted_timeline = apply_adjustments(baseline_timeline, adjustments)
     cashflows = build_cashflow_items(
         baseline_timeline,
@@ -678,13 +755,48 @@ def compute_forecast(
     )
     summary = compute_summary(adjusted_timeline)
     summary.currency = currency
+    projected_amount = summary.ending_balance
+    projected_change = summary.net_change
+    projected_change_percent = (
+        (projected_change / summary.starting_balance) * 100
+        if summary.starting_balance
+        else 0.0
+    )
+
+    running_history_balance = Decimal(str(summary.starting_balance))
+    realized_history = []
+    for item in historical_window:
+        running_history_balance += _extract_amount(item, ("inflow", "income", "credit"))
+        running_history_balance -= _extract_amount(
+            item, ("outflow", "expense", "debit")
+        )
+        realized_date = _parse_date(item.get("date"), fallback=date.today())
+        realized_history.append(
+            {
+                "date": realized_date.isoformat(),
+                "label": realized_date.isoformat(),
+                "balance": float(running_history_balance),
+            }
+        )
+
+    normalized_graph_mode = _normalize_graph_mode(graph_mode)
 
     result = ForecastResult(
         timeline=adjusted_timeline,
         summary=summary,
         cashflows=cashflows,
         adjustments=_build_adjustment_models(adjustments),
-        metadata=dict(metadata or {}),
+        metadata={
+            **dict(metadata or {}),
+            "moving_average_window": window,
+            "normalize": normalize,
+            "graph_mode": normalized_graph_mode,
+            "normalization_factor": float(normalization_factor),
+            "projected_amount": projected_amount,
+            "projected_change": projected_change,
+            "projected_change_percent": projected_change_percent,
+            "realized_history": realized_history,
+        },
     )
     return result.to_dict()
 
@@ -702,6 +814,34 @@ def _build_adjustment_schedule(
         amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
         if amount == 0:
             continue
+
+        distribution = (
+            str(_read_entry_value(adjustment, "distribution", "single")).strip().lower()
+        )
+        if distribution in {"spread", "distributed"}:
+            range_start = _parse_date(
+                _read_entry_value(adjustment, "range_start")
+                or _read_entry_value(adjustment, "date"),
+                fallback=timeline_dates[0],
+            )
+            range_end = _parse_date(
+                _read_entry_value(adjustment, "range_end")
+                or _read_entry_value(adjustment, "date"),
+                fallback=range_start,
+            )
+            if range_end < range_start:
+                range_start, range_end = range_end, range_start
+            selected_dates = [
+                current_date
+                for current_date in timeline_dates
+                if range_start <= current_date <= range_end
+            ]
+            if selected_dates:
+                per_day_amount = amount / Decimal(len(selected_dates))
+                for current_date in selected_dates:
+                    schedule[current_date] += per_day_amount
+            continue
+
         frequency = _normalize_frequency(_read_entry_value(adjustment, "frequency"))
         start_date = _parse_date(
             _read_entry_value(adjustment, "date")

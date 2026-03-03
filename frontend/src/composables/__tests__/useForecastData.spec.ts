@@ -28,6 +28,9 @@ describe('useForecastData', () => {
     const userId = ref('user-123')
     const includedAccountIds = ref(['acc-1', 'acc-2'])
     const excludedAccountIds = ref(['acc-3'])
+    const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
+    const normalize = ref(false)
+    const graphMode = ref<'combined' | 'forecast' | 'historical'>('combined')
 
     ;(global.fetch as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
@@ -62,6 +65,9 @@ describe('useForecastData', () => {
       userId,
       includedAccountIds,
       excludedAccountIds,
+      movingAverageWindow,
+      normalize,
+      graphMode,
     })
 
     await fetchData()
@@ -80,6 +86,9 @@ describe('useForecastData', () => {
     expect(callBody).toMatchObject({
       user_id: 'user-123',
       horizon_days: 30,
+      moving_average_window: 30,
+      normalize: false,
+      graph_mode: 'combined',
       included_account_ids: ['acc-1', 'acc-2'],
       excluded_account_ids: ['acc-3'],
     })
@@ -112,6 +121,9 @@ describe('useForecastData', () => {
       userId,
       includedAccountIds,
       excludedAccountIds,
+      movingAverageWindow: ref<7 | 30 | 60 | 90>(30),
+      normalize: ref(false),
+      graphMode: ref<'combined' | 'forecast' | 'historical'>('combined'),
     })
 
     await fetchData()

@@ -23,9 +23,32 @@
       @update:excludedAccountIds="excludedAccountIds = $event"
     />
 
+    <div class="card glass text-sm control-row">
+      <label>
+        Graph mode
+        <select v-model="graphMode" class="input ml-2">
+          <option value="combined">Combined</option>
+          <option value="forecast">Forecast only</option>
+          <option value="historical">Historical only</option>
+        </select>
+      </label>
+      <label>
+        Moving average
+        <select v-model.number="movingAverageWindow" class="input ml-2">
+          <option :value="7">7 days</option>
+          <option :value="30">30 days</option>
+          <option :value="60">60 days</option>
+          <option :value="90">90 days</option>
+        </select>
+      </label>
+      <label> <input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history </label>
+    </div>
+
     <ForecastChart
       :timeline="timeline"
       :view-type="viewType"
+      :graph-mode="graphMode"
+      :realized-history="realizedHistory"
       @update:viewType="viewType = $event"
     />
 
@@ -43,6 +66,7 @@ import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import {
   type ForecastAdjustmentInput,
+  type ForecastGraphMode,
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
@@ -63,6 +87,9 @@ const userId = ref(import.meta.env.VITE_USER_ID_PLAID || '')
 const forecastAccounts = ref<ForecastAccountOption[]>([])
 const includedAccountIds = ref<string[]>([])
 const excludedAccountIds = ref<string[]>([])
+const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
+const normalize = ref(false)
+const graphMode = ref<ForecastGraphMode>('combined')
 
 const { timeline, summary, cashflows, loading, error, fetchData } = useForecastData({
   viewType,
@@ -72,6 +99,9 @@ const { timeline, summary, cashflows, loading, error, fetchData } = useForecastD
   userId,
   includedAccountIds,
   excludedAccountIds,
+  movingAverageWindow,
+  normalize,
+  graphMode,
 })
 
 const forecastItems = computed(() =>
@@ -82,6 +112,7 @@ const forecastItems = computed(() =>
 )
 const hasForecastData = computed(() => timeline.value.length > 0)
 const isLoading = computed(() => loading.value)
+const realizedHistory = computed(() => (summary.value?.metadata?.realized_history as any[]) ?? [])
 
 watch(summary, (value) => {
   currentBalance.value = value?.starting_balance ?? 0
@@ -93,7 +124,17 @@ onMounted(async () => {
 })
 
 watch(
-  [viewType, manualIncome, liabilityRate, adjustments, includedAccountIds, excludedAccountIds],
+  [
+    viewType,
+    manualIncome,
+    liabilityRate,
+    adjustments,
+    includedAccountIds,
+    excludedAccountIds,
+    movingAverageWindow,
+    normalize,
+    graphMode,
+  ],
   fetchData,
 )
 
@@ -131,5 +172,12 @@ function addAdjustment(adjustment: ForecastAdjustmentInput) {
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
+}
+
+.control-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
 }
 </style>

@@ -9,7 +9,7 @@ pyNance is a full-stack personal finance dashboard that combines a Flask API, a 
 - **Account aggregation and transactions** via Plaid integrations.
 - **Rule-based categorization** to organize spending.
 - **Balance forecasting** to project future account balances.
-- **Forecast recompute API** (`POST /api/forecast/compute`) for scenario-based adjustments.
+- **Forecast recompute API** (`POST /api/forecast/compute`) with moving-average windows, normalization toggles, graph modes, and distributed manual adjustments.
 - **Goal tracking** for budgeting.
 - **Investment tracking** alongside banking activity.
 - **Deterministic account investment semantics** with persisted account-level flags (`is_investment`, holdings/transactions scope flags, and `account_type` normalization for API consumers).

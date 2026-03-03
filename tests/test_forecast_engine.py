@@ -182,3 +182,68 @@ def test_cashflow_items_sum_to_timeline_deltas():
         delta = point.forecast_balance - previous_balance
         assert cashflow_totals[point.date] == delta
         previous_balance = point.forecast_balance
+
+
+def test_compute_forecast_respects_moving_average_window():
+    """Use only selected moving-average window entries for projection."""
+    payload = compute_forecast(
+        user_id=1,
+        start_date=date(2026, 1, 1),
+        horizon_days=1,
+        latest_snapshots=[{"account_id": "a1", "balance": 100.0, "date": "2026-01-01"}],
+        historical_aggregates=[
+            {"date": "2025-12-20", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-21", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-22", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-23", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-24", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-25", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-26", "inflow": 0.0, "outflow": 20.0},
+            {"date": "2025-12-30", "inflow": 40.0, "outflow": 10.0},
+        ],
+        moving_average_window=7,
+    )
+    assert payload["timeline"][0]["forecast_balance"] == 87.14285714285714
+    assert payload["metadata"]["moving_average_window"] == 7
+
+
+def test_compute_forecast_normalize_toggle_sets_metadata():
+    """Normalization flag should be reflected in metadata and preserve projection output."""
+    payload = compute_forecast(
+        user_id=1,
+        start_date=date(2026, 1, 1),
+        horizon_days=1,
+        latest_snapshots=[{"account_id": "a1", "balance": 100.0, "date": "2026-01-01"}],
+        historical_aggregates=[{"date": "2025-12-31", "inflow": 20.0, "outflow": 10.0}],
+        normalize=True,
+    )
+    assert payload["metadata"]["normalize"] is True
+    assert payload["metadata"]["normalization_factor"] >= 1
+
+
+def test_apply_adjustments_distributed_range_spread():
+    """Distributed adjustments are split evenly across selected range dates."""
+    baseline = [
+        ForecastTimelinePoint(
+            date=date(2026, 1, 1), label="2026-01-01", forecast_balance=100.0
+        ),
+        ForecastTimelinePoint(
+            date=date(2026, 1, 2), label="2026-01-02", forecast_balance=100.0
+        ),
+        ForecastTimelinePoint(
+            date=date(2026, 1, 3), label="2026-01-03", forecast_balance=100.0
+        ),
+    ]
+    adjusted = apply_adjustments(
+        baseline,
+        [
+            {
+                "label": "Spread cost",
+                "amount": -30.0,
+                "distribution": "spread",
+                "range_start": "2026-01-01",
+                "range_end": "2026-01-03",
+            }
+        ],
+    )
+    assert [point.forecast_balance for point in adjusted] == [90.0, 80.0, 70.0]

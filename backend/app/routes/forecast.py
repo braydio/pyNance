@@ -80,6 +80,43 @@ def _parse_horizon_days(raw_value: object) -> int:
     return horizon
 
 
+def _parse_moving_average_window(raw_value: object) -> int:
+    """Normalize moving average window values accepted by compute API."""
+    if raw_value is None:
+        return 30
+    try:
+        window = int(raw_value)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("moving_average_window must be an integer.") from exc
+    if window not in {7, 30, 60, 90}:
+        raise ValueError("moving_average_window must be one of 7, 30, 60, or 90.")
+    return window
+
+
+def _parse_graph_mode(raw_value: object) -> str:
+    """Normalize graph mode values used by forecast chart controls."""
+    if raw_value is None:
+        return "combined"
+    graph_mode = str(raw_value).strip().lower()
+    if graph_mode not in {"combined", "forecast", "historical"}:
+        raise ValueError("graph_mode must be one of combined, forecast, or historical.")
+    return graph_mode
+
+
+def _parse_normalize(raw_value: object) -> bool:
+    """Normalize truthy payload values for historical normalization."""
+    if isinstance(raw_value, bool):
+        return raw_value
+    if raw_value is None:
+        return False
+    if isinstance(raw_value, str):
+        if raw_value.strip().lower() in {"true", "1", "yes"}:
+            return True
+        if raw_value.strip().lower() in {"false", "0", "no"}:
+            return False
+    raise ValueError("normalize must be a boolean.")
+
+
 def _load_latest_snapshots(
     user_id: str,
     included_account_ids: list[str] | None = None,
@@ -230,6 +267,11 @@ def compute_forecast_route():
     try:
         start_date = _parse_start_date(payload.get("start_date"))
         horizon_days = _parse_horizon_days(payload.get("horizon_days"))
+        moving_average_window = _parse_moving_average_window(
+            payload.get("moving_average_window")
+        )
+        normalize = _parse_normalize(payload.get("normalize"))
+        graph_mode = _parse_graph_mode(payload.get("graph_mode"))
         included_account_ids, excluded_account_ids = _parse_account_filters(payload)
     except ValueError as exc:
         logger.warning("Invalid forecast compute request: %s", exc)
@@ -270,6 +312,9 @@ def compute_forecast_route():
             latest_snapshots=latest_snapshots,
             historical_aggregates=historical_aggregates,
             adjustments=adjustments,
+            moving_average_window=moving_average_window,
+            normalize=normalize,
+            graph_mode=graph_mode,
             metadata={
                 "lookback_days": LOOKBACK_DAYS,
                 "included_account_ids": included_account_ids,
