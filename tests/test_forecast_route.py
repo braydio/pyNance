@@ -324,6 +324,70 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
     assert captured["adjustments"] == adjustments
 
 
+def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["adjustments"] = kwargs["adjustments"]
+        captured["metadata"] = kwargs["metadata"]
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": kwargs["adjustments"],
+            "metadata": kwargs["metadata"],
+        }
+
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_latest_snapshots",
+        lambda user_id, **_: [
+            {
+                "account_id": "acc",
+                "user_id": user_id,
+                "balance": 120.0,
+                "date": "2024-01-01",
+            }
+        ],
+    )
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_historical_aggregates",
+        lambda user_id, start_date, **_: [
+            {"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}
+        ],
+    )
+    monkeypatch.setattr(
+        forecast_module,
+        "_auto_wage_adjustments",
+        lambda **_: [
+            {
+                "label": "Auto wage income",
+                "amount": 1000.0,
+                "date": "2024-01-05",
+                "adjustment_type": "auto_income",
+            }
+        ],
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post(
+        "/api/forecast/compute",
+        json={
+            "user_id": "user-999",
+            "start_date": "2024-01-01",
+            "horizon_days": 10,
+            "adjustments": [{"label": "Manual", "amount": 50.0, "date": "2024-01-02"}],
+        },
+    )
+
+    assert resp.status_code == 200
+    assert len(captured["adjustments"]) == 2
+    assert captured["adjustments"][0]["label"] == "Manual"
+    assert captured["adjustments"][1]["label"] == "Auto wage income"
+    assert captured["metadata"]["auto_wage_adjustment_count"] == 1
+
+
 def test_forecast_compute_includes_account_filters_and_contribution_metadata(
     client, monkeypatch
 ):

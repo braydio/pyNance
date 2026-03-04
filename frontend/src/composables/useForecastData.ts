@@ -99,6 +99,7 @@ export function useForecastData({
   const summary = ref<ForecastSummary | null>(null)
   const cashflows = ref<ForecastCashflowItem[]>([])
   const appliedAdjustments = ref<ForecastAdjustmentInput[]>([])
+  const metadata = ref<Record<string, unknown>>({})
   const loading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -157,6 +158,7 @@ export function useForecastData({
         summary.value = null
         cashflows.value = []
         appliedAdjustments.value = []
+        metadata.value = {}
         throw new Error('Forecast user_id is not configured.')
       }
 
@@ -188,6 +190,7 @@ export function useForecastData({
       summary.value = data.summary ?? null
       cashflows.value = Array.isArray(data.cashflows) ? data.cashflows : []
       appliedAdjustments.value = Array.isArray(data.adjustments) ? data.adjustments : []
+      metadata.value = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {}
     } catch (err) {
       error.value = err as Error
     } finally {
@@ -200,6 +203,7 @@ export function useForecastData({
     summary: computed(() => summary.value),
     cashflows: computed(() => cashflows.value),
     adjustments: computed(() => appliedAdjustments.value),
+    metadata: computed(() => metadata.value),
     loading: computed(() => loading.value),
     error: computed(() => error.value),
     fetchData,

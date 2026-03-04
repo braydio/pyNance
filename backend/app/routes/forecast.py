@@ -10,6 +10,7 @@ from sqlalchemy import case, func
 
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
+WAGE_LOOKBACK_DAYS = 180
 
 
 def _parse_account_filters(
@@ -299,6 +300,148 @@ def _build_realized_history(
     return realized_history_desc
 
 
+def _looks_like_wage_income(tx: Transaction) -> bool:
+    """Return True when a transaction appears to be wage/payroll income."""
+    pfc = (
+        tx.personal_finance_category
+        if isinstance(tx.personal_finance_category, dict)
+        else {}
+    )
+    pfc_primary = str(
+        pfc.get("primary")
+        or pfc.get("primary_category")
+        or pfc.get("primary_category_name")
+        or ""
+    ).lower()
+    pfc_detailed = str(
+        pfc.get("detailed")
+        or pfc.get("detailed_category")
+        or pfc.get("detailed_category_name")
+        or ""
+    ).lower()
+
+    if "income" in pfc_primary and any(
+        token in pfc_detailed for token in ("wage", "payroll", "salary", "paycheck")
+    ):
+        return True
+
+    fields = [
+        str(tx.category_display or "").lower(),
+        str(tx.category or "").lower(),
+        str(tx.category_slug or "").lower(),
+    ]
+    for value in fields:
+        if not value:
+            continue
+        if "income - wages" in value or "income_wages" in value:
+            return True
+        if "income" in value and any(
+            token in value for token in ("wage", "payroll", "salary", "paycheck")
+        ):
+            return True
+    return False
+
+
+def _auto_wage_adjustments(
+    *,
+    user_id: str,
+    start_date: date,
+    horizon_days: int,
+    included_account_ids: list[str] | None = None,
+    excluded_account_ids: list[str] | None = None,
+) -> list[dict[str, object]]:
+    """Infer recurring wage income adjustments from historical transactions."""
+    included_ids = included_account_ids or []
+    excluded_ids = excluded_account_ids or []
+    lookback_start = start_date - timedelta(days=WAGE_LOOKBACK_DAYS)
+    horizon_end = start_date + timedelta(days=max(horizon_days - 1, 0))
+
+    query = (
+        db.session.query(Transaction)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(
+            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
+        )
+        .filter(Transaction.date >= lookback_start)
+        .filter(Transaction.date <= start_date)
+    )
+    if user_id:
+        query = query.filter(Transaction.user_id == user_id)
+    if included_ids:
+        query = query.filter(Transaction.account_id.in_(included_ids))
+    if excluded_ids:
+        query = query.filter(~Transaction.account_id.in_(excluded_ids))
+
+    wage_rows: list[Transaction] = []
+    for tx in query.order_by(Transaction.date.asc()).all():
+        amount = float(tx.amount or 0)
+        if amount <= 0:
+            continue
+        if _looks_like_wage_income(tx):
+            wage_rows.append(tx)
+
+    if not wage_rows:
+        return []
+
+    observed_dates = sorted(
+        {
+            (row.date.date() if isinstance(row.date, datetime) else row.date)
+            for row in wage_rows
+            if row.date is not None
+        }
+    )
+    if not observed_dates:
+        return []
+
+    positive_amounts = [
+        float(row.amount or 0) for row in wage_rows if float(row.amount or 0) > 0
+    ]
+    if not positive_amounts:
+        return []
+    avg_wage_amount = round(sum(positive_amounts) / len(positive_amounts), 2)
+
+    gaps = [
+        (right - left).days
+        for left, right in zip(observed_dates, observed_dates[1:])
+        if 1 <= (right - left).days <= 45
+    ]
+    if gaps:
+        sorted_gaps = sorted(gaps)
+        mid = len(sorted_gaps) // 2
+        if len(sorted_gaps) % 2 == 0:
+            median_gap = int(round((sorted_gaps[mid - 1] + sorted_gaps[mid]) / 2))
+        else:
+            median_gap = int(sorted_gaps[mid])
+    else:
+        median_gap = 14
+    median_gap = min(max(median_gap, 7), 35)
+
+    next_payday = observed_dates[-1]
+    while next_payday < start_date:
+        next_payday += timedelta(days=median_gap)
+
+    adjustments: list[dict[str, object]] = []
+    while next_payday <= horizon_end:
+        adjustments.append(
+            {
+                "label": "Auto wage income",
+                "amount": avg_wage_amount,
+                "date": next_payday.isoformat(),
+                "adjustment_type": "auto_income",
+                "reason": "Derived from recent wage-category transactions.",
+                "metadata": {
+                    "source": "auto_wage_detection",
+                    "observed_count": len(positive_amounts),
+                    "median_gap_days": median_gap,
+                },
+            }
+        )
+        next_payday += timedelta(days=median_gap)
+
+    return adjustments
+
+
 @forecast.route("", methods=["GET"])
 def get_forecast():
     """Return forecast payload generated by :class:`ForecastOrchestrator`."""
@@ -375,13 +518,22 @@ def compute_forecast_route():
             historical_aggregates=historical_aggregates,
             lookback_days=LOOKBACK_DAYS,
         )
+        inferred_wage_adjustments = _auto_wage_adjustments(
+            user_id=str(user_id),
+            start_date=start_date,
+            horizon_days=horizon_days,
+            included_account_ids=included_account_ids,
+            excluded_account_ids=excluded_account_ids,
+        )
+        merged_adjustments = list(adjustments) + inferred_wage_adjustments
+
         result = compute_forecast(
             user_id=str(user_id),
             start_date=start_date,
             horizon_days=horizon_days,
             latest_snapshots=latest_snapshots,
             historical_aggregates=historical_aggregates,
-            adjustments=adjustments,
+            adjustments=merged_adjustments,
             moving_average_window=moving_average_window,
             normalize=normalize,
             graph_mode=graph_mode,
@@ -397,6 +549,7 @@ def compute_forecast_route():
                 },
                 "realized_history_lookback_days": LOOKBACK_DAYS,
                 "realized_history": realized_history,
+                "auto_wage_adjustment_count": len(inferred_wage_adjustments),
             },
         )
         return jsonify(result), 200

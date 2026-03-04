@@ -91,7 +91,7 @@ const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
 const normalize = ref(false)
 const graphMode = ref<ForecastGraphMode>('combined')
 
-const { timeline, summary, cashflows, loading, error, fetchData } = useForecastData({
+const { timeline, summary, cashflows, metadata, loading, error, fetchData } = useForecastData({
   viewType,
   manualIncome,
   liabilityRate,
@@ -112,7 +112,12 @@ const forecastItems = computed(() =>
 )
 const hasForecastData = computed(() => timeline.value.length > 0)
 const isLoading = computed(() => loading.value)
-const realizedHistory = computed(() => (summary.value?.metadata?.realized_history as any[]) ?? [])
+const realizedHistory = computed(
+  () =>
+    ((metadata.value?.realized_history as any[]) ??
+      (summary.value?.metadata?.realized_history as any[]) ??
+      []),
+)
 
 watch(summary, (value) => {
   currentBalance.value = value?.starting_balance ?? 0

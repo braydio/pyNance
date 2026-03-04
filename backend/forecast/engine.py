@@ -822,6 +822,20 @@ def compute_forecast(
         realized_history = realized_history_desc
 
     normalized_graph_mode = _normalize_graph_mode(graph_mode)
+    summary_metadata = dict(summary.metadata or {})
+    summary_metadata.update(
+        {
+            "moving_average_window": window,
+            "normalize": normalize,
+            "graph_mode": normalized_graph_mode,
+            "normalization_factor": float(normalization_factor),
+            "projected_amount": projected_amount,
+            "projected_change": projected_change,
+            "projected_change_percent": projected_change_percent,
+            "realized_history": realized_history,
+        }
+    )
+    summary.metadata = summary_metadata
 
     result = ForecastResult(
         timeline=adjusted_timeline,
