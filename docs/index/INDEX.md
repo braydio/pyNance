@@ -11,6 +11,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Maintenance](../maintenance/) – operations and upkeep
 - [Maps](../maps/) – diagrams and visual references
 - [Roadmaps](../roadmaps/) – active product planning and workstream status
+- [Account Balance History Roadmap](../roadmaps/account-balance-history.md) – phased delivery plan for history correctness, caching, API/UI integration, and rollout validation.
 
 ## Additional Resources
 

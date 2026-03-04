@@ -6,6 +6,10 @@ The **Accounts Page** provides a detailed, organized view of all user accounts g
 
 ---
 
+## Related roadmap
+
+- [Account balance history delivery roadmap](../roadmaps/account-balance-history.md)
+
 ## Layout & Features
 
 ### 1. Institution Overview

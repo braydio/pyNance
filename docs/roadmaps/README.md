@@ -7,6 +7,7 @@ This directory consolidates the active product roadmaps for pyNance so they live
 | Area                    | Current focus                                                              | Detailed plan                                                   |
 | ----------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------- |
 | Accounts experience     | Balance history visualisation, range filters, and richer account insights  | [Accounts roadmap](./accounts.md)                               |
+| Account balance history | Backend correctness, cache/API hardening, UI integration, and release readiness | [Account balance history roadmap](./account-balance-history.md) |
 | Transactions sync       | Plaid delta-sync hardening, webhook coverage, and migration clean-up       | [Transactions sync roadmap](./transactions.md)                  |
 | Planning & allocations  | Bill management UI, allocation enforcement, and Flask planning APIs        | [Planning roadmap](./planning.md)                               |
 | Investments             | Holdings/transaction refresh reliability and analytics surfacing           | [Investments roadmap](./investments.md)                         |
