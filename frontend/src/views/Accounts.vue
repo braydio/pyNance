@@ -322,7 +322,7 @@ async function loadData() {
     const [summary, transactions] = await Promise.all([
       fetchNetChanges(accountId.value, { start_date: start, end_date: end }),
       fetchRecentTransactions(accountId.value, 10),
-      loadHistory(start, end),
+      loadHistory(),
     ])
 
     const summaryData = summary?.data ?? summary ?? {}

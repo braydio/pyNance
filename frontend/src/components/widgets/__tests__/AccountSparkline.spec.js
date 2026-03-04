@@ -10,24 +10,45 @@ const normalizedHistory = ref([
   { date: '2024-01-03', balance: 90 },
 ])
 
+const useAccountHistoryMock = vi.fn(() => ({
+  history: normalizedHistory,
+  balances: normalizedHistory,
+  loading: ref(false),
+  error: ref(null),
+  isReady: ref(true),
+  loadHistory: vi.fn(),
+}))
+
 vi.mock('@/composables/useAccountHistory', () => ({
-  useAccountHistory: () => ({
-    history: normalizedHistory,
-    balances: normalizedHistory,
-    loading: ref(false),
-    error: ref(null),
-    isReady: ref(true),
-    loadHistory: vi.fn(),
-  }),
+  useAccountHistory: (...args) => useAccountHistoryMock(...args),
 }))
 
 describe('AccountSparkline accessibility', () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     normalizedHistory.value = [
       { date: '2024-01-01', balance: 100 },
       { date: '2024-01-02', balance: 150 },
       { date: '2024-01-03', balance: 90 },
     ]
+  })
+
+  it('uses shared normalized account history with the same default range contract as chart consumers', () => {
+    mount(AccountSparkline, {
+      props: {
+        accountId: 'acct-123',
+      },
+    })
+
+    expect(useAccountHistoryMock).toHaveBeenCalled()
+    const [passedAccountIdRef, passedRangeRef] = useAccountHistoryMock.mock.calls[0]
+    expect(passedAccountIdRef.value).toBe('acct-123')
+    expect(passedRangeRef.value).toBe('30d')
+    expect(normalizedHistory.value).toEqual([
+      { date: '2024-01-01', balance: 100 },
+      { date: '2024-01-02', balance: 150 },
+      { date: '2024-01-03', balance: 90 },
+    ])
   })
 
   it('renders toggle button with descriptive content for the indicator', () => {

@@ -10,6 +10,10 @@ transactions, and history data.
 - `frontend/src/views/Accounts.vue` (Balance History chart)
 - `frontend/src/components/widgets/AccountSparkline.vue` (balance/transaction toggle sparkline)
 
+Both consumers read the same normalized `{ date, balance }` records from `useAccountHistory` for the same
+account and date window contract. The Accounts chart uses the selected range, while sparklines use the
+shared default `30d` range.
+
 The composable owns the shared contract for all account-history consumers:
 
 - payload normalization,
