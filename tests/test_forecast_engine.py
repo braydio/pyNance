@@ -221,6 +221,26 @@ def test_compute_forecast_normalize_toggle_sets_metadata():
     assert payload["metadata"]["normalization_factor"] >= 1
 
 
+def test_compute_forecast_uses_provided_realized_history():
+    """Route-provided realized history should be surfaced unchanged."""
+    realized_history = [
+        {"date": "2025-12-30", "label": "2025-12-30", "balance": 92.5},
+        {"date": "2025-12-31", "label": "2025-12-31", "balance": 95.0},
+        {"date": "2026-01-01", "label": "2026-01-01", "balance": 100.0},
+    ]
+
+    payload = compute_forecast(
+        user_id=2,
+        start_date=date(2026, 1, 1),
+        horizon_days=2,
+        latest_snapshots=[{"account_id": "a1", "balance": 100.0, "date": "2026-01-01"}],
+        historical_aggregates=[{"date": "2025-12-31", "inflow": 10.0, "outflow": 5.0}],
+        metadata={"realized_history": realized_history},
+    )
+
+    assert payload["metadata"]["realized_history"] == realized_history
+
+
 def test_apply_adjustments_distributed_range_spread():
     """Distributed adjustments are split evenly across selected range dates."""
     baseline = [

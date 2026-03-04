@@ -404,11 +404,19 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
     }
     assert captured["metadata"]["included_account_ids"] == ["acc-1", "acc-2"]
     assert captured["metadata"]["excluded_account_ids"] == ["acc-3"]
+    assert captured["metadata"]["starting_balance"] == 200.0
     assert captured["metadata"]["contribution_totals"] == {
         "snapshot_balance": 200.0,
         "historical_inflow": 40.0,
         "historical_outflow": 15.0,
     }
+    realized_history = captured["metadata"]["realized_history"]
+    assert isinstance(realized_history, list)
+    assert len(realized_history) == forecast_module.LOOKBACK_DAYS
+    by_date = {entry["date"]: entry["balance"] for entry in realized_history}
+    assert by_date["2023-12-30"] == 185.0
+    assert by_date["2023-12-31"] == 200.0
+    assert by_date["2024-01-01"] == 200.0
 
 
 def test_forecast_compute_rejects_invalid_account_filter_types(client):

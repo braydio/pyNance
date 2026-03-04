@@ -763,21 +763,63 @@ def compute_forecast(
         else 0.0
     )
 
-    running_history_balance = Decimal(str(summary.starting_balance))
-    realized_history = []
-    for item in historical_window:
-        running_history_balance += _extract_amount(item, ("inflow", "income", "credit"))
-        running_history_balance -= _extract_amount(
-            item, ("outflow", "expense", "debit")
-        )
-        realized_date = _parse_date(item.get("date"), fallback=date.today())
-        realized_history.append(
-            {
-                "date": realized_date.isoformat(),
-                "label": realized_date.isoformat(),
-                "balance": float(running_history_balance),
-            }
-        )
+    realized_history: list[dict[str, object]] = []
+    metadata_map = dict(metadata or {})
+    provided_realized_history = metadata_map.get("realized_history")
+    if isinstance(provided_realized_history, list):
+        normalized_points: list[tuple[date, dict[str, object]]] = []
+        for point in provided_realized_history:
+            if not isinstance(point, Mapping):
+                continue
+            realized_date = _parse_date(point.get("date"), fallback=date.today())
+            normalized_points.append(
+                (
+                    realized_date,
+                    {
+                        "date": realized_date.isoformat(),
+                        "label": str(point.get("label") or realized_date.isoformat()),
+                        "balance": float(
+                            _to_decimal(
+                                point.get("balance")
+                                or point.get("value")
+                                or point.get("amount")
+                            )
+                        ),
+                    },
+                )
+            )
+        normalized_points.sort(key=lambda item: item[0])
+        realized_history = [item[1] for item in normalized_points]
+
+    if not realized_history and historical_window:
+        anchor_date = _parse_date(start_date, fallback=date.today())
+        running_history_balance = Decimal(str(summary.starting_balance))
+        daily_net_by_date: dict[date, Decimal] = {}
+        for item in historical_window:
+            realized_date = _parse_date(item.get("date"), fallback=anchor_date)
+            daily_net_by_date[realized_date] = (
+                daily_net_by_date.get(realized_date, Decimal("0"))
+                + _extract_amount(item, ("inflow", "income", "credit"))
+                - _extract_amount(item, ("outflow", "expense", "debit"))
+            )
+
+        oldest_date = min(daily_net_by_date)
+        realized_history_desc: list[dict[str, object]] = []
+        current_date = anchor_date
+        while current_date >= oldest_date:
+            iso_date = current_date.isoformat()
+            realized_history_desc.append(
+                {
+                    "date": iso_date,
+                    "label": iso_date,
+                    "balance": float(running_history_balance),
+                }
+            )
+            running_history_balance -= daily_net_by_date.get(current_date, Decimal("0"))
+            current_date -= timedelta(days=1)
+
+        realized_history_desc.reverse()
+        realized_history = realized_history_desc
 
     normalized_graph_mode = _normalize_graph_mode(graph_mode)
 
@@ -787,7 +829,7 @@ def compute_forecast(
         cashflows=cashflows,
         adjustments=_build_adjustment_models(adjustments),
         metadata={
-            **dict(metadata or {}),
+            **metadata_map,
             "moving_average_window": window,
             "normalize": normalize,
             "graph_mode": normalized_graph_mode,
