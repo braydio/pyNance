@@ -42,3 +42,4 @@ Consult the linked documents above for detailed responsibilities, function summa
 ## Cross-References
 
 - Routes that rely heavily on this layer include [Transactions](../routes/transactions.md), [Plaid sync](../routes/plaid_transactions.md), and [Accounts](../routes/accounts.md). Use the linked route docs alongside the services above for end-to-end context.
+- Roadmap context for balance history hardening lives in [docs/roadmaps/account-balance-history.md](../../../roadmaps/account-balance-history.md).

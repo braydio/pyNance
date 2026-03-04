@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-27
+Last Updated: 2026-03-04
 Status: Active
 ---
 
@@ -55,6 +55,7 @@ Use the links below to open a specific route reference.
 ### Accounts & Transactions
 
 - [accounts.md](accounts.md) – Account lifecycle and categorization routes.
+- [Account balance history roadmap](../../../roadmaps/account-balance-history.md) – Delivery milestones for history correctness, cache behavior, and API/UI rollout.
 - [institutions.md](institutions.md) – Institution aggregation and refresh.
 - [transactions.md](transactions.md) – Core transaction queries and updates.
 - [categories.md](categories.md) – Category metadata and tagging flows.
