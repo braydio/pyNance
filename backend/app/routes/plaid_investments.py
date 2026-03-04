@@ -20,9 +20,9 @@ plaid_investments = Blueprint("plaid_investments", __name__)
 def generate_link_token_investments():
     """
     Generate a Plaid link token for the investments product.
-    Expects JSON payload with "user_id".
+    Expects JSON payload with "user_id". Malformed JSON is treated as empty input.
     """
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get("user_id")
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
@@ -38,9 +38,9 @@ def generate_link_token_investments():
 def exchange_public_token_investments():
     """
     Exchange a public token for an access token for investments.
-    Expects JSON with "user_id" and "public_token".
+    Expects JSON with "user_id" and "public_token". Malformed JSON is treated as empty input.
     """
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get("user_id")
     public_token = data.get("public_token")
     if not user_id or not public_token:
@@ -105,16 +105,16 @@ def exchange_public_token_investments():
 def refresh_investments_endpoint():
     """
     Refresh investments holdings for a linked investments item.
-    Expects JSON with "user_id" and "item_id".
+    Expects JSON with "user_id" and "item_id". Malformed JSON is treated as empty input.
     """
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     user_id = data.get("user_id")
     item_id = data.get("item_id")
     if not user_id or not item_id:
         return jsonify({"error": "Missing user_id or item_id"}), 400
     try:
-        start_date = (request.get_json() or {}).get("start_date")
-        end_date = (request.get_json() or {}).get("end_date")
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
         # Default to last 30 days if not provided
         if not start_date or not end_date:
             from datetime import date, timedelta
@@ -154,7 +154,7 @@ def refresh_all_investments():
     Optional JSON body accepts start_date/end_date (YYYY-MM-DD); defaults last 30 days.
     """
     try:
-        payload = request.get_json() or {}
+        payload = request.get_json(silent=True) or {}
         start_date = payload.get("start_date")
         end_date = payload.get("end_date")
         if not start_date or not end_date:

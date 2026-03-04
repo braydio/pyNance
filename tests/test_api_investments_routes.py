@@ -583,20 +583,75 @@ def plaid_investments_client():
         yield client, module
 
 
-def test_plaid_investments_input_validation(plaid_investments_client):
+@pytest.mark.parametrize(
+    ("path", "expected_error"),
+    [
+        ("/api/plaid/investments/generate_link_token", "Missing user_id"),
+        (
+            "/api/plaid/investments/exchange_public_token",
+            "Missing user_id or public_token",
+        ),
+        ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
+    ],
+)
+def test_plaid_investments_rejects_empty_body(
+    plaid_investments_client, path, expected_error
+):
+    """Return deterministic 400 responses when required JSON fields are absent."""
     client, _module = plaid_investments_client
 
-    missing_user = client.post("/api/plaid/investments/generate_link_token", json={})
-    missing_public_token = client.post(
-        "/api/plaid/investments/exchange_public_token", json={"user_id": "u1"}
-    )
-    missing_item_id = client.post(
-        "/api/plaid/investments/refresh", json={"user_id": "u1"}
+    response = client.post(path, json={})
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": expected_error}
+
+
+@pytest.mark.parametrize(
+    ("path", "expected_error"),
+    [
+        ("/api/plaid/investments/generate_link_token", "Missing user_id"),
+        (
+            "/api/plaid/investments/exchange_public_token",
+            "Missing user_id or public_token",
+        ),
+        ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
+    ],
+)
+def test_plaid_investments_rejects_invalid_json_body(
+    plaid_investments_client, path, expected_error
+):
+    """Treat malformed JSON payloads as empty input and return 400 validation errors."""
+    client, _module = plaid_investments_client
+
+    response = client.post(path, data="{", content_type="application/json")
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": expected_error}
+
+
+def test_plaid_investments_generate_link_token_success(plaid_investments_client):
+    """Return a Plaid link token for valid investment link requests."""
+    client, _module = plaid_investments_client
+
+    response = client.post(
+        "/api/plaid/investments/generate_link_token", json={"user_id": "u1"}
     )
 
-    assert missing_user.status_code == 400
-    assert missing_public_token.status_code == 400
-    assert missing_item_id.status_code == 400
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "success", "link_token": "link-token"}
+
+
+def test_plaid_investments_exchange_public_token_success(plaid_investments_client):
+    """Exchange public token requests return the linked item id on success."""
+    client, _module = plaid_investments_client
+
+    response = client.post(
+        "/api/plaid/investments/exchange_public_token",
+        json={"user_id": "u1", "public_token": "public-token"},
+    )
+
+    assert response.status_code == 200
+    assert response.get_json() == {"status": "success", "item_id": "item"}
 
 
 def test_plaid_investments_refresh_success_path(plaid_investments_client, monkeypatch):
