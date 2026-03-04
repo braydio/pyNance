@@ -79,6 +79,7 @@ describe('Investments.vue transaction filters', () => {
     await flushPromises()
 
     expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(1, 10, {
+      user_id: '',
       account_id: 'acc-1',
       security_id: 'sec-123',
       type: 'buy',
@@ -105,6 +106,7 @@ describe('Investments.vue transaction filters', () => {
     await flushPromises()
 
     expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(1, 10, {
+      user_id: '',
       account_id: 'acc-1',
       security_id: 'sec-42',
       type: 'sell',
@@ -120,6 +122,7 @@ describe('Investments.vue transaction filters', () => {
     const remount = mountInvestments()
     await flushPromises()
     expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(1, 10, {
+      user_id: '',
       account_id: 'acc-1',
       security_id: 'sec-42',
       type: 'sell',
@@ -137,11 +140,14 @@ describe('Investments.vue transaction filters', () => {
     await wrapper.find('.pager .btn:last-child').trigger('click')
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(2, 10, {})
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(2, 10, { user_id: '' })
 
     await wrapper.find('[data-testid="tx-filter-type"]').setValue('buy')
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(1, 10, { type: 'buy' })
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(1, 10, {
+      user_id: '',
+      type: 'buy',
+    })
   })
 })

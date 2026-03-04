@@ -4,7 +4,7 @@
 
 ## Supported filters
 
-These controls are mapped directly to backend query parameter names through `fetchInvestmentTransactions(page, pageSize, filters)`:
+These controls are mapped directly to backend query parameter names through `fetchInvestmentTransactions(page, pageSize, filters)`. The `user_id` is also passed inside `filters` so the request uses backend query parameter names exactly:
 
 - `account_id`
 - `security_id`

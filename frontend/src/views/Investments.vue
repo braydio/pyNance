@@ -446,8 +446,8 @@ async function loadTransactions(page = 1) {
   txLoading.value = true
   try {
     txPage.value = page
-    const filters = buildTransactionFilters()
-    const res = await fetchInvestmentTransactions(plaidUserId, page, txPageSize, filters)
+    const filters = { user_id: plaidUserId, ...buildTransactionFilters() }
+    const res = await fetchInvestmentTransactions(page, txPageSize, filters)
     const payload = res?.data || res || {}
     txData.value = payload.transactions || payload.data?.transactions || []
     txTotal.value = payload.total || payload.data?.total || 0
