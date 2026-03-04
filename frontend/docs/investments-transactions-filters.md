@@ -13,6 +13,8 @@ These controls are mapped directly to backend query parameter names through `fet
 - `start_date`
 - `end_date`
 
+The API helper only forwards the supported keys above (plus paging) so no unrelated client-side keys are sent to the backend.
+
 ## Persistence and pagination
 
 - Filter selections are persisted in `localStorage` under `investments.transactionFilters`.
