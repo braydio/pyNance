@@ -118,6 +118,11 @@ Accepted path identifier formats for `<id>`:
 - External `account_id` string (for example, a provider UUID-like identifier)
 - Internal numeric primary key (`id`) as either an integer path segment or numeric string
 
+Examples:
+
+- `/api/accounts/acc_12345/history` (`account_id`)
+- `/api/accounts/42/history` (numeric primary key)
+
 **Query Parameters**
 
 - `range` – optional day-window shorthand (`7d`, `30d`, `90d`, `365d`); default is `30d`
@@ -130,6 +135,8 @@ Precedence and window resolution rules (`start_date`/`end_date` take precedence 
 - If `start_date` is provided without `end_date`, `end_date` is derived as `start_date + (range_days - 1)`.
 - If `end_date` is provided without `start_date`, `start_date` is derived as `end_date - (range_days - 1)`.
 - If neither date is provided, the route returns the trailing `range_days` ending on the current UTC date.
+
+`range` is still parsed in every case to establish `range_days` for partial-bound requests.
 
 **Canonical Response Body**
 

@@ -33,9 +33,12 @@ def test_accounts_history_docs_capture_query_precedence_and_response_alias():
     assert "Precedence and window resolution rules" in section
     assert "take precedence over `range`" in section
     assert "does not override either bound" in section
+    assert "`range` is still parsed in every case" in section
     assert "Accepted path identifier formats" in section
     assert "External `account_id` string" in section
     assert "Internal numeric primary key" in section
+    assert "`/api/accounts/acc_12345/history`" in section
+    assert "`/api/accounts/42/history`" in section
     assert '"balances"' in section
     assert '"history"' in section
     assert "legacy alias" in section
@@ -53,9 +56,15 @@ def test_api_reference_has_balanced_markdown_fences_in_accounts_history_neighbor
     neighborhood = doc_text[start_index:end_index]
 
     assert "```text\nGET    /api/transactions/get_transactions" in neighborhood
-    assert "```text\nPOST   /api/plaid/transactions/exchange_public_token" in neighborhood
+    assert (
+        "```text\nPOST   /api/plaid/transactions/exchange_public_token" in neighborhood
+    )
 
-    fence_lines = [line.strip() for line in neighborhood.splitlines() if line.strip().startswith("```")]
+    fence_lines = [
+        line.strip()
+        for line in neighborhood.splitlines()
+        if line.strip().startswith("```")
+    ]
     opened = sum(1 for line in fence_lines if line != "```")
     closed = fence_lines.count("```")
     assert opened == closed
