@@ -11,6 +11,14 @@ const normalizedHistory = ref([
   { date: '2024-01-02', balance: 135.5 },
 ])
 const loadHistoryMock = vi.fn().mockResolvedValue(normalizedHistory.value)
+const useAccountHistoryMock = vi.fn(() => ({
+  history: normalizedHistory,
+  balances: normalizedHistory,
+  loading: ref(false),
+  error: ref(null),
+  isReady: ref(true),
+  loadHistory: loadHistoryMock,
+}))
 
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: {}, query: {} }),
@@ -30,14 +38,7 @@ vi.mock('@/services/api', () => ({
 }))
 
 vi.mock('@/composables/useAccountHistory', () => ({
-  useAccountHistory: () => ({
-    history: normalizedHistory,
-    balances: normalizedHistory,
-    loading: ref(false),
-    error: ref(null),
-    isReady: ref(true),
-    loadHistory: loadHistoryMock,
-  }),
+  useAccountHistory: (...args) => useAccountHistoryMock(...args),
 }))
 
 vi.mock('@/api/accounts', () => ({
@@ -124,6 +125,37 @@ describe('Accounts.vue', () => {
     expect(text).toContain('$1,250.55')
     expect(text).toContain('$300.10')
     expect(text).toContain('$950.45')
+  })
+
+  it('uses the shared account-history composable range contract for chart data loading', async () => {
+    shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: {
+            template: '<div><slot name="Summary" /></div>',
+          },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+          Card: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
+          UiButton: { template: '<button><slot /></button>' },
+          SkeletonCard: true,
+          RetryError: true,
+          AccountBalanceHistoryChart: true,
+          TransactionsTable: true,
+          NetYearComparisonChart: true,
+          AssetsBarTrended: true,
+          AccountsReorderChart: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(useAccountHistoryMock).toHaveBeenCalled()
+    const [, passedRangeRef] = useAccountHistoryMock.mock.calls[0]
+    expect(passedRangeRef.value).toBe('30d')
+    expect(loadHistoryMock).toHaveBeenCalledWith()
   })
 
   it('passes normalized composable history into the balance chart', async () => {
