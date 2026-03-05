@@ -50,7 +50,9 @@ all of them:
 | `--color-accent-green`                          | positive/earning accent           |
 | `--color-accent-orange`                         | warning or trend accent           |
 | `--color-accent-indigo`                         | fresh highlight accent            |
-| `--primary` / `--primary-dark`                  | generic button colors             |
+| `--accent-primary` / `--accent-primary-strong`  | Daily Net control palette accents |
+| `--accent-primary-contrast` / `--accent-surface` | contrast + frosted accent surfaces |
+| `--primary` / `--primary-dark`                  | legacy aliases to accent palette  |
 | `--hover-bg`                                    | hover background for buttons      |
 | `--hover-glow`                                  | drop shadow for hover effects     |
 | `--color-success` / `--color-bg-success`        | success states                    |

@@ -26,9 +26,6 @@
   --color-text-light: var(--text-primary);
   --color-text-muted: #71839b;
 
-  --primary: #719cd6;
-  --primary-dark: #39506d;
-
   --color-accent-cyan: #63cdcf;
   --color-accent-purple: #9d79d6;
   --color-accent-yellow: #dbc074;
@@ -39,7 +36,15 @@
   --color-accent-magenta: #d67ad2;
   --color-accent-indigo: #7aa2f7;
   --color-accent-purple-hover: #b093e6;
-  --color-accent: var(--color-accent-cyan);
+  --accent-primary: var(--color-accent-yellow);
+  --accent-primary-strong: var(--color-accent-green);
+  --accent-primary-contrast: var(--color-bg-dark);
+  --accent-surface: color-mix(in srgb, var(--accent-primary) 26%, var(--color-bg-dark));
+  --accent-surface-strong: color-mix(in srgb, var(--accent-primary-strong) 38%, var(--color-bg-secondary));
+
+  --primary: var(--accent-primary);
+  --primary-dark: var(--accent-primary-strong);
+  --color-accent: var(--accent-primary);
 
   --color-success: var(--color-accent-green);
   --color-bg-success: var(--color-accent-green);
