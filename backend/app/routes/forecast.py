@@ -130,7 +130,9 @@ def _load_latest_snapshots(
     accounts_query = db.session.query(Account).filter(
         (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
     )
-    if user_id:
+    # When explicit account IDs are provided, trust that filter as the source of truth.
+    # Otherwise, use user scoping with a null-user fallback for legacy rows.
+    if user_id and not included_ids:
         accounts_query = accounts_query.filter(Account.user_id == user_id)
     if included_ids:
         accounts_query = accounts_query.filter(Account.account_id.in_(included_ids))
@@ -218,8 +220,12 @@ def _load_historical_aggregates(
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
     )
-    if user_id:
-        query = query.filter(Transaction.user_id == user_id)
+    if user_id and not included_ids:
+        query = query.filter(
+            (Account.user_id == user_id)
+            | (Transaction.user_id == user_id)
+            | (Account.user_id.is_(None))
+        )
     if included_ids:
         query = query.filter(Transaction.account_id.in_(included_ids))
     if excluded_ids:
@@ -330,6 +336,37 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
         str(tx.category or "").lower(),
         str(tx.category_slug or "").lower(),
     ]
+    plaid_meta = getattr(tx, "plaid_meta", None)
+    plaid_meta_category = getattr(plaid_meta, "category", None) if plaid_meta else None
+    if isinstance(plaid_meta_category, list):
+        fields.extend(str(part or "").lower() for part in plaid_meta_category)
+    elif isinstance(plaid_meta_category, dict):
+        fields.extend(
+            str(value or "").lower() for value in plaid_meta_category.values()
+        )
+
+    plaid_meta_raw = getattr(plaid_meta, "raw", None) if plaid_meta else None
+    if isinstance(plaid_meta_raw, dict):
+        pfc_raw = plaid_meta_raw.get("personal_finance_category")
+        if isinstance(pfc_raw, dict):
+            pfc_raw_primary = str(
+                pfc_raw.get("primary")
+                or pfc_raw.get("primary_category")
+                or pfc_raw.get("primary_category_name")
+                or ""
+            ).lower()
+            pfc_raw_detailed = str(
+                pfc_raw.get("detailed")
+                or pfc_raw.get("detailed_category")
+                or pfc_raw.get("detailed_category_name")
+                or ""
+            ).lower()
+            if "income" in pfc_raw_primary and any(
+                token in pfc_raw_detailed
+                for token in ("wage", "payroll", "salary", "paycheck")
+            ):
+                return True
+
     for value in fields:
         if not value:
             continue
@@ -366,8 +403,12 @@ def _auto_wage_adjustments(
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
     )
-    if user_id:
-        query = query.filter(Transaction.user_id == user_id)
+    if user_id and not included_ids:
+        query = query.filter(
+            (Account.user_id == user_id)
+            | (Transaction.user_id == user_id)
+            | (Account.user_id.is_(None))
+        )
     if included_ids:
         query = query.filter(Transaction.account_id.in_(included_ids))
     if excluded_ids:
@@ -512,6 +553,13 @@ def compute_forecast_route():
         total_outflow = sum(
             float(item.get("outflow", 0) or 0) for item in historical_aggregates
         )
+        non_zero_historical_days = sum(
+            1
+            for item in historical_aggregates
+            if abs(float(item.get("inflow", 0) or 0))
+            + abs(float(item.get("outflow", 0) or 0))
+            > 0
+        )
         realized_history = _build_realized_history(
             start_date=start_date,
             ending_balance=net_snapshot_balance,
@@ -547,6 +595,8 @@ def compute_forecast_route():
                     "historical_inflow": total_inflow,
                     "historical_outflow": total_outflow,
                 },
+                "historical_aggregate_days": len(historical_aggregates),
+                "historical_aggregate_non_zero_days": non_zero_historical_days,
                 "realized_history_lookback_days": LOOKBACK_DAYS,
                 "realized_history": realized_history,
                 "auto_wage_adjustment_count": len(inferred_wage_adjustments),

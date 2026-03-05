@@ -32,4 +32,22 @@ describe('ForecastSummaryPanel', () => {
     expect(includedEvents?.at(-1)?.[0]).toEqual(['acc-1'])
     expect(excludedEvents?.at(-1)?.[0]).toEqual(['acc-2'])
   })
+
+  it('prefers computed forecast net change when provided', () => {
+    const wrapper = mount(ForecastSummaryPanel, {
+      props: {
+        currentBalance: 400,
+        manualIncome: 0,
+        liabilityRate: 0,
+        netChange: 123.45,
+        viewType: 'Month',
+        includedAccountIds: [],
+        excludedAccountIds: [],
+        accountOptions: [],
+      },
+    })
+
+    expect(wrapper.text()).toContain('Net Delta:')
+    expect(wrapper.text()).toContain('123.45')
+  })
 })

@@ -84,6 +84,10 @@ const props = defineProps({
   currentBalance: Number,
   manualIncome: Number,
   liabilityRate: Number,
+  netChange: {
+    type: Number,
+    default: null,
+  },
   viewType: String,
   accountOptions: {
     type: Array,
@@ -116,7 +120,13 @@ const excludedSet = computed(() => new Set(props.excludedAccountIds || []))
 /**
  * Provide a simple net delta hint based on manual adjustments.
  */
-const netDelta = computed(() => ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2))
+const netDelta = computed(() => {
+  const fromForecast = Number(props.netChange)
+  if (Number.isFinite(fromForecast)) {
+    return fromForecast.toFixed(2)
+  }
+  return ((localIncome.value || 0) - (localRate.value || 0)).toFixed(2)
+})
 
 /**
  * Return whether an account is currently included in compute requests.

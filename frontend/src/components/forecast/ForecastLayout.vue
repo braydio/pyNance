@@ -13,6 +13,7 @@
       :current-balance="currentBalance"
       :manual-income="manualIncome"
       :liability-rate="liabilityRate"
+      :net-change="summary?.net_change"
       :view-type="viewType"
       :account-options="forecastAccounts"
       :included-account-ids="includedAccountIds"
@@ -42,6 +43,33 @@
         </select>
       </label>
       <label> <input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history </label>
+    </div>
+
+    <div class="card glass adjustments-grid">
+      <div>
+        <h3 class="adjustments-title">Manual Adjustments</h3>
+        <p v-if="manualAppliedAdjustments.length === 0" class="adjustments-empty">
+          No manual adjustments applied.
+        </p>
+        <ul v-else class="adjustments-list">
+          <li v-for="(item, idx) in manualAppliedAdjustments" :key="`manual-${idx}`">
+            <span>{{ item.label || 'Manual adjustment' }}</span>
+            <strong>{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong>
+          </li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="adjustments-title">Auto-Detected Income</h3>
+        <p v-if="autoDetectedAdjustments.length === 0" class="adjustments-empty">
+          No auto-detected income events found.
+        </p>
+        <ul v-else class="adjustments-list auto">
+          <li v-for="(item, idx) in autoDetectedAdjustments" :key="`auto-${idx}`">
+            <span>{{ item.label || 'Auto income' }} ({{ item.date || 'scheduled' }})</span>
+            <strong>{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong>
+          </li>
+        </ul>
+      </div>
     </div>
 
     <ForecastChart
@@ -91,7 +119,16 @@ const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
 const normalize = ref(false)
 const graphMode = ref<ForecastGraphMode>('combined')
 
-const { timeline, summary, cashflows, metadata, loading, error, fetchData } = useForecastData({
+const {
+  timeline,
+  summary,
+  cashflows,
+  adjustments: appliedAdjustments,
+  metadata,
+  loading,
+  error,
+  fetchData,
+} = useForecastData({
   viewType,
   manualIncome,
   liabilityRate,
@@ -109,6 +146,33 @@ const forecastItems = computed(() =>
     label: item.label,
     amount: item.amount,
   })),
+)
+const baselineTrendAdjustment = computed<ForecastAdjustmentInput | null>(() => {
+  const avgDaily = Number(summary.value?.average_daily_change ?? 0)
+  if (!Number.isFinite(avgDaily) || avgDaily === 0) {
+    return null
+  }
+  return {
+    label: `Historical ${movingAverageWindow.value}d avg/day`,
+    amount: avgDaily,
+    date: 'daily trend',
+    adjustment_type: 'auto_trend',
+    reason: 'Derived from historical average net change.',
+  }
+})
+const autoDetectedAdjustments = computed(() =>
+  [
+    ...(appliedAdjustments.value || []).filter((adjustment) =>
+      String(adjustment?.adjustment_type || '').toLowerCase().startsWith('auto'),
+    ),
+    ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
+  ],
+)
+const manualAppliedAdjustments = computed(() =>
+  (appliedAdjustments.value || []).filter(
+    (adjustment) =>
+      !String(adjustment?.adjustment_type || '').toLowerCase().startsWith('auto'),
+  ),
 )
 const hasForecastData = computed(() => timeline.value.length > 0)
 const isLoading = computed(() => loading.value)
@@ -184,5 +248,41 @@ function addAdjustment(adjustment: ForecastAdjustmentInput) {
   gap: 1rem;
   align-items: center;
   flex-wrap: wrap;
+}
+
+.adjustments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.adjustments-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.adjustments-empty {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.adjustments-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.adjustments-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.adjustments-list.auto strong {
+  color: #047857;
 }
 </style>
