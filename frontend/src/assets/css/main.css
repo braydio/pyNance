@@ -113,7 +113,11 @@
 
   .gradient-toggle-btn:hover,
   .gradient-toggle-btn:focus-visible {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-strong) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary) 0%,
+      var(--accent-primary-strong) 100%
+    );
     color: var(--accent-primary-contrast);
     border-color: var(--accent-primary-strong);
     outline: none;
@@ -121,7 +125,11 @@
 
   .gradient-toggle-btn.extended,
   .gradient-toggle-btn.is-active {
-    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-primary-strong) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary) 0%,
+      var(--accent-primary-strong) 100%
+    );
     color: var(--accent-primary-contrast);
     border-color: var(--accent-primary-strong);
   }

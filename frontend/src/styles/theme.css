@@ -40,7 +40,11 @@
   --accent-primary-strong: var(--color-accent-green);
   --accent-primary-contrast: var(--color-bg-dark);
   --accent-surface: color-mix(in srgb, var(--accent-primary) 26%, var(--color-bg-dark));
-  --accent-surface-strong: color-mix(in srgb, var(--accent-primary-strong) 38%, var(--color-bg-secondary));
+  --accent-surface-strong: color-mix(
+    in srgb,
+    var(--accent-primary-strong) 38%,
+    var(--color-bg-secondary)
+  );
 
   --primary: var(--accent-primary);
   --primary-dark: var(--accent-primary-strong);
