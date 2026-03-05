@@ -154,9 +154,9 @@ def refresh_all_investments():
     Optional JSON body accepts start_date/end_date (YYYY-MM-DD); defaults last 30 days.
     """
     try:
-        payload = request.get_json(silent=True) or {}
-        start_date = payload.get("start_date")
-        end_date = payload.get("end_date")
+        data = request.get_json(silent=True) or {}
+        start_date = data.get("start_date")
+        end_date = data.get("end_date")
         if not start_date or not end_date:
             from datetime import date, timedelta
 
