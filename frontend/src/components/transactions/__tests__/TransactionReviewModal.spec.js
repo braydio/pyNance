@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import TransactionReviewModal from '../TransactionReviewModal.vue'
+import { updateTransaction } from '@/api/transactions'
 
 const sampleTransaction = vi.hoisted(() => ({
   transaction_id: 'tx-1',
@@ -37,9 +38,13 @@ vi.mock('@/composables/useTransactions', () => {
 })
 
 vi.mock('@/api/transactions', () => ({
-  updateTransaction: vi.fn(),
-  createTransactionRule: vi.fn(),
+  updateTransaction: vi.fn(() => Promise.resolve()),
+  createTransactionRule: vi.fn(() => Promise.resolve()),
   fetchTagSuggestions: vi.fn(() => Promise.resolve([])),
+}))
+
+vi.mock('@/api/categories', () => ({
+  fetchCategoryTree: vi.fn(() => Promise.resolve({ status: 'success', data: [] })),
 }))
 
 function findInputByLabel(wrapper, labelText) {
@@ -49,6 +54,10 @@ function findInputByLabel(wrapper, labelText) {
 }
 
 describe('TransactionReviewModal.vue', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('seeds edit inputs with the active transaction values when entering edit mode', async () => {
     const wrapper = mount(TransactionReviewModal, {
       props: { show: true, filters: {} },
@@ -67,5 +76,46 @@ describe('TransactionReviewModal.vue', () => {
     expect(dateInput?.value).toBe('2024-03-10')
     expect(amountInput?.value).toBe('125.75')
     expect(descriptionInput?.value).toBe('Cafe brunch')
+  })
+
+  it('supports keyboard-first editing shortcuts and save flow', async () => {
+    const wrapper = mount(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+
+    await flushPromises()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    await flushPromises()
+
+    const categoryInput = findInputByLabel(wrapper, 'Category')
+    const descriptionInput = findInputByLabel(wrapper, 'Description')
+    expect(document.activeElement).toBe(categoryInput)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '4', bubbles: true }))
+    await flushPromises()
+    expect(document.activeElement).toBe(descriptionInput)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true }))
+    await flushPromises()
+    const amountInput = findInputByLabel(wrapper, 'Amount')
+    expect(document.activeElement).toBe(amountInput)
+
+    await wrapper.get('input[type="number"]').setValue('200')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    await flushPromises()
+
+    expect(updateTransaction).toHaveBeenCalled()
+    const lastUpdatePayload = updateTransaction.mock.calls.at(-1)?.[0] || {}
+    expect(lastUpdatePayload.transaction_id).toBe('tx-1')
+    expect(lastUpdatePayload.amount).toBe(200)
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft', bubbles: true }))
+    await flushPromises()
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+
+    expect(findInputByLabel(wrapper, 'Category')).toBeNull()
   })
 })
