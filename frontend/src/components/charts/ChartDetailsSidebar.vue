@@ -8,7 +8,7 @@
   >
     <button
       type="button"
-      class="chart-details-sidebar__toggle"
+      class="chart-details-sidebar__toggle gradient-toggle-btn"
       :aria-expanded="isOpen.toString()"
       :aria-controls="contentId"
       @click="toggleSidebar"

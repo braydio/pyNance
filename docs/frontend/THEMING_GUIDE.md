@@ -65,6 +65,33 @@ Additional variables such as `--color-accent-magenta`, `--color-accent-indigo`,
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.
 
+## Default accent baseline (Daily Net controls)
+
+The Daily Net control palette is the default accent scheme for shared interactive controls.
+Treat these semantic tokens as authoritative when styling dashboard toggles, segmented controls,
+and action chips:
+
+- `--accent-primary`: base accent color for borders and text.
+- `--accent-primary-strong`: emphasized/active accent color.
+- `--accent-primary-contrast`: readable foreground color on active accent fills.
+- `--accent-surface`: accent-tinted resting surface used in gradients.
+
+The shared utility class `.gradient-toggle-btn` in `frontend/src/assets/css/main.css` is the
+canonical implementation of this baseline. Build new accent controls from this utility before
+adding component-local variants.
+
+### Accent migration quick reference (do / don't)
+
+| Do | Don’t |
+| --- | --- |
+| Use `.gradient-toggle-btn` for timeframe toggles, overlay triggers, and detail toggles. | Recreate one-off toggle button classes with hardcoded gradients per component. |
+| Use `--accent-primary` and `--accent-primary-strong` for border + active states. | Use component-local `--color-accent-yellow` / `--color-accent-cyan` as the primary control border tokens. |
+| Use `--accent-primary-contrast` for text on active/accent-filled states. | Use ad hoc text tokens for active controls when `--accent-primary-contrast` applies. |
+| Use `--accent-surface` as the gradient start for resting accent controls. | Start resting control gradients directly from unrelated chart/series colors. |
+
+Legacy aliases (`--primary`, `--primary-dark`) remain for backward compatibility, but new control
+work should rely on the `--accent-*` token family.
+
 ## How the Theme Loads
 
 `main.css` imports `global-colors.css` before Tailwind base layers. This ensures

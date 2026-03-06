@@ -1,0 +1,35 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Dashboard section components > renders net overview content and forwards slot content 1`] = `
+"<section data-v-26cbed55="" class="flex flex-col gap-6">
+  <div data-v-26cbed55="" class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
+  <div data-v-26cbed55="" class="w-full mb-8 bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2">
+    <h1 data-v-26cbed55="" class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"> Welcome, <span data-v-26cbed55="" class="username">Casey</span>! </h1>
+    <p data-v-26cbed55="" class="text-lg text-muted">Today is January 1, 2025</p>
+    <p data-v-26cbed55="" class="italic text-muted">In the black</p>
+  </div>
+  <div data-v-26cbed55="" class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"></div>
+  <div data-v-26cbed55="" class="flex justify-end mb-4">
+    <div data-v-26cbed55="" class="date-range-stub"></div>
+  </div>
+  <div data-v-26cbed55="" class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
+    <div data-v-26cbed55="" class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col">
+      <top-account-snapshot-stub data-v-26cbed55="" accountsubtype="" usespectrum="false" iseditinggroups="false"></top-account-snapshot-stub>
+    </div>
+    <div data-v-26cbed55="" class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative">
+      <div data-v-26cbed55="" class="daily-net-chart-header">
+        <h2 data-v-26cbed55="" class="daily-net-chart-title"><span data-v-26cbed55="" class="title-text">Net Income</span><span data-v-26cbed55="" class="title-subtitle">(Daily)</span></h2>
+        <div data-v-26cbed55="" class="daily-net-chart-controls">
+          <div data-v-26cbed55="" class="daily-net-chart-toolbar"><button data-v-26cbed55="" class="chart-details-sidebar__toggle gradient-toggle-btn chart-details-sidebar--inline" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date">Overlays</button>
+            <div data-v-26cbed55="" class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle"><button data-v-26cbed55="" class="gradient-toggle-btn daily-net-timeframe-btn is-active" type="button" aria-pressed="true"> MTD </button><button data-v-26cbed55="" class="gradient-toggle-btn daily-net-timeframe-btn" type="button" aria-pressed="false"> Rolling 30 </button></div>
+          </div>
+        </div>
+      </div>
+      <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd"></div>
+    </div>
+  </div>
+  <div data-v-26cbed55="" class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6">
+    <div class="summary-slot">Custom Summary</div>
+  </div>
+</section>"
+`;
