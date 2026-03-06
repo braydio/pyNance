@@ -99,7 +99,7 @@
 
     <!-- REVIEW TRANSACTIONS CARD -->
     <div
-      class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+      class="review-cta-card bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
     >
       <div>
         <div class="flex flex-wrap items-center gap-3">
@@ -121,13 +121,15 @@
           </label>
           <input
             v-model="reviewTagFilter"
-            class="input"
+            class="input review-filter-input"
             type="text"
             placeholder="Optional tag (e.g., #groceries)"
           />
         </div>
       </div>
-      <button class="btn btn-outline" @click="openReviewModal">Start Review</button>
+      <button class="btn btn-outline review-start-btn" @click="openReviewModal">
+        Start Review
+      </button>
     </div>
 
     <!-- RESERVED TABLES PANEL -->
@@ -148,7 +150,11 @@
             <Wallet class="w-7 h-7" />
             <span>Accounts</span>
           </button>
-          <span class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none" aria-hidden="true">or</span>
+          <span
+            class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none"
+            aria-hidden="true"
+            >or</span
+          >
           <button
             @click="expandTransactions"
             class="flex-1 w-full sm:w-auto flex items-center justify-center gap-3 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
@@ -660,3 +666,40 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
  * chart interactions cannot stack dialogs or expanded panels.
  */
 </script>
+
+<style scoped>
+.review-cta-card {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--color-accent-purple) 18%, var(--color-bg-sec)) 0%,
+    color-mix(in srgb, var(--color-accent-cyan) 10%, var(--color-bg-sec)) 100%
+  );
+}
+
+.review-filter-input {
+  min-height: 2.4rem;
+  border-color: color-mix(in srgb, var(--color-accent-purple) 38%, var(--divider));
+  background: color-mix(in srgb, var(--color-bg-dark) 88%, transparent);
+}
+
+.review-filter-input:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-purple) 55%, transparent);
+}
+
+.review-start-btn {
+  min-width: 9.75rem;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--color-accent-purple));
+  color: var(--color-accent-cyan);
+}
+
+.review-start-btn:hover {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--color-accent-cyan) 78%, var(--color-accent-purple)) 0%,
+    var(--color-accent-purple) 100%
+  );
+  color: var(--color-bg-dark);
+}
+</style>
