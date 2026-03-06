@@ -72,31 +72,31 @@
 
   .btn {
     @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
-    background-color: var(--color-accent-purple);
-    border-color: var(--color-accent-purple);
-    color: var(--color-bg-dark);
+    background-color: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary-contrast);
   }
 
   .btn:hover {
-    background-color: var(--color-accent-cyan);
-    border-color: var(--color-accent-cyan);
+    background-color: var(--accent-primary-strong);
+    border-color: var(--accent-primary-strong);
   }
 
   .btn-outline {
     @apply inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
-    color: var(--color-accent-purple);
-    border-color: var(--color-accent-purple);
+    color: var(--accent-primary);
+    border-color: var(--accent-primary);
   }
 
   .btn-outline:hover {
-    background-color: var(--color-accent-purple);
-    color: var(--color-bg-dark);
+    background-color: var(--accent-primary);
+    color: var(--accent-primary-contrast);
   }
 
   .gradient-toggle-btn {
-    background: linear-gradient(135deg, var(--color-bg-sec) 0%, var(--color-bg-dark) 100%);
-    border: 1px solid var(--color-accent-cyan);
-    color: var(--color-accent-cyan);
+    background: linear-gradient(135deg, var(--accent-surface) 0%, var(--color-bg-dark) 100%);
+    border: 1px solid var(--accent-primary);
+    color: var(--accent-primary);
     padding: 0.35rem 0.9rem;
     border-radius: 0.65rem;
     font-size: 0.85rem;
@@ -113,17 +113,25 @@
 
   .gradient-toggle-btn:hover,
   .gradient-toggle-btn:focus-visible {
-    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
-    color: var(--color-bg-dark);
-    border-color: var(--color-accent-cyan);
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary) 0%,
+      var(--accent-primary-strong) 100%
+    );
+    color: var(--accent-primary-contrast);
+    border-color: var(--accent-primary-strong);
     outline: none;
   }
 
   .gradient-toggle-btn.extended,
   .gradient-toggle-btn.is-active {
-    background: linear-gradient(135deg, var(--color-accent-cyan) 0%, var(--color-accent-blue) 100%);
-    color: var(--color-bg-dark);
-    border-color: var(--color-accent-cyan);
+    background: linear-gradient(
+      135deg,
+      var(--accent-primary) 0%,
+      var(--accent-primary-strong) 100%
+    );
+    color: var(--accent-primary-contrast);
+    border-color: var(--accent-primary-strong);
   }
 
   .gradient-toggle-btn:disabled {
@@ -135,7 +143,7 @@
     @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
     background-color: var(--primary);
     border-color: var(--primary);
-    color: var(--color-bg-dark);
+    color: var(--accent-primary-contrast);
   }
 
   .btn-primary:hover {
@@ -147,7 +155,7 @@
     @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
     background-color: var(--color-success);
     border-color: var(--color-success);
-    color: var(--color-bg-dark);
+    color: var(--accent-primary-contrast);
   }
 
   .btn-success:hover {
