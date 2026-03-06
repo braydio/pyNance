@@ -23,7 +23,7 @@
               Review Transactions
             </h2>
             <p class="text-xs uppercase tracking-widest text-[var(--color-text-muted)]">
-              Use ← to edit, → to approve
+              Use ← to edit, → to approve, 1-5 to jump fields, Enter to save
             </p>
           </div>
           <div class="flex items-center gap-3">
@@ -108,10 +108,17 @@
                 <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{{
                   field.label
                 }}</label>
+                <p
+                  v-if="isEditing && field.shortcutIndex"
+                  class="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]"
+                >
+                  {{ field.shortcutIndex }}
+                </p>
                 <div v-if="isEditing" class="space-y-2">
                   <input
                     v-if="field.type === 'input'"
                     v-model="editBuffer[field.key]"
+                    :ref="(element) => setEditInputRef(field.key, element)"
                     :type="field.inputType || 'text'"
                     :list="
                       field.key === 'category'
@@ -125,6 +132,7 @@
                   <input
                     v-else-if="field.type === 'date'"
                     v-model="editBuffer[field.key]"
+                    :ref="(element) => setEditInputRef(field.key, element)"
                     type="date"
                     class="input w-full"
                   />
@@ -167,7 +175,7 @@
  * offers in-context updates plus optional rule creation before advancing
  * through a batch.
  */
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import Fuse from 'fuse.js'
 import { useToast } from 'vue-toastification'
 import { useTransactions } from '@/composables/useTransactions'
@@ -185,6 +193,7 @@ const toast = useToast()
 
 const BATCH_SIZE = 10
 const CATEGORY_SUGGESTION_LIMIT = 12
+const EDIT_SHORTCUT_FIELDS = ['category', 'tag', 'merchant_name', 'description', 'amount']
 const filtersRef = computed(() => {
   const nextFilters = { ...(props.filters || {}) }
   if (!nextFilters.start_date) delete nextFilters.start_date
@@ -211,6 +220,7 @@ const editBuffer = ref({})
 const batchComplete = ref(false)
 const categoryOptions = ref([])
 const tagOptions = ref([])
+const editInputRefs = ref({})
 
 const hasNextBatch = computed(() => currentPage.value < totalPages.value)
 
@@ -228,6 +238,7 @@ const displayFields = computed(() => [
     label: 'Category',
     type: 'input',
     value: currentTransaction.value?.category || 'Uncategorized',
+    shortcutIndex: '1',
   },
   {
     key: 'tag',
@@ -235,18 +246,21 @@ const displayFields = computed(() => [
     type: 'input',
     formatter: (tx) => formatTagDisplay(tx),
     value: formatTagDisplay(currentTransaction.value),
+    shortcutIndex: '2',
   },
   {
     key: 'merchant_name',
     label: 'Merchant',
     type: 'input',
     value: currentTransaction.value?.merchant_name || 'Unknown merchant',
+    shortcutIndex: '3',
   },
   {
     key: 'description',
     label: 'Description',
     type: 'input',
     value: currentTransaction.value?.description || '',
+    shortcutIndex: '4',
   },
   {
     key: 'amount',
@@ -255,6 +269,7 @@ const displayFields = computed(() => [
     inputType: 'number',
     formatter: (tx) => formatAmount(tx.amount),
     value: currentTransaction.value?.amount ?? 0,
+    shortcutIndex: '5',
   },
 ])
 
@@ -471,20 +486,85 @@ function populateEditBuffer() {
 }
 
 /**
+ * Store or clear an editable field input reference by key.
+ *
+ * @param {string} key - Edit buffer key.
+ * @param {HTMLInputElement | null} element - Input element instance.
+ */
+function setEditInputRef(key, element) {
+  if (!key) return
+  if (element) {
+    editInputRefs.value[key] = element
+    return
+  }
+  delete editInputRefs.value[key]
+}
+
+/**
+ * Focus an editable field by key if it is currently rendered.
+ *
+ * @param {string} key - Edit buffer key.
+ */
+function focusEditField(key) {
+  const element = editInputRefs.value[key]
+  if (!element) return
+  element.focus()
+  element.select?.()
+}
+
+/**
+ * Focus one of the keyboard shortcut edit fields by index.
+ *
+ * @param {number} index - Zero-based index in shortcut fields.
+ */
+function focusShortcutField(index) {
+  if (index < 0 || index >= EDIT_SHORTCUT_FIELDS.length) return
+  focusEditField(EDIT_SHORTCUT_FIELDS[index])
+}
+
+/**
+ * Cycle focus across the shortcut edit fields.
+ *
+ * @param {1 | -1} direction - Forward or backward tab direction.
+ */
+function cycleShortcutField(direction = 1) {
+  const activeElement = document.activeElement
+  const activeIndex = EDIT_SHORTCUT_FIELDS.findIndex(
+    (key) => editInputRefs.value[key] === activeElement,
+  )
+  const fallbackIndex = direction === -1 ? EDIT_SHORTCUT_FIELDS.length - 1 : 0
+  const nextIndex =
+    activeIndex === -1
+      ? fallbackIndex
+      : (activeIndex + direction + EDIT_SHORTCUT_FIELDS.length) % EDIT_SHORTCUT_FIELDS.length
+  focusShortcutField(nextIndex)
+}
+
+/**
  * Start editing the current transaction and seed the edit buffer.
  */
 function beginEdit() {
   if (!currentTransaction.value) return
   populateEditBuffer()
   editingTransactionId.value = String(currentTransaction.value.transaction_id || '')
+  nextTick(() => {
+    focusShortcutField(0)
+  })
+}
+
+/**
+ * Cancel edit mode for the active transaction without advancing.
+ */
+function cancelEdit() {
+  editingTransactionId.value = ''
+  editBuffer.value = {}
 }
 
 /**
  * Reset edit state and advance to the next transaction in the batch.
  */
 function advanceToNext() {
-  editingTransactionId.value = ''
-  editBuffer.value = {}
+  cancelEdit()
   if (currentIndex.value < paginatedTransactions.value.length - 1) {
     currentIndex.value += 1
   } else {
@@ -497,7 +577,7 @@ function advanceToNext() {
  */
 function handleEditToggle() {
   if (isEditing.value) {
-    advanceToNext()
+    cancelEdit()
     return
   }
   beginEdit()
@@ -512,7 +592,9 @@ async function saveEdits() {
   const editableKeys = ['date', 'amount', 'description', 'category', 'merchant_name', 'tag']
   editableKeys.forEach((key) => {
     const currentValue =
-      key === 'tag' ? resolveTransactionTag(currentTransaction.value) : currentTransaction.value[key]
+      key === 'tag'
+        ? resolveTransactionTag(currentTransaction.value)
+        : currentTransaction.value[key]
     if (editBuffer.value[key] !== currentValue) {
       payload[key] = editBuffer.value[key]
     }
@@ -621,8 +703,7 @@ async function startNextBatch() {
  * Reset modal state on close.
  */
 function emitClose() {
-  editingTransactionId.value = ''
-  editBuffer.value = {}
+  cancelEdit()
   batchComplete.value = false
   currentIndex.value = 0
   emit('close')
@@ -636,19 +717,45 @@ function emitClose() {
 function handleKeydown(event) {
   if (!props.show || batchComplete.value) return
   const target = event.target
-  if (
+  const isEditableTarget =
     target &&
     target instanceof HTMLElement &&
     (target.tagName === 'INPUT' ||
       target.tagName === 'TEXTAREA' ||
       target.tagName === 'SELECT' ||
       target.isContentEditable)
-  ) {
+
+  if (isEditing.value && event.key === 'Escape') {
+    event.preventDefault()
+    cancelEdit()
     return
   }
+
+  if (isEditing.value && event.key === 'Enter') {
+    event.preventDefault()
+    handleApprove()
+    return
+  }
+
+  if (isEditing.value && event.key === 'Tab') {
+    event.preventDefault()
+    cycleShortcutField(event.shiftKey ? -1 : 1)
+    return
+  }
+
+  if (isEditing.value && /^[1-5]$/.test(event.key)) {
+    event.preventDefault()
+    focusShortcutField(Number(event.key) - 1)
+    return
+  }
+
+  if (isEditableTarget) return
+
   if (event.key === 'ArrowLeft') {
     event.preventDefault()
-    handleEditToggle()
+    if (!isEditing.value) {
+      beginEdit()
+    }
   } else if (event.key === 'ArrowRight') {
     event.preventDefault()
     handleApprove()
