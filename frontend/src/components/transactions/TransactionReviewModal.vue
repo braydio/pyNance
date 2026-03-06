@@ -10,7 +10,7 @@
       @click.self="emitClose"
     >
       <div
-        class="relative w-full max-w-4xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 flex flex-col overflow-hidden"
+        class="review-modal-shell relative w-full max-w-4xl mx-auto p-0 rounded-2xl shadow-2xl bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)]/60 flex flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-label="Review Transactions Modal"
@@ -22,7 +22,9 @@
             <h2 class="text-xl font-extrabold text-[var(--color-accent-cyan)] tracking-wide">
               Review Transactions
             </h2>
-            <p class="text-xs uppercase tracking-widest text-[var(--color-text-muted)]">
+            <p
+              class="review-shortcuts text-xs uppercase tracking-widest text-[var(--color-text-muted)]"
+            >
               Use ← to edit, → to approve, 1-5 to jump fields, Enter to save
             </p>
           </div>
@@ -104,7 +106,7 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div v-for="field in displayFields" :key="field.key" class="space-y-1">
+              <div v-for="field in displayFields" :key="field.key" class="review-field space-y-1">
                 <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{{
                   field.label
                 }}</label>
@@ -127,27 +129,27 @@
                           ? 'review-tag-suggestions'
                           : undefined
                     "
-                    class="input w-full"
+                    class="input review-input w-full"
                   />
                   <input
                     v-else-if="field.type === 'date'"
                     v-model="editBuffer[field.key]"
                     :ref="(element) => setEditInputRef(field.key, element)"
                     type="date"
-                    class="input w-full"
+                    class="input review-input w-full"
                   />
                 </div>
-                <p v-else class="font-semibold text-[var(--color-text-light)]">
+                <p v-else class="review-field-value font-semibold text-[var(--color-text-light)]">
                   {{ field.formatter ? field.formatter(currentTransaction) : field.value }}
                 </p>
               </div>
             </div>
 
-            <div class="flex flex-wrap gap-3 mt-6 items-center">
-              <button class="btn btn-outline" @click="handleEditToggle">
+            <div class="review-actions flex flex-wrap gap-3 mt-6 items-center">
+              <button class="btn btn-outline review-btn-secondary" @click="handleEditToggle">
                 {{ isEditing ? 'Cancel' : 'Edit (←)' }}
               </button>
-              <button class="btn" @click="handleApprove">
+              <button class="btn review-btn-primary" @click="handleApprove">
                 {{ isEditing ? 'Save & Next (→)' : 'Approve (→)' }}
               </button>
               <span class="text-sm text-[var(--color-text-muted)]">
@@ -787,4 +789,78 @@ onUnmounted(() => {
 
 <style scoped>
 @import '../../assets/css/main.css';
+
+.review-modal-shell {
+  box-shadow: 0 30px 80px color-mix(in srgb, var(--color-accent-cyan) 18%, transparent);
+}
+
+.review-shortcuts {
+  letter-spacing: 0.12em;
+}
+
+.review-field {
+  border: 1px solid color-mix(in srgb, var(--divider) 70%, transparent);
+  border-radius: 0.85rem;
+  background: color-mix(in srgb, var(--color-bg-dark) 86%, transparent);
+  padding: 0.7rem 0.8rem;
+}
+
+.review-field-value {
+  min-height: 1.7rem;
+  display: flex;
+  align-items: center;
+}
+
+.review-input {
+  min-height: 2.2rem;
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 25%, var(--divider));
+  background: color-mix(in srgb, var(--color-bg-sec) 45%, var(--color-bg-dark));
+}
+
+.review-input:focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-cyan) 50%, transparent);
+}
+
+.review-actions {
+  border-top: 1px dashed color-mix(in srgb, var(--divider) 75%, transparent);
+  padding-top: 1rem;
+}
+
+.review-btn-primary,
+.review-btn-secondary {
+  min-width: 9.25rem;
+  justify-content: center;
+  border-radius: 0.7rem;
+}
+
+.review-btn-primary {
+  background: linear-gradient(
+    135deg,
+    var(--color-accent-cyan) 0%,
+    color-mix(in srgb, var(--color-accent-purple) 65%, var(--color-accent-cyan)) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 72%, var(--color-accent-purple));
+  color: var(--color-bg-dark);
+}
+
+.review-btn-primary:hover {
+  filter: brightness(1.07);
+}
+
+.review-btn-secondary {
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--divider));
+  color: var(--color-accent-cyan);
+}
+
+.review-btn-secondary:hover {
+  background: color-mix(in srgb, var(--color-accent-cyan) 20%, transparent);
+  color: var(--color-text-light);
+}
+
+@media (max-width: 768px) {
+  .review-btn-primary,
+  .review-btn-secondary {
+    width: 100%;
+  }
+}
 </style>

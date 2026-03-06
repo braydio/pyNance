@@ -292,6 +292,7 @@ async function renderChart(rows, avgRows) {
     borderSkipped: false,
     stack: 'today-stack',
     order: 1,
+    profileType: 'today',
   }))
   const averageDatasets = orderedAverageRows.map((row, idx) => {
     const accentColor = getAccentColor(idx)
@@ -307,6 +308,7 @@ async function renderChart(rows, avgRows) {
       barPercentage: 0.6,
       categoryPercentage: 0.6,
       order: 2,
+      profileType: 'average',
     }
   })
   const datasets = [...baseDatasets, ...averageDatasets]
@@ -337,7 +339,32 @@ async function renderChart(rows, avgRows) {
         },
         tooltip: {
           callbacks: {
+            title: (contexts) => {
+              const profileType = contexts?.[0]?.dataset?.profileType
+              return profileType === 'average' ? 'Average Profile' : 'Daily Profile'
+            },
             label: (context) => `${context.dataset.label}: ${formatAmount(context.parsed.y || 0)}`,
+            afterLabel: (context) => {
+              const datasetValue = Number(context.parsed.y || 0)
+              const stackTotals = context.chart.data.datasets
+                .filter((dataset) => dataset.stack === context.dataset.stack)
+                .reduce((sum, dataset) => sum + Number(dataset.data?.[context.dataIndex] || 0), 0)
+              const percentage = stackTotals > 0 ? (datasetValue / stackTotals) * 100 : 0
+              return `Share of ${context.dataset.profileType || 'daily'} profile: ${percentage.toFixed(1)}%`
+            },
+            footer: (contexts) => {
+              const firstPoint = contexts?.[0]
+              if (!firstPoint) {
+                return ''
+              }
+              const stackTotal = firstPoint.chart.data.datasets
+                .filter((dataset) => dataset.stack === firstPoint.dataset.stack)
+                .reduce(
+                  (sum, dataset) => sum + Number(dataset.data?.[firstPoint.dataIndex] || 0),
+                  0,
+                )
+              return `Total ${firstPoint.dataset.profileType || 'daily'} spending: ${formatAmount(stackTotal)}`
+            },
           },
           backgroundColor: getStyleValue('--theme-bg'),
           titleColor: getStyleValue('--color-accent-yellow'),

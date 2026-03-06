@@ -125,8 +125,52 @@ describe('DailySpendingPanel', () => {
     await wrapper.get('input[type="checkbox"]').setValue(true)
     await flushPromises()
 
-    const averageDataset = chartConfig.data.datasets.find((dataset) => dataset.label === 'Food (Avg)')
+    const averageDataset = chartConfig.data.datasets.find(
+      (dataset) => dataset.label === 'Food (Avg)',
+    )
     expect(averageDataset.data).toEqual([30])
+  })
+
+  it('provides detailed tooltip copy for daily and average profile slices', async () => {
+    chartsApi.fetchCategoryBreakdownTree
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [{ id: 'food', label: 'Food', amount: 30 }],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [{ id: 'food', label: 'Food', amount: 90 }],
+      })
+    transactionsApi.fetchTransactions.mockResolvedValue({ transactions: [] })
+
+    const wrapper = mount(DailySpendingPanel, {
+      props: { detailDate: '2024-06-03', minDetailDate: '2024-06-01' },
+    })
+
+    await flushPromises()
+    await wrapper.get('input[type="checkbox"]').setValue(true)
+    await flushPromises()
+
+    const tooltipCallbacks = chartConfig.options.plugins.tooltip.callbacks
+    const averageDataset = chartConfig.data.datasets.find(
+      (dataset) => dataset.profileType === 'average',
+    )
+
+    expect(tooltipCallbacks.title([{ dataset: averageDataset }])).toBe('Average Profile')
+
+    const mockPoint = {
+      dataset: averageDataset,
+      parsed: { y: averageDataset.data[0] },
+      dataIndex: 0,
+      chart: { data: chartConfig.data },
+    }
+    const label = tooltipCallbacks.label(mockPoint)
+    const afterLabel = tooltipCallbacks.afterLabel(mockPoint)
+    const footer = tooltipCallbacks.footer([mockPoint])
+
+    expect(label).toContain('Food (Avg):')
+    expect(afterLabel).toContain('Share of average profile: 100.0%')
+    expect(footer).toContain('Total average spending:')
   })
 
   it('skips the average overlay when the date range is empty', async () => {
