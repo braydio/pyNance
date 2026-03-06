@@ -285,5 +285,4 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
   line-height: 1;
 }
-
 </style>
