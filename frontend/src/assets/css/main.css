@@ -93,6 +93,7 @@
     color: var(--accent-primary-contrast);
   }
 
+  .accent-toggle-btn,
   .gradient-toggle-btn {
     background: linear-gradient(135deg, var(--accent-surface) 0%, var(--color-bg-dark) 100%);
     border: 1px solid var(--accent-primary);
@@ -111,6 +112,8 @@
     white-space: nowrap;
   }
 
+  .accent-toggle-btn:hover,
+  .accent-toggle-btn:focus-visible,
   .gradient-toggle-btn:hover,
   .gradient-toggle-btn:focus-visible {
     background: linear-gradient(
@@ -123,6 +126,9 @@
     outline: none;
   }
 
+  .accent-toggle-btn.extended,
+  .accent-toggle-btn.is-active,
+  .accent-toggle-btn--active,
   .gradient-toggle-btn.extended,
   .gradient-toggle-btn.is-active {
     background: linear-gradient(
@@ -134,9 +140,20 @@
     border-color: var(--accent-primary-strong);
   }
 
+  .accent-toggle-btn:disabled,
   .gradient-toggle-btn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+
+  .accent-popover-surface {
+    border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
+    background: linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-yellow) 22%),
+      color-mix(in srgb, var(--color-bg-sec) 70%, var(--color-accent-green) 30%)
+    );
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   }
 
   .btn-primary {

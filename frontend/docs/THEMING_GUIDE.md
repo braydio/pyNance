@@ -105,6 +105,16 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - Prefer existing accent tokens over new color mixes; if a new mix is needed, document the reason and scope.
 - Use `--color-accent-indigo` for “active edit” or “fresh highlight” states when you need a distinct, non-critical accent.
 
+## Shared accent control utilities
+
+`frontend/src/assets/css/main.css` exposes reusable accent classes for dashboard controls so components can keep scoped CSS focused on layout and sizing:
+
+- `.accent-toggle-btn`: base accent control surface, border, and hover treatment.
+- `.accent-toggle-btn--active`: active state for toggles using the shared accent gradient.
+- `.accent-popover-surface`: shared frosted/gradient surface for popovers tied to accent controls.
+
+Use these classes for dashboard toggles (for example, overlay toggles, date range zoom controls, summary detail toggles, and timeframe buttons) instead of redefining color-mix or gradient values in component-scoped styles.
+
 ## Conclusion
 
 This guide establishes a foundation for consistent theming. By defining all
