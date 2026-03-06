@@ -14,8 +14,8 @@
     />
     <button
       v-if="!disableZoom"
-      class="gradient-toggle-btn ml-2"
-      :class="{ extended: zoomedOut }"
+      class="gradient-toggle-btn accent-toggle-btn ml-2"
+      :class="{ extended: zoomedOut, 'accent-toggle-btn--active': zoomedOut }"
       @click="toggleZoom"
     >
       {{ zoomedOut ? 'Zoom In' : 'Zoom Out' }}

@@ -97,6 +97,17 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - Accent colors remain on chips and badges, but gradient fills are reserved for hero metrics and summary cards.
 - Reference implementations live in `frontend/src/components/tables/AccountsTable.vue`, `frontend/src/components/tables/TransactionsTable.vue`, and the modal/inline tables in `frontend/src/components/tables/UpdateTransactionsTable.vue` and `ModalTransactionsDisplay.vue`.
 
+
+## Shared accent control utilities
+
+Use shared control classes in `frontend/src/assets/css/main.css` for accent-driven dashboard toggles and popovers:
+
+- `accent-toggle-btn`: base accent palette for compact control buttons.
+- `accent-toggle-btn--active`: active-state accent gradient for selected controls.
+- `accent-popover-surface`: shared accent surface treatment for compact popovers.
+
+These classes are designed to compose with existing control utilities such as `gradient-toggle-btn` so components can keep local styles focused on sizing and layout only.
+
 ## Component theming rules
 
 - Use theme tokens (`--color-bg-*`, `--themed-bg`, `--themed-border`, `--divider`, `--color-text-*`) for surfaces before introducing custom gradients.

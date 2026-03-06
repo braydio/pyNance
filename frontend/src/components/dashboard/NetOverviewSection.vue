@@ -59,8 +59,8 @@
               />
               <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
                 <button
-                  class="gradient-toggle-btn daily-net-timeframe-btn"
-                  :class="{ 'is-active': netTimeframe === 'mtd' }"
+                  class="gradient-toggle-btn accent-toggle-btn daily-net-timeframe-btn"
+                  :class="{ 'accent-toggle-btn--active': netTimeframe === 'mtd' }"
                   type="button"
                   :aria-pressed="netTimeframe === 'mtd'"
                   @click="emit('update:net-timeframe', 'mtd')"
@@ -68,8 +68,8 @@
                   MTD
                 </button>
                 <button
-                  class="gradient-toggle-btn daily-net-timeframe-btn"
-                  :class="{ 'is-active': netTimeframe === 'rolling_30' }"
+                  class="gradient-toggle-btn accent-toggle-btn daily-net-timeframe-btn"
+                  :class="{ 'accent-toggle-btn--active': netTimeframe === 'rolling_30' }"
                   type="button"
                   :aria-pressed="netTimeframe === 'rolling_30'"
                   @click="emit('update:net-timeframe', 'rolling_30')"
@@ -282,34 +282,8 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   font-size: 0.65rem;
   padding: 0.15rem 0.55rem;
   border-radius: 0.3rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
-  background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
-  color: var(--color-text-light);
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
   line-height: 1;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
 }
 
-.daily-net-timeframe-btn:hover,
-.daily-net-timeframe-btn:focus-visible {
-  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-yellow) 55%);
-  color: var(--color-text-light);
-  border-color: var(--color-accent-yellow);
-  outline: none;
-}
-
-.daily-net-timeframe-btn.is-active {
-  background: linear-gradient(
-    135deg,
-    var(--color-accent-yellow) 0%,
-    var(--color-accent-green) 100%
-  );
-  color: var(--color-bg-dark);
-  border-color: var(--color-accent-yellow);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.25);
-}
 </style>
