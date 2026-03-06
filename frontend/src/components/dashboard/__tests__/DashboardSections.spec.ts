@@ -14,7 +14,10 @@ const DateRangeSelectorStub = {
   template: '<div class="date-range-stub" @click="$emit(\'update:start-date\', startDate)"></div>',
 }
 
-const ChartDetailsSidebarStub = { name: 'ChartDetailsSidebar', template: '<div />' }
+const ChartDetailsSidebarStub = {
+  name: 'ChartDetailsSidebar',
+  template: '<button class="chart-details-sidebar__toggle gradient-toggle-btn">Overlays</button>',
+}
 
 const DailyNetChartStub = {
   name: 'DailyNetChart',
@@ -106,6 +109,20 @@ describe('Dashboard section components', () => {
       startDate: '2025-01-01',
       endDate: '2025-01-31',
     })
+
+    const timeframeButtons = wrapper.findAll(
+      '[data-testid="daily-net-timeframe-toggle"] .daily-net-timeframe-btn',
+    )
+    expect(timeframeButtons).toHaveLength(2)
+    timeframeButtons.forEach((button) => {
+      expect(button.classes()).toContain('gradient-toggle-btn')
+    })
+
+    const overlayTrigger = wrapper.find('.chart-details-sidebar__toggle')
+    expect(overlayTrigger.exists()).toBe(true)
+    expect(overlayTrigger.classes()).toContain('gradient-toggle-btn')
+
+    expect(wrapper.html()).toMatchSnapshot()
   })
 
   it('renders category breakdown controls and emits change events', async () => {

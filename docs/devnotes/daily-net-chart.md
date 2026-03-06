@@ -15,4 +15,6 @@
 
 **Why it matters.** The combination of stacked income/expense bars with a front-facing net line supports the “what you earned vs what you spent vs what you kept” story we want everywhere, while the persistent detail zone keeps metric context visible without covering bars or lines.
 
+**Shared accent baseline.** The Daily Net control styling (timeframe toggle, overlay options trigger, and linked accent utilities such as `.gradient-toggle-btn`) is now the shared dashboard accent baseline, not a chart-local exception. When adding or updating interactive dashboard controls, start from the Daily Net accent tokens (`--accent-primary`, `--accent-primary-strong`, `--accent-primary-contrast`, `--accent-surface`) and only diverge with explicit product/design direction.
+
 **Change control.** This section defines the baseline. Any future tweaks to stacking behavior, detail-zone content hierarchy, colors, or legend visibility should be made only with explicit product or design direction so the chart remains consistent with the documented intent.

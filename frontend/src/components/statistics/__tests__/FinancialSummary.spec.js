@@ -5,6 +5,24 @@ import { nextTick } from 'vue'
 import FinancialSummary from '../FinancialSummary.vue'
 
 describe('FinancialSummary trends', () => {
+  it('uses shared accent utility classes for the global detail toggle', () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 300, totalExpenses: 200, totalNet: 100 },
+        chartData: [],
+      },
+      global: {
+        stubs: {
+          DailySpendingPanel: {
+            template: '<div data-test="daily-spending-panel"></div>',
+          },
+        },
+      },
+    })
+
+    const globalToggle = wrapper.get('.stats-controls .gradient-toggle-btn')
+    expect(globalToggle.classes()).toContain('gradient-toggle-btn')
+  })
   it('shows the daily spending panel only in extended view', async () => {
     const wrapper = mount(FinancialSummary, {
       props: {
