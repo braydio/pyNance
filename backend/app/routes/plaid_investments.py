@@ -16,13 +16,24 @@ from flask import Blueprint, jsonify, request
 plaid_investments = Blueprint("plaid_investments", __name__)
 
 
+def _request_json_dict():
+    """Return the incoming request JSON body as a dictionary.
+
+    The route contracts for this module expect object-like payloads. Any empty,
+    malformed, or non-object JSON payloads are normalized to an empty dict so
+    required-field validation can deterministically return 400 responses.
+    """
+    data = request.get_json(silent=True) or {}
+    return data if isinstance(data, dict) else {}
+
+
 @plaid_investments.route("/generate_link_token", methods=["POST"])
 def generate_link_token_investments():
     """
     Generate a Plaid link token for the investments product.
     Expects JSON payload with "user_id". Malformed JSON is treated as empty input.
     """
-    data = request.get_json(silent=True) or {}
+    data = _request_json_dict()
     user_id = data.get("user_id")
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
@@ -40,7 +51,7 @@ def exchange_public_token_investments():
     Exchange a public token for an access token for investments.
     Expects JSON with "user_id" and "public_token". Malformed JSON is treated as empty input.
     """
-    data = request.get_json(silent=True) or {}
+    data = _request_json_dict()
     user_id = data.get("user_id")
     public_token = data.get("public_token")
     if not user_id or not public_token:
@@ -107,7 +118,7 @@ def refresh_investments_endpoint():
     Refresh investments holdings for a linked investments item.
     Expects JSON with "user_id" and "item_id". Malformed JSON is treated as empty input.
     """
-    data = request.get_json(silent=True) or {}
+    data = _request_json_dict()
     user_id = data.get("user_id")
     item_id = data.get("item_id")
     if not user_id or not item_id:
@@ -154,7 +165,7 @@ def refresh_all_investments():
     Optional JSON body accepts start_date/end_date (YYYY-MM-DD); defaults last 30 days.
     """
     try:
-        data = request.get_json(silent=True) or {}
+        data = _request_json_dict()
         start_date = data.get("start_date")
         end_date = data.get("end_date")
         if not start_date or not end_date:
@@ -180,9 +191,9 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 logger.error(
                     "Failed to refresh investments for item %s: %s",

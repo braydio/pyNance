@@ -8,7 +8,7 @@
   >
     <button
       type="button"
-      class="chart-details-sidebar__toggle gradient-toggle-btn"
+      class="chart-details-sidebar__toggle accent-toggle-btn"
       :aria-expanded="isOpen.toString()"
       :aria-controls="contentId"
       @click="toggleSidebar"
@@ -29,7 +29,7 @@
     <div
       v-show="isOpen"
       :id="contentId"
-      class="chart-details-sidebar__content"
+      class="chart-details-sidebar__content accent-popover-surface"
       role="region"
       :aria-labelledby="headerId"
     >
@@ -184,30 +184,15 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   padding: 0.3rem 0.65rem;
   border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 75%, transparent);
-  background: color-mix(in srgb, var(--color-bg-dark) 70%, var(--color-accent-yellow) 30%);
-  color: var(--color-text-light);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
-  transition:
-    background 0.2s ease,
-    color 0.2s ease,
-    border-color 0.2s ease;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
   font-size: 0.7rem;
   padding: 0.2rem 0.55rem;
-}
-
-.chart-details-sidebar__toggle:hover,
-.chart-details-sidebar__toggle:focus-visible {
-  background: color-mix(in srgb, var(--color-bg-dark) 45%, var(--color-accent-yellow) 55%);
-  color: var(--color-text-light);
-  outline: none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-yellow) 30%, transparent);
 }
 
 .chart-details-sidebar__icon {
@@ -232,13 +217,6 @@ onBeforeUnmount(() => {
   max-width: 14rem;
   padding: 0.6rem;
   border-radius: 0.35rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
-  background: linear-gradient(
-    140deg,
-    color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-yellow) 22%),
-    color-mix(in srgb, var(--color-bg-sec) 70%, var(--color-accent-green) 30%)
-  );
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   display: grid;
   gap: 0.55rem;
   position: relative;

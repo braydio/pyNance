@@ -600,7 +600,7 @@ def test_plaid_investments_rejects_empty_body(
     """Return deterministic 400 responses when required JSON fields are absent."""
     client, _module = plaid_investments_client
 
-    response = client.post(path, json={})
+    response = client.post(path)
 
     assert response.status_code == 400
     assert response.get_json() == {"error": expected_error}
@@ -624,6 +624,29 @@ def test_plaid_investments_rejects_invalid_json_body(
     client, _module = plaid_investments_client
 
     response = client.post(path, data="{", content_type="application/json")
+
+    assert response.status_code == 400
+    assert response.get_json() == {"error": expected_error}
+
+
+@pytest.mark.parametrize(
+    ("path", "expected_error"),
+    [
+        ("/api/plaid/investments/generate_link_token", "Missing user_id"),
+        (
+            "/api/plaid/investments/exchange_public_token",
+            "Missing user_id or public_token",
+        ),
+        ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
+    ],
+)
+def test_plaid_investments_rejects_non_object_json_body(
+    plaid_investments_client, path, expected_error
+):
+    """Treat non-object JSON payloads as empty input for deterministic validation."""
+    client, _module = plaid_investments_client
+
+    response = client.post(path, json=["not", "an", "object"])
 
     assert response.status_code == 400
     assert response.get_json() == {"error": expected_error}

@@ -12,7 +12,7 @@
       <h3 class="stats-title">Financial Snapshot</h3>
       <div class="stats-controls">
         <button
-          class="gradient-toggle-btn"
+          class="accent-toggle-btn"
           :class="{ extended: isExtendedView }"
           @click="toggleExtendedView"
           :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
@@ -501,13 +501,6 @@ const extendedMetrics = computed(() => {
     outlierDays,
   }
 })
-
-// Trend display helpers
-function trendLabel(trend) {
-  if (trend > 0.1) return '↗ Increasing'
-  if (trend < -0.1) return '↘ Decreasing'
-  return '→ Stable'
-}
 
 const netTrendClass = computed(() => ({
   'trend-up': extendedMetrics.value.netTrend > 0,
