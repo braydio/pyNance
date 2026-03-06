@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-04
+Last Updated: 2026-03-06
 Status: Active
 ---
 
@@ -35,7 +35,7 @@ Generate a Plaid Link token scoped to the `investments` product.
 ```
 
 - Error responses:
-  - `400` with `{ "error": "Missing user_id" }` when `user_id` is absent, request JSON is empty, or JSON is malformed.
+  - `400` with `{ "error": "Missing user_id" }` when `user_id` is absent, request JSON is empty, JSON is malformed, or a non-object JSON payload is provided.
   - `500` with `{ "error": "..." }` for unexpected token-generation failures.
 
 ### `POST /api/plaid/investments/exchange_public_token`
@@ -55,7 +55,7 @@ Exchange a Plaid public token, persist linked accounts, and upsert Plaid item me
 ```
 
 - Error responses:
-  - `400` with `{ "error": "Missing user_id or public_token" }` when required fields are absent, request JSON is empty, or JSON is malformed.
+  - `400` with `{ "error": "Missing user_id or public_token" }` when required fields are absent, request JSON is empty, JSON is malformed, or a non-object JSON payload is provided.
   - `500` with `{ "error": "Failed to exchange public token" }` when Plaid exchange does not return `access_token`/`item_id`.
   - `500` with `{ "error": "..." }` for other unexpected exchange/sync failures.
 
@@ -89,7 +89,7 @@ Refresh holdings/securities plus investment transactions for a specific linked P
 ```
 
 - Error responses:
-  - `400` with `{ "error": "Missing user_id or item_id" }` when required fields are absent, request JSON is empty, or JSON is malformed.
+  - `400` with `{ "error": "Missing user_id or item_id" }` when required fields are absent, request JSON is empty, JSON is malformed, or a non-object JSON payload is provided.
   - `404` with `{ "error": "Investments account not found" }` when no active `PlaidAccount` matches the provided `item_id` for `product="investments"`.
   - `500` with `{ "error": "..." }` for unexpected refresh failures.
 
