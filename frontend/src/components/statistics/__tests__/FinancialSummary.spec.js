@@ -22,7 +22,7 @@ describe('FinancialSummary trends', () => {
 
     expect(wrapper.find('[data-test="daily-spending-panel"]').exists()).toBe(false)
 
-    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await wrapper.find('.accent-toggle-btn').trigger('click')
     await nextTick()
 
     expect(wrapper.find('[data-test="daily-spending-panel"]').exists()).toBe(true)
@@ -48,12 +48,12 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await wrapper.find('.accent-toggle-btn').trigger('click')
     const html = wrapper.html()
     expect(html).toContain('Income:')
-    expect(html).toContain('+\$100.00')
+    expect(html).toContain('+$100.00')
     expect(html).toContain('Expenses:')
-    expect(html).toContain('+\$100.00')
+    expect(html).toContain('+$100.00')
   })
 
   it('rolls summary totals back to the selected date', async () => {
@@ -83,7 +83,7 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await wrapper.find('.accent-toggle-btn').trigger('click')
     const dateInput = wrapper.find('input[type="date"]')
     await dateInput.setValue('2024-01-02')
     await nextTick()
@@ -120,7 +120,7 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await wrapper.find('.accent-toggle-btn').trigger('click')
     expect(wrapper.find('.detail-date-reset').exists()).toBe(false)
 
     const dateInput = wrapper.get('#financial-snapshot-detail-date')
@@ -158,7 +158,7 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    await wrapper.find('.gradient-toggle-btn').trigger('click')
+    await wrapper.find('.accent-toggle-btn').trigger('click')
     await nextTick()
 
     const metrics = wrapper.vm.extendedMetrics
