@@ -69,11 +69,10 @@
                   {{ tx.description }}
                 </div>
                 <div
-                  v-if="showCategoryVisuals && tx.category && tx.category.length"
+                  v-if="showCategoryVisuals && getCategoryDisplayName(tx)"
                   class="text-xs text-[var(--color-accent-purple)] italic mt-1"
                 >
-                  {{ tx.category[0]
-                  }}<span v-if="tx.category.length > 1">: {{ tx.category[1] }}</span>
+                  {{ getCategoryDisplayName(tx) }}
                 </div>
               </div>
             </div>
@@ -159,5 +158,39 @@ function formatDate(value) {
     return value.toISOString().slice(0, 10)
   }
   return String(value)
+}
+
+/**
+ * Resolve a user-friendly category label for modal rows.
+ *
+ * The dashboard category modal receives transactions from mixed endpoints,
+ * so category text can arrive as `category_display`, `category_display_name`,
+ * a plain string in `category`, or an array hierarchy. This helper normalizes
+ * those shapes to ensure rows always show readable category text next to icons.
+ *
+ * @param {Record<string, unknown>} tx - Transaction row payload.
+ * @returns {string} Human-readable category label.
+ */
+function getCategoryDisplayName(tx) {
+  if (!tx) return ''
+
+  const displayName =
+    (typeof tx.category_display === 'string' && tx.category_display.trim()) ||
+    (typeof tx.category_display_name === 'string' && tx.category_display_name.trim())
+
+  if (displayName) return displayName
+
+  if (Array.isArray(tx.category)) {
+    const parts = tx.category
+      .map((segment) => (typeof segment === 'string' ? segment.trim() : ''))
+      .filter(Boolean)
+    return parts.join(': ')
+  }
+
+  if (typeof tx.category === 'string') {
+    return tx.category.trim()
+  }
+
+  return ''
 }
 </script>
