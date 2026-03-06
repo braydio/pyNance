@@ -16,6 +16,7 @@
       :net-change="summary?.net_change"
       :view-type="viewType"
       :account-options="forecastAccounts"
+      :account-group-options="accountGroupOptions"
       :included-account-ids="includedAccountIds"
       :excluded-account-ids="excludedAccountIds"
       @update:manualIncome="manualIncome = $event"
@@ -54,7 +55,9 @@
         <ul v-else class="adjustments-list">
           <li v-for="(item, idx) in manualAppliedAdjustments" :key="`manual-${idx}`">
             <span>{{ item.label || 'Manual adjustment' }}</span>
-            <strong>{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong>
+            <strong
+              >{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong
+            >
           </li>
         </ul>
       </div>
@@ -66,7 +69,9 @@
         <ul v-else class="adjustments-list auto">
           <li v-for="(item, idx) in autoDetectedAdjustments" :key="`auto-${idx}`">
             <span>{{ item.label || 'Auto income' }} ({{ item.date || 'scheduled' }})</span>
-            <strong>{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong>
+            <strong
+              >{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong
+            >
           </li>
         </ul>
       </div>
@@ -98,12 +103,30 @@ import {
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
+import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
 
 type ForecastAccountOption = {
   account_id: string
   name: string
   institution_name?: string
+}
+
+type ForecastAccountGroupOption = {
+  id: string
+  name: string
+  accountIds: string[]
+}
+
+type SnapshotGroupAccount = {
+  account_id?: string
+  id?: string
+}
+
+type SnapshotGroup = {
+  id?: string
+  name?: string
+  accounts?: SnapshotGroupAccount[]
 }
 
 const viewType = ref<ForecastViewType>('Month')
@@ -118,6 +141,7 @@ const excludedAccountIds = ref<string[]>([])
 const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
 const normalize = ref(false)
 const graphMode = ref<ForecastGraphMode>('combined')
+const { groups: accountSnapshotGroups } = useAccountGroups({ userId: userId.value })
 
 const {
   timeline,
@@ -160,27 +184,52 @@ const baselineTrendAdjustment = computed<ForecastAdjustmentInput | null>(() => {
     reason: 'Derived from historical average net change.',
   }
 })
-const autoDetectedAdjustments = computed(() =>
-  [
-    ...(appliedAdjustments.value || []).filter((adjustment) =>
-      String(adjustment?.adjustment_type || '').toLowerCase().startsWith('auto'),
-    ),
-    ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
-  ],
-)
+const autoDetectedAdjustments = computed(() => [
+  ...(appliedAdjustments.value || []).filter((adjustment) =>
+    String(adjustment?.adjustment_type || '')
+      .toLowerCase()
+      .startsWith('auto'),
+  ),
+  ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
+])
 const manualAppliedAdjustments = computed(() =>
   (appliedAdjustments.value || []).filter(
     (adjustment) =>
-      !String(adjustment?.adjustment_type || '').toLowerCase().startsWith('auto'),
+      !String(adjustment?.adjustment_type || '')
+        .toLowerCase()
+        .startsWith('auto'),
   ),
+)
+const forecastAccountIdSet = computed(
+  () => new Set(forecastAccounts.value.map((account) => account.account_id)),
+)
+const accountGroupOptions = computed<ForecastAccountGroupOption[]>(() =>
+  (accountSnapshotGroups.value || [])
+    .map((group: SnapshotGroup) => {
+      const uniqueAccountIds = Array.from(
+        new Set(
+          (group?.accounts || [])
+            .map((account: SnapshotGroupAccount) =>
+              String(account?.account_id || account?.id || ''),
+            )
+            .filter((id: string) => id && forecastAccountIdSet.value.has(id)),
+        ),
+      )
+      return {
+        id: String(group?.id || ''),
+        name: String(group?.name || 'Group'),
+        accountIds: uniqueAccountIds,
+      }
+    })
+    .filter((group) => group.id && group.accountIds.length > 0),
 )
 const hasForecastData = computed(() => timeline.value.length > 0)
 const isLoading = computed(() => loading.value)
 const realizedHistory = computed(
   () =>
-    ((metadata.value?.realized_history as any[]) ??
-      (summary.value?.metadata?.realized_history as any[]) ??
-      []),
+    (metadata.value?.realized_history as any[]) ??
+    (summary.value?.metadata?.realized_history as any[]) ??
+    [],
 )
 
 watch(summary, (value) => {

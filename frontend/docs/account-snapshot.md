@@ -35,3 +35,8 @@ The top banner total (`Total Balance`) is the sum of resolved per-account balanc
 For exact implementation details, see:
 
 - `frontend/src/components/widgets/TopAccountSnapshot.vue`
+
+## Forecast Reuse
+
+- Account groups configured for `TopAccountSnapshot` are also surfaced in the Forecast summary account selector as quick-select shortcuts.
+- Forecast only includes group accounts that are currently available in forecast account options, preventing stale or orphaned IDs from being applied.
