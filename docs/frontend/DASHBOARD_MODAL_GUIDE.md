@@ -55,6 +55,9 @@ The modal remains visible until the user triggers the `close` event.
 
 - Do **not** strip the `bar-click` listeners or modal helpers when refactoring.
 - Keep the fetch helpers in sync with backend API changes.
+- Category drill-down rows should show each transaction's display category label
+  (for example `category_display`) alongside the icon so users can verify the
+  exact category assignment from the modal.
 - Update this guide whenever the modal workflow changes.
 
 ## Review Transactions Overlay
