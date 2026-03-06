@@ -82,12 +82,12 @@ adding component-local variants.
 
 ### Accent migration quick reference (do / don't)
 
-| Do | Don’t |
-| --- | --- |
-| Use `.gradient-toggle-btn` for timeframe toggles, overlay triggers, and detail toggles. | Recreate one-off toggle button classes with hardcoded gradients per component. |
-| Use `--accent-primary` and `--accent-primary-strong` for border + active states. | Use component-local `--color-accent-yellow` / `--color-accent-cyan` as the primary control border tokens. |
-| Use `--accent-primary-contrast` for text on active/accent-filled states. | Use ad hoc text tokens for active controls when `--accent-primary-contrast` applies. |
-| Use `--accent-surface` as the gradient start for resting accent controls. | Start resting control gradients directly from unrelated chart/series colors. |
+| Do                                                                                      | Don’t                                                                                                     |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Use `.gradient-toggle-btn` for timeframe toggles, overlay triggers, and detail toggles. | Recreate one-off toggle button classes with hardcoded gradients per component.                            |
+| Use `--accent-primary` and `--accent-primary-strong` for border + active states.        | Use component-local `--color-accent-yellow` / `--color-accent-cyan` as the primary control border tokens. |
+| Use `--accent-primary-contrast` for text on active/accent-filled states.                | Use ad hoc text tokens for active controls when `--accent-primary-contrast` applies.                      |
+| Use `--accent-surface` as the gradient start for resting accent controls.               | Start resting control gradients directly from unrelated chart/series colors.                              |
 
 Legacy aliases (`--primary`, `--primary-dark`) remain for backward compatibility, but new control
 work should rely on the `--accent-*` token family.
