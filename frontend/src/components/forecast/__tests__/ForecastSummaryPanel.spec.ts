@@ -33,6 +33,32 @@ describe('ForecastSummaryPanel', () => {
     expect(excludedEvents?.at(-1)?.[0]).toEqual(['acc-2'])
   })
 
+  it('applies dashboard group shortcut as include selection', async () => {
+    const wrapper = mount(ForecastSummaryPanel, {
+      props: {
+        currentBalance: 500,
+        manualIncome: 0,
+        liabilityRate: 0,
+        viewType: 'Month',
+        includedAccountIds: [],
+        excludedAccountIds: ['acc-2'],
+        accountOptions: [
+          { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank A' },
+          { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank B' },
+        ],
+        accountGroupOptions: [
+          { id: 'group-1', name: 'Core accounts', accountIds: ['acc-1', 'acc-2'] },
+        ],
+      },
+    })
+
+    await wrapper.get('.selector-toggle').trigger('click')
+    await wrapper.get('.shortcut-chip').trigger('click')
+
+    expect(wrapper.emitted('update:includedAccountIds')?.at(-1)?.[0]).toEqual(['acc-1', 'acc-2'])
+    expect(wrapper.emitted('update:excludedAccountIds')?.at(-1)?.[0]).toEqual([])
+  })
+
   it('prefers computed forecast net change when provided', () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
