@@ -1,7 +1,7 @@
 <template>
   <fieldset class="section-container scope-group">
-    <legend class="text-sm font-semibold">Choose data to share</legend>
-    <div class="scope-options" role="group" aria-label="Choose data to share">
+    <legend class="text-sm font-semibold">Choose what data to share</legend>
+    <div class="scope-options" role="group" aria-label="Choose what data to share">
       <button
         v-for="product in availableProducts"
         :key="product.id"
@@ -23,17 +23,17 @@ const availableProducts = [
   {
     id: 'transactions',
     label: 'Transactions',
-    helper: 'Share balances and transaction history for cash flow insights.',
+    helper: 'Enables account balances and transaction history for cash flow insights.',
   },
   {
     id: 'investments',
     label: 'Investments',
-    helper: 'Share holdings and investment activity to track performance.',
+    helper: 'Enables holdings and investment activity tracking in your portfolio views.',
   },
   {
     id: 'liabilities',
     label: 'Liabilities',
-    helper: 'Share loan and credit details to monitor debts.',
+    helper: 'Enables loan and credit detail tracking for debt monitoring.',
   },
 ]
 

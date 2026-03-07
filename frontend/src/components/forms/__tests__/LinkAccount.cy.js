@@ -28,12 +28,17 @@ describe('LinkAccount', () => {
     openDialog()
 
     cy.contains('Step 1').should('be.visible')
-    cy.contains('Choose product scope').should('be.visible')
+
+    cy.contains('h3', 'Choose data scope').should('be.visible')
+    cy.contains('p', 'Choose data scope').should('be.visible')
+    cy.contains('Select an Account Type').should('not.exist')
+    cy.contains('classifications').should('not.exist')
+    cy.contains('Choose what data to share').should('be.visible')
     cy.contains('Step 2').should('be.visible')
     cy.contains('Connect with Plaid').should('be.visible')
 
     cy.contains('Selected:').should('not.exist')
-    cy.contains('Select at least one product to continue.').should('have.length', 2)
+    cy.contains('Choose at least one data scope to continue.').should('have.length', 2)
     cy.contains('button', 'Link With Selected Scope').should('be.disabled')
 
     cy.contains('button', 'Transactions').click()
