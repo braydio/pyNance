@@ -126,14 +126,15 @@ The Accounts page follows a strict surface and hierarchy model so accent gradien
 
 #### Current Implementation
 
-- LinkAccount presents a two-step scope selection and Plaid connection flow
-- LinkProviderLauncher exposes the Plaid link action and disabled state for the CTA
-- CTA uses opacity and cursor styling for disabled state
-- AccountActionsSidebar owns the selected product scope and passes it into LinkAccount via v-model
+- LinkAccount presents a two-step scope selection and Plaid connection flow.
+- Step 1 and Step 2 each display explicit empty-state guidance: "Select at least one product to continue."
+- LinkProviderLauncher exposes the Plaid link action and disabled state for the CTA.
+- CTA uses opacity and cursor styling for disabled state and remains disabled until at least one product is selected.
+- AccountActionsSidebar initializes with an empty selected product array and passes scope into LinkAccount via v-model.
 
 #### Acceptance Criteria
 
-- Buttons are disabled when no products are selected
+- Primary link button is disabled when no products are selected and only becomes enabled after a selection is made
 - Disabled state includes visual feedback and accessibility support
 - Tooltips provide clear explanation of requirements
 - Button state updates reactively based on selection changes

@@ -52,6 +52,7 @@
                 <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
                 <p class="text-xs text-muted">Choose product scope</p>
               </div>
+              <p class="text-sm text-muted mt-2">Select at least one product to continue.</p>
               <PlaidProductScopeSelector
                 :model-value="selectedProducts"
                 @update:model-value="updateSelectedProducts"
@@ -63,9 +64,7 @@
                 <p class="text-xs uppercase tracking-wide text-muted">Step 2</p>
                 <p class="text-xs text-muted">Connect with Plaid</p>
               </div>
-              <p class="text-sm text-muted mt-2">
-                Each account link requires at least one product scope.
-              </p>
+              <p class="text-sm text-muted mt-2">Select at least one product to continue.</p>
               <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
                 <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
                 <LinkProviderLauncher
