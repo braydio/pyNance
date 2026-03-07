@@ -20,9 +20,9 @@ describe('PlaidProductScopeSelector', () => {
       'be.visible',
     )
     cy.contains('Investments').should('be.visible')
-    cy.contains('Enables holdings and investment activity tracking in your portfolio views.').should(
-      'be.visible',
-    )
+    cy.contains(
+      'Enables holdings and investment activity tracking in your portfolio views.',
+    ).should('be.visible')
     cy.contains('Liabilities').should('be.visible')
     cy.contains('Enables loan and credit detail tracking for debt monitoring.').should('be.visible')
 
