@@ -22,7 +22,7 @@ import TokenUpload from '@/components/forms/TokenUpload.vue'
 import TogglePanel from '@/components/ui/TogglePanel.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 
-const selectedProducts = ref(['transactions'])
+const selectedProducts = ref([])
 const showTokenForm = ref(false)
 const showPlaidRefresh = ref(false)
 
