@@ -3,7 +3,7 @@
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="text-xs uppercase tracking-wide text-muted">New Account</p>
-        <p class="text-sm text-muted">Product Scope (Account Type)</p>
+        <p class="text-sm text-muted">Choose data scope</p>
       </div>
       <UiButton
         variant="primary"
@@ -27,9 +27,9 @@
           <header class="flex items-start justify-between gap-3">
             <div>
               <p class="text-xs uppercase tracking-wide text-muted">Scope Selection</p>
-              <h3 id="link-account-title" class="text-lg font-semibold">Select an Account Type</h3>
+              <h3 id="link-account-title" class="text-lg font-semibold">Choose data scope</h3>
               <p id="link-account-description" class="text-sm text-muted">
-                Select from the following classifications for your new account link.
+                Choose what data to share so pyNance can enable the matching account insights.
                 <span v-if="selectedSummary" class="block text-xs text-muted mt-1">
                   Selected: {{ selectedSummary }}
                 </span>
@@ -50,9 +50,9 @@
             <section>
               <div class="flex items-center justify-between gap-3">
                 <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
-                <p class="text-xs text-muted">Choose product scope</p>
+                <p class="text-xs text-muted">Choose what data to share</p>
               </div>
-              <p class="text-sm text-muted mt-2">Select at least one product to continue.</p>
+              <p class="text-sm text-muted mt-2">Choose at least one data scope to continue.</p>
               <PlaidProductScopeSelector
                 :model-value="selectedProducts"
                 @update:model-value="updateSelectedProducts"
@@ -64,7 +64,7 @@
                 <p class="text-xs uppercase tracking-wide text-muted">Step 2</p>
                 <p class="text-xs text-muted">Connect with Plaid</p>
               </div>
-              <p class="text-sm text-muted mt-2">Select at least one product to continue.</p>
+              <p class="text-sm text-muted mt-2">Choose at least one data scope to continue.</p>
               <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
                 <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
                 <LinkProviderLauncher
