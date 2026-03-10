@@ -128,16 +128,21 @@ The Accounts page follows a strict surface and hierarchy model so accent gradien
 
 - LinkAccount presents a two-step scope selection and Plaid connection flow.
 - Step 1 and Step 2 each display explicit empty-state guidance: "Select at least one product to continue."
-- LinkProviderLauncher exposes the Plaid link action and disabled state for the CTA.
-- CTA uses opacity and cursor styling for disabled state and remains disabled until at least one product is selected.
+- LinkProviderLauncher exposes the Plaid link action, loading status text, disabled state, and structured error events for the CTA.
+- LinkProviderLauncher sets user-facing recovery messaging for script-load failures, token-generation failures, missing token/SDK guard failures, and token-exchange failures.
+- LinkAccount renders launcher error messages inline in Step 2 (`role="alert"`) and provides a retry control to clear the message before repeating the CTA.
+- CTA uses opacity and cursor styling for disabled state, remains disabled until at least one product is selected, and stays disabled while launcher work is in progress.
 - AccountActionsSidebar initializes with an empty selected product array and passes scope into LinkAccount via v-model.
 
 #### Acceptance Criteria
 
 - Primary link button is disabled when no products are selected and only becomes enabled after a selection is made
+- CTA stays disabled while a link attempt is loading and displays progress text during loading
 - Disabled state includes visual feedback and accessibility support
 - Tooltips provide clear explanation of requirements
 - Button state updates reactively based on selection changes
+- Step 2 displays inline error messaging when launcher errors occur and allows retry by clearing the error state
+- Launcher emits structured error events (`{ code, message }`) so parent components can render context-appropriate feedback
 - Error states are communicated clearly to users
 
 ### 2.4 Refresh Subtitles Styling
