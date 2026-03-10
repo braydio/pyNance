@@ -65,14 +65,30 @@
                 <p class="text-xs text-muted">Connect with Plaid</p>
               </div>
               <p class="text-sm text-muted mt-2">Choose at least one data scope to continue.</p>
+              <div
+                v-if="launcherErrorMessage"
+                class="mt-3 rounded-lg border border-[var(--color-danger,#dc2626)]/40 bg-[var(--color-danger,#dc2626)]/10 px-3 py-2 text-sm"
+                role="alert"
+                data-testid="launcher-error-message"
+              >
+                <p class="font-medium">{{ launcherErrorMessage }}</p>
+                <button
+                  type="button"
+                  class="mt-2 underline text-sm text-[var(--color-accent-cyan)]"
+                  @click="clearLauncherError"
+                >
+                  Retry
+                </button>
+              </div>
               <div class="flex flex-wrap items-center justify-end gap-2 mt-4">
                 <UiButton variant="outline" class="btn-sm" @click="closeDialog">Cancel</UiButton>
                 <LinkProviderLauncher
                   :selected-products="selectedProducts"
                   :user-id="userID"
                   @refresh="handleRefresh"
+                  @error="handleLauncherError"
                 >
-                  <template #default="{ linkPlaid, loading, isDisabled }">
+                  <template #default="{ linkPlaid, loading, isDisabled, statusMessage }">
                     <UiButton
                       variant="primary"
                       pill
@@ -80,7 +96,7 @@
                       :disabled="isDisabled"
                       @click="linkPlaid"
                     >
-                      {{ loading ? 'Linking…' : 'Link With Selected Scope' }}
+                      {{ loading ? statusMessage || 'Linking…' : 'Link With Selected Scope' }}
                     </UiButton>
                   </template>
                 </LinkProviderLauncher>
@@ -115,6 +131,7 @@ const dialogRef = ref(null)
 const closeButtonRef = ref(null)
 const previousFocusElement = ref(null)
 const previousBodyOverflow = ref('')
+const launcherErrorMessage = ref('')
 
 const selectedSummary = computed(() =>
   selectedProducts.value.length ? selectedProducts.value.map(formatProductLabel).join(', ') : '',
@@ -137,6 +154,22 @@ function updateSelectedProducts(products) {
  */
 function formatProductLabel(product) {
   return product.charAt(0).toUpperCase() + product.slice(1)
+}
+
+/**
+ * Capture launcher errors so the dialog can present inline recovery guidance.
+ *
+ * @param {{ code: string, message: string }} payload - Structured launcher error payload.
+ */
+function handleLauncherError(payload) {
+  launcherErrorMessage.value = payload?.message || 'Unable to link account right now. Please retry.'
+}
+
+/**
+ * Clear the inline error state and let users retry the same call-to-action.
+ */
+function clearLauncherError() {
+  launcherErrorMessage.value = ''
 }
 
 // Accessibility focus trapping
@@ -177,6 +210,7 @@ function handleDialogKeydown(event) {
 }
 
 function openDialog() {
+  clearLauncherError()
   showDialog.value = true
 }
 
@@ -188,6 +222,10 @@ function handleRefresh() {
   emit('refreshAccount')
   closeDialog()
 }
+
+watch(selectedProducts, () => {
+  clearLauncherError()
+})
 
 // Manage focus/scroll locking when dialog toggles
 watch(showDialog, async (isOpen) => {

@@ -1,5 +1,11 @@
 <template>
-  <slot :linkPlaid="linkPlaid" :loading="loading" :isDisabled="isDisabled" />
+  <slot
+    :link-plaid="linkPlaid"
+    :loading="loading"
+    :is-disabled="isDisabled"
+    :error-message="errorMessage"
+    :status-message="statusMessage"
+  />
 </template>
 
 <script setup>
@@ -19,10 +25,26 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['refresh'])
+const emit = defineEmits(['refresh', 'error'])
 
 const loading = ref(false)
+const errorMessage = ref('')
+const statusMessage = ref('')
 const isDisabled = computed(() => props.selectedProducts.length === 0 || loading.value)
+
+/**
+ * Publish a recoverable launcher error for both local rendering and parent-level handling.
+ *
+ * @param {string} code - Stable error code for analytics and parent UI handling.
+ * @param {string} message - User-facing fallback message.
+ * @param {unknown} error - Original error payload for console diagnostics.
+ */
+function publishLauncherError(code, message, error) {
+  errorMessage.value = message
+  statusMessage.value = ''
+  console.error(message, error)
+  emit('error', { code, message })
+}
 
 /**
  * Ensure the Plaid Link SDK script is available before opening the flow.
@@ -64,10 +86,24 @@ async function ensurePlaidScript() {
  */
 const linkPlaid = async () => {
   if (isDisabled.value) return
+
+  errorMessage.value = ''
+  statusMessage.value = 'Preparing secure Plaid connection…'
   loading.value = true
 
   try {
-    await ensurePlaidScript()
+    try {
+      await ensurePlaidScript()
+    } catch (error) {
+      publishLauncherError(
+        'PLAID_SCRIPT_LOAD_FAILED',
+        'Unable to load Plaid right now. Please refresh and try again.',
+        error,
+      )
+      return
+    }
+
+    statusMessage.value = 'Generating a secure link token…'
 
     const payload = { products: props.selectedProducts }
     if (props.userId) {
@@ -77,14 +113,23 @@ const linkPlaid = async () => {
     const { link_token, status, message } = await accountLinkApi.generateLinkToken(payload)
 
     if (status === 'error') {
-      console.error('Failed to generate link token:', message)
+      publishLauncherError(
+        'LINK_TOKEN_GENERATION_FAILED',
+        message || 'Unable to generate a link token. Please try again.',
+        message,
+      )
       return
     }
 
     if (!link_token || !window.Plaid) {
-      console.error('Missing Plaid link token or SDK.')
+      publishLauncherError(
+        'MISSING_LINK_TOKEN_OR_SDK',
+        'We could not initialize Plaid. Please try again in a moment.',
+      )
       return
     }
+
+    statusMessage.value = 'Opening Plaid Link…'
 
     const handler = window.Plaid.create({
       token: link_token,
@@ -93,17 +138,32 @@ const linkPlaid = async () => {
         if (props.userId) {
           exchangePayload.user_id = props.userId
         }
-        await accountLinkApi.exchangePublicToken(exchangePayload)
-        emit('refresh')
+
+        statusMessage.value = 'Finalizing your linked account…'
+
+        try {
+          await accountLinkApi.exchangePublicToken(exchangePayload)
+          statusMessage.value = ''
+          emit('refresh')
+        } catch (error) {
+          publishLauncherError(
+            'PUBLIC_TOKEN_EXCHANGE_FAILED',
+            'We could not finish linking the account. Please retry.',
+            error,
+          )
+        }
       },
       onExit: () => {
         console.log('Plaid flow exited')
+        if (!errorMessage.value) {
+          statusMessage.value = ''
+        }
       },
     })
 
     handler.open()
   } catch (e) {
-    console.error('Error linking Plaid:', e)
+    publishLauncherError('PLAID_LINK_FLOW_FAILED', 'An unexpected error occurred while linking.', e)
   } finally {
     loading.value = false
   }
