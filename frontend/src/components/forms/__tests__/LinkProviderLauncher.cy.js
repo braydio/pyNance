@@ -49,7 +49,10 @@ const mountLauncher = (props = {}) => {
 
 describe('LinkProviderLauncher', () => {
   beforeEach(() => {
-    cy.stub(accountLinkApi, 'generateLinkToken').resolves({ status: 'success', link_token: 'token-1' })
+    cy.stub(accountLinkApi, 'generateLinkToken').resolves({
+      status: 'success',
+      link_token: 'token-1',
+    })
     cy.stub(accountLinkApi, 'exchangePublicToken').resolves({ status: 'success' })
   })
 
@@ -90,13 +93,19 @@ describe('LinkProviderLauncher', () => {
     }
 
     accountLinkApi.generateLinkToken.restore()
-    cy.stub(accountLinkApi, 'generateLinkToken').resolves({ status: 'error', message: 'Token service down' })
+    cy.stub(accountLinkApi, 'generateLinkToken').resolves({
+      status: 'error',
+      message: 'Token service down',
+    })
 
     cy.get('[data-testid="launcher-cta"]').click()
 
     cy.get('[data-testid="slot-error"]').should('contain.text', 'Token service down')
     cy.wrap(null).then(() => {
-      expect(events[0]).to.deep.equal({ code: 'LINK_TOKEN_GENERATION_FAILED', message: 'Token service down' })
+      expect(events[0]).to.deep.equal({
+        code: 'LINK_TOKEN_GENERATION_FAILED',
+        message: 'Token service down',
+      })
     })
   })
 
