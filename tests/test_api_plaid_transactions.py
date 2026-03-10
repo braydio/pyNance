@@ -4,7 +4,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytest
 from flask import Flask
@@ -62,6 +62,19 @@ account_logic_stub.merge_plaid_products = (
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
 sql_pkg.account_logic = account_logic_stub
+
+# Services stub
+services_pkg = types.ModuleType("app.services")
+plaid_sync_stub = types.ModuleType("app.services.plaid_sync")
+plaid_sync_stub.sync_account_transactions = lambda *_a, **_k: {
+    "added": 0,
+    "modified": 0,
+    "removed": 0,
+    "next_cursor": None,
+}
+services_pkg.plaid_sync = plaid_sync_stub
+sys.modules["app.services"] = services_pkg
+sys.modules["app.services.plaid_sync"] = plaid_sync_stub
 
 # Helpers stub
 helpers_pkg = types.ModuleType("app.helpers")
@@ -143,14 +156,6 @@ class DummyAccount:
         self.balance = 0.0
         self.updated_at = datetime(2000, 1, 1)
         self.plaid_account = DummyPlaidAcct(f"t-{account_id}", account=self)
-
-
-class DummyAccountHistory:
-    """Mutable stand-in for ``AccountHistory`` rows."""
-
-    def __init__(self, balance: float = 0.0) -> None:
-        self.balance = balance
-        self.updated_at = datetime(2000, 1, 1, tzinfo=timezone.utc)
 
 
 class QueryStub:
@@ -407,22 +412,15 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
     assert called.get("token") == "tok123"
 
 
-def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
-    """Ensure ``/sync`` updates balances and ``AccountHistory`` entries."""
+def test_sync_endpoint_returns_sync_counters(client, monkeypatch):
+    """Ensure ``/sync`` returns Plaid sync counters from the service."""
 
     account = DummyAccount("acct-123", "user-1", "Main")
     plaid_account = account.plaid_account
-    history: list[tuple[str, float]] = []
-    history_entry = DummyAccountHistory(balance=account.balance)
-    initial_history_updated_at = history_entry.updated_at
 
     class SessionStub:
         def __init__(self):
-            self.commits = 0
             self.rollbacks = 0
-
-        def commit(self):
-            self.commits += 1
 
         def rollback(self):
             self.rollbacks += 1
@@ -445,19 +443,16 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
 
     plaid_module.PlaidAccount.query = Query(plaid_account)
 
-    def fake_refresh(access_token=None, account_or_id=None, **_kwargs):
-        assert access_token == plaid_account.access_token
-        account_id = getattr(account_or_id, "account_id", account_or_id)
-        account.balance += 25.0
-        history.append((account_id, account.balance))
-        history_entry.balance = account.balance
-        history_entry.updated_at = datetime.now(timezone.utc)
-        return True, None
-
     monkeypatch.setattr(
-        plaid_module.account_logic,
-        "refresh_data_for_plaid_account",
-        fake_refresh,
+        plaid_module.plaid_sync,
+        "sync_account_transactions",
+        lambda account_id: {
+            "account_id": account_id,
+            "added": 3,
+            "modified": 2,
+            "removed": 1,
+            "next_cursor": "cursor-2",
+        },
     )
 
     resp = client.post("/api/accounts/sync", json={"account_id": account.account_id})
@@ -465,13 +460,55 @@ def test_sync_endpoint_updates_balances_and_history(client, monkeypatch):
     payload = resp.get_json()
     assert payload == {
         "status": "success",
-        "result": {"updated": True, "error": None},
+        "result": {
+            "added": 3,
+            "modified": 2,
+            "removed": 1,
+            "next_cursor": "cursor-2",
+        },
     }
-    assert plaid_account.last_refreshed is not None
-    assert account.updated_at > datetime(2000, 1, 1)
-    assert account.balance == 25.0
-    assert history == [(account.account_id, 25.0)]
-    assert history_entry.balance == 25.0
-    assert history_entry.updated_at > initial_history_updated_at
-    assert session_stub.commits == 1
     assert session_stub.rollbacks == 0
+
+
+def test_sync_endpoint_rolls_back_on_sync_error(client, monkeypatch):
+    """Ensure ``/sync`` keeps defensive rollback behavior for service failures."""
+
+    account = DummyAccount("acct-123", "user-1", "Main")
+    plaid_account = account.plaid_account
+
+    class SessionStub:
+        def __init__(self):
+            self.rollbacks = 0
+
+        def rollback(self):
+            self.rollbacks += 1
+
+    session_stub = SessionStub()
+    plaid_module.db = types.SimpleNamespace(session=session_stub)
+
+    class Query:
+        def __init__(self, record):
+            self.record = record
+
+        def options(self, *args, **kwargs):
+            return self
+
+        def filter_by(self, **kwargs):
+            account_id = kwargs.get("account_id")
+            if account_id == self.record.account_id:
+                return types.SimpleNamespace(first=lambda: self.record)
+            return types.SimpleNamespace(first=lambda: None)
+
+    plaid_module.PlaidAccount.query = Query(plaid_account)
+
+    monkeypatch.setattr(
+        plaid_module.plaid_sync,
+        "sync_account_transactions",
+        lambda *_a, **_k: (_ for _ in ()).throw(RuntimeError("boom")),
+    )
+
+    resp = client.post("/api/accounts/sync", json={"account_id": account.account_id})
+    assert resp.status_code == 500
+    payload = resp.get_json()
+    assert payload == {"status": "error", "message": "boom"}
+    assert session_stub.rollbacks == 1

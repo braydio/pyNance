@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-27
+Last Updated: 2026-03-10
 Status: Active
 ---
 
@@ -14,7 +14,7 @@ Synchronize and expose transaction data retrieved via the Plaid API, supporting 
 
 - `GET /plaid/transactions` – Retrieve synced transactions with optional filters.
 - `GET /plaid/transactions/<id>` – Fetch a specific transaction by ID.
-- `POST /plaid/transactions/sync` – Force-refresh Plaid transactions.
+- `POST /plaid/transactions/sync` – Force-refresh Plaid transactions for a specific linked account.
 - `POST /plaid/transactions/refresh_accounts` – Refresh Plaid accounts and transactions with optional date scoping.
 
 ## Inputs/Outputs
@@ -26,8 +26,8 @@ Synchronize and expose transaction data retrieved via the Plaid API, supporting 
   - **Inputs:** Path parameter `id`.
   - **Outputs:** Full transaction object.
 - **POST /plaid/transactions/sync**
-  - **Inputs:** None.
-  - **Outputs:** `{ "success": true, "new_records": int }` summarizing ingest results.
+  - **Inputs:** JSON body `{ "account_id": "..." }`.
+  - **Outputs:** `{ "status": "success", "result": { "added": int, "modified": int, "removed": int, "next_cursor": str|null } }`.
 - **POST /plaid/transactions/refresh_accounts**
   - **Inputs:** JSON body `{ "start_date": "YYYY-MM-DD", "end_date": "YYYY-MM-DD", "account_ids": ["id1"] }`.
   - **Outputs:** `{ "status": "success", "updated_accounts": ["name"] }` with refresh counts.
@@ -38,12 +38,13 @@ Synchronize and expose transaction data retrieved via the Plaid API, supporting 
 
 ## Dependencies
 
-- `services.plaid_transaction_service` for sync logic.
+- `app.services.plaid_sync.sync_account_transactions` for delta transaction sync counters.
 - `models.Transaction` and date filtering utilities.
 
 ## Behaviors/Edge Cases
 
-- Automatically paginates Plaid transactions and applies deduplication across manual/synced data.
+- Sync validates the account linkage before dispatching to the Plaid sync service.
+- The route wraps service failures with a defensive DB rollback before returning an error envelope.
 - Categorization occurs post-ingestion.
 
 ## Sample Request/Response
