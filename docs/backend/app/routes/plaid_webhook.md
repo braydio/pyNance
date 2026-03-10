@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2025-11-24
+Last Updated: 2026-03-10
 Status: Active
 ---
 
@@ -32,6 +32,7 @@ Validate Plaid webhook requests and dispatch downstream sync jobs for transactio
 - Ignores payloads without `item_id`.
 - Logs every accepted webhook before invoking sync routines.
 - Dispatches sync routines based on `webhook_type`/`webhook_code` combinations.
+- `TRANSACTIONS` sync webhooks call `plaid_sync.sync_account_transactions(account_id)` for each matching account to honor item-level cursors while preserving per-account failure isolation and triggered-account reporting.
 
 ## Sample Request/Response
 ```http

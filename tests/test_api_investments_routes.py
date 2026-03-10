@@ -140,6 +140,9 @@ class PlaidQueryStub:
     def __init__(self, rows):
         self.rows = list(rows)
 
+    def options(self, *_args, **_kwargs):
+        return self
+
     def filter_by(self, **kwargs):
         filtered = [
             row
@@ -777,7 +780,6 @@ def plaid_webhook_client():
     }
 
     account_logic_stub = types.ModuleType("app.sql.account_logic")
-    account_logic_stub.refresh_data_for_plaid_account = lambda *_a, **_k: (True, None)
 
     sql_pkg = types.ModuleType("app.sql")
     sql_pkg.account_logic = account_logic_stub
@@ -785,8 +787,14 @@ def plaid_webhook_client():
     sys.modules["app.sql.account_logic"] = account_logic_stub
     sys.modules["app.sql.investments_logic"] = investments_logic_stub
 
+    plaid_sync_stub = types.ModuleType("app.services.plaid_sync")
+    plaid_sync_stub.sync_account_transactions = lambda _account_id: {"ok": True}
+    services_pkg = types.ModuleType("app.services")
+    services_pkg.plaid_sync = plaid_sync_stub
+    sys.modules["app.services"] = services_pkg
+    sys.modules["app.services.plaid_sync"] = plaid_sync_stub
+
     helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
-    helpers_stub.get_accounts = lambda *_a, **_k: []
     helpers_stub.get_investment_transactions = lambda *_a, **_k: [
         {"id": "p1"},
         {"id": "p2"},
@@ -806,6 +814,80 @@ def plaid_webhook_client():
     app.register_blueprint(module.plaid_webhooks, url_prefix="/api/webhooks")
     with app.test_client() as client:
         yield client, module
+
+
+def test_plaid_webhook_transactions_sync_dispatches_each_account(
+    plaid_webhook_client, monkeypatch
+):
+    client, module = plaid_webhook_client
+
+    first = PlaidAccountStub(
+        "acct-1", "item-1", "token-1", account=types.SimpleNamespace()
+    )
+    second = PlaidAccountStub(
+        "acct-2", "item-1", "token-1", account=types.SimpleNamespace()
+    )
+    module.PlaidAccount.query = PlaidQueryStub([first, second])
+    module.PlaidAccount.account = None
+    module.joinedload = lambda *_a, **_k: None
+
+    called = []
+
+    def _sync(account_id):
+        called.append(account_id)
+        return {"added": 1}
+
+    monkeypatch.setattr(module.plaid_sync, "sync_account_transactions", _sync)
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "SYNC_UPDATES_AVAILABLE",
+            "item_id": "item-1",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert called == ["acct-1", "acct-2"]
+    assert resp.get_json()["triggered"] == ["acct-1", "acct-2"]
+
+
+def test_plaid_webhook_transactions_sync_isolates_account_failures(
+    plaid_webhook_client, monkeypatch
+):
+    client, module = plaid_webhook_client
+
+    first = PlaidAccountStub(
+        "acct-1", "item-1", "token-1", account=types.SimpleNamespace()
+    )
+    second = PlaidAccountStub(
+        "acct-2", "item-1", "token-1", account=types.SimpleNamespace()
+    )
+    module.PlaidAccount.query = PlaidQueryStub([first, second])
+    module.PlaidAccount.account = None
+    module.joinedload = lambda *_a, **_k: None
+
+    def _sync(account_id):
+        if account_id == "acct-1":
+            raise RuntimeError("boom")
+        return {"added": 1}
+
+    monkeypatch.setattr(module.plaid_sync, "sync_account_transactions", _sync)
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "TRANSACTIONS",
+            "webhook_code": "DEFAULT_UPDATE",
+            "item_id": "item-1",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["triggered"] == ["acct-2"]
 
 
 def test_plaid_webhook_investments_transactions_dispatch(
