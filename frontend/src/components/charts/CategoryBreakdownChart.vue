@@ -39,7 +39,7 @@ const props = defineProps({
 
 const { startDate, endDate, selectedCategoryIds, groupOthers, breakdownType } = toRefs(props)
 
-const emit = defineEmits(['bar-click', 'summary-change', 'categories-change'])
+const emit = defineEmits(['bar-click', 'summary-change', 'categories-change', 'rows-change'])
 
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
@@ -81,14 +81,26 @@ function mapMerchantBreakdownToTree(raw = []) {
     id: merchant.label,
     label: merchant.label,
     amount: merchant.amount,
+    category_ids: [],
     children: [
       {
         id: merchant.label,
         label: merchant.label,
         amount: merchant.amount,
+        category_ids: [],
       },
     ],
   }))
+}
+
+function normalizeIds(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item)).filter(Boolean)
+  }
+  if (value === null || value === undefined || value === '') {
+    return []
+  }
+  return [String(value)]
 }
 
 function extractHorizontalBarData(tree, selectedIds = []) {
@@ -96,9 +108,12 @@ function extractHorizontalBarData(tree, selectedIds = []) {
   const rows =
     tree?.flatMap((parent) =>
       (parent.children || [])
-        .filter((child) => sel.has(String(child.id)))
+        .filter((child) => {
+          const childIds = normalizeIds(child.category_ids?.length ? child.category_ids : child.id)
+          return childIds.some((id) => sel.has(id))
+        })
         .map((child) => ({
-          id: String(child.id),
+          id: normalizeIds(child.category_ids?.length ? child.category_ids : child.id),
           label: child.label || parent.label || 'Category',
           parentLabel: parent.label || '',
           amount: child.amount || 0,
@@ -119,11 +134,13 @@ async function renderChart() {
   // If nothing is selected, do not render a chart; show the empty-state overlay instead
   if (showEmptyState.value) {
     barRows.value = []
+    emit('rows-change', [])
     return
   }
 
   const rows = extractHorizontalBarData(categoryTree.value, selectedCategoryIds.value)
   barRows.value = rows
+  emit('rows-change', rows)
 
   // If there are no rows to show (e.g., selected IDs do not match current data),
   // avoid rendering an empty chart.
@@ -188,7 +205,7 @@ async function renderChart() {
           const index = points[0].index
           const row = barRows.value[index]
           if (!row) return
-          emit('bar-click', { label: row.label, ids: [row.id] })
+          emit('bar-click', { label: row.label, ids: row.id })
         }
       },
       scales: {
@@ -255,7 +272,11 @@ async function fetchData() {
       categoryTree.value = processed
       emit(
         'categories-change',
-        categoryTree.value.flatMap((cat) => (cat.children || []).map((child) => String(child.id))),
+        categoryTree.value.flatMap((cat) =>
+          (cat.children || []).flatMap((child) =>
+            normalizeIds(child.category_ids?.length ? child.category_ids : child.id),
+          ),
+        ),
       )
       updateSummary()
       await renderChart()
@@ -269,7 +290,8 @@ function sumSelectedAmounts(nodes, selectedIds) {
   const sel = new Set((selectedIds || []).map((x) => String(x)))
   return (nodes || []).reduce((sum, n) => {
     let subtotal = 0
-    if (sel.has(String(n.id))) {
+    const nodeIds = normalizeIds(n.category_ids?.length ? n.category_ids : n.id)
+    if (nodeIds.some((id) => sel.has(id))) {
       subtotal += n.amount
     }
     subtotal += sumSelectedAmounts(n.children || [], Array.from(sel))

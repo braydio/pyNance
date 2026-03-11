@@ -12,8 +12,11 @@
         <slot />
       </div>
     </main>
-    <footer class="glass border-t" style="border-color: var(--divider)">
-      <div class="container py-4 text-center text-gray-600 text-sm">
+    <footer
+      class="glass border-t"
+      style="border-color: var(--divider)"
+    >
+      <div class="dashboard-shell-footer">
         <slot name="footer" />
       </div>
     </footer>

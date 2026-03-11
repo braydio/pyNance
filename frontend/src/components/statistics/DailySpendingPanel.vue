@@ -29,6 +29,7 @@
 
       <div class="transactions-card">
         <h5 class="transactions-title">Latest Transactions</h5>
+        <div v-if="averageLoading" class="panel-state">Building average profile...</div>
         <div v-if="showAverageBreakdown" class="average-breakdown">
           <div class="average-breakdown-header">Average Profile Breakdown</div>
           <ol class="average-breakdown-list">
@@ -97,6 +98,7 @@ const transactionsLoading = ref(false)
 const transactionsError = ref('')
 const compareToAverage = ref(false)
 const averageRows = ref([])
+const averageLoading = ref(false)
 
 const formattedDetailDate = computed(() => {
   const parsed = parseISODate(props.detailDate)
@@ -439,6 +441,7 @@ async function loadAverageProfile() {
     return
   }
 
+  averageLoading.value = true
   try {
     const response = await fetchCategoryBreakdownTree({
       start_date: props.minDetailDate,
@@ -458,6 +461,7 @@ async function loadAverageProfile() {
     console.error('Error loading average spending profile:', err)
     averageRows.value = []
   } finally {
+    averageLoading.value = false
     await renderChart(categoryRows.value, averageRows.value)
   }
 }
@@ -614,6 +618,7 @@ onUnmounted(() => {
   border-radius: 10px;
   padding: 0.75rem;
   min-height: 220px;
+  overflow: hidden;
 }
 
 .chart-canvas {
@@ -646,6 +651,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
 }
 
 .average-breakdown {
@@ -669,6 +677,9 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
+  max-height: 13.5rem;
+  overflow-y: auto;
+  padding-right: 0.35rem;
 }
 
 .average-breakdown-row {

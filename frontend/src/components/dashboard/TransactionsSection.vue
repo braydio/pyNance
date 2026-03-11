@@ -4,11 +4,21 @@
 -->
 <template>
   <div class="absolute inset-0 p-6 sm:p-8 flex flex-col bg-[var(--color-bg-sec)]">
-    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-      <h2 class="text-2xl font-bold text-[var(--color-accent-red)]">Transactions Table</h2>
+    <div class="dashboard-panel-header mb-5">
+      <div class="space-y-2">
+        <div class="dashboard-panel-kicker">
+          Transaction Queue
+        </div>
+        <h2 class="dashboard-panel-title text-[var(--color-accent-red)]">
+          Transactions Table
+        </h2>
+        <p class="dashboard-panel-copy mb-0">
+          Sort, search, and page through raw activity from the same dashboard drill-down surface.
+        </p>
+      </div>
       <button
+        class="btn btn-outline rounded-xl border-[var(--color-accent-red)] text-[var(--color-accent-red)] hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-dark)]"
         @click="emit('close')"
-        class="px-4 py-2 rounded bg-[var(--color-accent-red)] text-[var(--color-bg-sec)] font-bold text-lg shadow hover:brightness-105"
       >
         Close
       </button>
@@ -19,9 +29,9 @@
         :sort-key="sortKey"
         :sort-order="sortOrder"
         :search="search"
-        @sort="emit('sort', $event)"
         :current-page="currentPage"
         :total-pages="totalPages"
+        @sort="emit('sort', $event)"
         @change-page="emit('change-page', $event)"
       />
       <PaginationControls
