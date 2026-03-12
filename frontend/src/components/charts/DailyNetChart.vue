@@ -57,7 +57,8 @@
 
           <div v-if="activeDetails.comparison" class="daily-net-chart__details-comparison">
             <p>
-              {{ activeDetails.comparison.label }}: {{ formatAmount(activeDetails.comparison.value) }}
+              {{ activeDetails.comparison.label }}:
+              {{ formatAmount(activeDetails.comparison.value) }}
             </p>
             <p>
               vs prior:

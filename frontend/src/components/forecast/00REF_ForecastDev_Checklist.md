@@ -1,4 +1,3 @@
-
 ## 🧮 Forecast Engine: Goal-Based Implementation Plan
 
 A step-by-step guide to implementing a forecast engine using the `pyNance` repo, from concept to production deployment.
@@ -13,6 +12,7 @@ A step-by-step guide to implementing a forecast engine using the `pyNance` repo,
 ---
 
 ## 📀 Goal 2.5 - Runtime: Switches & Validation
+
 - [x] Live/mock toggle switcher for refresh_all_accounts
 - [x] Manual adjustment from VUE -> forecast calculation lines
 - [x] Dashboard toggle for manual/mock mode

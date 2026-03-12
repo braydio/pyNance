@@ -270,12 +270,11 @@
   }
 
   .dashboard-panel {
-    background:
-      linear-gradient(
-        180deg,
-        color-mix(in srgb, var(--color-bg-sec) 92%, rgba(99, 205, 207, 0.08)) 0%,
-        color-mix(in srgb, var(--color-bg-dark) 82%, rgba(122, 162, 247, 0.06)) 100%
-      );
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--color-bg-sec) 92%, rgba(99, 205, 207, 0.08)) 0%,
+      color-mix(in srgb, var(--color-bg-dark) 82%, rgba(122, 162, 247, 0.06)) 100%
+    );
     border: 1px solid color-mix(in srgb, var(--divider) 72%, var(--color-accent-cyan));
     border-radius: 1.25rem;
     box-shadow:

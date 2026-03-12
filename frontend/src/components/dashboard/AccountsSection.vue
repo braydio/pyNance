@@ -6,12 +6,8 @@
   <div class="absolute inset-0 p-6 sm:p-8 flex flex-col bg-[var(--color-bg-sec)]">
     <div class="dashboard-panel-header mb-5">
       <div class="space-y-2">
-        <div class="dashboard-panel-kicker">
-          Account Surfaces
-        </div>
-        <h2 class="dashboard-panel-title text-[var(--color-accent-cyan)]">
-          Accounts Table
-        </h2>
+        <div class="dashboard-panel-kicker">Account Surfaces</div>
+        <h2 class="dashboard-panel-title text-[var(--color-accent-cyan)]">Accounts Table</h2>
         <p class="dashboard-panel-copy mb-0">
           Review balances, institutions, and account health without leaving the dashboard flow.
         </p>

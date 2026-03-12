@@ -12,8 +12,10 @@
       <slot name="controls"></slot>
     </div>
     <!-- Right: Summary (if present) -->
-    <div v-if="$slots.summary"
-      class="chart-summary bg-[var(--color-bg-secondary)] px-4 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto min-w-[150px]">
+    <div
+      v-if="$slots.summary"
+      class="chart-summary bg-[var(--color-bg-secondary)] px-4 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto min-w-[150px]"
+    >
       <slot name="summary"></slot>
     </div>
   </div>

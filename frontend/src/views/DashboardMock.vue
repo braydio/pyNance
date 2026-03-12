@@ -43,76 +43,72 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
-import { Bar } from 'vue-chartjs';
+import { ref, computed } from 'vue'
+import { Bar } from 'vue-chartjs'
 import {
   Chart as ChartJS,
   BarElement,
   CategoryScale,
   LinearScale,
   Tooltip as ChartTooltip,
-} from 'chart.js';
-import Modal from '@/components/ui/Modal.vue';
+} from 'chart.js'
+import Modal from '@/components/ui/Modal.vue'
 
-ChartJS.register(BarElement, CategoryScale, LinearScale, ChartTooltip);
+ChartJS.register(BarElement, CategoryScale, LinearScale, ChartTooltip)
 
 const netIncomeData = [
   { date: '2025-05-01', net: 120 },
   { date: '2025-05-02', net: -40 },
   { date: '2025-05-03', net: 75 },
-];
+]
 
 const transactionsMock = {
   '2025-05-01': [
     { date: '2025-05-01', description: 'Coffee', amount: -3.5 },
     { date: '2025-05-01', description: 'Salary', amount: 150 },
   ],
-  '2025-05-02': [
-    { date: '2025-05-02', description: 'Groceries', amount: -40 },
-  ],
-  '2025-05-03': [
-    { date: '2025-05-03', description: 'Bonus', amount: 75 },
-  ],
-};
+  '2025-05-02': [{ date: '2025-05-02', description: 'Groceries', amount: -40 }],
+  '2025-05-03': [{ date: '2025-05-03', description: 'Bonus', amount: 75 }],
+}
 
 const chartData = computed(() => ({
-  labels: netIncomeData.map(item => item.date),
+  labels: netIncomeData.map((item) => item.date),
   datasets: [
     {
       label: 'Net Income',
       backgroundColor: '#4ade80',
-      data: netIncomeData.map(item => item.net),
+      data: netIncomeData.map((item) => item.net),
     },
   ],
-}));
+}))
 
 const chartOptions = {
   responsive: true,
   onClick: (e, elements) => {
-    const idx = elements[0]?.index;
+    const idx = elements[0]?.index
     if (idx !== undefined) {
-      handleChartClick({ index: idx });
+      handleChartClick({ index: idx })
     }
   },
-};
+}
 
 const accounts = ref([
   { id: 'acc-1', name: 'Checking Account' },
   { id: 'acc-2', name: 'Savings Account' },
-]);
+])
 
-const visibleAccounts = ref(['acc-1', 'acc-2']);
-const selectedDayTransactions = ref([]);
-const selectedDay = ref('');
+const visibleAccounts = ref(['acc-1', 'acc-2'])
+const selectedDayTransactions = ref([])
+const selectedDay = ref('')
 
 function handleChartClick({ index }) {
-  const date = netIncomeData[index]?.date;
+  const date = netIncomeData[index]?.date
   if (selectedDay.value === date) {
-    selectedDayTransactions.value = [];
-    selectedDay.value = '';
+    selectedDayTransactions.value = []
+    selectedDay.value = ''
   } else {
-    selectedDayTransactions.value = transactionsMock[date] || [];
-    selectedDay.value = date;
+    selectedDayTransactions.value = transactionsMock[date] || []
+    selectedDay.value = date
   }
 }
 </script>

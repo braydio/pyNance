@@ -80,7 +80,11 @@
         <span>{{ visibleRows.length }} rows</span>
       </div>
       <ol class="breakdown-rows-list">
-        <li v-for="(row, index) in visibleRows.slice(0, 5)" :key="`${row.label}-${index}`" class="breakdown-row-item">
+        <li
+          v-for="(row, index) in visibleRows.slice(0, 5)"
+          :key="`${row.label}-${index}`"
+          class="breakdown-row-item"
+        >
           <span class="breakdown-row-rank">{{ index + 1 }}</span>
           <div class="breakdown-row-main">
             <span class="breakdown-row-label">{{ row.label }}</span>
@@ -147,9 +151,10 @@ const topRow = computed(() => visibleRows.value[0] || null)
 const storyCards = computed(() => {
   if (!visibleRows.value.length) return []
 
-  const concentration = topRow.value && totalVisibleAmount.value
-    ? (Number(topRow.value.amount || 0) / totalVisibleAmount.value) * 100
-    : 0
+  const concentration =
+    topRow.value && totalVisibleAmount.value
+      ? (Number(topRow.value.amount || 0) / totalVisibleAmount.value) * 100
+      : 0
 
   return [
     {

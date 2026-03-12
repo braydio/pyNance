@@ -6,12 +6,8 @@
   <div class="absolute inset-0 p-6 sm:p-8 flex flex-col bg-[var(--color-bg-sec)]">
     <div class="dashboard-panel-header mb-5">
       <div class="space-y-2">
-        <div class="dashboard-panel-kicker">
-          Transaction Queue
-        </div>
-        <h2 class="dashboard-panel-title text-[var(--color-accent-red)]">
-          Transactions Table
-        </h2>
+        <div class="dashboard-panel-kicker">Transaction Queue</div>
+        <h2 class="dashboard-panel-title text-[var(--color-accent-red)]">Transactions Table</h2>
         <p class="dashboard-panel-copy mb-0">
           Sort, search, and page through raw activity from the same dashboard drill-down surface.
         </p>

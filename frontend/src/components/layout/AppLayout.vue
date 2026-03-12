@@ -12,10 +12,7 @@
         <slot />
       </div>
     </main>
-    <footer
-      class="glass border-t"
-      style="border-color: var(--divider)"
-    >
+    <footer class="glass border-t" style="border-color: var(--divider)">
       <div class="dashboard-shell-footer">
         <slot name="footer" />
       </div>

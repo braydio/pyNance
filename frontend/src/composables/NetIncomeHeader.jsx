@@ -12,13 +12,13 @@ const NetIncomeHeader = () => {
     fontSize: '1.25em',
     fontWeight: 'bold',
     color: '#333',
-  };
+  }
 
   const itemStyle = {
     flex: 1,
     textAlign: 'center',
     fontWeight: 'bold',
-  };
+  }
 
   return (
     <div style={headerStyle}>
@@ -26,7 +26,7 @@ const NetIncomeHeader = () => {
       <div style={{ ...itemStyle, color: 'red' }}>Expenses</div>
       <div style={{ ...itemStyle, color: 'black' }}>Net Total</div>
     </div>
-  );
-};
+  )
+}
 
-export default NetIncomeHeader;
+export default NetIncomeHeader

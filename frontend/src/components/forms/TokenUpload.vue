@@ -8,8 +8,13 @@
         <input id="userId" v-model="userId" class="input-text" placeholder="Well?" />
 
         <label class="text-xs font-medium" for="accessToken">Access Token</label>
-        <textarea id="accessToken" v-model="accessToken" class="input-textarea" rows="2"
-          placeholder="You said you knew what you were doing."></textarea>
+        <textarea
+          id="accessToken"
+          v-model="accessToken"
+          class="input-textarea"
+          rows="2"
+          placeholder="You said you knew what you were doing."
+        ></textarea>
 
         <button @click="submit" :disabled="!userId || !accessToken || loading" class="forms-btn">
           Upload
@@ -131,7 +136,6 @@ const submit = async () => {
   font-weight: bold;
 }
 </style>
-
 
 <style scoped>
 @reference "../../assets/css/main.css";

@@ -10,15 +10,15 @@
  * @returns {string} Formatted currency string.
  */
 export function formatAmount(amount) {
-  const num = Number(amount || 0);
-  if (Number.isNaN(num)) return '$0.00';
+  const num = Number(amount || 0)
+  if (Number.isNaN(num)) return '$0.00'
 
   const formatted = Math.abs(num).toLocaleString('en-US', {
     style: 'currency',
     currency: 'USD',
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  });
+  })
 
-  return num < 0 ? `(${formatted})` : formatted;
+  return num < 0 ? `(${formatted})` : formatted
 }

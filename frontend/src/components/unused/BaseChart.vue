@@ -5,17 +5,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
-import Chart from 'chart.js/auto';
+import { ref, onMounted, onBeforeUnmount } from 'vue'
+import Chart from 'chart.js/auto'
 
 const props = defineProps({
   type: { type: String, required: true },
   data: { type: Object, required: true },
   options: { type: Object, default: () => ({}) },
-});
+})
 
-const chartRef = ref(null);
-let chartInstance = null;
+const chartRef = ref(null)
+let chartInstance = null
 
 onMounted(() => {
   if (chartRef.value) {
@@ -39,13 +39,13 @@ onMounted(() => {
         },
         ...props.options,
       },
-    });
+    })
   }
-});
+})
 
 onBeforeUnmount(() => {
   if (chartInstance) {
-    chartInstance.destroy();
+    chartInstance.destroy()
   }
-});
+})
 </script>

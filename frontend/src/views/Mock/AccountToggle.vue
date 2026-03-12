@@ -20,12 +20,16 @@
       <!-- Account Visibility Toggle -->
       <div class="flex gap-2 items-center">
         <span class="text-sm text-gray-600">Accounts:</span>
-        <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded"
-          @click="toggleAccount('Checking')">
+        <button
+          class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded"
+          @click="toggleAccount('Checking')"
+        >
           Checking
         </button>
-        <button class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded"
-          @click="toggleAccount('Savings')">
+        <button
+          class="bg-blue-100 hover:bg-blue-200 text-blue-800 text-xs px-2 py-1 rounded"
+          @click="toggleAccount('Savings')"
+        >
           Savings
         </button>
       </div>
@@ -39,15 +43,14 @@
       </div>
     </div>
     ```
-
   </div>
 </template>
 
 <script setup>
 const toggleAccount = (account) => {
-  console.log("Toggled visibility for:", account);
+  console.log('Toggled visibility for:', account)
   // implement actual logic later
-};
+}
 </script>
 
 <style scoped>

@@ -17,7 +17,7 @@
 
 <script>
 export default {
-  name: "RecurringCalendar",
+  name: 'RecurringCalendar',
   props: {
     recurringTransactions: {
       type: Array,
@@ -26,22 +26,21 @@ export default {
   },
   computed: {
     days() {
-      const today = new Date();
-      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
-      const result = [];
+      const today = new Date()
+      const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+      const result = []
 
       for (let i = 1; i <= daysInMonth; i++) {
-        const date = new Date(today.getFullYear(), today.getMonth(), i);
-        const transactions = this.recurringTransactions.filter(tx => {
-          const txDay = new Date(tx.next_date).getDate();
-          return txDay === i;
-        });
-        result.push({ date, transactions });
+        const date = new Date(today.getFullYear(), today.getMonth(), i)
+        const transactions = this.recurringTransactions.filter((tx) => {
+          const txDay = new Date(tx.next_date).getDate()
+          return txDay === i
+        })
+        result.push({ date, transactions })
       }
 
-      return result;
+      return result
     },
   },
-};
+}
 </script>
-

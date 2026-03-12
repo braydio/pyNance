@@ -1,12 +1,18 @@
 <template>
   <div class="bank-statement-list card bs-collapsible">
     <div class="bs-toggle-row">
-      <button :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']" @click="toggle('assets')"
-        aria-label="Show Assets">
+      <button
+        :class="['bs-tab', expanded === 'assets' && 'bs-tab-active', 'bs-tab-assets']"
+        @click="toggle('assets')"
+        aria-label="Show Assets"
+      >
         Assets
       </button>
-      <button :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
-        @click="toggle('liabilities')" aria-label="Show Liabilities">
+      <button
+        :class="['bs-tab', expanded === 'liabilities' && 'bs-tab-active', 'bs-tab-liabilities']"
+        @click="toggle('liabilities')"
+        aria-label="Show Liabilities"
+      >
         Liabilities
       </button>
       <span class="bs-net-amount" :class="netTotal >= 0 ? 'bs-net-green' : 'bs-net-red'">
@@ -19,8 +25,13 @@
         <li v-for="account in assetAccounts" :key="account.id" class="bs-row bs-row-asset">
           <div class="bs-stripe bs-stripe-green"></div>
           <div class="bs-logo-container">
-            <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-              loading="lazy" />
+            <img
+              v-if="account.institution_icon_url"
+              :src="account.institution_icon_url"
+              alt="Bank logo"
+              class="bs-logo"
+              loading="lazy"
+            />
             <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
           </div>
           <div class="bs-details">
@@ -28,9 +39,7 @@
             <div class="bs-mask">•••• {{ mask(account.mask) }}</div>
           </div>
           <div class="bs-amount-section">
-            <span class="bs-amount bs-amount-green">
-              +{{ format(account.adjusted_balance) }}
-            </span>
+            <span class="bs-amount bs-amount-green"> +{{ format(account.adjusted_balance) }} </span>
           </div>
         </li>
       </ul>
@@ -41,8 +50,13 @@
         <li v-for="account in liabilityAccounts" :key="account.id" class="bs-row bs-row-liability">
           <div class="bs-stripe bs-stripe-red"></div>
           <div class="bs-logo-container">
-            <img v-if="account.institution_icon_url" :src="account.institution_icon_url" alt="Bank logo" class="bs-logo"
-              loading="lazy" />
+            <img
+              v-if="account.institution_icon_url"
+              :src="account.institution_icon_url"
+              alt="Bank logo"
+              class="bs-logo"
+              loading="lazy"
+            />
             <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
           </div>
           <div class="bs-details">
@@ -50,17 +64,19 @@
             <div class="bs-mask">•••• {{ mask(account.mask) }}</div>
           </div>
           <div class="bs-amount-section">
-            <span class="bs-amount bs-amount-red">
-              –{{ format(account.adjusted_balance) }}
-            </span>
+            <span class="bs-amount bs-amount-red"> –{{ format(account.adjusted_balance) }} </span>
           </div>
         </li>
       </ul>
     </Transition>
 
     <div
-      v-if="((expanded === 'assets' && !assetAccounts.length) || (expanded === 'liabilities' && !liabilityAccounts.length))"
-      class="bs-empty">
+      v-if="
+        (expanded === 'assets' && !assetAccounts.length) ||
+        (expanded === 'liabilities' && !liabilityAccounts.length)
+      "
+      class="bs-empty"
+    >
       No accounts available for this category.
     </div>
   </div>
@@ -86,24 +102,31 @@ function toggle(type) {
 const assetAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
-      .filter(a => a.adjusted_balance >= 0)
-      .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
-      .slice(0, 5)
-    : []
+        .filter((a) => a.adjusted_balance >= 0)
+        .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
+        .slice(0, 5)
+    : [],
 )
 const liabilityAccounts = computed(() =>
   allVisibleAccounts.value
     ? [...allVisibleAccounts.value]
-      .filter(a => a.adjusted_balance < 0)
-      .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
-      .slice(0, 5)
-    : []
+        .filter((a) => a.adjusted_balance < 0)
+        .sort((a, b) => Math.abs(b.adjusted_balance) - Math.abs(a.adjusted_balance))
+        .slice(0, 5)
+    : [],
 )
-const netTotal = computed(() => assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0) +
-  liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0))
+const netTotal = computed(
+  () =>
+    assetAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0) +
+    liabilityAccounts.value.reduce((sum, a) => sum + a.adjusted_balance, 0),
+)
 
-const format = val =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(val)
+const format = (val) =>
+  new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2,
+  }).format(val)
 
 function mask(maskString) {
   if (!maskString) return '----'
@@ -111,7 +134,12 @@ function mask(maskString) {
 }
 function initials(name) {
   if (!name) return '??'
-  return name.split(' ').map((w) => w[0]).join('').toUpperCase().slice(0, 2)
+  return name
+    .split(' ')
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
 }
 </script>
 
@@ -147,7 +175,9 @@ function initials(name) {
   border-radius: 0.9rem 0.9rem 0 0;
   font-size: 1.11rem;
   font-weight: 600;
-  transition: background 0.17s, color 0.17s;
+  transition:
+    background 0.17s,
+    color 0.17s;
   cursor: pointer;
   box-shadow: 0 1px 6px #2a448a0d;
   position: relative;
@@ -218,7 +248,10 @@ function initials(name) {
   box-shadow: 0 2px 14px #1c274055;
   position: relative;
   border: 1.5px solid #263c66;
-  transition: box-shadow 0.17s, background 0.16s, transform 0.12s;
+  transition:
+    box-shadow 0.17s,
+    background 0.16s,
+    transform 0.12s;
   min-height: 54px;
   gap: 1.08rem;
   will-change: transform, box-shadow;
@@ -301,7 +334,7 @@ function initials(name) {
 }
 
 .bs-name {
-  font-size: 1.10rem;
+  font-size: 1.1rem;
   font-weight: 600;
   color: #e4f1ff;
   letter-spacing: 0.01em;
@@ -356,7 +389,7 @@ function initials(name) {
 /* Animations */
 .bs-slide-enter-active,
 .bs-slide-leave-active {
-  transition: all 0.45s cubic-bezier(.44, .11, .42, 1.07);
+  transition: all 0.45s cubic-bezier(0.44, 0.11, 0.42, 1.07);
 }
 
 .bs-slide-enter-from {

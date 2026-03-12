@@ -1,5 +1,5 @@
-'// DashboardMock.vue — Action Item 1: Feature-Complete Top Bar <template>
-
+'// DashboardMock.vue — Action Item 1: Feature-Complete Top Bar
+<template>
   <div class="dashboard-top-bar">
     <div class="left-section">
       <h1 class="text-2xl font-semibold">Dashboard</h1>
@@ -21,15 +21,18 @@
     <div class="right-section flex items-center gap-4">
       <div class="account-toggle">
         <label for="accountToggle" class="text-sm text-gray-600">Show All Accounts:</label>
-        <input type="checkbox" v-model="showAllAccounts" id="accountToggle" class="ml-2">
+        <input type="checkbox" v-model="showAllAccounts" id="accountToggle" class="ml-2" />
       </div>
 
       <div class="profile-menu relative">
         <button @click="toggleMenu" class="flex items-center space-x-2">
-          <img src="/mock-profile.jpg" alt="Profile" class="w-8 h-8 rounded-full">
+          <img src="/mock-profile.jpg" alt="Profile" class="w-8 h-8 rounded-full" />
           <span class="text-sm">Brayden</span>
         </button>
-        <div v-if="menuOpen" class="absolute right-0 mt-2 w-40 bg-white border rounded shadow-md z-10">
+        <div
+          v-if="menuOpen"
+          class="absolute right-0 mt-2 w-40 bg-white border rounded shadow-md z-10"
+        >
           <ul class="text-sm">
             <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Settings</li>
             <li class="px-4 py-2 hover:bg-gray-100 cursor-pointer">Logout</li>
@@ -38,13 +41,12 @@
       </div>
     </div>
     ```
-
   </div>
 </template>
 
 <script>
 export default {
-  name: "DashboardTopBar",
+  name: 'DashboardTopBar',
   data() {
     return {
       selectedRange: '30',
@@ -54,9 +56,9 @@ export default {
   },
   methods: {
     toggleMenu() {
-      this.menuOpen = !this.menuOpen;
-    }
-  }
+      this.menuOpen = !this.menuOpen
+    },
+  },
 }
 </script>
 

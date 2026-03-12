@@ -1,18 +1,14 @@
 <template>
   <div class="refresh-controls">
-    <button class="btn-accent" @click="$emit('refresh')">
-      Refresh Balances
-    </button>
-    <button class="btn-accent" @click="$emit('sync')">
-      Sync Transactions
-    </button>
+    <button class="btn-accent" @click="$emit('refresh')">Refresh Balances</button>
+    <button class="btn-accent" @click="$emit('sync')">Sync Transactions</button>
   </div>
 </template>
 
 <script>
 export default {
-  name: "RefreshControls",
-};
+  name: 'RefreshControls',
+}
 </script>
 
 <style scoped>

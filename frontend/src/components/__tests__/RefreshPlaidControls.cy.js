@@ -9,9 +9,9 @@ describe('RefreshPlaidControls', () => {
         status: 'success',
         accounts: [
           { account_id: '1', name: 'Checking' },
-          { account_id: '2', name: 'Savings' }
-        ]
-      }
+          { account_id: '2', name: 'Savings' },
+        ],
+      },
     }).as('getAccounts')
 
     mount(RefreshPlaidControls)

@@ -4,9 +4,7 @@
 -->
 <template>
   <!-- Page title for accessibility (screen-reader only) -->
-  <h1 class="sr-only">
-    Dashboard - Financial Overview
-  </h1>
+  <h1 class="sr-only">Dashboard - Financial Overview</h1>
   <BasePageLayout gap="gap-8">
     <!-- NET OVERVIEW -->
     <Suspense>
@@ -103,13 +101,9 @@
     <div class="review-cta-card dashboard-panel p-6 md:p-7">
       <div class="dashboard-panel-header gap-6">
         <div class="space-y-3">
-          <div class="dashboard-panel-kicker">
-            Review Workflow
-          </div>
+          <div class="dashboard-panel-kicker">Review Workflow</div>
           <div class="flex flex-wrap items-center gap-3">
-            <h2 class="dashboard-panel-title">
-              Review Transactions
-            </h2>
+            <h2 class="dashboard-panel-title">Review Transactions</h2>
             <span class="dashboard-status-pill">
               <span class="dashboard-status-dot" />
               {{ reviewCountLabel }}
@@ -135,13 +129,10 @@
             class="input review-filter-input"
             type="text"
             placeholder="Optional tag (e.g., #groceries)"
-          >
+          />
         </div>
         <div class="review-cta-action-wrap">
-          <button
-            class="btn btn-outline review-start-btn"
-            @click="openReviewModal"
-          >
+          <button class="btn btn-outline review-start-btn" @click="openReviewModal">
             Start Review
           </button>
         </div>
@@ -161,12 +152,8 @@
         >
           <div class="dashboard-panel-header gap-4">
             <div class="space-y-2">
-              <div class="dashboard-panel-kicker">
-                Drill Down
-              </div>
-              <h2 class="dashboard-panel-title">
-                Choose a lower dashboard surface
-              </h2>
+              <div class="dashboard-panel-kicker">Drill Down</div>
+              <h2 class="dashboard-panel-title">Choose a lower dashboard surface</h2>
               <p class="dashboard-panel-copy mb-0">
                 Open either the account ledger or the transaction queue from the same panel shell.
               </p>

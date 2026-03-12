@@ -2,7 +2,8 @@
 
 /* Entry point for theme variables. Nightfox dark palette is the default. */
 :root {
-  --font-sans: 'IBM Plex Mono', 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', ui-monospace, monospace;
+  --font-sans:
+    'IBM Plex Mono', 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', ui-monospace, monospace;
   --font-display: 'Share Tech Mono', 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
   --font-chart: var(--font-display);
 }

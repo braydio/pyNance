@@ -150,8 +150,8 @@ function emitClose() {
 const titleLabel = computed(() =>
   props.kind === 'category' ? 'Category Transactions' : 'Transactions',
 )
-const subtitlePrefix = computed(() => 
-  props.subtitlePrefix || (props.kind === 'category' ? 'Category' : 'Date')
+const subtitlePrefix = computed(
+  () => props.subtitlePrefix || (props.kind === 'category' ? 'Category' : 'Date'),
 )
 
 /**
