@@ -11,6 +11,7 @@
 - Internal helpers:
   - [`_upsert_transaction(tx, account, plaid_acct)`](../../../../backend/app/services/plaid_sync.py): Applies transaction rules, maps Plaid categories to [`Category` models](../../../../backend/app/models.py), refreshes metadata via [`refresh_or_insert_plaid_metadata`](../../../../backend/app/sql/refresh_metadata.py), and detects internal transfers through [`detect_internal_transfer`](../../../../backend/app/sql/account_logic.py).
   - [`_apply_removed(removed)`](../../../../backend/app/services/plaid_sync.py): Deletes transactions that Plaid reports as removed to maintain parity with the external feed.
+- [`_transactions_sync_with_retry(req, account_id, item_id, ...)`](../../../../backend/app/services/plaid_sync.py): Wraps Plaid SDK calls with bounded exponential backoff for transient Plaid error codes (`PRODUCT_NOT_READY`, `RATE_LIMIT_EXCEEDED`, `INSTITUTION_DOWN`) and logs structured sync context (`account_id`, `item_id`, `attempt`, `error_code`) without including access tokens.
 
 ## Dependencies & Collaborators
 
@@ -23,6 +24,7 @@
 
 - Sync cursors are persisted per Plaid item, so subsequent accounts linked to the same item reuse progress and benefit from incremental fetches.
 - Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
+- Plaid API fetches now retry transient failures with exponential backoff before bubbling the last exception. Because retries happen before batch application, cursor persistence and DB commit/rollback behavior remain unchanged when retries exhaust.
 
 ## Merchant normalization
 

@@ -6,6 +6,8 @@ removed transactions inside a single DB transaction and persists the cursor.
 
 from __future__ import annotations
 
+import json
+import time
 from datetime import date, datetime, timezone
 from typing import Dict, List, Optional
 
@@ -23,6 +25,89 @@ try:
     from plaid.model.transactions_sync_request import TransactionsSyncRequest
 except Exception:  # pragma: no cover - allow older SDKs
     TransactionsSyncRequest = None  # type: ignore
+
+
+TRANSIENT_PLAID_ERROR_CODES = {
+    "PRODUCT_NOT_READY",
+    "RATE_LIMIT_EXCEEDED",
+    "INSTITUTION_DOWN",
+}
+
+
+def _extract_plaid_error_code(error: Exception) -> Optional[str]:
+    """Extract Plaid ``error_code`` from known exception payload shapes.
+
+    Plaid client exceptions often expose ``error_code`` directly or encode
+    details in a JSON ``body`` payload.
+    """
+
+    direct_code = getattr(error, "error_code", None)
+    if direct_code:
+        return str(direct_code)
+
+    body = getattr(error, "body", None)
+    if not body:
+        return None
+
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="ignore")
+
+    if isinstance(body, str):
+        try:
+            body = json.loads(body)
+        except json.JSONDecodeError:
+            return None
+
+    if isinstance(body, dict):
+        code = body.get("error_code")
+        return str(code) if code else None
+
+    return None
+
+
+def _transactions_sync_with_retry(
+    req: TransactionsSyncRequest,
+    *,
+    account_id: str,
+    item_id: Optional[str],
+    max_attempts: int = 3,
+    initial_backoff_seconds: float = 0.5,
+):
+    """Call Plaid ``transactions_sync`` with bounded retries for transient errors."""
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return plaid_client.transactions_sync(req)
+        except Exception as error:
+            error_code = _extract_plaid_error_code(error)
+            is_transient = error_code in TRANSIENT_PLAID_ERROR_CODES
+
+            if not is_transient:
+                logger.error(
+                    "[SYNC] Plaid transactions_sync non-transient failure",
+                    extra={
+                        "account_id": account_id,
+                        "item_id": item_id,
+                        "attempt": attempt,
+                        "error_code": error_code,
+                    },
+                )
+                raise
+
+            logger.warning(
+                "[SYNC] Plaid transactions_sync transient failure",
+                extra={
+                    "account_id": account_id,
+                    "item_id": item_id,
+                    "attempt": attempt,
+                    "error_code": error_code,
+                },
+            )
+
+            if attempt == max_attempts:
+                raise
+
+            time.sleep(initial_backoff_seconds * (2 ** (attempt - 1)))
 
 
 def _parse_txn_date(val) -> datetime:
@@ -205,7 +290,9 @@ def sync_account_transactions(account_id: str) -> Dict:
         if next_cursor:
             req_kwargs["cursor"] = next_cursor
         req = TransactionsSyncRequest(**req_kwargs)
-        resp = plaid_client.transactions_sync(req)
+        resp = _transactions_sync_with_retry(
+            req, account_id=account_id, item_id=item_id
+        )
         data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
 
         added = data.get("added", [])
