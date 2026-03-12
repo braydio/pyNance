@@ -159,7 +159,7 @@ def sync_account_transactions(account_id: str) -> Dict:
     - Resolves Account -> PlaidAccount to retrieve access_token and cursor
     - Paginates until has_more is False
     - Applies added/modified/removed atomically
-    - Persists next_cursor
+    - Persists item-scoped cursor state once after all pages apply successfully
     """
     if TransactionsSyncRequest is None:
         raise RuntimeError("Plaid SDK missing TransactionsSyncRequest; upgrade SDK")
@@ -241,17 +241,13 @@ def sync_account_transactions(account_id: str) -> Dict:
         if not has_more:
             break
 
-    # Persist final cursor for all accounts under this item
+    # Persist final cursor state once for every account under this Plaid item.
+    # Cursor progress is item-scoped, so the write happens after the page loop
+    # completes successfully.
     for pa in item_plaid_accts:
         pa.sync_cursor = next_cursor
         # Use naive timestamp to match DB
         pa.last_refreshed = datetime.now()
-    db.session.commit()
-
-    # Legacy: Persist final cursor
-    plaid_acct.sync_cursor = next_cursor
-    # Use naive timestamp to match DB
-    plaid_acct.last_refreshed = datetime.now()
     db.session.commit()
 
     logger.info(

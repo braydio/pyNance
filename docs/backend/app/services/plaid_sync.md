@@ -22,7 +22,7 @@
 ## Usage Notes
 
 - Sync cursors are persisted per Plaid item, so subsequent accounts linked to the same item reuse progress and benefit from incremental fetches.
-- Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
+- Database commits occur per batch to keep additions, modifications, and deletions consistent; after pagination completes, the item-scoped cursor and `last_refreshed` values are persisted once for every account under the item. Failures trigger rollbacks and surface through logged errors.
 
 ## Merchant normalization
 
