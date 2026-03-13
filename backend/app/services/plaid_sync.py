@@ -73,7 +73,11 @@ def _transactions_sync_with_retry(
     max_attempts: int = 3,
     initial_backoff_seconds: float = 0.5,
 ):
-    """Call Plaid ``transactions_sync`` with bounded retries for transient errors."""
+    """Call Plaid ``transactions_sync`` with bounded retries for transient errors.
+
+    The helper retries only known transient Plaid ``error_code`` values and
+    re-raises all non-transient errors immediately.
+    """
 
     for attempt in range(1, max_attempts + 1):
         try:
@@ -81,27 +85,25 @@ def _transactions_sync_with_retry(
         except Exception as error:
             error_code = _extract_plaid_error_code(error)
             is_transient = error_code in TRANSIENT_PLAID_ERROR_CODES
+            log_context = {
+                "account_id": account_id,
+                "item_id": item_id,
+                "attempt": attempt,
+                "attempt_count": attempt,
+                "max_attempts": max_attempts,
+                "error_code": error_code,
+            }
 
             if not is_transient:
                 logger.error(
                     "[SYNC] Plaid transactions_sync non-transient failure",
-                    extra={
-                        "account_id": account_id,
-                        "item_id": item_id,
-                        "attempt": attempt,
-                        "error_code": error_code,
-                    },
+                    extra=log_context,
                 )
                 raise
 
             logger.warning(
                 "[SYNC] Plaid transactions_sync transient failure",
-                extra={
-                    "account_id": account_id,
-                    "item_id": item_id,
-                    "attempt": attempt,
-                    "error_code": error_code,
-                },
+                extra=log_context,
             )
 
             if attempt == max_attempts:
