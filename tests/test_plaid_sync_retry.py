@@ -119,6 +119,9 @@ def test_transactions_sync_with_retry_retries_transient_errors(monkeypatch):
     assert all(
         event[2]["error_code"] == "RATE_LIMIT_EXCEEDED" for event in warning_events
     )
+    assert all(event[2]["account_id"] == "acc-1" for event in warning_events)
+    assert all(event[2]["item_id"] == "item-1" for event in warning_events)
+    assert warning_events[-1][2]["attempt_count"] == 2
 
 
 def test_transactions_sync_with_retry_raises_non_transient(monkeypatch):
@@ -145,6 +148,9 @@ def test_transactions_sync_with_retry_raises_non_transient(monkeypatch):
     error_events = [event for event in logger.events if event[0] == "error"]
     assert len(error_events) == 1
     assert error_events[0][2]["attempt"] == 1
+    assert error_events[0][2]["attempt_count"] == 1
+    assert error_events[0][2]["account_id"] == "acc-2"
+    assert error_events[0][2]["item_id"] == "item-2"
 
 
 def test_transactions_sync_with_retry_raises_after_max_attempts(monkeypatch):
@@ -172,3 +178,5 @@ def test_transactions_sync_with_retry_raises_after_max_attempts(monkeypatch):
     warning_events = [event for event in logger.events if event[0] == "warning"]
     assert len(warning_events) == 2
     assert warning_events[-1][2]["attempt"] == 2
+    assert warning_events[-1][2]["attempt_count"] == 2
+    assert warning_events[-1][2]["max_attempts"] == 2
