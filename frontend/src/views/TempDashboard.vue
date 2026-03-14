@@ -135,6 +135,8 @@
           <p class="text-muted">
             Step through transactions in batches of 10, approve quickly, or edit in place without
             leaving the dashboard.
+            You know, it's like dating apps so you swipe left or swipe right.. you know, gamefied,
+            its fun. Seriously.
           </p>
           <div class="mt-3 flex flex-col gap-2 max-w-sm">
             <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
