@@ -54,6 +54,7 @@ class Account(db.Model, TimestampMixin):
         server_default=db.text("false"),
     )
     product_provenance = db.Column(db.String(64), nullable=True)
+    apr = db.Column(db.Numeric(7, 4), nullable=True)
 
     plaid_account = db.relationship(
         "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"

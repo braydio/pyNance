@@ -43,3 +43,14 @@ Both ingestion paths therefore emit the same metadata contract:
 - `is_internal`: existing boolean exclusion flag used across analytics.
 - `transfer_type`: explicit classifier output (`brokerage_funding`, `checking_savings_transfer`, or generic `internal_transfer`).
 - `internal_transfer_flag`: model alias for compatibility-sensitive consumers.
+
+
+## APR inference fallback for credit accounts
+
+When Plaid account payloads do not provide APR, `_upsert_transaction` now attempts to infer APR for liability-style accounts (`credit card`, `credit`, `loan`, `liability`) from observed interest-charge transactions. Detection uses:
+
+- description tokens containing `interest charge` or `interest`; or
+- category path `Bank Fees -> Interest`; or
+- Plaid PFC detailed category `BANK_FEES_INTEREST`.
+
+The estimate annualizes a monthly interest ratio against the approximated pre-charge balance and persists the result to `Account.apr` so account payloads can display a best-effort APR in the UI.

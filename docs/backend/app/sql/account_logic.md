@@ -102,3 +102,8 @@ Spend analytics and summary endpoints continue to exclude rows where `is_interna
 - `product_provenance` (`product_scope`, `payload_type`, or `none`)
 
 Account serialization (`get_accounts_from_db`) now emits these flags and a normalized `account_type` value. Investment-linked rows always serialize with `account_type = "investment"` even when upstream type values vary (for example `brokerage`).
+
+
+## APR serialization note
+
+`get_accounts_from_db` now includes an `apr` field in serialized account payloads. Values come from `Account.apr` and are emitted as floating-point percentages (or `null` when unavailable).

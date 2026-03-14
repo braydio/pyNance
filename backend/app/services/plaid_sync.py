@@ -34,6 +34,86 @@ TRANSIENT_PLAID_ERROR_CODES = {
 }
 
 
+CREDIT_ACCOUNT_TYPES = {"credit card", "credit", "loan", "liability"}
+INTEREST_DESCRIPTION_TOKENS = ("interest charge", "interest")
+INTEREST_PFC_CATEGORIES = {"BANK_FEES_INTEREST"}
+
+
+def _is_credit_account(account: Account) -> bool:
+    """Return ``True`` when account type metadata indicates a liability account."""
+
+    account_type = str(getattr(account, "type", "") or "").strip().lower()
+    subtype = str(getattr(account, "subtype", "") or "").strip().lower()
+    return account_type in CREDIT_ACCOUNT_TYPES or subtype in CREDIT_ACCOUNT_TYPES
+
+
+def _is_interest_charge_transaction(tx: dict) -> bool:
+    """Determine whether a transaction represents an interest charge."""
+
+    description = str(tx.get("name") or tx.get("description") or "").strip().lower()
+    if any(token in description for token in INTEREST_DESCRIPTION_TOKENS):
+        return True
+
+    pfc = tx.get("personal_finance_category") or {}
+    pfc_detailed = str(pfc.get("detailed") or "").upper()
+    if pfc_detailed in INTEREST_PFC_CATEGORIES:
+        return True
+
+    category_path = [
+        str(value or "").strip().lower() for value in (tx.get("category") or [])
+    ]
+    return category_path[:2] == ["bank fees", "interest"]
+
+
+def _estimate_interest_apr(account: Account, tx: dict) -> float | None:
+    """Estimate APR from an observed interest charge transaction.
+
+    The estimate assumes the incoming transaction represents a monthly interest
+    charge and annualizes that ratio against the approximated balance before the
+    interest posted.
+    """
+
+    try:
+        amount = abs(float(tx.get("amount") or 0))
+    except (TypeError, ValueError):
+        return None
+
+    if amount <= 0:
+        return None
+
+    try:
+        current_balance = abs(float(account.balance or 0))
+    except (TypeError, ValueError):
+        return None
+
+    # For liabilities, Plaid interest is usually posted as a positive amount
+    # that increases the amount owed. Back it out to approximate pre-charge balance.
+    balance_before_charge = current_balance - amount
+    if balance_before_charge <= 0:
+        balance_before_charge = current_balance
+    if balance_before_charge <= 0:
+        return None
+
+    monthly_rate = amount / balance_before_charge
+    apr_percent = monthly_rate * 12 * 100
+    return round(apr_percent, 4)
+
+
+def _update_account_apr_from_interest_charge(account: Account, tx: dict) -> None:
+    """Update account APR using interest transactions when provider APR is unavailable."""
+
+    if not _is_credit_account(account):
+        return
+    if not _is_interest_charge_transaction(tx):
+        return
+
+    estimated_apr = _estimate_interest_apr(account, tx)
+    if estimated_apr is None:
+        return
+
+    account.apr = estimated_apr
+
+
 def _extract_plaid_error_code(error: Exception) -> Optional[str]:
     """Extract Plaid ``error_code`` from known exception payload shapes.
 
@@ -169,6 +249,8 @@ def _upsert_transaction(
         "payment_method"
     ) or "Unknown"
     pending = bool(tx.get("pending", False))
+
+    _update_account_apr_from_interest_charge(account, tx)
 
     existing = Transaction.query.filter_by(transaction_id=txn_id).first()
     if existing:

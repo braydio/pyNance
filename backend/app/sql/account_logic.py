@@ -550,6 +550,7 @@ def get_accounts_from_db(include_hidden: bool = False):
                 "institution_name": acc.institution_name,
                 "balance": float(acc.balance) if acc.balance is not None else None,
                 "status": acc.status,
+                "apr": float(acc.apr) if acc.apr is not None else None,
             }
         )
     return accounts
