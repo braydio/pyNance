@@ -59,7 +59,7 @@
               />
               <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
                 <button
-                  class="accent-toggle-btn gradient-toggle-btn daily-net-timeframe-btn"
+                  class="accent-toggle-btn daily-net-timeframe-btn"
                   :class="{ 'accent-toggle-btn--active': netTimeframe === 'mtd' }"
                   type="button"
                   :aria-pressed="netTimeframe === 'mtd'"
@@ -68,7 +68,7 @@
                   MTD
                 </button>
                 <button
-                  class="accent-toggle-btn gradient-toggle-btn daily-net-timeframe-btn"
+                  class="accent-toggle-btn daily-net-timeframe-btn"
                   :class="{ 'accent-toggle-btn--active': netTimeframe === 'rolling_30' }"
                   type="button"
                   :aria-pressed="netTimeframe === 'rolling_30'"

@@ -145,7 +145,8 @@
   .accent-toggle-btn.is-active,
   .accent-toggle-btn--active,
   .gradient-toggle-btn.extended,
-  .gradient-toggle-btn.is-active {
+  .gradient-toggle-btn.is-active,
+  .gradient-toggle-btn--active {
     background: linear-gradient(
       135deg,
       var(--accent-primary) 0%,
@@ -162,13 +163,31 @@
   }
 
   .accent-popover-surface {
-    border: 1px solid color-mix(in srgb, var(--color-accent-yellow) 70%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
     background: linear-gradient(
       140deg,
-      color-mix(in srgb, var(--color-bg-dark) 78%, var(--color-accent-yellow) 22%),
-      color-mix(in srgb, var(--color-bg-sec) 70%, var(--color-accent-green) 30%)
+      color-mix(in srgb, var(--color-bg-dark) 78%, var(--accent-primary) 22%),
+      color-mix(in srgb, var(--color-bg-sec) 70%, var(--accent-primary-strong) 30%)
     );
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+  }
+
+  .accent-popover-close-btn {
+    border: 0.5px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
+    color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+    background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      box-shadow 0.2s ease;
+  }
+
+  .accent-popover-close-btn:hover,
+  .accent-popover-close-btn:focus-visible {
+    color: var(--color-text-light);
+    background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-primary) 50%, transparent);
+    outline: none;
   }
 
   .btn-primary {

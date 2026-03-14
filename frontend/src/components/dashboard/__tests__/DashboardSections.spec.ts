@@ -16,7 +16,7 @@ const DateRangeSelectorStub = {
 
 const ChartDetailsSidebarStub = {
   name: 'ChartDetailsSidebar',
-  template: '<button class="chart-details-sidebar__toggle gradient-toggle-btn">Overlays</button>',
+  template: '<button class="chart-details-sidebar__toggle accent-toggle-btn">Overlays</button>',
 }
 
 const DailyNetChartStub = {
@@ -115,12 +115,12 @@ describe('Dashboard section components', () => {
     )
     expect(timeframeButtons).toHaveLength(2)
     timeframeButtons.forEach((button) => {
-      expect(button.classes()).toContain('gradient-toggle-btn')
+      expect(button.classes()).toContain('accent-toggle-btn')
     })
 
     const overlayTrigger = wrapper.find('.chart-details-sidebar__toggle')
     expect(overlayTrigger.exists()).toBe(true)
-    expect(overlayTrigger.classes()).toContain('gradient-toggle-btn')
+    expect(overlayTrigger.classes()).toContain('accent-toggle-btn')
 
     expect(wrapper.html()).toMatchSnapshot()
   })

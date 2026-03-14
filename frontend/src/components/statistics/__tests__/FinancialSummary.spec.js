@@ -20,8 +20,8 @@ describe('FinancialSummary trends', () => {
       },
     })
 
-    const globalToggle = wrapper.get('.stats-controls .gradient-toggle-btn')
-    expect(globalToggle.classes()).toContain('gradient-toggle-btn')
+    const globalToggle = wrapper.get('.stats-controls .accent-toggle-btn')
+    expect(globalToggle.classes()).toContain('accent-toggle-btn')
   })
   it('shows the daily spending panel only in extended view', async () => {
     const wrapper = mount(FinancialSummary, {

@@ -112,6 +112,7 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 - `.accent-toggle-btn`: base accent control surface, border, and hover treatment.
 - `.accent-toggle-btn--active`: active state for toggles using the shared accent gradient.
 - `.accent-popover-surface`: shared frosted/gradient surface for popovers tied to accent controls.
+- `.accent-popover-close-btn`: shared close button palette for accent popover content.
 
 Use these classes for dashboard toggles (for example, overlay toggles, date range zoom controls, summary detail toggles, and timeframe buttons) instead of redefining color-mix or gradient values in component-scoped styles.
 

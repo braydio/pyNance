@@ -12,8 +12,8 @@
       <h3 class="stats-title">Financial Snapshot</h3>
       <div class="stats-controls">
         <button
-          class="accent-toggle-btn gradient-toggle-btn"
-          :class="{ extended: isExtendedView }"
+          class="accent-toggle-btn"
+          :class="{ 'accent-toggle-btn--active': isExtendedView }"
           @click="toggleExtendedView"
           :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
         >

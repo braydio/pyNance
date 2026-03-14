@@ -35,7 +35,7 @@
     >
       <button
         type="button"
-        class="chart-details-sidebar__close"
+        class="chart-details-sidebar__close accent-popover-close-btn"
         aria-label="Close overlay options"
         @click="closeSidebar"
       >
@@ -253,26 +253,11 @@ onBeforeUnmount(() => {
   width: 1.4rem;
   height: 1.4rem;
   border-radius: 0.2rem;
-  border: 0.5px solid color-mix(in srgb, var(--color-accent-yellow) 45%, transparent);
-  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
-  background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
   font-size: 1rem;
   line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition:
-    color 0.2s ease,
-    background 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.chart-details-sidebar__close:hover,
-.chart-details-sidebar__close:focus-visible {
-  color: var(--color-text-light);
-  background: color-mix(in srgb, var(--color-accent-yellow) 22%, transparent);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-yellow) 50%, transparent);
-  outline: none;
 }
 
 .chart-details-sidebar__fieldset {
