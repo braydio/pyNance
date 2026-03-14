@@ -172,7 +172,6 @@
     box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
   }
 
-
   .accent-popover-close-btn {
     border: 0.5px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
     color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
