@@ -8,6 +8,6 @@ describe('ChartDetailsSidebar', () => {
     const wrapper = mount(ChartDetailsSidebar)
 
     const overlayTrigger = wrapper.get('button.chart-details-sidebar__toggle')
-    expect(overlayTrigger.classes()).toContain('gradient-toggle-btn')
+    expect(overlayTrigger.classes()).toContain('accent-toggle-btn')
   })
 })
