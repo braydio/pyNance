@@ -19,3 +19,5 @@ historical context and auditability.
 ## Recent active revision references
 
 - `backend/migrations/versions/e7b9f1c2a4d3_add_investment_account_flags.py` – adds explicit investment account flags (`is_investment`, holdings/transactions flags) and provenance metadata.
+
+- `backend/migrations/versions/2c4d6e8f9a10_add_apr_to_accounts.py` – adds a nullable `apr` column to persist provider or inferred APR values for account payloads.

@@ -19,6 +19,7 @@ Represents a financial account belonging to a user. Each account can be linked t
 - `type`: Account type (`checking`, `savings`, `credit`, etc.)
 - `current_balance`, `available_balance`: Live balance fields
 - `currency`: ISO 4217 code (e.g. `USD`)
+- `apr`: Optional annual percentage rate for liability accounts; populated from provider metadata or inferred from interest charges when available
 - `is_active`: Soft delete flag
 - `created_at`, `updated_at`: Audit fields
 
