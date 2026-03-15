@@ -12,30 +12,36 @@
     </div>
 
     <template v-else>
-      <div
-        v-if="legendItems.length"
-        class="daily-net-chart__legend"
-        aria-label="Active chart overlays"
-      >
-        <span
-          v-for="item in legendItems"
-          :key="item.label"
-          class="daily-net-chart__legend-item"
-          :style="{ '--legend-color': item.color }"
-        >
-          <span class="daily-net-chart__legend-swatch" />
-          <span class="daily-net-chart__legend-label">{{ item.label }}</span>
-        </span>
-      </div>
+      <div class="daily-net-chart__meta">
+        <div class="daily-net-chart__legend-shell">
+          <div
+            v-if="legendItems.length"
+            class="daily-net-chart__legend"
+            aria-label="Active chart overlays"
+          >
+            <span
+              v-for="item in legendItems"
+              :key="item.label"
+              class="daily-net-chart__legend-item"
+              :style="{ '--legend-color': item.color }"
+            >
+              <span class="daily-net-chart__legend-swatch" />
+              <span class="daily-net-chart__legend-label">{{ item.label }}</span>
+            </span>
+          </div>
+          <div v-else class="daily-net-chart__legend-placeholder" aria-hidden="true"></div>
+        </div>
 
-      <div class="daily-net-chart__canvas-wrap">
-        <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
         <section
           v-if="activeDetails"
           class="daily-net-chart__details"
           aria-live="polite"
           aria-label="Active day details"
         >
+          <span
+            class="daily-net-chart__details-top-accent"
+            aria-hidden="true"
+          ></span>
           <div class="daily-net-chart__details-header">
             <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
             <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
@@ -68,6 +74,10 @@
             </p>
           </div>
         </section>
+      </div>
+
+      <div class="daily-net-chart__canvas-wrap">
+        <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
         <div
           v-show="hoverIndicator.visible"
           class="daily-net-chart__hover-indicator"
@@ -912,13 +922,25 @@ onUnmounted(() => chartInstance.value?.destroy())
   display: flex;
   flex-wrap: wrap;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  align-items: center;
+}
+
+.daily-net-chart__legend-shell {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 108px;
+  display: flex;
+  align-items: flex-end;
 }
 
 .daily-net-chart__legend-item {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
+  padding: 0.28rem 0.58rem;
+  border: 1px solid color-mix(in srgb, var(--divider) 90%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 64%, transparent);
 }
 
 .daily-net-chart__legend-swatch {
@@ -931,18 +953,50 @@ onUnmounted(() => chartInstance.value?.destroy())
   color: var(--color-text-muted);
 }
 
+.daily-net-chart__meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 290px;
+  align-items: stretch;
+  column-gap: 0.85rem;
+  min-height: 124px;
+  margin-bottom: 1rem;
+  padding: 0.9rem 1rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--divider) 92%, transparent);
+  border-radius: 18px;
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--color-accent-cyan) 10%, transparent),
+      transparent 42%
+    ),
+    color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.daily-net-chart__legend-placeholder {
+  width: 100%;
+  min-height: 1px;
+}
+
 .daily-net-chart__details {
-  position: absolute;
-  top: 0.5rem;
-  right: 0.5rem;
-  z-index: 2;
-  max-width: min(280px, 70%);
-  padding: 0.5rem 0.65rem;
+  width: 100%;
+  max-width: 290px;
+  min-height: 108px;
+  padding: 0.7rem 0.8rem 0.75rem;
   border: 1px solid var(--divider);
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 88%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 90%, transparent);
   box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(6px);
+  display: flex;
+  flex-direction: column;
+}
+
+.daily-net-chart__details-top-accent {
+  width: 3.5rem;
+  border-top: 3px solid color-mix(in srgb, var(--color-accent-yellow) 88%, white 12%);
+  border-radius: 999px;
+  margin-bottom: 0.45rem;
 }
 
 .daily-net-chart__details-header {
@@ -1040,5 +1094,20 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__hover-label {
   color: var(--color-text-light);
+}
+
+@media (max-width: 900px) {
+  .daily-net-chart__meta {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 0;
+  }
+
+  .daily-net-chart__legend-shell,
+  .daily-net-chart__details {
+    min-height: 0;
+    max-width: 100%;
+  }
 }
 </style>

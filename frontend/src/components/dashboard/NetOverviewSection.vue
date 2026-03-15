@@ -42,10 +42,13 @@
         class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
         <div class="daily-net-chart-header">
-          <h2 class="daily-net-chart-title">
-            <span class="title-text">Net Income</span>
-            <span class="title-subtitle">(Daily)</span>
-          </h2>
+          <div class="daily-net-chart-title-block">
+            <h2 class="daily-net-chart-title">
+              <span class="title-text">Net Income</span>
+              <span class="title-subtitle">(Daily)</span>
+            </h2>
+            <p class="daily-net-chart-caption">Overlay legend and active day details stay pinned above the chart.</p>
+          </div>
           <div class="daily-net-chart-controls">
             <div class="daily-net-chart-toolbar">
               <ChartDetailsSidebar
@@ -233,6 +236,7 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   z-index: 8;
   overflow: visible;
   isolation: isolate;
+  padding-top: 1rem;
 }
 
 .net-overview-summary-panel {
@@ -242,14 +246,21 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 
 .daily-net-chart-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.6rem;
+  gap: 0.9rem;
   flex-wrap: wrap;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.25rem;
   width: 100%;
   position: relative;
   z-index: 12;
+  padding: 0.9rem 1rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--divider) 92%, transparent);
+  border-radius: 18px 18px 14px 14px;
+  background:
+    radial-gradient(circle at top left, rgba(77, 208, 225, 0.12), transparent 38%),
+    color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 84%, transparent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .daily-net-chart-controls {
@@ -260,19 +271,27 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   z-index: 12;
 }
 
+.daily-net-chart-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
 .daily-net-chart-toolbar {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  padding: 0.25rem 0.45rem;
-  border-radius: 0.35rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 999px;
   border: 1px solid var(--themed-border);
-  background: var(--themed-bg);
+  background: color-mix(in srgb, var(--themed-bg) 88%, transparent);
   backdrop-filter: blur(6px);
   position: relative;
   z-index: 12;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
 }
 
 .title-text {
@@ -290,6 +309,13 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   opacity: 0.8;
 }
 
+.daily-net-chart-caption {
+  margin: 0;
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--color-text-muted) 92%, white 8%);
+}
+
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
@@ -301,5 +327,21 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   padding: 0.15rem 0.55rem;
   border-radius: 0.3rem;
   line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .daily-net-chart-header {
+    border-radius: 18px;
+  }
+
+  .daily-net-chart-controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .daily-net-chart-toolbar {
+    justify-content: flex-start;
+    border-radius: 16px;
+  }
 }
 </style>
