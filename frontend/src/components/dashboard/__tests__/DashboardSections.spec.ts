@@ -27,7 +27,8 @@ const DailyNetChartStub = {
     zoomedOut: { type: Boolean, default: false },
   },
   emits: ['summary-change', 'data-change', 'bar-click'],
-  template: '<div class="daily-net-chart" @click="$emit(\'bar-click\', startDate)" />',
+  template:
+    '<div class="daily-net-chart" @click="$emit(\'bar-click\', startDate)"><div class="daily-net-chart__title-shell"><slot name="title" /></div><div class="daily-net-chart__controls-shell"><slot name="controls" /></div></div>',
 }
 
 const FinancialSummaryStub = {

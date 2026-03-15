@@ -17,18 +17,20 @@ exports[`Dashboard section components > renders net overview content and forward
       <top-account-snapshot-stub data-v-26cbed55="" accountsubtype="" usespectrum="false" iseditinggroups="false"></top-account-snapshot-stub>
     </div>
     <div data-v-26cbed55="" class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative">
-      <div data-v-26cbed55="" class="daily-net-chart-header">
-        <div class="daily-net-chart-title-block" data-v-26cbed55="">
-          <h2 class="daily-net-chart-title" data-v-26cbed55=""><span class="title-text" data-v-26cbed55="">Net Income</span><span class="title-subtitle" data-v-26cbed55="">(Daily)</span></h2>
-          <p class="daily-net-chart-caption" data-v-26cbed55="">Overlay legend and active day details stay pinned above the chart.</p>
+      <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd">
+        <div class="daily-net-chart__title-shell">
+          <div data-v-26cbed55="" class="daily-net-chart-title-block">
+            <h2 data-v-26cbed55="" class="daily-net-chart-title"><span data-v-26cbed55="" class="title-text">Net Income</span><span data-v-26cbed55="" class="title-subtitle">(Daily)</span></h2>
+          </div>
         </div>
-        <div data-v-26cbed55="" class="daily-net-chart-controls">
-          <div data-v-26cbed55="" class="daily-net-chart-toolbar"><button data-v-26cbed55="" class="chart-details-sidebar__toggle accent-toggle-btn chart-details-sidebar--inline" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date">Overlays</button>
-            <div data-v-26cbed55="" class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle"><button data-v-26cbed55="" class="accent-toggle-btn daily-net-timeframe-btn accent-toggle-btn--active" type="button" aria-pressed="true"> MTD </button><button data-v-26cbed55="" class="accent-toggle-btn daily-net-timeframe-btn" type="button" aria-pressed="false"> Rolling 30 </button></div>
+        <div class="daily-net-chart__controls-shell">
+          <div data-v-26cbed55="" class="daily-net-chart-controls">
+            <div data-v-26cbed55="" class="daily-net-chart-toolbar"><button data-v-26cbed55="" class="chart-details-sidebar__toggle accent-toggle-btn chart-details-sidebar--inline" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date">Overlays</button>
+              <div data-v-26cbed55="" class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle"><button data-v-26cbed55="" class="accent-toggle-btn daily-net-timeframe-btn accent-toggle-btn--active" type="button" aria-pressed="true"> MTD </button><button data-v-26cbed55="" class="accent-toggle-btn daily-net-timeframe-btn" type="button" aria-pressed="false"> Rolling 30 </button></div>
+            </div>
           </div>
         </div>
       </div>
-      <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd"></div>
     </div>
   </div>
   <div data-v-26cbed55="" class="net-overview-summary-panel bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6">

@@ -41,49 +41,6 @@
       <div
         class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
-        <div class="daily-net-chart-header">
-          <div class="daily-net-chart-title-block">
-            <h2 class="daily-net-chart-title">
-              <span class="title-text">Net Income</span>
-              <span class="title-subtitle">(Daily)</span>
-            </h2>
-            <p class="daily-net-chart-caption">Overlay legend and active day details stay pinned above the chart.</p>
-          </div>
-          <div class="daily-net-chart-controls">
-            <div class="daily-net-chart-toolbar">
-              <ChartDetailsSidebar
-                class="chart-details-sidebar--inline"
-                v-model:show7-day="show7DayModel"
-                v-model:show30-day="show30DayModel"
-                v-model:show-avg-income="showAvgIncomeModel"
-                v-model:show-avg-expenses="showAvgExpensesModel"
-                v-model:show-comparison-overlay="showComparisonOverlayModel"
-                v-model:comparison-mode="comparisonModeModel"
-              />
-              <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
-                <button
-                  class="accent-toggle-btn daily-net-timeframe-btn"
-                  :class="{ 'accent-toggle-btn--active': netTimeframe === 'mtd' }"
-                  type="button"
-                  :aria-pressed="netTimeframe === 'mtd'"
-                  @click="emit('update:net-timeframe', 'mtd')"
-                >
-                  MTD
-                </button>
-                <button
-                  class="accent-toggle-btn daily-net-timeframe-btn"
-                  :class="{ 'accent-toggle-btn--active': netTimeframe === 'rolling_30' }"
-                  type="button"
-                  :aria-pressed="netTimeframe === 'rolling_30'"
-                  @click="emit('update:net-timeframe', 'rolling_30')"
-                >
-                  Rolling 30
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <DailyNetChart
           :start-date="activeRange.start"
           :end-date="activeRange.end"
@@ -98,7 +55,51 @@
           @summary-change="emit('net-summary-change', $event)"
           @data-change="emit('net-data-change', $event)"
           @bar-click="emit('net-bar-click', $event)"
-        />
+        >
+          <template #title>
+            <div class="daily-net-chart-title-block">
+              <h2 class="daily-net-chart-title">
+                <span class="title-text">Net Income</span>
+                <span class="title-subtitle">(Daily)</span>
+              </h2>
+            </div>
+          </template>
+          <template #controls>
+            <div class="daily-net-chart-controls">
+              <div class="daily-net-chart-toolbar">
+                <ChartDetailsSidebar
+                  class="chart-details-sidebar--inline"
+                  v-model:show7-day="show7DayModel"
+                  v-model:show30-day="show30DayModel"
+                  v-model:show-avg-income="showAvgIncomeModel"
+                  v-model:show-avg-expenses="showAvgExpensesModel"
+                  v-model:show-comparison-overlay="showComparisonOverlayModel"
+                  v-model:comparison-mode="comparisonModeModel"
+                />
+                <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
+                  <button
+                    class="accent-toggle-btn daily-net-timeframe-btn"
+                    :class="{ 'accent-toggle-btn--active': netTimeframe === 'mtd' }"
+                    type="button"
+                    :aria-pressed="netTimeframe === 'mtd'"
+                    @click="emit('update:net-timeframe', 'mtd')"
+                  >
+                    MTD
+                  </button>
+                  <button
+                    class="accent-toggle-btn daily-net-timeframe-btn"
+                    :class="{ 'accent-toggle-btn--active': netTimeframe === 'rolling_30' }"
+                    type="button"
+                    :aria-pressed="netTimeframe === 'rolling_30'"
+                    @click="emit('update:net-timeframe', 'rolling_30')"
+                  >
+                    Rolling 30
+                  </button>
+                </div>
+              </div>
+            </div>
+          </template>
+        </DailyNetChart>
       </div>
     </div>
 
@@ -236,7 +237,6 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   z-index: 8;
   overflow: visible;
   isolation: isolate;
-  padding-top: 1rem;
 }
 
 .net-overview-summary-panel {
@@ -244,28 +244,9 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   z-index: 1;
 }
 
-.daily-net-chart-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.25rem;
-  width: 100%;
-  position: relative;
-  z-index: 12;
-  padding: 0.9rem 1rem 0.85rem;
-  border: 1px solid color-mix(in srgb, var(--divider) 92%, transparent);
-  border-radius: 18px 18px 14px 14px;
-  background:
-    radial-gradient(circle at top left, rgba(77, 208, 225, 0.12), transparent 38%),
-    color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 84%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
 .daily-net-chart-controls {
   display: flex;
-  justify-content: flex-end;
+  justify-content: flex-start;
   flex: 0 0 auto;
   position: relative;
   z-index: 12;
@@ -274,7 +255,7 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .daily-net-chart-title-block {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: 0.15rem;
   min-width: 0;
 }
 
@@ -309,13 +290,6 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   opacity: 0.8;
 }
 
-.daily-net-chart-caption {
-  margin: 0;
-  font-size: 0.74rem;
-  line-height: 1.35;
-  color: color-mix(in srgb, var(--color-text-muted) 92%, white 8%);
-}
-
 .daily-net-timeframe-toggle {
   display: inline-flex;
   align-items: center;
@@ -330,10 +304,6 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 }
 
 @media (max-width: 900px) {
-  .daily-net-chart-header {
-    border-radius: 18px;
-  }
-
   .daily-net-chart-controls {
     width: 100%;
     justify-content: flex-start;

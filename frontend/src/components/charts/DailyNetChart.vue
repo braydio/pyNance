@@ -13,6 +13,10 @@
 
     <template v-else>
       <div class="daily-net-chart__meta">
+        <div v-if="$slots.title" class="daily-net-chart__title-shell">
+          <slot name="title" />
+        </div>
+
         <div class="daily-net-chart__legend-shell">
           <div
             v-if="legendItems.length"
@@ -74,6 +78,10 @@
             </p>
           </div>
         </section>
+
+        <div v-if="$slots.controls" class="daily-net-chart__controls-shell">
+          <slot name="controls" />
+        </div>
       </div>
 
       <div class="daily-net-chart__canvas-wrap">
@@ -943,6 +951,13 @@ onUnmounted(() => chartInstance.value?.destroy())
   align-items: flex-end;
 }
 
+.daily-net-chart__title-shell {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  min-height: 108px;
+}
+
 .daily-net-chart__legend-item {
   display: inline-flex;
   align-items: center;
@@ -965,8 +980,8 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__meta {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
-  align-items: stretch;
+  grid-template-columns: auto minmax(0, 1fr) 290px auto;
+  align-items: center;
   column-gap: 0.85rem;
   min-height: 124px;
   margin-bottom: 1rem;
@@ -986,6 +1001,13 @@ onUnmounted(() => chartInstance.value?.destroy())
 .daily-net-chart__legend-placeholder {
   width: 100%;
   min-height: 1px;
+}
+
+.daily-net-chart__controls-shell {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 108px;
 }
 
 .daily-net-chart__details {
@@ -1114,7 +1136,9 @@ onUnmounted(() => chartInstance.value?.destroy())
     min-height: 0;
   }
 
+  .daily-net-chart__title-shell,
   .daily-net-chart__legend-shell,
+  .daily-net-chart__controls-shell,
   .daily-net-chart__details {
     min-height: 0;
     max-width: 100%;
