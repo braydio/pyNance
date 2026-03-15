@@ -176,6 +176,16 @@ const DEFAULT_ZOOM_MONTHS = 6
 
 const getStyle = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim()
 
+function formatAxisCurrency(value) {
+  const numericValue = Number(value) || 0
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 0,
+    minimumFractionDigits: 0,
+  }).format(numericValue)
+}
+
 /**
  * Create comparison details for the active point using the existing tooltip math.
  *
@@ -768,7 +778,7 @@ async function renderChart() {
           ticks: {
             color: getStyle('--color-text-muted'),
             font: { family: fontFamily, size: 12 },
-            callback: (value) => formatAmount(value),
+            callback: (value) => formatAxisCurrency(value),
           },
         },
       },
