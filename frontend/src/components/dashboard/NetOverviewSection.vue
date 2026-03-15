@@ -39,7 +39,7 @@
         <TopAccountSnapshot />
       </div>
       <div
-        class="md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
+        class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
         <div class="daily-net-chart-header">
           <h2 class="daily-net-chart-title">
@@ -100,7 +100,7 @@
     </div>
 
     <div
-      class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
+      class="net-overview-summary-panel bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
     >
       <slot name="summary">
         <FinancialSummary
@@ -228,6 +228,18 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   text-align: left;
 }
 
+.daily-net-chart-panel {
+  position: relative;
+  z-index: 8;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.net-overview-summary-panel {
+  position: relative;
+  z-index: 1;
+}
+
 .daily-net-chart-header {
   display: flex;
   align-items: center;
@@ -236,12 +248,16 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   flex-wrap: wrap;
   margin-bottom: 0.4rem;
   width: 100%;
+  position: relative;
+  z-index: 12;
 }
 
 .daily-net-chart-controls {
   display: flex;
   justify-content: flex-end;
   flex: 0 0 auto;
+  position: relative;
+  z-index: 12;
 }
 
 .daily-net-chart-toolbar {
@@ -255,6 +271,8 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   border: 1px solid var(--themed-border);
   background: var(--themed-bg);
   backdrop-filter: blur(6px);
+  position: relative;
+  z-index: 12;
 }
 
 .title-text {

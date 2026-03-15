@@ -174,6 +174,7 @@ onBeforeUnmount(() => {
   pointer-events: auto;
   top: auto;
   right: auto;
+  z-index: 40;
 }
 
 .chart-details-sidebar__toggle {
@@ -214,7 +215,7 @@ onBeforeUnmount(() => {
 .chart-details-sidebar__content {
   pointer-events: auto;
   min-width: 12rem;
-  max-width: 14rem;
+  max-width: min(18rem, calc(100vw - 2rem));
   padding: 0.6rem;
   border-radius: 0.35rem;
   display: grid;
@@ -225,10 +226,18 @@ onBeforeUnmount(() => {
 .chart-details-sidebar--inline .chart-details-sidebar__content {
   position: absolute;
   top: calc(100% + 0.45rem);
-  left: 50%;
-  right: auto;
-  transform: translateX(-50%);
-  z-index: 20;
+  right: 0;
+  left: auto;
+  transform: none;
+  z-index: 50;
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.28);
+}
+
+@media (max-width: 640px) {
+  .chart-details-sidebar--inline .chart-details-sidebar__content {
+    left: 0;
+    right: auto;
+  }
 }
 
 .chart-details-sidebar__heading {
