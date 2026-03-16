@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-10
+Last Updated: 2026-03-15
 Status: Active
 ---
 
@@ -32,6 +32,7 @@ Validate Plaid webhook requests and dispatch downstream sync jobs for transactio
 - `models.PlaidWebhookLog` for logging incoming payloads.
 - `models.PlaidAccount` to resolve affected accounts.
 - `services.plaid_sync.sync_account_transactions` and investment helpers for targeted syncs.
+- `app.sql.account_logic.canonicalize_plaid_products` to parse canonical comma-delimited product scopes.
 
 ## Behaviors/Edge Cases
 
@@ -39,6 +40,7 @@ Validate Plaid webhook requests and dispatch downstream sync jobs for transactio
 - Logs every accepted webhook before invoking sync routines.
 - Dispatches sync routines based on `webhook_type`/`webhook_code` combinations.
 - `TRANSACTIONS` sync webhooks call `plaid_sync.sync_account_transactions(account_id)` for each matching account to honor item-level cursors while preserving per-account failure isolation and triggered-account reporting.
+- `INVESTMENTS_TRANSACTIONS` and `HOLDINGS` webhooks resolve accounts by `item_id`, then filter to accounts whose parsed scopes include `investments` (including canonical mixed scopes like `"investments,transactions"`).
 
 ## Sample Request/Response
 
