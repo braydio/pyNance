@@ -199,8 +199,8 @@
             <div class="bs-stripe"></div>
             <div class="bs-logo-container">
               <img
-                v-if="account.institution_icon_url"
-                :src="account.institution_icon_url"
+                v-if="accountLogoUrl(account)"
+                :src="accountLogoUrl(account)"
                 alt="Bank logo"
                 class="bs-logo"
                 loading="lazy"
@@ -208,14 +208,7 @@
               <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
             <div class="bs-details">
-              <div class="bs-name">
-                <span
-                  class="bs-toggle-icon"
-                  :class="{ 'bs-expanded': openAccountId === accountId(account) }"
-                  >▶</span
-                >
-                {{ account.name }}
-              </div>
+              <div class="bs-name">{{ account.name }}</div>
               <div class="bs-mask">
                 <span v-if="account.mask">•••• {{ mask(account.mask) }}</span>
                 <span
@@ -251,9 +244,6 @@
                 </div>
               </div>
             </div>
-            <div class="bs-sparkline">
-              <AccountSparkline :account-id="accountId(account)" />
-            </div>
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
@@ -270,6 +260,16 @@
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                class="bs-expand-toggle"
+                :class="{ 'is-expanded': openAccountId === accountId(account) }"
+                :aria-label="`${openAccountId === accountId(account) ? 'Collapse' : 'Expand'} recent transactions for ${account.name}`"
+                tabindex="-1"
+                @click.stop="toggleDetails(accountId(account), $event)"
+              >
+                <ChevronRight />
+              </button>
               <X
                 v-if="isEditingGroups"
                 class="bs-account-delete"
@@ -367,8 +367,8 @@
             <div class="bs-stripe"></div>
             <div class="bs-logo-container">
               <img
-                v-if="account.institution_icon_url"
-                :src="account.institution_icon_url"
+                v-if="accountLogoUrl(account)"
+                :src="accountLogoUrl(account)"
                 alt="Bank logo"
                 class="bs-logo"
                 loading="lazy"
@@ -412,9 +412,6 @@
                 </div>
               </div>
             </div>
-            <div class="bs-sparkline">
-              <AccountSparkline :account-id="accountId(account)" />
-            </div>
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
                 <span class="bs-amount" :class="balanceClass(account)">{{
@@ -431,6 +428,16 @@
                   </span>
                 </div>
               </div>
+              <button
+                type="button"
+                class="bs-expand-toggle"
+                :class="{ 'is-expanded': openAccountId === accountId(account) }"
+                :aria-label="`${openAccountId === accountId(account) ? 'Collapse' : 'Expand'} recent transactions for ${account.name}`"
+                tabindex="-1"
+                @click.stop="toggleDetails(accountId(account), $event)"
+              >
+                <ChevronRight />
+              </button>
             </div>
           </div>
           <div v-if="openAccountId === accountId(account)" class="bs-details-row">
@@ -479,10 +486,9 @@
 <script setup>
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import Draggable from 'vuedraggable'
-import { GripVertical, X, Check } from 'lucide-vue-next'
+import { GripVertical, X, Check, ChevronRight } from 'lucide-vue-next'
 import { useTopAccounts } from '@/composables/useTopAccounts'
 import { useAccountGroups } from '@/composables/useAccountGroups'
-import AccountSparkline from './AccountSparkline.vue'
 import { fetchRecentTransactions } from '@/api/accounts'
 
 const groupAccounts = ref([])
@@ -514,6 +520,17 @@ const normalizeAccounts = (list) => {
     normalized.push(normalizedEntry)
   }
   return normalized
+}
+
+function accountLogoUrl(account) {
+  if (!account || typeof account !== 'object') return ''
+  return (
+    account.institution_icon_url ||
+    account.institution_logo_url ||
+    account.logo_url ||
+    account.icon_url ||
+    ''
+  )
 }
 
 function accountsMatch(a, b) {
@@ -1969,7 +1986,7 @@ defineExpose({
 
 .bs-row {
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto;
   align-items: center;
   background: linear-gradient(90deg, var(--color-bg-dark) 80%, var(--color-bg-sec) 100%);
   border-radius: 11px;
@@ -2008,13 +2025,6 @@ defineExpose({
 
 .bs-row:active {
   transform: translateY(0);
-}
-
-.bs-sparkline {
-  width: 96px;
-  height: 36px;
-  align-self: center;
-  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-no-mask-icon {
@@ -2105,26 +2115,6 @@ defineExpose({
   max-width: 100%;
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-}
-
-.bs-toggle-icon {
-  font-size: 0.7rem;
-  color: var(--accent, var(--color-accent-cyan));
-  transition: transform 0.3s ease;
-  display: inline-block;
-  opacity: 0.8;
-  flex-shrink: 0;
-}
-
-.bs-toggle-icon.bs-expanded {
-  transform: rotate(90deg);
-  opacity: 1;
-}
-
-.bs-row:hover .bs-toggle-icon {
-  opacity: 1;
-  color: var(--accent, var(--color-accent-cyan));
 }
 
 .bs-mask {
@@ -2193,7 +2183,7 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 0.35rem;
+  gap: 0.2rem;
   height: 100%;
   z-index: 2;
 }
@@ -2215,6 +2205,41 @@ defineExpose({
   margin-left: 0.2em;
   word-break: keep-all;
   color: var(--color-text-light);
+}
+
+.bs-expand-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, var(--accent, var(--color-accent-cyan)) 78%, white 22%);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.bs-expand-toggle svg {
+  width: 0.95rem;
+  height: 0.95rem;
+  transition: transform 0.18s ease;
+}
+
+.bs-expand-toggle.is-expanded svg {
+  transform: rotate(90deg);
+}
+
+.bs-row:hover .bs-expand-toggle,
+.bs-expand-toggle:focus-visible {
+  background: color-mix(in srgb, var(--accent, var(--color-accent-cyan)) 16%, transparent);
+  color: var(--color-text-light);
+  outline: none;
 }
 
 .bs-utilization {

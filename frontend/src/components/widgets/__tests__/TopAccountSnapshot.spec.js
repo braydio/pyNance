@@ -27,7 +27,14 @@ ensureMockStorage()
 
 // Sample data (hoisted for use inside mocks)
 const sampleAccounts = vi.hoisted(() => [
-  { id: 'acc-1', account_id: 'acc-1', name: 'Account 1', adjusted_balance: 1, mask: '1111' },
+  {
+    id: 'acc-1',
+    account_id: 'acc-1',
+    name: 'Account 1',
+    adjusted_balance: 1,
+    mask: '1111',
+    logo_url: 'https://example.com/bank-logo.svg',
+  },
   { id: 'acc-2', account_id: 'acc-2', name: 'Account 2', adjusted_balance: 2, mask: '2222' },
 ])
 
@@ -151,11 +158,6 @@ vi.mock('@/api/accounts', () => ({
   fetchRecentTransactions: vi.fn(async () => ({ transactions: [] })),
 }))
 
-const sparklineStub = {
-  name: 'AccountSparkline',
-  template: '<div class=\"spark\"></div>',
-}
-
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem(
@@ -169,28 +171,24 @@ beforeEach(() => {
 
 describe('TopAccountSnapshot', () => {
   it('renders account rows with individual balances', async () => {
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
     const rows = wrapper.findAll('.bs-account-container .bs-row')
     expect(rows.length).toBeGreaterThanOrEqual(2)
     expect(rows[0].text()).toContain('Account 1')
     expect(rows[0].text()).toMatch(/\$1\.00/)
+    expect(wrapper.find('.bs-sparkline').exists()).toBe(false)
+    expect(rows[0].find('.bs-expand-toggle').exists()).toBe(true)
   })
 
   it('shows total balance pill for visible accounts', async () => {
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
     expect(wrapper.find('.bs-banner-value').text()).toContain('$3.00')
   })
 
   it('toggles edit mode from the group menu and emits update', async () => {
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     const switchBtn = wrapper.find('button.bs-group-btn')
     await switchBtn.trigger('click')
     const editBtn = wrapper.find('.bs-group-item.bs-group-action')
@@ -202,9 +200,7 @@ describe('TopAccountSnapshot', () => {
   })
 
   it('collapses the group dropdown after selecting a group', async () => {
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
     const firstGroupId = wrapper.vm.activeGroupId?.value || wrapper.vm.groups?.value?.[0]?.id
     wrapper.vm.showGroupMenu = true
@@ -251,9 +247,7 @@ describe('TopAccountSnapshot', () => {
         activeGroupId: 'group-1',
       }),
     )
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
     const amounts = wrapper.findAll('.bs-account-container .bs-amount')
     expect(amounts).toHaveLength(4)
@@ -296,9 +290,7 @@ describe('TopAccountSnapshot', () => {
         activeGroupId: 'group-1',
       }),
     )
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
 
     const creditLimitRow = wrapper
@@ -353,9 +345,7 @@ describe('TopAccountSnapshot', () => {
       }),
     )
 
-    const wrapper = mount(TopAccountSnapshot, {
-      global: { stubs: { AccountSparkline: sparklineStub } },
-    })
+    const wrapper = mount(TopAccountSnapshot)
     await nextTick()
 
     const accountRows = wrapper.findAll('.bs-account-container')
@@ -369,5 +359,14 @@ describe('TopAccountSnapshot', () => {
 
     expect(wrapper.find('.bs-banner-value').text()).toContain('$130.25')
     expect(currentOnlyRow?.find('.bs-amount').classes()).toContain('bs-balance-neg')
+  })
+
+  it('renders the institution logo when a supported logo field is present', async () => {
+    const wrapper = mount(TopAccountSnapshot)
+    await nextTick()
+
+    const logo = wrapper.find('.bs-account-container .bs-logo')
+    expect(logo.exists()).toBe(true)
+    expect(logo.attributes('src')).toBe('https://example.com/bank-logo.svg')
   })
 })
