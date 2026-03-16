@@ -2,7 +2,8 @@ import { defineComponent } from 'vue'
 import { useTopAccounts } from '../useTopAccounts'
 
 const TestComponent = defineComponent({
-  template: '<div><div class="row" v-for="acc in positiveAccounts" :key="acc.id">{{ acc.name }}</div></div>',
+  template:
+    '<div><div class="row" v-for="acc in positiveAccounts" :key="acc.id">{{ acc.name }}</div></div>',
   setup() {
     const { positiveAccounts } = useTopAccounts()
     return { positiveAccounts }

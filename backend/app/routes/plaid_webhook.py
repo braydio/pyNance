@@ -12,6 +12,7 @@ from app.helpers.plaid_helpers import get_investment_transactions
 from app.models import Account, PlaidAccount, PlaidWebhookLog
 from app.services import plaid_sync
 from app.sql import investments_logic
+from app.sql.account_logic import canonicalize_plaid_products
 from flask import Blueprint, Request, jsonify, request
 from sqlalchemy.orm import joinedload
 
@@ -84,6 +85,14 @@ class WebhookMetrics:
 webhook_metrics = WebhookMetrics()
 
 plaid_webhooks = Blueprint("plaid_webhooks", __name__)
+
+
+def _has_investments_scope(plaid_account: PlaidAccount) -> bool:
+    """Return whether a Plaid account includes the investments product scope."""
+
+    return "investments" in set(
+        canonicalize_plaid_products(getattr(plaid_account, "product", None))
+    )
 
 
 def _verify_plaid_signature(req: Request) -> tuple[bool, str | None]:
@@ -280,9 +289,11 @@ def handle_plaid_webhook():
         end_date = date.today().isoformat()
         start_date = (date.today() - timedelta(days=30)).isoformat()
 
-        accounts = PlaidAccount.query.filter_by(
-            item_id=item_id, product="investments"
-        ).all()
+        accounts = [
+            plaid_account
+            for plaid_account in PlaidAccount.query.filter_by(item_id=item_id).all()
+            if _has_investments_scope(plaid_account)
+        ]
         triggered = []
         for pa in accounts:
             try:
@@ -303,9 +314,11 @@ def handle_plaid_webhook():
             logger.warning("Holdings webhook missing item_id; cannot dispatch refresh")
             return jsonify({"status": "ignored"}), 200
 
-        accounts = PlaidAccount.query.filter_by(
-            item_id=item_id, product="investments"
-        ).all()
+        accounts = [
+            plaid_account
+            for plaid_account in PlaidAccount.query.filter_by(item_id=item_id).all()
+            if _has_investments_scope(plaid_account)
+        ]
         triggered = []
         for pa in accounts:
             try:

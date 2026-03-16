@@ -76,18 +76,18 @@ and action chips:
 - `--accent-primary-contrast`: readable foreground color on active accent fills.
 - `--accent-surface`: accent-tinted resting surface used in gradients.
 
-The shared utility class `.gradient-toggle-btn` in `frontend/src/assets/css/main.css` is the
-canonical implementation of this baseline. Build new accent controls from this utility before
+The shared utility class `.accent-toggle-btn` in `frontend/src/assets/css/main.css` is the
+canonical implementation of this baseline (with `.gradient-toggle-btn` retained as a compatibility alias). Build new accent controls from `.accent-toggle-btn` before
 adding component-local variants.
 
 ### Accent migration quick reference (do / don't)
 
-| Do                                                                                      | Don’t                                                                                                     |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| Use `.gradient-toggle-btn` for timeframe toggles, overlay triggers, and detail toggles. | Recreate one-off toggle button classes with hardcoded gradients per component.                            |
-| Use `--accent-primary` and `--accent-primary-strong` for border + active states.        | Use component-local `--color-accent-yellow` / `--color-accent-cyan` as the primary control border tokens. |
-| Use `--accent-primary-contrast` for text on active/accent-filled states.                | Use ad hoc text tokens for active controls when `--accent-primary-contrast` applies.                      |
-| Use `--accent-surface` as the gradient start for resting accent controls.               | Start resting control gradients directly from unrelated chart/series colors.                              |
+| Do                                                                                                                                                  | Don’t                                                                                                     |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| Use `.accent-toggle-btn` (and `.accent-toggle-btn--active`) for timeframe toggles, overlay triggers, detail toggles, and shared dashboard controls. | Recreate one-off toggle button classes with hardcoded gradients per component.                            |
+| Use `--accent-primary` and `--accent-primary-strong` for border + active states.                                                                    | Use component-local `--color-accent-yellow` / `--color-accent-cyan` as the primary control border tokens. |
+| Use `--accent-primary-contrast` for text on active/accent-filled states.                                                                            | Use ad hoc text tokens for active controls when `--accent-primary-contrast` applies.                      |
+| Use `--accent-surface` as the gradient start for resting accent controls.                                                                           | Start resting control gradients directly from unrelated chart/series colors.                              |
 
 Legacy aliases (`--primary`, `--primary-dark`) remain for backward compatibility, but new control
 work should rely on the `--accent-*` token family.

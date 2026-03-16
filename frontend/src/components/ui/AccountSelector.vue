@@ -5,24 +5,24 @@
       <div class="selection-info">
         <h3 class="selector-title">Account Filter</h3>
         <p class="selection-count" v-if="availableAccounts.length > 0">
-          {{ hasSelection ? `${selectedAccountIds.length} of ${availableAccounts.length} selected` : 'All accounts' }}
+          {{
+            hasSelection
+              ? `${selectedAccountIds.length} of ${availableAccounts.length} selected`
+              : 'All accounts'
+          }}
         </p>
       </div>
-      
+
       <!-- Quick actions -->
       <div class="quick-actions" v-if="availableAccounts.length > 0">
-        <button 
-          @click="selectAll" 
+        <button
+          @click="selectAll"
           class="action-btn"
           :disabled="selectedAccountIds.length === availableAccounts.length"
         >
           Select All
         </button>
-        <button 
-          @click="deselectAll" 
-          class="action-btn"
-          :disabled="selectedAccountIds.length === 0"
-        >
+        <button @click="deselectAll" class="action-btn" :disabled="selectedAccountIds.length === 0">
           Clear
         </button>
         <button @click="selectAccountsByType('depository')" class="action-btn type-btn">
@@ -48,22 +48,22 @@
 
     <!-- Account grid -->
     <div v-else-if="availableAccounts.length > 0" class="accounts-grid">
-      <div 
-        v-for="account in availableAccounts" 
+      <div
+        v-for="account in availableAccounts"
         :key="account.id"
         class="account-card"
-        :class="{ 
-          'selected': selectedAccountIds.includes(account.id),
-          'asset': account.balance >= 0,
-          'liability': account.balance < 0
+        :class="{
+          selected: selectedAccountIds.includes(account.id),
+          asset: account.balance >= 0,
+          liability: account.balance < 0,
         }"
         @click="toggleAccount(account.id)"
       >
         <div class="account-header">
           <div class="account-icon">
-            <img 
-              v-if="account.institution_icon_url" 
-              :src="account.institution_icon_url" 
+            <img
+              v-if="account.institution_icon_url"
+              :src="account.institution_icon_url"
               :alt="account.institution_name || 'Bank'"
               class="icon-img"
             />
@@ -80,15 +80,27 @@
           </div>
           <div class="selection-indicator">
             <div class="checkbox" :class="{ checked: selectedAccountIds.includes(account.id) }">
-              <svg v-if="selectedAccountIds.includes(account.id)" class="check-icon" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+              <svg
+                v-if="selectedAccountIds.includes(account.id)"
+                class="check-icon"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path
+                  fill-rule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clip-rule="evenodd"
+                />
               </svg>
             </div>
           </div>
         </div>
-        
+
         <div class="account-balance">
-          <span class="balance-amount" :class="{ positive: account.balance >= 0, negative: account.balance < 0 }">
+          <span
+            class="balance-amount"
+            :class="{ positive: account.balance >= 0, negative: account.balance < 0 }"
+          >
             {{ formatBalance(account.balance) }}
           </span>
           <span class="balance-label">{{ account.balance >= 0 ? 'Asset' : 'Liability' }}</span>
@@ -110,15 +122,15 @@ const props = defineProps({
   selectedAccountIds: { type: Array, required: true },
   availableAccounts: { type: Array, required: true },
   loading: { type: Boolean, default: false },
-  error: { type: String, default: null }
+  error: { type: String, default: null },
 })
 
 const emit = defineEmits([
   'toggle-account',
   'select-all',
-  'deselect-all', 
+  'deselect-all',
   'select-accounts-by-type',
-  'fetch-accounts'
+  'fetch-accounts',
 ])
 
 // Computed
@@ -149,14 +161,15 @@ function formatBalance(amount) {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0
+    maximumFractionDigits: 0,
   }).format(Math.abs(amount))
 }
 
 function initials(name) {
   if (!name) return '??'
-  return name.split(' ')
-    .map(word => word[0])
+  return name
+    .split(' ')
+    .map((word) => word[0])
     .join('')
     .toUpperCase()
     .slice(0, 2)
@@ -235,7 +248,8 @@ function initials(name) {
 }
 
 /* States */
-.loading-state, .error-state {
+.loading-state,
+.error-state {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -253,8 +267,12 @@ function initials(name) {
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .error-state {
@@ -454,17 +472,17 @@ function initials(name) {
   .account-selector {
     padding: 1rem;
   }
-  
+
   .selector-header {
     flex-direction: column;
     align-items: stretch;
     gap: 1rem;
   }
-  
+
   .quick-actions {
     justify-content: center;
   }
-  
+
   .accounts-grid {
     grid-template-columns: 1fr;
     max-height: 300px;

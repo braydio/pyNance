@@ -313,3 +313,87 @@ def test_sync_paths_share_transfer_classifier_for_brokerage_funding(
     assert via_refresh is not None
     assert via_refresh.transfer_type == "brokerage_funding"
     assert via_refresh.is_internal is True
+
+
+def test_upsert_transaction_estimates_apr_from_interest_charges(app_context):
+    """Credit-card interest charges should backfill account APR estimates."""
+
+    account = Account(
+        account_id="acc-apr-1",
+        user_id="user-1",
+        name="Travel Card",
+        type="credit",
+        subtype="credit card",
+        balance=Decimal("1000.00"),
+    )
+    plaid_account = PlaidAccount(
+        account_id="acc-apr-1",
+        item_id="item-apr-1",
+        access_token="token",
+    )
+    db.session.add_all([account, plaid_account])
+    db.session.commit()
+
+    tx = {
+        "transaction_id": "tx-apr-1",
+        "account_id": "acc-apr-1",
+        "amount": 20.0,
+        "date": "2024-04-01",
+        "name": "INTEREST CHARGE",
+        "description": "Interest Charge",
+        "merchant_name": "",
+        "category": ["Bank Fees", "Interest"],
+        "payment_meta": {"payment_method": "card"},
+    }
+
+    plaid_sync = _load_backend_module(
+        "app/services/plaid_sync.py", "apr_interest_plaid_sync"
+    )
+    plaid_sync._upsert_transaction(tx, account, plaid_account)
+    db.session.commit()
+
+    refreshed = Account.query.filter_by(account_id="acc-apr-1").first()
+    assert refreshed is not None
+    assert float(refreshed.apr) == pytest.approx(24.4898, abs=1e-4)
+
+
+def test_upsert_transaction_does_not_set_apr_for_non_interest_categories(app_context):
+    """Non-interest transactions should not mutate APR estimates."""
+
+    account = Account(
+        account_id="acc-apr-2",
+        user_id="user-1",
+        name="Travel Card",
+        type="credit",
+        subtype="credit card",
+        balance=Decimal("1000.00"),
+    )
+    plaid_account = PlaidAccount(
+        account_id="acc-apr-2",
+        item_id="item-apr-2",
+        access_token="token",
+    )
+    db.session.add_all([account, plaid_account])
+    db.session.commit()
+
+    tx = {
+        "transaction_id": "tx-apr-2",
+        "account_id": "acc-apr-2",
+        "amount": 50.0,
+        "date": "2024-04-01",
+        "name": "DINNER",
+        "description": "Restaurant charge",
+        "merchant_name": "",
+        "category": ["Food and Drink", "Restaurants"],
+        "payment_meta": {"payment_method": "card"},
+    }
+
+    plaid_sync = _load_backend_module(
+        "app/services/plaid_sync.py", "apr_non_interest_plaid_sync"
+    )
+    plaid_sync._upsert_transaction(tx, account, plaid_account)
+    db.session.commit()
+
+    refreshed = Account.query.filter_by(account_id="acc-apr-2").first()
+    assert refreshed is not None
+    assert refreshed.apr is None

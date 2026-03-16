@@ -48,9 +48,9 @@
           class="flex flex-col gap-4 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
           aria-busy="true"
         >
-          <div class="h-6 w-1/3 bg-[var(--divider)] rounded mb-2"></div>
-          <div class="h-4 w-1/4 bg-[var(--divider)] rounded mb-2"></div>
-          <div class="h-4 w-1/2 bg-[var(--divider)] rounded mb-4"></div>
+          <div class="h-6 w-1/3 bg-[var(--divider)] rounded mb-2" />
+          <div class="h-4 w-1/4 bg-[var(--divider)] rounded mb-2" />
+          <div class="h-4 w-1/2 bg-[var(--divider)] rounded mb-4" />
           <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
             <SkeletonCard />
             <div class="md:col-span-2">
@@ -87,7 +87,7 @@
             data-testid="breakdown-skeleton"
             class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
           >
-            <div class="h-6 w-40 bg-[var(--divider)] rounded mb-4"></div>
+            <div class="h-6 w-40 bg-[var(--divider)] rounded mb-4" />
             <div class="grid grid-cols-2 gap-3">
               <SkeletonCard />
               <SkeletonCard />
@@ -98,25 +98,30 @@
     </InsightsRow>
 
     <!-- REVIEW TRANSACTIONS CARD -->
-    <div
-      class="review-cta-card bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-purple)] p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-    >
-      <div>
-        <div class="flex flex-wrap items-center gap-3">
-          <h2 class="text-xl font-bold text-[var(--color-text-light)]">Review Transactions</h2>
-          <span
-            class="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-indigo)]/50 bg-[var(--color-bg-dark)]/40 px-3 py-1 text-xs font-semibold text-[var(--color-text-light)]"
-          >
-            <span class="h-2 w-2 rounded-full bg-[var(--color-accent-indigo)]"></span>
-            {{ reviewCountLabel }}
-          </span>
+    <div class="review-cta-card dashboard-panel p-6 md:p-7">
+      <div class="dashboard-panel-header gap-6">
+        <div class="space-y-3">
+          <div class="dashboard-panel-kicker">Review Workflow</div>
+          <div class="flex flex-wrap items-center gap-3">
+            <h2 class="dashboard-panel-title">Review Transactions</h2>
+            <span class="dashboard-status-pill">
+              <span class="dashboard-status-dot" />
+              {{ reviewCountLabel }}
+            </span>
+          </div>
+          <p class="dashboard-panel-copy">
+            Step through transactions in batches of 10, approve quickly, or edit in place without
+            leaving the dashboard.
+          </p>
         </div>
-        <p class="text-muted">
-          Step through transactions in batches of 10, approve quickly, or edit in place without
-          leaving the dashboard.
-        </p>
-        <div class="mt-3 flex flex-col gap-2 max-w-sm">
-          <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+        <div class="review-cta-meta">
+          <span class="review-cta-meta-label">Workflow</span>
+          <span class="review-cta-meta-value">Batch / inline edits / tag filter</span>
+        </div>
+      </div>
+      <div class="review-cta-grid">
+        <div class="mt-1 flex flex-col gap-2 max-w-sm">
+          <label class="text-xs uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
             Tag filter
           </label>
           <input
@@ -126,42 +131,56 @@
             placeholder="Optional tag (e.g., #groceries)"
           />
         </div>
+        <div class="review-cta-action-wrap">
+          <button class="btn btn-outline review-start-btn" @click="openReviewModal">
+            Start Review
+          </button>
+        </div>
       </div>
-      <button class="btn btn-outline review-start-btn" @click="openReviewModal">
-        Start Review
-      </button>
     </div>
 
     <!-- RESERVED TABLES PANEL -->
     <div
       data-testid="tables-panel"
-      class="relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-xl flex flex-col justify-center items-stretch overflow-hidden"
+      class="dashboard-panel tables-panel-shell relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] overflow-hidden"
     >
       <transition name="accordion">
         <div
           v-if="!accountsExpanded && !transactionsExpanded"
           data-testid="tables-panel-cta"
-          class="flex flex-col items-stretch justify-center gap-6 sm:flex-row sm:items-center sm:justify-between sm:gap-8 w-full h-full p-6 sm:p-10 lg:p-12"
+          class="flex h-full w-full flex-col justify-center gap-8 p-6 sm:p-10 lg:p-12"
         >
-          <button
-            @click="expandAccounts"
-            class="flex-1 w-full sm:w-auto flex items-center justify-center gap-3 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-cyan)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-sec)] transition text-center"
-          >
-            <Wallet class="w-7 h-7" />
-            <span>Accounts</span>
-          </button>
-          <span
-            class="mx-8 text-lg font-light text-[var(--color-text-muted)] select-none"
-            aria-hidden="true"
-            >or</span
-          >
-          <button
-            @click="expandTransactions"
-            class="flex-1 w-full sm:w-auto flex items-center justify-center gap-3 text-2xl font-bold px-8 py-8 rounded-2xl border-2 border-[var(--color-accent-red)] bg-[var(--color-bg-sec)] shadow-lg hover:bg-[var(--color-accent-red)] hover:text-[var(--color-bg-sec)] transition text-center"
-          >
-            <CreditCard class="w-7 h-7" />
-            <span>Transactions</span>
-          </button>
+          <div class="dashboard-panel-header gap-4">
+            <div class="space-y-2">
+              <div class="dashboard-panel-kicker">Drill Down</div>
+              <h2 class="dashboard-panel-title">Choose a lower dashboard surface</h2>
+              <p class="dashboard-panel-copy mb-0">
+                Open either the account ledger or the transaction queue from the same panel shell.
+              </p>
+            </div>
+          </div>
+          <div class="tables-panel-grid">
+            <button
+              class="tables-panel-option tables-panel-option--accounts"
+              @click="expandAccounts"
+            >
+              <div class="tables-panel-option-header">
+                <Wallet class="w-7 h-7" />
+                <span>Accounts</span>
+              </div>
+              <p>Balances, linked institutions, and account-level drill downs.</p>
+            </button>
+            <button
+              class="tables-panel-option tables-panel-option--transactions"
+              @click="expandTransactions"
+            >
+              <div class="tables-panel-option-header">
+                <CreditCard class="w-7 h-7" />
+                <span>Transactions</span>
+              </div>
+              <p>Searchable activity history, pagination, and review handoff.</p>
+            </button>
+          </div>
         </div>
       </transition>
       <transition name="modal-fade-slide">
@@ -175,8 +194,8 @@
               class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
               aria-busy="true"
             >
-              <div class="h-6 w-48 bg-[var(--divider)] rounded mb-4"></div>
-              <div class="h-[55vh] bg-[var(--divider)] rounded"></div>
+              <div class="h-6 w-48 bg-[var(--divider)] rounded mb-4" />
+              <div class="h-[55vh] bg-[var(--divider)] rounded" />
             </section>
           </template>
         </Suspense>
@@ -189,11 +208,11 @@
               :sort-key="sortKey"
               :sort-order="sortOrder"
               :search="searchQuery"
-              @sort="setSort"
               :current-page="currentPage"
               :total-pages="totalPages"
               :page-size="pageSize"
               :total-count="totalCount"
+              @sort="setSort"
               @change-page="changePage"
               @set-page="setPage"
               @close="collapseTables"
@@ -205,8 +224,8 @@
               class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
               aria-busy="true"
             >
-              <div class="h-6 w-56 bg-[var(--divider)] rounded mb-4"></div>
-              <div class="h-[55vh] bg-[var(--divider)] rounded"></div>
+              <div class="h-6 w-56 bg-[var(--divider)] rounded mb-4" />
+              <div class="h-[55vh] bg-[var(--divider)] rounded" />
             </section>
           </template>
         </Suspense>
@@ -676,6 +695,45 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
   );
 }
 
+.review-cta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: end;
+  margin-top: 1.25rem;
+}
+
+.review-cta-meta {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 15rem;
+  padding: 0.9rem 1rem;
+  border-radius: 1rem;
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 28%, var(--divider));
+  background: color-mix(in srgb, var(--color-bg-dark) 76%, transparent);
+}
+
+.review-cta-meta-label {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-cyan);
+}
+
+.review-cta-meta-value {
+  color: color-mix(in srgb, var(--color-text-light) 78%, var(--color-text-muted));
+  font-size: 0.85rem;
+}
+
+.review-cta-action-wrap {
+  display: flex;
+  align-items: end;
+  justify-content: flex-start;
+}
+
 .review-filter-input {
   min-height: 2.4rem;
   border-color: color-mix(in srgb, var(--color-accent-purple) 38%, var(--divider));
@@ -688,8 +746,9 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
 
 .review-start-btn {
   min-width: 9.75rem;
+  min-height: 3rem;
   justify-content: center;
-  border-radius: 0.75rem;
+  border-radius: 1rem;
   border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--color-accent-purple));
   color: var(--color-accent-cyan);
 }
@@ -701,5 +760,105 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
     var(--color-accent-purple) 100%
   );
   color: var(--color-bg-dark);
+}
+
+.tables-panel-shell {
+  min-height: 55vh;
+}
+
+.tables-panel-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+.tables-panel-option {
+  display: flex;
+  min-height: 13rem;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  border-radius: 1.25rem;
+  border: 1px solid var(--divider);
+  padding: 1.5rem;
+  text-align: left;
+  transition:
+    transform 0.22s ease,
+    border-color 0.22s ease,
+    box-shadow 0.22s ease,
+    background-color 0.22s ease;
+}
+
+.tables-panel-option:hover {
+  transform: translateY(-2px);
+}
+
+.tables-panel-option p {
+  margin: 0;
+  color: color-mix(in srgb, var(--color-text-light) 76%, var(--color-text-muted));
+  font-size: 0.9rem;
+  line-height: 1.65;
+}
+
+.tables-panel-option-header {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.tables-panel-option--accounts {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-accent-cyan) 18%, var(--color-bg-dark)) 0%,
+    color-mix(in srgb, var(--color-bg-sec) 88%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--divider));
+  color: var(--color-accent-cyan);
+}
+
+.tables-panel-option--accounts:hover {
+  box-shadow: 0 16px 32px rgba(14, 31, 44, 0.44);
+}
+
+.tables-panel-option--transactions {
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--color-accent-red) 16%, var(--color-bg-dark)) 0%,
+    color-mix(in srgb, var(--color-bg-sec) 88%, transparent) 100%
+  );
+  border-color: color-mix(in srgb, var(--color-accent-red) 52%, var(--divider));
+  color: var(--color-accent-red);
+}
+
+.tables-panel-option--transactions:hover {
+  box-shadow: 0 16px 32px rgba(44, 14, 20, 0.42);
+}
+
+@media (min-width: 768px) {
+  .review-cta-grid {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .review-cta-action-wrap {
+    justify-content: flex-end;
+  }
+
+  .tables-panel-shell {
+    min-height: 60vh;
+  }
+
+  .tables-panel-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .tables-panel-shell {
+    min-height: 65vh;
+  }
 }
 </style>

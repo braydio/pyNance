@@ -11,6 +11,7 @@
 - Internal helpers:
   - [`_upsert_transaction(tx, account, plaid_acct)`](../../../../backend/app/services/plaid_sync.py): Applies transaction rules, maps Plaid categories to [`Category` models](../../../../backend/app/models.py), refreshes metadata via [`refresh_or_insert_plaid_metadata`](../../../../backend/app/sql/refresh_metadata.py), and detects internal transfers through [`detect_internal_transfer`](../../../../backend/app/sql/account_logic.py).
   - [`_apply_removed(removed)`](../../../../backend/app/services/plaid_sync.py): Deletes transactions that Plaid reports as removed to maintain parity with the external feed.
+- [`_transactions_sync_with_retry(req, account_id, item_id, ...)`](../../../../backend/app/services/plaid_sync.py): Wraps Plaid SDK calls with bounded exponential backoff for transient Plaid error codes (`PRODUCT_NOT_READY`, `RATE_LIMIT_EXCEEDED`, `INSTITUTION_DOWN`) and logs structured sync context (`account_id`, `item_id`, `attempt`, `attempt_count`, `max_attempts`, `error_code`) without including access tokens.
 
 ## Dependencies & Collaborators
 
@@ -42,3 +43,14 @@ Both ingestion paths therefore emit the same metadata contract:
 - `is_internal`: existing boolean exclusion flag used across analytics.
 - `transfer_type`: explicit classifier output (`brokerage_funding`, `checking_savings_transfer`, or generic `internal_transfer`).
 - `internal_transfer_flag`: model alias for compatibility-sensitive consumers.
+
+
+## APR inference fallback for credit accounts
+
+When Plaid account payloads do not provide APR, `_upsert_transaction` now attempts to infer APR for liability-style accounts (`credit card`, `credit`, `loan`, `liability`) from observed interest-charge transactions. Detection uses:
+
+- description tokens containing `interest charge` or `interest`; or
+- category path `Bank Fees -> Interest`; or
+- Plaid PFC detailed category `BANK_FEES_INTEREST`.
+
+The estimate annualizes a monthly interest ratio against the approximated pre-charge balance and persists the result to `Account.apr` so account payloads can display a best-effort APR in the UI.

@@ -6,6 +6,8 @@ removed transactions inside a single DB transaction and persists the cursor.
 
 from __future__ import annotations
 
+import json
+import time
 from datetime import date, datetime, timezone
 from typing import Dict, List, Optional
 
@@ -23,6 +25,171 @@ try:
     from plaid.model.transactions_sync_request import TransactionsSyncRequest
 except Exception:  # pragma: no cover - allow older SDKs
     TransactionsSyncRequest = None  # type: ignore
+
+
+TRANSIENT_PLAID_ERROR_CODES = {
+    "PRODUCT_NOT_READY",
+    "RATE_LIMIT_EXCEEDED",
+    "INSTITUTION_DOWN",
+}
+
+
+CREDIT_ACCOUNT_TYPES = {"credit card", "credit", "loan", "liability"}
+INTEREST_DESCRIPTION_TOKENS = ("interest charge", "interest")
+INTEREST_PFC_CATEGORIES = {"BANK_FEES_INTEREST"}
+
+
+def _is_credit_account(account: Account) -> bool:
+    """Return ``True`` when account type metadata indicates a liability account."""
+
+    account_type = str(getattr(account, "type", "") or "").strip().lower()
+    subtype = str(getattr(account, "subtype", "") or "").strip().lower()
+    return account_type in CREDIT_ACCOUNT_TYPES or subtype in CREDIT_ACCOUNT_TYPES
+
+
+def _is_interest_charge_transaction(tx: dict) -> bool:
+    """Determine whether a transaction represents an interest charge."""
+
+    description = str(tx.get("name") or tx.get("description") or "").strip().lower()
+    if any(token in description for token in INTEREST_DESCRIPTION_TOKENS):
+        return True
+
+    pfc = tx.get("personal_finance_category") or {}
+    pfc_detailed = str(pfc.get("detailed") or "").upper()
+    if pfc_detailed in INTEREST_PFC_CATEGORIES:
+        return True
+
+    category_path = [
+        str(value or "").strip().lower() for value in (tx.get("category") or [])
+    ]
+    return category_path[:2] == ["bank fees", "interest"]
+
+
+def _estimate_interest_apr(account: Account, tx: dict) -> float | None:
+    """Estimate APR from an observed interest charge transaction.
+
+    The estimate assumes the incoming transaction represents a monthly interest
+    charge and annualizes that ratio against the approximated balance before the
+    interest posted.
+    """
+
+    try:
+        amount = abs(float(tx.get("amount") or 0))
+    except (TypeError, ValueError):
+        return None
+
+    if amount <= 0:
+        return None
+
+    try:
+        current_balance = abs(float(account.balance or 0))
+    except (TypeError, ValueError):
+        return None
+
+    # For liabilities, Plaid interest is usually posted as a positive amount
+    # that increases the amount owed. Back it out to approximate pre-charge balance.
+    balance_before_charge = current_balance - amount
+    if balance_before_charge <= 0:
+        balance_before_charge = current_balance
+    if balance_before_charge <= 0:
+        return None
+
+    monthly_rate = amount / balance_before_charge
+    apr_percent = monthly_rate * 12 * 100
+    return round(apr_percent, 4)
+
+
+def _update_account_apr_from_interest_charge(account: Account, tx: dict) -> None:
+    """Update account APR using interest transactions when provider APR is unavailable."""
+
+    if not _is_credit_account(account):
+        return
+    if not _is_interest_charge_transaction(tx):
+        return
+
+    estimated_apr = _estimate_interest_apr(account, tx)
+    if estimated_apr is None:
+        return
+
+    account.apr = estimated_apr
+
+
+def _extract_plaid_error_code(error: Exception) -> Optional[str]:
+    """Extract Plaid ``error_code`` from known exception payload shapes.
+
+    Plaid client exceptions often expose ``error_code`` directly or encode
+    details in a JSON ``body`` payload.
+    """
+
+    direct_code = getattr(error, "error_code", None)
+    if direct_code:
+        return str(direct_code)
+
+    body = getattr(error, "body", None)
+    if not body:
+        return None
+
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="ignore")
+
+    if isinstance(body, str):
+        try:
+            body = json.loads(body)
+        except json.JSONDecodeError:
+            return None
+
+    if isinstance(body, dict):
+        code = body.get("error_code")
+        return str(code) if code else None
+
+    return None
+
+
+def _transactions_sync_with_retry(
+    req: TransactionsSyncRequest,
+    *,
+    account_id: str,
+    item_id: Optional[str],
+    max_attempts: int = 3,
+    initial_backoff_seconds: float = 0.5,
+):
+    """Call Plaid ``transactions_sync`` with bounded retries for transient errors.
+
+    The helper retries only known transient Plaid ``error_code`` values and
+    re-raises all non-transient errors immediately.
+    """
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            return plaid_client.transactions_sync(req)
+        except Exception as error:
+            error_code = _extract_plaid_error_code(error)
+            is_transient = error_code in TRANSIENT_PLAID_ERROR_CODES
+            log_context = {
+                "account_id": account_id,
+                "item_id": item_id,
+                "attempt": attempt,
+                "attempt_count": attempt,
+                "max_attempts": max_attempts,
+                "error_code": error_code,
+            }
+
+            if not is_transient:
+                logger.error(
+                    "[SYNC] Plaid transactions_sync non-transient failure",
+                    extra=log_context,
+                )
+                raise
+
+            logger.warning(
+                "[SYNC] Plaid transactions_sync transient failure",
+                extra=log_context,
+            )
+
+            if attempt == max_attempts:
+                raise
+
+            time.sleep(initial_backoff_seconds * (2 ** (attempt - 1)))
 
 
 def _parse_txn_date(val) -> datetime:
@@ -82,6 +249,8 @@ def _upsert_transaction(
         "payment_method"
     ) or "Unknown"
     pending = bool(tx.get("pending", False))
+
+    _update_account_apr_from_interest_charge(account, tx)
 
     existing = Transaction.query.filter_by(transaction_id=txn_id).first()
     if existing:
@@ -205,7 +374,9 @@ def sync_account_transactions(account_id: str) -> Dict:
         if next_cursor:
             req_kwargs["cursor"] = next_cursor
         req = TransactionsSyncRequest(**req_kwargs)
-        resp = plaid_client.transactions_sync(req)
+        resp = _transactions_sync_with_retry(
+            req, account_id=account_id, item_id=item_id
+        )
         data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
 
         added = data.get("added", [])

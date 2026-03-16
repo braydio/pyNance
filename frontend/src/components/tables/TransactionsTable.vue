@@ -84,23 +84,19 @@
             <!-- Date -->
             <td class="cell font-mono text-xs cell-muted">{{ formatDate(tx.date) }}</td>
             <!-- Category -->
-            <td class="cell text-center">
-              <img
-                v-if="tx.category_icon_url"
-                :src="tx.category_icon_url"
-                alt="category icon"
-                class="h-5 w-5 mx-auto"
-                loading="lazy"
-              />
-              <span
-                v-else
-                :class="[
-                  'inline-block rounded-xl border border-[var(--divider)] bg-[var(--color-bg-secondary)]',
-                  'px-3 py-1 text-xs font-semibold text-[color:var(--color-accent-blue)] tracking-wide shadow-sm',
-                ]"
-              >
-                {{ formatCategory(tx) }}
-              </span>
+            <td class="cell">
+              <div class="category-cell">
+                <img
+                  v-if="tx.category_icon_url"
+                  :src="tx.category_icon_url"
+                  alt="category icon"
+                  class="h-5 w-5 flex-shrink-0"
+                  loading="lazy"
+                />
+                <span class="category-chip">
+                  {{ formatCategory(tx) }}
+                </span>
+              </div>
             </td>
             <!-- Merchant: Description -->
             <td class="cell font-medium truncate max-w-xs">
@@ -396,7 +392,7 @@ export default {
         ? ''
         : str
             .toLowerCase()
-            .replace(/([^\s\/-]+)(?=[\s\/-]?)/g, (w) => w.charAt(0).toUpperCase() + w.slice(1))
+            .replace(/([^\s/-]+)(?=[\s/-]?)/g, (w) => w.charAt(0).toUpperCase() + w.slice(1))
     const formatName = (val) =>
       !val
         ? 'N/A'
@@ -509,6 +505,25 @@ export default {
 
 .cell-flex {
   @apply flex items-center gap-2;
+}
+
+.category-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--table-border);
+  background: color-mix(in srgb, var(--table-surface-alt) 92%, transparent);
+  padding: 0.35rem 0.75rem;
+  color: var(--color-accent-blue);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .control-surface {

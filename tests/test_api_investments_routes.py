@@ -550,6 +550,9 @@ def plaid_investments_client():
     investments_logic_stub.upsert_investment_transactions = lambda txs: len(txs)
 
     account_logic_stub = types.ModuleType("app.sql.account_logic")
+    account_logic_stub.canonicalize_plaid_products = lambda value: [
+        token.strip() for token in str(value or "").split(",") if token.strip()
+    ]
     account_logic_stub.save_plaid_account = lambda *_a, **_k: None
     account_logic_stub.upsert_accounts = lambda *_a, **_k: None
 
@@ -718,6 +721,43 @@ def test_plaid_investments_refresh_success_path(plaid_investments_client, monkey
     }
 
 
+def test_plaid_investments_refresh_supports_canonical_scope_strings(
+    plaid_investments_client, monkeypatch
+):
+    """Refresh should match accounts whose product scopes include investments."""
+    client, module = plaid_investments_client
+
+    account = PlaidAccountStub(
+        "acct-1", "item-1", "token-1", product="investments,transactions"
+    )
+    module.PlaidAccount.query = PlaidQueryStub([account])
+
+    monkeypatch.setattr(
+        module.investments_logic,
+        "upsert_investments_from_plaid",
+        lambda _user_id, _token: {"securities": 1, "holdings": 1},
+    )
+    monkeypatch.setattr(
+        module, "get_investment_transactions", lambda *_a: [{"id": "a"}]
+    )
+    monkeypatch.setattr(
+        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
+    )
+
+    resp = client.post(
+        "/api/plaid/investments/refresh",
+        json={
+            "user_id": "u1",
+            "item_id": "item-1",
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-31",
+        },
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["upserts"]["investment_transactions"] == 1
+
+
 def test_plaid_investments_refresh_all_aggregates_summary(
     plaid_investments_client, monkeypatch
 ):
@@ -780,6 +820,9 @@ def plaid_webhook_client():
     }
 
     account_logic_stub = types.ModuleType("app.sql.account_logic")
+    account_logic_stub.canonicalize_plaid_products = lambda value: [
+        token.strip() for token in str(value or "").split(",") if token.strip()
+    ]
 
     sql_pkg = types.ModuleType("app.sql")
     sql_pkg.account_logic = account_logic_stub
@@ -920,6 +963,40 @@ def test_plaid_webhook_investments_transactions_dispatch(
     assert resp.status_code == 200
     assert resp.get_json()["triggered"] == [
         {"account_id": "acct-1", "investment_txs": 3}
+    ]
+
+
+def test_plaid_webhook_investments_transactions_accepts_mixed_product_scopes(
+    plaid_webhook_client, monkeypatch
+):
+    """Webhook dispatch should include accounts with canonical mixed Plaid scopes."""
+    client, module = plaid_webhook_client
+
+    acct = PlaidAccountStub(
+        "acct-1", "item-1", "token-1", product="investments,transactions"
+    )
+    module.PlaidAccount.query = PlaidQueryStub([acct])
+
+    monkeypatch.setattr(
+        module, "get_investment_transactions", lambda *_a, **_k: [{"id": "a"}]
+    )
+    monkeypatch.setattr(
+        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
+    )
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "INVESTMENTS_TRANSACTIONS",
+            "webhook_code": "DEFAULT_UPDATE",
+            "item_id": "item-1",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["triggered"] == [
+        {"account_id": "acct-1", "investment_txs": 1}
     ]
 
 

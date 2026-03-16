@@ -132,6 +132,7 @@ def test_get_accounts_from_db_includes_display_name_and_investment_semantics(
                 investment_has_holdings=True,
                 investment_has_transactions=True,
                 product_provenance="product_scope",
+                apr=Decimal("19.1234"),
             ),
         ]
     )
@@ -151,3 +152,4 @@ def test_get_accounts_from_db_includes_display_name_and_investment_semantics(
     assert by_id["acc-5"]["is_investment"] is True
     assert by_id["acc-5"]["investment_has_holdings"] is True
     assert by_id["acc-5"]["investment_has_transactions"] is True
+    assert by_id["acc-5"]["apr"] == pytest.approx(19.1234)

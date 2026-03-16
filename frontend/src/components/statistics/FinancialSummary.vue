@@ -13,7 +13,7 @@
       <div class="stats-controls">
         <button
           class="accent-toggle-btn"
-          :class="{ extended: isExtendedView }"
+          :class="{ 'accent-toggle-btn--active': isExtendedView }"
           @click="toggleExtendedView"
           :title="isExtendedView ? 'Switch to Basic View' : 'Switch to Extended View'"
         >

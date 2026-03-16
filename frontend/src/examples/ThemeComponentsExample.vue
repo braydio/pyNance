@@ -6,9 +6,11 @@
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card>
           <h3 class="text-lg font-semibold mb-2">Glassmorphic Card</h3>
-          <p class="text-gray-300">This card now features glassmorphic styling with violet gradients and hover effects.</p>
+          <p class="text-gray-300">
+            This card now features glassmorphic styling with violet gradients and hover effects.
+          </p>
         </Card>
-        
+
         <Card>
           <h3 class="text-lg font-semibold mb-2">Another Card</h3>
           <p class="text-gray-300">Hover over the cards to see the subtle glow effect.</p>
@@ -34,11 +36,9 @@
     <section>
       <h2 class="text-2xl font-bold mb-4 text-white">Modal Component</h2>
       <Button variant="violet-primary" @click="showModal = true">Open Modal</Button>
-      
+
       <Modal v-if="showModal" @close="showModal = false">
-        <template #title>
-          Updated Modal
-        </template>
+        <template #title> Updated Modal </template>
         <template #body>
           <div class="space-y-4">
             <p class="text-gray-300">
@@ -51,12 +51,8 @@
               <li>Smooth fade-slide animations</li>
             </ul>
             <div class="flex gap-4 pt-4">
-              <Button variant="violet-primary" @click="showModal = false">
-                Close Modal
-              </Button>
-              <Button variant="blue-secondary">
-                Secondary Action
-              </Button>
+              <Button variant="violet-primary" @click="showModal = false"> Close Modal </Button>
+              <Button variant="blue-secondary"> Secondary Action </Button>
             </div>
           </div>
         </template>

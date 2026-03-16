@@ -3,24 +3,24 @@
     <div class="import-box">
       <h2>󰋺 Import Transactions from File</h2>
     </div>
-      <div v-if="loading" class="status">Loading available files...</div>
+    <div v-if="loading" class="status">Loading available files...</div>
 
-      <div v-else>
-        <label class="text-label"> Click the dropdown. </label>
+    <div v-else>
+      <label class="text-label"> Click the dropdown. </label>
 
-        <div class="import-controls">
-          <select v-model="selectedFile">
-            <option disabled value=""> -- Go ahead, do it. -- </option>
-            <option v-for="file in files" :key="file.name" :value="file.name">
-              {{ file.label }}
-            </option>
-          </select>
+      <div class="import-controls">
+        <select v-model="selectedFile">
+          <option disabled value="">-- Go ahead, do it. --</option>
+          <option v-for="file in files" :key="file.name" :value="file.name">
+            {{ file.label }}
+          </option>
+        </select>
 
-          <button :disabled="!selectedFile" @click="startImport" class="btn btn-primary">
-            Click Me
-          </button>
-        </div>
+        <button :disabled="!selectedFile" @click="startImport" class="btn btn-primary">
+          Click Me
+        </button>
       </div>
+    </div>
   </div>
 </template>
 
@@ -35,7 +35,7 @@ const loading = ref(true)
 async function loadFiles() {
   try {
     const res = await axios.get('/api/import/files')
-    files.value = res.data.map(name => {
+    files.value = res.data.map((name) => {
       const [provider, type, datePart] = name.split('_')
       const label = `${provider} → ${type} (${datePart.replace(/\..*$/, '').replace('-', '/')})`
       return { name, label }
@@ -61,8 +61,6 @@ async function startImport() {
 onMounted(loadFiles)
 </script>
 
-
-
 <style scoped>
 @reference "../../assets/css/main.css";
 .import-selector {
@@ -72,11 +70,10 @@ onMounted(loadFiles)
   box-shadow: 0 2px 10px var(--shadow);
 }
 
-
 .import-box {
   display: flex;
   flex-direction: column;
-  align-items: center;      /* ✅ centers all children horizontally */
+  align-items: center; /* ✅ centers all children horizontally */
   gap: 0.75rem;
   text-align: center;
   margin-bottom: 1rem;

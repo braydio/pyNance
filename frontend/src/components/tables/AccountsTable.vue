@@ -1,10 +1,18 @@
 <!-- AccountsTable.vue - Table of linked accounts with filter controls. -->
 <template>
   <div class="card table-panel">
-    <h2 class="table-title font-bold text-xl mb-6 text-left tracking-wide flex items-center">
-      <span class="title-icon i-ph:bank-duotone text-2xl mr-2"></span>
-      Accounts
-    </h2>
+    <div class="table-panel-header">
+      <div class="table-panel-copy">
+        <div class="table-kicker">Account Surfaces</div>
+        <h2 class="table-title font-bold text-xl text-left tracking-wide flex items-center">
+          <span class="title-icon i-ph:bank-duotone text-2xl mr-2"></span>
+          Accounts
+        </h2>
+        <p class="table-subtitle">
+          Linked institutions, account types, and balances in one readable ledger.
+        </p>
+      </div>
+    </div>
     <!-- Controls/Filters -->
     <div class="control-surface md:p-4" data-testid="accounts-control-bar">
       <div class="input-shell">
@@ -440,17 +448,46 @@ export default {
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 
 .table-panel {
-  @apply shadow-xl rounded-2xl p-4 md:p-6;
+  @apply shadow-xl rounded-2xl p-5 md:p-7;
   background-color: var(--table-surface-strong);
   border: 1px solid var(--table-border);
 }
 
+.table-panel-header {
+  margin-bottom: 1.25rem;
+  padding: 0.25rem 0.25rem 0.75rem;
+}
+
+.table-panel-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  max-width: 42rem;
+}
+
+.table-kicker {
+  font-family: var(--font-display);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-accent-cyan);
+}
+
 .table-title {
   color: var(--color-accent-blue);
+  margin: 0;
 }
 
 .title-icon {
   color: var(--color-accent-blue);
+}
+
+.table-subtitle {
+  margin: 0;
+  color: color-mix(in srgb, var(--text-primary) 74%, var(--color-text-muted));
+  font-size: 0.92rem;
+  line-height: 1.6;
 }
 
 .table-shell {

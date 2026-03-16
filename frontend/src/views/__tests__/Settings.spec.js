@@ -6,16 +6,16 @@ import SettingsView from '../Settings.vue'
 vi.mock('axios', () => ({
   default: {
     get: vi.fn().mockResolvedValue({ data: { themes: [], current_theme: '' } }),
-    post: vi.fn().mockResolvedValue({})
-  }
+    post: vi.fn().mockResolvedValue({}),
+  },
 }))
 
 describe('Settings.vue', () => {
   it('matches snapshot', async () => {
     const wrapper = shallowMount(SettingsView, {
       global: {
-        stubs: ['BasePageLayout', 'PageHeader', 'SettingsIcon']
-      }
+        stubs: ['BasePageLayout', 'PageHeader', 'SettingsIcon'],
+      },
     })
     await flushPromises()
     expect(wrapper.html()).toMatchSnapshot()

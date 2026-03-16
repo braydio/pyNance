@@ -12,7 +12,6 @@ This module defines the **forecasting engine's structure**, **data sources**, an
 
 - Fields: `amount`, `date`, `account_id`, `description`
 - Used for:
-
   - Deriving recurring patterns (optional)
   - Fallback calculation of actuals
   - Breakdown visualization
@@ -60,27 +59,22 @@ interface BalanceSnapshot {
 ## 🔍 Forecast Engine Logic Flow
 
 1. **Ingest Recurring Events**:
-
    - From `recurring_transactions`, `manual inputs`, or `findRecurring()`
 
 2. **Generate Forecast Line**:
-
    - Project events forward using frequency and amount
    - Apply modifiers like `manualIncome`, `liabilityRate`
    - Output: `{ date, forecastValue }[]`
 
 3. **Generate Actuals Line**:
-
    - Primary: From `account_history`
    - Fallback: `sum(transactions by date)`
    - Align to forecast timeline
 
 4. **Compute Net Delta**:
-
    - `delta = forecast - actuals` (per date)
 
 5. **Return Chart Data**:
-
    - X-axis labels (dates)
    - Y-axis: forecast\[], actuals\[], delta\[]
 
@@ -91,7 +85,6 @@ interface BalanceSnapshot {
 - Forecast: Full timeline
 - Actuals: Only up to current day
 - Visual features:
-
   - Toggle (Month/Year)
   - Tooltip on hover
   - Dynamic breakdowns by view type

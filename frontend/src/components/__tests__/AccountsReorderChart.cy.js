@@ -12,9 +12,7 @@ describe('AccountsReorderChart', () => {
       statusCode: 200,
       body: {
         status: 'success',
-        accounts: [
-          { id: 1, name: 'Checking', adjusted_balance: 100, is_hidden: false },
-        ],
+        accounts: [{ id: 1, name: 'Checking', adjusted_balance: 100, is_hidden: false }],
       },
     }).as('getAccounts')
 

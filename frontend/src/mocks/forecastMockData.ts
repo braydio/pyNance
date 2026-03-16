@@ -35,4 +35,3 @@ export const mockAccountHistory = Array.from({ length: 30 }, (_, i) => {
     balance: 4000 + i * 25 + Math.random() * 30,
   }
 })
-

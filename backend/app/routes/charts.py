@@ -628,7 +628,11 @@ def category_breakdown_tree():
 
         # Aggregate: {primary_category: {"amount": sum, "children": {detailed_category: sum}}}
         category_breakdown = defaultdict(
-            lambda: {"amount": 0, "children": defaultdict(float)}
+            lambda: {
+                "amount": 0,
+                "category_ids": set(),
+                "children": defaultdict(lambda: {"amount": 0, "category_ids": set()}),
+            }
         )
 
         # Query all relevant transactions (category join for label, account join for normalization)
@@ -663,24 +667,39 @@ def category_breakdown_tree():
                 continue
             parent_label = getattr(cat, "display_primary", None) or "Uncategorized"
             child_label = getattr(cat, "display_detailed", None) or "Other"
+            category_id = getattr(cat, "id", None)
 
             amt = abs(amount)
             category_breakdown[parent_label]["amount"] += amt
-            category_breakdown[parent_label]["children"][child_label] += amt
+            if category_id is not None:
+                category_breakdown[parent_label]["category_ids"].add(int(category_id))
+                category_breakdown[parent_label]["children"][child_label][
+                    "category_ids"
+                ].add(int(category_id))
+            category_breakdown[parent_label]["children"][child_label]["amount"] += amt
 
         # Compose output: one bar per primary_category
         output = []
         for parent_label, data in category_breakdown.items():
             children = [
-                {"label": child, "amount": round(amount, 2)}
-                for child, amount in sorted(
-                    data["children"].items(), key=lambda x: x[1], reverse=True
+                {
+                    "id": child,
+                    "label": child,
+                    "amount": round(child_data["amount"], 2),
+                    "category_ids": sorted(child_data["category_ids"]),
+                }
+                for child, child_data in sorted(
+                    data["children"].items(),
+                    key=lambda x: x[1]["amount"],
+                    reverse=True,
                 )
             ]
             output.append(
                 {
+                    "id": parent_label,
                     "label": parent_label,
                     "amount": round(data["amount"], 2),
+                    "category_ids": sorted(data["category_ids"]),
                     "children": children,
                 }
             )

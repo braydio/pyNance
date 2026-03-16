@@ -1,0 +1,110 @@
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - navigation [ref=e6]:
+      - generic [ref=e7]:
+        - link "Dashboard" [ref=e8] [cursor=pointer]:
+          - /url: /
+        - link "Accounts" [ref=e9] [cursor=pointer]:
+          - /url: /accounts
+        - link "Transactions" [ref=e10] [cursor=pointer]:
+          - /url: /transactions
+        - link "Forecasting" [ref=e11] [cursor=pointer]:
+          - /url: /forecast
+        - link "Planning" [ref=e12] [cursor=pointer]:
+          - /url: /planning
+        - link "Investments" [ref=e13] [cursor=pointer]:
+          - /url: /investments
+  - main [ref=e14]:
+    - generic [ref=e15]:
+      - heading "Dashboard - Financial Overview" [level=1] [ref=e16]
+      - generic [ref=e17]:
+        - generic [ref=e18]:
+          - generic [ref=e20]:
+            - heading "Welcome, Brayden!" [level=1] [ref=e21]
+            - paragraph [ref=e22]: Today is March 11, 2026
+            - paragraph [ref=e23]: ... and things are looking quite bleak.
+          - generic [ref=e26]:
+            - textbox [ref=e27]: 2026-03-01
+            - textbox [ref=e28]: 2026-03-31
+            - button "Zoom Out" [ref=e29] [cursor=pointer]
+          - generic [ref=e30]:
+            - generic [ref=e32]:
+              - generic [ref=e34]:
+                - generic "Group" [ref=e36]
+                - generic [ref=e37]:
+                  - generic [ref=e38]: Total Balance
+                  - generic [ref=e39]: $0.00
+              - button "Switch group" [ref=e42] [cursor=pointer]: Switch ▾
+              - generic [ref=e43]: No accounts to display
+            - generic [ref=e44]:
+              - generic [ref=e45]:
+                - heading "Net Income (Daily)" [level=2] [ref=e46]:
+                  - generic [ref=e47]: Net Income
+                  - generic [ref=e48]: (Daily)
+                - generic [ref=e50]:
+                  - complementary "Overlays" [ref=e51]:
+                    - button "Overlays Expand overlay options" [ref=e52] [cursor=pointer]:
+                      - generic [ref=e53]: Overlays
+                      - img [ref=e55]
+                      - generic [ref=e57]: Expand overlay options
+                  - generic [ref=e58]:
+                    - button "MTD" [pressed] [ref=e59] [cursor=pointer]
+                    - button "Rolling 30" [ref=e60] [cursor=pointer]
+              - generic [ref=e62]: Loading daily net chart…
+          - generic [ref=e64]:
+            - generic [ref=e65]:
+              - heading "Financial Snapshot" [level=3] [ref=e66]
+              - button "Show Detail View" [ref=e68] [cursor=pointer]
+            - generic [ref=e69]:
+              - generic [ref=e70]:
+                - generic [ref=e71]: "Income:"
+                - generic [ref=e72]: $0.00
+              - generic [ref=e73]:
+                - generic [ref=e74]: "Expenses:"
+                - generic [ref=e75]: $0.00
+              - generic [ref=e76]:
+                - generic [ref=e77]: "Net Total:"
+                - generic [ref=e78]: $0.00
+        - generic [ref=e92]:
+          - heading "Spending Insights" [level=2] [ref=e93]
+          - generic [ref=e94]:
+            - generic [ref=e95]:
+              - heading "Quick Signals" [level=3] [ref=e96]
+              - generic [ref=e97]:
+                - generic [ref=e98]:
+                  - generic [ref=e99]: Rising Merchant
+                  - generic [ref=e100]: —
+                  - generic [ref=e101]: +0%
+                - generic [ref=e102]:
+                  - generic [ref=e103]: Rising Category
+                  - generic [ref=e104]: —
+                  - generic [ref=e105]: +0%
+            - heading "Top Merchants" [level=3] [ref=e107]
+            - heading "Top Categories" [level=3] [ref=e110]
+        - generic [ref=e112]:
+          - generic [ref=e113]:
+            - generic [ref=e114]:
+              - heading "Review Transactions" [level=2] [ref=e115]
+              - generic [ref=e116]: 34 to review
+            - paragraph [ref=e118]: Step through transactions in batches of 10, approve quickly, or edit in place without leaving the dashboard.
+            - generic [ref=e119]:
+              - generic [ref=e120]: Tag filter
+              - 'textbox "Optional tag (e.g., #groceries)" [ref=e121]'
+          - button "Start Review" [ref=e122]
+        - generic [ref=e124]:
+          - button "Accounts" [ref=e125]:
+            - img [ref=e126]
+            - generic [ref=e129]: Accounts
+          - generic [ref=e130]: or
+          - button "Transactions" [ref=e131]:
+            - img [ref=e132]
+            - generic [ref=e134]: Transactions
+  - contentinfo [ref=e135]:
+    - generic [ref=e137]:
+      - link "Settings" [ref=e138] [cursor=pointer]:
+        - /url: /settings
+      - link "Docs" [ref=e139] [cursor=pointer]:
+        - /url: /docs
+      - link "Support" [ref=e140] [cursor=pointer]:
+        - /url: /support
+      - generic [ref=e141]: v0.0.0

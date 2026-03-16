@@ -1,4 +1,5 @@
 # Directory for design of Dashboard.vue
+
 # 📊 DashboardMock.vue Layout Plan
 
 **Purpose:**
@@ -12,16 +13,16 @@ Define and scope a Vue-based dashboard mock for `DashboardMock.vue` under `front
 
 **Contents:**
 
-* **App Title/Logo**: Positioned top-left.
-* **User Display**: Show current user or "Welcome Back, \[Name]" message.
-* **Date Range Selector**: Default to current month. Use dropdown or calendar picker.
-* **Global Filter/Settings Button**: Access to preferences, theme toggle, or hidden account settings.
-* **Account Toggle Visibility**: Button or dropdown to show/hide specific accounts from dashboard views.
+- **App Title/Logo**: Positioned top-left.
+- **User Display**: Show current user or "Welcome Back, \[Name]" message.
+- **Date Range Selector**: Default to current month. Use dropdown or calendar picker.
+- **Global Filter/Settings Button**: Access to preferences, theme toggle, or hidden account settings.
+- **Account Toggle Visibility**: Button or dropdown to show/hide specific accounts from dashboard views.
 
 **Special Requirements:**
 
-* State persists across route changes (Vuex or Pinia).
-* Animations for hiding/showing accounts.
+- State persists across route changes (Vuex or Pinia).
+- Animations for hiding/showing accounts.
 
 ---
 
@@ -31,20 +32,20 @@ Define and scope a Vue-based dashboard mock for `DashboardMock.vue` under `front
 
 **Contents:**
 
-* **X-axis**: Dates.
-* **Y-axis**: Net income (positive or negative).
-* **Bar**: Color-coded bars for each day.
-* **Hover Tooltip**: Show value, date.
-* **Click Interaction**: Opens transaction detail modal for that day.
+- **X-axis**: Dates.
+- **Y-axis**: Net income (positive or negative).
+- **Bar**: Color-coded bars for each day.
+- **Hover Tooltip**: Show value, date.
+- **Click Interaction**: Opens transaction detail modal for that day.
 
 **Data Format:**
 
 ```ts
 interface NetIncomeByDay {
-  date: string; // YYYY-MM-DD
-  income: number;
-  expenses: number;
-  net: number;
+  date: string // YYYY-MM-DD
+  income: number
+  expenses: number
+  net: number
 }
 ```
 
@@ -70,30 +71,30 @@ interface NetIncomeByDay {
 
 **Contents:**
 
-* **Header**: Date selected.
-* **Table Columns**: Description, Amount, Category, Type, Time.
-* **Pagination (if needed)**
-* **Close Button**: To dismiss modal.
-* **Transaction Highlights**: Bold negative amounts.
+- **Header**: Date selected.
+- **Table Columns**: Description, Amount, Category, Type, Time.
+- **Pagination (if needed)**
+- **Close Button**: To dismiss modal.
+- **Transaction Highlights**: Bold negative amounts.
 
 **Expected Data:**
 
 ```ts
 interface Transaction {
-  id: string;
-  date: string;
-  amount: number;
-  description: string;
-  category: string;
-  type: 'income' | 'expense';
-  time: string;
+  id: string
+  date: string
+  amount: number
+  description: string
+  category: string
+  type: 'income' | 'expense'
+  time: string
 }
 ```
 
 **UX Detail:**
 
-* Animate open/close.
-* Re-click same bar = toggle close.
+- Animate open/close.
+- Re-click same bar = toggle close.
 
 ---
 

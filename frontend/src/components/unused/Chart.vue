@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import { Chart } from "chart.js/auto";
+import { Chart } from 'chart.js/auto'
 
 export default {
   props: {
@@ -16,25 +16,25 @@ export default {
     chartData: Object, // Data for the chart
     chartType: {
       type: String,
-      default: "bar", // Default chart type
+      default: 'bar', // Default chart type
     },
     toggleText: String,
   },
   data() {
     return {
       chartInstance: null,
-    };
+    }
   },
   methods: {
     toggleView() {
-      this.$emit("toggle");
+      this.$emit('toggle')
     },
     renderChart() {
       if (this.chartInstance) {
-        this.chartInstance.destroy();
+        this.chartInstance.destroy()
       }
 
-      const ctx = document.getElementById(this.chartId).getContext("2d");
+      const ctx = document.getElementById(this.chartId).getContext('2d')
       this.chartInstance = new Chart(ctx, {
         type: this.chartType,
         data: this.chartData,
@@ -42,15 +42,14 @@ export default {
           responsive: true,
           maintainAspectRatio: false,
         },
-      });
+      })
     },
   },
   watch: {
-    chartData: "renderChart", // Re-render chart when data changes
+    chartData: 'renderChart', // Re-render chart when data changes
   },
   mounted() {
-    this.renderChart();
+    this.renderChart()
   },
-};
+}
 </script>
-

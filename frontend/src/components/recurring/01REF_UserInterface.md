@@ -25,7 +25,6 @@ Ensure recurring rules can be managed smoothly within the transaction editing wo
 - Display on Save, Edit, Delete actions
 - Position: top-right corner
 - Types:
-
   - ✅ Success: “Rule saved”
   - ❌ Error: “Invalid input” / “Server error”
   - ⚠️ Info: “Simulated rule not saved”

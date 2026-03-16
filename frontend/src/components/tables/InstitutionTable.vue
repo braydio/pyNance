@@ -48,11 +48,11 @@
 </template>
 
 <script>
-import api from '@/services/api';
+import api from '@/services/api'
 export default {
   name: 'InstitutionTable',
   data() {
-    return { institutions: [], expanded: {}, loading: true };
+    return { institutions: [], expanded: {}, loading: true }
   },
   methods: {
     /**
@@ -60,35 +60,38 @@ export default {
      * @param {number|string} id - Institution identifier.
      */
     toggle(id) {
-      this.expanded[id] = !this.expanded[id];
+      this.expanded[id] = !this.expanded[id]
     },
     formatDate(d) {
-      if (!d) return 'N/A';
-      return new Date(d).toLocaleString();
+      if (!d) return 'N/A'
+      return new Date(d).toLocaleString()
     },
     formatBalance(b) {
-      const num = parseFloat(b || 0);
-      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num);
+      const num = parseFloat(b || 0)
+      return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num)
     },
     async refresh(id) {
-      await api.refreshInstitution(id);
-      this.fetch();
+      await api.refreshInstitution(id)
+      this.fetch()
     },
     async fetch() {
-      const res = await api.getInstitutions();
+      const res = await api.getInstitutions()
       if (res.status === 'success') {
-        this.institutions = res.institutions;
+        this.institutions = res.institutions
       }
-      this.loading = false;
-    }
+      this.loading = false
+    },
   },
   mounted() {
-    this.fetch();
-  }
-};
+    this.fetch()
+  },
+}
 </script>
 
 <style scoped>
 @reference "../../assets/css/main.css";
-th, td { @apply p-2; }
+th,
+td {
+  @apply p-2;
+}
 </style>

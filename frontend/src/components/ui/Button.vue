@@ -5,7 +5,7 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed } from 'vue'
 
 const props = defineProps({
   variant: {
@@ -20,15 +20,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
-});
+})
 
 const computedClass = computed(() => {
-  return [
-    'btn',
-    props.variant && `btn-${props.variant}`,
-    props.pill && 'btn-pill',
-  ]
+  return ['btn', props.variant && `btn-${props.variant}`, props.pill && 'btn-pill']
     .filter(Boolean)
-    .join(' ');
-});
+    .join(' ')
+})
 </script>
