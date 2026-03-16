@@ -10,10 +10,22 @@ from app.helpers.plaid_helpers import (
 )
 from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
-from app.sql.account_logic import save_plaid_account, upsert_accounts
+from app.sql.account_logic import (
+    canonicalize_plaid_products,
+    save_plaid_account,
+    upsert_accounts,
+)
 from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
+
+
+def _has_investments_scope(plaid_account: PlaidAccount) -> bool:
+    """Return whether a Plaid account includes the investments product scope."""
+
+    return "investments" in set(
+        canonicalize_plaid_products(getattr(plaid_account, "product", None))
+    )
 
 
 def _request_json_dict():
@@ -132,9 +144,15 @@ def refresh_investments_endpoint():
 
             end_date = date.today().isoformat()
             start_date = (date.today() - timedelta(days=30)).isoformat()
-        account = PlaidAccount.query.filter_by(
-            item_id=item_id, product="investments"
-        ).first()
+        item_accounts = PlaidAccount.query.filter_by(item_id=item_id).all()
+        account = next(
+            (
+                plaid_account
+                for plaid_account in item_accounts
+                if _has_investments_scope(plaid_account)
+            ),
+            None,
+        )
         if not account:
             return jsonify({"error": "Investments account not found"}), 404
         # Fetch holdings + securities and upsert
@@ -174,9 +192,8 @@ def refresh_all_investments():
             end_date = date.today().isoformat()
             start_date = (date.today() - timedelta(days=30)).isoformat()
 
-        items = PlaidAccount.query.filter_by(
-            product="investments", is_active=True
-        ).all()
+        item_candidates = PlaidAccount.query.filter_by(is_active=True).all()
+        items = [item for item in item_candidates if _has_investments_scope(item)]
         total = {
             "securities": 0,
             "holdings": 0,

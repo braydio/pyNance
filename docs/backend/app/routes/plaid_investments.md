@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-06
+Last Updated: 2026-03-15
 Status: Active
 ---
 
@@ -90,12 +90,12 @@ Refresh holdings/securities plus investment transactions for a specific linked P
 
 - Error responses:
   - `400` with `{ "error": "Missing user_id or item_id" }` when required fields are absent, request JSON is empty, JSON is malformed, or a non-object JSON payload is provided.
-  - `404` with `{ "error": "Investments account not found" }` when no active `PlaidAccount` matches the provided `item_id` for `product="investments"`.
+  - `404` with `{ "error": "Investments account not found" }` when no `PlaidAccount` matches the provided `item_id` with a parsed product scope containing `investments` (supports canonical comma-delimited strings such as `"investments,transactions"`).
   - `500` with `{ "error": "..." }` for unexpected refresh failures.
 
 ### `POST /api/plaid/investments/refresh_all`
 
-Refresh holdings/securities and transactions for all active Plaid investment accounts.
+Refresh holdings/securities and transactions for all active Plaid accounts whose parsed scopes include the `investments` product.
 
 - Request JSON body (optional):
   - `start_date` (optional, `YYYY-MM-DD`)
