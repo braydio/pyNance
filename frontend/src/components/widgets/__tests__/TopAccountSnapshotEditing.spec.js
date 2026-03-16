@@ -181,6 +181,38 @@ beforeEach(() => {
 })
 
 describe('TopAccountSnapshot editing behaviour', () => {
+  it('shows a footer done button that exits editing mode', async () => {
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [
+          {
+            id: 'group-1',
+            name: 'Group',
+            accounts: [sampleAccounts[0]],
+          },
+        ],
+        activeGroupId: 'group-1',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot, {
+      props: { isEditingGroups: true },
+      global: { stubs: { AccountSparkline: true } },
+    })
+
+    await nextTick()
+
+    const doneButton = wrapper.find('.bs-editing-footer .bs-done-btn')
+    expect(doneButton.exists()).toBe(true)
+
+    await doneButton.trigger('click')
+    await nextTick()
+
+    expect(wrapper.emitted('update:isEditingGroups')?.[0]).toEqual([false])
+    expect(wrapper.find('.bs-editing-footer').exists()).toBe(false)
+  })
+
   it('allows adding and removing accounts while editing groups', async () => {
     localStorage.setItem(
       'accountGroups',

@@ -464,6 +464,14 @@
 
     <div v-if="isEditingGroups" class="bs-editing-footer">
       <span class="bs-editing-chip">Editing groups</span>
+      <button
+        type="button"
+        class="bs-done-btn gradient-toggle-btn"
+        @click="finishEditingSession"
+        aria-label="Finish editing account groups"
+      >
+        Done
+      </button>
     </div>
   </div>
 </template>
@@ -1734,7 +1742,12 @@ defineExpose({
 .bs-editing-footer {
   margin-top: 0.75rem;
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.bs-editing-footer .bs-done-btn {
+  margin-left: auto;
 }
 
 @media (max-width: 900px) {

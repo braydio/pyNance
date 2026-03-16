@@ -133,11 +133,15 @@
   .gradient-toggle-btn:focus-visible {
     background: linear-gradient(
       135deg,
-      var(--accent-primary) 0%,
-      var(--accent-primary-strong) 100%
+      color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
+      color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
     );
-    color: var(--accent-primary-contrast);
-    border-color: var(--accent-primary-strong);
+    color: var(--color-text-light);
+    border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 10px 22px rgba(0, 0, 0, 0.28);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
     outline: none;
   }
 
@@ -149,11 +153,15 @@
   .gradient-toggle-btn--active {
     background: linear-gradient(
       135deg,
-      var(--accent-primary) 0%,
-      var(--accent-primary-strong) 100%
+      color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
+      color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
     );
-    color: var(--accent-primary-contrast);
-    border-color: var(--accent-primary-strong);
+    color: var(--color-text-light);
+    border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 10px 22px rgba(0, 0, 0, 0.28);
+    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
   }
 
   .accent-toggle-btn:disabled,
