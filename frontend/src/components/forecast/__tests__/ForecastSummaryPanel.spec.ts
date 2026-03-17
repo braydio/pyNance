@@ -7,7 +7,9 @@ describe('ForecastSummaryPanel', () => {
   it('emits include/exclude account updates when toggles are clicked', async () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
-        currentBalance: 400,
+        assetBalance: 900,
+        liabilityBalance: 500,
+        netBalance: 400,
         manualIncome: 0,
         liabilityRate: 0,
         viewType: 'Month',
@@ -36,7 +38,9 @@ describe('ForecastSummaryPanel', () => {
   it('applies dashboard group shortcut as include selection', async () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
-        currentBalance: 500,
+        assetBalance: 1200,
+        liabilityBalance: 700,
+        netBalance: 500,
         manualIncome: 0,
         liabilityRate: 0,
         viewType: 'Month',
@@ -59,10 +63,35 @@ describe('ForecastSummaryPanel', () => {
     expect(wrapper.emitted('update:excludedAccountIds')?.at(-1)?.[0]).toEqual([])
   })
 
+  it('renders asset, liability, and net balances', () => {
+    const wrapper = mount(ForecastSummaryPanel, {
+      props: {
+        assetBalance: 2500,
+        liabilityBalance: 800,
+        netBalance: 1700,
+        manualIncome: 0,
+        liabilityRate: 0,
+        viewType: 'Month',
+        includedAccountIds: [],
+        excludedAccountIds: [],
+        accountOptions: [],
+      },
+    })
+
+    expect(wrapper.text()).toContain('Assets')
+    expect(wrapper.text()).toContain('$2500.00')
+    expect(wrapper.text()).toContain('Liabilities')
+    expect(wrapper.text()).toContain('$800.00')
+    expect(wrapper.text()).toContain('Net')
+    expect(wrapper.text()).toContain('$1700.00')
+  })
+
   it('prefers computed forecast net change when provided', () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
-        currentBalance: 400,
+        assetBalance: 900,
+        liabilityBalance: 500,
+        netBalance: 400,
         manualIncome: 0,
         liabilityRate: 0,
         netChange: 123.45,

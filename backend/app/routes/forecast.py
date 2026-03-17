@@ -11,6 +11,50 @@ from sqlalchemy import case, func
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
 WAGE_LOOKBACK_DAYS = 180
+LIABILITY_ACCOUNT_TYPE_TOKENS = {
+    "credit",
+    "credit card",
+    "loan",
+    "liability",
+    "line of credit",
+    "mortgage",
+    "student",
+    "debt",
+}
+
+
+def _is_liability_account_type(raw_account_type: object) -> bool:
+    """Return ``True`` when an account type should be treated as a liability.
+
+    The latest snapshot payload is stitched together from mixed account sources,
+    so this helper accepts variations such as ``credit_card``, ``line-of-credit``,
+    and nested type labels (for example ``loan/student``).
+    """
+
+    normalized = str(raw_account_type or "").strip().lower().replace("_", " ")
+    if not normalized:
+        return False
+
+    normalized = normalized.replace("-", " ").replace("/", " ")
+    return any(token in normalized for token in LIABILITY_ACCOUNT_TYPE_TOKENS)
+
+
+def _snapshot_balance_breakdown(
+    latest_snapshots: list[dict[str, object]],
+) -> tuple[float, float, float]:
+    """Aggregate snapshot balances into asset, liability, and net buckets."""
+
+    asset_balance = 0.0
+    liability_balance = 0.0
+    for snapshot in latest_snapshots:
+        balance = float(snapshot.get("balance", 0) or 0)
+        account_type = snapshot.get("account_type")
+        if _is_liability_account_type(account_type):
+            liability_balance += abs(balance)
+        else:
+            asset_balance += abs(balance)
+
+    return asset_balance, liability_balance, asset_balance - liability_balance
 
 
 def _parse_account_filters(
@@ -544,8 +588,8 @@ def compute_forecast_route():
             excluded_account_ids=excluded_account_ids,
         )
 
-        net_snapshot_balance = sum(
-            float(snapshot.get("balance", 0) or 0) for snapshot in latest_snapshots
+        asset_balance, liability_balance, net_snapshot_balance = (
+            _snapshot_balance_breakdown(latest_snapshots)
         )
         total_inflow = sum(
             float(item.get("inflow", 0) or 0) for item in historical_aggregates
@@ -590,6 +634,9 @@ def compute_forecast_route():
                 "included_account_ids": included_account_ids,
                 "excluded_account_ids": excluded_account_ids,
                 "starting_balance": net_snapshot_balance,
+                "asset_balance": asset_balance,
+                "liability_balance": liability_balance,
+                "net_balance": net_snapshot_balance,
                 "contribution_totals": {
                     "snapshot_balance": net_snapshot_balance,
                     "historical_inflow": total_inflow,

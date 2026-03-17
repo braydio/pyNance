@@ -20,9 +20,21 @@
 
     <div class="summary-grid">
       <div class="field-group">
-        <p class="label">Current Balance</p>
+        <p class="label">Assets</p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
-          ${{ currentBalance.toFixed(2) }}
+          ${{ assetBalance.toFixed(2) }}
+        </button>
+      </div>
+      <div class="field-group">
+        <p class="label">Liabilities</p>
+        <button type="button" class="value-link" @click="isSelectorOpen = true">
+          ${{ liabilityBalance.toFixed(2) }}
+        </button>
+      </div>
+      <div class="field-group">
+        <p class="label">Net</p>
+        <button type="button" class="value-link" @click="isSelectorOpen = true">
+          ${{ netBalance.toFixed(2) }}
         </button>
       </div>
       <div class="field-group">
@@ -122,7 +134,18 @@
 import { computed, ref, toRef } from 'vue'
 
 const props = defineProps({
-  currentBalance: Number,
+  assetBalance: {
+    type: Number,
+    default: 0,
+  },
+  liabilityBalance: {
+    type: Number,
+    default: 0,
+  },
+  netBalance: {
+    type: Number,
+    default: 0,
+  },
   manualIncome: Number,
   liabilityRate: Number,
   netChange: {

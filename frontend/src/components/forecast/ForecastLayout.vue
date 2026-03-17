@@ -10,7 +10,9 @@
       Forecast data is not available yet. Add adjustments or try again later.
     </div>
     <ForecastSummaryPanel
-      :current-balance="currentBalance"
+      :asset-balance="assetBalance"
+      :liability-balance="liabilityBalance"
+      :net-balance="netBalance"
       :manual-income="manualIncome"
       :liability-rate="liabilityRate"
       :net-change="summary?.net_change"
@@ -130,7 +132,6 @@ type SnapshotGroup = {
 }
 
 const viewType = ref<ForecastViewType>('Month')
-const currentBalance = ref(0)
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 const adjustments = ref<ForecastAdjustmentInput[]>([])
@@ -164,6 +165,16 @@ const {
   normalize,
   graphMode,
 })
+
+const assetBalance = computed(() =>
+  Number(metadata.value?.asset_balance ?? summary.value?.metadata?.asset_balance ?? 0),
+)
+const liabilityBalance = computed(() =>
+  Number(metadata.value?.liability_balance ?? summary.value?.metadata?.liability_balance ?? 0),
+)
+const netBalance = computed(() =>
+  Number(metadata.value?.net_balance ?? summary.value?.starting_balance ?? 0),
+)
 
 const forecastItems = computed(() =>
   cashflows.value.map((item) => ({
@@ -231,10 +242,6 @@ const realizedHistory = computed(
     (summary.value?.metadata?.realized_history as any[]) ??
     [],
 )
-
-watch(summary, (value) => {
-  currentBalance.value = value?.starting_balance ?? 0
-})
 
 onMounted(async () => {
   await fetchForecastAccounts()

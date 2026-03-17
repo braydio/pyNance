@@ -245,6 +245,7 @@ def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
         ],
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -309,6 +310,7 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
         ],
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -417,12 +419,14 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
                 "balance": 150.0,
                 "date": "2024-01-01",
                 "user_id": user_id,
+                "account_type": "depository",
             },
             {
                 "account_id": "acc-2",
                 "balance": 50.0,
                 "date": "2024-01-01",
                 "user_id": user_id,
+                "account_type": "credit_card",
             },
         ]
 
@@ -442,6 +446,7 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
     monkeypatch.setattr(forecast_module, "_load_latest_snapshots", fake_snapshots)
     monkeypatch.setattr(forecast_module, "_load_historical_aggregates", fake_aggregates)
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -468,9 +473,12 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
     }
     assert captured["metadata"]["included_account_ids"] == ["acc-1", "acc-2"]
     assert captured["metadata"]["excluded_account_ids"] == ["acc-3"]
-    assert captured["metadata"]["starting_balance"] == 200.0
+    assert captured["metadata"]["asset_balance"] == 150.0
+    assert captured["metadata"]["liability_balance"] == 50.0
+    assert captured["metadata"]["net_balance"] == 100.0
+    assert captured["metadata"]["starting_balance"] == 100.0
     assert captured["metadata"]["contribution_totals"] == {
-        "snapshot_balance": 200.0,
+        "snapshot_balance": 100.0,
         "historical_inflow": 40.0,
         "historical_outflow": 15.0,
     }
@@ -478,9 +486,9 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
     assert isinstance(realized_history, list)
     assert len(realized_history) == forecast_module.LOOKBACK_DAYS
     by_date = {entry["date"]: entry["balance"] for entry in realized_history}
-    assert by_date["2023-12-30"] == 185.0
-    assert by_date["2023-12-31"] == 200.0
-    assert by_date["2024-01-01"] == 200.0
+    assert by_date["2023-12-30"] == 85.0
+    assert by_date["2023-12-31"] == 100.0
+    assert by_date["2024-01-01"] == 100.0
 
 
 def test_forecast_compute_rejects_invalid_account_filter_types(client):
@@ -514,6 +522,7 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
         forecast_module, "_load_historical_aggregates", lambda *a, **k: []
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -538,3 +547,44 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
     assert captured["moving_average_window"] == 60
     assert captured["normalize"] is True
     assert captured["graph_mode"] == "historical"
+
+
+def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(
+    client, monkeypatch
+):
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["metadata"] = kwargs["metadata"]
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": [],
+            "metadata": {},
+        }
+
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_latest_snapshots",
+        lambda *a, **k: [
+            {"account_id": "a1", "balance": 1000.0, "account_type": "depository"},
+            {"account_id": "a2", "balance": -100.0, "account_type": "loan/student"},
+            {"account_id": "a3", "balance": 250.0, "account_type": "line-of-credit"},
+        ],
+    )
+    monkeypatch.setattr(
+        forecast_module,
+        "_load_historical_aggregates",
+        lambda *a, **k: [],
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+
+    resp = client.post("/api/forecast/compute", json={"user_id": "user-balance"})
+
+    assert resp.status_code == 200
+    assert captured["metadata"]["asset_balance"] == 1000.0
+    assert captured["metadata"]["liability_balance"] == 350.0
+    assert captured["metadata"]["net_balance"] == 650.0
+    assert captured["metadata"]["starting_balance"] == 650.0

@@ -24,6 +24,13 @@ export type ForecastTimelinePoint = {
   delta?: number | null
 }
 
+export type ForecastMetadata = {
+  asset_balance?: number
+  liability_balance?: number
+  net_balance?: number
+  [key: string]: unknown
+}
+
 export type ForecastSummary = {
   start_date: string
   end_date: string
@@ -40,7 +47,7 @@ export type ForecastSummary = {
   breakdowns?: Record<string, number>
   account_count?: number | null
   recurring_count?: number | null
-  metadata?: Record<string, unknown>
+  metadata?: ForecastMetadata
 }
 
 export type ForecastCashflowItem = {
@@ -54,7 +61,7 @@ export type ForecastCashflowItem = {
   account_id?: number | null
   recurring_id?: number | null
   direction?: string | null
-  metadata?: Record<string, unknown>
+  metadata?: ForecastMetadata
 }
 
 type ForecastComputeResponse = {
@@ -62,7 +69,7 @@ type ForecastComputeResponse = {
   summary: ForecastSummary | null
   cashflows: ForecastCashflowItem[]
   adjustments: ForecastAdjustmentInput[]
-  metadata: Record<string, unknown>
+  metadata: ForecastMetadata
 }
 
 export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
@@ -99,7 +106,7 @@ export function useForecastData({
   const summary = ref<ForecastSummary | null>(null)
   const cashflows = ref<ForecastCashflowItem[]>([])
   const appliedAdjustments = ref<ForecastAdjustmentInput[]>([])
-  const metadata = ref<Record<string, unknown>>({})
+  const metadata = ref<ForecastMetadata>({})
   const loading = ref(false)
   const error = ref<Error | null>(null)
 
@@ -190,7 +197,10 @@ export function useForecastData({
       summary.value = data.summary ?? null
       cashflows.value = Array.isArray(data.cashflows) ? data.cashflows : []
       appliedAdjustments.value = Array.isArray(data.adjustments) ? data.adjustments : []
-      metadata.value = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {}
+      metadata.value =
+        data?.metadata && typeof data.metadata === 'object'
+          ? (data.metadata as ForecastMetadata)
+          : {}
     } catch (err) {
       error.value = err as Error
     } finally {
