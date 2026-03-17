@@ -3,13 +3,35 @@
 ## Snapshot
 
 - `app/services/plaid_sync.py` manages Plaid delta-sync with paging, atomic apply, and cursor persistence.
-- `/api/plaid/transactions/sync` triggers syncs on demand while `/api/webhooks/plaid` processes `TRANSACTIONS:SYNC_UPDATES_AVAILABLE` notifications.
+- `/api/plaid/transactions/sync` (registered via `plaid_transactions` with `/api/plaid/transactions` prefix) triggers syncs on demand, while `/api/webhooks/plaid` (registered via `plaid_webhooks` with `/api/webhooks` prefix) processes `TRANSACTIONS:SYNC_UPDATES_AVAILABLE` and `TRANSACTIONS:DEFAULT_UPDATE` notifications.
 - Raw Plaid payloads are archived in `plaid_transaction_meta.raw` for audit and replay.
 
 ## Current coverage
 
 - Service behaviour and webhook wiring are exercised in `tests/test_plaid_webhook.py` (service stubs, webhook fan-out, and cursor updates).
-- Legacy `transactions/get` helpers remain only for manual backfills and are isolated from default flows.
+
+## Migration status (route wiring)
+
+Migration is still partial: transaction refresh traffic uses both the cursor-based sync path and legacy `/transactions/get` path.
+
+### Cursor-driven endpoints (`/transactions/sync`)
+
+- `POST /api/plaid/transactions/sync` directly calls `plaid_sync.sync_account_transactions`.
+- `POST /api/webhooks/plaid` calls `plaid_sync.sync_account_transactions` for `TRANSACTIONS` webhooks (`SYNC_UPDATES_AVAILABLE`, `DEFAULT_UPDATE`).
+
+### Legacy endpoints (`/transactions/get`)
+
+- `POST /api/accounts/refresh_accounts` still routes transaction refreshes through `account_logic.refresh_data_for_plaid_account`.
+- `POST /api/accounts/<account_id>/refresh` still routes transaction refreshes through `account_logic.refresh_data_for_plaid_account`.
+- `POST /api/plaid/transactions/refresh_accounts` still routes through `account_logic.refresh_data_for_plaid_account`.
+- `POST /api/institutions/<institution_id>/refresh` still routes through `account_logic.refresh_data_for_plaid_account`.
+
+### Quick verification references
+
+- Blueprint registration and URL prefixes: `backend/app/__init__.py`.
+- Cursor endpoints: `backend/app/routes/plaid_transactions.py`, `backend/app/routes/plaid_webhook.py`.
+- Legacy route handlers: `backend/app/routes/accounts.py`, `backend/app/routes/plaid_transactions.py`, `backend/app/routes/institutions.py`.
+- Legacy helper implementation (`get_transactions` using `/transactions/get`): `backend/app/sql/account_logic.py`, `backend/app/helpers/plaid_helpers.py`.
 
 ## Outstanding priorities
 
@@ -34,4 +56,4 @@
 - ✅ Webhook and manual sync entry points are covered by automated tests (unit + integration) with deterministic fixtures.
 - ✅ Metrics and runbook entries exist for sync monitoring, and on-call responders can replay failed syncs quickly.
 
-_Last updated: 2025-09-10_
+_Last updated: 2026-03-13_

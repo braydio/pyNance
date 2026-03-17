@@ -26,6 +26,31 @@
 - Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
 - Cursor state (`sync_cursor`, `last_refreshed`) is item-scoped and persisted once for every account under the Plaid item after the page loop completes successfully.
 
+## Migration status (actual route wiring)
+
+The migration to Plaid `/transactions/sync` is still partial.
+
+### Cursor-driven (`/transactions/sync`)
+
+- `POST /api/plaid/transactions/sync` uses `sync_account_transactions(account_id)` directly.
+- `POST /api/webhooks/plaid` uses `sync_account_transactions(account_id)` for `TRANSACTIONS` webhook codes `SYNC_UPDATES_AVAILABLE` and `DEFAULT_UPDATE`.
+
+### Still legacy (`/transactions/get`)
+
+The following refresh endpoints still call `account_logic.refresh_data_for_plaid_account(...)`, which fetches via `get_transactions(...)` (Plaid `/transactions/get`):
+
+- `POST /api/accounts/refresh_accounts`
+- `POST /api/accounts/<account_id>/refresh`
+- `POST /api/plaid/transactions/refresh_accounts`
+- `POST /api/institutions/<institution_id>/refresh`
+
+### File-level verification map
+
+- Route and prefix registration: `backend/app/__init__.py`
+- Cursor route handlers: `backend/app/routes/plaid_transactions.py`, `backend/app/routes/plaid_webhook.py`
+- Legacy route handlers: `backend/app/routes/accounts.py`, `backend/app/routes/plaid_transactions.py`, `backend/app/routes/institutions.py`
+- Legacy ingestion internals: `backend/app/sql/account_logic.py`, `backend/app/helpers/plaid_helpers.py`
+
 ## Merchant normalization
 
 Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_merchant` to enforce a shared fallback order (`merchant_name` -> `name` -> `description` -> `Unknown`). The helper strips common processor prefixes (for example `POS`, `SQ *`, and `PAYPAL *`), normalizes case/spacing, and emits a canonical `merchant_slug`. Ingestion preserves the raw source description in `Transaction.description` while persisting normalized merchant fields and metadata.
