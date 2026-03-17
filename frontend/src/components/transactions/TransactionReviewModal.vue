@@ -167,6 +167,34 @@
   <datalist id="review-tag-suggestions">
     <option v-for="option in tagSuggestions" :key="option" :value="option" />
   </datalist>
+  <div
+    v-if="rulePrompt.visible"
+    class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4"
+    @click.self="resolveRulePrompt(false)"
+  >
+    <div
+      class="w-full max-w-lg rounded-xl border border-[var(--divider)] bg-[var(--color-bg-sec)] p-5 shadow-2xl"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Save rule confirmation"
+    >
+      <h3 class="text-lg font-bold text-[var(--color-accent-cyan)]">
+        Save rule for future matches?
+      </h3>
+      <p class="mt-3 text-sm text-[var(--color-text-muted)]">
+        Always set <strong>{{ rulePrompt.field }}</strong> to
+        <strong>"{{ rulePrompt.value }}"</strong> for
+        <strong>{{ rulePrompt.description || 'this transaction description' }}</strong> in
+        <strong>{{ rulePrompt.accountLabel }}</strong> at
+        <strong>{{ rulePrompt.institutionLabel }}</strong
+        >?
+      </p>
+      <div class="mt-5 flex justify-end gap-2">
+        <button class="btn btn-outline" @click="resolveRulePrompt(false)">No, skip rule</button>
+        <button class="btn" @click="resolveRulePrompt(true)">Yes, save rule</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
@@ -223,6 +251,15 @@ const batchComplete = ref(false)
 const categoryOptions = ref([])
 const tagOptions = ref([])
 const editInputRefs = ref({})
+const rulePrompt = ref({
+  visible: false,
+  field: '',
+  value: '',
+  description: '',
+  accountLabel: 'this account',
+  institutionLabel: 'this institution',
+})
+let pendingRulePromptResolver = null
 
 const hasNextBatch = computed(() => currentPage.value < totalPages.value)
 
@@ -643,11 +680,14 @@ async function maybeSaveRule(payload) {
   const changedField = ['category', 'merchant_name', 'merchant_type'].find((key) => key in payload)
   if (!changedField) return
   const newValue = payload[changedField]
-  const promptText = [
-    `Always set ${changedField} to "${newValue}" for ${currentTransaction.value.description}`,
-    `in ${currentTransaction.value.account_name} at ${currentTransaction.value.institution_name}?`,
-  ].join(' ')
-  if (!confirm(promptText)) return
+  const shouldCreateRule = await requestRulePrompt({
+    field: changedField,
+    value: newValue,
+    description: currentTransaction.value.description,
+    accountLabel: currentTransaction.value.account_name,
+    institutionLabel: currentTransaction.value.institution_name,
+  })
+  if (!shouldCreateRule) return
   try {
     await createTransactionRule({
       user_id: currentTransaction.value.user_id || '',
@@ -660,6 +700,47 @@ async function maybeSaveRule(payload) {
   } catch (error) {
     console.error('Failed to save rule', error)
     toast.error('Failed to save rule')
+  }
+}
+
+/**
+ * Prompt for transaction rule creation using an explicit yes/no modal choice.
+ *
+ * @param {Record<string, string>} prompt - Prompt details rendered to the user.
+ * @returns {Promise<boolean>} True when the user opts into saving a rule.
+ */
+function requestRulePrompt(prompt) {
+  return new Promise((resolve) => {
+    pendingRulePromptResolver = resolve
+    rulePrompt.value = {
+      visible: true,
+      field: prompt.field,
+      value: prompt.value,
+      description: prompt.description,
+      accountLabel: prompt.accountLabel || 'this account',
+      institutionLabel: prompt.institutionLabel || 'this institution',
+    }
+  })
+}
+
+/**
+ * Resolve and close the transaction rule prompt.
+ *
+ * @param {boolean} shouldCreateRule - User decision for rule creation.
+ */
+function resolveRulePrompt(shouldCreateRule) {
+  const resolver = pendingRulePromptResolver
+  pendingRulePromptResolver = null
+  rulePrompt.value = {
+    visible: false,
+    field: '',
+    value: '',
+    description: '',
+    accountLabel: 'this account',
+    institutionLabel: 'this institution',
+  }
+  if (resolver) {
+    resolver(shouldCreateRule)
   }
 }
 

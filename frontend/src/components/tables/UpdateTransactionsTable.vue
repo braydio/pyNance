@@ -341,6 +341,25 @@
         </div>
       </template>
     </Modal>
+    <Modal v-if="rulePrompt.visible" @close="resolveRulePrompt(false)">
+      <template #title>Save rule for future matches?</template>
+      <template #body>
+        <div class="space-y-4">
+          <p class="text-sm text-[var(--color-text-muted)]">
+            Always set <strong>{{ rulePrompt.field }}</strong> to
+            <strong>"{{ rulePrompt.value }}"</strong> for
+            <strong>{{ rulePrompt.description || 'this transaction description' }}</strong> in
+            <strong>{{ rulePrompt.accountLabel }}</strong> at
+            <strong>{{ rulePrompt.institutionLabel }}</strong
+            >?
+          </p>
+          <div class="flex justify-end gap-2">
+            <button class="btn-sm" @click="resolveRulePrompt(false)">No, skip rule</button>
+            <button class="btn-sm" @click="resolveRulePrompt(true)">Yes, save rule</button>
+          </div>
+        </div>
+      </template>
+    </Modal>
     <datalist id="category-suggestions">
       <option v-for="option in categorySuggestions" :key="option" :value="option" />
     </datalist>
@@ -424,6 +443,15 @@ const editBuffer = ref({
 
 // State for marking internal transactions
 const showInternalModal = ref(false)
+const rulePrompt = ref({
+  visible: false,
+  field: '',
+  value: '',
+  description: '',
+  accountLabel: 'this account',
+  institutionLabel: 'this institution',
+})
+let pendingRulePromptResolver = null
 const internalCandidates = ref([])
 const selectedCounterpart = ref([])
 const activeInternalTx = ref(null)
@@ -730,6 +758,47 @@ function buildRuleContext(tx) {
 }
 
 /**
+ * Prompt for transaction rule creation using an explicit yes/no modal choice.
+ *
+ * @param {Object} prompt - Prompt details rendered in the modal.
+ * @returns {Promise<boolean>} Whether the user chose to create a rule.
+ */
+function requestRulePrompt(prompt) {
+  return new Promise((resolve) => {
+    pendingRulePromptResolver = resolve
+    rulePrompt.value = {
+      visible: true,
+      field: prompt.field,
+      value: prompt.value,
+      description: prompt.description,
+      accountLabel: prompt.accountLabel || 'this account',
+      institutionLabel: prompt.institutionLabel || 'this institution',
+    }
+  })
+}
+
+/**
+ * Resolve and close the transaction rule prompt.
+ *
+ * @param {boolean} shouldCreateRule - User decision for rule creation.
+ */
+function resolveRulePrompt(shouldCreateRule) {
+  const resolver = pendingRulePromptResolver
+  pendingRulePromptResolver = null
+  rulePrompt.value = {
+    visible: false,
+    field: '',
+    value: '',
+    description: '',
+    accountLabel: 'this account',
+    institutionLabel: 'this institution',
+  }
+  if (resolver) {
+    resolver(shouldCreateRule)
+  }
+}
+
+/**
  * Persist edits for the active transaction and optionally create a rule.
  *
  * @param {Object} tx - Transaction reference from the current row.
@@ -787,11 +856,14 @@ async function saveEdit(tx) {
     const changedField = ['category', 'merchant_name', 'merchant_type'].find((f) => f in payload)
     if (changedField) {
       const newValue = payload[changedField]
-      const promptText = [
-        `Always set ${changedField} to "${newValue}" for ${ruleSource.description}`,
-        `in ${accountLabel} at ${institutionLabel}?`,
-      ].join(' ')
-      if (confirm(promptText)) {
+      const shouldCreateRule = await requestRulePrompt({
+        field: changedField,
+        value: newValue,
+        description: ruleSource.description,
+        accountLabel,
+        institutionLabel,
+      })
+      if (shouldCreateRule) {
         try {
           await createTransactionRule({
             user_id: ruleSource.user_id || '',
