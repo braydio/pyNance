@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-02
+Last Updated: 2026-03-17
 Status: Active
 ---
 
@@ -31,7 +31,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`) and aggregate contribution totals for the selected accounts.
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts.
 
 ## Auth
 
