@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import TransactionReviewModal from '../TransactionReviewModal.vue'
-import { updateTransaction } from '@/api/transactions'
+import { createTransactionRule, updateTransaction } from '@/api/transactions'
 
 const sampleTransaction = vi.hoisted(() => ({
   transaction_id: 'tx-1',
@@ -117,5 +117,33 @@ describe('TransactionReviewModal.vue', () => {
     await flushPromises()
 
     expect(findInputByLabel(wrapper, 'Category')).toBeNull()
+  })
+
+  it('allows skipping rule creation when declining the save rule prompt', async () => {
+    const wrapper = mount(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+
+    await flushPromises()
+
+    await wrapper.get('.btn-outline').trigger('click')
+    await flushPromises()
+
+    const categoryInput = findInputByLabel(wrapper, 'Category')
+    expect(categoryInput).not.toBeNull()
+
+    categoryInput.value = 'Dining Out'
+    categoryInput.dispatchEvent(new Event('input'))
+    await flushPromises()
+
+    await wrapper.get('.review-btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.vm.rulePrompt.visible).toBe(true)
+    wrapper.vm.resolveRulePrompt(false)
+    await flushPromises()
+
+    expect(createTransactionRule).not.toHaveBeenCalled()
   })
 })

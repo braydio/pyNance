@@ -39,6 +39,12 @@ The summary card is hidden while loading, while showing an error state, or when 
 
 - Active edit rows use a subtle `--color-accent-indigo` edge highlight to differentiate from standard row zebra striping.
 
+## Rule Prompt Behavior
+
+- When a user edits `category`, `merchant_name`, or `merchant_type`, the UI opens an explicit confirmation modal asking whether to save a reusable transaction rule.
+- The confirmation includes clear **Yes** and **No** actions (`Yes, save rule` / `No, skip rule`) so users can decline rule creation without leaving the flow.
+- This behavior is consistent across both the transactions table editor and the step-through transaction review modal.
+
 ## Related Files
 
 - `frontend/src/components/tables/UpdateTransactionsTable.vue`

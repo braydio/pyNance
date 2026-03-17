@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
 import UpdateTransactionsTable from '../UpdateTransactionsTable.vue'
 import { updateTransaction, createTransactionRule } from '@/api/transactions'
@@ -36,6 +36,10 @@ vi.mock('@/api/transactions', () => ({
 }))
 
 describe('UpdateTransactionsTable.vue', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   it('filters transactions by primary category', async () => {
     const transactions = [
       {
@@ -379,7 +383,6 @@ describe('UpdateTransactionsTable.vue', () => {
   it('builds rule prompts from the edited transaction when rows shift', async () => {
     updateTransaction.mockResolvedValue({})
     createTransactionRule.mockResolvedValue({})
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
 
     const transactions = [
       {
@@ -416,19 +419,57 @@ describe('UpdateTransactionsTable.vue', () => {
     wrapper.vm.editBuffer.category = 'Household'
 
     // Simulate the virtualized row changing beneath the edit state.
-    await wrapper.vm.saveEdit(transactions[0])
+    const savePromise = wrapper.vm.saveEdit(transactions[0])
     await flushPromises()
 
-    expect(confirmSpy).toHaveBeenCalled()
-    const promptText = confirmSpy.mock.calls[0][0]
-    expect(promptText).toContain('Electric Utility')
+    expect(wrapper.vm.rulePrompt.visible).toBe(true)
+    expect(wrapper.vm.rulePrompt.description).toBe('Electric Utility')
+
+    wrapper.vm.resolveRulePrompt(true)
+    await savePromise
+    await flushPromises()
+
     expect(createTransactionRule).toHaveBeenCalledWith(
       expect.objectContaining({
         description: 'Electric Utility',
         account_id: 'acct-2',
       }),
     )
+  })
 
-    confirmSpy.mockRestore()
+  it('allows explicitly skipping rule creation from the save prompt', async () => {
+    updateTransaction.mockResolvedValue({})
+    createTransactionRule.mockResolvedValue({})
+
+    const transaction = {
+      transaction_id: 'alpha',
+      date: '2024-01-01',
+      amount: 10,
+      description: 'Coffee Shop',
+      category: 'Food: Coffee',
+      merchant_name: 'Cafe',
+      account_name: 'Everyday Checking',
+      institution_name: 'Bank A',
+      account_id: 'acct-1',
+    }
+
+    const wrapper = mount(UpdateTransactionsTable, {
+      props: { transactions: [transaction] },
+      global: { stubs: ['Modal', 'FuzzyDropdown'] },
+    })
+    await flushPromises()
+
+    wrapper.vm.startEdit(0, transaction)
+    wrapper.vm.editBuffer.category = 'Household'
+
+    const savePromise = wrapper.vm.saveEdit(transaction)
+    await flushPromises()
+
+    expect(wrapper.vm.rulePrompt.visible).toBe(true)
+    wrapper.vm.resolveRulePrompt(false)
+    await savePromise
+    await flushPromises()
+
+    expect(createTransactionRule).not.toHaveBeenCalled()
   })
 })
