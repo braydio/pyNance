@@ -124,10 +124,13 @@ def _derive_investment_flags(
     has_transaction_scope = "transactions" in products
     investment_from_type = _is_investment_type(payload_type, payload_subtype)
 
-    is_investment = has_investment_scope or investment_from_type
+    # Only mark as investment if the account's type/subtype indicates investment,
+    # not based on item-level products (which would incorrectly flag credit cards
+    # from institutions that also offer investment services)
+    is_investment = investment_from_type
     if is_investment:
         effective_type = "investment"
-        provenance = "product_scope" if has_investment_scope else "payload_type"
+        provenance = "payload_type"
     else:
         effective_type = str(payload_type or "Unknown")
         provenance = "none"

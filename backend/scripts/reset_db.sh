@@ -26,13 +26,11 @@ echo "==> Dropping and recreating dev database 'pynance'"
 ${DOCKER_COMPOSE_CMD} exec -T db psql -U user -d postgres -c "DROP DATABASE IF EXISTS pynance;"
 ${DOCKER_COMPOSE_CMD} exec -T db psql -U user -d postgres -c "CREATE DATABASE pynance;"
 
-export FLASK_APP="run:app"
-
 echo "==> Running migrations after reset"
-python -m flask db upgrade
+flask --app backend.run db upgrade
 
 echo "==> Seeding demo data"
-python -m flask seed-dev
+flask --app backend.run seed-dev
 
 echo "==> Database reset and seed complete."
 

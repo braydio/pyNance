@@ -33,4 +33,4 @@ Additional feature planning (forecasting, routing refactors, and UI audit items)
 - Apply new database migrations immediately after pulling backend changes so JSON payload columns and indices remain in sync.
 - Keep roadmap docs versioned alongside the code: update the relevant plan whenever a milestone completes or scope shifts.
 
-_Last updated: 2025-10-03_
+_Last updated: 2026-03-16_

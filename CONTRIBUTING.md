@@ -42,10 +42,10 @@ Copy and configure environment files for both backend and frontend:
 
 ```bash
 # Backend environment
-cp backend/example.env backend/.env
+cp backend/.env.example backend/.env
 
 # Frontend environment
-cp frontend/example.env frontend/.env
+cp frontend/.env.example frontend/.env
 ```
 
 **Validation Steps:**

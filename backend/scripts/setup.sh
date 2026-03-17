@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Simple dev bootstrap:
-# - Ensure backend/.env exists (copied from example.env if missing)
+# - Ensure backend/.env exists (copied from .env.example if missing)
 # - Start Postgres via docker compose
 # - Wait for DB readiness
 # - Run migrations
@@ -11,17 +11,17 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${ROOT_DIR}"
 
 BACKEND_ENV="${ROOT_DIR}/.env"
-EXAMPLE_ENV="${ROOT_DIR}/example.env"
+EXAMPLE_ENV="${ROOT_DIR}/.env.example"
 
 echo "==> pyNance backend setup starting"
 
 if [[ ! -f "${BACKEND_ENV}" ]]; then
   if [[ -f "${EXAMPLE_ENV}" ]]; then
-    echo "==> No backend .env found, copying from example.env"
+    echo "==> No backend .env found, copying from .env.example"
     cp "${EXAMPLE_ENV}" "${BACKEND_ENV}"
     echo "    Edit ${BACKEND_ENV} to customize credentials as needed."
   else
-    echo "ERROR: example.env not found; cannot bootstrap environment."
+    echo "ERROR: .env.example not found; cannot bootstrap environment."
     exit 1
   fi
 fi
@@ -58,10 +58,8 @@ until ${DOCKER_COMPOSE_CMD} exec db pg_isready -U user -d pynance >/dev/null 2>&
 done
 echo "==> Postgres is ready."
 
-export FLASK_APP="run:app"
-
 echo "==> Running database migrations (flask db upgrade)"
-python -m flask db upgrade
+flask --app backend.run db upgrade
 
 echo "==> Backend setup complete. You can now run:"
 echo "    python run.py"

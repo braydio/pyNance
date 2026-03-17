@@ -17,7 +17,7 @@ Folders:
 - Docs should match existing deployment types
 - Use `lint`, `black`, `ruff` for style
 - Run `bash scripts/setup.sh` to prepare the environment (creates `.venv`, installs deps, links hooks)
-- Copy `backend/example.env` to `backend/.env` (and `frontend/example.env` to `frontend/.env`)
+- Copy `backend/.env.example` to `backend/.env` (and `frontend/.env.example` to `frontend/.env`)
 
 ## Validation
 

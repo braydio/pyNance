@@ -5,7 +5,7 @@ It also provides verified examples and troubleshooting tips so you can get up an
 
 ## Quick Start
 
-- Copy `backend/example.env` to `backend/.env` and fill in any blanks.
+- Copy `backend/.env.example` to `backend/.env` and fill in any blanks.
 - Ensure `SQLALCHEMY_DATABASE_URI` points to your PostgreSQL instance.
 - Apply migrations before running the API: `flask --app backend.run db upgrade`.
 - Start services:

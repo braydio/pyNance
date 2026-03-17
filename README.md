@@ -67,7 +67,7 @@ flask --app backend.run db upgrade
    bash scripts/setup.sh
    ```
 
-   - Copies `backend/example.env` to `backend/.env`.
+   - Copies `backend/.env.example` to `backend/.env`.
    - Spins up PostgreSQL via `backend/docker-compose.yml` and waits for readiness.
    - Applies Alembic migrations with `flask db upgrade` (see [Flask-Migrate](https://flask-migrate.readthedocs.io/en/latest/)).
 
