@@ -24,7 +24,7 @@
 
 - Sync cursors are persisted per Plaid item, so subsequent accounts linked to the same item reuse progress and benefit from incremental fetches.
 - Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
-- Plaid API fetches now retry transient failures with exponential backoff before bubbling the last exception. Because retries happen before batch application, cursor persistence and DB commit/rollback behavior remain unchanged when retries exhaust.
+- Cursor state (`sync_cursor`, `last_refreshed`) is item-scoped and persisted once for every account under the Plaid item after the page loop completes successfully.
 
 ## Merchant normalization
 
@@ -43,7 +43,6 @@ Both ingestion paths therefore emit the same metadata contract:
 - `is_internal`: existing boolean exclusion flag used across analytics.
 - `transfer_type`: explicit classifier output (`brokerage_funding`, `checking_savings_transfer`, or generic `internal_transfer`).
 - `internal_transfer_flag`: model alias for compatibility-sensitive consumers.
-
 
 ## APR inference fallback for credit accounts
 
