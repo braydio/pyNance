@@ -28,9 +28,7 @@ def test_collect_full_history_deduplicates_and_tracks_missing(window_days):
         ],
     }
 
-    def fake_fetch(
-        access_token: str, start: str, end: str
-    ):  # pragma: no cover - simple shim
+    def fake_fetch(access_token: str, start: str, end: str):  # pragma: no cover - simple shim
         if (start, end) in responses:
             return responses[(start, end)]
         return sum(responses.values(), [])

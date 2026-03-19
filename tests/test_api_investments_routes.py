@@ -52,9 +52,7 @@ class QueryListStub:
 
     def order_by(self, order):
         direction, attr = order
-        self._rows = sorted(
-            self._rows, key=lambda row: getattr(row, attr), reverse=direction == "desc"
-        )
+        self._rows = sorted(self._rows, key=lambda row: getattr(row, attr), reverse=direction == "desc")
         return self
 
     def count(self):
@@ -144,11 +142,7 @@ class PlaidQueryStub:
         return self
 
     def filter_by(self, **kwargs):
-        filtered = [
-            row
-            for row in self.rows
-            if all(getattr(row, key, None) == value for key, value in kwargs.items())
-        ]
+        filtered = [row for row in self.rows if all(getattr(row, key, None) == value for key, value in kwargs.items())]
         return PlaidQueryStub(filtered)
 
     def first(self):
@@ -174,9 +168,7 @@ class AccountScopeStub:
         self.is_investment = is_investment
 
 
-def _load_module(
-    module_name: str, route_path: str, models_stub, sql_pkg, helpers_stub=None
-):
+def _load_module(module_name: str, route_path: str, models_stub, sql_pkg, helpers_stub=None):
     """Load a backend route module with lightweight dependency stubs."""
 
     sys.path.insert(0, BASE_BACKEND)
@@ -194,9 +186,7 @@ def _load_module(
 
     extensions_stub = types.ModuleType("app.extensions")
     extensions_stub.db = types.SimpleNamespace(
-        session=types.SimpleNamespace(
-            add=lambda *_: None, commit=lambda: None, rollback=lambda: None
-        )
+        session=types.SimpleNamespace(add=lambda *_: None, commit=lambda: None, rollback=lambda: None)
     )
     sys.modules["app.extensions"] = extensions_stub
 
@@ -220,9 +210,7 @@ def investments_client():
     models_stub = types.ModuleType("app.models")
     models_stub.Account = AccountScopeStub
     models_stub.PlaidAccount = PlaidAccountStub
-    models_stub.InvestmentHolding = type(
-        "InvestmentHolding", (), {"security_id": FilterColumn("security_id")}
-    )
+    models_stub.InvestmentHolding = type("InvestmentHolding", (), {"security_id": FilterColumn("security_id")})
 
     models_stub.InvestmentTransaction = type(
         "InvestmentTransaction",
@@ -236,9 +224,7 @@ def investments_client():
             "date": FilterColumn("date"),
         },
     )
-    models_stub.Security = type(
-        "Security", (), {"security_id": FilterColumn("security_id")}
-    )
+    models_stub.Security = type("Security", (), {"security_id": FilterColumn("security_id")})
 
     scoped_account_rows = [
         {
@@ -271,40 +257,22 @@ def investments_client():
 
     holding = Holding("acc-1", "sec-1", 2.0, 10.0, 30.0, date(2024, 5, 2))
     cross_user_holding = Holding("acc-2", "sec-2", 3.0, 11.0, 33.0, date(2024, 5, 2))
-    non_investment_holding = Holding(
-        "acc-3", "sec-3", 4.0, 12.0, 48.0, date(2024, 5, 2)
-    )
+    non_investment_holding = Holding("acc-3", "sec-3", 4.0, 12.0, 48.0, date(2024, 5, 2))
     no_scope_holding = Holding("acc-4", "sec-4", 5.0, 13.0, 65.0, date(2024, 5, 2))
-    security = Sec(
-        "sec-1", "Security One", "SEC1", "equity", "USD", 15.0, date(2024, 5, 2)
-    )
-    security_two = Sec(
-        "sec-2", "Security Two", "SEC2", "equity", "USD", 16.0, date(2024, 5, 2)
-    )
-    security_three = Sec(
-        "sec-3", "Security Three", "SEC3", "equity", "USD", 17.0, date(2024, 5, 2)
-    )
-    security_four = Sec(
-        "sec-4", "Security Four", "SEC4", "equity", "USD", 18.0, date(2024, 5, 2)
-    )
+    security = Sec("sec-1", "Security One", "SEC1", "equity", "USD", 15.0, date(2024, 5, 2))
+    security_two = Sec("sec-2", "Security Two", "SEC2", "equity", "USD", 16.0, date(2024, 5, 2))
+    security_three = Sec("sec-3", "Security Three", "SEC3", "equity", "USD", 17.0, date(2024, 5, 2))
+    security_four = Sec("sec-4", "Security Four", "SEC4", "equity", "USD", 18.0, date(2024, 5, 2))
 
     allowed_account = AccountScopeStub("acc-1", "u1", True)
     cross_user_account = AccountScopeStub("acc-2", "u2", True)
     non_investment_account = AccountScopeStub("acc-3", "u1", False)
     no_scope_account = AccountScopeStub("acc-4", "u1", True)
 
-    plaid_investments = PlaidAccountStub(
-        "acc-1", "item-1", "token-1", product="investments"
-    )
-    plaid_investments_two = PlaidAccountStub(
-        "acc-2", "item-2", "token-2", product="investments"
-    )
-    plaid_non_investments = PlaidAccountStub(
-        "acc-3", "item-3", "token-3", product="transactions"
-    )
-    plaid_missing_scope = PlaidAccountStub(
-        "acc-4", "item-4", "token-4", product="liabilities"
-    )
+    plaid_investments = PlaidAccountStub("acc-1", "item-1", "token-1", product="investments")
+    plaid_investments_two = PlaidAccountStub("acc-2", "item-2", "token-2", product="investments")
+    plaid_non_investments = PlaidAccountStub("acc-3", "item-3", "token-3", product="transactions")
+    plaid_missing_scope = PlaidAccountStub("acc-4", "item-4", "token-4", product="liabilities")
 
     class SessionQuery:
         def __init__(self):
@@ -336,9 +304,7 @@ def investments_client():
         def all(self):
             return list(self.rows)
 
-    module.db = types.SimpleNamespace(
-        session=types.SimpleNamespace(query=lambda *_: SessionQuery())
-    )
+    module.db = types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *_: SessionQuery()))
 
     txns = [
         Txn(
@@ -427,10 +393,7 @@ def investments_client():
                 "acc-3": plaid_non_investments,
                 "acc-4": plaid_missing_scope,
             }
-            return [
-                (txn, account_by_id[txn.account_id], plaid_by_id[txn.account_id])
-                for txn in self._rows
-            ]
+            return [(txn, account_by_id[txn.account_id], plaid_by_id[txn.account_id]) for txn in self._rows]
 
     models_stub.InvestmentTransaction.query = JoinedTxnQuery(txns)
 
@@ -459,26 +422,18 @@ def test_investments_success_endpoints(investments_client):
 def test_investments_transactions_date_validation_errors(investments_client):
     client, *_ = investments_client
 
-    bad_format = client.get(
-        "/api/investments/transactions?user_id=u1&start_date=2024/01/01"
-    )
-    reversed_range = client.get(
-        "/api/investments/transactions?user_id=u1&start_date=2024-02-02&end_date=2024-01-01"
-    )
+    bad_format = client.get("/api/investments/transactions?user_id=u1&start_date=2024/01/01")
+    reversed_range = client.get("/api/investments/transactions?user_id=u1&start_date=2024-02-02&end_date=2024-01-01")
 
     assert bad_format.status_code == 400
     assert "Invalid date" in bad_format.get_json()["error"]
     assert reversed_range.status_code == 400
-    assert (
-        "end_date must be greater than or equal" in reversed_range.get_json()["error"]
-    )
+    assert "end_date must be greater than or equal" in reversed_range.get_json()["error"]
 
 
 def test_investments_transactions_combined_filters_and_pagination(investments_client):
     client, _module, models_stub, txns, _captured_scope = investments_client
-    models_stub.InvestmentTransaction.query = (
-        models_stub.InvestmentTransaction.query.__class__(txns)
-    )
+    models_stub.InvestmentTransaction.query = models_stub.InvestmentTransaction.query.__class__(txns)
 
     resp = client.get(
         "/api/investments/transactions?user_id=u1&account_id=acc-1&security_id=sec-1&type=trade&subtype=buy"
@@ -496,9 +451,7 @@ def test_investments_transactions_combined_filters_and_pagination(investments_cl
         "start_date": "2024-01-01",
         "end_date": "2024-01-03",
     }
-    assert [txn["investment_transaction_id"] for txn in payload["transactions"]] == [
-        "t3"
-    ]
+    assert [txn["investment_transaction_id"] for txn in payload["transactions"]] == ["t3"]
 
 
 def test_investments_endpoints_require_user_scope(investments_client):
@@ -520,9 +473,7 @@ def test_investments_filters_cross_user_and_non_investment_results(investments_c
     tx_resp = client.get("/api/investments/transactions?user_id=u1")
 
     holding_accounts = [row["account_id"] for row in holdings_resp.get_json()["data"]]
-    tx_accounts = [
-        row["account_id"] for row in tx_resp.get_json()["data"]["transactions"]
-    ]
+    tx_accounts = [row["account_id"] for row in tx_resp.get_json()["data"]["transactions"]]
 
     assert holding_accounts == ["acc-1"]
     assert tx_accounts == ["acc-1", "acc-1"]
@@ -535,11 +486,7 @@ def plaid_investments_client():
     models_stub.PlaidItem = type(
         "PlaidItem",
         (),
-        {
-            "query": types.SimpleNamespace(
-                filter_by=lambda **_k: types.SimpleNamespace(first=lambda: None)
-            )
-        },
+        {"query": types.SimpleNamespace(filter_by=lambda **_k: types.SimpleNamespace(first=lambda: None))},
     )
 
     investments_logic_stub = types.ModuleType("app.sql.investments_logic")
@@ -582,9 +529,7 @@ def plaid_investments_client():
     )
 
     app = Flask(__name__)
-    app.register_blueprint(
-        module.plaid_investments, url_prefix="/api/plaid/investments"
-    )
+    app.register_blueprint(module.plaid_investments, url_prefix="/api/plaid/investments")
     with app.test_client() as client:
         yield client, module
 
@@ -600,9 +545,7 @@ def plaid_investments_client():
         ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
     ],
 )
-def test_plaid_investments_rejects_empty_body(
-    plaid_investments_client, path, expected_error
-):
+def test_plaid_investments_rejects_empty_body(plaid_investments_client, path, expected_error):
     """Return deterministic 400 responses when required JSON fields are absent."""
     client, _module = plaid_investments_client
 
@@ -623,9 +566,7 @@ def test_plaid_investments_rejects_empty_body(
         ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
     ],
 )
-def test_plaid_investments_rejects_invalid_json_body(
-    plaid_investments_client, path, expected_error
-):
+def test_plaid_investments_rejects_invalid_json_body(plaid_investments_client, path, expected_error):
     """Treat malformed JSON payloads as empty input and return 400 validation errors."""
     client, _module = plaid_investments_client
 
@@ -646,9 +587,7 @@ def test_plaid_investments_rejects_invalid_json_body(
         ("/api/plaid/investments/refresh", "Missing user_id or item_id"),
     ],
 )
-def test_plaid_investments_rejects_non_object_json_body(
-    plaid_investments_client, path, expected_error
-):
+def test_plaid_investments_rejects_non_object_json_body(plaid_investments_client, path, expected_error):
     """Treat non-object JSON payloads as empty input for deterministic validation."""
     client, _module = plaid_investments_client
 
@@ -662,9 +601,7 @@ def test_plaid_investments_generate_link_token_success(plaid_investments_client)
     """Return a Plaid link token for valid investment link requests."""
     client, _module = plaid_investments_client
 
-    response = client.post(
-        "/api/plaid/investments/generate_link_token", json={"user_id": "u1"}
-    )
+    response = client.post("/api/plaid/investments/generate_link_token", json={"user_id": "u1"})
 
     assert response.status_code == 200
     assert response.get_json() == {"status": "success", "link_token": "link-token"}
@@ -699,9 +636,7 @@ def test_plaid_investments_refresh_success_path(plaid_investments_client, monkey
         "get_investment_transactions",
         lambda token, start_date, end_date: [{"id": "a"}, {"id": "b"}],
     )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh",
@@ -721,15 +656,11 @@ def test_plaid_investments_refresh_success_path(plaid_investments_client, monkey
     }
 
 
-def test_plaid_investments_refresh_supports_canonical_scope_strings(
-    plaid_investments_client, monkeypatch
-):
+def test_plaid_investments_refresh_supports_canonical_scope_strings(plaid_investments_client, monkeypatch):
     """Refresh should match accounts whose product scopes include investments."""
     client, module = plaid_investments_client
 
-    account = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", product="investments,transactions"
-    )
+    account = PlaidAccountStub("acct-1", "item-1", "token-1", product="investments,transactions")
     module.PlaidAccount.query = PlaidQueryStub([account])
 
     monkeypatch.setattr(
@@ -737,12 +668,8 @@ def test_plaid_investments_refresh_supports_canonical_scope_strings(
         "upsert_investments_from_plaid",
         lambda _user_id, _token: {"securities": 1, "holdings": 1},
     )
-    monkeypatch.setattr(
-        module, "get_investment_transactions", lambda *_a: [{"id": "a"}]
-    )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module, "get_investment_transactions", lambda *_a: [{"id": "a"}])
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh",
@@ -758,17 +685,11 @@ def test_plaid_investments_refresh_supports_canonical_scope_strings(
     assert resp.get_json()["upserts"]["investment_transactions"] == 1
 
 
-def test_plaid_investments_refresh_all_aggregates_summary(
-    plaid_investments_client, monkeypatch
-):
+def test_plaid_investments_refresh_all_aggregates_summary(plaid_investments_client, monkeypatch):
     client, module = plaid_investments_client
 
-    first = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1")
-    )
-    second = PlaidAccountStub(
-        "acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2")
-    )
+    first = PlaidAccountStub("acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1"))
+    second = PlaidAccountStub("acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2"))
     module.PlaidAccount.query = PlaidQueryStub([first, second])
 
     holdings_counts = {
@@ -787,9 +708,7 @@ def test_plaid_investments_refresh_all_aggregates_summary(
         "get_investment_transactions",
         lambda token, _start, _end: tx_counts[token],
     )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh_all",
@@ -805,17 +724,11 @@ def test_plaid_investments_refresh_all_aggregates_summary(
     }
 
 
-def test_plaid_investments_refresh_all_rolls_back_failed_item(
-    plaid_investments_client, monkeypatch
-):
+def test_plaid_investments_refresh_all_rolls_back_failed_item(plaid_investments_client, monkeypatch):
     client, module = plaid_investments_client
 
-    first = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1")
-    )
-    second = PlaidAccountStub(
-        "acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2")
-    )
+    first = PlaidAccountStub("acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1"))
+    second = PlaidAccountStub("acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2"))
     module.PlaidAccount.query = PlaidQueryStub([first, second])
 
     rollback_calls = []
@@ -830,17 +743,13 @@ def test_plaid_investments_refresh_all_rolls_back_failed_item(
             raise RuntimeError("insert failed")
         return {"securities": 2, "holdings": 3}
 
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investments_from_plaid", upsert
-    )
+    monkeypatch.setattr(module.investments_logic, "upsert_investments_from_plaid", upsert)
     monkeypatch.setattr(
         module,
         "get_investment_transactions",
         lambda token, _start, _end: [{"id": token}],
     )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh_all",
@@ -911,17 +820,11 @@ def plaid_webhook_client():
         yield client, module
 
 
-def test_plaid_webhook_transactions_sync_dispatches_each_account(
-    plaid_webhook_client, monkeypatch
-):
+def test_plaid_webhook_transactions_sync_dispatches_each_account(plaid_webhook_client, monkeypatch):
     client, module = plaid_webhook_client
 
-    first = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", account=types.SimpleNamespace()
-    )
-    second = PlaidAccountStub(
-        "acct-2", "item-1", "token-1", account=types.SimpleNamespace()
-    )
+    first = PlaidAccountStub("acct-1", "item-1", "token-1", account=types.SimpleNamespace())
+    second = PlaidAccountStub("acct-2", "item-1", "token-1", account=types.SimpleNamespace())
     module.PlaidAccount.query = PlaidQueryStub([first, second])
     module.PlaidAccount.account = None
     module.joinedload = lambda *_a, **_k: None
@@ -949,17 +852,11 @@ def test_plaid_webhook_transactions_sync_dispatches_each_account(
     assert resp.get_json()["triggered"] == ["acct-1", "acct-2"]
 
 
-def test_plaid_webhook_transactions_sync_isolates_account_failures(
-    plaid_webhook_client, monkeypatch
-):
+def test_plaid_webhook_transactions_sync_isolates_account_failures(plaid_webhook_client, monkeypatch):
     client, module = plaid_webhook_client
 
-    first = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", account=types.SimpleNamespace()
-    )
-    second = PlaidAccountStub(
-        "acct-2", "item-1", "token-1", account=types.SimpleNamespace()
-    )
+    first = PlaidAccountStub("acct-1", "item-1", "token-1", account=types.SimpleNamespace())
+    second = PlaidAccountStub("acct-2", "item-1", "token-1", account=types.SimpleNamespace())
     module.PlaidAccount.query = PlaidQueryStub([first, second])
     module.PlaidAccount.account = None
     module.joinedload = lambda *_a, **_k: None
@@ -985,9 +882,7 @@ def test_plaid_webhook_transactions_sync_isolates_account_failures(
     assert resp.get_json()["triggered"] == ["acct-2"]
 
 
-def test_plaid_webhook_investments_transactions_dispatch(
-    plaid_webhook_client, monkeypatch
-):
+def test_plaid_webhook_investments_transactions_dispatch(plaid_webhook_client, monkeypatch):
     client, module = plaid_webhook_client
 
     acct = PlaidAccountStub("acct-1", "item-1", "token-1")
@@ -998,9 +893,7 @@ def test_plaid_webhook_investments_transactions_dispatch(
         "get_investment_transactions",
         lambda *_a, **_k: [{"id": "a"}, {"id": "b"}, {"id": "c"}],
     )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/webhooks/plaid",
@@ -1013,28 +906,18 @@ def test_plaid_webhook_investments_transactions_dispatch(
     )
 
     assert resp.status_code == 200
-    assert resp.get_json()["triggered"] == [
-        {"account_id": "acct-1", "investment_txs": 3}
-    ]
+    assert resp.get_json()["triggered"] == [{"account_id": "acct-1", "investment_txs": 3}]
 
 
-def test_plaid_webhook_investments_transactions_accepts_mixed_product_scopes(
-    plaid_webhook_client, monkeypatch
-):
+def test_plaid_webhook_investments_transactions_accepts_mixed_product_scopes(plaid_webhook_client, monkeypatch):
     """Webhook dispatch should include accounts with canonical mixed Plaid scopes."""
     client, module = plaid_webhook_client
 
-    acct = PlaidAccountStub(
-        "acct-1", "item-1", "token-1", product="investments,transactions"
-    )
+    acct = PlaidAccountStub("acct-1", "item-1", "token-1", product="investments,transactions")
     module.PlaidAccount.query = PlaidQueryStub([acct])
 
-    monkeypatch.setattr(
-        module, "get_investment_transactions", lambda *_a, **_k: [{"id": "a"}]
-    )
-    monkeypatch.setattr(
-        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
-    )
+    monkeypatch.setattr(module, "get_investment_transactions", lambda *_a, **_k: [{"id": "a"}])
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/webhooks/plaid",
@@ -1047,17 +930,13 @@ def test_plaid_webhook_investments_transactions_accepts_mixed_product_scopes(
     )
 
     assert resp.status_code == 200
-    assert resp.get_json()["triggered"] == [
-        {"account_id": "acct-1", "investment_txs": 1}
-    ]
+    assert resp.get_json()["triggered"] == [{"account_id": "acct-1", "investment_txs": 1}]
 
 
 def test_plaid_webhook_holdings_dispatch(plaid_webhook_client, monkeypatch):
     client, module = plaid_webhook_client
 
-    acct = PlaidAccountStub(
-        "acct-9", "item-9", "token-9", account=types.SimpleNamespace(user_id="u9")
-    )
+    acct = PlaidAccountStub("acct-9", "item-9", "token-9", account=types.SimpleNamespace(user_id="u9"))
     module.PlaidAccount.query = PlaidQueryStub([acct])
     monkeypatch.setattr(
         module.investments_logic,
@@ -1076,9 +955,7 @@ def test_plaid_webhook_holdings_dispatch(plaid_webhook_client, monkeypatch):
     )
 
     assert resp.status_code == 200
-    assert resp.get_json()["triggered"] == [
-        {"account_id": "acct-9", "securities": 7, "holdings": 11}
-    ]
+    assert resp.get_json()["triggered"] == [{"account_id": "acct-9", "securities": 7, "holdings": 11}]
 
 
 def test_plaid_webhook_investments_missing_item_id_is_ignored(plaid_webhook_client):

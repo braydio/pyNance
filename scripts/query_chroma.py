@@ -22,9 +22,7 @@ DEFAULT_LLM_MODEL = os.getenv("OLLAMA_LLM_MODEL")
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(
-        description="Query ChromaDB for similar documents."
-    )
+    parser = argparse.ArgumentParser(description="Query ChromaDB for similar documents.")
     parser.add_argument("-q", "--query", help="Run a single query and exit.")
     parser.add_argument("-n", "--count", type=int, default=DEFAULT_COUNT)
     parser.add_argument("--collection", default=DEFAULT_COLLECTION)
@@ -51,12 +49,8 @@ def build_client(args):
 
 
 def build_collection(client, args):
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=args.model
-    )
-    return client.get_or_create_collection(
-        name=args.collection, embedding_function=embedding_fn
-    )
+    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=args.model)
+    return client.get_or_create_collection(name=args.collection, embedding_function=embedding_fn)
 
 
 def query_collection(collection, question, count):

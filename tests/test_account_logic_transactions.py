@@ -61,9 +61,7 @@ def app_client():
         db.drop_all()
 
 
-def _seed_transactions(
-    amounts: list[Decimal] | None = None, tags: dict[str, list[str]] | None = None
-):
+def _seed_transactions(amounts: list[Decimal] | None = None, tags: dict[str, list[str]] | None = None):
     """Insert a single account with dated transactions in reverse chronological order.
 
     Args:
@@ -101,9 +99,7 @@ def _seed_transactions(
         )
         if tags and txn_id in tags:
             for tag_name in tags[txn_id]:
-                tag = Tag.query.filter_by(
-                    user_id=account.user_id, name=tag_name
-                ).first()
+                tag = Tag.query.filter_by(user_id=account.user_id, name=tag_name).first()
                 if not tag:
                     tag = Tag(user_id=account.user_id, name=tag_name)
                     db.session.add(tag)

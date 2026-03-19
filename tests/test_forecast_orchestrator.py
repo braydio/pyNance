@@ -36,10 +36,7 @@ class DummyRuleEngine:
     def forecast_balances(horizon_days=60):
         # Use non-deprecated current date
         today = datetime.now().date()
-        return [
-            {"date": today + timedelta(days=i), "account_id": "acc", "balance": i}
-            for i in range(horizon_days)
-        ]
+        return [{"date": today + timedelta(days=i), "account_id": "acc", "balance": i} for i in range(horizon_days)]
 
 
 fe_stub.ForecastEngine = DummyRuleEngine
@@ -49,9 +46,7 @@ fs_stub = types.ModuleType("app.services.forecast_stat_model")
 fs_stub.ForecastEngine = DummyRuleEngine
 sys.modules["app.services.forecast_stat_model"] = fs_stub
 MODULE_PATH = os.path.join(BASE_BACKEND, "app", "services", "forecast_orchestrator.py")
-spec = importlib.util.spec_from_file_location(
-    "app.services.forecast_orchestrator", MODULE_PATH
-)
+spec = importlib.util.spec_from_file_location("app.services.forecast_orchestrator", MODULE_PATH)
 forecast_orchestrator = importlib.util.module_from_spec(spec)
 try:
     spec.loader.exec_module(forecast_orchestrator)

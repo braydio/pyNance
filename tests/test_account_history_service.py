@@ -92,10 +92,7 @@ def test_upsert_accounts_normalizes_status(app_context):
 
     upsert_accounts("user-1", accounts, provider="PLAID")
 
-    persisted = {
-        account.account_id: account.status
-        for account in Account.query.order_by(Account.account_id)
-    }
+    persisted = {account.account_id: account.status for account in Account.query.order_by(Account.account_id)}
 
     assert persisted == {
         "acct-1": "active",
@@ -155,18 +152,12 @@ def test_cache_history_upserts_only_requested_window(app_context):
         replacement_history,
     )
 
-    all_rows = (
-        AccountHistory.query.filter_by(account_id=account.account_id)
-        .order_by(AccountHistory.date.asc())
-        .all()
-    )
+    all_rows = AccountHistory.query.filter_by(account_id=account.account_id).order_by(AccountHistory.date.asc()).all()
     assert len(all_rows) == 365
 
     for row in all_rows:
         if target_start <= row.date <= today:
-            expected_balance = Decimal(
-                str(5000 + (row.date - target_start).days)
-            ).quantize(Decimal("0.01"))
+            expected_balance = Decimal(str(5000 + (row.date - target_start).days)).quantize(Decimal("0.01"))
             assert row.balance == expected_balance
         else:
             assert row.balance == original_balances[row.date]
@@ -205,9 +196,7 @@ def test_get_or_compute_account_history_cache_matches_first_compute(app_context)
                 account_id=account.account_id,
                 user_id=account.user_id,
                 amount=Decimal("5.00"),
-                date=datetime.combine(
-                    start + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc
-                ),
+                date=datetime.combine(start + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc),
                 description="Internal transfer",
                 provider="manual",
                 is_internal=True,

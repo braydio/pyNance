@@ -50,9 +50,7 @@ DATABASE_URI = config_mod.SQLALCHEMY_DATABASE_URI
 
 # Load forecast_logic for plaid_helpers dependency
 forecast_path = BACKEND_DIR / "app" / "sql" / "forecast_logic.py"
-forecast_spec = importlib.util.spec_from_file_location(
-    "app.sql.forecast_logic", forecast_path
-)
+forecast_spec = importlib.util.spec_from_file_location("app.sql.forecast_logic", forecast_path)
 forecast_mod = importlib.util.module_from_spec(forecast_spec)  # type: ignore[arg-type]
 forecast_spec.loader.exec_module(forecast_mod)  # type: ignore[arg-type]
 sys.modules["app.sql.forecast_logic"] = forecast_mod
@@ -68,9 +66,7 @@ PlaidAccount = models_mod.PlaidAccount
 
 # Load helpers
 plaid_helpers_path = BACKEND_DIR / "app" / "helpers" / "plaid_helpers.py"
-plaid_spec = importlib.util.spec_from_file_location(
-    "app.helpers.plaid_helpers", plaid_helpers_path
-)
+plaid_spec = importlib.util.spec_from_file_location("app.helpers.plaid_helpers", plaid_helpers_path)
 plaid_mod = importlib.util.module_from_spec(plaid_spec)  # type: ignore[arg-type]
 plaid_spec.loader.exec_module(plaid_mod)  # type: ignore[arg-type]
 sys.modules["app.helpers.plaid_helpers"] = plaid_mod
@@ -80,9 +76,7 @@ get_institution_name = plaid_mod.get_institution_name
 
 # Load account_logic
 account_logic_path = BACKEND_DIR / "app" / "sql" / "account_logic.py"
-account_spec = importlib.util.spec_from_file_location(
-    "app.sql.account_logic", account_logic_path
-)
+account_spec = importlib.util.spec_from_file_location("app.sql.account_logic", account_logic_path)
 account_mod = importlib.util.module_from_spec(account_spec)  # type: ignore[arg-type]
 account_spec.loader.exec_module(account_mod)  # type: ignore[arg-type]
 sys.modules["app.sql.account_logic"] = account_mod
@@ -127,9 +121,7 @@ def sync_from_token(user_id: str, access_token: str) -> int:
     accounts = get_accounts(access_token, user_id)
     for acct in accounts:
         acct["institution_name"] = institution_name
-    account_mod.upsert_accounts(
-        user_id, accounts, provider="plaid", access_token=access_token
-    )
+    account_mod.upsert_accounts(user_id, accounts, provider="plaid", access_token=access_token)
 
     inserted = 0
     for acct in accounts:

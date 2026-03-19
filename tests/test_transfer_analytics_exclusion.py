@@ -129,9 +129,7 @@ def test_transaction_reporting_excludes_internal_transfers():
 def test_top_spending_category_excludes_internal_transfers():
     client, app = _build_client()
     with app.app_context():
-        response = client.get(
-            "/transactions/top_categories?start_date=2024-04-01&end_date=2024-04-30"
-        )
+        response = client.get("/transactions/top_categories?start_date=2024-04-01&end_date=2024-04-30")
 
     assert response.status_code == 200
     data = response.get_json()["data"]

@@ -77,18 +77,14 @@ config_stub.logger = DummyLogger()
 sys.modules.setdefault("app", app_stub)
 sys.modules["app.config"] = config_stub
 
-MODULE_PATH = os.path.join(
-    os.path.dirname(__file__), "..", "backend", "app", "helpers", "import_helpers.py"
-)
+MODULE_PATH = os.path.join(os.path.dirname(__file__), "..", "backend", "app", "helpers", "import_helpers.py")
 spec = importlib.util.spec_from_file_location("import_helpers", MODULE_PATH)
 import_helpers = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(import_helpers)
 
 
 def test_import_transactions_from_pdf():
-    pdf_path = os.path.join(
-        os.path.dirname(__file__), "fixtures", "synchrony_sample.pdf"
-    )
+    pdf_path = os.path.join(os.path.dirname(__file__), "fixtures", "synchrony_sample.pdf")
     result = import_helpers.import_transactions_from_pdf(pdf_path)
     assert result["status"] == "success"
     assert result["count"] == 3

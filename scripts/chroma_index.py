@@ -21,16 +21,12 @@ EXCLUDE_DIRS = {
 def parse_args():
     parser = argparse.ArgumentParser(description="Index project files into ChromaDB")
     parser.add_argument("--source", default="backend", help="Source directory")
-    parser.add_argument(
-        "--collection", default=os.getenv("CHROMA_COLLECTION", "pynance-code")
-    )
+    parser.add_argument("--collection", default=os.getenv("CHROMA_COLLECTION", "pynance-code"))
     parser.add_argument("--host", default=os.getenv("CHROMA_HOST", "localhost"))
     parser.add_argument("--port", type=int, default=int(os.getenv("CHROMA_PORT", 8055)))
     parser.add_argument("--tenant", default=os.getenv("CHROMA_TENANT"))
     parser.add_argument("--database", default=os.getenv("CHROMA_DATABASE"))
-    parser.add_argument(
-        "--model", default=os.getenv("CHROMA_MODEL", "all-MiniLM-L6-v2")
-    )
+    parser.add_argument("--model", default=os.getenv("CHROMA_MODEL", "all-MiniLM-L6-v2"))
     parser.add_argument("--reindex", action="store_true")
     parser.add_argument("--diff-only", action="store_true")
     return parser.parse_args()
@@ -45,12 +41,8 @@ def main():
     if args.database:
         client_kwargs["database"] = args.database
     client = chromadb.HttpClient(**client_kwargs)
-    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name=args.model
-    )
-    collection = client.get_or_create_collection(
-        name=args.collection, embedding_function=embedding_fn
-    )
+    embedding_fn = embedding_functions.SentenceTransformerEmbeddingFunction(model_name=args.model)
+    collection = client.get_or_create_collection(name=args.collection, embedding_function=embedding_fn)
 
     existing_ids = set()
     if not args.reindex:
@@ -75,9 +67,7 @@ def main():
                 if not content.strip():
                     continue
 
-                metadata_base = extract_metadata(
-                    os.path.abspath(path), content, source_root=source_root
-                )
+                metadata_base = extract_metadata(os.path.abspath(path), content, source_root=source_root)
                 chunks = chunk_text(content)
                 tags = metadata_base.get("tags", "")
 

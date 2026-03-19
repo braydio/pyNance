@@ -56,15 +56,9 @@ def test_api_reference_has_balanced_markdown_fences_in_accounts_history_neighbor
     neighborhood = doc_text[start_index:end_index]
 
     assert "```text\nGET    /api/transactions/get_transactions" in neighborhood
-    assert (
-        "```text\nPOST   /api/plaid/transactions/exchange_public_token" in neighborhood
-    )
+    assert "```text\nPOST   /api/plaid/transactions/exchange_public_token" in neighborhood
 
-    fence_lines = [
-        line.strip()
-        for line in neighborhood.splitlines()
-        if line.strip().startswith("```")
-    ]
+    fence_lines = [line.strip() for line in neighborhood.splitlines() if line.strip().startswith("```")]
     opened = sum(1 for line in fence_lines if line != "```")
     closed = fence_lines.count("```")
     assert opened == closed

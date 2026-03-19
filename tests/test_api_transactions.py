@@ -82,9 +82,7 @@ class _Expr:
 @pytest.fixture
 def client():
     app = Flask(__name__)
-    app.register_blueprint(
-        transactions_module.transactions, url_prefix="/api/transactions"
-    )
+    app.register_blueprint(transactions_module.transactions, url_prefix="/api/transactions")
     app.config["TESTING"] = True
     with app.test_client() as c:
         yield c
@@ -245,9 +243,7 @@ def test_update_transaction_applies_tag_normalization(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)),
         raising=False,
     )
 
@@ -297,9 +293,7 @@ def test_update_transaction_defaults_empty_tag(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(add=added_tags.append, commit=lambda: None)),
         raising=False,
     )
 
@@ -318,9 +312,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=10,
-                date=transactions_module.datetime(
-                    2026, 2, 5, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 5, tzinfo=transactions_module.UTC),
                 merchant_name="Coffee Shop",
                 merchant_slug="coffee-shop",
                 description="Coffee",
@@ -334,9 +326,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=15,
-                date=transactions_module.datetime(
-                    2026, 1, 10, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 1, 10, tzinfo=transactions_module.UTC),
                 merchant_name="Coffee Shop",
                 merchant_slug="coffee-shop",
                 description="Coffee",
@@ -350,9 +340,7 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=20,
-                date=transactions_module.datetime(
-                    2026, 2, 3, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 3, tzinfo=transactions_module.UTC),
                 merchant_name="Grocery Mart",
                 merchant_slug="grocery-mart",
                 description="Groceries",
@@ -381,34 +369,18 @@ def test_top_merchants_returns_frontend_shape(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())),
         raising=False,
     )
-    monkeypatch.setattr(
-        transactions_module.Account, "is_hidden", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "is_internal", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "pending", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Account, "is_hidden", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "is_internal", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "pending", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module.Transaction, "account_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "category_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Account, "account_id", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Transaction, "account_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "category_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Account, "account_id", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
-    )
+    monkeypatch.setattr(transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount))
 
     resp = client.get("/api/transactions/top_merchants?trend_points=3")
     assert resp.status_code == 200
@@ -424,9 +396,7 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=30,
-                date=transactions_module.datetime(
-                    2026, 2, 1, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 1, tzinfo=transactions_module.UTC),
                 merchant_name="A",
                 merchant_slug="a",
                 description="A",
@@ -440,9 +410,7 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=10,
-                date=transactions_module.datetime(
-                    2026, 2, 2, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 2, tzinfo=transactions_module.UTC),
                 merchant_name="B",
                 merchant_slug="b",
                 description="B",
@@ -471,34 +439,18 @@ def test_top_categories_uses_category_fallback_and_top_n(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())),
         raising=False,
     )
-    monkeypatch.setattr(
-        transactions_module.Account, "is_hidden", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "is_internal", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "pending", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Account, "is_hidden", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "is_internal", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "pending", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module.Transaction, "account_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "category_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Account, "account_id", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Transaction, "account_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "category_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Account, "account_id", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
-    )
+    monkeypatch.setattr(transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount))
 
     resp = client.get("/api/transactions/top_categories?top_n=1&trend_points=4")
     assert resp.status_code == 200
@@ -515,9 +467,7 @@ def test_top_merchants_groups_by_canonical_slug(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=12,
-                date=transactions_module.datetime(
-                    2026, 2, 5, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 5, tzinfo=transactions_module.UTC),
                 merchant_name="Joe's Coffee",
                 merchant_slug="joes-coffee",
                 description="POS JOE'S COFFEE #123",
@@ -531,9 +481,7 @@ def test_top_merchants_groups_by_canonical_slug(client, monkeypatch):
         (
             types.SimpleNamespace(
                 amount=8,
-                date=transactions_module.datetime(
-                    2026, 2, 10, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 10, tzinfo=transactions_module.UTC),
                 merchant_name="Joes Coffee",
                 merchant_slug="joes-coffee",
                 description="DEBIT JOES COFFEE",
@@ -562,34 +510,18 @@ def test_top_merchants_groups_by_canonical_slug(client, monkeypatch):
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())),
         raising=False,
     )
-    monkeypatch.setattr(
-        transactions_module.Account, "is_hidden", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "is_internal", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "pending", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Account, "is_hidden", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "is_internal", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "pending", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module.Transaction, "account_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "category_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Account, "account_id", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Transaction, "account_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "category_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Account, "account_id", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
-    )
+    monkeypatch.setattr(transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount))
 
     resp = client.get("/api/transactions/top_merchants?trend_points=3")
     assert resp.status_code == 200
@@ -605,9 +537,7 @@ def test_top_categories_groups_equivalent_variants_without_slug(client, monkeypa
         (
             types.SimpleNamespace(
                 amount=9,
-                date=transactions_module.datetime(
-                    2026, 2, 1, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 1, tzinfo=transactions_module.UTC),
                 merchant_name="Shop A",
                 merchant_slug="shop-a",
                 description="A",
@@ -623,9 +553,7 @@ def test_top_categories_groups_equivalent_variants_without_slug(client, monkeypa
         (
             types.SimpleNamespace(
                 amount=11,
-                date=transactions_module.datetime(
-                    2026, 2, 2, tzinfo=transactions_module.UTC
-                ),
+                date=transactions_module.datetime(2026, 2, 2, tzinfo=transactions_module.UTC),
                 merchant_name="Shop B",
                 merchant_slug="shop-b",
                 description="B",
@@ -656,34 +584,18 @@ def test_top_categories_groups_equivalent_variants_without_slug(client, monkeypa
     monkeypatch.setattr(
         transactions_module,
         "db",
-        types.SimpleNamespace(
-            session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())
-        ),
+        types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *_args, **_kwargs: QueryStub())),
         raising=False,
     )
-    monkeypatch.setattr(
-        transactions_module.Account, "is_hidden", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "is_internal", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "pending", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Account, "is_hidden", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "is_internal", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "pending", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Transaction, "date", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module.Transaction, "account_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Transaction, "category_id", _Expr(), raising=False
-    )
-    monkeypatch.setattr(
-        transactions_module.Account, "account_id", _Expr(), raising=False
-    )
+    monkeypatch.setattr(transactions_module.Transaction, "account_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Transaction, "category_id", _Expr(), raising=False)
+    monkeypatch.setattr(transactions_module.Account, "account_id", _Expr(), raising=False)
     monkeypatch.setattr(transactions_module.Category, "id", _Expr(), raising=False)
-    monkeypatch.setattr(
-        transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount)
-    )
+    monkeypatch.setattr(transactions_module, "display_transaction_amount", lambda txn: -abs(txn.amount))
 
     resp = client.get("/api/transactions/top_categories?trend_points=3")
     assert resp.status_code == 200

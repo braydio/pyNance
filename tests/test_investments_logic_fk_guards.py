@@ -108,9 +108,7 @@ def test_upsert_investments_creates_missing_security_before_holding(monkeypatch)
             self.conflict_kwargs = kwargs
             return self
 
-    monkeypatch.setattr(
-        "sqlalchemy.dialects.postgresql.insert", lambda _table: FakeInsert()
-    )
+    monkeypatch.setattr("sqlalchemy.dialects.postgresql.insert", lambda _table: FakeInsert())
 
     summary = logic.upsert_investments_from_plaid("user-1", "token-1")
 

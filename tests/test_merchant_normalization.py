@@ -65,14 +65,10 @@ def app_context():
         ("  Whole Foods  ", "POS SHOULD NOT WIN", None, "Whole Foods", "whole-foods"),
     ],
 )
-def test_resolve_merchant_normalizes_noisy_values(
-    merchant_name, name, description, expected_display, expected_slug
-):
+def test_resolve_merchant_normalizes_noisy_values(merchant_name, name, description, expected_display, expected_slug):
     """Normalization should strip processor noise and return stable slugs."""
 
-    resolved = resolve_merchant(
-        merchant_name=merchant_name, name=name, description=description
-    )
+    resolved = resolve_merchant(merchant_name=merchant_name, name=name, description=description)
 
     assert resolved.display_name == expected_display
     assert resolved.merchant_slug == expected_slug
@@ -108,9 +104,7 @@ def test_upsert_transaction_uses_normalized_merchant_name(app_context):
         "payment_meta": {"payment_method": "card"},
     }
 
-    plaid_sync = _load_backend_module(
-        "app/services/plaid_sync.py", "merchant_test_plaid_sync"
-    )
+    plaid_sync = _load_backend_module("app/services/plaid_sync.py", "merchant_test_plaid_sync")
     plaid_sync._upsert_transaction(tx, account, plaid_account)
     db.session.commit()
 
@@ -121,9 +115,7 @@ def test_upsert_transaction_uses_normalized_merchant_name(app_context):
     assert saved.plaid_meta.raw["merchant_slug"] == "joes-coffee"
 
 
-def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(
-    app_context, monkeypatch
-):
+def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(app_context, monkeypatch):
     """Legacy refresh path should apply the same merchant normalization helper."""
 
     account = Account(
@@ -161,9 +153,7 @@ def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(
         }
     ]
 
-    account_logic = _load_backend_module(
-        "app/sql/account_logic.py", "merchant_test_account_logic"
-    )
+    account_logic = _load_backend_module("app/sql/account_logic.py", "merchant_test_account_logic")
 
     monkeypatch.setattr(
         account_logic,
@@ -187,9 +177,7 @@ def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(
     assert saved.plaid_meta.raw["merchant_slug"] == "netflix-com"
 
 
-def test_sync_paths_share_transfer_classifier_for_brokerage_funding(
-    app_context, monkeypatch
-):
+def test_sync_paths_share_transfer_classifier_for_brokerage_funding(app_context, monkeypatch):
     """Legacy and sync ingestion paths should classify brokerage funding consistently."""
 
     checking = Account(
@@ -221,12 +209,8 @@ def test_sync_paths_share_transfer_classifier_for_brokerage_funding(
     db.session.add_all([checking, brokerage, plaid_checking, plaid_brokerage])
     db.session.commit()
 
-    plaid_sync = _load_backend_module(
-        "app/services/plaid_sync.py", "transfer_shared_plaid_sync"
-    )
-    account_logic = _load_backend_module(
-        "app/sql/account_logic.py", "transfer_shared_account_logic"
-    )
+    plaid_sync = _load_backend_module("app/services/plaid_sync.py", "transfer_shared_plaid_sync")
+    account_logic = _load_backend_module("app/sql/account_logic.py", "transfer_shared_account_logic")
 
     plaid_sync._upsert_transaction(
         {
@@ -346,9 +330,7 @@ def test_upsert_transaction_estimates_apr_from_interest_charges(app_context):
         "payment_meta": {"payment_method": "card"},
     }
 
-    plaid_sync = _load_backend_module(
-        "app/services/plaid_sync.py", "apr_interest_plaid_sync"
-    )
+    plaid_sync = _load_backend_module("app/services/plaid_sync.py", "apr_interest_plaid_sync")
     plaid_sync._upsert_transaction(tx, account, plaid_account)
     db.session.commit()
 
@@ -388,9 +370,7 @@ def test_upsert_transaction_does_not_set_apr_for_non_interest_categories(app_con
         "payment_meta": {"payment_method": "card"},
     }
 
-    plaid_sync = _load_backend_module(
-        "app/services/plaid_sync.py", "apr_non_interest_plaid_sync"
-    )
+    plaid_sync = _load_backend_module("app/services/plaid_sync.py", "apr_non_interest_plaid_sync")
     plaid_sync._upsert_transaction(tx, account, plaid_account)
     db.session.commit()
 

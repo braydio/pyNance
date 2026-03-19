@@ -27,9 +27,7 @@ def main() -> None:
     vector = encoder.encode(query_text)
 
     client = QdrantClient(args.host, port=args.port)
-    results = client.search(
-        collection_name=args.collection, query_vector=vector, limit=args.count
-    )
+    results = client.search(collection_name=args.collection, query_vector=vector, limit=args.count)
 
     print("\n[QDRANT] Search Results:\n")
     for i, r in enumerate(results, 1):

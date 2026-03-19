@@ -139,9 +139,7 @@ def test_build_snapshot_payload_creates_preference_sqlite(sqlite_app):
 
         payload = build_snapshot_payload(user_id="integration-user")
 
-        preference = AccountSnapshotPreference.query.filter_by(
-            user_id="integration-user"
-        ).first()
+        preference = AccountSnapshotPreference.query.filter_by(user_id="integration-user").first()
         assert preference is not None
         expected_selection = [
             "asset-1",
@@ -171,12 +169,8 @@ def test_build_snapshot_payload_filters_by_user(sqlite_app):
 
     with sqlite_app.app_context():
         primary_accounts = [
-            _make_account(
-                "primary-1", "Primary Checking", 4200.0, "Bank A", user_id="user-a"
-            ),
-            _make_account(
-                "primary-2", "Primary Savings", 3100.0, "Bank A", user_id="user-a"
-            ),
+            _make_account("primary-1", "Primary Checking", 4200.0, "Bank A", user_id="user-a"),
+            _make_account("primary-2", "Primary Savings", 3100.0, "Bank A", user_id="user-a"),
         ]
         other_accounts = [
             _make_account(
@@ -212,10 +206,5 @@ def test_build_snapshot_payload_filters_by_user(sqlite_app):
 
         preference = AccountSnapshotPreference.query.filter_by(user_id="user-a").first()
         assert preference is not None
-        assert set(preference.selected_account_ids).issubset(
-            {acct.account_id for acct in primary_accounts}
-        )
-        assert (
-            AccountSnapshotPreference.query.filter_by(user_id="other-user").first()
-            is None
-        )
+        assert set(preference.selected_account_ids).issubset({acct.account_id for acct in primary_accounts})
+        assert AccountSnapshotPreference.query.filter_by(user_id="other-user").first() is None

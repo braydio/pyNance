@@ -102,9 +102,7 @@ class DocCorpus:
             self._documents = docs
         return self._documents
 
-    def find(
-        self, literal_terms: Sequence[str], pattern: re.Pattern[str] | None
-    ) -> Path | None:
+    def find(self, literal_terms: Sequence[str], pattern: re.Pattern[str] | None) -> Path | None:
         """Locate the first documentation file matching the provided criteria."""
 
         for path, text in self.documents:
@@ -125,10 +123,7 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         Parsed argument namespace describing the desired input set.
     """
     parser = argparse.ArgumentParser(
-        description=(
-            "Validate that touched backend Python and frontend Vue files have "
-            "accompanying documentation."
-        )
+        description=("Validate that touched backend Python and frontend Vue files have " "accompanying documentation.")
     )
     selection = parser.add_mutually_exclusive_group()
     selection.add_argument(
@@ -190,10 +185,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     filtered = filter_relevant_files(targets)
     if not filtered:
         if not args.json_output:
-            print(
-                f"{_style('[docs]', 'cyan', bold=True)} "
-                "No backend/frontend Python or Vue files to verify."
-            )
+            print(f"{_style('[docs]', 'cyan', bold=True)} " "No backend/frontend Python or Vue files to verify.")
         else:
             print(json.dumps({"checked": [], "missing": []}, indent=2))
         return 0
@@ -210,9 +202,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 {
                     "file": result.file_path.as_posix(),
                     "category": result.category,
-                    "documentation": (
-                        result.doc_path.as_posix() if result.doc_path else None
-                    ),
+                    "documentation": (result.doc_path.as_posix() if result.doc_path else None),
                     "message": result.message,
                 }
                 for result in results
@@ -236,22 +226,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 doc_rel = result.doc_path.relative_to(REPO_ROOT)
                 source_path = result.file_path.as_posix()
                 doc_target = doc_rel.as_posix()
-                print(
-                    f"  • {_style(source_path, 'blue')} "
-                    f"{_style('→', 'dim')} {_style(doc_target, 'cyan')}"
-                )
+                print(f"  • {_style(source_path, 'blue')} " f"{_style('→', 'dim')} {_style(doc_target, 'cyan')}")
         if missing:
             print(f"{_style('[docs]', 'yellow', bold=True)} Missing documentation for:")
             for result in missing:
-                print(
-                    f"  • {_style(result.file_path.as_posix(), 'red')} "
-                    f"{_style(f'({result.message})', 'dim')}"
-                )
+                print(f"  • {_style(result.file_path.as_posix(), 'red')} " f"{_style(f'({result.message})', 'dim')}")
         else:
-            print(
-                f"{_style('[docs]', 'green', bold=True)} "
-                f"Verified documentation for {len(covered)} file(s)."
-            )
+            print(f"{_style('[docs]', 'green', bold=True)} " f"Verified documentation for {len(covered)} file(s).")
 
     return 1 if missing else 0
 
@@ -268,11 +249,7 @@ def resolve_target_files(args: argparse.Namespace) -> list[Path]:
     if args.paths:
         paths: list[Path] = []
         for raw in args.paths:
-            candidate = (
-                (REPO_ROOT / raw).resolve()
-                if not Path(raw).is_absolute()
-                else Path(raw)
-            )
+            candidate = (REPO_ROOT / raw).resolve() if not Path(raw).is_absolute() else Path(raw)
             if candidate.is_dir():
                 for child in candidate.rglob("*"):
                     if not child.is_file():
@@ -399,14 +376,8 @@ def check_file(path: Path, corpora: dict[str, DocCorpus]) -> FileDocResult:
     if doc_path:
         return FileDocResult(file_path=path, category=category, doc_path=doc_path)
 
-    message = (
-        f"no reference in docs/{category}"
-        if doc_root.exists()
-        else "documentation tree missing"
-    )
-    return FileDocResult(
-        file_path=path, category=category, doc_path=None, message=message
-    )
+    message = f"no reference in docs/{category}" if doc_root.exists() else "documentation tree missing"
+    return FileDocResult(file_path=path, category=category, doc_path=None, message=message)
 
 
 def build_literal_terms(category: str, relative: Path) -> list[str]:

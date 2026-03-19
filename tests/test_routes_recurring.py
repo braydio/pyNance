@@ -10,9 +10,7 @@ from flask import Flask
 
 # Patch 'app' into sys.modules so Flask can load Blueprints
 pkg = types.ModuleType("app")
-pkg.__path__ = [
-    os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "backend", "app")
-]
+pkg.__path__ = [os.path.join(os.path.abspath(os.path.dirname(__file__)), "..", "backend", "app")]
 sys.modules["app"] = pkg
 
 _orig_extensions = sys.modules.get("app.extensions")

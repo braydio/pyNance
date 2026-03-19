@@ -244,15 +244,9 @@ def test_compute_forecast_uses_provided_realized_history():
 def test_apply_adjustments_distributed_range_spread():
     """Distributed adjustments are split evenly across selected range dates."""
     baseline = [
-        ForecastTimelinePoint(
-            date=date(2026, 1, 1), label="2026-01-01", forecast_balance=100.0
-        ),
-        ForecastTimelinePoint(
-            date=date(2026, 1, 2), label="2026-01-02", forecast_balance=100.0
-        ),
-        ForecastTimelinePoint(
-            date=date(2026, 1, 3), label="2026-01-03", forecast_balance=100.0
-        ),
+        ForecastTimelinePoint(date=date(2026, 1, 1), label="2026-01-01", forecast_balance=100.0),
+        ForecastTimelinePoint(date=date(2026, 1, 2), label="2026-01-02", forecast_balance=100.0),
+        ForecastTimelinePoint(date=date(2026, 1, 3), label="2026-01-03", forecast_balance=100.0),
     ]
     adjusted = apply_adjustments(
         baseline,

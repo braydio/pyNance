@@ -257,6 +257,34 @@ describe('TopAccountSnapshot', () => {
     expect(amounts[3].classes()).toContain('bs-balance-neg')
   })
 
+  it('uses the credit accent color for credit-card rows even when the balance is positive', async () => {
+    const customAccounts = [
+      {
+        id: 'robinhood-credit',
+        account_id: 'robinhood-credit',
+        name: 'Robinhood Credit Card',
+        adjusted_balance: 120,
+        subtype: 'credit card',
+        institution_name: 'Robinhood',
+      },
+    ]
+    localStorage.setItem(
+      'accountGroups',
+      JSON.stringify({
+        groups: [{ id: 'group-1', name: 'Group', accounts: customAccounts }],
+        activeGroupId: 'group-1',
+      }),
+    )
+
+    const wrapper = mount(TopAccountSnapshot)
+    await nextTick()
+
+    const row = wrapper.find('.bs-account-container .bs-row')
+    expect(row.attributes('style')).toContain('--color-accent-red')
+    expect(row.text()).toContain('($120.00)')
+    expect(wrapper.find('.bs-banner-value').text()).toContain('($120.00)')
+  })
+
   it('shows utilization only for credit accounts with a limit', async () => {
     const customAccounts = [
       {

@@ -45,19 +45,13 @@ account_logic_stub.serialize_plaid_products = lambda value: ",".join(
     sorted(
         {
             str(item).strip()
-            for item in (
-                value
-                if isinstance(value, (list, set, tuple))
-                else str(value or "").split(",")
-            )
+            for item in (value if isinstance(value, (list, set, tuple)) else str(value or "").split(","))
             if str(item).strip()
         }
     )
 )
-account_logic_stub.merge_plaid_products = (
-    lambda existing, incoming: account_logic_stub.serialize_plaid_products(
-        list(set(str(existing or "").split(",")) | set(str(incoming or "").split(",")))
-    )
+account_logic_stub.merge_plaid_products = lambda existing, incoming: account_logic_stub.serialize_plaid_products(
+    list(set(str(existing or "").split(",")) | set(str(incoming or "").split(",")))
 )
 sys.modules["app.sql"] = sql_pkg
 sys.modules["app.sql.account_logic"] = account_logic_stub
@@ -136,9 +130,7 @@ class DummyPlaidAcct:
 class _DummyPlaidAccountQuery:
     def filter_by(self, **kwargs):
         account_id = kwargs.get("account_id")
-        return types.SimpleNamespace(
-            first=lambda: DummyPlaidAcct._records.get(account_id)
-        )
+        return types.SimpleNamespace(first=lambda: DummyPlaidAcct._records.get(account_id))
 
 
 DummyPlaidAcct.query = _DummyPlaidAccountQuery()
@@ -196,9 +188,7 @@ class _DummyPlaidItemQuery:
     def filter_by(self, **kwargs):
         item_id = kwargs.get("item_id")
         record = DummyPlaidItem._records.get(item_id)
-        return types.SimpleNamespace(
-            first=lambda: record, all=lambda: [record] if record else []
-        )
+        return types.SimpleNamespace(first=lambda: record, all=lambda: [record] if record else [])
 
 
 DummyPlaidItem.query = _DummyPlaidItemQuery()
@@ -207,9 +197,7 @@ models_stub.PlaidItem = DummyPlaidItem
 sys.modules["app.models"] = models_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "plaid_transactions.py")
-spec = importlib.util.spec_from_file_location(
-    "app.routes.plaid_transactions", ROUTE_PATH
-)
+spec = importlib.util.spec_from_file_location("app.routes.plaid_transactions", ROUTE_PATH)
 plaid_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plaid_module)
 plaid_module.joinedload = lambda *a, **k: None
@@ -254,9 +242,7 @@ def test_exchange_public_token_products_scope_variants(client, monkeypatch):
         "exchange_public_token",
         lambda *_: {"access_token": "tok", "item_id": "item-1"},
     )
-    monkeypatch.setattr(
-        plaid_module, "get_item", lambda *_: {"institution_id": "ins_1"}
-    )
+    monkeypatch.setattr(plaid_module, "get_item", lambda *_: {"institution_id": "ins_1"})
     monkeypatch.setattr(plaid_module, "get_institution_name", lambda *_: "Bank")
     monkeypatch.setattr(
         plaid_module,
@@ -270,16 +256,12 @@ def test_exchange_public_token_products_scope_variants(client, monkeypatch):
             }
         ],
     )
-    monkeypatch.setattr(
-        plaid_module.account_logic, "upsert_accounts", lambda *_, **__: None
-    )
+    monkeypatch.setattr(plaid_module.account_logic, "upsert_accounts", lambda *_, **__: None)
 
     def fake_save(account_id, item_id, access_token, product):
         existing = DummyPlaidAcct._records.get(account_id)
         if existing:
-            scopes = (
-                set((existing.product or "").split(",")) if existing.product else set()
-            )
+            scopes = set((existing.product or "").split(",")) if existing.product else set()
             scopes.update(set((product or "").split(",")) if product else set())
             existing.product = ",".join(sorted(filter(None, scopes)))
             return existing
@@ -350,9 +332,7 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
         captured.append((account_id, start_date, end_date))
         return True, None
 
-    monkeypatch.setattr(
-        plaid_module.account_logic, "refresh_data_for_plaid_account", fake_refresh
-    )
+    monkeypatch.setattr(plaid_module.account_logic, "refresh_data_for_plaid_account", fake_refresh)
 
     resp = client.post(
         "/api/accounts/refresh_accounts",
@@ -373,24 +353,16 @@ def test_refresh_accounts_filters_and_dates(client, monkeypatch):
 def test_delete_account_calls_remove_item(client, monkeypatch):
     called = {}
 
-    monkeypatch.setattr(
-        plaid_module, "remove_item", lambda tok: called.setdefault("token", tok)
-    )
+    monkeypatch.setattr(plaid_module, "remove_item", lambda tok: called.setdefault("token", tok))
 
     def plaid_account_filter_by(**kw):
         if "item_id" in kw:
-            return types.SimpleNamespace(
-                all=lambda: [types.SimpleNamespace(account_id="acct")]
-            )
+            return types.SimpleNamespace(all=lambda: [types.SimpleNamespace(account_id="acct")])
         return types.SimpleNamespace(
-            first=lambda: types.SimpleNamespace(
-                access_token="tok123", item_id="item-1", account_id="acct"
-            )
+            first=lambda: types.SimpleNamespace(access_token="tok123", item_id="item-1", account_id="acct")
         )
 
-    plaid_module.PlaidAccount.query = types.SimpleNamespace(
-        filter_by=plaid_account_filter_by
-    )
+    plaid_module.PlaidAccount.query = types.SimpleNamespace(filter_by=plaid_account_filter_by)
 
     plaid_module.PlaidItem.query = types.SimpleNamespace(
         filter_by=lambda **kw: types.SimpleNamespace(
@@ -403,9 +375,7 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
         filter=lambda *a, **kw: types.SimpleNamespace(delete=lambda **_kwargs: 1)
     )
 
-    plaid_module.db = types.SimpleNamespace(
-        session=types.SimpleNamespace(commit=lambda: None)
-    )
+    plaid_module.db = types.SimpleNamespace(session=types.SimpleNamespace(commit=lambda: None))
 
     resp = client.delete("/api/accounts/delete_account", json={"account_id": "acct"})
     assert resp.status_code == 200

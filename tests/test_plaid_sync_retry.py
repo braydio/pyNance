@@ -40,9 +40,7 @@ def _load_plaid_sync_module():
 
     logger = _DummyLogger()
     config_stub.logger = logger
-    config_stub.plaid_client = types.SimpleNamespace(
-        transactions_sync=lambda _req: None
-    )
+    config_stub.plaid_client = types.SimpleNamespace(transactions_sync=lambda _req: None)
 
     extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace())
     models_stub.Account = object
@@ -116,9 +114,7 @@ def test_transactions_sync_with_retry_retries_transient_errors(monkeypatch):
     assert calls["count"] == 3
     warning_events = [event for event in logger.events if event[0] == "warning"]
     assert len(warning_events) == 2
-    assert all(
-        event[2]["error_code"] == "RATE_LIMIT_EXCEEDED" for event in warning_events
-    )
+    assert all(event[2]["error_code"] == "RATE_LIMIT_EXCEEDED" for event in warning_events)
     assert all(event[2]["account_id"] == "acc-1" for event in warning_events)
     assert all(event[2]["item_id"] == "item-1" for event in warning_events)
     assert warning_events[-1][2]["attempt_count"] == 2

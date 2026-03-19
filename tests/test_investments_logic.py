@@ -19,9 +19,7 @@ BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 def load_module(name, path):
     if path.endswith("__init__.py"):
-        spec = importlib.util.spec_from_file_location(
-            name, path, submodule_search_locations=[os.path.dirname(path)]
-        )
+        spec = importlib.util.spec_from_file_location(name, path, submodule_search_locations=[os.path.dirname(path)])
     else:
         spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -50,9 +48,7 @@ def setup_app(tmp_path):
     }
     sys.modules["app.config"] = config_stub
 
-    extensions = load_module(
-        "app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py")
-    )
+    extensions = load_module("app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py"))
     extensions.db.init_app(app)
     return app, extensions
 

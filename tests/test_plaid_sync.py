@@ -66,9 +66,7 @@ class _Query:
             return _Query(first_obj=None, all_objs=self._all_objs)
         if "item_id" in kwargs:
             target = kwargs["item_id"]
-            matches = [
-                o for o in self._all_objs if getattr(o, "item_id", None) == target
-            ]
+            matches = [o for o in self._all_objs if getattr(o, "item_id", None) == target]
             return _Query(first_obj=matches[0] if matches else None, all_objs=matches)
         return self
 
@@ -142,15 +140,11 @@ def _load_module(monkeypatch):
     monkeypatch.setitem(sys.modules, "app.sql.sequence_utils", seq_stub)
 
     merchant_stub = types.ModuleType("app.utils.merchant_normalization")
-    merchant_stub.resolve_merchant = lambda **_k: types.SimpleNamespace(
-        display_name="m", merchant_slug="m"
-    )
+    merchant_stub.resolve_merchant = lambda **_k: types.SimpleNamespace(display_name="m", merchant_slug="m")
     monkeypatch.setitem(sys.modules, "app.utils.merchant_normalization", merchant_stub)
 
     module_path = Path("backend/app/services/plaid_sync.py")
-    spec = importlib.util.spec_from_file_location(
-        "app.services.plaid_sync", module_path
-    )
+    spec = importlib.util.spec_from_file_location("app.services.plaid_sync", module_path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -161,17 +155,11 @@ def test_sync_persists_item_cursor_once_after_pages(monkeypatch):
 
     primary_account = _Account("acct-primary")
     sibling_account = _Account("acct-sibling")
-    primary_plaid = _PlaidAccount(
-        "acct-primary", "item-1", "access", sync_cursor="cursor-old"
-    )
+    primary_plaid = _PlaidAccount("acct-primary", "item-1", "access", sync_cursor="cursor-old")
     sibling_plaid = _PlaidAccount("acct-sibling", "item-1", "access")
 
-    module.Account.query = _Query(
-        first_obj=primary_account, all_objs=[primary_account, sibling_account]
-    )
-    module.PlaidAccount.query = _Query(
-        first_obj=primary_plaid, all_objs=[primary_plaid, sibling_plaid]
-    )
+    module.Account.query = _Query(first_obj=primary_account, all_objs=[primary_account, sibling_account])
+    module.PlaidAccount.query = _Query(first_obj=primary_plaid, all_objs=[primary_plaid, sibling_plaid])
     module.TransactionsSyncRequest = lambda **kwargs: kwargs
     module._upsert_transaction = lambda *_a, **_k: None
     module._apply_removed = lambda _removed: 0

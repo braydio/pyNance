@@ -46,9 +46,7 @@ class DummyPlaidItem:
 class _DummyPlaidItemQuery:
     def filter_by(self, **kwargs):
         item_id = kwargs.get("item_id")
-        matched = [
-            i for i in DummyPlaidItem._items if getattr(i, "item_id", None) == item_id
-        ]
+        matched = [i for i in DummyPlaidItem._items if getattr(i, "item_id", None) == item_id]
         return types.SimpleNamespace(all=lambda: matched)
 
 
@@ -102,9 +100,7 @@ finance_stub.normalize_account_balance = lambda balance, *_a, **_k: balance
 sys.modules["app.utils.finance_utils"] = finance_stub
 
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "accounts.py")
-spec = importlib.util.spec_from_file_location(
-    "tests._accounts_route_scopes", ROUTE_PATH
-)
+spec = importlib.util.spec_from_file_location("tests._accounts_route_scopes", ROUTE_PATH)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 

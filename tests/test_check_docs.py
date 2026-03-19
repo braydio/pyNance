@@ -27,9 +27,7 @@ check_docs = _load_check_docs()
 def test_check_file_detects_accounts_doc():
     """Known backend routes should map to existing documentation entries."""
 
-    corpora = {
-        name: check_docs.DocCorpus(path) for name, path in check_docs.DOC_ROOTS.items()
-    }
+    corpora = {name: check_docs.DocCorpus(path) for name, path in check_docs.DOC_ROOTS.items()}
     result = check_docs.check_file(Path("backend/app/routes/accounts.py"), corpora)
 
     assert result.is_documented
@@ -37,24 +35,18 @@ def test_check_file_detects_accounts_doc():
     assert "docs/backend" in result.doc_path.as_posix()
 
 
-def test_check_file_detects_component_by_name(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
+def test_check_file_detects_component_by_name(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """CamelCase Vue components fall back to name-based matching."""
 
     frontend_docs = tmp_path / "frontend"
     frontend_docs.mkdir()
     doc_file = frontend_docs / "components.md"
-    doc_file.write_text(
-        "## SkeletonCard\n\nDetails about SkeletonCard component.\n", encoding="utf-8"
-    )
+    doc_file.write_text("## SkeletonCard\n\nDetails about SkeletonCard component.\n", encoding="utf-8")
 
     monkeypatch.setitem(check_docs.DOC_ROOTS, "frontend", frontend_docs)
 
     corpora = {"frontend": check_docs.DocCorpus(frontend_docs)}
-    result = check_docs.check_file(
-        Path("frontend/src/components/SkeletonCard.vue"), corpora
-    )
+    result = check_docs.check_file(Path("frontend/src/components/SkeletonCard.vue"), corpora)
 
     assert result.is_documented
     assert result.doc_path == doc_file

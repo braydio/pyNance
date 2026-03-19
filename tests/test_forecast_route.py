@@ -43,9 +43,7 @@ class QueryStub:
         return []
 
 
-extensions_stub.db = types.SimpleNamespace(
-    session=types.SimpleNamespace(query=lambda *a, **k: QueryStub())
-)
+extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace(query=lambda *a, **k: QueryStub()))
 sys.modules["app.extensions"] = extensions_stub
 
 # ---- app.sql as package + forecast_logic ----
@@ -73,8 +71,7 @@ class DummyRuleEngine:
         # Use non-deprecated current date
         today = datetime.now().date()
         return [
-            {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
-            for i in range(horizon_days)
+            {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i} for i in range(horizon_days)
         ]
 
 
@@ -143,12 +140,8 @@ except Exception:
     pytest.skip("forecast module import failed", allow_module_level=True)
 
 # ---- Load forecast orchestrator for monkeypatching ----
-SERVICES_PATH = os.path.join(
-    BASE_BACKEND, "app", "services", "forecast_orchestrator.py"
-)
-spec2 = importlib.util.spec_from_file_location(
-    "app.services.forecast_orchestrator", SERVICES_PATH
-)
+SERVICES_PATH = os.path.join(BASE_BACKEND, "app", "services", "forecast_orchestrator.py")
+spec2 = importlib.util.spec_from_file_location("app.services.forecast_orchestrator", SERVICES_PATH)
 forecast_orchestrator = importlib.util.module_from_spec(spec2)
 spec2.loader.exec_module(forecast_orchestrator)
 
@@ -165,16 +158,11 @@ def client():
 def dummy_forecast(self, method="rule", days=60, stat_input=None):
     # Use non-deprecated current date for dummy forecast
     today = datetime.now().date()
-    return [
-        {"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i}
-        for i in range(days)
-    ]
+    return [{"date": today + timedelta(days=i), "account_id": "acc", "balance": 100 + i} for i in range(days)]
 
 
 def test_forecast_route(client, monkeypatch):
-    monkeypatch.setattr(
-        forecast_orchestrator.ForecastOrchestrator, "forecast", dummy_forecast
-    )
+    monkeypatch.setattr(forecast_orchestrator.ForecastOrchestrator, "forecast", dummy_forecast)
     monkeypatch.setattr(
         sys.modules["app.services.forecast_orchestrator"].ForecastOrchestrator,
         "forecast",
@@ -240,9 +228,7 @@ def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_historical_aggregates",
-        lambda user_id, start_date, **_: [
-            {"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}
-        ],
+        lambda user_id, start_date, **_: [{"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}],
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
@@ -305,9 +291,7 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_historical_aggregates",
-        lambda user_id, start_date, **_: [
-            {"date": "2023-12-30", "inflow": 10.0, "outflow": 2.0}
-        ],
+        lambda user_id, start_date, **_: [{"date": "2023-12-30", "inflow": 10.0, "outflow": 2.0}],
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
@@ -355,9 +339,7 @@ def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_load_historical_aggregates",
-        lambda user_id, start_date, **_: [
-            {"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}
-        ],
+        lambda user_id, start_date, **_: [{"date": "2023-12-31", "inflow": 20.0, "outflow": 5.0}],
     )
     monkeypatch.setattr(
         forecast_module,
@@ -390,9 +372,7 @@ def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
     assert captured["metadata"]["auto_wage_adjustment_count"] == 1
 
 
-def test_forecast_compute_includes_account_filters_and_contribution_metadata(
-    client, monkeypatch
-):
+def test_forecast_compute_includes_account_filters_and_contribution_metadata(client, monkeypatch):
     captured = {}
 
     def fake_compute_forecast(**kwargs):
@@ -430,9 +410,7 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(
             },
         ]
 
-    def fake_aggregates(
-        user_id, start_date, included_account_ids=None, excluded_account_ids=None
-    ):
+    def fake_aggregates(user_id, start_date, included_account_ids=None, excluded_account_ids=None):
         captured["aggregate_filters"] = {
             "user_id": user_id,
             "included": included_account_ids,
@@ -518,9 +496,7 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
         }
 
     monkeypatch.setattr(forecast_module, "_load_latest_snapshots", lambda *a, **k: [])
-    monkeypatch.setattr(
-        forecast_module, "_load_historical_aggregates", lambda *a, **k: []
-    )
+    monkeypatch.setattr(forecast_module, "_load_historical_aggregates", lambda *a, **k: [])
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
 
@@ -549,9 +525,7 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
     assert captured["graph_mode"] == "historical"
 
 
-def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(
-    client, monkeypatch
-):
+def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(client, monkeypatch):
     captured = {}
 
     def fake_compute_forecast(**kwargs):

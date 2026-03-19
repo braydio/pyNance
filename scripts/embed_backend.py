@@ -38,9 +38,7 @@ for root, _, files in os.walk(SOURCE_DIR):
                 chunks = chunk_text(content)
                 for i, chunk in enumerate(chunks):
                     doc_id = f"{filename}-{i}"
-                    collection.add(
-                        documents=[chunk], metadatas=[{"source": path}], ids=[doc_id]
-                    )
+                    collection.add(documents=[chunk], metadatas=[{"source": path}], ids=[doc_id])
                     doc_count += 1
 
 print(f"Indexed {doc_count} code chunks into ChromaDB collection '{COLLECTION_NAME}'.")

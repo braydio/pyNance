@@ -46,11 +46,7 @@ def extract_metadata(path, content, source_root="backend"):
         except Exception:
             pass
     elif ext == ".md":
-        tags.update(
-            line.strip("# *").strip()
-            for line in content.splitlines()
-            if line.strip().startswith("#")
-        )
+        tags.update(line.strip("# *").strip() for line in content.splitlines() if line.strip().startswith("#"))
 
     functions = extract_functions(content)
     return {

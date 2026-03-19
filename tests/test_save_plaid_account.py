@@ -19,9 +19,7 @@ BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 def load_module(name, path):
     if path.endswith("__init__.py"):
-        spec = importlib.util.spec_from_file_location(
-            name, path, submodule_search_locations=[os.path.dirname(path)]
-        )
+        spec = importlib.util.spec_from_file_location(name, path, submodule_search_locations=[os.path.dirname(path)])
     else:
         spec = importlib.util.spec_from_file_location(name, path)
     module = importlib.util.module_from_spec(spec)
@@ -56,12 +54,8 @@ def setup_app(tmp_path):
     env_stub = types.ModuleType("app.config.environment")
     sys.modules["app.config.environment"] = env_stub
 
-    sys.modules.setdefault(
-        "flask_cors", types.SimpleNamespace(CORS=lambda *a, **k: None)
-    )
-    sys.modules.setdefault(
-        "flask_migrate", types.SimpleNamespace(Migrate=lambda *a, **k: None)
-    )
+    sys.modules.setdefault("flask_cors", types.SimpleNamespace(CORS=lambda *a, **k: None))
+    sys.modules.setdefault("flask_migrate", types.SimpleNamespace(Migrate=lambda *a, **k: None))
 
     helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
     helpers_stub.get_accounts = lambda *a, **k: []
@@ -73,14 +67,10 @@ def setup_app(tmp_path):
     sys.modules["app.helpers.normalize"] = normalize_stub
 
     utils_stub = types.ModuleType("app.utils.finance_utils")
-    utils_stub.display_transaction_amount = lambda txn: (
-        txn.amount if hasattr(txn, "amount") else 0
-    )
+    utils_stub.display_transaction_amount = lambda txn: (txn.amount if hasattr(txn, "amount") else 0)
     sys.modules["app.utils.finance_utils"] = utils_stub
 
-    extensions = load_module(
-        "app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py")
-    )
+    extensions = load_module("app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py"))
     extensions.db.init_app(app)
     return app, extensions
 
@@ -89,9 +79,7 @@ def setup_app(tmp_path):
 def db_ctx(tmp_path):
     app, extensions = setup_app(tmp_path)
     with app.app_context():
-        models = load_module(
-            "app.models", os.path.join(BASE_BACKEND, "app", "models", "__init__.py")
-        )
+        models = load_module("app.models", os.path.join(BASE_BACKEND, "app", "models", "__init__.py"))
         logic = load_module(
             "app.sql.account_logic",
             os.path.join(BASE_BACKEND, "app", "sql", "account_logic.py"),

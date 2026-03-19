@@ -17,6 +17,26 @@ vi.mock('@/api/investments', () => ({
   fetchInvestmentTransactions: (...args) => apiMocks.fetchInvestmentTransactions(...args),
 }))
 
+function ensureMockStorage() {
+  if (typeof localStorage !== 'undefined' && typeof localStorage.clear === 'function') return
+  let store = {}
+  const storage = {
+    getItem: (key) => (key in store ? store[key] : null),
+    setItem: (key, val) => {
+      store[key] = String(val)
+    },
+    removeItem: (key) => {
+      delete store[key]
+    },
+    clear: () => {
+      store = {}
+    },
+  }
+  Object.defineProperty(globalThis, 'localStorage', { value: storage, writable: true })
+}
+
+ensureMockStorage()
+
 function mountInvestments() {
   return mount(Investments, {
     global: {
@@ -46,6 +66,7 @@ const txPayload = {
   ],
   total: 25,
 }
+const expectedUserId = import.meta.env.VITE_USER_ID_PLAID || import.meta.env.VITE_USER_ID || ''
 
 describe('Investments.vue transaction filters', () => {
   beforeEach(() => {
@@ -78,15 +99,19 @@ describe('Investments.vue transaction filters', () => {
     await wrapper.find('[data-testid="tx-filter-end-date"]').setValue('2025-01-31')
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(1, 10, {
-      user_id: '',
-      account_id: 'acc-1',
-      security_id: 'sec-123',
-      type: 'buy',
-      subtype: 'dividend',
-      start_date: '2025-01-01',
-      end_date: '2025-01-31',
-    })
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(
+      1,
+      10,
+      expect.objectContaining({
+        user_id: expectedUserId,
+        account_id: 'acc-1',
+        security_id: 'sec-123',
+        type: 'buy',
+        subtype: 'dividend',
+        start_date: '2025-01-01',
+        end_date: '2025-01-31',
+      }),
+    )
   })
 
   it('restores persisted filter selections from localStorage on mount and remount', async () => {
@@ -105,15 +130,19 @@ describe('Investments.vue transaction filters', () => {
     const wrapper = mountInvestments()
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(1, 10, {
-      user_id: '',
-      account_id: 'acc-1',
-      security_id: 'sec-42',
-      type: 'sell',
-      subtype: 'withdrawal',
-      start_date: '2024-05-01',
-      end_date: '2024-05-31',
-    })
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(
+      1,
+      10,
+      expect.objectContaining({
+        user_id: expectedUserId,
+        account_id: 'acc-1',
+        security_id: 'sec-42',
+        type: 'sell',
+        subtype: 'withdrawal',
+        start_date: '2024-05-01',
+        end_date: '2024-05-31',
+      }),
+    )
     expect(wrapper.find('[data-testid="tx-filter-security-id"]').element.value).toBe('sec-42')
 
     wrapper.unmount()
@@ -121,15 +150,19 @@ describe('Investments.vue transaction filters', () => {
 
     const remount = mountInvestments()
     await flushPromises()
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(1, 10, {
-      user_id: '',
-      account_id: 'acc-1',
-      security_id: 'sec-42',
-      type: 'sell',
-      subtype: 'withdrawal',
-      start_date: '2024-05-01',
-      end_date: '2024-05-31',
-    })
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenCalledWith(
+      1,
+      10,
+      expect.objectContaining({
+        user_id: expectedUserId,
+        account_id: 'acc-1',
+        security_id: 'sec-42',
+        type: 'sell',
+        subtype: 'withdrawal',
+        start_date: '2024-05-01',
+        end_date: '2024-05-31',
+      }),
+    )
     remount.unmount()
   })
 
@@ -140,14 +173,70 @@ describe('Investments.vue transaction filters', () => {
     await wrapper.find('.pager .btn:last-child').trigger('click')
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(2, 10, { user_id: '' })
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(
+      2,
+      10,
+      expect.objectContaining({ user_id: expectedUserId }),
+    )
 
     await wrapper.find('[data-testid="tx-filter-type"]').setValue('buy')
     await flushPromises()
 
-    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(1, 10, {
-      user_id: '',
-      type: 'buy',
+    expect(apiMocks.fetchInvestmentTransactions).toHaveBeenLastCalledWith(
+      1,
+      10,
+      expect.objectContaining({
+        user_id: expectedUserId,
+        type: 'buy',
+      }),
+    )
+  })
+
+  it('shows aggregate account rows before holding details when multiple accounts are in scope', async () => {
+    apiMocks.fetchHoldings.mockResolvedValue({
+      data: [
+        {
+          account_id: 'acc-1',
+          security_id: 'sec-1',
+          quantity: 2,
+          institution_value: 50,
+          security: { ticker_symbol: 'AAA', name: 'Alpha', price: 25 },
+        },
+        {
+          account_id: 'acc-1',
+          security_id: 'sec-2',
+          quantity: 1,
+          institution_value: 30,
+          security: { ticker_symbol: 'BBB', name: 'Beta', price: 30 },
+        },
+        {
+          account_id: 'acc-2',
+          security_id: 'sec-3',
+          quantity: 4,
+          institution_value: 80,
+          security: { ticker_symbol: 'CCC', name: 'Gamma', price: 20 },
+        },
+      ],
     })
+    apiMocks.fetchInvestmentAccounts.mockResolvedValue({
+      data: [
+        { account_id: 'acc-1', name: 'Brokerage 1', institution_name: 'Fidelity' },
+        { account_id: 'acc-2', name: 'Brokerage 2', institution_name: 'Robinhood' },
+      ],
+    })
+
+    const wrapper = mountInvestments()
+    await flushPromises()
+
+    const summaryRows = wrapper.findAll('.holdings-summary-row')
+    expect(summaryRows).toHaveLength(2)
+    expect(wrapper.text()).toContain('Multiple accounts are selected')
+    expect(wrapper.text()).not.toContain('AAAAlpha')
+
+    await summaryRows[0].trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('AAA')
+    expect(wrapper.text()).toContain('Alpha')
   })
 })

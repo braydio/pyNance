@@ -62,9 +62,7 @@ def _load_charts_module():
 
     finance_utils_stub = types.ModuleType("app.utils.finance_utils")
     finance_utils_stub.display_transaction_amount = lambda tx: 0
-    finance_utils_stub.normalize_account_balance = (
-        lambda balance, *_args, **_kwargs: balance
-    )
+    finance_utils_stub.normalize_account_balance = lambda balance, *_args, **_kwargs: balance
     sys.modules["app.utils.finance_utils"] = finance_utils_stub
 
     sqlalchemy_stub = types.ModuleType("sqlalchemy")

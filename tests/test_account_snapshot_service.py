@@ -58,9 +58,7 @@ def make_accounts():
 
 def make_preference(existing):
     class Preference:
-        query = types.SimpleNamespace(
-            filter_by=lambda **kwargs: types.SimpleNamespace(first=lambda: existing)
-        )
+        query = types.SimpleNamespace(filter_by=lambda **kwargs: types.SimpleNamespace(first=lambda: existing))
 
         def __init__(self, user_id, selected_account_ids):
             self.id = 99
@@ -89,12 +87,8 @@ def setup_session(monkeypatch):
 
 def test_build_snapshot_payload_creates_preference(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(
-        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
-    )
-    monkeypatch.setattr(
-        snapshot_service, "AccountSnapshotPreference", make_preference(None)
-    )
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda _user_id=None: accounts)
+    monkeypatch.setattr(snapshot_service, "AccountSnapshotPreference", make_preference(None))
     added, commits = setup_session(monkeypatch)
 
     data = snapshot_service.build_snapshot_payload(user_id="user-x")
@@ -142,12 +136,8 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
     ]
     accounts = [account(idx + 1, value) for idx, value in enumerate(balances)]
 
-    monkeypatch.setattr(
-        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
-    )
-    monkeypatch.setattr(
-        snapshot_service, "AccountSnapshotPreference", make_preference(None)
-    )
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda _user_id=None: accounts)
+    monkeypatch.setattr(snapshot_service, "AccountSnapshotPreference", make_preference(None))
     added, commits = setup_session(monkeypatch)
 
     data = snapshot_service.build_snapshot_payload(user_id="user-top")
@@ -173,9 +163,7 @@ def test_default_selection_prioritizes_top_balances(monkeypatch):
 
 def test_build_snapshot_payload_sanitizes_selection(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(
-        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
-    )
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda _user_id=None: accounts)
 
     existing = types.SimpleNamespace(
         id=5,
@@ -199,9 +187,7 @@ def test_build_snapshot_payload_sanitizes_selection(monkeypatch):
 
 def test_update_snapshot_selection_filters_invalid(monkeypatch):
     accounts = make_accounts()
-    monkeypatch.setattr(
-        snapshot_service, "_visible_accounts", lambda _user_id=None: accounts
-    )
+    monkeypatch.setattr(snapshot_service, "_visible_accounts", lambda _user_id=None: accounts)
 
     existing = types.SimpleNamespace(
         id=7,
@@ -214,9 +200,7 @@ def test_update_snapshot_selection_filters_invalid(monkeypatch):
     monkeypatch.setattr(snapshot_service, "AccountSnapshotPreference", Preference)
     added, commits = setup_session(monkeypatch)
 
-    data = snapshot_service.update_snapshot_selection(
-        ["acc-1", "acc-2", "ghost", "acc-2"], user_id="user-z"
-    )
+    data = snapshot_service.update_snapshot_selection(["acc-1", "acc-2", "ghost", "acc-2"], user_id="user-z")
 
     assert data["selected_account_ids"] == ["acc-1", "acc-2"]
     assert data["metadata"].get("discarded_ids") == ["ghost"]
@@ -234,9 +218,7 @@ def test_visible_accounts_scope_is_forwarded(monkeypatch):
         return accounts
 
     monkeypatch.setattr(snapshot_service, "_visible_accounts", _stub_visible_accounts)
-    monkeypatch.setattr(
-        snapshot_service, "AccountSnapshotPreference", make_preference(None)
-    )
+    monkeypatch.setattr(snapshot_service, "AccountSnapshotPreference", make_preference(None))
     setup_session(monkeypatch)
 
     snapshot_service.build_snapshot_payload()

@@ -27,9 +27,7 @@ env_stub = types.ModuleType("app.config.environment")
 sys.modules["app.config.environment"] = env_stub
 
 extensions_stub = types.ModuleType("app.extensions")
-extensions_stub.db = types.SimpleNamespace(
-    session=types.SimpleNamespace(add=lambda x: None, commit=lambda: None)
-)
+extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace(add=lambda x: None, commit=lambda: None))
 sys.modules["app.extensions"] = extensions_stub
 
 models_stub = types.ModuleType("app.models")

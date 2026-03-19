@@ -97,9 +97,7 @@ def check_file(path_str: str, expected: dict[str, str]) -> list[str]:
             continue
         actual_value = parsed[key]
         if actual_value != expected_value:
-            errors.append(
-                f"{path_str}: {key} should be {expected_value!r} but found {actual_value!r}"
-            )
+            errors.append(f"{path_str}: {key} should be {expected_value!r} but found {actual_value!r}")
 
     return errors
 

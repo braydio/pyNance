@@ -47,9 +47,7 @@ def setup_sqlite_app(tmp_path):
         app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{tmp_path}/test.db"
         app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-        extensions = load_module(
-            "app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py")
-        )
+        extensions = load_module("app.extensions", os.path.join(BASE_BACKEND, "app", "extensions.py"))
         extensions.db.init_app(app)
         return app, extensions
     except Exception as e:

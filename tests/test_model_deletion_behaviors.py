@@ -149,9 +149,7 @@ def test_institution_delete_cascades_account_tree(app_context):
     db.session.add(group)
     db.session.flush()
 
-    db.session.add(
-        AccountGroupMembership(group_id=group.id, account_id=account.account_id)
-    )
+    db.session.add(AccountGroupMembership(group_id=group.id, account_id=account.account_id))
     db.session.commit()
 
     db.session.delete(institution)
@@ -199,9 +197,7 @@ def test_category_delete_retains_transactions(app_context):
     db.session.commit()
 
     assert db.session.get(Category, child.id).parent_id is None
-    remaining_txn = (
-        db.session.query(Transaction).filter_by(transaction_id="txn-2").one()
-    )
+    remaining_txn = db.session.query(Transaction).filter_by(transaction_id="txn-2").one()
     assert remaining_txn.category_id is None
 
 
@@ -231,11 +227,7 @@ def test_security_delete_sets_transaction_security_null(app_context):
     db.session.commit()
 
     assert db.session.query(InvestmentHolding).count() == 0
-    remaining_txn = (
-        db.session.query(InvestmentTransaction)
-        .filter_by(investment_transaction_id="inv-2")
-        .one()
-    )
+    remaining_txn = db.session.query(InvestmentTransaction).filter_by(investment_transaction_id="inv-2").one()
     assert remaining_txn.security_id is None
 
 
@@ -243,12 +235,8 @@ def test_planning_models_use_timestamp_mixin(app_context):
     """Planning models should automatically populate created/updated timestamps."""
 
     scenario = PlanningScenario(name="Baseline")
-    scenario.bills.append(
-        PlannedBill(name="Rent", amount_cents=120000, due_date=None, predicted=False)
-    )
-    scenario.allocations.append(
-        ScenarioAllocation(target="Savings", kind="percent", value=20)
-    )
+    scenario.bills.append(PlannedBill(name="Rent", amount_cents=120000, due_date=None, predicted=False))
+    scenario.allocations.append(ScenarioAllocation(target="Savings", kind="percent", value=20))
 
     db.session.add(scenario)
     db.session.commit()

@@ -38,9 +38,9 @@ app_pkg.__path__ = []
 sys.modules["app"] = app_pkg
 
 helpers_norm = types.ModuleType("app.helpers.normalize")
-helpers_norm.normalize_amount = lambda x: Decimal(
-    str((x.get("amount") if isinstance(x, dict) else x))
-).quantize(Decimal("0.01"))
+helpers_norm.normalize_amount = lambda x: Decimal(str((x.get("amount") if isinstance(x, dict) else x))).quantize(
+    Decimal("0.01")
+)
 sys.modules["app.helpers.normalize"] = helpers_norm
 
 plaid_helpers = types.ModuleType("app.helpers.plaid_helpers")
@@ -83,28 +83,20 @@ utils_pkg.__path__ = []
 finance_utils = types.ModuleType("app.utils.finance_utils")
 finance_utils.display_transaction_amount = lambda txn: txn.amount
 category_display = types.ModuleType("app.utils.category_display")
-category_display.category_display = lambda primary, detailed=None: (
-    f"{primary} - {detailed}" if detailed else primary
-)
+category_display.category_display = lambda primary, detailed=None: (f"{primary} - {detailed}" if detailed else primary)
 category_display.humanize_enum = lambda value: str(value).replace("_", " ").title()
 category_display.strip_parent = lambda detailed, parent: (
-    detailed.replace(f"{parent}_", "", 1)
-    if isinstance(detailed, str) and isinstance(parent, str)
-    else detailed
+    detailed.replace(f"{parent}_", "", 1) if isinstance(detailed, str) and isinstance(parent, str) else detailed
 )
 sys.modules["app.utils.finance_utils"] = finance_utils
 utils_cat = types.ModuleType("app.utils.category_canonical")
 utils_cat.canonicalize_category = lambda *a, **k: ("UNKNOWN", "Unknown")
-utils_cat.canonical_display_for_slug = lambda slug: (
-    "Unknown" if not slug else str(slug).replace("_", " ").title()
-)
+utils_cat.canonical_display_for_slug = lambda slug: ("Unknown" if not slug else str(slug).replace("_", " ").title())
 sys.modules["app.utils.category_canonical"] = utils_cat
 
 utils_display = types.ModuleType("app.utils.category_display")
 utils_display.category_display = lambda *a, **k: "Unknown"
-utils_display.humanize_enum = lambda value: (
-    str(value).replace("_", " ").title() if value else "Unknown"
-)
+utils_display.humanize_enum = lambda value: (str(value).replace("_", " ").title() if value else "Unknown")
 utils_display.strip_parent = lambda value: value
 sys.modules["app.utils.category_display"] = utils_display
 
@@ -332,9 +324,7 @@ def test_detect_internal_transfer_avoids_false_positive_purchase_pairs():
     db.init_app(app)
     with app.app_context():
         db.create_all()
-        checking = models.Account(
-            account_id="E1", user_id="u3", name="Checking", type="depository"
-        )
+        checking = models.Account(account_id="E1", user_id="u3", name="Checking", type="depository")
         savings = models.Account(
             account_id="E2",
             user_id="u3",

@@ -23,9 +23,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--reindex", action="store_true", help="Force full reindex")
     parser.add_argument("--source", default="backend", help="Source directory")
-    parser.add_argument(
-        "--host", default=os.getenv("QDRANT_HOST", "localhost"), help="Qdrant host"
-    )
+    parser.add_argument("--host", default=os.getenv("QDRANT_HOST", "localhost"), help="Qdrant host")
     parser.add_argument(
         "--port",
         type=int,
@@ -87,9 +85,7 @@ def main() -> None:
 
                     client.upsert(
                         collection_name=args.collection,
-                        points=models.Batch(
-                            ids=ids, vectors=vectors, payloads=payloads
-                        ),
+                        points=models.Batch(ids=ids, vectors=vectors, payloads=payloads),
                     )
                     indexed_count += len(vectors)
 

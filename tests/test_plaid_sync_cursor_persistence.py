@@ -57,10 +57,7 @@ class _FakePlaidAccountQuery:
 
     def first(self):
         for plaid_account in self._plaid_accounts:
-            if all(
-                getattr(plaid_account, key) == value
-                for key, value in self._filters.items()
-            ):
+            if all(getattr(plaid_account, key) == value for key, value in self._filters.items()):
                 return plaid_account
         return None
 
@@ -68,10 +65,7 @@ class _FakePlaidAccountQuery:
         return [
             plaid_account
             for plaid_account in self._plaid_accounts
-            if all(
-                getattr(plaid_account, key) == value
-                for key, value in self._filters.items()
-            )
+            if all(getattr(plaid_account, key) == value for key, value in self._filters.items())
         ]
 
 
@@ -119,9 +113,7 @@ def test_sync_account_transactions_persists_item_cursor_once(monkeypatch):
     fake_session = _FakeSession()
     monkeypatch.setattr(plaid_sync, "db", SimpleNamespace(session=fake_session))
     monkeypatch.setattr(plaid_sync, "ensure_transactions_sequence", lambda: None)
-    monkeypatch.setattr(
-        plaid_sync, "_upsert_transaction", lambda *_args, **_kwargs: None
-    )
+    monkeypatch.setattr(plaid_sync, "_upsert_transaction", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(plaid_sync, "_apply_removed", lambda removed: len(removed))
     monkeypatch.setattr(
         plaid_sync,
@@ -136,13 +128,9 @@ def test_sync_account_transactions_persists_item_cursor_once(monkeypatch):
             }
         ),
     )
-    monkeypatch.setattr(
-        plaid_sync, "TransactionsSyncRequest", _FakeTransactionsSyncRequest
-    )
+    monkeypatch.setattr(plaid_sync, "TransactionsSyncRequest", _FakeTransactionsSyncRequest)
 
-    fake_account_cls = SimpleNamespace(
-        query=_FakeAccountQuery([account]), account_id=_FakeColumn()
-    )
+    fake_account_cls = SimpleNamespace(query=_FakeAccountQuery([account]), account_id=_FakeColumn())
     fake_plaid_cls = SimpleNamespace(query=_FakePlaidAccountQuery(plaid_accounts))
     monkeypatch.setattr(plaid_sync, "Account", fake_account_cls)
     monkeypatch.setattr(plaid_sync, "PlaidAccount", fake_plaid_cls)
