@@ -31,9 +31,7 @@ def upgrade():
         sa.UniqueConstraint("id"),
     )
     with op.batch_alter_table("account_groups", schema=None) as batch_op:
-        batch_op.create_index(
-            batch_op.f("ix_account_groups_user_id"), ["user_id"], unique=False
-        )
+        batch_op.create_index(batch_op.f("ix_account_groups_user_id"), ["user_id"], unique=False)
 
     op.create_table(
         "account_group_preferences",
@@ -42,9 +40,7 @@ def upgrade():
         sa.Column("active_group_id", sa.String(length=36), nullable=True),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["active_group_id"], ["account_groups.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["active_group_id"], ["account_groups.id"], ondelete="SET NULL"),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("account_group_preferences", schema=None) as batch_op:
@@ -53,9 +49,7 @@ def upgrade():
             ["active_group_id"],
             unique=False,
         )
-        batch_op.create_index(
-            batch_op.f("ix_account_group_preferences_user_id"), ["user_id"], unique=True
-        )
+        batch_op.create_index(batch_op.f("ix_account_group_preferences_user_id"), ["user_id"], unique=True)
 
     op.create_table(
         "account_group_memberships",
@@ -65,16 +59,10 @@ def upgrade():
         sa.Column("position", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("updated_at", sa.DateTime(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["account_id"], ["accounts.account_id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["group_id"], ["account_groups.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["account_id"], ["accounts.account_id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["group_id"], ["account_groups.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "group_id", "account_id", name="uq_account_group_membership"
-        ),
+        sa.UniqueConstraint("group_id", "account_id", name="uq_account_group_membership"),
     )
     with op.batch_alter_table("account_group_memberships", schema=None) as batch_op:
         batch_op.create_index(
@@ -92,9 +80,7 @@ def upgrade():
         batch_op.alter_column("is_active", existing_type=sa.BOOLEAN(), nullable=False)
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -103,14 +89,10 @@ def upgrade():
         )
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
 
     with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -136,14 +118,10 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
         batch_op.alter_column(
@@ -152,9 +130,7 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("plaid_accounts", schema=None) as batch_op:
         batch_op.alter_column("is_active", existing_type=sa.BOOLEAN(), nullable=True)

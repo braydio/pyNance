@@ -5,10 +5,11 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Optional
 
+from sqlalchemy import func
+
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.sql.sequence_utils import ensure_transactions_sequence
-from sqlalchemy import func
 
 
 def find_recurring_items(transactions):

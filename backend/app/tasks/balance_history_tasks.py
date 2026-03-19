@@ -31,9 +31,7 @@ def update_all_balance_history():
         )
 
         if successful < total:
-            failed_accounts = [
-                acc_id for acc_id, success in results.items() if not success
-            ]
+            failed_accounts = [acc_id for acc_id, success in results.items() if not success]
             logger.warning(
                 "Failed to update balance history for accounts: %s",
                 failed_accounts,
@@ -71,7 +69,5 @@ def update_single_account_balance_history(account_id: str):
         return success
 
     except Exception as e:
-        logger.error(
-            "Error updating balance history for %s: %s", account_id, e, exc_info=True
-        )
+        logger.error("Error updating balance history for %s: %s", account_id, e, exc_info=True)
         return False

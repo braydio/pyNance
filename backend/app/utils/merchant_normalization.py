@@ -15,9 +15,7 @@ _PREFIX_PATTERNS = [
     re.compile(r"^paypal\s*\*\s*", re.IGNORECASE),
     re.compile(r"^card\s+\d+\s+", re.IGNORECASE),
 ]
-_TRAILING_NOISE = re.compile(
-    r"\b(?:pending|debit|card\s*\d+|ach|online|purchase|pos)\b", re.IGNORECASE
-)
+_TRAILING_NOISE = re.compile(r"\b(?:pending|debit|card\s*\d+|ach|online|purchase|pos)\b", re.IGNORECASE)
 _SEPARATOR = re.compile(r"\s*[-:/|]\s*")
 _SPACES = re.compile(r"\s+")
 
@@ -97,6 +95,4 @@ def resolve_merchant(
                 source=source,
             )
 
-    return MerchantNormalizationResult(
-        display_name="Unknown", merchant_slug="unknown", source="fallback"
-    )
+    return MerchantNormalizationResult(display_name="Unknown", merchant_slug="unknown", source="fallback")

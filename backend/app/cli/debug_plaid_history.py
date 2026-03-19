@@ -45,9 +45,7 @@ def _parse_date(label: str, value: str | None, default: date | None = None) -> d
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError as exc:  # pragma: no cover - defensive guardrail
-        raise click.BadParameter(
-            f"{label} must be in YYYY-MM-DD format (got {value!r})"
-        ) from exc
+        raise click.BadParameter(f"{label} must be in YYYY-MM-DD format (got {value!r})") from exc
 
 
 def collect_full_history(
@@ -99,9 +97,7 @@ def collect_full_history(
         window_label = f"{window_start.isoformat()} -> {window_end.isoformat()}"
 
         logger.info("[PLAID HISTORY] Fetching window %s", window_label)
-        batch = fetch_transactions(
-            access_token, window_start.isoformat(), window_end.isoformat()
-        )
+        batch = fetch_transactions(access_token, window_start.isoformat(), window_end.isoformat())
         total_seen += len(batch)
 
         for tx in batch:
@@ -121,12 +117,8 @@ def collect_full_history(
 
         window_end = window_start - timedelta(days=1)
 
-    unique_transactions = sorted(
-        all_transactions.values(), key=lambda tx: tx.get("date") or ""
-    )
-    combined_for_dates = sorted(
-        unique_transactions + missing_ids, key=lambda tx: tx.get("date") or ""
-    )
+    unique_transactions = sorted(all_transactions.values(), key=lambda tx: tx.get("date") or "")
+    combined_for_dates = sorted(unique_transactions + missing_ids, key=lambda tx: tx.get("date") or "")
     earliest = combined_for_dates[0].get("date") if combined_for_dates else None
     latest = combined_for_dates[-1].get("date") if combined_for_dates else None
 
@@ -143,9 +135,7 @@ def collect_full_history(
 
 
 @click.command("debug-plaid-history")
-@click.option(
-    "--account", "account_id", required=True, help="Plaid account_id to inspect"
-)
+@click.option("--account", "account_id", required=True, help="Plaid account_id to inspect")
 @click.option(
     "--start",
     "start_date",
@@ -185,13 +175,12 @@ def debug_plaid_history(
     start = _parse_date("start", start_date)
     end = _parse_date("end", end_date, default=today)
 
-    from app.models import PlaidAccount
     from sqlalchemy.orm import joinedload
 
+    from app.models import PlaidAccount
+
     plaid_account = (
-        PlaidAccount.query.options(joinedload(PlaidAccount.account))
-        .filter_by(account_id=account_id)
-        .first()
+        PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(account_id=account_id).first()
     )
     if not plaid_account:
         click.echo(f"No PlaidAccount found for account_id={account_id}")
@@ -223,17 +212,11 @@ def debug_plaid_history(
     )
 
     click.echo("Suggested dedup guardrails:")
+    click.echo("- Use Plaid's transaction_id as the canonical key and update rows " "when amounts or status change.")
     click.echo(
-        "- Use Plaid's transaction_id as the canonical key and update rows "
-        "when amounts or status change."
+        "- When transaction_id is missing, fall back to " "pending_transaction_id + date + amount + merchant_name."
     )
-    click.echo(
-        "- When transaction_id is missing, fall back to "
-        "pending_transaction_id + date + amount + merchant_name."
-    )
-    click.echo(
-        "- Keep the sync cursor current to reduce overlap and lower dedupe pressure."
-    )
+    click.echo("- Keep the sync cursor current to reduce overlap and lower dedupe pressure.")
 
     if output_path:
         payload = {

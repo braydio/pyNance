@@ -2,11 +2,12 @@
 
 import logging
 
+from flask import Blueprint, jsonify
+from sqlalchemy.orm import aliased
+
 from app.config import plaid_client
 from app.extensions import db
 from app.models import Category
-from flask import Blueprint, jsonify
-from sqlalchemy.orm import aliased
 
 logger = logging.getLogger(__name__)
 
@@ -31,13 +32,10 @@ def get_category_tree():
         if primary not in grouped:
             grouped[primary] = []
 
-        grouped[primary].append(
-            {"id": cat.id, "label": detailed, "plaid_id": cat.plaid_category_id}
-        )
+        grouped[primary].append({"id": cat.id, "label": detailed, "plaid_id": cat.plaid_category_id})
 
     nested = [
-        {"id": idx + 1, "label": label, "children": children}
-        for idx, (label, children) in enumerate(grouped.items())
+        {"id": idx + 1, "label": label, "children": children} for idx, (label, children) in enumerate(grouped.items())
     ]
     return jsonify({"status": "success", "data": nested})
 
@@ -57,9 +55,7 @@ def refresh_plaid_categories():
 
             if len(hierarchy) == 1:
                 primary = hierarchy[0]
-                existing = Category.query.filter_by(
-                    plaid_category_id=plaid_cat_id
-                ).first()
+                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
                 if not existing:
                     parent = Category(
                         plaid_category_id=plaid_cat_id,
@@ -90,9 +86,7 @@ def refresh_plaid_categories():
                     db.session.add(parent)
                     db.session.flush()
 
-                existing = Category.query.filter_by(
-                    plaid_category_id=plaid_cat_id
-                ).first()
+                existing = Category.query.filter_by(plaid_category_id=plaid_cat_id).first()
                 if not existing:
                     child = Category(
                         plaid_category_id=plaid_cat_id,

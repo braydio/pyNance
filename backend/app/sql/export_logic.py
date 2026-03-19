@@ -9,10 +9,11 @@ excessive memory usage.
 import csv
 import io
 
+from flask import current_app, send_file
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, RecurringTransaction, Transaction
-from flask import current_app, send_file
 
 CHUNK_SIZE = 500
 

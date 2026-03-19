@@ -1,11 +1,12 @@
 # backend/app/sql/forecast_logic.py
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import func
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, RecurringTransaction, Transaction
 from app.sql.dialect_utils import dialect_insert
-from sqlalchemy import func
 
 
 def get_latest_balance_for_account(account_id: str, user_id: str) -> float:
@@ -61,9 +62,7 @@ def update_account_history(account_id, user_id, balance, is_hidden=None):
             )
             db.session.execute(stmt)
         else:
-            history = AccountHistory.query.filter_by(
-                account_id=account_id, date=dt_today
-            ).first()
+            history = AccountHistory.query.filter_by(account_id=account_id, date=dt_today).first()
             if history:
                 history.balance = balance
                 history.updated_at = now
@@ -93,9 +92,7 @@ def update_account_history(account_id, user_id, balance, is_hidden=None):
         )
 
 
-def generate_forecast_line(
-    start_date, end_date, recurring_items=None, manual_income=0.0, liability_rate=0.0
-):
+def generate_forecast_line(start_date, end_date, recurring_items=None, manual_income=0.0, liability_rate=0.0):
     """
     Generate a forecasted daily balance line.
     """
@@ -117,14 +114,10 @@ def generate_forecast_line(
             if freq == "monthly" and current_date.day == item.get("day", 1):
                 balance += item["amount"]
             elif freq == "weekly":
-                if (current_date - start).days % 7 == 0 and (
-                    current_date - start
-                ).days >= 0:
+                if (current_date - start).days % 7 == 0 and (current_date - start).days >= 0:
                     balance += item["amount"]
             elif freq == "biweekly":
-                if (current_date - start).days % 14 == 0 and (
-                    current_date - start
-                ).days >= 0:
+                if (current_date - start).days % 14 == 0 and (current_date - start).days >= 0:
                     balance += item["amount"]
             elif freq == "daily":
                 balance += item["amount"]
@@ -141,10 +134,7 @@ def calculate_deltas(forecast_line, actuals_line):
     """
     Calculate delta between forecast and actuals.
     """
-    return [
-        round(f - a, 2) if a is not None else None
-        for f, a in zip(forecast_line, actuals_line)
-    ]
+    return [round(f - a, 2) if a is not None else None for f, a in zip(forecast_line, actuals_line)]
 
 
 def list_recurring_transactions(user_id):
@@ -165,9 +155,7 @@ def list_recurring_transactions(user_id):
 def get_account_history_range(user_id, start_date, end_date):
     """Aggregate daily balances for the given range."""
     data = (
-        db.session.query(
-            func.date(AccountHistory.date), func.sum(AccountHistory.balance)
-        )
+        db.session.query(func.date(AccountHistory.date), func.sum(AccountHistory.balance))
         .filter(AccountHistory.user_id == user_id)
         .filter(AccountHistory.date >= start_date, AccountHistory.date <= end_date)
         .group_by(func.date(AccountHistory.date))

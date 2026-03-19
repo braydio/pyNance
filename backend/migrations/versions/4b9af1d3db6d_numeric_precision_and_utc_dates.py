@@ -12,9 +12,7 @@ depends_on = None
 NUMERIC = sa.Numeric(18, 2)
 
 
-def _alter_numeric(
-    table: str, column: str, nullable: bool, default_zero: bool = False
-) -> None:
+def _alter_numeric(table: str, column: str, nullable: bool, default_zero: bool = False) -> None:
     """Convert ``table.column`` from float to ``NUMERIC(18, 2)``."""
 
     if not nullable:

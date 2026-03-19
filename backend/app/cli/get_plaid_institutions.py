@@ -21,9 +21,7 @@ def fetch_plaid_institutions(count=500, country_codes=None):
     institutions = []
     offset = 0
     while True:
-        req = InstitutionsGetRequest(
-            count=count, offset=offset, country_codes=country_codes_enum
-        )
+        req = InstitutionsGetRequest(count=count, offset=offset, country_codes=country_codes_enum)
         resp = plaid_client.institutions_get(req)
         data = resp.to_dict()
         insts = data.get("institutions", [])

@@ -1,5 +1,7 @@
 """Routes for Plaid investments flows and account syncing."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -15,7 +17,6 @@ from app.sql.account_logic import (
     save_plaid_account,
     upsert_accounts,
 )
-from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
 
@@ -23,9 +24,7 @@ plaid_investments = Blueprint("plaid_investments", __name__)
 def _has_investments_scope(plaid_account: PlaidAccount) -> bool:
     """Return whether a Plaid account includes the investments product scope."""
 
-    return "investments" in set(
-        canonicalize_plaid_products(getattr(plaid_account, "product", None))
-    )
+    return "investments" in set(canonicalize_plaid_products(getattr(plaid_account, "product", None)))
 
 
 def _request_json_dict():
@@ -147,19 +146,13 @@ def refresh_investments_endpoint():
             start_date = (date.today() - timedelta(days=30)).isoformat()
         item_accounts = PlaidAccount.query.filter_by(item_id=item_id).all()
         account = next(
-            (
-                plaid_account
-                for plaid_account in item_accounts
-                if _has_investments_scope(plaid_account)
-            ),
+            (plaid_account for plaid_account in item_accounts if _has_investments_scope(plaid_account)),
             None,
         )
         if not account:
             return jsonify({"error": "Investments account not found"}), 404
         # Fetch holdings + securities and upsert
-        summary = investments_logic.upsert_investments_from_plaid(
-            user_id, account.access_token
-        )
+        summary = investments_logic.upsert_investments_from_plaid(user_id, account.access_token)
         # Fetch investment transactions and upsert
         txs = get_investment_transactions(account.access_token, start_date, end_date)
         tx_count = investments_logic.upsert_investment_transactions(txs)
@@ -210,9 +203,7 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total[
-                    "investment_transactions"
-                ] += investments_logic.upsert_investment_transactions(txs)
+                total["investment_transactions"] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 db.session.rollback()
                 logger.error(

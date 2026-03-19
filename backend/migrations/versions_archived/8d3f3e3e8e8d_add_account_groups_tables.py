@@ -16,9 +16,7 @@ def upgrade():
         "account_groups",
         sa.Column("id", sa.String(length=36), primary_key=True),
         sa.Column("user_id", sa.String(length=64), nullable=False),
-        sa.Column(
-            "name", sa.String(length=128), nullable=False, server_default="Group"
-        ),
+        sa.Column("name", sa.String(length=128), nullable=False, server_default="Group"),
         sa.Column("position", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("accent", sa.String(length=64), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
@@ -43,15 +41,9 @@ def upgrade():
         sa.Column("position", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["group_id"], ["account_groups.id"], ondelete="CASCADE"
-        ),
-        sa.ForeignKeyConstraint(
-            ["account_id"], ["accounts.account_id"], ondelete="CASCADE"
-        ),
-        sa.UniqueConstraint(
-            "group_id", "account_id", name="uq_account_group_membership"
-        ),
+        sa.ForeignKeyConstraint(["group_id"], ["account_groups.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["account_id"], ["accounts.account_id"], ondelete="CASCADE"),
+        sa.UniqueConstraint("group_id", "account_id", name="uq_account_group_membership"),
     )
     op.create_index(
         "ix_account_group_memberships_group_id",
@@ -71,9 +63,7 @@ def upgrade():
         sa.Column("active_group_id", sa.String(length=36), nullable=True),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["active_group_id"], ["account_groups.id"], ondelete="SET NULL"
-        ),
+        sa.ForeignKeyConstraint(["active_group_id"], ["account_groups.id"], ondelete="SET NULL"),
     )
     op.create_index(
         "ix_account_group_preferences_user_id",

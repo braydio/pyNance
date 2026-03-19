@@ -7,6 +7,10 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
+from plaid import ApiException
+from sqlalchemy import case, func, or_
+from sqlalchemy.orm import aliased
+
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
@@ -19,9 +23,6 @@ from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
 from app.utils.merchant_normalization import resolve_merchant
-from plaid import ApiException
-from sqlalchemy import case, func, or_
-from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 
@@ -106,14 +107,10 @@ def _is_investment_type(account_type: str | None, subtype: str | None) -> bool:
         "pension",
         "retirement",
     }
-    return (
-        normalized_type in investment_tokens or normalized_subtype in investment_tokens
-    )
+    return normalized_type in investment_tokens or normalized_subtype in investment_tokens
 
 
-def _derive_investment_flags(
-    account_payload: dict, plaid_products
-) -> dict[str, object]:
+def _derive_investment_flags(account_payload: dict, plaid_products) -> dict[str, object]:
     """Derive deterministic account investment metadata from payload + scopes."""
 
     products = set(canonicalize_plaid_products(plaid_products))
@@ -204,9 +201,7 @@ def _parse_refresh_status(raw_status: str | None) -> dict:
         return {"status": "unknown", "message": str(raw_status)}
 
 
-def persist_refresh_status(
-    plaid_account: PlaidAccount | None, status: dict, commit: bool
-):
+def persist_refresh_status(plaid_account: PlaidAccount | None, status: dict, commit: bool):
     """Persist structured refresh status into PlaidAccount.last_error for UI visibility."""
 
     if not plaid_account:
@@ -236,9 +231,7 @@ def should_throttle_refresh(plaid_account: PlaidAccount | None) -> bool:
     return _now_utc() < cooldown_until
 
 
-def refresh_is_stale(
-    plaid_account: PlaidAccount | None, sla: timedelta = REFRESH_SLA
-) -> bool:
+def refresh_is_stale(plaid_account: PlaidAccount | None, sla: timedelta = REFRESH_SLA) -> bool:
     """Return True if the last successful refresh is older than the SLA window."""
 
     if not plaid_account:
@@ -268,9 +261,7 @@ def _tx_cache_key(
     ids = None
     if account_ids:
         ids = tuple(sorted(account_ids))
-    start = (
-        start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
-    )
+    start = start_date.isoformat() if hasattr(start_date, "isoformat") else str(start_date)
     end = end_date.isoformat() if hasattr(end_date, "isoformat") else str(end_date)
     tags_key = None
     if tags:
@@ -333,9 +324,7 @@ def normalize_balance(amount, account_type):
     return normalize_amount(
         {
             "amount": amount,
-            "transaction_type": (
-                account_type.lower().replace("_", " ") if account_type else None
-            ),
+            "transaction_type": (account_type.lower().replace("_", " ") if account_type else None),
         }
     )
 
@@ -395,15 +384,11 @@ def _account_transfer_context(account: Account | None) -> str:
         getattr(account, "subtype", None),
         getattr(account, "name", None),
     )
-    if any(
-        keyword in profile for keyword in ("brokerage", "investment", "ira", "401k")
-    ):
+    if any(keyword in profile for keyword in ("brokerage", "investment", "ira", "401k")):
         return "brokerage"
     if "saving" in profile:
         return "savings"
-    if any(
-        keyword in profile for keyword in ("checking", "depository", "cash management")
-    ):
+    if any(keyword in profile for keyword in ("checking", "depository", "cash management")):
         return "checking"
     return "other"
 
@@ -414,9 +399,7 @@ def _transfer_keyword_score(txn: Transaction, account_context: str) -> int:
     for keyword in ACCOUNT_CONTEXT_KEYWORDS.get(account_context, set()):
         if keyword in text:
             score += 1
-    if account_context == "brokerage" and any(
-        word in text for word in ("fund", "settlement", "sweep")
-    ):
+    if account_context == "brokerage" and any(word in text for word in ("fund", "settlement", "sweep")):
         score += 1
     return score
 
@@ -466,9 +449,7 @@ def classify_transfer_pair(
     return "internal_transfer"
 
 
-def detect_internal_transfer(
-    txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")
-) -> None:
+def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")) -> None:
     """Flag ``txn`` and a matching counterpart as an internal transfer.
 
     Candidates are selected using amount/date baseline matching and then
@@ -503,18 +484,12 @@ def detect_internal_transfer(
         transfer_type = classify_transfer_pair(txn, other, account, other_account)
         if not transfer_type:
             continue
-        other_base_date = (
-            other.date.date() if hasattr(other.date, "date") else other.date
-        )
+        other_base_date = other.date.date() if hasattr(other.date, "date") else other.date
         diff = abs((txn_base_date - other_base_date).days)
-        heuristic_score = _transfer_keyword_score(
-            txn, _account_transfer_context(account)
-        ) + _transfer_keyword_score(other, _account_transfer_context(other_account))
-        if (
-            best is None
-            or heuristic_score > best_score
-            or (heuristic_score == best_score and diff < best_diff)
-        ):
+        heuristic_score = _transfer_keyword_score(txn, _account_transfer_context(account)) + _transfer_keyword_score(
+            other, _account_transfer_context(other_account)
+        )
+        if best is None or heuristic_score > best_score or (heuristic_score == best_score and diff < best_diff):
             best = other
             best_diff = diff
             best_score = heuristic_score
@@ -600,9 +575,7 @@ def upsert_accounts(
         try:
             account_id = account.get("account_id") or account.get("id")
             if not account_id or account_id in processed_ids:
-                logger.warning(
-                    "Skipping invalid or duplicate account id: %s", account_id
-                )
+                logger.warning("Skipping invalid or duplicate account id: %s", account_id)
                 continue
             processed_ids.add(account_id)
 
@@ -623,9 +596,7 @@ def upsert_accounts(
             subtype = str(account.get("subtype") or "Unknown").capitalize()
             status = normalize_account_status(account.get("status"))
             institution_name = (
-                (account.get("institution") or {}).get("name")
-                or account.get("institution_name")
-                or "Unknown"
+                (account.get("institution") or {}).get("name") or account.get("institution_name") or "Unknown"
             )
 
             # If we have access_token and missing institution, refresh metadata
@@ -660,9 +631,7 @@ def upsert_accounts(
                 "link_type": str(provider or "").lower() or "manual",
                 "is_investment": investment_flags["is_investment"],
                 "investment_has_holdings": investment_flags["investment_has_holdings"],
-                "investment_has_transactions": investment_flags[
-                    "investment_has_transactions"
-                ],
+                "investment_has_transactions": investment_flags["investment_has_transactions"],
                 "product_provenance": investment_flags["product_provenance"],
             }
 
@@ -671,10 +640,7 @@ def upsert_accounts(
                 logger.debug("Updating account %s", account_id)
                 for key, value in filtered_account.items():
                     # Only update institution_name if it was Unknown
-                    if (
-                        key == "institution_name"
-                        and existing_account.institution_name != "Unknown"
-                    ):
+                    if key == "institution_name" and existing_account.institution_name != "Unknown":
                         continue
                     setattr(existing_account, key, value)
                 existing_account.updated_at = now
@@ -710,9 +676,7 @@ def upsert_accounts(
                 )
                 db.session.execute(stmt)
             else:
-                history = AccountHistory.query.filter_by(
-                    account_id=account_id, date=dt_today
-                ).first()
+                history = AccountHistory.query.filter_by(account_id=account_id, date=dt_today).first()
                 if history:
                     history.balance = balance
                     history.updated_at = now_utc
@@ -805,9 +769,7 @@ def get_paginated_transactions(
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter(Account.is_hidden.is_(False))
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .order_by(Transaction.date.desc(), Transaction.transaction_id.desc())
     )
 
@@ -831,10 +793,7 @@ def get_paginated_transactions(
         query = query.filter(Transaction.amount < 0)
     if merchant:
         # Filter by merchant_slug (indexed) or merchant_name as fallback
-        query = query.filter(
-            (Transaction.merchant_slug == merchant)
-            | (Transaction.merchant_name == merchant)
-        )
+        query = query.filter((Transaction.merchant_slug == merchant) | (Transaction.merchant_name == merchant))
     if tags:
         include_untagged = "#untagged" in tags
         tag_names = [tag for tag in tags if tag != "#untagged"]
@@ -850,12 +809,7 @@ def get_paginated_transactions(
     offset = (page - 1) * page_size
 
     running_balance_expr = None
-    cacheable = (
-        not recent
-        and not include_running_balance
-        and page <= TX_CACHE_MAX_PAGE
-        and page_size > 0
-    )
+    cacheable = not recent and not include_running_balance and page <= TX_CACHE_MAX_PAGE and page_size > 0
     cache_key = None
     cached_meta = {
         "cache_hit": False,
@@ -885,9 +839,7 @@ def get_paginated_transactions(
                 **cached.get("meta", {}),
                 "cache_hit": True,
                 "cached_until": (
-                    _coerce_iso_datetime(cached.get("cached_at") or _now_utc())
-                    .replace(tzinfo=timezone.utc)
-                    .isoformat()
+                    _coerce_iso_datetime(cached.get("cached_at") or _now_utc()).replace(tzinfo=timezone.utc).isoformat()
                     if cached.get("cached_at")
                     else None
                 ),
@@ -933,8 +885,7 @@ def get_paginated_transactions(
                 "category_id": getattr(cat, "id", None),
                 "category_icon_url": getattr(cat, "pfc_icon_url", None),
                 "merchant_name": txn.merchant_name or "Unknown",
-                "user_id": getattr(txn, "user_id", None)
-                or getattr(acc, "user_id", None),
+                "user_id": getattr(txn, "user_id", None) or getattr(acc, "user_id", None),
                 "account_name": acc.name or "Unnamed Account",
                 "institution_name": acc.institution_name or "Unknown",
                 "subtype": acc.subtype or "Unknown",
@@ -944,9 +895,7 @@ def get_paginated_transactions(
                 "internal_transfer_flag": bool(getattr(txn, "is_internal", False)),
                 "isEditing": False,
                 "tags": _serialize_transaction_tags(txn),
-                "running_balance": (
-                    float(running_balance) if running_balance is not None else None
-                ),
+                "running_balance": (float(running_balance) if running_balance is not None else None),
             }
         )
 
@@ -959,9 +908,7 @@ def get_paginated_transactions(
     }
     if cacheable and cache_key:
         meta["cache_hit"] = False
-        meta["cached_until"] = (
-            _now_utc() + timedelta(seconds=TX_CACHE_TTL_SECONDS)
-        ).isoformat()
+        meta["cached_until"] = (_now_utc() + timedelta(seconds=TX_CACHE_TTL_SECONDS)).isoformat()
         _set_cached_tx_page(cache_key, (serialized, total), meta)
 
     return serialized, total, meta
@@ -1076,23 +1023,13 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
     category = db.session.query(Category).filter_by(category_slug=category_slug).first()
 
     if not category and (pfc_primary or pfc_detailed):
-        category = (
-            db.session.query(Category)
-            .filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed)
-            .first()
-        )
+        category = db.session.query(Category).filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed).first()
 
     if not category:
-        category = (
-            db.session.query(Category)
-            .filter_by(primary_category=primary, detailed_category=detailed)
-            .first()
-        )
+        category = db.session.query(Category).filter_by(primary_category=primary, detailed_category=detailed).first()
 
     if category and category.category_slug and category.category_slug != category_slug:
-        duplicate = (
-            db.session.query(Category).filter_by(category_slug=category_slug).first()
-        )
+        duplicate = db.session.query(Category).filter_by(category_slug=category_slug).first()
         if duplicate and duplicate.id != category.id:
             return duplicate
 
@@ -1109,13 +1046,9 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
         db.session.add(category)
         db.session.flush()
     else:
-        if primary and (
-            not category.primary_category or category.primary_category == "Unknown"
-        ):
+        if primary and (not category.primary_category or category.primary_category == "Unknown"):
             category.primary_category = primary
-        if detailed and (
-            not category.detailed_category or category.detailed_category == "Unknown"
-        ):
+        if detailed and (not category.detailed_category or category.detailed_category == "Unknown"):
             category.detailed_category = detailed
         if pfc_primary:
             category.pfc_primary = pfc_primary
@@ -1130,9 +1063,7 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
     return category
 
 
-def refresh_data_for_plaid_account(
-    access_token, account_or_id, accounts_data=None, start_date=None, end_date=None
-):
+def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=None, start_date=None, end_date=None):
     """Refresh a single Plaid account and return update status and error info.
 
     Parameters are the same as before, but the return value is now a tuple of
@@ -1146,9 +1077,7 @@ def refresh_data_for_plaid_account(
 
     PLAID_MAX_LOOKBACK_DAYS = 680
     end_date_obj = end_date or now.date()
-    start_date_obj = (
-        start_date or (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
-    )
+    start_date_obj = start_date or (now - timedelta(days=PLAID_MAX_LOOKBACK_DAYS)).date()
 
     if isinstance(end_date_obj, str):
         end_date_obj = datetime.strptime(end_date_obj, "%Y-%m-%d").date()
@@ -1160,9 +1089,7 @@ def refresh_data_for_plaid_account(
         if not isinstance(account, Account):
             account = Account.query.filter_by(account_id=account_or_id).first()
         if not account:
-            logger.warning(
-                "[DB Lookup] No account found for account_id=%s", account_or_id
-            )
+            logger.warning("[DB Lookup] No account found for account_id=%s", account_or_id)
             return False, {
                 "plaid_error_code": "account_not_found",
                 "plaid_error_message": "Account not found for the provided account_id",
@@ -1211,9 +1138,7 @@ def refresh_data_for_plaid_account(
         fetched_count = len(transactions)
 
         # Only process transactions for this specific account
-        transactions = [
-            txn for txn in transactions if txn.get("account_id") == account_id
-        ]
+        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
 
         plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
 
@@ -1238,16 +1163,12 @@ def refresh_data_for_plaid_account(
             if isinstance(txn_date, str):
                 try:
                     parsed_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
-                    txn_date = datetime.combine(
-                        parsed_date, datetime.min.time(), tzinfo=timezone.utc
-                    )
+                    txn_date = datetime.combine(parsed_date, datetime.min.time(), tzinfo=timezone.utc)
                 except ValueError:
                     totals["skipped_invalid_date"] += 1
                     continue
             elif isinstance(txn_date, pydate) and not isinstance(txn_date, datetime):
-                txn_date = datetime.combine(
-                    txn_date, datetime.min.time(), tzinfo=timezone.utc
-                )
+                txn_date = datetime.combine(txn_date, datetime.min.time(), tzinfo=timezone.utc)
 
             # Plaid PFC fields
             pfc_obj = txn.get("personal_finance_category", {})
@@ -1263,22 +1184,16 @@ def refresh_data_for_plaid_account(
             detailed = category_path[1] if len(category_path) > 1 else "Unknown"
 
             # Use robust category upsert logic
-            category = get_or_create_category(
-                primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url
-            )
+            category = get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url)
 
-            description = (
-                txn.get("name") or txn.get("description") or "[no description]"
-            )
+            description = txn.get("name") or txn.get("description") or "[no description]"
             merchant = resolve_merchant(
                 merchant_name=txn.get("merchant_name"),
                 name=txn.get("name"),
                 description=txn.get("description"),
             )
             merchant_name = merchant.display_name
-            merchant_type = (
-                txn.get("payment_meta", {}).get("payment_method") or "Unknown"
-            )
+            merchant_type = txn.get("payment_meta", {}).get("payment_method") or "Unknown"
             txn["merchant_slug"] = merchant.merchant_slug
             pending = txn.get("pending", False)
             txn_amount = process_transaction_amount(txn.get("amount") or 0)
@@ -1319,9 +1234,7 @@ def refresh_data_for_plaid_account(
                     totals["unchanged"] += 1
                 # -- Update Plaid metadata on every refresh (even if not updating Transaction) --
                 if plaid_account_obj:
-                    refresh_or_insert_plaid_metadata(
-                        txn, existing_txn, plaid_account_obj.account_id
-                    )
+                    refresh_or_insert_plaid_metadata(txn, existing_txn, plaid_account_obj.account_id)
                 detect_internal_transfer(existing_txn)
             else:
                 new_txn = Transaction(
@@ -1346,9 +1259,7 @@ def refresh_data_for_plaid_account(
                 totals["inserted"] += 1
                 updated = True
                 if plaid_account_obj:
-                    refresh_or_insert_plaid_metadata(
-                        txn, new_txn, plaid_account_obj.account_id
-                    )
+                    refresh_or_insert_plaid_metadata(txn, new_txn, plaid_account_obj.account_id)
                 detect_internal_transfer(new_txn)
 
         if plaid_account_obj:

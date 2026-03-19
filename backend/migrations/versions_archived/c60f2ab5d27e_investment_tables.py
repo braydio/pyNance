@@ -55,9 +55,7 @@ def upgrade():
             ["securities.security_id"],
         ),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint(
-            "account_id", "security_id", name="uq_holding_account_security"
-        ),
+        sa.UniqueConstraint("account_id", "security_id", name="uq_holding_account_security"),
     )
     with op.batch_alter_table("investment_holdings", schema=None) as batch_op:
         batch_op.create_index(
@@ -110,9 +108,7 @@ def upgrade():
         )
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -121,14 +117,10 @@ def upgrade():
         )
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
 
     with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -148,14 +140,10 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
         batch_op.alter_column(
@@ -164,9 +152,7 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("investment_transactions", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_investment_transactions_security_id"))

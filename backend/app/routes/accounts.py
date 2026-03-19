@@ -5,6 +5,8 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
+from flask import Blueprint, g, jsonify, request
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
@@ -20,7 +22,6 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, g, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -51,9 +52,7 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
     """
     # If identifier is numeric-like, try primary key first
     try:
-        if isinstance(identifier, int) or (
-            isinstance(identifier, str) and identifier.isdigit()
-        ):
+        if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
             acct = Account.query.get(int(identifier))
             if acct:
                 return acct
@@ -126,18 +125,14 @@ def _investment_date_range(start_date, end_date) -> tuple[str, str]:
     return start_dt.isoformat(), end_dt.isoformat()
 
 
-def _refresh_plaid_investments(
-    account: Account, access_token: str, start_date=None, end_date=None
-) -> bool:
+def _refresh_plaid_investments(account: Account, access_token: str, start_date=None, end_date=None) -> bool:
     """Refresh Plaid investments data for an account."""
 
     from app.helpers.plaid_helpers import get_investment_transactions
     from app.sql import investments_logic
 
     start_iso, end_iso = _investment_date_range(start_date, end_date)
-    summary = investments_logic.upsert_investments_from_plaid(
-        account.user_id, access_token
-    )
+    summary = investments_logic.upsert_investments_from_plaid(account.user_id, access_token)
     transactions = investments_logic.upsert_investment_transactions(
         get_investment_transactions(access_token, start_iso, end_iso)
     )
@@ -228,8 +223,7 @@ def refresh_all_accounts():
                         )
                         continue
                     accounts_data = [
-                        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
-                        for acct in accounts_data
+                        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct) for acct in accounts_data
                     ]
                     token_account_cache[access_token] = accounts_data
                 products = _plaid_products_for_account(account)
@@ -263,45 +257,26 @@ def refresh_all_accounts():
                                     "institution_name": inst,
                                     "account_ids": [account.account_id],
                                     "account_names": [account.name],
-                                    "plaid_error_code": err_payload.get(
-                                        "plaid_error_code"
-                                    ),
-                                    "plaid_error_message": err_payload.get(
-                                        "plaid_error_message"
-                                    ),
+                                    "plaid_error_code": err_payload.get("plaid_error_code"),
+                                    "plaid_error_message": err_payload.get("plaid_error_message"),
                                 }
 
-                                if (
-                                    err_payload.get("plaid_error_code")
-                                    == "ITEM_LOGIN_REQUIRED"
-                                ):
+                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
                                     error_map[key][
                                         "update_link_token_endpoint"
                                     ] = "/api/plaid/transactions/generate_update_link_token"
-                                    error_map[key]["affected_account_ids"] = [
-                                        account.account_id
-                                    ]
+                                    error_map[key]["affected_account_ids"] = [account.account_id]
                             else:
                                 error_map[key]["account_ids"].append(account.account_id)
                                 error_map[key]["account_names"].append(account.name)
 
-                                if (
-                                    err_payload.get("plaid_error_code")
-                                    == "ITEM_LOGIN_REQUIRED"
-                                ):
-                                    affected_ids = set(
-                                        error_map[key].get("affected_account_ids", [])
-                                    )
+                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                    affected_ids = set(error_map[key].get("affected_account_ids", []))
                                     affected_ids.add(account.account_id)
-                                    error_map[key]["affected_account_ids"] = list(
-                                        affected_ids
-                                    )
+                                    error_map[key]["affected_account_ids"] = list(affected_ids)
 
-                            if (
-                                err_payload.get("plaid_error_code")
-                                == "ITEM_LOGIN_REQUIRED"
-                            ):
+                            if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                 logger.warning(
                                     "Plaid re-auth required: Institution: %s, Account: %s, Error: %s. "
                                     "User must re-auth via Link update mode. Call POST "
@@ -367,9 +342,7 @@ def refresh_all_accounts():
             for key, error_info in error_map.items():
                 institution, error_code, error_message = key
                 affected_count = len(error_info["account_ids"])
-                account_names = ", ".join(
-                    error_info["account_names"][:3]
-                )  # Show first 3 names
+                account_names = ", ".join(error_info["account_names"][:3])  # Show first 3 names
                 if len(error_info["account_names"]) > 3:
                     account_names += f" and {len(error_info['account_names']) - 3} more"
 
@@ -474,10 +447,7 @@ def refresh_single_account(account_id):
             ),
             429,
         )
-    accounts_data = [
-        acct.to_dict() if hasattr(acct, "to_dict") else dict(acct)
-        for acct in accounts_data
-    ]
+    accounts_data = [acct.to_dict() if hasattr(acct, "to_dict") else dict(acct) for acct in accounts_data]
     if should_throttle_refresh(account.plaid_account):
         status = serialized_refresh_status(account.plaid_account)
         return (
@@ -503,10 +473,7 @@ def refresh_single_account(account_id):
                 end_date=end_date,
             )
 
-            if (
-                isinstance(err, dict)
-                and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED"
-            ):
+            if isinstance(err, dict) and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                 logger.warning(
                     "Plaid re-auth required for institution %s (account %s): %s. User must re-auth via Link update mode. "
                     "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",
@@ -625,20 +592,12 @@ def list_accounts():
         for a in accounts:
             try:
                 last_refreshed = None
-                refresh_status = serialized_refresh_status(
-                    getattr(a, "plaid_account", None)
-                )
+                refresh_status = serialized_refresh_status(getattr(a, "plaid_account", None))
                 cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
-                normalized_balance = normalize_account_balance(
-                    a.balance, a.type, account_id=a.account_id
-                )
-                balance_value = (
-                    float(normalized_balance)
-                    if normalized_balance is not None
-                    else None
-                )
+                normalized_balance = normalize_account_balance(a.balance, a.type, account_id=a.account_id)
+                balance_value = float(normalized_balance) if normalized_balance is not None else None
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.debug(
                         "Normalized original balance of %s to %s because account type %s",
@@ -664,9 +623,7 @@ def list_accounts():
                         "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,
                         "refresh_status": refresh_status,
-                        "refresh_stale": refresh_is_stale(
-                            getattr(a, "plaid_account", None)
-                        ),
+                        "refresh_stale": refresh_is_stale(getattr(a, "plaid_account", None)),
                         "refresh_cooldown_until": cooldown_until,
                     }
                 )
@@ -733,9 +690,7 @@ def get_recurring(account_id):
     Retrieves all recurring transactions for the specified account from the database.
     """
     try:
-        recurring_txs = RecurringTransaction.query.filter_by(
-            account_id=account_id
-        ).all()
+        recurring_txs = RecurringTransaction.query.filter_by(account_id=account_id).all()
         data = []
         for tx in recurring_txs:
             amount = display_transaction_amount(getattr(tx, "transaction", tx))
@@ -745,9 +700,7 @@ def get_recurring(account_id):
                     "description": tx.description,
                     "amount": amount,
                     "frequency": tx.frequency,
-                    "next_due_date": (
-                        tx.next_due_date.isoformat() if tx.next_due_date else None
-                    ),
+                    "next_due_date": (tx.next_due_date.isoformat() if tx.next_due_date else None),
                     "notes": tx.notes,
                     "updated_at": tx.updated_at.isoformat() if tx.updated_at else None,
                 }
@@ -778,9 +731,7 @@ def update_recurring_tx(account_id):
             recurring.amount = amount
             db.session.commit()
             return (
-                jsonify(
-                    {"status": "success", "message": "Recurring transaction updated"}
-                ),
+                jsonify({"status": "success", "message": "Recurring transaction updated"}),
                 200,
             )
         else:
@@ -796,9 +747,7 @@ def update_recurring_tx(account_id):
             db.session.add(new_tx)
             db.session.commit()
             return (
-                jsonify(
-                    {"status": "success", "message": "Recurring transaction created"}
-                ),
+                jsonify({"status": "success", "message": "Recurring transaction created"}),
                 201,
             )
     except Exception as e:
@@ -844,9 +793,7 @@ def match_account_by_fields():
         if data.get("name"):
             filters.append(Account.name.ilike(f"%{data['name']}%"))
         if data.get("institution_name"):
-            filters.append(
-                Account.institution_name.ilike(f"%{data['institution_name']}%")
-            )
+            filters.append(Account.institution_name.ilike(f"%{data['institution_name']}%"))
         if data.get("type"):
             filters.append(Account.type == data["type"])
         if data.get("subtype"):
@@ -871,9 +818,7 @@ def match_account_by_fields():
                     "subtype": acc.subtype,
                     "is_investment": bool(acc.is_investment),
                     "investment_has_holdings": bool(acc.investment_has_holdings),
-                    "investment_has_transactions": bool(
-                        acc.investment_has_transactions
-                    ),
+                    "investment_has_transactions": bool(acc.investment_has_transactions),
                     "product_provenance": acc.product_provenance,
                 }
                 for acc in matches
@@ -895,8 +840,9 @@ def account_net_changes(account_id):
     """
 
     try:
-        from app.sql import account_logic
         from sqlalchemy import case, func
+
+        from app.sql import account_logic
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
@@ -911,12 +857,8 @@ def account_net_changes(account_id):
 
         # Compute income/expense breakdown from transactions in the range
         # Use external account_id consistently
-        income_sum = func.sum(
-            case((Transaction.amount > 0, Transaction.amount), else_=0)
-        )
-        expense_sum = func.sum(
-            case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
-        )
+        income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0))
+        expense_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0))
 
         q = (
             db.session.query(income_sum.label("income"), expense_sum.label("expenses"))
@@ -955,9 +897,7 @@ def account_net_changes(account_id):
             # Backward-compat legacy fields
             "account_id": legacy.get("account_id", account_id),
             "net_change": legacy.get("net_change", net),
-            "period": legacy.get(
-                "period", {"start": start_date.isoformat(), "end": end_date.isoformat()}
-            ),
+            "period": legacy.get("period", {"start": start_date.isoformat(), "end": end_date.isoformat()}),
         }
 
         return jsonify(payload), 200
@@ -1024,9 +964,7 @@ def get_account_history(account_id):
         # Use the robust account resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(
-                "Account history request for unknown account: %s", account_id
-            )
+            logger.warning("Account history request for unknown account: %s", account_id)
             return jsonify({"error": "Account not found"}), 404
 
         balances = get_or_compute_account_history(
@@ -1070,9 +1008,7 @@ def transaction_history(account_id):
         # Resolve account using the robust resolver
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(
-                "Transaction history request for unknown account: %s", account_id
-            )
+            logger.warning("Transaction history request for unknown account: %s", account_id)
             return jsonify({"status": "error", "message": "Account not found"}), 404
 
         # Parse query parameters
@@ -1081,9 +1017,7 @@ def transaction_history(account_id):
         limit = min(int(request.args.get("limit", 100)), 1000)  # Cap at 1000
         offset = int(request.args.get("offset", 0))
         order = request.args.get("order", "desc").lower()
-        include_internal = (
-            request.args.get("include_internal", "false").lower() == "true"
-        )
+        include_internal = request.args.get("include_internal", "false").lower() == "true"
 
         # Parse date filters
         start_date = None
@@ -1127,10 +1061,7 @@ def transaction_history(account_id):
 
         # Exclude internal transactions unless requested
         if not include_internal:
-            query = query.filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
 
         # Apply ordering
         if order == "asc":
@@ -1201,11 +1132,7 @@ def transaction_history(account_id):
         )
 
     except Exception as e:
-        inst = (
-            (account.institution_name or "Unknown")
-            if "account" in locals() and account
-            else account_id
-        )
+        inst = (account.institution_name or "Unknown") if "account" in locals() and account else account_id
         logger.error(
             "Error in transaction_history for institution %s: %s",
             inst,

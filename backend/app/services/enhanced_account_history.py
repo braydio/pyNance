@@ -4,11 +4,12 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from sqlalchemy import func
+
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
 from app.services.account_history import compute_balance_history
 from app.utils.finance_utils import normalize_account_balance
-from sqlalchemy import func
 
 TWOPLACES = Decimal("0.01")
 
@@ -50,9 +51,7 @@ def get_or_compute_account_history(
             return []
 
         resolved_end_date = end_date or datetime.now(timezone.utc).date()
-        resolved_start_date = start_date or (
-            resolved_end_date - timedelta(days=days - 1)
-        )
+        resolved_start_date = start_date or (resolved_end_date - timedelta(days=days - 1))
 
         if resolved_start_date > resolved_end_date:
             return []
@@ -66,9 +65,7 @@ def get_or_compute_account_history(
             if cached_history:
                 return cached_history
 
-        current_balance = normalize_account_balance(
-            account.balance, account.type, account_id=account.account_id
-        )
+        current_balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
         fresh_history = compute_fresh_history(
             account_id,
             current_balance,
@@ -107,11 +104,7 @@ def get_cached_history(account_id: str, start: date, end: date):
 
     return [
         {
-            "date": (
-                record.date.isoformat()
-                if hasattr(record.date, "isoformat")
-                else str(record.date)
-            ),
+            "date": (record.date.isoformat() if hasattr(record.date, "isoformat") else str(record.date)),
             "balance": round(float(record.balance or 0), 2),
         }
         for record in records
@@ -144,9 +137,7 @@ def get_daily_transaction_totals(
     )
 
     if not include_internal:
-        query = query.filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        query = query.filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
 
     tx_rows = query.group_by(func.date(Transaction.date)).all()
     return [{"date": row[0], "amount": row[1] or Decimal("0")} for row in tx_rows]
@@ -176,9 +167,7 @@ def compute_fresh_history(
             include_internal=include_internal,
         )
 
-        return compute_balance_history(
-            Decimal(str(current_balance)), transactions, start_date, end_date
-        )
+        return compute_balance_history(Decimal(str(current_balance)), transactions, start_date, end_date)
 
     except Exception as e:
         print(f"Error computing fresh history: {e}")
@@ -202,9 +191,7 @@ def cache_history(account_id: str, user_id: str, history: List[Dict[str, float]]
             return
 
         now = datetime.now(timezone.utc)
-        window_dates = [
-            datetime.fromisoformat(record["date"]).date() for record in history
-        ]
+        window_dates = [datetime.fromisoformat(record["date"]).date() for record in history]
         window_start = min(window_dates)
         window_end = max(window_dates)
 

@@ -45,9 +45,9 @@ def get_investment_accounts(user_id: Optional[str] = None) -> List[Dict[str, obj
     Returns:
         Serialized investment account records eligible for the investments APIs.
     """
-    query = Account.query.join(
-        PlaidAccount, Account.account_id == PlaidAccount.account_id
-    ).filter(Account.is_investment.is_(True))
+    query = Account.query.join(PlaidAccount, Account.account_id == PlaidAccount.account_id).filter(
+        Account.is_investment.is_(True)
+    )
     if user_id:
         query = query.filter(Account.user_id == user_id)
     query = query.filter(PlaidAccount.product.ilike("%investments%"))
@@ -200,8 +200,7 @@ def upsert_investment_transactions(items: List[dict]) -> int:
         count = 0
         for t in items or []:
             tx = InvestmentTransaction(
-                investment_transaction_id=t.get("investment_transaction_id")
-                or t.get("investment_transaction_id"),
+                investment_transaction_id=t.get("investment_transaction_id") or t.get("investment_transaction_id"),
                 account_id=t.get("account_id"),
                 security_id=t.get("security_id"),
                 date=t.get("date"),

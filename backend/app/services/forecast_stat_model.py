@@ -1,7 +1,8 @@
 import pandas as pd
-from app.config import logger
 from sklearn.metrics import mean_squared_error
 from statsmodels.tsa.arima.model import ARIMA
+
+from app.config import logger
 
 logger.info("Initializing forecast stat model")
 

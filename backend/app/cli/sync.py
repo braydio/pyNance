@@ -1,6 +1,7 @@
 """Command line helpers for manual account synchronization."""
 
 import click
+
 from app.config import logger
 
 

@@ -15,12 +15,8 @@ class Institution(db.Model, TimestampMixin):
     provider = db.Column(db.String(64), nullable=False)
     last_refreshed = db.Column(db.DateTime, nullable=True)
 
-    accounts = db.relationship(
-        "Account", back_populates="institution", cascade="all, delete"
-    )
-    plaid_accounts = db.relationship(
-        "PlaidAccount", back_populates="institution", cascade="all, delete"
-    )
+    accounts = db.relationship("Account", back_populates="institution", cascade="all, delete")
+    plaid_accounts = db.relationship("PlaidAccount", back_populates="institution", cascade="all, delete")
 
 
 class PlaidAccount(db.Model, TimestampMixin):

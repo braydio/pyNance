@@ -16,9 +16,10 @@ import csv
 from pathlib import Path
 
 import click
+from flask.cli import with_appcontext
+
 from app.extensions import db
 from app.models import Account, PlaidAccount, PlaidItem
-from flask.cli import with_appcontext
 
 
 @click.command("import-plaid-tokens")
@@ -47,10 +48,7 @@ def import_plaid_tokens(csv_path: Path) -> None:
         reader = csv.DictReader(fh)
         required_cols = {"account_id", "access_token", "item_id"}
         if not required_cols.issubset(set(reader.fieldnames or ())):
-            click.echo(
-                "CSV is missing required columns. "
-                f"Expected {sorted(required_cols)}, got {reader.fieldnames}"
-            )
+            click.echo("CSV is missing required columns. " f"Expected {sorted(required_cols)}, got {reader.fieldnames}")
             return
 
         for row in reader:

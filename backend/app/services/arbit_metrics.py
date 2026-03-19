@@ -19,9 +19,7 @@ SERIES_CONFIG: Dict[str, Tuple[Tuple[str, str], ...]] = {
     "latency": (("Cycle Latency (s)", "cycle_latency"),),
 }
 
-METRIC_NAMES = tuple(
-    metric for series in SERIES_CONFIG.values() for _, metric in series
-)
+METRIC_NAMES = tuple(metric for series in SERIES_CONFIG.values() for _, metric in series)
 
 
 class MetricPoint(TypedDict):

@@ -1,6 +1,7 @@
+from sqlalchemy.exc import IntegrityError
+
 from app.extensions import db
 from app.models import Category
-from sqlalchemy.exc import IntegrityError
 
 
 def upsert_categories_from_plaid_data(data: dict) -> int:
@@ -56,23 +57,17 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
     detailed = category_path[1] if len(category_path) > 1 else None
 
     # Check for existing category
-    existing = Category.query.filter_by(
-        primary_category=primary, detailed_category=detailed
-    ).first()
+    existing = Category.query.filter_by(primary_category=primary, detailed_category=detailed).first()
     if existing:
         return existing
 
     # Ensure parent exists if needed
     parent = None
     if detailed:
-        parent = Category.query.filter_by(
-            primary_category=primary, detailed_category=None
-        ).first()
+        parent = Category.query.filter_by(primary_category=primary, detailed_category=None).first()
         if not parent:
             parent = Category(
-                plaid_category_id=(
-                    f"{plaid_category_id}_parent" if plaid_category_id else None
-                ),
+                plaid_category_id=(f"{plaid_category_id}_parent" if plaid_category_id else None),
                 primary_category=primary,
                 detailed_category=None,
                 parent_id=None,
@@ -92,9 +87,7 @@ def resolve_or_create_category(category_path, plaid_category_id=None):
         db.session.flush()
     except IntegrityError:
         db.session.rollback()
-        category = Category.query.filter_by(
-            primary_category=primary, detailed_category=detailed
-        ).first()
+        category = Category.query.filter_by(primary_category=primary, detailed_category=detailed).first()
 
     # If still None, return a safe fallback instead of crashing
     if not category:

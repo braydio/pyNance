@@ -6,6 +6,9 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict
 
+from flask import Blueprint, g, has_request_context, jsonify, request
+from sqlalchemy import case, func
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Tag, Transaction, transaction_tags
@@ -14,8 +17,6 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, g, has_request_context, jsonify, request
-from sqlalchemy import case, func
 
 charts = Blueprint("charts", __name__)
 
@@ -53,10 +54,7 @@ def category_breakdown():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .distinct(Transaction.id)
@@ -86,9 +84,7 @@ def category_breakdown():
                 breakdown_map[key]["date"] = tx.date
 
         # Sort by descending amount
-        sorted_items = sorted(
-            breakdown_map.items(), key=lambda item: item[1]["amount"], reverse=True
-        )
+        sorted_items = sorted(breakdown_map.items(), key=lambda item: item[1]["amount"], reverse=True)
 
         data = [
             {
@@ -140,10 +136,7 @@ def tag_metrics() -> Dict[str, Any]:
             )
             .outerjoin(Tag, Tag.id == transaction_tags.c.tag_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .group_by(tag_label)
@@ -203,9 +196,7 @@ def category_transactions() -> Dict[str, Any]:
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .filter(Transaction.category_id.in_(cat_ids))
         .filter(Transaction.date >= start_date)
         .filter(Transaction.date <= end_date)
@@ -243,34 +234,21 @@ def get_cash_flow():
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
 
-        start_date = (
-            datetime.strptime(start_date_str, "%Y-%m-%d").date()
-            if start_date_str
-            else None
-        )
-        end_date = (
-            datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
-        )
+        start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+        end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
 
         date_fmt = "%Y-%m-%d" if granularity == "daily" else "%m-%Y"
         date_expr = func.strftime(date_fmt, Transaction.date).label("period")
 
-        income_sum = func.sum(
-            case((Transaction.amount > 0, Transaction.amount), else_=0)
-        ).label("income")
-        expense_sum = func.sum(
-            case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
-        ).label("expenses")
+        income_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("income")
+        expense_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("expenses")
         tx_count = func.count(Transaction.id).label("txn_count")
 
         aggregated = (
             db.session.query(date_expr, income_sum, expense_sum, tx_count)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         )
         if start_date:
             aggregated = aggregated.filter(Transaction.date >= start_date)
@@ -334,9 +312,7 @@ def get_net_assets():
     for month in months:
         accounts = month_accounts_cache.get(month)
         if accounts is None:
-            accounts = (
-                db.session.query(Account).filter(Account.is_hidden.is_(False)).all()
-            )
+            accounts = db.session.query(Account).filter(Account.is_hidden.is_(False)).all()
             month_accounts_cache[month] = accounts
         logger.debug("Month %s - retrieved %d accounts", month, len(accounts))
 
@@ -352,15 +328,13 @@ def get_net_assets():
         assets = sum(
             acc.balance
             for acc in accounts
-            if acc.type.lower() not in ["credit", "loan", "liability"]
-            and acc.balance is not None
+            if acc.type.lower() not in ["credit", "loan", "liability"] and acc.balance is not None
         )
 
         liabilities = sum(
             acc.balance
             for acc in accounts
-            if acc.type.lower() in ["credit", "credit card", "loan", "liability"]
-            and acc.balance is not None
+            if acc.type.lower() in ["credit", "credit card", "loan", "liability"] and acc.balance is not None
         )
 
         net_value = float(net) if net is not None else 0.0
@@ -417,12 +391,8 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
     # included for the entire end date. Without this, transactions occurring
     # later in the day would be excluded and tooltips would not match modal
     # totals.
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(
-        tzinfo=timezone.utc
-    )
-    end_dt = datetime.combine(end_date, datetime.max.time()).replace(
-        tzinfo=timezone.utc
-    )
+    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
+    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
 
     # Align filtering with transactions listing: exclude hidden accounts
     # (is_hidden == False) and internal transfers so tooltip counts match
@@ -433,9 +403,7 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         .filter(Account.is_hidden.is_(False))
         .filter(Transaction.date >= start_dt)
         .filter(Transaction.date <= end_dt)
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .all()
     )
 
@@ -528,11 +496,7 @@ def accounts_snapshot():
             "account_id": acc.account_id,
             "name": acc.name,
             "institution_name": acc.institution_name,
-            "balance": float(
-                normalize_account_balance(
-                    acc.balance, acc.type, account_id=acc.account_id
-                )
-            ),
+            "balance": float(normalize_account_balance(acc.balance, acc.type, account_id=acc.account_id)),
             "type": acc.type,
             "subtype": acc.subtype,
         }
@@ -557,11 +521,7 @@ def forecast_route():
 
         daily_totals = defaultdict(float)
         for p in projections:
-            day = (
-                p["date"].strftime("%Y-%m-%d")
-                if hasattr(p["date"], "strftime")
-                else str(p["date"])
-            )
+            day = p["date"].strftime("%Y-%m-%d") if hasattr(p["date"], "strftime") else str(p["date"])
             daily_totals[day] += p.get("balance", 0)
 
         labels = []
@@ -571,9 +531,7 @@ def forecast_route():
         for i in range(horizon):
             day = start + timedelta(days=i)
             labels.append(day.strftime("%b %d"))
-            forecast_line.append(
-                round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2)
-            )
+            forecast_line.append(round(daily_totals.get(day.strftime("%Y-%m-%d"), 0), 2))
 
         adjustment = manual_income - liability_rate
         if adjustment:
@@ -641,10 +599,7 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .all()
         )
 
@@ -653,10 +608,7 @@ def category_breakdown_tree():
             .join(Category, Transaction.category_id == Category.id, isouter=True)
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .all()
         )
         for tx, cat in transactions:
@@ -673,9 +625,7 @@ def category_breakdown_tree():
             category_breakdown[parent_label]["amount"] += amt
             if category_id is not None:
                 category_breakdown[parent_label]["category_ids"].add(int(category_id))
-                category_breakdown[parent_label]["children"][child_label][
-                    "category_ids"
-                ].add(int(category_id))
+                category_breakdown[parent_label]["children"][child_label]["category_ids"].add(int(category_id))
             category_breakdown[parent_label]["children"][child_label]["amount"] += amt
 
         # Compose output: one bar per primary_category
@@ -760,10 +710,7 @@ def merchant_breakdown():
             db.session.query(Transaction, Account)
             .join(Account, Transaction.account_id == Account.account_id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .all()
@@ -779,9 +726,7 @@ def merchant_breakdown():
 
         data = [
             {"label": merchant, "amount": round(amount, 2)}
-            for merchant, amount in sorted(
-                merchant_totals.items(), key=lambda x: x[1], reverse=True
-            )[:top_n]
+            for merchant, amount in sorted(merchant_totals.items(), key=lambda x: x[1], reverse=True)[:top_n]
         ]
 
         return (

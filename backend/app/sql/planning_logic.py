@@ -11,9 +11,10 @@ import uuid
 from datetime import date
 from typing import Any, Dict, Optional
 
+from werkzeug.exceptions import BadRequest, NotFound
+
 from app.extensions import db
 from app.models import PlannedBill, PlanningScenario, ScenarioAllocation
-from werkzeug.exceptions import BadRequest, NotFound
 
 
 # -----------------------------

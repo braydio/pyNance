@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pdfplumber
+
 from app.config import logger
 
 
@@ -45,9 +46,7 @@ def import_transactions_from_csv(filepath: str | Path):
                 imported.append(
                     {
                         "transaction_id": row["Reference Number"],
-                        "date": datetime.strptime(row["Transaction Date"], "%m/%d/%Y")
-                        .date()
-                        .isoformat(),
+                        "date": datetime.strptime(row["Transaction Date"], "%m/%d/%Y").date().isoformat(),
                         "name": row["Description"],
                         "amount": abs(amount),
                         "type": "credit" if amount > 0 else "debit",
@@ -80,9 +79,7 @@ def import_transactions_from_pdf(filepath: str | Path):
                 text = page.extract_text() or ""
                 lines.extend(text.splitlines())
 
-        txn_pattern = re.compile(
-            r"^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+(-?\d+(?:\.\d{1,2})?)$"
-        )
+        txn_pattern = re.compile(r"^(\d{2}/\d{2}/\d{4})\s+(.+?)\s+(-?\d+(?:\.\d{1,2})?)$")
 
         for idx, line in enumerate(lines):
             match = txn_pattern.match(line.strip())

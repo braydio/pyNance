@@ -2,12 +2,13 @@
 import types
 from datetime import date, datetime, timedelta, timezone
 
+from flask import Blueprint, jsonify, request
+from sqlalchemy import func
+
 from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
-from flask import Blueprint, jsonify, request
-from sqlalchemy import func
 
 recurring = Blueprint("recurring", __name__)
 
@@ -118,9 +119,7 @@ def delete_recurring_tx(account_id):
 
         if not match:
             return (
-                jsonify(
-                    {"status": "error", "message": "No matching recurring rule found."}
-                ),
+                jsonify({"status": "error", "message": "No matching recurring rule found."}),
                 404,
             )
 

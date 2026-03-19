@@ -71,9 +71,7 @@ def canonicalize_category(
     return UNKNOWN_SLUG, UNKNOWN_DISPLAY
 
 
-def canonical_display_for_slug(
-    slug: str | None, fallback_display: str | None = None
-) -> str:
+def canonical_display_for_slug(slug: str | None, fallback_display: str | None = None) -> str:
     """Build a deterministic display label for a canonical category slug."""
 
     normalized_slug = _normalize_slug_component(slug)

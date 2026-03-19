@@ -154,9 +154,7 @@ def delete_account_group(group_id: str, user_id: str | None = None) -> dict:
     }
 
 
-def reorder_account_groups(
-    group_ids: Sequence[str], user_id: str | None = None
-) -> dict:
+def reorder_account_groups(group_ids: Sequence[str], user_id: str | None = None) -> dict:
     """Persist a new ordering for groups.
 
     Args:
@@ -228,9 +226,7 @@ def add_account_to_group(
     group = _get_group(group_id, user_id=user_id)
     account = _get_account(account_id)
     existing = (
-        AccountGroupMembership.query.filter_by(group_id=group.id)
-        .order_by(AccountGroupMembership.position.asc())
-        .all()
+        AccountGroupMembership.query.filter_by(group_id=group.id).order_by(AccountGroupMembership.position.asc()).all()
     )
     if any(m.account_id == account.account_id for m in existing):
         raise ValueError("Account already in group")
@@ -266,18 +262,14 @@ def remove_account_from_group(
     """
 
     group = _get_group(group_id, user_id=user_id)
-    membership = AccountGroupMembership.query.filter_by(
-        group_id=group.id, account_id=account_id
-    ).first()
+    membership = AccountGroupMembership.query.filter_by(group_id=group.id, account_id=account_id).first()
     if not membership:
         raise ValueError("Account not found in group")
     db.session.delete(membership)
     db.session.flush()
     remaining = (
         AccountGroupMembership.query.filter_by(group_id=group.id)
-        .order_by(
-            AccountGroupMembership.position.asc(), AccountGroupMembership.id.asc()
-        )
+        .order_by(AccountGroupMembership.position.asc(), AccountGroupMembership.id.asc())
         .all()
     )
     for position, member in enumerate(remaining):
@@ -308,9 +300,7 @@ def reorder_group_accounts(
     group = _get_group(group_id, user_id=user_id)
     memberships = (
         AccountGroupMembership.query.filter_by(group_id=group.id)
-        .order_by(
-            AccountGroupMembership.position.asc(), AccountGroupMembership.id.asc()
-        )
+        .order_by(AccountGroupMembership.position.asc(), AccountGroupMembership.id.asc())
         .all()
     )
     existing_ids = {m.account_id for m in memberships}
@@ -370,9 +360,7 @@ def _load_groups(user_id: str) -> list[AccountGroup]:
     return [default_group]
 
 
-def _ensure_preference(
-    user_id: str, groups: Sequence[AccountGroup]
-) -> AccountGroupPreference:
+def _ensure_preference(user_id: str, groups: Sequence[AccountGroup]) -> AccountGroupPreference:
     """Ensure a preference record exists for the scope.
 
     Args:
@@ -414,9 +402,7 @@ def _serialize_groups(groups: Sequence[AccountGroup]) -> list[dict]:
         return []
     group_ids = [g.id for g in groups]
     memberships = (
-        AccountGroupMembership.query.filter(
-            AccountGroupMembership.group_id.in_(group_ids)
-        )
+        AccountGroupMembership.query.filter(AccountGroupMembership.group_id.in_(group_ids))
         .order_by(
             AccountGroupMembership.group_id.asc(),
             AccountGroupMembership.position.asc(),
@@ -427,11 +413,7 @@ def _serialize_groups(groups: Sequence[AccountGroup]) -> list[dict]:
     account_ids = {m.account_id for m in memberships}
     accounts = []
     if account_ids:
-        accounts = (
-            Account.query.filter(Account.account_id.in_(account_ids))
-            .order_by(Account.account_id.asc())
-            .all()
-        )
+        accounts = Account.query.filter(Account.account_id.in_(account_ids)).order_by(Account.account_id.asc()).all()
     account_map = {acc.account_id: acc for acc in accounts}
     grouped: dict[str, list[AccountGroupMembership]] = {gid: [] for gid in group_ids}
     stale: list[AccountGroupMembership] = []
@@ -452,10 +434,7 @@ def _serialize_groups(groups: Sequence[AccountGroup]) -> list[dict]:
                 "name": group.name,
                 "accent": group.accent or DEFAULT_ACCENT,
                 "position": group.position,
-                "accounts": [
-                    _serialize_account(account_map[m.account_id])
-                    for m in grouped.get(group.id, [])
-                ],
+                "accounts": [_serialize_account(account_map[m.account_id]) for m in grouped.get(group.id, [])],
             }
         )
     return serialized
@@ -471,9 +450,7 @@ def _serialize_account(account: Account) -> dict:
         dict: Account payload with normalized balances.
     """
 
-    balance = normalize_account_balance(
-        account.balance, account.type, account_id=account.account_id
-    )
+    balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
     if getattr(plaid_account, "last_refreshed", None):

@@ -55,9 +55,7 @@ def _sanitize_for_json(value: Any) -> Any:
     return value
 
 
-def refresh_or_insert_plaid_metadata(
-    plaid_tx: dict, transaction, plaid_account_id: str
-):
+def refresh_or_insert_plaid_metadata(plaid_tx: dict, transaction, plaid_account_id: str):
     """
     Insert or update the PlaidTransactionMeta for a given Transaction.
     Args:
@@ -65,9 +63,7 @@ def refresh_or_insert_plaid_metadata(
         transaction: The Transaction SQLAlchemy instance (already created/updated).
         plaid_account_id: The PlaidAccount.account_id (for FK).
     """
-    meta = PlaidTransactionMeta.query.filter_by(
-        transaction_id=transaction.transaction_id
-    ).first()
+    meta = PlaidTransactionMeta.query.filter_by(transaction_id=transaction.transaction_id).first()
     if not meta:
         meta = PlaidTransactionMeta(transaction_id=transaction.transaction_id)
         db.session.add(meta)

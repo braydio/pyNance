@@ -4,6 +4,7 @@ from datetime import date
 from decimal import Decimal
 
 import click
+
 from app.extensions import db
 from app.models import Account, Category, Institution, Transaction
 

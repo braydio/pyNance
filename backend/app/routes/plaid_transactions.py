@@ -4,6 +4,13 @@
 from datetime import datetime
 from typing import Optional
 
+from flask import Blueprint, jsonify, request
+from plaid.model.country_code import CountryCode
+from plaid.model.link_token_create_request import LinkTokenCreateRequest
+from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
+from plaid.model.products import Products
+from sqlalchemy.orm import joinedload
+
 from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger, plaid_client
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -18,12 +25,6 @@ from app.models import Account, PlaidAccount, PlaidItem
 from app.services import plaid_sync
 from app.sql import account_logic  # for upserting accounts and processing transactions
 from app.sql.account_logic import merge_plaid_products, serialize_plaid_products
-from flask import Blueprint, jsonify, request
-from plaid.model.country_code import CountryCode
-from plaid.model.link_token_create_request import LinkTokenCreateRequest
-from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.products import Products
-from sqlalchemy.orm import joinedload
 
 plaid_transactions = Blueprint("plaid_transactions", __name__)
 
@@ -40,9 +41,7 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
     """
     # If identifier is numeric-like, try primary key first
     try:
-        if isinstance(identifier, int) or (
-            isinstance(identifier, str) and identifier.isdigit()
-        ):
+        if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
             acct = Account.query.get(int(identifier))
             if acct:
                 return acct
@@ -71,9 +70,7 @@ def generate_link_token_endpoint():
         if not token:
             logger.warning("Failed to generate link token - token was None")
             return (
-                jsonify(
-                    {"status": "error", "message": "Failed to generate link token"}
-                ),
+                jsonify({"status": "error", "message": "Failed to generate link token"}),
                 500,
             )
         logger.info("Generated link token for user_id=%s", user_id)
@@ -146,9 +143,7 @@ def exchange_public_token_endpoint():
                 existing_item.access_token = access_token
                 existing_item.user_id = str(user_id)
                 existing_item.institution_name = institution_name
-                existing_item.product = merge_plaid_products(
-                    existing_item.product, canonical_products
-                )
+                existing_item.product = merge_plaid_products(existing_item.product, canonical_products)
                 existing_item.is_active = True
             else:
                 db.session.add(
@@ -255,9 +250,7 @@ def delete_plaid_account():
         linked_accounts = [plaid_acct.account_id]
         if item_id:
             linked_accounts = [
-                pa.account_id
-                for pa in PlaidAccount.query.filter_by(item_id=item_id).all()
-                if pa.account_id
+                pa.account_id for pa in PlaidAccount.query.filter_by(item_id=item_id).all() if pa.account_id
             ]
 
         access_token = plaid_acct.access_token
@@ -276,9 +269,7 @@ def delete_plaid_account():
             # Clean up the stored PlaidItem row for this item as well
             PlaidItem.query.filter_by(item_id=item_id).delete()
 
-        deleted_count = Account.query.filter(
-            Account.account_id.in_(linked_accounts)
-        ).delete(synchronize_session=False)
+        deleted_count = Account.query.filter(Account.account_id.in_(linked_accounts)).delete(synchronize_session=False)
         db.session.commit()
         logger.info(
             "Deleted Plaid item %s and %d linked account(s): %s",
@@ -309,19 +300,13 @@ def refresh_accounts_endpoint():
     start_date_str = data.get("start_date")
     end_date_str = data.get("end_date")
     account_ids = data.get("account_ids") or []
-    start_date = (
-        datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
-    )
-    end_date = (
-        datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
-    )
+    start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date() if start_date_str else None
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else None
     if not user_id:
         return jsonify({"error": "Missing user_id"}), 400
 
     try:
-        query = Account.query.options(joinedload(Account.plaid_account)).filter_by(
-            user_id=user_id
-        )
+        query = Account.query.options(joinedload(Account.plaid_account)).filter_by(user_id=user_id)
         if account_ids:
             query = query.filter(Account.account_id.in_(account_ids))
         accounts = query.all()
@@ -334,13 +319,10 @@ def refresh_accounts_endpoint():
                 if accounts_data is None:
                     accounts_data = get_accounts(access_token, acct.user_id)
                     if accounts_data is None:
-                        logger.warning(
-                            "Plaid rate limit hit; skipping account %s", acct.account_id
-                        )
+                        logger.warning("Plaid rate limit hit; skipping account %s", acct.account_id)
                         continue
                     accounts_data = [
-                        item.to_dict() if hasattr(item, "to_dict") else dict(item)
-                        for item in accounts_data
+                        item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data
                     ]
                     token_account_cache[access_token] = accounts_data
                 refreshed_flag, _ = account_logic.refresh_data_for_plaid_account(
@@ -351,9 +333,7 @@ def refresh_accounts_endpoint():
                     end_date=end_date,
                 )
                 if refreshed_flag:
-                    refreshed.append(
-                        acct.name or acct.account_id
-                    )  # ✅ return readable name
+                    refreshed.append(acct.name or acct.account_id)  # ✅ return readable name
             else:
                 logger.warning(
                     "Missing access token for account %s (user %s)",
@@ -433,9 +413,7 @@ def generate_update_link_token():
                 {
                     "status": "success",
                     "link_token": response.link_token,
-                    "expiration": (
-                        response.expiration.isoformat() if response.expiration else None
-                    ),
+                    "expiration": (response.expiration.isoformat() if response.expiration else None),
                     "account_id": account.account_id,
                 }
             ),
@@ -491,9 +469,7 @@ def sync_transactions_endpoint():
             return jsonify({"status": "error", "message": "Missing account_id"}), 400
 
         plaid_account = (
-            PlaidAccount.query.options(joinedload(PlaidAccount.account))
-            .filter_by(account_id=account_id)
-            .first()
+            PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(account_id=account_id).first()
         )
         if not plaid_account or not plaid_account.access_token:
             logger.warning(

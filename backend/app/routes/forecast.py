@@ -1,12 +1,13 @@
 from datetime import date, datetime, timedelta
 
+from flask import Blueprint, jsonify, request
+from forecast.engine import compute_forecast
+from sqlalchemy import case, func
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
-from flask import Blueprint, jsonify, request
-from forecast.engine import compute_forecast
-from sqlalchemy import case, func
 
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
@@ -171,9 +172,7 @@ def _load_latest_snapshots(
     included_ids = included_account_ids or []
     excluded_ids = excluded_account_ids or []
 
-    accounts_query = db.session.query(Account).filter(
-        (Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None))
-    )
+    accounts_query = db.session.query(Account).filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
     # When explicit account IDs are provided, trust that filter as the source of truth.
     # Otherwise, use user scoping with a null-user fallback for legacy rows.
     if user_id and not included_ids:
@@ -200,8 +199,7 @@ def _load_latest_snapshots(
             db.session.query(AccountHistory)
             .join(
                 subquery,
-                (AccountHistory.account_id == subquery.c.account_id)
-                & (AccountHistory.date == subquery.c.max_date),
+                (AccountHistory.account_id == subquery.c.account_id) & (AccountHistory.date == subquery.c.max_date),
             )
             .all()
         )
@@ -226,9 +224,7 @@ def _load_latest_snapshots(
                 "account_type": account.account_type,
                 "is_investment": bool(account.is_investment),
                 "investment_has_holdings": bool(account.investment_has_holdings),
-                "investment_has_transactions": bool(
-                    account.investment_has_transactions
-                ),
+                "investment_has_transactions": bool(account.investment_has_transactions),
             }
         )
 
@@ -247,28 +243,20 @@ def _load_historical_aggregates(
 
     lookback_start = start_date - timedelta(days=LOOKBACK_DAYS)
     date_expr = func.date(Transaction.date).label("date")
-    inflow_sum = func.sum(
-        case((Transaction.amount > 0, Transaction.amount), else_=0)
-    ).label("inflow")
-    outflow_sum = func.sum(
-        case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
-    ).label("outflow")
+    inflow_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("inflow")
+    outflow_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("outflow")
 
     query = (
         db.session.query(date_expr, inflow_sum, outflow_sum)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
     )
     if user_id and not included_ids:
         query = query.filter(
-            (Account.user_id == user_id)
-            | (Transaction.user_id == user_id)
-            | (Account.user_id.is_(None))
+            (Account.user_id == user_id) | (Transaction.user_id == user_id) | (Account.user_id.is_(None))
         )
     if included_ids:
         query = query.filter(Transaction.account_id.in_(included_ids))
@@ -315,21 +303,9 @@ def _build_realized_history(
         else:
             aggregate_date = datetime.fromisoformat(str(raw_date)).date()
 
-        inflow = float(
-            aggregate.get("inflow")
-            or aggregate.get("income")
-            or aggregate.get("credit")
-            or 0
-        )
-        outflow = float(
-            aggregate.get("outflow")
-            or aggregate.get("expense")
-            or aggregate.get("debit")
-            or 0
-        )
-        daily_net_by_date[aggregate_date] = (
-            daily_net_by_date.get(aggregate_date, 0.0) + inflow - outflow
-        )
+        inflow = float(aggregate.get("inflow") or aggregate.get("income") or aggregate.get("credit") or 0)
+        outflow = float(aggregate.get("outflow") or aggregate.get("expense") or aggregate.get("debit") or 0)
+        daily_net_by_date[aggregate_date] = daily_net_by_date.get(aggregate_date, 0.0) + inflow - outflow
 
     realized_history_desc: list[dict[str, object]] = []
     running_balance = float(ending_balance or 0)
@@ -352,27 +328,15 @@ def _build_realized_history(
 
 def _looks_like_wage_income(tx: Transaction) -> bool:
     """Return True when a transaction appears to be wage/payroll income."""
-    pfc = (
-        tx.personal_finance_category
-        if isinstance(tx.personal_finance_category, dict)
-        else {}
-    )
+    pfc = tx.personal_finance_category if isinstance(tx.personal_finance_category, dict) else {}
     pfc_primary = str(
-        pfc.get("primary")
-        or pfc.get("primary_category")
-        or pfc.get("primary_category_name")
-        or ""
+        pfc.get("primary") or pfc.get("primary_category") or pfc.get("primary_category_name") or ""
     ).lower()
     pfc_detailed = str(
-        pfc.get("detailed")
-        or pfc.get("detailed_category")
-        or pfc.get("detailed_category_name")
-        or ""
+        pfc.get("detailed") or pfc.get("detailed_category") or pfc.get("detailed_category_name") or ""
     ).lower()
 
-    if "income" in pfc_primary and any(
-        token in pfc_detailed for token in ("wage", "payroll", "salary", "paycheck")
-    ):
+    if "income" in pfc_primary and any(token in pfc_detailed for token in ("wage", "payroll", "salary", "paycheck")):
         return True
 
     fields = [
@@ -385,19 +349,14 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
     if isinstance(plaid_meta_category, list):
         fields.extend(str(part or "").lower() for part in plaid_meta_category)
     elif isinstance(plaid_meta_category, dict):
-        fields.extend(
-            str(value or "").lower() for value in plaid_meta_category.values()
-        )
+        fields.extend(str(value or "").lower() for value in plaid_meta_category.values())
 
     plaid_meta_raw = getattr(plaid_meta, "raw", None) if plaid_meta else None
     if isinstance(plaid_meta_raw, dict):
         pfc_raw = plaid_meta_raw.get("personal_finance_category")
         if isinstance(pfc_raw, dict):
             pfc_raw_primary = str(
-                pfc_raw.get("primary")
-                or pfc_raw.get("primary_category")
-                or pfc_raw.get("primary_category_name")
-                or ""
+                pfc_raw.get("primary") or pfc_raw.get("primary_category") or pfc_raw.get("primary_category_name") or ""
             ).lower()
             pfc_raw_detailed = str(
                 pfc_raw.get("detailed")
@@ -406,8 +365,7 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
                 or ""
             ).lower()
             if "income" in pfc_raw_primary and any(
-                token in pfc_raw_detailed
-                for token in ("wage", "payroll", "salary", "paycheck")
+                token in pfc_raw_detailed for token in ("wage", "payroll", "salary", "paycheck")
             ):
                 return True
 
@@ -416,9 +374,7 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
             continue
         if "income - wages" in value or "income_wages" in value:
             return True
-        if "income" in value and any(
-            token in value for token in ("wage", "payroll", "salary", "paycheck")
-        ):
+        if "income" in value and any(token in value for token in ("wage", "payroll", "salary", "paycheck")):
             return True
     return False
 
@@ -441,17 +397,13 @@ def _auto_wage_adjustments(
         db.session.query(Transaction)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .filter(Transaction.date >= lookback_start)
         .filter(Transaction.date <= start_date)
     )
     if user_id and not included_ids:
         query = query.filter(
-            (Account.user_id == user_id)
-            | (Transaction.user_id == user_id)
-            | (Account.user_id.is_(None))
+            (Account.user_id == user_id) | (Transaction.user_id == user_id) | (Account.user_id.is_(None))
         )
     if included_ids:
         query = query.filter(Transaction.account_id.in_(included_ids))
@@ -470,26 +422,18 @@ def _auto_wage_adjustments(
         return []
 
     observed_dates = sorted(
-        {
-            (row.date.date() if isinstance(row.date, datetime) else row.date)
-            for row in wage_rows
-            if row.date is not None
-        }
+        {(row.date.date() if isinstance(row.date, datetime) else row.date) for row in wage_rows if row.date is not None}
     )
     if not observed_dates:
         return []
 
-    positive_amounts = [
-        float(row.amount or 0) for row in wage_rows if float(row.amount or 0) > 0
-    ]
+    positive_amounts = [float(row.amount or 0) for row in wage_rows if float(row.amount or 0) > 0]
     if not positive_amounts:
         return []
     avg_wage_amount = round(sum(positive_amounts) / len(positive_amounts), 2)
 
     gaps = [
-        (right - left).days
-        for left, right in zip(observed_dates, observed_dates[1:])
-        if 1 <= (right - left).days <= 45
+        (right - left).days for left, right in zip(observed_dates, observed_dates[1:]) if 1 <= (right - left).days <= 45
     ]
     if gaps:
         sorted_gaps = sorted(gaps)
@@ -559,9 +503,7 @@ def compute_forecast_route():
     try:
         start_date = _parse_start_date(payload.get("start_date"))
         horizon_days = _parse_horizon_days(payload.get("horizon_days"))
-        moving_average_window = _parse_moving_average_window(
-            payload.get("moving_average_window")
-        )
+        moving_average_window = _parse_moving_average_window(payload.get("moving_average_window"))
         normalize = _parse_normalize(payload.get("normalize"))
         graph_mode = _parse_graph_mode(payload.get("graph_mode"))
         included_account_ids, excluded_account_ids = _parse_account_filters(payload)
@@ -588,21 +530,13 @@ def compute_forecast_route():
             excluded_account_ids=excluded_account_ids,
         )
 
-        asset_balance, liability_balance, net_snapshot_balance = (
-            _snapshot_balance_breakdown(latest_snapshots)
-        )
-        total_inflow = sum(
-            float(item.get("inflow", 0) or 0) for item in historical_aggregates
-        )
-        total_outflow = sum(
-            float(item.get("outflow", 0) or 0) for item in historical_aggregates
-        )
+        asset_balance, liability_balance, net_snapshot_balance = _snapshot_balance_breakdown(latest_snapshots)
+        total_inflow = sum(float(item.get("inflow", 0) or 0) for item in historical_aggregates)
+        total_outflow = sum(float(item.get("outflow", 0) or 0) for item in historical_aggregates)
         non_zero_historical_days = sum(
             1
             for item in historical_aggregates
-            if abs(float(item.get("inflow", 0) or 0))
-            + abs(float(item.get("outflow", 0) or 0))
-            > 0
+            if abs(float(item.get("inflow", 0) or 0)) + abs(float(item.get("outflow", 0) or 0)) > 0
         )
         realized_history = _build_realized_history(
             start_date=start_date,

@@ -39,9 +39,7 @@ def build_snapshot_payload(user_id: str | None = None) -> dict:
     return _build_payload(accounts, preference, valid_ids, discarded)
 
 
-def update_snapshot_selection(
-    selected_account_ids: Iterable[str], user_id: str | None = None
-) -> dict:
+def update_snapshot_selection(selected_account_ids: Iterable[str], user_id: str | None = None) -> dict:
     """Persist a new snapshot selection and return the refreshed payload.
 
     Args:
@@ -98,9 +96,7 @@ def _visible_accounts(user_id: str | None = None) -> List[Account]:
     )
 
 
-def _ensure_preference(
-    user_id: str, accounts: Sequence[Account]
-) -> AccountSnapshotPreference:
+def _ensure_preference(user_id: str, accounts: Sequence[Account]) -> AccountSnapshotPreference:
     preference = AccountSnapshotPreference.query.filter_by(user_id=user_id).first()
     if preference:
         if preference.selected_account_ids is None:
@@ -136,9 +132,7 @@ def _default_snapshot_ids(accounts: Sequence[Account]) -> List[str]:
             continue
 
         balance_value = getattr(account, "balance", 0) or 0
-        normalized_balance = normalize_account_balance(
-            balance_value, getattr(account, "type", "") or ""
-        )
+        normalized_balance = normalize_account_balance(balance_value, getattr(account, "type", "") or "")
         try:
             numeric_balance = float(normalized_balance)
         except (TypeError, ValueError):  # pragma: no cover - defensive
@@ -163,9 +157,7 @@ def _default_snapshot_ids(accounts: Sequence[Account]) -> List[str]:
 
     selection: List[str] = []
     selection.extend(account_id for account_id, _ in assets[:DEFAULT_ASSET_LIMIT])
-    selection.extend(
-        account_id for account_id, _ in liabilities[:DEFAULT_LIABILITY_LIMIT]
-    )
+    selection.extend(account_id for account_id, _ in liabilities[:DEFAULT_LIABILITY_LIMIT])
 
     if len(selection) < MAX_SNAPSHOT_SELECTION:
         ranked_remaining = sorted(
@@ -200,12 +192,8 @@ def _normalize_ids(raw_ids: Iterable[str] | None) -> List[str]:
     return result
 
 
-def _filter_valid_ids(
-    ids: Sequence[str], accounts: Sequence[Account]
-) -> Tuple[List[str], List[str]]:
-    account_map = {
-        acc.account_id: acc for acc in accounts if getattr(acc, "account_id", None)
-    }
+def _filter_valid_ids(ids: Sequence[str], accounts: Sequence[Account]) -> Tuple[List[str], List[str]]:
+    account_map = {acc.account_id: acc for acc in accounts if getattr(acc, "account_id", None)}
     valid: List[str] = []
     discarded: List[str] = []
     for account_id in ids:
@@ -228,13 +216,9 @@ def _build_payload(
     selected_ids: Sequence[str],
     discarded: Sequence[str],
 ) -> dict:
-    account_map = {
-        acc.account_id: acc for acc in accounts if getattr(acc, "account_id", None)
-    }
+    account_map = {acc.account_id: acc for acc in accounts if getattr(acc, "account_id", None)}
     selected_accounts = [
-        _serialize_account(account_map[account_id])
-        for account_id in selected_ids
-        if account_id in account_map
+        _serialize_account(account_map[account_id]) for account_id in selected_ids if account_id in account_map
     ]
     available_accounts = [_serialize_account(acc) for acc in accounts]
 
@@ -255,9 +239,7 @@ def _build_payload(
 
 
 def _serialize_account(account: Account) -> dict:
-    normalized_balance = normalize_account_balance(
-        account.balance, account.type, account_id=account.account_id
-    )
+    normalized_balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
     last_refreshed = None
     plaid_account = getattr(account, "plaid_account", None)
 

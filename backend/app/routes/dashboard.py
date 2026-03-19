@@ -1,12 +1,13 @@
 """Dashboard-specific API routes."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.services import account_groups as account_group_service
 from app.services.account_snapshot import (
     build_snapshot_payload,
     update_snapshot_selection,
 )
-from flask import Blueprint, jsonify, request
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -19,9 +20,7 @@ def get_account_snapshot():
         data = build_snapshot_payload(user_id=user_id)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error(
-            "Failed to load account snapshot preferences: %s", exc, exc_info=True
-        )
+        logger.error("Failed to load account snapshot preferences: %s", exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -39,9 +38,7 @@ def update_account_snapshot():
         )
     if not isinstance(selected_ids, list):
         return (
-            jsonify(
-                {"status": "error", "message": "selected_account_ids must be a list"}
-            ),
+            jsonify({"status": "error", "message": "selected_account_ids must be a list"}),
             400,
         )
 
@@ -49,9 +46,7 @@ def update_account_snapshot():
         data = update_snapshot_selection(selected_ids, user_id=user_id)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error(
-            "Failed to update account snapshot preferences: %s", exc, exc_info=True
-        )
+        logger.error("Failed to update account snapshot preferences: %s", exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -66,11 +61,7 @@ def _group_scope(payload: dict | None = None) -> str:
     """
 
     payload = payload or {}
-    return (
-        payload.get("user_id")
-        or request.args.get("user_id")
-        or account_group_service.DEFAULT_USER_SCOPE
-    )
+    return payload.get("user_id") or request.args.get("user_id") or account_group_service.DEFAULT_USER_SCOPE
 
 
 @dashboard.route("/account-groups", methods=["GET"])
@@ -139,9 +130,7 @@ def update_account_group(group_id: str):
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 404
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error(
-            "Failed to update account group %s: %s", group_id, exc, exc_info=True
-        )
+        logger.error("Failed to update account group %s: %s", group_id, exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -164,9 +153,7 @@ def delete_account_group(group_id: str):
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 404
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error(
-            "Failed to delete account group %s: %s", group_id, exc, exc_info=True
-        )
+        logger.error("Failed to delete account group %s: %s", group_id, exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -183,9 +170,7 @@ def reorder_account_groups():
     group_ids = payload.get("group_ids")
     if not isinstance(group_ids, list) or not group_ids:
         return (
-            jsonify(
-                {"status": "error", "message": "group_ids must be a non-empty list"}
-            ),
+            jsonify({"status": "error", "message": "group_ids must be a non-empty list"}),
             400,
         )
     try:
@@ -244,9 +229,7 @@ def add_account_to_group(group_id: str):
             400,
         )
     try:
-        data = account_group_service.add_account_to_group(
-            group_id, account_id, user_id=scope
-        )
+        data = account_group_service.add_account_to_group(group_id, account_id, user_id=scope)
         return jsonify({"status": "success", "data": data}), 201
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
@@ -276,9 +259,7 @@ def remove_account_from_group(group_id: str, account_id: str):
     payload = request.get_json(silent=True) or {}
     scope = _group_scope(payload)
     try:
-        data = account_group_service.remove_account_from_group(
-            group_id, account_id, user_id=scope
-        )
+        data = account_group_service.remove_account_from_group(group_id, account_id, user_id=scope)
         return jsonify({"status": "success", "data": data}), 200
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 404
@@ -309,20 +290,14 @@ def reorder_group_accounts(group_id: str):
     account_ids = payload.get("account_ids")
     if not isinstance(account_ids, list) or not account_ids:
         return (
-            jsonify(
-                {"status": "error", "message": "account_ids must be a non-empty list"}
-            ),
+            jsonify({"status": "error", "message": "account_ids must be a non-empty list"}),
             400,
         )
     try:
-        data = account_group_service.reorder_group_accounts(
-            group_id, account_ids, user_id=scope
-        )
+        data = account_group_service.reorder_group_accounts(group_id, account_ids, user_id=scope)
         return jsonify({"status": "success", "data": data}), 200
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
     except Exception as exc:  # pragma: no cover - defensive logging
-        logger.error(
-            "Failed to reorder accounts for group %s: %s", group_id, exc, exc_info=True
-        )
+        logger.error("Failed to reorder accounts for group %s: %s", group_id, exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500

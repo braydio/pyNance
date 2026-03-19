@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import uuid
 
-from app.extensions import db
 from sqlalchemy import CheckConstraint, Index
 from sqlalchemy.dialects.postgresql import UUID
+
+from app.extensions import db
 
 from .mixins import TimestampMixin
 

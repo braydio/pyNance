@@ -16,9 +16,7 @@ branch_labels = None
 depends_on = None
 
 
-account_status = sa.Enum(
-    "active", "inactive", "closed", "archived", name="account_status"
-)
+account_status = sa.Enum("active", "inactive", "closed", "archived", name="account_status")
 # Remove legacy Teller variant from enum definitions; we only support Plaid/manual.
 link_type = sa.Enum("manual", "plaid", name="link_type")
 provider_type = sa.Enum("manual", "plaid", name="provider_type")
@@ -167,9 +165,7 @@ def upgrade() -> None:
         )
     else:
         with op.batch_alter_table("account_history") as batch_op:
-            batch_op.alter_column(
-                "date", type_=sa.Date(), existing_type=sa.DateTime(), nullable=False
-            )
+            batch_op.alter_column("date", type_=sa.Date(), existing_type=sa.DateTime(), nullable=False)
 
     # 3) Create enums and alter columns with value normalization for Postgres
     if dialect == "postgresql":
@@ -180,21 +176,15 @@ def upgrade() -> None:
         # Normalize existing values to valid labels using text casts only
         # Avoid casting to enum until after values are sanitized to prevent enum label errors
         # If column is already enum, cast back to enum on write to avoid type mismatch
-        op.execute(
-            "UPDATE accounts SET status = LOWER(status::text)::account_status WHERE status IS NOT NULL"
-        )
+        op.execute("UPDATE accounts SET status = LOWER(status::text)::account_status WHERE status IS NOT NULL")
         op.execute(
             "UPDATE accounts SET status = 'active'::account_status WHERE status IS NULL OR status::text NOT IN ('active','inactive','closed','archived')"
         )
-        op.execute(
-            "UPDATE accounts SET link_type = LOWER(link_type::text)::link_type WHERE link_type IS NOT NULL"
-        )
+        op.execute("UPDATE accounts SET link_type = LOWER(link_type::text)::link_type WHERE link_type IS NOT NULL")
         op.execute(
             "UPDATE accounts SET link_type = 'manual'::link_type WHERE link_type IS NULL OR link_type::text NOT IN ('manual','plaid')"
         )
-        op.execute(
-            "UPDATE transactions SET provider = LOWER(provider::text)::provider_type WHERE provider IS NOT NULL"
-        )
+        op.execute("UPDATE transactions SET provider = LOWER(provider::text)::provider_type WHERE provider IS NOT NULL")
         op.execute(
             "UPDATE transactions SET provider = 'manual'::provider_type WHERE provider IS NULL OR provider::text NOT IN ('manual','plaid')"
         )
@@ -205,24 +195,12 @@ def upgrade() -> None:
         op.execute("ALTER TABLE accounts ALTER COLUMN link_type DROP DEFAULT")
         op.execute("ALTER TABLE transactions ALTER COLUMN provider DROP DEFAULT")
 
-        op.execute(
-            "ALTER TABLE accounts ALTER COLUMN status TYPE account_status USING status::account_status"
-        )
-        op.execute(
-            "ALTER TABLE accounts ALTER COLUMN status SET DEFAULT 'active'::account_status"
-        )
-        op.execute(
-            "ALTER TABLE accounts ALTER COLUMN link_type TYPE link_type USING link_type::link_type"
-        )
-        op.execute(
-            "ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"
-        )
-        op.execute(
-            "ALTER TABLE transactions ALTER COLUMN provider TYPE provider_type USING provider::provider_type"
-        )
-        op.execute(
-            "ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"
-        )
+        op.execute("ALTER TABLE accounts ALTER COLUMN status TYPE account_status USING status::account_status")
+        op.execute("ALTER TABLE accounts ALTER COLUMN status SET DEFAULT 'active'::account_status")
+        op.execute("ALTER TABLE accounts ALTER COLUMN link_type TYPE link_type USING link_type::link_type")
+        op.execute("ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type")
+        op.execute("ALTER TABLE transactions ALTER COLUMN provider TYPE provider_type USING provider::provider_type")
+        op.execute("ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type")
     else:
         with op.batch_alter_table("accounts") as batch_op:
             batch_op.alter_column(
@@ -264,17 +242,13 @@ def upgrade() -> None:
             except Exception:
                 pass
             try:
-                batch_op.create_index(
-                    "ix_plaid_accounts_plaid_item_id", ["plaid_item_id"], unique=False
-                )
+                batch_op.create_index("ix_plaid_accounts_plaid_item_id", ["plaid_item_id"], unique=False)
             except Exception:
                 pass
 
     # 5) Indexes for common query patterns
     existing_tx_indexes = {idx["name"] for idx in inspector.get_indexes("transactions")}
-    existing_ah_indexes = {
-        idx["name"] for idx in inspector.get_indexes("account_history")
-    }
+    existing_ah_indexes = {idx["name"] for idx in inspector.get_indexes("account_history")}
 
     if "ix_transactions_account_date" not in existing_tx_indexes:
         op.create_index(
@@ -325,9 +299,7 @@ def downgrade() -> None:
         except Exception:
             pass
         try:
-            batch_op.drop_constraint(
-                "plaid_accounts_plaid_item_id_fkey", type_="foreignkey"
-            )
+            batch_op.drop_constraint("plaid_accounts_plaid_item_id_fkey", type_="foreignkey")
         except Exception:
             pass
         try:
@@ -371,9 +343,7 @@ def downgrade() -> None:
         )
     else:
         with op.batch_alter_table("account_history") as batch_op:
-            batch_op.alter_column(
-                "date", type_=sa.DateTime(), existing_type=sa.Date(), nullable=False
-            )
+            batch_op.alter_column("date", type_=sa.DateTime(), existing_type=sa.Date(), nullable=False)
 
     # Restore accounts id column and PK if needed
     if dialect == "postgresql":

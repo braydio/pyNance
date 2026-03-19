@@ -4,10 +4,11 @@ from datetime import datetime
 from decimal import Decimal
 
 import sqlalchemy as sa
+from sqlalchemy.orm import validates
+
 from app.extensions import db
 from app.utils.category_canonical import canonical_display_for_slug
 from app.utils.category_display import category_display, humanize_enum, strip_parent
-from sqlalchemy.orm import validates
 
 from .mixins import TimestampMixin
 
@@ -27,16 +28,10 @@ class Category(db.Model):
     category_slug = db.Column(db.String(128), nullable=True, unique=True, index=True)
     category_display = db.Column(db.String(256), nullable=True)
     display_name = db.Column(db.String(256), default="Unknown")
-    parent_id = db.Column(
-        db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True
-    )
+    parent_id = db.Column(db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     parent = db.relationship("Category", remote_side=[id])
 
-    __table_args__ = (
-        db.UniqueConstraint(
-            "primary_category", "detailed_category", name="uq_category_composite"
-        ),
-    )
+    __table_args__ = (db.UniqueConstraint("primary_category", "detailed_category", name="uq_category_composite"),)
 
     @property
     def display_primary(self) -> str:
@@ -118,9 +113,7 @@ class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.String(64), nullable=True, index=True)
     transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    account_id = db.Column(
-        db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE")
-    )
+    account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE"))
     amount = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     date = db.Column(db.DateTime(timezone=True), nullable=False)
     description = db.Column(db.String(256))
@@ -131,9 +124,7 @@ class Transaction(db.Model):
     user_modified = db.Column(db.Boolean, default=False)
     user_modified_fields = db.Column(db.Text)
     updated_by_rule = db.Column(db.Boolean, default=False)
-    category_id = db.Column(
-        db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL")
-    )
+    category_id = db.Column(db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"))
     category = db.Column(db.String(128))
     category_slug = db.Column(db.String(128), nullable=True, index=True)
     category_display = db.Column(db.String(256), nullable=True)
@@ -158,9 +149,7 @@ class Transaction(db.Model):
     )
 
     def __repr__(self):
-        return (
-            f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
-        )
+        return f"<Transaction(transaction_id={self.transaction_id}, amount={self.amount})>"
 
     @property
     def internal_transfer_flag(self) -> bool:
@@ -251,9 +240,7 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
         unique=True,
         nullable=False,
     )
-    transaction = db.relationship(
-        "Transaction", back_populates="plaid_meta", uselist=False
-    )
+    transaction = db.relationship("Transaction", back_populates="plaid_meta", uselist=False)
 
     plaid_account_id = db.Column(
         db.String(64),

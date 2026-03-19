@@ -59,9 +59,7 @@ def _is_interest_charge_transaction(tx: dict) -> bool:
     if pfc_detailed in INTEREST_PFC_CATEGORIES:
         return True
 
-    category_path = [
-        str(value or "").strip().lower() for value in (tx.get("category") or [])
-    ]
+    category_path = [str(value or "").strip().lower() for value in (tx.get("category") or [])]
     return category_path[:2] == ["bank fees", "interest"]
 
 
@@ -211,9 +209,7 @@ def _parse_txn_date(val) -> datetime:
         return datetime.now(timezone.utc)
 
 
-def _upsert_transaction(
-    tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]
-) -> None:
+def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> None:
     txn_id = tx.get("transaction_id")
     if not txn_id:
         return
@@ -231,9 +227,7 @@ def _upsert_transaction(
     primary = legacy_path[0] if len(legacy_path) > 0 else "Unknown"
     detailed = legacy_path[1] if len(legacy_path) > 1 else "Unknown"
 
-    category: Category = get_or_create_category(
-        primary, detailed, pfc_primary, pfc_detailed, pfc_icon
-    )
+    category: Category = get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon)
 
     # Normalize core fields
     txn_date = _parse_txn_date(tx.get("date"))
@@ -245,9 +239,7 @@ def _upsert_transaction(
     )
     merchant_name = merchant.display_name
     tx["merchant_slug"] = merchant.merchant_slug
-    merchant_type = (tx.get("payment_meta", {}) or {}).get(
-        "payment_method"
-    ) or "Unknown"
+    merchant_type = (tx.get("payment_meta", {}) or {}).get("payment_method") or "Unknown"
     pending = bool(tx.get("pending", False))
 
     _update_account_apr_from_interest_charge(account, tx)
@@ -316,9 +308,7 @@ def _apply_removed(removed: List[dict]) -> int:
     ids = [r.get("transaction_id") for r in removed if r.get("transaction_id")]
     if not ids:
         return 0
-    deleted = Transaction.query.filter(Transaction.transaction_id.in_(ids)).delete(
-        synchronize_session=False
-    )
+    deleted = Transaction.query.filter(Transaction.transaction_id.in_(ids)).delete(synchronize_session=False)
     return int(deleted or 0)
 
 
@@ -346,13 +336,9 @@ def sync_account_transactions(account_id: str) -> Dict:
 
     # Build per-item account maps
     item_id = plaid_acct.item_id
-    item_plaid_accts = (
-        PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct]
-    )
+    item_plaid_accts = PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct]
     acct_ids = [pa.account_id for pa in item_plaid_accts if pa.account_id]
-    accounts = (
-        Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
-    )
+    accounts = Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
     account_map = {a.account_id: a for a in accounts}
     plaid_map = {pa.account_id: pa for pa in item_plaid_accts}
 
@@ -374,9 +360,7 @@ def sync_account_transactions(account_id: str) -> Dict:
         if next_cursor:
             req_kwargs["cursor"] = next_cursor
         req = TransactionsSyncRequest(**req_kwargs)
-        resp = _transactions_sync_with_retry(
-            req, account_id=account_id, item_id=item_id
-        )
+        resp = _transactions_sync_with_retry(req, account_id=account_id, item_id=item_id)
         data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
 
         added = data.get("added", [])

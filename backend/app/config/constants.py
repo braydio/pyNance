@@ -17,8 +17,7 @@ FILES = {
     "TRANSACTIONS": DIRECTORIES["DATA_DIR"] / "Transactions.json",
     "LAST_TX_REFRESH": DIRECTORIES["TEMP_DIR"] / "TxRefresh_Temporary.json",
     "TRANSACTIONS_EXPORT": DIRECTORIES["TEMP_DIR"] / "Transactions.json",
-    "TRANSACTIONS_RAW_ENRICHED": DIRECTORIES["TEMP_DIR"]
-    / "TransactionsRawEnriched.json",
+    "TRANSACTIONS_RAW_ENRICHED": DIRECTORIES["TEMP_DIR"] / "TransactionsRawEnriched.json",
     "DEFAULT_THEME": DIRECTORIES["THEMES_DIR"] / "default.css",
     "CURRENT_THEME": DIRECTORIES["THEMES_DIR"] / "current_theme.txt",
     "ARCHIVE_FILE": DIRECTORIES["ARCHIVE_DIR"] / "archive.json",
@@ -30,22 +29,15 @@ FRONTEND_DIST_DIR = os.path.join(os.path.dirname(__file__), "../../../frontend/d
 SQLALCHEMY_DATABASE_URI = os.getenv("SQLALCHEMY_DATABASE_URI")
 SQLALCHEMY_ENGINE_OPTIONS = {"connect_args": {"options": f"-c search_path={DB_SCHEMA}"}}
 if not SQLALCHEMY_DATABASE_URI:
-    raise RuntimeError(
-        "SQLALCHEMY_DATABASE_URI must be defined when running against PostgreSQL."
-    )
+    raise RuntimeError("SQLALCHEMY_DATABASE_URI must be defined when running against PostgreSQL.")
 
 try:
     _parsed_uri = make_url(SQLALCHEMY_DATABASE_URI)
     DATABASE_NAME = _parsed_uri.database
     if IS_PROD and DB_SCHEMA != "public":
-        raise RuntimeError(
-            f"Production environment may only use DB_SCHEMA='public' "
-            f"(got {DB_SCHEMA!r})"
-        )
+        raise RuntimeError(f"Production environment may only use DB_SCHEMA='public' " f"(got {DB_SCHEMA!r})")
 except ArgumentError as exc:  # pragma: no cover - misconfiguration guard
-    raise RuntimeError(
-        "SQLALCHEMY_DATABASE_URI is not a valid SQLAlchemy URL."
-    ) from exc
+    raise RuntimeError("SQLALCHEMY_DATABASE_URI is not a valid SQLAlchemy URL.") from exc
 DB_IDENTITY = f"{DATABASE_NAME}:{DB_SCHEMA}"
 
 TELEMETRY = {"enabled": True, "track_modifications": False}

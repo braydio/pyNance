@@ -9,9 +9,10 @@ performs minimal request validation.
 
 from __future__ import annotations
 
-from app.services import planning_service
 from flask import Blueprint, jsonify, request
 from werkzeug.exceptions import BadRequest
+
+from app.services import planning_service
 
 # Blueprint for planning routes
 planning = Blueprint("planning", __name__)

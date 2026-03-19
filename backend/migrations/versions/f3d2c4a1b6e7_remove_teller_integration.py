@@ -19,22 +19,12 @@ def upgrade() -> None:
 
     # Drop Teller-specific data before tightening enum constraints.
     # Compare via ::text to avoid invalid enum literal errors and assign enum values
-    op.execute(
-        sa.text(
-            "UPDATE accounts SET link_type = 'manual'::link_type WHERE link_type::text = 'teller'"
-        )
-    )
-    op.execute(
-        sa.text(
-            "UPDATE transactions SET provider = 'manual'::provider_type WHERE provider::text = 'teller'"
-        )
-    )
+    op.execute(sa.text("UPDATE accounts SET link_type = 'manual'::link_type WHERE link_type::text = 'teller'"))
+    op.execute(sa.text("UPDATE transactions SET provider = 'manual'::provider_type WHERE provider::text = 'teller'"))
 
     # Remove Teller from the link_type enum used by accounts.
     op.execute(sa.text("ALTER TYPE link_type RENAME TO link_type_old"))
-    link_type_old = sa.Enum(
-        "manual", "plaid", "teller", name="link_type_old", create_type=False
-    )
+    link_type_old = sa.Enum("manual", "plaid", "teller", name="link_type_old", create_type=False)
     link_type_new = sa.Enum("manual", "plaid", name="link_type")
     link_type_new.create(bind, checkfirst=False)
     # Drop default to prevent cast errors when switching enum type
@@ -46,18 +36,12 @@ def upgrade() -> None:
         type_=link_type_new,
         postgresql_using="link_type::text::link_type",
     )
-    op.execute(
-        sa.text(
-            "ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"
-        )
-    )
+    op.execute(sa.text("ALTER TABLE accounts ALTER COLUMN link_type SET DEFAULT 'manual'::link_type"))
     op.execute(sa.text("DROP TYPE link_type_old"))
 
     # Remove Teller from the provider_type enum used by transactions.
     op.execute(sa.text("ALTER TYPE provider_type RENAME TO provider_type_old"))
-    provider_type_old = sa.Enum(
-        "manual", "plaid", "teller", name="provider_type_old", create_type=False
-    )
+    provider_type_old = sa.Enum("manual", "plaid", "teller", name="provider_type_old", create_type=False)
     provider_type_new = sa.Enum("manual", "plaid", name="provider_type")
     provider_type_new.create(bind, checkfirst=False)
     # Drop default to prevent cast errors when switching enum type
@@ -69,11 +53,7 @@ def upgrade() -> None:
         type_=provider_type_new,
         postgresql_using="provider::text::provider_type",
     )
-    op.execute(
-        sa.text(
-            "ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"
-        )
-    )
+    op.execute(sa.text("ALTER TABLE transactions ALTER COLUMN provider SET DEFAULT 'manual'::provider_type"))
     op.execute(sa.text("DROP TYPE provider_type_old"))
 
     # Finally drop the Teller account table entirely.
@@ -127,9 +107,7 @@ def downgrade() -> None:
 
     # Restore Teller enum variants for transactions.
     op.execute(sa.text("ALTER TYPE provider_type RENAME TO provider_type_old"))
-    provider_type_old = sa.Enum(
-        "manual", "plaid", name="provider_type_old", create_type=False
-    )
+    provider_type_old = sa.Enum("manual", "plaid", name="provider_type_old", create_type=False)
     provider_type_new = sa.Enum("manual", "plaid", "teller", name="provider_type")
     provider_type_new.create(bind, checkfirst=False)
     op.alter_column(

@@ -15,10 +15,11 @@ from decimal import Decimal, InvalidOperation
 from pathlib import Path
 
 import click
+from flask.cli import with_appcontext
+
 from app.extensions import db
 from app.models import Account
 from app.sql.account_logic import normalize_account_status
-from flask.cli import with_appcontext
 
 
 @click.command("import-accounts")
@@ -64,9 +65,7 @@ def import_accounts(csv_path: Path) -> None:
             account.name = (row.get("name") or "").strip() or "Unnamed Account"
             account.type = (row.get("type") or "").strip() or None
             account.subtype = (row.get("subtype") or "").strip() or None
-            account.institution_name = (
-                row.get("institution_name") or ""
-            ).strip() or None
+            account.institution_name = (row.get("institution_name") or "").strip() or None
 
             raw_status = (row.get("status") or "").strip()
             account.status = normalize_account_status(raw_status)

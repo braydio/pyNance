@@ -3,13 +3,14 @@
 import logging
 import os
 
+from flask import Flask
+from flask_cors import CORS
+from flask_migrate import Migrate
+
 from app.cli.sync import sync_accounts
 from app.config import DB_IDENTITY, DB_SCHEMA, IS_DEV, IS_TEST, logger, plaid_client
 from app.database.schema import ensure_schema
 from app.extensions import db
-from flask import Flask
-from flask_cors import CORS
-from flask_migrate import Migrate
 
 
 def create_app():

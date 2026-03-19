@@ -3,6 +3,8 @@
 from datetime import date, datetime
 from typing import Dict, Mapping, Optional
 
+from flask import Blueprint, g, jsonify, request, session
+
 from app.extensions import db
 from app.models import (
     Account,
@@ -12,7 +14,6 @@ from app.models import (
     Security,
 )
 from app.sql import investments_logic
-from flask import Blueprint, g, jsonify, request, session
 
 investments = Blueprint("investments", __name__)
 
@@ -37,10 +38,7 @@ def _resolve_user_scope(args: Mapping[str, str]) -> str:
     """
 
     user_id = (
-        args.get("user_id")
-        or getattr(g, "user_id", None)
-        or session.get("user_id")
-        or session.get("auth_user_id")
+        args.get("user_id") or getattr(g, "user_id", None) or session.get("user_id") or session.get("auth_user_id")
     )
     if not isinstance(user_id, str) or not user_id.strip():
         raise ValueError("user_id is required")
@@ -57,9 +55,7 @@ def _has_investments_scope(product: str | None) -> bool:
 
     if not product:
         return False
-    scopes = {
-        segment.strip().lower() for segment in product.split(",") if segment.strip()
-    }
+    scopes = {segment.strip().lower() for segment in product.split(",") if segment.strip()}
     return "investments" in scopes
 
 
@@ -120,9 +116,7 @@ def _parse_iso_date(value: str) -> date:
     try:
         return datetime.strptime(value, DATE_PARAM_FORMAT).date()
     except ValueError as exc:  # pragma: no cover - defensive guard
-        raise ValueError(
-            f"Invalid date '{value}'. Expected format YYYY-MM-DD."
-        ) from exc
+        raise ValueError(f"Invalid date '{value}'. Expected format YYYY-MM-DD.") from exc
 
 
 @investments.route("/accounts", methods=["GET"])
@@ -174,11 +168,7 @@ def list_holdings():
                     "type": sec.type,
                     "currency": sec.iso_currency_code,
                     "price": sec.institution_price,
-                    "price_as_of": (
-                        sec.institution_price_as_of.isoformat()
-                        if sec.institution_price_as_of
-                        else None
-                    ),
+                    "price_as_of": (sec.institution_price_as_of.isoformat() if sec.institution_price_as_of else None),
                 },
             }
         )
@@ -210,9 +200,9 @@ def list_investment_transactions():
     except ValueError as exc:
         return jsonify({"status": "error", "error": str(exc)}), 400
 
-    q = InvestmentTransaction.query.join(
-        Account, InvestmentTransaction.account_id == Account.account_id
-    ).join(PlaidAccount, Account.account_id == PlaidAccount.account_id)
+    q = InvestmentTransaction.query.join(Account, InvestmentTransaction.account_id == Account.account_id).join(
+        PlaidAccount, Account.account_id == PlaidAccount.account_id
+    )
     account_id = filters["account_id"]
     if account_id:
         q = q.filter(InvestmentTransaction.account_id == account_id)

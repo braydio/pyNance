@@ -20,12 +20,13 @@ from __future__ import annotations
 from datetime import date, datetime
 
 import click
+from flask.cli import with_appcontext
+from sqlalchemy.orm import joinedload
+
 from app.config import logger
 from app.helpers.plaid_helpers import get_accounts
 from app.models import PlaidAccount
 from app.sql import account_logic
-from flask.cli import with_appcontext
-from sqlalchemy.orm import joinedload
 
 
 def _parse_date(label: str, value: str | None) -> date | None:
@@ -34,9 +35,7 @@ def _parse_date(label: str, value: str | None) -> date | None:
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError as exc:
-        raise click.BadParameter(
-            f"{label} must be in YYYY-MM-DD format (got {value!r})"
-        ) from exc
+        raise click.BadParameter(f"{label} must be in YYYY-MM-DD format (got {value!r})") from exc
 
 
 @click.command("backfill-plaid-history")
@@ -68,11 +67,7 @@ def backfill_plaid_history(
 
     try:
         if account_id:
-            pa = (
-                PlaidAccount.query.options(joinedload(PlaidAccount.account))
-                .filter_by(account_id=account_id)
-                .first()
-            )
+            pa = PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(account_id=account_id).first()
             if not pa:
                 click.echo(f"No PlaidAccount for account {account_id}")
                 return
@@ -89,10 +84,7 @@ def backfill_plaid_history(
             if accounts_data is None:
                 click.echo("Plaid rate limit hit; try again later.")
                 return
-            accounts_data = [
-                item.to_dict() if hasattr(item, "to_dict") else dict(item)
-                for item in accounts_data
-            ]
+            accounts_data = [item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data]
             updated, error = account_logic.refresh_data_for_plaid_account(
                 pa.access_token,
                 pa.account,
@@ -102,31 +94,21 @@ def backfill_plaid_history(
             )
             if error:
                 logger.error("Backfill failed for account %s: %s", pa.account_id, error)
-                message = (
-                    error.get("plaid_error_message")
-                    if isinstance(error, dict)
-                    else str(error)
-                )
+                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                 click.echo(f"ERR {pa.account_id}: {message}")
             else:
                 click.echo(f"OK {pa.account_id}: updated={bool(updated)}")
             return
 
         if item_id:
-            rows = (
-                PlaidAccount.query.options(joinedload(PlaidAccount.account))
-                .filter_by(item_id=item_id)
-                .all()
-            )
+            rows = PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(item_id=item_id).all()
             if not rows:
                 click.echo(f"No PlaidAccounts found for item {item_id}")
                 return
 
             for pa in rows:
                 if not pa.access_token:
-                    click.echo(
-                        f"ERR {pa.account_id}: missing access token for item {item_id}"
-                    )
+                    click.echo(f"ERR {pa.account_id}: missing access token for item {item_id}")
                     continue
                 click.echo(
                     f"Backfilling account {pa.account_id} (item {item_id}) "
@@ -135,14 +117,9 @@ def backfill_plaid_history(
                 )
                 accounts_data = get_accounts(pa.access_token, pa.account.user_id)
                 if accounts_data is None:
-                    click.echo(
-                        f"Plaid rate limit hit; skipping {pa.account_id} for now."
-                    )
+                    click.echo(f"Plaid rate limit hit; skipping {pa.account_id} for now.")
                     continue
-                accounts_data = [
-                    item.to_dict() if hasattr(item, "to_dict") else dict(item)
-                    for item in accounts_data
-                ]
+                accounts_data = [item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data]
                 updated, error = account_logic.refresh_data_for_plaid_account(
                     pa.access_token,
                     pa.account,
@@ -157,11 +134,7 @@ def backfill_plaid_history(
                         pa.account_id,
                         error,
                     )
-                    message = (
-                        error.get("plaid_error_message")
-                        if isinstance(error, dict)
-                        else str(error)
-                    )
+                    message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                     click.echo(f"ERR {item_id}/{pa.account_id}: {message}")
                 else:
                     click.echo(f"OK {item_id}/{pa.account_id}: updated={bool(updated)}")
@@ -170,21 +143,15 @@ def backfill_plaid_history(
         # Default: backfill all distinct Plaid items
         seen_items: set[str] = set()
         updates = 0
-        query = PlaidAccount.query.options(joinedload(PlaidAccount.account)).order_by(
-            PlaidAccount.item_id
-        )
+        query = PlaidAccount.query.options(joinedload(PlaidAccount.account)).order_by(PlaidAccount.item_id)
         for pa in query.all():
             if not pa.item_id or pa.item_id in seen_items:
                 continue
             seen_items.add(pa.item_id)
 
             if not pa.access_token:
-                click.echo(
-                    f"ERR {pa.item_id}: missing access token for account {pa.account_id}"
-                )
-                logger.error(
-                    "Skipping Plaid item %s due to missing access token", pa.item_id
-                )
+                click.echo(f"ERR {pa.item_id}: missing access token for account {pa.account_id}")
+                logger.error("Skipping Plaid item %s due to missing access token", pa.item_id)
                 continue
 
             click.echo(
@@ -202,22 +169,14 @@ def backfill_plaid_history(
                     pa.account_id,
                     error,
                 )
-                message = (
-                    error.get("plaid_error_message")
-                    if isinstance(error, dict)
-                    else str(error)
-                )
+                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                 click.echo(f"ERR {pa.item_id}: {message}")
                 continue
 
             updates += int(bool(updated))
-            click.echo(
-                f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}"
-            )
+            click.echo(f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}")
 
-        click.echo(
-            f"Completed backfill. Items={len(seen_items)} updated_accounts={updates}"
-        )
+        click.echo(f"Completed backfill. Items={len(seen_items)} updated_accounts={updates}")
 
     except Exception as e:  # pragma: no cover - defensive
         logger.error("backfill-plaid-history error: %s", e, exc_info=True)

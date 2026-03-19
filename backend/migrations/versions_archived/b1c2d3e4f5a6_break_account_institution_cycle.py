@@ -64,9 +64,7 @@ def upgrade():
 
 def downgrade():
     # Drop FK first
-    op.drop_constraint(
-        "fk_accounts_institution_db_id_institutions", "accounts", type_="foreignkey"
-    )
+    op.drop_constraint("fk_accounts_institution_db_id_institutions", "accounts", type_="foreignkey")
     # Drop tables
     op.drop_table("accounts")
     op.drop_table("institutions")

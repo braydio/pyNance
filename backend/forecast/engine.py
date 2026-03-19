@@ -86,9 +86,7 @@ def _normalize_window(value: Any) -> int:
     return parsed if parsed in allowed else 30
 
 
-def _matches_frequency(
-    current_date: date, start_date: date, frequency: str | None
-) -> bool:
+def _matches_frequency(current_date: date, start_date: date, frequency: str | None) -> bool:
     """Return True when a date matches a recurring frequency."""
     if current_date < start_date:
         return False
@@ -187,12 +185,7 @@ def _category_sources(
     amount_keys = ("amount", "average", "avg", "net", "value")
 
     for entry in category_averages:
-        label = str(
-            entry.get("category")
-            or entry.get("label")
-            or entry.get("name")
-            or "Uncategorized"
-        )
+        label = str(entry.get("category") or entry.get("label") or entry.get("name") or "Uncategorized")
         confidence = _to_decimal(entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE))
 
         inflow = _extract_amount(entry, inflow_keys)
@@ -256,12 +249,7 @@ def _recurring_sources_by_date(
         if not amount:
             continue
 
-        label = str(
-            entry.get("label")
-            or entry.get("merchant")
-            or entry.get("description")
-            or "Recurring"
-        )
+        label = str(entry.get("label") or entry.get("merchant") or entry.get("description") or "Recurring")
         category = str(entry.get("category") or "Recurring")
         confidence = _to_decimal(entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE))
         metadata = {
@@ -287,16 +275,12 @@ def _recurring_sources_by_date(
     return expanded
 
 
-def _scaled_category_items(
-    remaining: Decimal, category_sources: Sequence[dict[str, Any]]
-) -> list[dict[str, Any]]:
+def _scaled_category_items(remaining: Decimal, category_sources: Sequence[dict[str, Any]]) -> list[dict[str, Any]]:
     """Scale category averages to match the remaining delta."""
     if not category_sources or remaining == 0:
         return []
 
-    category_total = sum(
-        (_to_decimal(source.get("amount")) for source in category_sources), Decimal("0")
-    )
+    category_total = sum((_to_decimal(source.get("amount")) for source in category_sources), Decimal("0"))
     if category_total == 0:
         return []
 
@@ -350,9 +334,7 @@ def build_cashflow_items(
     for current_date, delta in daily_deltas:
         day_items: list[tuple[Decimal, ForecastCashflowItem]] = []
         recurring_items = recurring_by_date.get(current_date, [])
-        recurring_total = sum(
-            (_to_decimal(item.get("amount")) for item in recurring_items), Decimal("0")
-        )
+        recurring_total = sum((_to_decimal(item.get("amount")) for item in recurring_items), Decimal("0"))
 
         for entry in recurring_items:
             amount = _to_decimal(entry.get("amount"))
@@ -368,9 +350,7 @@ def build_cashflow_items(
                         category=str(entry.get("category") or "Recurring"),
                         source=str(entry.get("source") or "recurring"),
                         type=_cashflow_type(amount),
-                        confidence=float(
-                            entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE)
-                        ),
+                        confidence=float(entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE)),
                         direction=_cashflow_direction(amount),
                         metadata=entry.get("metadata", {}),
                     ),
@@ -392,9 +372,7 @@ def build_cashflow_items(
                         category=str(entry.get("category") or uncategorized_label),
                         source=str(entry.get("source") or "category_average"),
                         type=_cashflow_type(amount),
-                        confidence=float(
-                            entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE)
-                        ),
+                        confidence=float(entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE)),
                         direction=_cashflow_direction(amount),
                         metadata={},
                     ),
@@ -444,13 +422,10 @@ def _build_adjustment_cashflows(
         adjustment_id = _read_entry_value(adjustment, "adjustment_id")
         frequency = _normalize_frequency(_read_entry_value(adjustment, "frequency"))
         start_date = _parse_date(
-            _read_entry_value(adjustment, "date")
-            or _read_entry_value(adjustment, "start_date"),
+            _read_entry_value(adjustment, "date") or _read_entry_value(adjustment, "start_date"),
             fallback=timeline_dates[0],
         )
-        confidence = float(
-            _read_entry_value(adjustment, "confidence", DEFAULT_ADJUSTMENT_CONFIDENCE)
-        )
+        confidence = float(_read_entry_value(adjustment, "confidence", DEFAULT_ADJUSTMENT_CONFIDENCE))
 
         for current_date in timeline_dates:
             if _matches_frequency(current_date, start_date, frequency):
@@ -495,9 +470,7 @@ def apply_adjustments(
         return []
 
     timeline = list(baseline_timeline)
-    timeline_dates = [
-        _parse_date(point.date, fallback=date.today()) for point in timeline
-    ]
+    timeline_dates = [_parse_date(point.date, fallback=date.today()) for point in timeline]
     adjustment_schedule = _build_adjustment_schedule(adjustments or [], timeline_dates)
     running_adjustment = Decimal("0")
     adjusted_points: list[ForecastTimelinePoint] = []
@@ -564,21 +537,15 @@ def compute_summary(
     starting_balance = _starting_balance(timeline)
     ending_balance = _to_decimal(timeline[-1].forecast_balance)
 
-    balances = [starting_balance] + [
-        _to_decimal(point.forecast_balance) for point in timeline
-    ]
+    balances = [starting_balance] + [_to_decimal(point.forecast_balance) for point in timeline]
     min_balance = min(balances)
     max_balance = max(balances)
 
     net_change = ending_balance - starting_balance
     daily_deltas = _daily_deltas(timeline)
     total_inflows = sum((delta for _, delta in daily_deltas if delta > 0), Decimal("0"))
-    total_outflows = sum(
-        (-delta for _, delta in daily_deltas if delta < 0), Decimal("0")
-    )
-    average_daily_change = (
-        net_change / Decimal(len(daily_deltas)) if daily_deltas else Decimal("0")
-    )
+    total_outflows = sum((-delta for _, delta in daily_deltas if delta < 0), Decimal("0"))
+    average_daily_change = net_change / Decimal(len(daily_deltas)) if daily_deltas else Decimal("0")
 
     depletion_date: date | None = None
     if starting_balance <= 0:
@@ -622,15 +589,11 @@ def _build_adjustment_models(
                 _read_entry_value(adjustment, "type", "manual"),
             )
         )
-        adjustment_date = _read_entry_value(adjustment, "date") or _read_entry_value(
-            adjustment, "start_date"
-        )
+        adjustment_date = _read_entry_value(adjustment, "date") or _read_entry_value(adjustment, "start_date")
         if adjustment_date is None:
             adjustment_date = date.today()
         reason = _read_entry_value(adjustment, "reason")
-        adjustment_id = _read_entry_value(
-            adjustment, "adjustment_id", _read_entry_value(adjustment, "id")
-        )
+        adjustment_id = _read_entry_value(adjustment, "adjustment_id", _read_entry_value(adjustment, "id"))
         metadata: dict[str, Any] = {}
         frequency = _read_entry_value(adjustment, "frequency")
         if frequency:
@@ -709,14 +672,8 @@ def compute_forecast(
                 normalized_aggregates.append(
                     {
                         **item,
-                        "inflow": float(
-                            _extract_amount(item, ("inflow", "income", "credit"))
-                            / normalization_factor
-                        ),
-                        "outflow": float(
-                            _extract_amount(item, ("outflow", "expense", "debit"))
-                            / normalization_factor
-                        ),
+                        "inflow": float(_extract_amount(item, ("inflow", "income", "credit")) / normalization_factor),
+                        "outflow": float(_extract_amount(item, ("outflow", "expense", "debit")) / normalization_factor),
                     }
                 )
 
@@ -736,9 +693,7 @@ def compute_forecast(
                 ForecastTimelinePoint(
                     date=point.date,
                     label=point.label,
-                    forecast_balance=float(
-                        _to_decimal(point.forecast_balance) * normalization_factor
-                    ),
+                    forecast_balance=float(_to_decimal(point.forecast_balance) * normalization_factor),
                     actual_balance=point.actual_balance,
                     delta=point.delta,
                     metadata=point_metadata,
@@ -757,11 +712,7 @@ def compute_forecast(
     summary.currency = currency
     projected_amount = summary.ending_balance
     projected_change = summary.net_change
-    projected_change_percent = (
-        (projected_change / summary.starting_balance) * 100
-        if summary.starting_balance
-        else 0.0
-    )
+    projected_change_percent = (projected_change / summary.starting_balance) * 100 if summary.starting_balance else 0.0
 
     realized_history: list[dict[str, object]] = []
     metadata_map = dict(metadata or {})
@@ -779,11 +730,7 @@ def compute_forecast(
                         "date": realized_date.isoformat(),
                         "label": str(point.get("label") or realized_date.isoformat()),
                         "balance": float(
-                            _to_decimal(
-                                point.get("balance")
-                                or point.get("value")
-                                or point.get("amount")
-                            )
+                            _to_decimal(point.get("balance") or point.get("value") or point.get("amount"))
                         ),
                     },
                 )
@@ -871,26 +818,20 @@ def _build_adjustment_schedule(
         if amount == 0:
             continue
 
-        distribution = (
-            str(_read_entry_value(adjustment, "distribution", "single")).strip().lower()
-        )
+        distribution = str(_read_entry_value(adjustment, "distribution", "single")).strip().lower()
         if distribution in {"spread", "distributed"}:
             range_start = _parse_date(
-                _read_entry_value(adjustment, "range_start")
-                or _read_entry_value(adjustment, "date"),
+                _read_entry_value(adjustment, "range_start") or _read_entry_value(adjustment, "date"),
                 fallback=timeline_dates[0],
             )
             range_end = _parse_date(
-                _read_entry_value(adjustment, "range_end")
-                or _read_entry_value(adjustment, "date"),
+                _read_entry_value(adjustment, "range_end") or _read_entry_value(adjustment, "date"),
                 fallback=range_start,
             )
             if range_end < range_start:
                 range_start, range_end = range_end, range_start
             selected_dates = [
-                current_date
-                for current_date in timeline_dates
-                if range_start <= current_date <= range_end
+                current_date for current_date in timeline_dates if range_start <= current_date <= range_end
             ]
             if selected_dates:
                 per_day_amount = amount / Decimal(len(selected_dates))
@@ -900,8 +841,7 @@ def _build_adjustment_schedule(
 
         frequency = _normalize_frequency(_read_entry_value(adjustment, "frequency"))
         start_date = _parse_date(
-            _read_entry_value(adjustment, "date")
-            or _read_entry_value(adjustment, "start_date"),
+            _read_entry_value(adjustment, "date") or _read_entry_value(adjustment, "start_date"),
             fallback=timeline_dates[0],
         )
 
@@ -961,14 +901,10 @@ def project_balances(
             continue
 
         existing_date, existing_balance = existing
-        if snapshot_date > existing_date or (
-            snapshot_date == existing_date and balance > existing_balance
-        ):
+        if snapshot_date > existing_date or (snapshot_date == existing_date and balance > existing_balance):
             latest_by_account[account_id] = (snapshot_date, balance)
 
-    starting_balance = sum(
-        (balance for _, balance in latest_by_account.values()), Decimal("0")
-    )
+    starting_balance = sum((balance for _, balance in latest_by_account.values()), Decimal("0"))
 
     # Compute the average inflow/outflow per day from historical aggregates.
     inflow_keys = (

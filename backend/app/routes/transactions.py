@@ -11,12 +11,13 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 
+from flask import Blueprint, jsonify, request
+from sqlalchemy import func
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Tag, Transaction
 from app.sql import account_logic
-from flask import Blueprint, jsonify, request
-from sqlalchemy import func
 
 transactions = Blueprint("transactions", __name__)
 
@@ -304,9 +305,7 @@ def _internal_match_score(
         score += 12.0
 
     merchantish_a = _has_non_transfer_hint(anchor["tokens"], anchor.get("description"))
-    merchantish_b = _has_non_transfer_hint(
-        candidate["tokens"], candidate.get("description")
-    )
+    merchantish_b = _has_non_transfer_hint(candidate["tokens"], candidate.get("description"))
     if merchantish_a and not hint_a:
         score += 6.0
     if merchantish_b and not hint_b:
@@ -349,14 +348,10 @@ def _trend_months(end_date: datetime, window_months: int) -> list[datetime]:
     """Return month-start buckets ending in the month of ``end_date``."""
 
     end_month = _month_floor(end_date)
-    return [
-        _shift_month(end_month, -offset) for offset in range(window_months - 1, -1, -1)
-    ]
+    return [_shift_month(end_month, -offset) for offset in range(window_months - 1, -1, -1)]
 
 
-def _coerce_positive_int(
-    raw_value: str | None, default: int, minimum: int, maximum: int
-) -> int:
+def _coerce_positive_int(raw_value: str | None, default: int, minimum: int, maximum: int) -> int:
     """Parse and clamp an integer query parameter."""
 
     if raw_value is None:
@@ -384,9 +379,7 @@ def _normalize_category_slug(value: str | None) -> str:
     return normalized.upper() or "UNCATEGORIZED"
 
 
-def _resolve_grouping_key_and_label(
-    txn: Transaction, category: Category | None, group_by: str
-) -> tuple[str, str]:
+def _resolve_grouping_key_and_label(txn: Transaction, category: Category | None, group_by: str) -> tuple[str, str]:
     """Return canonical grouping key and representative display label for a transaction."""
 
     if group_by == "merchant":
@@ -396,11 +389,7 @@ def _resolve_grouping_key_and_label(
         label = merchant_label or fallback_label or "Unknown"
         return merchant_slug or _slugify_merchant(label), label
 
-    raw_slug = (
-        getattr(txn, "category_slug", None)
-        or getattr(category, "category_slug", None)
-        or ""
-    )
+    raw_slug = getattr(txn, "category_slug", None) or getattr(category, "category_slug", None) or ""
     raw_label = (
         getattr(txn, "category_display", None)
         or getattr(txn, "category", None)
@@ -422,12 +411,8 @@ def _top_spending_breakdown(group_by: str):
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
     account_ids = _parse_account_ids(request.args)
-    top_n = _coerce_positive_int(
-        request.args.get("top_n"), default=5, minimum=1, maximum=50
-    )
-    trend_points = _coerce_positive_int(
-        request.args.get("trend_points"), default=6, minimum=2, maximum=24
-    )
+    top_n = _coerce_positive_int(request.args.get("top_n"), default=5, minimum=1, maximum=50)
+    trend_points = _coerce_positive_int(request.args.get("trend_points"), default=6, minimum=2, maximum=24)
 
     try:
         start_date = _parse_iso_date(start_date_str)
@@ -450,10 +435,7 @@ def _top_spending_breakdown(group_by: str):
             .join(Account, Transaction.account_id == Account.account_id)
             .outerjoin(Category, Transaction.category_id == Category.id)
             .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
@@ -485,9 +467,7 @@ def _top_spending_breakdown(group_by: str):
                 trends[key][idx] += spend
 
         data = []
-        for name, total in sorted(
-            totals.items(), key=lambda item: item[1], reverse=True
-        )[:top_n]:
+        for name, total in sorted(totals.items(), key=lambda item: item[1], reverse=True)[:top_n]:
             entry = {
                 "name": labels.get(name, name),
                 "total": round(total, 2),
@@ -498,9 +478,7 @@ def _top_spending_breakdown(group_by: str):
             data.append(entry)
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:
-        logger.error(
-            "Error building %s spending breakdown: %s", group_by, exc, exc_info=True
-        )
+        logger.error("Error building %s spending breakdown: %s", group_by, exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
@@ -591,24 +569,16 @@ def update_transaction():
             is_internal = bool(data["is_internal"])
             transfer_type = data.get("transfer_type")
             txn.is_internal = is_internal
-            txn.transfer_type = (transfer_type if is_internal else None) or (
-                "manual_internal" if is_internal else None
-            )
-            txn.internal_match_id = (
-                counterpart_id if is_internal and counterpart_id else None
-            )
+            txn.transfer_type = (transfer_type if is_internal else None) or ("manual_internal" if is_internal else None)
+            txn.internal_match_id = counterpart_id if is_internal and counterpart_id else None
             changed_fields["is_internal"] = True
             changed_fields["transfer_type"] = True
             if counterpart_id:
-                other = Transaction.query.filter_by(
-                    transaction_id=counterpart_id
-                ).first()
+                other = Transaction.query.filter_by(transaction_id=counterpart_id).first()
                 if other and flag_counterpart:
                     other.is_internal = is_internal
                     other.transfer_type = txn.transfer_type if is_internal else None
-                    other.internal_match_id = (
-                        txn.transaction_id if is_internal else None
-                    )
+                    other.internal_match_id = txn.transaction_id if is_internal else None
 
         txn.user_modified = True
         existing_fields = {}
@@ -665,12 +635,8 @@ def scan_internal_transfers():
     - Same-account matches optionally allowed (enabled by default)
     """
     try:
-        date_window_days = _coerce_positive_int(
-            request.args.get("date_window_days"), default=3, minimum=1, maximum=14
-        )
-        allow_same_account = _truthy_param(
-            request.args.get("allow_same_account"), default=True
-        )
+        date_window_days = _coerce_positive_int(request.args.get("date_window_days"), default=3, minimum=1, maximum=14)
+        allow_same_account = _truthy_param(request.args.get("allow_same_account"), default=True)
         amount_epsilon_raw = request.args.get("amount_epsilon")
         amount_epsilon = AMOUNT_EPSILON
         if amount_epsilon_raw:
@@ -685,10 +651,7 @@ def scan_internal_transfers():
         txns = (
             db.session.query(Transaction, Account)
             .join(Account, Transaction.account_id == Account.account_id)
-            .filter(
-                (Transaction.is_internal.is_(False))
-                | (Transaction.is_internal.is_(None))
-            )
+            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter((Transaction.pending.is_(False)) | (Transaction.pending.is_(None)))
             .all()
         )
@@ -734,9 +697,7 @@ def scan_internal_transfers():
                         continue
 
                     # Records are date-sorted; stop once we pass the max forward window.
-                    forward_seconds = (
-                        candidate["date"] - anchor["date"]
-                    ).total_seconds()
+                    forward_seconds = (candidate["date"] - anchor["date"]).total_seconds()
                     if forward_seconds > max_window_seconds:
                         break
 
@@ -770,17 +731,10 @@ def scan_internal_transfers():
                         "institution_name": anchor.get("institution_name"),
                         "user_id": user_id,
                         "time_delta_hours": round(
-                            abs(
-                                (
-                                    anchor["date"] - best_candidate["date"]
-                                ).total_seconds()
-                            )
-                            / 3600.0,
+                            abs((anchor["date"] - best_candidate["date"]).total_seconds()) / 3600.0,
                             2,
                         ),
-                        "amount_delta": float(
-                            abs(abs(anchor["amount"]) - abs(best_candidate["amount"]))
-                        ),
+                        "amount_delta": float(abs(abs(anchor["amount"]) - abs(best_candidate["amount"]))),
                         "match_score": round(float(best_score), 4),
                         "counterpart": {
                             "transaction_id": counterpart_txn.transaction_id,
@@ -885,20 +839,14 @@ def get_transactions_paginated():
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
         category = request.args.get("category")
-        merchant = request.args.get(
-            "merchant"
-        )  # Filter by merchant_name or merchant_slug
+        merchant = request.args.get("merchant")  # Filter by merchant_name or merchant_slug
         tags = _parse_tag_filters(request.args)
         account_ids = _parse_account_ids(request.args)
         account_id_single = request.args.get("account_id")
         if account_id_single and account_id_single not in account_ids:
             account_ids.append(account_id_single)
 
-        tx_type_raw = (
-            request.args.get("tx_type")
-            or request.args.get("transaction_type")
-            or request.args.get("type")
-        )
+        tx_type_raw = request.args.get("tx_type") or request.args.get("transaction_type") or request.args.get("type")
         tx_type = tx_type_raw.lower() if tx_type_raw else None
 
         try:
@@ -953,9 +901,7 @@ def get_account_transactions(account_id):
         recent = request.args.get("recent") == "true"
         limit = int(request.args.get("limit", 10))
 
-        start_date = _ensure_utc(
-            datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None
-        )
+        start_date = _ensure_utc(datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None)
         logger.debug(
             "Changed date string %s to datetime object: %s",
             start_date_str,
@@ -963,11 +909,7 @@ def get_account_transactions(account_id):
         )
 
         end_date = _ensure_utc(
-            (
-                datetime.strptime(end_date_str, "%Y-%m-%d")
-                + timedelta(days=1)
-                - timedelta(microseconds=1)
-            )
+            (datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1) - timedelta(microseconds=1))
             if end_date_str
             else None
         )
@@ -1023,20 +965,14 @@ def merchant_suggestions():
         q = (request.args.get("q") or "").strip()
         limit = min(int(request.args.get("limit", 50)), 200)
 
-        query = db.session.query(
-            Transaction.merchant_name, func.count(Transaction.id).label("cnt")
-        ).group_by(Transaction.merchant_name)
+        query = db.session.query(Transaction.merchant_name, func.count(Transaction.id).label("cnt")).group_by(
+            Transaction.merchant_name
+        )
 
         if q:
             query = query.filter(Transaction.merchant_name.ilike(f"%{q}%"))
 
-        rows = (
-            query.order_by(
-                func.count(Transaction.id).desc(), Transaction.merchant_name.asc()
-            )
-            .limit(limit)
-            .all()
-        )
+        rows = query.order_by(func.count(Transaction.id).desc(), Transaction.merchant_name.asc()).limit(limit).all()
         names = [name for name, _ in rows if name]
         return jsonify({"status": "success", "data": names}), 200
     except Exception as e:

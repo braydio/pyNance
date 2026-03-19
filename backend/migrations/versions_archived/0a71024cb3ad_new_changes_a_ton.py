@@ -35,9 +35,7 @@ def upgrade():
         )
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -46,14 +44,10 @@ def upgrade():
         )
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
 
     with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.NUMERIC(), type_=sa.UUID(), existing_nullable=False)
         batch_op.alter_column(
             "scenario_id",
             existing_type=sa.NUMERIC(),
@@ -73,14 +67,10 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planning_scenarios", schema=None) as batch_op:
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
         batch_op.alter_column(
@@ -89,9 +79,7 @@ def downgrade():
             type_=sa.NUMERIC(),
             existing_nullable=False,
         )
-        batch_op.alter_column(
-            "id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False
-        )
+        batch_op.alter_column("id", existing_type=sa.UUID(), type_=sa.NUMERIC(), existing_nullable=False)
 
     with op.batch_alter_table("account_snapshot_preferences", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_account_snapshot_preferences_user_id"))

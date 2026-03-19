@@ -10,13 +10,14 @@ from datetime import datetime, timezone
 from typing import Optional, Tuple
 
 import click
+from flask.cli import with_appcontext
+from sqlalchemy.orm import joinedload
+
 from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_accounts
 from app.models import PlaidAccount
 from app.sql import account_logic
-from flask.cli import with_appcontext
-from sqlalchemy.orm import joinedload
 
 
 def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
@@ -25,14 +26,9 @@ def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
     accounts_data = get_accounts(pa.access_token, pa.account.user_id)
     if accounts_data is None:
         return False, "PLAID_RATE_LIMIT"
-    accounts_data = [
-        item.to_dict() if hasattr(item, "to_dict") else dict(item)
-        for item in accounts_data
-    ]
+    accounts_data = [item.to_dict() if hasattr(item, "to_dict") else dict(item) for item in accounts_data]
 
-    result = account_logic.refresh_data_for_plaid_account(
-        pa.access_token, pa.account, accounts_data=accounts_data
-    )
+    result = account_logic.refresh_data_for_plaid_account(pa.access_token, pa.account, accounts_data=accounts_data)
     if isinstance(result, tuple) and len(result) == 2:
         updated, error = result
     else:
@@ -71,11 +67,7 @@ def _refresh_plaid_account(pa: PlaidAccount) -> Tuple[bool, Optional[dict]]:
 def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
     try:
         if account_id:
-            pa = (
-                PlaidAccount.query.options(joinedload(PlaidAccount.account))
-                .filter_by(account_id=account_id)
-                .first()
-            )
+            pa = PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(account_id=account_id).first()
             if not pa:
                 click.echo(f"No PlaidAccount for account {account_id}")
                 return
@@ -85,22 +77,14 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
             updated, error = _refresh_plaid_account(pa)
             if error:
                 logger.error("Refresh failed for account %s: %s", pa.account_id, error)
-                message = (
-                    error.get("plaid_error_message")
-                    if isinstance(error, dict)
-                    else str(error)
-                )
+                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                 click.echo(f"ERR {pa.account_id}: {message}")
             else:
                 click.echo(f"OK {pa.account_id}: updated={bool(updated)}")
             return
 
         if item_id:
-            pa = (
-                PlaidAccount.query.options(joinedload(PlaidAccount.account))
-                .filter_by(item_id=item_id)
-                .first()
-            )
+            pa = PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(item_id=item_id).first()
             if not pa:
                 click.echo(f"No PlaidAccount for item {item_id}")
                 return
@@ -110,36 +94,24 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
             updated, error = _refresh_plaid_account(pa)
             if error:
                 logger.error("Refresh failed for item %s: %s", item_id, error)
-                message = (
-                    error.get("plaid_error_message")
-                    if isinstance(error, dict)
-                    else str(error)
-                )
+                message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                 click.echo(f"ERR {item_id}: {message}")
             else:
-                click.echo(
-                    f"OK {item_id}: account={pa.account_id} updated={bool(updated)}"
-                )
+                click.echo(f"OK {item_id}: account={pa.account_id} updated={bool(updated)}")
             return
 
         # Default: sync one account per distinct item
         seen = set()
         updates = 0
-        query = PlaidAccount.query.options(joinedload(PlaidAccount.account)).order_by(
-            PlaidAccount.item_id
-        )
+        query = PlaidAccount.query.options(joinedload(PlaidAccount.account)).order_by(PlaidAccount.item_id)
         for pa in query.all():
             if not pa.item_id or pa.item_id in seen:
                 continue
             seen.add(pa.item_id)
             try:
                 if not pa.access_token:
-                    click.echo(
-                        f"ERR {pa.item_id}: missing access token for account {pa.account_id}"
-                    )
-                    logger.error(
-                        "Skipping Plaid item %s due to missing access token", pa.item_id
-                    )
+                    click.echo(f"ERR {pa.item_id}: missing access token for account {pa.account_id}")
+                    logger.error("Skipping Plaid item %s due to missing access token", pa.item_id)
                     continue
 
                 updated, error = _refresh_plaid_account(pa)
@@ -150,18 +122,12 @@ def sync_plaid_tx(item_id: str | None, account_id: str | None) -> None:
                         pa.account_id,
                         error,
                     )
-                    message = (
-                        error.get("plaid_error_message")
-                        if isinstance(error, dict)
-                        else str(error)
-                    )
+                    message = error.get("plaid_error_message") if isinstance(error, dict) else str(error)
                     click.echo(f"ERR {pa.item_id}: {message}")
                     continue
 
                 updates += int(bool(updated))
-                click.echo(
-                    f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}"
-                )
+                click.echo(f"OK {pa.item_id}: account={pa.account_id} updated={bool(updated)}")
             except Exception as e:
                 logger.error("Sync failed for item %s: %s", pa.item_id, e)
                 click.echo(f"ERR {pa.item_id}: {e}")

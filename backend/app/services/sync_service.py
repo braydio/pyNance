@@ -29,9 +29,7 @@ def sync_account(account: Account) -> None:
 
     user_id = account.user_id
     plaid_account = account.plaid_account
-    access_token = (
-        getattr(plaid_account, "access_token", None) if plaid_account else None
-    )
+    access_token = getattr(plaid_account, "access_token", None) if plaid_account else None
 
     if not user_id or not access_token:
         logger.warning(

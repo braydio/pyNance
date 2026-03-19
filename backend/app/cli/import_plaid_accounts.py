@@ -14,9 +14,10 @@ from datetime import datetime
 from pathlib import Path
 
 import click
+from flask.cli import with_appcontext
+
 from app.extensions import db
 from app.models import Account, PlaidAccount
-from flask.cli import with_appcontext
 
 
 @click.command("import-plaid-accounts")
@@ -67,9 +68,7 @@ def import_plaid_accounts(csv_path: Path) -> None:
             plaid_account.access_token = (row.get("access_token") or "").strip() or None
             plaid_account.item_id = (row.get("item_id") or "").strip() or None
             plaid_account.product = (row.get("product") or "").strip() or None
-            plaid_account.institution_id = (
-                row.get("institution_id") or ""
-            ).strip() or None
+            plaid_account.institution_id = (row.get("institution_id") or "").strip() or None
             plaid_account.webhook = (row.get("webhook") or "").strip() or None
             plaid_account.sync_cursor = (row.get("sync_cursor") or "").strip() or None
             plaid_account.last_error = (row.get("last_error") or "").strip() or None
@@ -87,9 +86,7 @@ def import_plaid_accounts(csv_path: Path) -> None:
             raw_last_refreshed = (row.get("last_refreshed") or "").strip()
             if raw_last_refreshed:
                 try:
-                    plaid_account.last_refreshed = datetime.fromisoformat(
-                        raw_last_refreshed
-                    )
+                    plaid_account.last_refreshed = datetime.fromisoformat(raw_last_refreshed)
                 except ValueError:
                     plaid_account.last_refreshed = None
 

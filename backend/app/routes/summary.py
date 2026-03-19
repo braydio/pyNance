@@ -5,10 +5,11 @@ Routes providing aggregated financial summary metrics.
 from datetime import datetime, timedelta
 from typing import Any, Dict, Tuple
 
-from app.extensions import db
-from app.models import Account, Transaction
 from flask import Blueprint, jsonify, request
 from sqlalchemy import case, func, or_
+
+from app.extensions import db
+from app.models import Account, Transaction
 
 summary = Blueprint("summary", __name__)
 
@@ -42,12 +43,8 @@ def fetch_transaction_data(start_date: datetime, end_date: datetime):
     return (
         db.session.query(
             Transaction.date.label("date"),
-            func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label(
-                "income"
-            ),
-            func.sum(
-                case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)
-            ).label("expenses"),
+            func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("income"),
+            func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("expenses"),
             func.sum(Transaction.amount).label("net"),
         )
         .join(Account, Transaction.account_id == Account.account_id)
@@ -137,11 +134,7 @@ def compute_volatility_metrics(stats: Dict[str, Any], rows) -> Dict[str, Any]:
     volatility = variance**0.5 * 0.5
     threshold = 2 * volatility
 
-    outlier_dates = [
-        rows[i].date.isoformat()
-        for i, v in enumerate(net_vals)
-        if abs(v - mean_net) > threshold
-    ]
+    outlier_dates = [rows[i].date.isoformat() for i, v in enumerate(net_vals) if abs(v - mean_net) > threshold]
 
     return {
         "trend": round(trend, 2),

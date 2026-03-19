@@ -24,9 +24,7 @@ def upgrade():
 
     with op.batch_alter_table("plaid_accounts", schema=None) as batch_op:
         if "product" not in plaid_columns:
-            batch_op.add_column(
-                sa.Column("product", sa.String(length=64), nullable=True)
-            )
+            batch_op.add_column(sa.Column("product", sa.String(length=64), nullable=True))
 
     # ### end Alembic commands ###
 

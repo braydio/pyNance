@@ -44,11 +44,7 @@ def _canonicalize(
         slug = np_detailed
         display = _humanize(np_primary or unknown)
         if slug != (np_primary or ""):
-            suffix = (
-                slug[len(np_primary) + 1 :]
-                if np_primary and slug.startswith(f"{np_primary}_")
-                else slug
-            )
+            suffix = slug[len(np_primary) + 1 :] if np_primary and slug.startswith(f"{np_primary}_") else slug
             display = f"{display} - {_humanize(suffix)}"
         return slug, display
 
@@ -74,16 +70,12 @@ def _canonicalize(
 def upgrade() -> None:
     bind = op.get_bind()
 
-    op.add_column(
-        "categories", sa.Column("category_slug", sa.String(length=128), nullable=True)
-    )
+    op.add_column("categories", sa.Column("category_slug", sa.String(length=128), nullable=True))
     op.add_column(
         "categories",
         sa.Column("category_display", sa.String(length=256), nullable=True),
     )
-    op.add_column(
-        "transactions", sa.Column("category_slug", sa.String(length=128), nullable=True)
-    )
+    op.add_column("transactions", sa.Column("category_slug", sa.String(length=128), nullable=True))
     op.add_column(
         "transactions",
         sa.Column("category_display", sa.String(length=256), nullable=True),
@@ -130,9 +122,7 @@ def upgrade() -> None:
 
     for duplicate_id, keeper_id in duplicates:
         bind.execute(
-            sa.text(
-                "UPDATE transactions SET category_id = :keeper_id WHERE category_id = :duplicate_id"
-            ),
+            sa.text("UPDATE transactions SET category_id = :keeper_id WHERE category_id = :duplicate_id"),
             {"keeper_id": keeper_id, "duplicate_id": duplicate_id},
         )
         bind.execute(
@@ -162,12 +152,8 @@ def upgrade() -> None:
         )
     )
 
-    op.create_index(
-        "ix_categories_category_slug", "categories", ["category_slug"], unique=True
-    )
-    op.create_index(
-        "ix_transactions_category_slug", "transactions", ["category_slug"], unique=False
-    )
+    op.create_index("ix_categories_category_slug", "categories", ["category_slug"], unique=True)
+    op.create_index("ix_transactions_category_slug", "transactions", ["category_slug"], unique=False)
 
 
 def downgrade() -> None:

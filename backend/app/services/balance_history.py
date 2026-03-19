@@ -4,12 +4,13 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Dict, List, Optional
 
+from dateutil import tz as _tz
+from sqlalchemy import and_, desc, func
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
 from app.utils.finance_utils import normalize_account_balance
-from dateutil import tz as _tz
-from sqlalchemy import and_, desc, func
 
 TWOPLACES = Decimal("0.01")
 
@@ -26,9 +27,7 @@ def resolve_account_by_any_id(identifier) -> Optional[Account]:
     """Resolve account by either numeric primary key or external account_id."""
 
     try:
-        if isinstance(identifier, int) or (
-            isinstance(identifier, str) and identifier.isdigit()
-        ):
+        if isinstance(identifier, int) or (isinstance(identifier, str) and identifier.isdigit()):
             acct = Account.query.get(int(identifier))
             if acct:
                 return acct
@@ -61,9 +60,7 @@ def calculate_daily_balances(
         .filter(Transaction.account_id == account_id)
         .filter(Transaction.date >= start_date)
         .filter(Transaction.date <= end_date)
-        .filter(
-            (Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None))
-        )
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .group_by(func.date(Transaction.date))
         .order_by(desc(func.date(Transaction.date)))
         .all()
@@ -79,9 +76,7 @@ def calculate_daily_balances(
         balance_records.append({"date": current_date, "balance": running_balance})
 
         if current_date in daily_amounts:
-            running_balance = (running_balance - daily_amounts[current_date]).quantize(
-                TWOPLACES
-            )
+            running_balance = (running_balance - daily_amounts[current_date]).quantize(TWOPLACES)
 
         current_date -= timedelta(days=1)
 
@@ -102,9 +97,7 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
         return 0
 
     lookup_key = account.account_id
-    existing_records = AccountHistory.query.filter(
-        AccountHistory.account_id == lookup_key
-    ).all()
+    existing_records = AccountHistory.query.filter(AccountHistory.account_id == lookup_key).all()
 
     existing_dates = {}
     for record in existing_records:
@@ -129,9 +122,7 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
                 new_record = AccountHistory(
                     account_id=lookup_key,
                     user_id=account.user_id,
-                    date=datetime.combine(
-                        record_date, datetime.min.time(), tzinfo=timezone.utc
-                    ),
+                    date=datetime.combine(record_date, datetime.min.time(), tzinfo=timezone.utc),
                     balance=record["balance"],
                     is_hidden=account.is_hidden or False,
                 )
@@ -155,26 +146,20 @@ def store_balance_history(account_id: str, balance_records: List[Dict]) -> int:
         return 0
 
 
-def update_account_balance_history(
-    account_id: str, days: int = 365, force_update: bool = False
-) -> bool:
+def update_account_balance_history(account_id: str, days: int = 365, force_update: bool = False) -> bool:
     """Update balance history for an account."""
 
     try:
         account = resolve_account_by_any_id(account_id)
         if not account:
-            logger.warning(
-                "Balance history: account %s not found (skipping)", account_id
-            )
+            logger.warning("Balance history: account %s not found (skipping)", account_id)
             return False
 
         lookup_key = account.account_id
 
         if not force_update:
             latest_record = (
-                AccountHistory.query.filter_by(account_id=lookup_key)
-                .order_by(desc(AccountHistory.date))
-                .first()
+                AccountHistory.query.filter_by(account_id=lookup_key).order_by(desc(AccountHistory.date)).first()
             )
 
             if latest_record:
@@ -189,9 +174,7 @@ def update_account_balance_history(
         end_date = datetime.now(timezone.utc).date()
         start_date = end_date - timedelta(days=days - 1)
 
-        current_balance = normalize_account_balance(
-            account.balance, account.type, account_id=account.account_id
-        )
+        current_balance = normalize_account_balance(account.balance, account.type, account_id=account.account_id)
 
         logger.info(
             "Updating balance history for %s (%s/%s) from %s to %s",
@@ -207,9 +190,7 @@ def update_account_balance_history(
             current_balance,
         )
 
-        balance_records = calculate_daily_balances(
-            lookup_key, current_balance, start_date, end_date
-        )
+        balance_records = calculate_daily_balances(lookup_key, current_balance, start_date, end_date)
 
         if not balance_records:
             logger.warning("No balance records calculated for %s", account_id)
@@ -224,15 +205,11 @@ def update_account_balance_history(
         return False
 
     except Exception as e:
-        logger.error(
-            "Error updating balance history for %s: %s", account_id, e, exc_info=True
-        )
+        logger.error("Error updating balance history for %s: %s", account_id, e, exc_info=True)
         return False
 
 
-def update_all_accounts_balance_history(
-    days: int = 365, force_update: bool = False
-) -> Dict[str, bool]:
+def update_all_accounts_balance_history(days: int = 365, force_update: bool = False) -> Dict[str, bool]:
     """Update balance history for every account in the system."""
 
     results: Dict[str, bool] = {}
@@ -241,9 +218,7 @@ def update_all_accounts_balance_history(
     for account in accounts:
         account_id = account.account_id
         try:
-            results[account_id] = update_account_balance_history(
-                account_id, days=days, force_update=force_update
-            )
+            results[account_id] = update_account_balance_history(account_id, days=days, force_update=force_update)
         except Exception as e:
             logger.error(
                 "Error updating balance history for %s: %s",
@@ -266,9 +241,7 @@ def get_balance_history_from_db(account_id: str, days: int = 30) -> List[Dict]:
 
     account = resolve_account_by_any_id(account_id)
     if not account:
-        logger.warning(
-            "Balance history: account %s not found for retrieval", account_id
-        )
+        logger.warning("Balance history: account %s not found for retrieval", account_id)
         return []
 
     lookup_key = account.account_id
@@ -293,14 +266,8 @@ def get_balance_history_from_db(account_id: str, days: int = 30) -> List[Dict]:
 
     return [
         {
-            "date": (
-                record.date.date().isoformat()
-                if hasattr(record.date, "date")
-                else record.date
-            ),
-            "balance": float(
-                _to_decimal(record.balance) if record.balance is not None else 0
-            ),
+            "date": (record.date.date().isoformat() if hasattr(record.date, "date") else record.date),
+            "balance": float(_to_decimal(record.balance) if record.balance is not None else 0),
         }
         for record in records
     ]

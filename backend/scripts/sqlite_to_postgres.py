@@ -78,9 +78,7 @@ def insert_rows(pg_engine: Engine, table: Table, rows: Sequence[dict]) -> None:
             conn.execute(insert_stmt, rows)
         except IntegrityError as exc:
             trans.rollback()
-            print(
-                f"Batch insert hit IntegrityError on {table.name}: {exc.orig}. Falling back to row-by-row."
-            )
+            print(f"Batch insert hit IntegrityError on {table.name}: {exc.orig}. Falling back to row-by-row.")
             for row in rows:
                 nested = conn.begin()
                 try:
@@ -88,9 +86,7 @@ def insert_rows(pg_engine: Engine, table: Table, rows: Sequence[dict]) -> None:
                     nested.commit()
                 except IntegrityError as row_exc:
                     nested.rollback()
-                    print(
-                        f"  Skipping row in {table.name} due to IntegrityError: {row_exc.orig}"
-                    )
+                    print(f"  Skipping row in {table.name} due to IntegrityError: {row_exc.orig}")
             return
         else:
             trans.commit()
@@ -102,9 +98,7 @@ def postgres_has_rows(pg_engine: Engine, table: Table) -> bool:
     return count > 0
 
 
-def copy_table(
-    sqlite_engine: Engine, pg_engine: Engine, table: Table, chunk_size: int
-) -> None:
+def copy_table(sqlite_engine: Engine, pg_engine: Engine, table: Table, chunk_size: int) -> None:
     if table.name in TABLE_SKIP:
         return
 
@@ -147,9 +141,7 @@ def main() -> None:
         for table in metadata.sorted_tables:
             copy_table(sqlite_engine, pg_engine, table, args.chunk_size)
 
-    print(
-        "Data migration complete. Run 'flask db upgrade' if additional migrations exist."
-    )
+    print("Data migration complete. Run 'flask db upgrade' if additional migrations exist.")
 
 
 if __name__ == "__main__":

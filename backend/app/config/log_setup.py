@@ -20,9 +20,7 @@ APP_LOG_FILE = DIRECTORIES["LOGS_DIR"] / "app.log"
 MAX_LOG_SIZE = 10 * 1024 * 1024  # 10 MB
 BACKUP_COUNT = 5
 
-sql_formatter = logging.Formatter(
-    "[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s"
-)
+sql_formatter = logging.Formatter("[%(asctime)s] %(levelname)s %(filename)s:%(lineno)d - %(message)s")
 
 # ---------------------------------------------------------------------------
 #   SQLAlchemy Logging (Rotating, quiet by default)
@@ -30,9 +28,7 @@ sql_formatter = logging.Formatter(
 sqlalchemy_logger = logging.getLogger("sqlalchemy.engine")
 sqlalchemy_logger.setLevel(logging.WARNING)
 
-sql_file_handler = RotatingFileHandler(
-    SQL_LOG_FILE, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT, encoding="utf-8"
-)
+sql_file_handler = RotatingFileHandler(SQL_LOG_FILE, maxBytes=MAX_LOG_SIZE, backupCount=BACKUP_COUNT, encoding="utf-8")
 sql_file_handler.setFormatter(sql_formatter)
 sqlalchemy_logger.addHandler(sql_file_handler)
 
@@ -87,10 +83,7 @@ def setup_logger():
 
     # Helper predicates
     def is_app_file_handler(h):
-        return (
-            isinstance(h, RotatingFileHandler)
-            and Path(getattr(h, "baseFilename", "")) == APP_LOG_FILE
-        )
+        return isinstance(h, RotatingFileHandler) and Path(getattr(h, "baseFilename", "")) == APP_LOG_FILE
 
     def is_console_handler(h):
         return isinstance(h, logging.StreamHandler) and getattr(h, "stream", None) in (
@@ -116,9 +109,7 @@ def setup_logger():
             encoding="utf-8",
         )
         file_handler.setFormatter(
-            logging.Formatter(
-                "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
-            )
+            logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
         )
         file_handler.setLevel(log_level)
         root_logger.addHandler(file_handler)
@@ -144,9 +135,7 @@ def setup_logger():
         if is_app_file_handler(handler):
             handler.setLevel(log_level)
             handler.setFormatter(
-                logging.Formatter(
-                    "%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s"
-                )
+                logging.Formatter("%(asctime)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s")
             )
         elif is_console_handler(handler):
             handler.setLevel(log_level)

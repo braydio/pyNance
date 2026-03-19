@@ -6,8 +6,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import List
 
-from app.models import AccountHistory, RecurringTransaction
 from sqlalchemy.orm import Session
+
+from app.models import AccountHistory, RecurringTransaction
 
 
 class ForecastEngine:
@@ -17,9 +18,7 @@ class ForecastEngine:
         self.db = db
 
     @staticmethod
-    def _generate_projection_dates(
-        start: datetime, freq: str, horizon: int
-    ) -> List[datetime]:
+    def _generate_projection_dates(start: datetime, freq: str, horizon: int) -> List[datetime]:
         """Build a list of projection dates using a frequency string."""
         delta_map = {
             "daily": 1,
@@ -44,20 +43,14 @@ class ForecastEngine:
         for r in recurrences:
             if not r.next_due_date or not r.frequency:
                 continue
-            dates = self._generate_projection_dates(
-                start=r.next_due_date, freq=r.frequency, horizon=horizon_days
-            )
+            dates = self._generate_projection_dates(start=r.next_due_date, freq=r.frequency, horizon=horizon_days)
             for d in dates:
                 forecast.append(
                     {
                         "date": d,
-                        "account_id": (
-                            r.transaction.account_id if r.transaction else None
-                        ),
+                        "account_id": (r.transaction.account_id if r.transaction else None),
                         "amount": r.transaction.amount if r.transaction else 0,
-                        "description": (
-                            r.transaction.description if r.transaction else "Recurring"
-                        ),
+                        "description": (r.transaction.description if r.transaction else "Recurring"),
                         "type": "recurring",
                         "frequency": r.frequency,
                     }
@@ -88,7 +81,5 @@ class ForecastEngine:
             for acc_id in balances:
                 delta = daily_txns[day][acc_id]
                 balances[acc_id] += delta
-                output.append(
-                    {"date": day, "account_id": acc_id, "balance": balances[acc_id]}
-                )
+                output.append({"date": day, "account_id": acc_id, "balance": balances[acc_id]})
         return output

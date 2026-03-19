@@ -9,16 +9,6 @@ import json
 from datetime import date, datetime
 from typing import Union
 
-from app.config import (
-    BACKEND_PUBLIC_URL,
-    FILES,
-    PLAID_CLIENT_NAME,
-    logger,
-    plaid_client,
-)
-from app.extensions import db
-from app.models import Category
-from app.sql.forecast_logic import update_account_history
 from flask import has_request_context, request
 from plaid.exceptions import ApiException
 from plaid.model.accounts_get_request import AccountsGetRequest
@@ -42,6 +32,17 @@ from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
+from app.config import (
+    BACKEND_PUBLIC_URL,
+    FILES,
+    PLAID_CLIENT_NAME,
+    logger,
+    plaid_client,
+)
+from app.extensions import db
+from app.models import Category
+from app.sql.forecast_logic import update_account_history
+
 LAST_TRANSACTIONS = FILES["LAST_TX_REFRESH"]
 PLAID_TOKENS = FILES["PLAID_TOKENS"]
 
@@ -50,9 +51,7 @@ def _warn_if_dashboard_request():
     if not has_request_context():
         return
     try:
-        if request.method == "GET" and str(request.path).startswith(
-            ("/api/charts", "/api/dashboard")
-        ):
+        if request.method == "GET" and str(request.path).startswith(("/api/charts", "/api/dashboard")):
             logger.warning(
                 "Plaid helper invoked during dashboard request: %s %s",
                 request.method,
@@ -162,9 +161,7 @@ def get_accounts(access_token: str, user_id: str):
 
     except ApiException as e:
         if getattr(e, "status", None) == 429:
-            logger.error(
-                "Plaid ACCOUNTS_LIMIT hit for user %s – aborting refresh", user_id
-            )
+            logger.error("Plaid ACCOUNTS_LIMIT hit for user %s – aborting refresh", user_id)
             return None
         logger.error("Error syncing accounts: %s", e, exc_info=True)
         raise
@@ -265,9 +262,7 @@ def remove_item(access_token: str) -> None:
 
 def get_institution_name(institution_id: str):
     try:
-        plaid_request = InstitutionsGetByIdRequest(
-            institution_id=institution_id, country_codes=[CountryCode("US")]
-        )
+        plaid_request = InstitutionsGetByIdRequest(institution_id=institution_id, country_codes=[CountryCode("US")])
         response = plaid_client.institutions_get_by_id(plaid_request)
         return response.institution.name
     except Exception as e:
@@ -280,9 +275,7 @@ def get_institution_name(institution_id: str):
 
 
 def refresh_plaid_categories():
-    logger.warning(
-        "Plaid /categories/get endpoint is deprecated. Skipping category refresh."
-    )
+    logger.warning("Plaid /categories/get endpoint is deprecated. Skipping category refresh.")
     return []
 
 
@@ -311,12 +304,8 @@ def get_transactions(
             try:
                 return datetime.strptime(value, "%Y-%m-%d").date()
             except ValueError as exc:
-                raise ValueError(
-                    f"{label} must be in YYYY-MM-DD format (got {value!r})"
-                ) from exc
-        raise TypeError(
-            f"{label} must be a date, datetime, or YYYY-MM-DD string (got {type(value).__name__})"
-        )
+                raise ValueError(f"{label} must be in YYYY-MM-DD format (got {value!r})") from exc
+        raise TypeError(f"{label} must be a date, datetime, or YYYY-MM-DD string (got {type(value).__name__})")
 
     start_dt = _coerce_date(start_date, "start_date")
     end_dt = _coerce_date(end_date, "end_date")
@@ -362,9 +351,7 @@ def resolve_or_create_category(category_path):
     primary = category_path[0] if len(category_path) > 0 else "Uncategorized"
     secondary = category_path[1] if len(category_path) > 1 else None
 
-    category = Category.query.filter_by(
-        primary_category=primary, detailed_category=secondary
-    ).first()
+    category = Category.query.filter_by(primary_category=primary, detailed_category=secondary).first()
 
     if not category:
         category = Category(
@@ -419,9 +406,7 @@ def get_investment_transactions(access_token: str, start_date, end_date):
         offset = 0
         count = 500
         while True:
-            options = InvestmentsTransactionsGetRequestOptions(
-                count=count, offset=offset
-            )
+            options = InvestmentsTransactionsGetRequestOptions(count=count, offset=offset)
             req = InvestmentsTransactionsGetRequest(
                 access_token=access_token,
                 start_date=start_dt,

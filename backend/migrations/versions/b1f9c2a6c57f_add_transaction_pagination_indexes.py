@@ -21,9 +21,7 @@ def upgrade() -> None:
     """Create composite indexes aligned to transaction pagination queries."""
 
     bind = op.get_bind()
-    existing_indexes = {
-        index["name"] for index in sa.inspect(bind).get_indexes("transactions")
-    }
+    existing_indexes = {index["name"] for index in sa.inspect(bind).get_indexes("transactions")}
 
     if "ix_transactions_user_date_transaction_id_desc" not in existing_indexes:
         op.create_index(
@@ -52,9 +50,5 @@ def downgrade() -> None:
     """Drop composite indexes tied to transaction pagination queries."""
 
     op.drop_index("ix_transactions_account_date", table_name="transactions")
-    op.drop_index(
-        "ix_transactions_account_date_transaction_id_desc", table_name="transactions"
-    )
-    op.drop_index(
-        "ix_transactions_user_date_transaction_id_desc", table_name="transactions"
-    )
+    op.drop_index("ix_transactions_account_date_transaction_id_desc", table_name="transactions")
+    op.drop_index("ix_transactions_user_date_transaction_id_desc", table_name="transactions")

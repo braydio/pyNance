@@ -1,8 +1,9 @@
 """Admin endpoints for managing Plaid webhooks on existing items."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import BACKEND_PUBLIC_URL, logger, plaid_client
 from app.models import PlaidAccount
-from flask import Blueprint, jsonify, request
 
 try:  # Plaid SDK request model (v9+)
     from plaid.model.item_webhook_update_request import ItemWebhookUpdateRequest
@@ -119,10 +120,7 @@ def update_all_items_webhook():
 
     try:
         # Unique item_ids across all Plaid accounts
-        item_ids = {
-            pa.item_id
-            for pa in PlaidAccount.query.filter(PlaidAccount.item_id.isnot(None)).all()
-        }
+        item_ids = {pa.item_id for pa in PlaidAccount.query.filter(PlaidAccount.item_id.isnot(None)).all()}
         updated, errors = [], []
         for item_id in item_ids:
             try:

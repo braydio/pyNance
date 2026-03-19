@@ -38,27 +38,19 @@ def upgrade():
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
         sa.CheckConstraint("amount_cents >= 0", name="ck_planned_bills_amount_nonneg"),
-        sa.ForeignKeyConstraint(
-            ["scenario_id"], ["planning_scenarios.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["scenario_id"], ["planning_scenarios.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("planned_bills", schema=None) as batch_op:
-        batch_op.create_index(
-            "ix_planned_bills_scenario_due", ["scenario_id", "due_date"], unique=False
-        )
-        batch_op.create_index(
-            batch_op.f("ix_planned_bills_scenario_id"), ["scenario_id"], unique=False
-        )
+        batch_op.create_index("ix_planned_bills_scenario_due", ["scenario_id", "due_date"], unique=False)
+        batch_op.create_index(batch_op.f("ix_planned_bills_scenario_id"), ["scenario_id"], unique=False)
 
     op.create_table(
         "scenario_allocations",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("scenario_id", sa.UUID(), nullable=False),
         sa.Column("target", sa.String(length=160), nullable=False),
-        sa.Column(
-            "kind", sa.Enum("fixed", "percent", name="allocation_type"), nullable=False
-        ),
+        sa.Column("kind", sa.Enum("fixed", "percent", name="allocation_type"), nullable=False),
         sa.Column("value", sa.Integer(), nullable=False),
         sa.Column("created_at", sa.DateTime(), nullable=False),
         sa.Column("updated_at", sa.DateTime(), nullable=False),
@@ -66,15 +58,11 @@ def upgrade():
             "(kind = 'fixed' AND value >= 0) OR (kind = 'percent' AND value BETWEEN 0 AND 100)",
             name="ck_alloc_value_semantics",
         ),
-        sa.ForeignKeyConstraint(
-            ["scenario_id"], ["planning_scenarios.id"], ondelete="CASCADE"
-        ),
+        sa.ForeignKeyConstraint(["scenario_id"], ["planning_scenarios.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     with op.batch_alter_table("scenario_allocations", schema=None) as batch_op:
-        batch_op.create_index(
-            "ix_allocations_scenario_kind", ["scenario_id", "kind"], unique=False
-        )
+        batch_op.create_index("ix_allocations_scenario_kind", ["scenario_id", "kind"], unique=False)
         batch_op.create_index(
             batch_op.f("ix_scenario_allocations_scenario_id"),
             ["scenario_id"],

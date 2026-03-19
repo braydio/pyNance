@@ -2,8 +2,9 @@
 
 import os
 
-from app.config.constants import FRONTEND_DIST_DIR
 from flask import Blueprint, current_app, send_from_directory
+
+from app.config.constants import FRONTEND_DIST_DIR
 
 # Create a blueprint named 'frontend'
 frontend = Blueprint("frontend", __name__)

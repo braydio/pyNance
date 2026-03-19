@@ -24,22 +24,16 @@ def upgrade():
     # Create index on accounts.account_id only for non-SQLite dialects
     if not is_sqlite:
         with op.batch_alter_table("accounts", schema=None) as batch_op:
-            batch_op.create_index(
-                batch_op.f("ix_accounts_account_id"), ["account_id"], unique=True
-            )
+            batch_op.create_index(batch_op.f("ix_accounts_account_id"), ["account_id"], unique=True)
 
     # Add metadata columns to categories if not already present
     bind = op.get_bind()
     insp = sa.inspect(bind)
     existing = {col["name"] for col in insp.get_columns("categories")}
     if "pfc_primary" not in existing:
-        op.add_column(
-            "categories", sa.Column("pfc_primary", sa.String(length=64), nullable=True)
-        )
+        op.add_column("categories", sa.Column("pfc_primary", sa.String(length=64), nullable=True))
     if "pfc_detailed" not in existing:
-        op.add_column(
-            "categories", sa.Column("pfc_detailed", sa.String(length=64), nullable=True)
-        )
+        op.add_column("categories", sa.Column("pfc_detailed", sa.String(length=64), nullable=True))
     if "pfc_icon_url" not in existing:
         op.add_column(
             "categories",
@@ -52,17 +46,11 @@ def upgrade():
     existing_ix = {ix["name"] for ix in insp.get_indexes("plaid_accounts")}
     if "ix_plaid_accounts_account_id" not in existing_ix:
         with op.batch_alter_table("plaid_accounts", schema=None) as batch_op:
-            batch_op.create_index(
-                batch_op.f("ix_plaid_accounts_account_id"), ["account_id"], unique=False
-            )
+            batch_op.create_index(batch_op.f("ix_plaid_accounts_account_id"), ["account_id"], unique=False)
 
     with op.batch_alter_table("transactions", schema=None) as batch_op:
-        batch_op.add_column(
-            sa.Column("personal_finance_category", sa.JSON(), nullable=True)
-        )
-        batch_op.add_column(
-            sa.Column("personal_finance_category_icon_url", sa.String(), nullable=True)
-        )
+        batch_op.add_column(sa.Column("personal_finance_category", sa.JSON(), nullable=True))
+        batch_op.add_column(sa.Column("personal_finance_category_icon_url", sa.String(), nullable=True))
         # Create index on transactions.transaction_id only for non-SQLite dialects
         if not is_sqlite:
             batch_op.create_index(

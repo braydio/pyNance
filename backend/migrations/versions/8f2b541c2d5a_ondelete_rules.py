@@ -43,9 +43,7 @@ def upgrade() -> None:
 
     with op.batch_alter_table("plaid_accounts") as batch_op:
         batch_op.drop_constraint("plaid_accounts_account_id_fkey", type_="foreignkey")
-        batch_op.drop_constraint(
-            "plaid_accounts_institution_db_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("plaid_accounts_institution_db_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "plaid_accounts_account_id_fkey",
             "accounts",
@@ -62,17 +60,11 @@ def upgrade() -> None:
         )
 
     bind = op.get_bind()
-    teller_exists = bind.execute(
-        text("SELECT to_regclass('public.teller_accounts')")
-    ).scalar()
+    teller_exists = bind.execute(text("SELECT to_regclass('public.teller_accounts')")).scalar()
     if teller_exists:
         with op.batch_alter_table("teller_accounts") as batch_op:
-            batch_op.drop_constraint(
-                "teller_accounts_account_id_fkey", type_="foreignkey"
-            )
-            batch_op.drop_constraint(
-                "teller_accounts_institution_db_id_fkey", type_="foreignkey"
-            )
+            batch_op.drop_constraint("teller_accounts_account_id_fkey", type_="foreignkey")
+            batch_op.drop_constraint("teller_accounts_institution_db_id_fkey", type_="foreignkey")
             batch_op.create_foreign_key(
                 "teller_accounts_account_id_fkey",
                 "accounts",
@@ -117,12 +109,8 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("recurring_transactions") as batch_op:
-        batch_op.drop_constraint(
-            "recurring_transactions_transaction_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "recurring_transactions_account_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("recurring_transactions_transaction_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("recurring_transactions_account_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "recurring_transactions_transaction_id_fkey",
             "transactions",
@@ -139,12 +127,8 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("plaid_transaction_meta") as batch_op:
-        batch_op.drop_constraint(
-            "plaid_transaction_meta_transaction_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "plaid_transaction_meta_plaid_account_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("plaid_transaction_meta_transaction_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("plaid_transaction_meta_plaid_account_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "plaid_transaction_meta_transaction_id_fkey",
             "transactions",
@@ -161,12 +145,8 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("investment_holdings") as batch_op:
-        batch_op.drop_constraint(
-            "investment_holdings_account_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "investment_holdings_security_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("investment_holdings_account_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("investment_holdings_security_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "investment_holdings_account_id_fkey",
             "accounts",
@@ -183,12 +163,8 @@ def upgrade() -> None:
         )
 
     with op.batch_alter_table("investment_transactions") as batch_op:
-        batch_op.drop_constraint(
-            "investment_transactions_account_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "investment_transactions_security_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("investment_transactions_account_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("investment_transactions_security_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "investment_transactions_account_id_fkey",
             "accounts",
@@ -207,12 +183,8 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     with op.batch_alter_table("investment_transactions") as batch_op:
-        batch_op.drop_constraint(
-            "investment_transactions_security_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "investment_transactions_account_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("investment_transactions_security_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("investment_transactions_account_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "investment_transactions_security_id_fkey",
             "securities",
@@ -227,12 +199,8 @@ def downgrade() -> None:
         )
 
     with op.batch_alter_table("investment_holdings") as batch_op:
-        batch_op.drop_constraint(
-            "investment_holdings_security_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "investment_holdings_account_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("investment_holdings_security_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("investment_holdings_account_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "investment_holdings_security_id_fkey",
             "securities",
@@ -247,12 +215,8 @@ def downgrade() -> None:
         )
 
     with op.batch_alter_table("plaid_transaction_meta") as batch_op:
-        batch_op.drop_constraint(
-            "plaid_transaction_meta_plaid_account_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "plaid_transaction_meta_transaction_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("plaid_transaction_meta_plaid_account_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("plaid_transaction_meta_transaction_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "plaid_transaction_meta_plaid_account_id_fkey",
             "plaid_accounts",
@@ -267,12 +231,8 @@ def downgrade() -> None:
         )
 
     with op.batch_alter_table("recurring_transactions") as batch_op:
-        batch_op.drop_constraint(
-            "recurring_transactions_account_id_fkey", type_="foreignkey"
-        )
-        batch_op.drop_constraint(
-            "recurring_transactions_transaction_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("recurring_transactions_account_id_fkey", type_="foreignkey")
+        batch_op.drop_constraint("recurring_transactions_transaction_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "recurring_transactions_account_id_fkey",
             "accounts",
@@ -312,17 +272,11 @@ def downgrade() -> None:
         )
 
     bind = op.get_bind()
-    teller_exists = bind.execute(
-        text("SELECT to_regclass('public.teller_accounts')")
-    ).scalar()
+    teller_exists = bind.execute(text("SELECT to_regclass('public.teller_accounts')")).scalar()
     if teller_exists:
         with op.batch_alter_table("teller_accounts") as batch_op:
-            batch_op.drop_constraint(
-                "teller_accounts_institution_db_id_fkey", type_="foreignkey"
-            )
-            batch_op.drop_constraint(
-                "teller_accounts_account_id_fkey", type_="foreignkey"
-            )
+            batch_op.drop_constraint("teller_accounts_institution_db_id_fkey", type_="foreignkey")
+            batch_op.drop_constraint("teller_accounts_account_id_fkey", type_="foreignkey")
             batch_op.create_foreign_key(
                 "teller_accounts_institution_db_id_fkey",
                 "institutions",
@@ -337,9 +291,7 @@ def downgrade() -> None:
             )
 
     with op.batch_alter_table("plaid_accounts") as batch_op:
-        batch_op.drop_constraint(
-            "plaid_accounts_institution_db_id_fkey", type_="foreignkey"
-        )
+        batch_op.drop_constraint("plaid_accounts_institution_db_id_fkey", type_="foreignkey")
         batch_op.drop_constraint("plaid_accounts_account_id_fkey", type_="foreignkey")
         batch_op.create_foreign_key(
             "plaid_accounts_institution_db_id_fkey",

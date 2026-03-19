@@ -20,10 +20,11 @@ compare with a dashboard export separately (future enhancement).
 from __future__ import annotations
 
 import click
-from app.config import plaid_client
-from app.models import PlaidAccount, PlaidItem
 from flask.cli import with_appcontext
 from plaid.model.item_get_request import ItemGetRequest
+
+from app.config import plaid_client
+from app.models import PlaidAccount, PlaidItem
 
 
 @click.command("reconcile-plaid-items")
@@ -50,9 +51,7 @@ def reconcile_plaid_items(verbose: bool) -> None:
 
     # Fallbacks from PlaidAccount (one token per item)
     rows = (
-        PlaidAccount.query.with_entities(
-            PlaidAccount.item_id, PlaidAccount.access_token
-        )
+        PlaidAccount.query.with_entities(PlaidAccount.item_id, PlaidAccount.access_token)
         .filter(PlaidAccount.item_id.isnot(None))
         .filter(PlaidAccount.item_id != "")
         .all()
@@ -73,9 +72,7 @@ def reconcile_plaid_items(verbose: bool) -> None:
             req = ItemGetRequest(access_token=token)
             resp = plaid_client.item_get(req)
             if verbose:
-                click.echo(
-                    f"✔ {item_id} OK (institution={getattr(resp.item, 'institution_id', 'n/a')})"
-                )
+                click.echo(f"✔ {item_id} OK (institution={getattr(resp.item, 'institution_id', 'n/a')})")
             live_ok += 1
         except Exception as e:  # Plaid ApiException or transport error
             msg = getattr(e, "body", str(e)) or str(e)

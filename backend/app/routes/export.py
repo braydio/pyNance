@@ -3,10 +3,11 @@
 import csv
 from io import StringIO
 
+from flask import Blueprint, Response, jsonify
+
 from app.extensions import db
 from app.models import Account, PlaidAccount
 from app.sql.export_logic import export_all_to_csv, export_csv_response
-from flask import Blueprint, Response, jsonify
 
 export = Blueprint("export", __name__)
 
@@ -17,9 +18,7 @@ def export_model_csv(model_name):
         response = export_csv_response(model_name)
         if response is None:
             return (
-                jsonify(
-                    {"status": "error", "message": f"Unknown model '{model_name}'"}
-                ),
+                jsonify({"status": "error", "message": f"Unknown model '{model_name}'"}),
                 404,
             )
         return response

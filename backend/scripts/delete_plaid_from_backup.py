@@ -43,10 +43,7 @@ def parse_args() -> argparse.Namespace:
         "--sqlite-path",
         type=Path,
         default=DEFAULT_SQLITE,
-        help=(
-            "Path to the legacy SQLite backup database "
-            "(default: app/data/backup_dashboard_database.db)."
-        ),
+        help=("Path to the legacy SQLite backup database " "(default: app/data/backup_dashboard_database.db)."),
     )
     parser.add_argument(
         "--base-url",
@@ -104,10 +101,7 @@ def delete_account(base_url: str, account_id: str) -> bool:
         return False
 
     if resp.status_code != 200:
-        print(
-            f"[ERROR] Non-200 response for account_id={account_id}: "
-            f"{resp.status_code} {resp.text}"
-        )
+        print(f"[ERROR] Non-200 response for account_id={account_id}: " f"{resp.status_code} {resp.text}")
         return False
 
     try:
@@ -134,10 +128,7 @@ def main() -> None:
         return
 
     mode = "DRY RUN" if not args.execute else "EXECUTE"
-    print(
-        f"Found {len(accounts)} plaid-linked accounts in {args.sqlite_path} "
-        f"({mode} mode)."
-    )
+    print(f"Found {len(accounts)} plaid-linked accounts in {args.sqlite_path} " f"({mode} mode).")
 
     for acct in accounts:
         label = f"{acct.account_id} | {acct.name}"

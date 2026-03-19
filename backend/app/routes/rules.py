@@ -1,9 +1,10 @@
 """CRUD endpoints for managing transaction rules."""
 
+from flask import Blueprint, jsonify, request
+
 from app.extensions import db
 from app.models import TransactionRule
 from app.sql import transaction_rules_logic
-from flask import Blueprint, jsonify, request
 
 rules = Blueprint("rules", __name__)
 

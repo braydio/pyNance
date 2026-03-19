@@ -8,9 +8,10 @@ until synchronization to avoid loading heavy dependencies at import time.
 from datetime import timedelta
 from importlib import import_module
 
+from dateutil.parser import parse
+
 from app.services.recurring_detection import RecurringDetector
 from app.sql import recurring_logic
-from dateutil.parser import parse
 
 
 class RecurringBridge:
@@ -42,13 +43,8 @@ class RecurringBridge:
         for item in candidates:
             if not item.get("account_id"):
                 for tx in self.transactions:
-                    desc_sig = "".join(filter(str.isalnum, tx["description"].lower()))[
-                        :16
-                    ]
-                    if (
-                        round(tx["amount"], 2) == item["amount"]
-                        and desc_sig == item["description"]
-                    ):
+                    desc_sig = "".join(filter(str.isalnum, tx["description"].lower()))[:16]
+                    if round(tx["amount"], 2) == item["amount"] and desc_sig == item["description"]:
                         item["account_id"] = tx.get("account_id")
                         break
 

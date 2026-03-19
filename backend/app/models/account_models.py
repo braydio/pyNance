@@ -5,15 +5,14 @@ from __future__ import annotations
 from decimal import Decimal
 from uuid import uuid4
 
-from app.extensions import db
 from sqlalchemy.ext.hybrid import hybrid_property
+
+from app.extensions import db
 
 from .mixins import TimestampMixin
 
 # Database enums
-AccountStatusEnum = db.Enum(
-    "active", "inactive", "closed", "archived", name="account_status"
-)
+AccountStatusEnum = db.Enum("active", "inactive", "closed", "archived", name="account_status")
 LinkTypeEnum = db.Enum("manual", "plaid", name="link_type")
 
 
@@ -38,9 +37,7 @@ class Account(db.Model, TimestampMixin):
     is_hidden = db.Column(db.Boolean, default=False)
     balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     link_type = db.Column(LinkTypeEnum, nullable=False, server_default="manual")
-    is_investment = db.Column(
-        db.Boolean, nullable=False, default=False, server_default=db.text("false")
-    )
+    is_investment = db.Column(db.Boolean, nullable=False, default=False, server_default=db.text("false"))
     investment_has_holdings = db.Column(
         db.Boolean,
         nullable=False,
@@ -56,9 +53,7 @@ class Account(db.Model, TimestampMixin):
     product_provenance = db.Column(db.String(64), nullable=True)
     apr = db.Column(db.Numeric(7, 4), nullable=True)
 
-    plaid_account = db.relationship(
-        "PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan"
-    )
+    plaid_account = db.relationship("PlaidAccount", backref="account", uselist=False, cascade="all, delete-orphan")
     institution = db.relationship("Institution", back_populates="accounts")
 
     @staticmethod
@@ -77,21 +72,15 @@ class Account(db.Model, TimestampMixin):
         return cleaned
 
     @staticmethod
-    def _format_account_type(
-        subtype: str | None, account_type: str | None
-    ) -> str | None:
+    def _format_account_type(subtype: str | None, account_type: str | None) -> str | None:
         """Return a title-cased account type label from subtype or type values."""
 
-        source = Account._normalize_display_segment(
-            subtype
-        ) or Account._normalize_display_segment(account_type)
+        source = Account._normalize_display_segment(subtype) or Account._normalize_display_segment(account_type)
         if not source:
             return None
         return source.replace("_", " ").replace("-", " ").title()
 
-    def format_display_name(
-        self, mask: str | None = None, last4: str | None = None
-    ) -> str:
+    def format_display_name(self, mask: str | None = None, last4: str | None = None) -> str:
         """Build a canonical display name from institution/type metadata and optional mask.
 
         Args:
@@ -152,9 +141,7 @@ class AccountHistory(db.Model, TimestampMixin):
     balance = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
     is_hidden = db.Column(db.Boolean, default=None)
 
-    __table_args__ = (
-        db.UniqueConstraint("account_id", "date", name="_account_date_uc"),
-    )
+    __table_args__ = (db.UniqueConstraint("account_id", "date", name="_account_date_uc"),)
 
 
 class FinancialGoal(db.Model, TimestampMixin):
@@ -194,9 +181,7 @@ class AccountGroup(db.Model, TimestampMixin):
 
     __tablename__ = "account_groups"
 
-    id = db.Column(
-        db.String(36), primary_key=True, default=lambda: str(uuid4()), unique=True
-    )
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid4()), unique=True)
     user_id = db.Column(db.String(64), nullable=False, index=True)
     name = db.Column(db.String(128), nullable=False, default="Group")
     position = db.Column(db.Integer, nullable=False, default=0)
@@ -208,9 +193,7 @@ class AccountGroup(db.Model, TimestampMixin):
         cascade="all, delete-orphan",
         order_by="AccountGroupMembership.position",
     )
-    preference = db.relationship(
-        "AccountGroupPreference", back_populates="active_group", uselist=False
-    )
+    preference = db.relationship("AccountGroupPreference", back_populates="active_group", uselist=False)
 
 
 class AccountGroupMembership(db.Model, TimestampMixin):
@@ -234,15 +217,9 @@ class AccountGroupMembership(db.Model, TimestampMixin):
     position = db.Column(db.Integer, nullable=False, default=0)
 
     group = db.relationship("AccountGroup", back_populates="memberships")
-    account = db.relationship(
-        "Account", primaryjoin="Account.account_id == AccountGroupMembership.account_id"
-    )
+    account = db.relationship("Account", primaryjoin="Account.account_id == AccountGroupMembership.account_id")
 
-    __table_args__ = (
-        db.UniqueConstraint(
-            "group_id", "account_id", name="uq_account_group_membership"
-        ),
-    )
+    __table_args__ = (db.UniqueConstraint("group_id", "account_id", name="uq_account_group_membership"),)
 
 
 class AccountGroupPreference(db.Model, TimestampMixin):
@@ -259,6 +236,4 @@ class AccountGroupPreference(db.Model, TimestampMixin):
         index=True,
     )
 
-    active_group = db.relationship(
-        "AccountGroup", back_populates="preference", foreign_keys=[active_group_id]
-    )
+    active_group = db.relationship("AccountGroup", back_populates="preference", foreign_keys=[active_group_id])

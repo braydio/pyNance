@@ -6,6 +6,9 @@ from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from flask import Blueprint, Request, jsonify, request
+from sqlalchemy.orm import joinedload
+
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
@@ -13,8 +16,6 @@ from app.models import Account, PlaidAccount, PlaidWebhookLog
 from app.services import plaid_sync
 from app.sql import investments_logic
 from app.sql.account_logic import canonicalize_plaid_products
-from flask import Blueprint, Request, jsonify, request
-from sqlalchemy.orm import joinedload
 
 try:  # pragma: no cover - optional dependency
     from prometheus_client import Counter as PrometheusCounter
@@ -32,9 +33,7 @@ def _build_prometheus_counter() -> "PrometheusCounter | None":
         return None
 
     try:
-        return PrometheusCounter(
-            PROM_COUNTER_NAME, PROM_COUNTER_HELP, ["status", "code"]
-        )
+        return PrometheusCounter(PROM_COUNTER_NAME, PROM_COUNTER_HELP, ["status", "code"])
     except ValueError:  # pragma: no cover - already registered
         try:
             from prometheus_client import REGISTRY  # type: ignore
@@ -90,9 +89,7 @@ plaid_webhooks = Blueprint("plaid_webhooks", __name__)
 def _has_investments_scope(plaid_account: PlaidAccount) -> bool:
     """Return whether a Plaid account includes the investments product scope."""
 
-    return "investments" in set(
-        canonicalize_plaid_products(getattr(plaid_account, "product", None))
-    )
+    return "investments" in set(canonicalize_plaid_products(getattr(plaid_account, "product", None)))
 
 
 def _verify_plaid_signature(req: Request) -> tuple[bool, str | None]:
@@ -131,9 +128,7 @@ def _verify_plaid_signature(req: Request) -> tuple[bool, str | None]:
     provided_signature = components.get("v1")
 
     if not timestamp or not provided_signature:
-        logger.warning(
-            "Rejecting Plaid webhook: Plaid-Signature missing timestamp or signature component."
-        )
+        logger.warning("Rejecting Plaid webhook: Plaid-Signature missing timestamp or signature component.")
         return False, "missing_components"
 
     raw_body = req.get_data(as_text=True) or ""
@@ -163,9 +158,7 @@ def handle_plaid_webhook():
     if not is_valid:
         webhook_metrics.increment("failure", "SIGNATURE")
         logger.warning("Plaid webhook rejected due to %s signature.", reason)
-        status_code = (
-            401 if reason in {"missing", "malformed", "missing_components"} else 403
-        )
+        status_code = 401 if reason in {"missing", "malformed", "missing_components"} else 403
         return jsonify({"status": "unauthorized"}), status_code
 
     payload = request.get_json(silent=True) or {}
@@ -174,10 +167,7 @@ def handle_plaid_webhook():
     item_id = payload.get("item_id")
 
     logger.info(
-        (
-            "Received Plaid webhook %s:%s for item %s "
-            "(new_transactions=%s, delivery_id=%s)"
-        ),
+        ("Received Plaid webhook %s:%s for item %s " "(new_transactions=%s, delivery_id=%s)"),
         webhook_type or "UNKNOWN",
         webhook_code or "UNKNOWN",
         item_id or "UNKNOWN",
@@ -212,11 +202,7 @@ def handle_plaid_webhook():
             return jsonify({"status": "ignored"}), 200
 
         # Trigger sync for each account under this item
-        accounts = (
-            PlaidAccount.query.options(joinedload(PlaidAccount.account))
-            .filter_by(item_id=item_id)
-            .all()
-        )
+        accounts = PlaidAccount.query.options(joinedload(PlaidAccount.account)).filter_by(item_id=item_id).all()
         if not accounts:
             logger.info(
                 "Plaid webhook %s:%s had no matching accounts for item %s",
@@ -280,9 +266,7 @@ def handle_plaid_webhook():
         "HISTORICAL_UPDATE",
     ):
         if not item_id:
-            logger.warning(
-                "Investments webhook missing item_id; cannot dispatch refresh"
-            )
+            logger.warning("Investments webhook missing item_id; cannot dispatch refresh")
             return jsonify({"status": "ignored"}), 200
 
         # Determine a safe fetch window (last 30 days)

@@ -1,9 +1,10 @@
 """Helper for aggregating daily account balances."""
 
+from sqlalchemy import func
+
 from app.config import logger
 from app.extensions import db
 from app.models import AccountHistory, Transaction
-from sqlalchemy import func
 
 
 def update_account_history():
@@ -20,10 +21,7 @@ def update_account_history():
         .all()
     )
 
-    records = [
-        AccountHistory(account_id=acc_id, date=tx_date, balance=bal)
-        for acc_id, tx_date, bal in grouped
-    ]
+    records = [AccountHistory(account_id=acc_id, date=tx_date, balance=bal) for acc_id, tx_date, bal in grouped]
 
     db.session.bulk_save_objects(records)
     db.session.commit()

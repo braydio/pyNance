@@ -46,11 +46,7 @@ class InvestmentHolding(db.Model, TimestampMixin):
     # Full raw holding payload (optional)
     raw = db.Column(db.JSON, nullable=True)
 
-    __table_args__ = (
-        db.UniqueConstraint(
-            "account_id", "security_id", name="uq_holding_account_security"
-        ),
-    )
+    __table_args__ = (db.UniqueConstraint("account_id", "security_id", name="uq_holding_account_security"),)
 
 
 class InvestmentTransaction(db.Model, TimestampMixin):
