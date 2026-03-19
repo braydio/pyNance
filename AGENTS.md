@@ -17,12 +17,12 @@ Use this guide to keep contributions consistent with the project's structure, to
 - `python backend/run.py` or `flask --app backend.run run` serves the API with hot reload.
 - `cd frontend && npm run dev` starts the Vue dev server.
 - `pytest -q` executes backend tests; scope with `pytest tests/test_<feature>.py -q` when iterating.
-- `pre-commit run --all-files` runs Black, Ruff, Isort, MyPy, Pylint, and Bandit.
+- `pre-commit run --all-files` runs Black, Ruff, MyPy, Pylint, and Bandit.
 - Configure `SQLALCHEMY_DATABASE_URI` for PostgreSQL and apply migrations with `flask db upgrade` before running the API.
 
 ## Coding Style & Naming Conventions
 
-- Follow Black's 120-character formatting; use Isort (Black profile) for imports and Ruff for linting.
+- Follow Black's 120-character formatting; use Ruff for linting and import sorting.
 - Naming: `snake_case` for functions/vars, `PascalCase` for classes, `UPPER_SNAKE_CASE` for constants.
 - Vue files lean on script-setup; do not wrap `<draggable>` in `<Transition>`.
 - Review the relevant docs in `docs/` for best practices before changing behavior.

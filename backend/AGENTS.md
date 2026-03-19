@@ -13,11 +13,11 @@
 - `python backend/run.py` or `flask --app backend.run run` – launches the API with reloading; set `SQLALCHEMY_DATABASE_URI` first.
 - `cd frontend && npm run dev` – starts the Vue dev server alongside the API.
 - `pytest -q` – runs the backend test suite; narrow with `pytest tests/test_<feature>.py -q`.
-- `pre-commit run --all-files` – executes Black, Ruff, Isort, MyPy, Pylint, and Bandit gates before review.
+- `pre-commit run --all-files` – executes Black, Ruff, MyPy, Pylint, and Bandit gates before review.
 
 ## Coding Style & Naming Conventions
 
-- Python follows Black (120-char limit) and Isort (Black profile); lint with Ruff.
+- Python follows Black (120-char limit); Ruff handles linting and import sorting.
 - Naming: `snake_case` functions/vars, `PascalCase` classes, and `UPPER_SNAKE_CASE` constants.
 - Vue components use `<script setup>` with scoped styles; never wrap `<draggable>` in `<Transition>`.
 - Keep comments purposeful and favor defensive checks around optional integrations.

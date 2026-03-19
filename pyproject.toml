@@ -1,6 +1,6 @@
 [tool.black]
-line-length = 88
-target-version = ["py313"]
+line-length = 120
+target-version = ["py311"]
 extend-exclude = '''
 (.
     \.git
@@ -10,3 +10,12 @@ extend-exclude = '''
   | frontend
 )/'
 '''
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["frontend"]
+
+[tool.ruff.lint]
+extend-select = ["I"]
+ignore = ["E501", "E203", "E402"]

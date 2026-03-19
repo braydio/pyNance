@@ -8,20 +8,10 @@ repos:
     hooks:
       - id: black
 
-  # isort: Import sorting
-  - repo: https://github.com/pre-commit/mirrors-isort
-    rev: v5.10.1
-    hooks:
-      - id: isort
-        args:
-          - "--profile=black"
-
-  # Ruff: Fast linter / fixer
+  # Ruff: Fast linter / fixer, including import sorting
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.4.4
     hooks:
       - id: ruff
         args:
           - "--fix"
-          - "--line-length=120"
-          - "--ignore=E501,E203,E402"

@@ -101,7 +101,7 @@ validate_python_env() {
     fi
     
     # Check required tools
-    local tools=("black" "isort" "ruff" "mypy" "pytest")
+    local tools=("black" "ruff" "mypy" "pytest")
     if [ $CI_MODE -eq 0 ]; then
         tools+=("pre-commit")
     fi
@@ -148,14 +148,6 @@ validate_python_style() {
         echo -e "${GREEN}✅ Black formatting passed${NC}"
     else
         echo -e "${RED}❌ Black formatting failed${NC}"
-        return 1
-    fi
-    
-    echo "Running isort check..."
-    if isort --check-only --profile black backend/; then
-        echo -e "${GREEN}✅ isort check passed${NC}"
-    else
-        echo -e "${RED}❌ isort check failed${NC}"
         return 1
     fi
     

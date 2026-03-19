@@ -98,7 +98,7 @@ fi
 
 ## 6. Run formatters on all files if pre-commit is installed
 if command -v pre-commit &>/dev/null; then
-  echo "Running formatters (black, isort, ruff)..."
+  echo "Running formatters and lint checks (black, ruff)..."
   pre-commit run --all-files || true
 else
   echo "pre-commit not found — skipping format check."

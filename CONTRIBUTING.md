@@ -96,7 +96,7 @@ command -v pre-commit >/dev/null && echo "✅ pre-commit installed" || echo "❌
 
 - **Style**: PEP 8 compliance
 - **Type Annotations**: Required for all functions and methods
-- **Formatters**: `black` (line length: 120), `isort` (black profile)
+- **Formatters**: `black` (line length: 120)
 - **Linters**: `ruff`, `mypy`, `pylint`
 - **Security**: `bandit` for security checks
 
@@ -111,7 +111,6 @@ command -v pre-commit >/dev/null && echo "✅ pre-commit installed" || echo "❌
 ```bash
 # Python style validation
 black --check --line-length=120 backend/
-isort --check-only --profile black backend/
 ruff check backend/ --line-length=120
 mypy backend/ --ignore-missing-imports
 pylint backend/app/
@@ -140,8 +139,7 @@ chmod +x .githooks/*
 Pre-commit runs automatically on commit and includes:
 
 - `black` - Python code formatting
-- `isort` - Python import sorting
-- `ruff` - Python linting with auto-fix
+- `ruff` - Python linting, import sorting, and auto-fix
 - `mypy` - Static type checking
 - `pylint` - Python linting
 - `bandit` - Security analysis
