@@ -805,6 +805,58 @@ def test_plaid_investments_refresh_all_aggregates_summary(
     }
 
 
+def test_plaid_investments_refresh_all_rolls_back_failed_item(
+    plaid_investments_client, monkeypatch
+):
+    client, module = plaid_investments_client
+
+    first = PlaidAccountStub(
+        "acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1")
+    )
+    second = PlaidAccountStub(
+        "acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2")
+    )
+    module.PlaidAccount.query = PlaidQueryStub([first, second])
+
+    rollback_calls = []
+
+    def rollback():
+        rollback_calls.append("rolled-back")
+
+    module.db.session.rollback = rollback
+
+    def upsert(_user_id, token):
+        if token == "token-1":
+            raise RuntimeError("insert failed")
+        return {"securities": 2, "holdings": 3}
+
+    monkeypatch.setattr(
+        module.investments_logic, "upsert_investments_from_plaid", upsert
+    )
+    monkeypatch.setattr(
+        module,
+        "get_investment_transactions",
+        lambda token, _start, _end: [{"id": token}],
+    )
+    monkeypatch.setattr(
+        module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs)
+    )
+
+    resp = client.post(
+        "/api/plaid/investments/refresh_all",
+        json={"start_date": "2024-01-01", "end_date": "2024-01-31"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["summary"] == {
+        "securities": 2,
+        "holdings": 3,
+        "investment_transactions": 1,
+        "items": 2,
+    }
+    assert rollback_calls == ["rolled-back"]
+
+
 @pytest.fixture
 def plaid_webhook_client():
     models_stub = types.ModuleType("app.models")

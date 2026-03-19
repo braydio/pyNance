@@ -138,3 +138,35 @@ def test_upsert_investment_transactions_persists_json(db_ctx):
     assert stored.raw["nested"]["posted_at"] == datetime(2024, 1, 1, 12, 30).isoformat()
     assert stored.raw["nested"]["legs"][0] == pytest.approx(5.25)
     assert stored.raw["nested"]["legs"][1]["when"] == date(2024, 1, 2).isoformat()
+
+
+def test_upsert_investment_transactions_rolls_back_on_failure(db_ctx, monkeypatch):
+    db, _models, logic = db_ctx
+
+    rollback_calls = []
+    original_merge = db.session.merge
+    original_rollback = db.session.rollback
+
+    def failing_merge(*args, **kwargs):
+        original_merge(*args, **kwargs)
+        raise RuntimeError("flush failed")
+
+    def tracking_rollback():
+        rollback_calls.append("rolled-back")
+        return original_rollback()
+
+    monkeypatch.setattr(db.session, "merge", failing_merge)
+    monkeypatch.setattr(db.session, "rollback", tracking_rollback)
+
+    with pytest.raises(RuntimeError, match="flush failed"):
+        logic.upsert_investment_transactions(
+            [
+                {
+                    "investment_transaction_id": "tx-fail",
+                    "account_id": "acct-fail",
+                    "security_id": "sec-fail",
+                }
+            ]
+        )
+
+    assert rollback_calls == ["rolled-back"]

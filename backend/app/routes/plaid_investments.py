@@ -107,6 +107,7 @@ def exchange_public_token_investments():
                 )
             db.session.commit()
         except Exception as e:
+            db.session.rollback()
             logger.error("Failed to upsert PlaidItem for investments: %s", e)
         # Save initial investments data (if you have specific logic, call it here)
         # e.g., account_logic.save_investments_data(user_id, access_token)
@@ -172,6 +173,7 @@ def refresh_investments_endpoint():
             200,
         )
     except Exception as e:
+        db.session.rollback()
         logger.error("Error refreshing investments: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500
 
@@ -208,10 +210,11 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
+                db.session.rollback()
                 logger.error(
                     "Failed to refresh investments for item %s: %s",
                     pa.item_id,
@@ -230,5 +233,6 @@ def refresh_all_investments():
             200,
         )
     except Exception as e:
+        db.session.rollback()
         logger.error("Error in refresh_all_investments: %s", e, exc_info=True)
         return jsonify({"error": str(e)}), 500

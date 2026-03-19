@@ -6,6 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any, Dict, List, Optional
 
+from app.config import logger
 from app.extensions import db
 from app.models import (
     Account,
@@ -82,81 +83,112 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
     secs = data.get("securities", []) or []
     holds = data.get("holdings", []) or []
 
-    sec_upserts = 0
-    for s in secs:
-        # Map Plaid security fields sensibly
-        security = Security(
-            security_id=s.get("security_id"),
-            name=s.get("name"),
-            ticker_symbol=s.get("ticker_symbol"),
-            cusip=s.get("cusip"),
-            isin=s.get("isin"),
-            type=s.get("type"),
-            is_cash_equivalent=s.get("is_cash_equivalent"),
-            institution_price=s.get("institution_price"),
-            institution_price_as_of=s.get("institution_price_as_of"),
-            market_identifier_code=s.get("market_identifier_code"),
-            iso_currency_code=s.get("iso_currency_code"),
-            raw=_json_safe(s),
-        )
-        db.session.merge(security)
-        sec_upserts += 1
+    try:
+        security_ids = set()
+        sec_upserts = 0
+        for s in secs:
+            security_id = s.get("security_id")
+            if not security_id:
+                continue
+            security_ids.add(security_id)
+            # Map Plaid security fields sensibly
+            security = Security(
+                security_id=security_id,
+                name=s.get("name"),
+                ticker_symbol=s.get("ticker_symbol"),
+                cusip=s.get("cusip"),
+                isin=s.get("isin"),
+                type=s.get("type"),
+                is_cash_equivalent=s.get("is_cash_equivalent"),
+                institution_price=s.get("institution_price"),
+                institution_price_as_of=s.get("institution_price_as_of"),
+                market_identifier_code=s.get("market_identifier_code"),
+                iso_currency_code=s.get("iso_currency_code"),
+                raw=_json_safe(s),
+            )
+            db.session.merge(security)
+            sec_upserts += 1
 
-    # Conflict-safe upsert for holdings to avoid unique violations on
-    # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
-    from sqlalchemy.dialects.postgresql import insert
+        # Plaid should return matching security records for holdings, but when it
+        # does not we still need a parent row before inserting the holding.
+        for h in holds:
+            sec_id = h.get("security_id")
+            if not sec_id or sec_id in security_ids:
+                continue
+            db.session.merge(
+                Security(
+                    security_id=sec_id,
+                    name=h.get("name"),
+                    ticker_symbol=h.get("ticker_symbol"),
+                    iso_currency_code=h.get("iso_currency_code"),
+                    raw={"placeholder_from_holding": True, "holding": _json_safe(h)},
+                )
+            )
+            security_ids.add(sec_id)
+            sec_upserts += 1
 
-    def _as_date(value):
-        if isinstance(value, datetime):
-            return value.date()
-        if isinstance(value, date):
-            return value
-        if isinstance(value, str) and value:
-            try:
-                return datetime.strptime(value, "%Y-%m-%d").date()
-            except ValueError:
+        # Flush parent security rows before issuing Core inserts for holdings.
+        db.session.flush()
+
+        # Conflict-safe upsert for holdings to avoid unique violations on
+        # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
+        from sqlalchemy.dialects.postgresql import insert
+
+        def _as_date(value):
+            if isinstance(value, datetime):
+                return value.date()
+            if isinstance(value, date):
+                return value
+            if isinstance(value, str) and value:
                 try:
-                    return date.fromisoformat(value)
+                    return datetime.strptime(value, "%Y-%m-%d").date()
                 except ValueError:
-                    return None
-        return None
+                    try:
+                        return date.fromisoformat(value)
+                    except ValueError:
+                        return None
+            return None
 
-    holding_upserts = 0
-    table = InvestmentHolding.__table__
-    for h in holds:
-        acct_id = h.get("account_id")
-        sec_id = h.get("security_id")
-        if not acct_id or not sec_id:
-            continue
-        values = {
-            "account_id": acct_id,
-            "security_id": sec_id,
-            "quantity": h.get("quantity"),
-            "cost_basis": h.get("cost_basis"),
-            "institution_value": h.get("institution_value"),
-            # In holdings payloads, the date is often named institution_price_as_of
-            "as_of": _as_date(h.get("institution_price_as_of") or h.get("as_of")),
-            "raw": _json_safe(h),
+        holding_upserts = 0
+        table = InvestmentHolding.__table__
+        for h in holds:
+            acct_id = h.get("account_id")
+            sec_id = h.get("security_id")
+            if not acct_id or not sec_id:
+                continue
+            values = {
+                "account_id": acct_id,
+                "security_id": sec_id,
+                "quantity": h.get("quantity"),
+                "cost_basis": h.get("cost_basis"),
+                "institution_value": h.get("institution_value"),
+                # In holdings payloads, the date is often named institution_price_as_of
+                "as_of": _as_date(h.get("institution_price_as_of") or h.get("as_of")),
+                "raw": _json_safe(h),
+            }
+            stmt = insert(table).values(values)
+            stmt = stmt.on_conflict_do_update(
+                index_elements=[table.c.account_id, table.c.security_id],
+                set_={
+                    "quantity": stmt.excluded.quantity,
+                    "cost_basis": stmt.excluded.cost_basis,
+                    "institution_value": stmt.excluded.institution_value,
+                    "as_of": stmt.excluded.as_of,
+                    "raw": stmt.excluded.raw,
+                },
+            )
+            db.session.execute(stmt)
+            holding_upserts += 1
+
+        db.session.commit()
+        return {
+            "securities": sec_upserts,
+            "holdings": holding_upserts,
         }
-        stmt = insert(table).values(values)
-        stmt = stmt.on_conflict_do_update(
-            index_elements=[table.c.account_id, table.c.security_id],
-            set_={
-                "quantity": stmt.excluded.quantity,
-                "cost_basis": stmt.excluded.cost_basis,
-                "institution_value": stmt.excluded.institution_value,
-                "as_of": stmt.excluded.as_of,
-                "raw": stmt.excluded.raw,
-            },
-        )
-        db.session.execute(stmt)
-        holding_upserts += 1
-
-    db.session.commit()
-    return {
-        "securities": sec_upserts,
-        "holdings": holding_upserts,
-    }
+    except Exception:
+        db.session.rollback()
+        logger.exception("Failed to upsert investments data from Plaid")
+        raise
 
 
 def upsert_investment_transactions(items: List[dict]) -> int:
@@ -164,25 +196,30 @@ def upsert_investment_transactions(items: List[dict]) -> int:
 
     Returns the number of transactions processed.
     """
-    count = 0
-    for t in items or []:
-        tx = InvestmentTransaction(
-            investment_transaction_id=t.get("investment_transaction_id")
-            or t.get("investment_transaction_id"),
-            account_id=t.get("account_id"),
-            security_id=t.get("security_id"),
-            date=t.get("date"),
-            amount=t.get("amount"),
-            price=t.get("price"),
-            quantity=t.get("quantity"),
-            subtype=t.get("subtype"),
-            type=t.get("type"),
-            name=t.get("name"),
-            fees=t.get("fees"),
-            iso_currency_code=t.get("iso_currency_code"),
-            raw=_json_safe(t),
-        )
-        db.session.merge(tx)
-        count += 1
-    db.session.commit()
-    return count
+    try:
+        count = 0
+        for t in items or []:
+            tx = InvestmentTransaction(
+                investment_transaction_id=t.get("investment_transaction_id")
+                or t.get("investment_transaction_id"),
+                account_id=t.get("account_id"),
+                security_id=t.get("security_id"),
+                date=t.get("date"),
+                amount=t.get("amount"),
+                price=t.get("price"),
+                quantity=t.get("quantity"),
+                subtype=t.get("subtype"),
+                type=t.get("type"),
+                name=t.get("name"),
+                fees=t.get("fees"),
+                iso_currency_code=t.get("iso_currency_code"),
+                raw=_json_safe(t),
+            )
+            db.session.merge(tx)
+            count += 1
+        db.session.commit()
+        return count
+    except Exception:
+        db.session.rollback()
+        logger.exception("Failed to upsert investment transactions")
+        raise
