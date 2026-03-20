@@ -22,10 +22,10 @@ class FilterColumn:
     def __get__(self, instance, owner):
         if instance is None:
             return self
-        return getattr(instance, self.attr)
+        return instance.__dict__.get(self.attr)
 
     def __set__(self, instance, value):
-        setattr(instance, self.attr, value)
+        instance.__dict__[self.attr] = value
 
     def __eq__(self, other):
         return lambda row: getattr(row, self.attr) == other
@@ -113,6 +113,7 @@ class Sec:
 class PlaidAccountStub:
     """Simple PlaidAccount stand-in for route tests."""
 
+    account_id = FilterColumn("account_id")
     query = None
 
     def __init__(
@@ -210,7 +211,14 @@ def investments_client():
     models_stub = types.ModuleType("app.models")
     models_stub.Account = AccountScopeStub
     models_stub.PlaidAccount = PlaidAccountStub
-    models_stub.InvestmentHolding = type("InvestmentHolding", (), {"security_id": FilterColumn("security_id")})
+    models_stub.InvestmentHolding = type(
+        "InvestmentHolding",
+        (),
+        {
+            "account_id": FilterColumn("account_id"),
+            "security_id": FilterColumn("security_id"),
+        },
+    )
 
     models_stub.InvestmentTransaction = type(
         "InvestmentTransaction",
@@ -490,11 +498,11 @@ def plaid_investments_client():
     )
 
     investments_logic_stub = types.ModuleType("app.sql.investments_logic")
-    investments_logic_stub.upsert_investments_from_plaid = lambda *_a, **_k: {
+    investments_logic_stub.sync_investments_from_plaid = lambda *_a, **_k: {
         "securities": 1,
         "holdings": 2,
+        "investment_transactions": 2,
     }
-    investments_logic_stub.upsert_investment_transactions = lambda txs: len(txs)
 
     account_logic_stub = types.ModuleType("app.sql.account_logic")
     account_logic_stub.canonicalize_plaid_products = lambda value: [
@@ -515,10 +523,6 @@ def plaid_investments_client():
     }
     helpers_stub.generate_link_token = lambda *_a, **_k: "link-token"
     helpers_stub.get_accounts = lambda *_a, **_k: []
-    helpers_stub.get_investment_transactions = lambda *_a, **_k: [
-        {"id": "tx-1"},
-        {"id": "tx-2"},
-    ]
 
     module = _load_module(
         "app.routes.plaid_investments",
@@ -625,18 +629,18 @@ def test_plaid_investments_refresh_success_path(plaid_investments_client, monkey
 
     account = PlaidAccountStub("acct-1", "item-1", "token-1")
     module.PlaidAccount.query = PlaidQueryStub([account])
+    commit_calls = []
+    module.db.session.commit = lambda: commit_calls.append("committed")
 
     monkeypatch.setattr(
         module.investments_logic,
-        "upsert_investments_from_plaid",
-        lambda user_id, token: {"securities": 3, "holdings": 4},
+        "sync_investments_from_plaid",
+        lambda user_id, token, start_date, end_date, commit=False: {
+            "securities": 3,
+            "holdings": 4,
+            "investment_transactions": 2,
+        },
     )
-    monkeypatch.setattr(
-        module,
-        "get_investment_transactions",
-        lambda token, start_date, end_date: [{"id": "a"}, {"id": "b"}],
-    )
-    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh",
@@ -654,6 +658,7 @@ def test_plaid_investments_refresh_success_path(plaid_investments_client, monkey
         "holdings": 4,
         "investment_transactions": 2,
     }
+    assert commit_calls == ["committed"]
 
 
 def test_plaid_investments_refresh_supports_canonical_scope_strings(plaid_investments_client, monkeypatch):
@@ -665,11 +670,13 @@ def test_plaid_investments_refresh_supports_canonical_scope_strings(plaid_invest
 
     monkeypatch.setattr(
         module.investments_logic,
-        "upsert_investments_from_plaid",
-        lambda _user_id, _token: {"securities": 1, "holdings": 1},
+        "sync_investments_from_plaid",
+        lambda _user_id, _token, _start, _end, commit=False: {
+            "securities": 1,
+            "holdings": 1,
+            "investment_transactions": 1,
+        },
     )
-    monkeypatch.setattr(module, "get_investment_transactions", lambda *_a: [{"id": "a"}])
-    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh",
@@ -693,22 +700,17 @@ def test_plaid_investments_refresh_all_aggregates_summary(plaid_investments_clie
     module.PlaidAccount.query = PlaidQueryStub([first, second])
 
     holdings_counts = {
-        "token-1": {"securities": 1, "holdings": 2},
-        "token-2": {"securities": 3, "holdings": 4},
+        "token-1": {"securities": 1, "holdings": 2, "investment_transactions": 1},
+        "token-2": {"securities": 3, "holdings": 4, "investment_transactions": 2},
     }
-    tx_counts = {"token-1": [{"id": "x"}], "token-2": [{"id": "y"}, {"id": "z"}]}
+    commit_calls = []
+    module.db.session.commit = lambda: commit_calls.append("committed")
 
     monkeypatch.setattr(
         module.investments_logic,
-        "upsert_investments_from_plaid",
-        lambda _user_id, token: holdings_counts[token],
+        "sync_investments_from_plaid",
+        lambda _user_id, token, _start, _end, commit=False: holdings_counts[token],
     )
-    monkeypatch.setattr(
-        module,
-        "get_investment_transactions",
-        lambda token, _start, _end: tx_counts[token],
-    )
-    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
 
     resp = client.post(
         "/api/plaid/investments/refresh_all",
@@ -722,6 +724,7 @@ def test_plaid_investments_refresh_all_aggregates_summary(plaid_investments_clie
         "investment_transactions": 3,
         "items": 2,
     }
+    assert commit_calls == ["committed", "committed"]
 
 
 def test_plaid_investments_refresh_all_rolls_back_failed_item(plaid_investments_client, monkeypatch):
@@ -738,18 +741,12 @@ def test_plaid_investments_refresh_all_rolls_back_failed_item(plaid_investments_
 
     module.db.session.rollback = rollback
 
-    def upsert(_user_id, token):
+    def upsert(_user_id, token, _start, _end, commit=False):
         if token == "token-1":
             raise RuntimeError("insert failed")
-        return {"securities": 2, "holdings": 3}
+        return {"securities": 2, "holdings": 3, "investment_transactions": 1}
 
-    monkeypatch.setattr(module.investments_logic, "upsert_investments_from_plaid", upsert)
-    monkeypatch.setattr(
-        module,
-        "get_investment_transactions",
-        lambda token, _start, _end: [{"id": token}],
-    )
-    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
+    monkeypatch.setattr(module.investments_logic, "sync_investments_from_plaid", upsert)
 
     resp = client.post(
         "/api/plaid/investments/refresh_all",

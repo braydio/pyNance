@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-27
+Last Updated: 2026-03-20
 Status: Active
 ---
 
@@ -137,3 +137,4 @@ Content-Type: application/json
 
 - Refresh endpoints union account-level (`PlaidAccount.product`) and item-level (`PlaidItem.product`) scopes.
 - Scope parsing accepts canonical comma-delimited values and legacy payload formats while always resolving to canonical product identifiers before refresh routing.
+- Investment refresh branches now stage securities, holdings, and investment transactions inside one transaction boundary and commit only after the full investment refresh succeeds for that account.
