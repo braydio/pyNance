@@ -8,7 +8,6 @@ from app.helpers.plaid_helpers import (
     exchange_public_token,
     generate_link_token,
     get_accounts,
-    get_investment_transactions,
 )
 from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
@@ -151,16 +150,19 @@ def refresh_investments_endpoint():
         )
         if not account:
             return jsonify({"error": "Investments account not found"}), 404
-        # Fetch holdings + securities and upsert
-        summary = investments_logic.upsert_investments_from_plaid(user_id, account.access_token)
-        # Fetch investment transactions and upsert
-        txs = get_investment_transactions(account.access_token, start_date, end_date)
-        tx_count = investments_logic.upsert_investment_transactions(txs)
+        summary = investments_logic.sync_investments_from_plaid(
+            user_id,
+            account.access_token,
+            start_date,
+            end_date,
+            commit=False,
+        )
+        db.session.commit()
         return (
             jsonify(
                 {
                     "status": "success",
-                    "upserts": {**summary, "investment_transactions": tx_count},
+                    "upserts": summary,
                 }
             ),
             200,
@@ -197,13 +199,16 @@ def refresh_all_investments():
         }
         for pa in items:
             try:
-                sums = investments_logic.upsert_investments_from_plaid(
-                    pa.account.user_id if pa.account else None, pa.access_token
+                sums = investments_logic.sync_investments_from_plaid(
+                    pa.account.user_id if pa.account else None,
+                    pa.access_token,
+                    start_date,
+                    end_date,
+                    commit=False,
                 )
-                for k in ("securities", "holdings"):
+                db.session.commit()
+                for k in ("securities", "holdings", "investment_transactions"):
                     total[k] += int(sums.get(k, 0))
-                txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 db.session.rollback()
                 logger.error(

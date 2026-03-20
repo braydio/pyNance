@@ -36,6 +36,32 @@ def _json_safe(obj: Any) -> Any:
     return obj
 
 
+def _as_date(value: Any) -> date | None:
+    """Return a ``date`` instance for supported Plaid date values.
+
+    Args:
+        value: Raw Plaid field value that may already be a ``date``/``datetime``
+            object or an ISO-style string.
+
+    Returns:
+        Parsed ``date`` when coercion succeeds, otherwise ``None``.
+    """
+
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
+        return value
+    if isinstance(value, str) and value:
+        try:
+            return datetime.strptime(value, "%Y-%m-%d").date()
+        except ValueError:
+            try:
+                return date.fromisoformat(value)
+            except ValueError:
+                return None
+    return None
+
+
 def get_investment_accounts(user_id: Optional[str] = None) -> List[Dict[str, object]]:
     """Return accounts linked for Plaid investments within an optional user scope.
 
@@ -72,21 +98,29 @@ def get_investment_accounts(user_id: Optional[str] = None) -> List[Dict[str, obj
     return accounts
 
 
-def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
-    """Fetch investments via Plaid and persist securities, holdings.
+def upsert_investment_holdings(
+    securities: List[dict],
+    holdings: List[dict],
+    *,
+    commit: bool = True,
+) -> dict:
+    """Persist investment securities and holdings.
 
-    Returns a summary dict with counts for upserts.
+    Args:
+        securities: Plaid securities payload.
+        holdings: Plaid holdings payload.
+        commit: When ``True``, commit or roll back inside this helper. Callers
+            that need a wider transaction boundary should pass ``False`` and
+            manage the session themselves.
+
+    Returns:
+        Summary counts for persisted securities and holdings.
     """
-    from app.helpers.plaid_helpers import get_investments
-
-    data = get_investments(access_token) or {}
-    secs = data.get("securities", []) or []
-    holds = data.get("holdings", []) or []
 
     try:
         security_ids = set()
         sec_upserts = 0
-        for s in secs:
+        for s in securities or []:
             security_id = s.get("security_id")
             if not security_id:
                 continue
@@ -111,7 +145,7 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
 
         # Plaid should return matching security records for holdings, but when it
         # does not we still need a parent row before inserting the holding.
-        for h in holds:
+        for h in holdings or []:
             sec_id = h.get("security_id")
             if not sec_id or sec_id in security_ids:
                 continue
@@ -134,24 +168,9 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
         # (account_id, security_id). Use PostgreSQL ON CONFLICT to update.
         from sqlalchemy.dialects.postgresql import insert
 
-        def _as_date(value):
-            if isinstance(value, datetime):
-                return value.date()
-            if isinstance(value, date):
-                return value
-            if isinstance(value, str) and value:
-                try:
-                    return datetime.strptime(value, "%Y-%m-%d").date()
-                except ValueError:
-                    try:
-                        return date.fromisoformat(value)
-                    except ValueError:
-                        return None
-            return None
-
         holding_upserts = 0
         table = InvestmentHolding.__table__
-        for h in holds:
+        for h in holdings or []:
             acct_id = h.get("account_id")
             sec_id = h.get("security_id")
             if not acct_id or not sec_id:
@@ -180,21 +199,52 @@ def upsert_investments_from_plaid(user_id: str, access_token: str) -> dict:
             db.session.execute(stmt)
             holding_upserts += 1
 
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return {
             "securities": sec_upserts,
             "holdings": holding_upserts,
         }
     except Exception:
-        db.session.rollback()
+        if commit:
+            db.session.rollback()
         logger.exception("Failed to upsert investments data from Plaid")
         raise
 
 
-def upsert_investment_transactions(items: List[dict]) -> int:
+def upsert_investments_from_plaid(user_id: str, access_token: str, *, commit: bool = True) -> dict:
+    """Fetch investments via Plaid and persist securities and holdings.
+
+    Args:
+        user_id: User identifier associated with the Plaid item. Present for
+            caller symmetry and logging compatibility.
+        access_token: Plaid access token for the investment item.
+        commit: When ``True``, finalize the transaction inside this helper.
+
+    Returns:
+        Summary counts for persisted securities and holdings.
+    """
+    del user_id
+
+    from app.helpers.plaid_helpers import get_investments
+
+    data = get_investments(access_token) or {}
+    return upsert_investment_holdings(
+        data.get("securities", []) or [],
+        data.get("holdings", []) or [],
+        commit=commit,
+    )
+
+
+def upsert_investment_transactions(items: List[dict], *, commit: bool = True) -> int:
     """Upsert a list of Plaid investment transactions.
 
-    Returns the number of transactions processed.
+    Args:
+        items: Plaid investment transaction payloads.
+        commit: When ``True``, finalize the transaction inside this helper.
+
+    Returns:
+        The number of transactions processed.
     """
     try:
         count = 0
@@ -216,9 +266,63 @@ def upsert_investment_transactions(items: List[dict]) -> int:
             )
             db.session.merge(tx)
             count += 1
-        db.session.commit()
+        if commit:
+            db.session.commit()
         return count
     except Exception:
-        db.session.rollback()
+        if commit:
+            db.session.rollback()
         logger.exception("Failed to upsert investment transactions")
+        raise
+
+
+def sync_investments_from_plaid(
+    user_id: str,
+    access_token: str,
+    start_date: str,
+    end_date: str,
+    *,
+    commit: bool = True,
+) -> dict:
+    """Fetch and persist Plaid securities, holdings, and transactions atomically.
+
+    This helper orchestrates the entire Plaid investments refresh so callers can
+    wrap all writes in a single transaction boundary.
+
+    Args:
+        user_id: User identifier associated with the Plaid item.
+        access_token: Plaid access token used for both holdings and transactions.
+        start_date: Inclusive start date for investment transactions.
+        end_date: Inclusive end date for investment transactions.
+        commit: When ``True``, commit or roll back inside this helper. Route and
+            service callers should usually pass ``False`` so they can control the
+            transaction boundary explicitly.
+
+    Returns:
+        Summary counts for securities, holdings, and investment transactions.
+    """
+    del user_id
+
+    from app.helpers.plaid_helpers import get_investment_transactions, get_investments
+
+    try:
+        data = get_investments(access_token) or {}
+        summary = upsert_investment_holdings(
+            data.get("securities", []) or [],
+            data.get("holdings", []) or [],
+            commit=False,
+        )
+        transactions = get_investment_transactions(access_token, start_date, end_date)
+        transaction_count = upsert_investment_transactions(transactions, commit=False)
+        result = {
+            **summary,
+            "investment_transactions": transaction_count,
+        }
+        if commit:
+            db.session.commit()
+        return result
+    except Exception:
+        if commit:
+            db.session.rollback()
+        logger.exception("Failed to synchronize Plaid investments data")
         raise

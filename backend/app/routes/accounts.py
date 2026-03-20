@@ -126,20 +126,31 @@ def _investment_date_range(start_date, end_date) -> tuple[str, str]:
 
 
 def _refresh_plaid_investments(account: Account, access_token: str, start_date=None, end_date=None) -> bool:
-    """Refresh Plaid investments data for an account."""
+    """Refresh Plaid investments data for an account without committing.
 
-    from app.helpers.plaid_helpers import get_investment_transactions
+    Args:
+        account: Account being refreshed.
+        access_token: Plaid access token for the linked item.
+        start_date: Optional transaction window start.
+        end_date: Optional transaction window end.
+
+    Returns:
+        ``True`` when the refresh persisted at least one investment row.
+    """
+
     from app.sql import investments_logic
 
     start_iso, end_iso = _investment_date_range(start_date, end_date)
-    summary = investments_logic.upsert_investments_from_plaid(account.user_id, access_token)
-    transactions = investments_logic.upsert_investment_transactions(
-        get_investment_transactions(access_token, start_iso, end_iso)
+    summary = investments_logic.sync_investments_from_plaid(
+        account.user_id,
+        access_token,
+        start_iso,
+        end_iso,
+        commit=False,
     )
-
     securities_count = int(summary.get("securities", 0) or 0)
     holdings_count = int(summary.get("holdings", 0) or 0)
-    tx_count = int(transactions or 0)
+    tx_count = int(summary.get("investment_transactions", 0) or 0)
 
     return bool(securities_count or holdings_count or tx_count)
 
@@ -310,6 +321,7 @@ def refresh_all_accounts():
                             if account.plaid_account:
                                 # Store naive timestamp to match column type
                                 account.plaid_account.last_refreshed = datetime.now()
+                            db.session.commit()
                         except Exception as exc:
                             # Ensure the session is usable for the rest of the loop
                             try:
@@ -538,7 +550,9 @@ def refresh_single_account(account_id):
                 if account.plaid_account:
                     # Store naive timestamp to match column type
                     account.plaid_account.last_refreshed = datetime.now()
+                db.session.commit()
             except Exception as exc:
+                db.session.rollback()
                 logger.error(
                     "Plaid investments refresh failed for institution %s: %s",
                     inst,

@@ -20,14 +20,13 @@ After token exchange succeeds, the route persists both account-level and item-le
 
 This split keeps per-account linkage (`PlaidAccount`) and per-item token state (`PlaidItem`) in sync.
 
-## 3) Holdings + securities ingest (`upsert_investments_from_plaid`)
+## 3) Holdings + securities ingest (`upsert_investment_holdings`)
 
-Holdings refresh calls `investments_logic.upsert_investments_from_plaid(user_id, access_token)`, which:
+The low-level holdings helper `investments_logic.upsert_investment_holdings(securities, holdings, commit=...)`:
 
-1. Fetches Plaid holdings payload via `get_investments(access_token)`.
-2. Upserts each security into `Security` via `db.session.merge(...)`.
-3. Upserts each holding into `InvestmentHolding` using PostgreSQL `ON CONFLICT` for `(account_id, security_id)`.
-4. Commits and returns summary counts (`securities`, `holdings`).
+1. Upserts each security into `Security` via `db.session.merge(...)`.
+2. Upserts each holding into `InvestmentHolding` using PostgreSQL `ON CONFLICT` for `(account_id, security_id)`.
+3. Optionally commits and returns summary counts (`securities`, `holdings`).
 
 ## 4) Investment transactions ingest (`get_investment_transactions` + `upsert_investment_transactions`)
 
@@ -37,9 +36,19 @@ Transaction refresh uses a two-step process:
    - Accepts ISO date strings or `date`/`datetime` objects.
    - Coerces to Plaid-compatible dates.
    - Paginates with `count`/`offset` until all rows are retrieved.
-2. Persist with `investments_logic.upsert_investment_transactions(txs)`.
+2. Persist with `investments_logic.upsert_investment_transactions(txs, commit=...)`.
    - Upserts each row into `InvestmentTransaction` via `db.session.merge(...)`.
-   - Commits once per batch and returns the processed count.
+   - Optionally commits once per batch and returns the processed count.
+
+## 4a) Atomic orchestration (`sync_investments_from_plaid`)
+
+Refresh routes now prefer `investments_logic.sync_investments_from_plaid(user_id, access_token, start_date, end_date, commit=False)`, which:
+
+1. Fetches holdings/securities from Plaid.
+2. Persists securities and holdings without committing.
+3. Fetches investment transactions for the requested window.
+4. Persists transactions without committing.
+5. Lets the caller issue one final commit so any failure rolls back the full investment refresh.
 
 ### Date-window behavior
 
@@ -68,4 +77,4 @@ Current investment refresh API entry points are:
 - `POST /api/plaid/investments/refresh` for one linked investment item (`user_id` + `item_id`).
 - `POST /api/plaid/investments/refresh_all` for all active linked investment items.
 
-Both entry points execute holdings/securities ingest first, then transaction ingest for the selected date window.
+Both entry points execute holdings/securities ingest first, then transaction ingest for the selected date window, and commit only after the full item refresh succeeds.

@@ -13,11 +13,15 @@ from pathlib import Path
 
 import pytest
 from flask import Flask
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
 
 def load_module(name, path):
+    app_pkg = types.ModuleType("app")
+    app_pkg.__path__ = [os.path.join(BASE_BACKEND, "app")]
+    sys.modules["app"] = app_pkg
     if path.endswith("__init__.py"):
         spec = importlib.util.spec_from_file_location(name, path, submodule_search_locations=[os.path.dirname(path)])
     else:
@@ -39,6 +43,7 @@ def setup_app(tmp_path):
         debug=lambda *a, **k: None,
         warning=lambda *a, **k: None,
         error=lambda *a, **k: None,
+        exception=lambda *a, **k: None,
     )
     config_stub.plaid_client = None
     config_stub.FILES = {}
@@ -86,6 +91,7 @@ def test_get_investment_accounts(db_ctx):
         user_id="u1",
         name="Invest",
         type="brokerage",
+        is_investment=True,
     )
     db.session.add(acc)
     db.session.commit()
@@ -166,3 +172,73 @@ def test_upsert_investment_transactions_rolls_back_on_failure(db_ctx, monkeypatc
         )
 
     assert rollback_calls == ["rolled-back"]
+
+
+def test_sync_investments_from_plaid_rolls_back_partial_writes_on_transaction_failure(db_ctx, monkeypatch):
+    db, models, logic = db_ctx
+
+    account = models.Account(
+        account_id="acct-sync",
+        user_id="u-sync",
+        name="Brokerage",
+        type="investment",
+        is_investment=True,
+    )
+    db.session.add(account)
+    db.session.commit()
+
+    monkeypatch.setattr("sqlalchemy.dialects.postgresql.insert", sqlite_insert)
+
+    original_upsert_transactions = logic.upsert_investment_transactions
+
+    helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
+    helpers_stub.get_investments = lambda _token: {
+        "securities": [
+            {
+                "security_id": "sec-sync",
+                "name": "Security Sync",
+                "ticker_symbol": "SYNC",
+                "type": "equity",
+                "iso_currency_code": "USD",
+            }
+        ],
+        "holdings": [
+            {
+                "account_id": "acct-sync",
+                "security_id": "sec-sync",
+                "quantity": Decimal("2"),
+                "institution_value": Decimal("20"),
+                "institution_price_as_of": "2024-01-31",
+                "iso_currency_code": "USD",
+            }
+        ],
+    }
+    helpers_stub.get_investment_transactions = lambda *_args, **_kwargs: [
+        {
+            "investment_transaction_id": "tx-sync",
+            "account_id": "acct-sync",
+            "security_id": "sec-sync",
+            "date": date(2024, 1, 31),
+            "amount": Decimal("20"),
+        }
+    ]
+    sys.modules["app.helpers.plaid_helpers"] = helpers_stub
+
+    def failing_upsert(items, *, commit=True):
+        processed = original_upsert_transactions(items, commit=False)
+        assert processed == 1
+        raise RuntimeError("transaction upsert failed")
+
+    monkeypatch.setattr(logic, "upsert_investment_transactions", failing_upsert)
+
+    with pytest.raises(RuntimeError, match="transaction upsert failed"):
+        logic.sync_investments_from_plaid(
+            "u-sync",
+            "token-sync",
+            "2024-01-01",
+            "2024-01-31",
+        )
+
+    assert db.session.get(models.Security, "sec-sync") is None
+    assert models.InvestmentHolding.query.count() == 0
+    assert db.session.get(models.InvestmentTransaction, "tx-sync") is None

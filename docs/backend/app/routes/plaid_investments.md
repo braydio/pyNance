@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-15
+Last Updated: 2026-03-20
 Status: Active
 ---
 
@@ -126,6 +126,7 @@ Refresh holdings/securities and transactions for all active Plaid accounts whose
 Notes:
 
 - Per-item refresh errors are logged and skipped (`continue`), so the route can still return `200` with partial aggregate results.
+- Each item refresh now uses a single transaction boundary: holdings, securities, and investment transactions are written together and rolled back together on failure.
 
 ## Auth
 
@@ -142,3 +143,8 @@ Notes:
 - Investments persistence helpers in `app.sql.investments_logic`.
 - Account linkage helpers in `app.sql.account_logic`.
 - Models: `PlaidAccount`, `PlaidItem`.
+
+## Transaction semantics
+
+- `POST /api/plaid/investments/refresh` delegates to `sync_investments_from_plaid(..., commit=False)` and issues one final `db.session.commit()` only after all investment writes succeed.
+- `POST /api/plaid/investments/refresh_all` repeats that same per-item pattern so failures in transaction ingest do not leave partial holdings/security rows committed for the affected item.
