@@ -553,6 +553,16 @@ def plaid_investments_client():
     account_logic_stub.canonicalize_plaid_products = lambda value: [
         token.strip() for token in str(value or "").split(",") if token.strip()
     ]
+    account_logic_stub.merge_plaid_products = lambda existing, incoming: ",".join(
+        sorted(
+            {
+                token.strip()
+                for raw in (existing, incoming)
+                for token in str(raw or "").split(",")
+                if token.strip()
+            }
+        )
+    )
     account_logic_stub.save_plaid_account = lambda *_a, **_k: None
     account_logic_stub.upsert_accounts = lambda *_a, **_k: None
 
@@ -681,6 +691,55 @@ def test_plaid_investments_exchange_public_token_success(plaid_investments_clien
 
     assert response.status_code == 200
     assert response.get_json() == {"status": "success", "item_id": "item"}
+
+
+def test_plaid_investments_exchange_public_token_merges_existing_item_scopes(
+    plaid_investments_client, monkeypatch
+):
+    """Linking investments later preserves existing transactions product scope."""
+    client, module = plaid_investments_client
+
+    existing_item = types.SimpleNamespace(
+        access_token="old-token",
+        user_id="old-user",
+        product="transactions",
+        is_active=False,
+    )
+    module.PlaidItem.query = types.SimpleNamespace(
+        filter_by=lambda **_k: types.SimpleNamespace(first=lambda: existing_item)
+    )
+
+    saved_products = []
+    upsert_enabled_products = []
+    monkeypatch.setattr(
+        module,
+        "save_plaid_account",
+        lambda _acct_id, _item_id, _access_token, product: saved_products.append(
+            product
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "upsert_accounts",
+        lambda *_a, **kwargs: upsert_enabled_products.append(
+            kwargs.get("enabled_products")
+        ),
+    )
+    monkeypatch.setattr(
+        module,
+        "get_accounts",
+        lambda *_a, **_k: [{"account_id": "acc-1"}, {"account_id": "acc-2"}],
+    )
+
+    response = client.post(
+        "/api/plaid/investments/exchange_public_token",
+        json={"user_id": "u1", "public_token": "public-token"},
+    )
+
+    assert response.status_code == 200
+    assert existing_item.product == "investments,transactions"
+    assert upsert_enabled_products == ["investments,transactions"]
+    assert saved_products == ["investments,transactions", "investments,transactions"]
 
 
 def test_plaid_investments_refresh_success_path(plaid_investments_client, monkeypatch):

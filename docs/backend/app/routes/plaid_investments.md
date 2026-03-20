@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-15
+Last Updated: 2026-03-17
 Status: Active
 ---
 
@@ -62,6 +62,7 @@ Exchange a Plaid public token, persist linked accounts, and upsert Plaid item me
 Notes:
 
 - The route upserts accounts via `upsert_accounts(...)`, stores Plaid account link rows with `save_plaid_account(...)`, and attempts to upsert a `PlaidItem` row.
+- Product scopes for both `PlaidItem.product` and `PlaidAccount.product` are now canonicalized via `merge_plaid_products(...)` so linking investments after transactions preserves existing scopes and stores a deduplicated sorted value (for example, `investments,transactions`).
 - Failure in the internal `PlaidItem` upsert block is logged but does not change the success response if the exchange itself succeeds.
 
 ### `POST /api/plaid/investments/refresh`

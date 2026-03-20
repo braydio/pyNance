@@ -12,6 +12,7 @@ from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
 from app.sql.account_logic import (
     canonicalize_plaid_products,
+    merge_plaid_products,
     save_plaid_account,
     upsert_accounts,
 )
@@ -75,24 +76,17 @@ def exchange_public_token_investments():
         if not access_token or not item_id:
             return jsonify({"error": "Failed to exchange public token"}), 500
         accounts = get_accounts(access_token, user_id)
-        upsert_accounts(
-            user_id,
-            accounts,
-            provider="plaid",
-            access_token=access_token,
-            enabled_products=["investments"],
-        )
-        for acct in accounts:
-            acct_id = acct.get("account_id")
-            if acct_id:
-                save_plaid_account(acct_id, item_id, access_token, "investments")
+        canonical_products = merge_plaid_products(None, "investments")
         # Ensure 1 entry per Item in secure table
         try:
             existing_item = PlaidItem.query.filter_by(item_id=item_id).first()
             if existing_item:
                 existing_item.access_token = access_token
                 existing_item.user_id = str(user_id)
-                existing_item.product = "investments"
+                canonical_products = merge_plaid_products(
+                    existing_item.product, canonical_products
+                )
+                existing_item.product = canonical_products
                 existing_item.is_active = True
             else:
                 db.session.add(
@@ -101,13 +95,25 @@ def exchange_public_token_investments():
                         item_id=item_id,
                         access_token=access_token,
                         institution_name=None,
-                        product="investments",
+                        product=canonical_products,
                         is_active=True,
                     )
                 )
             db.session.commit()
         except Exception as e:
             logger.error("Failed to upsert PlaidItem for investments: %s", e)
+
+        upsert_accounts(
+            user_id,
+            accounts,
+            provider="plaid",
+            access_token=access_token,
+            enabled_products=canonical_products,
+        )
+        for acct in accounts:
+            acct_id = acct.get("account_id")
+            if acct_id:
+                save_plaid_account(acct_id, item_id, access_token, canonical_products)
         # Save initial investments data (if you have specific logic, call it here)
         # e.g., account_logic.save_investments_data(user_id, access_token)
         return (
@@ -208,9 +214,9 @@ def refresh_all_investments():
                 for k in ("securities", "holdings"):
                     total[k] += int(sums.get(k, 0))
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
-                total["investment_transactions"] += (
-                    investments_logic.upsert_investment_transactions(txs)
-                )
+                total[
+                    "investment_transactions"
+                ] += investments_logic.upsert_investment_transactions(txs)
             except Exception as inner:
                 logger.error(
                     "Failed to refresh investments for item %s: %s",
