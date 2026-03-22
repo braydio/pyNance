@@ -21,6 +21,7 @@
       :account-group-options="accountGroupOptions"
       :included-account-ids="includedAccountIds"
       :excluded-account-ids="excludedAccountIds"
+      :compute-meta="forecastComputeMeta"
       @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event"
       @update:includedAccountIds="includedAccountIds = $event"
@@ -84,6 +85,7 @@
       :view-type="viewType"
       :graph-mode="graphMode"
       :realized-history="realizedHistory"
+      :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
 
@@ -129,6 +131,14 @@ type SnapshotGroup = {
   id?: string
   name?: string
   accounts?: SnapshotGroupAccount[]
+}
+
+type ForecastComputeMeta = {
+  lookbackDays: number
+  movingAverageWindow: 7 | 30 | 60 | 90
+  normalize: boolean
+  includesAutoDetectedAdjustments: boolean
+  autoDetectedAdjustmentCount: number
 }
 
 const viewType = ref<ForecastViewType>('Month')
@@ -242,6 +252,21 @@ const realizedHistory = computed(
     (summary.value?.metadata?.realized_history as any[]) ??
     [],
 )
+
+const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
+  lookbackDays: Number(
+    metadata.value?.lookback_days ??
+      summary.value?.metadata?.lookback_days ??
+      metadata.value?.realized_history_lookback_days ??
+      summary.value?.metadata?.realized_history_lookback_days ??
+      realizedHistory.value.length ??
+      0,
+  ),
+  movingAverageWindow: movingAverageWindow.value,
+  normalize: normalize.value,
+  includesAutoDetectedAdjustments: autoDetectedAdjustments.value.length > 0,
+  autoDetectedAdjustmentCount: autoDetectedAdjustments.value.length,
+}))
 
 onMounted(async () => {
   await fetchForecastAccounts()

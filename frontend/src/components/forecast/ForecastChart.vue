@@ -2,7 +2,17 @@
 <template>
   <div class="chart-container">
     <div class="chart-header">
-      <h2 class="chart-title">Forecast vs Actuals ({{ viewType }})</h2>
+      <div class="chart-header-copy">
+        <h2 class="chart-title">Forecast vs Actuals ({{ viewType }})</h2>
+        <details class="chart-methodology" :open="isMethodologyOpen">
+          <summary class="chart-methodology-summary" @click.prevent="toggleMethodology">
+            How this forecast is calculated
+          </summary>
+          <p class="chart-methodology-body">
+            {{ methodologyCopy }}
+          </p>
+        </details>
+      </div>
       <button @click="toggleView" class="toggle-button">
         Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
       </button>
@@ -13,20 +23,37 @@
 </template>
 
 <script setup>
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Chart, registerables } from 'chart.js'
 
 Chart.register(...registerables)
 
 const props = defineProps({
-  timeline: { type: Array, default: () => [] },
-  realizedHistory: { type: Array, default: () => [] },
-  viewType: String,
-  graphMode: { type: String, default: 'combined' },
+  timeline: {
+    type: Array,
+    default: () => [],
+  },
+  realizedHistory: {
+    type: Array,
+    default: () => [],
+  },
+  viewType: {
+    type: String,
+    default: 'Month',
+  },
+  graphMode: {
+    type: String,
+    default: 'combined',
+  },
+  computeMeta: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['update:viewType'])
 const chartCanvas = ref(null)
+const isMethodologyOpen = ref(false)
 let chartInstance = null
 
 const labels = computed(() => {
@@ -36,9 +63,34 @@ const labels = computed(() => {
 })
 const hasData = computed(() => labels.value.length > 0)
 
+/**
+ * Summarize the compute controls shown above the chart for quick reference.
+ */
+const methodologyCopy = computed(() => {
+  const lookbackDays = Number(props.computeMeta?.lookbackDays ?? 0)
+  const movingAverageWindow = Number(props.computeMeta?.movingAverageWindow ?? 0)
+  const normalizeState = props.computeMeta?.normalize
+    ? 'Normalization is on'
+    : 'Normalization is off'
+  const autoDetectedCount = Number(props.computeMeta?.autoDetectedAdjustmentCount ?? 0)
+  const autoDetectedCopy = props.computeMeta?.includesAutoDetectedAdjustments
+    ? `Auto-detected adjustments are included${autoDetectedCount > 0 ? ` (${autoDetectedCount} detected)` : ''}.`
+    : 'Auto-detected adjustments are not included.'
+
+  return `It uses the latest ${lookbackDays || 'available'} days of realized history, applies a ${movingAverageWindow || 'current'}-day moving average, and renders in ${props.graphMode} mode. ${normalizeState}. ${autoDetectedCopy}`
+})
+
 function toggleView() {
   emit('update:viewType', props.viewType === 'Month' ? 'Year' : 'Month')
 }
+
+/**
+ * Keep the methodology copy compact until the user requests it.
+ */
+function toggleMethodology() {
+  isMethodologyOpen.value = !isMethodologyOpen.value
+}
+
 function destroyChart() {
   if (chartInstance) {
     chartInstance.destroy()
@@ -107,12 +159,38 @@ watch(() => [props.timeline, props.realizedHistory, props.graphMode], renderChar
 .chart-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1rem;
+}
+.chart-header-copy {
+  display: grid;
+  gap: 0.35rem;
 }
 .chart-title {
   font-size: 1.125rem;
   font-weight: 600;
+}
+.chart-methodology {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.chart-methodology-summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+}
+.chart-methodology-summary::-webkit-details-marker {
+  display: none;
+}
+.chart-methodology-summary::before {
+  content: 'ⓘ';
+  margin-right: 0.35rem;
+}
+.chart-methodology-body {
+  margin-top: 0.35rem;
+  max-width: 36rem;
+  line-height: 1.45;
 }
 .toggle-button {
   font-size: 0.875rem;
