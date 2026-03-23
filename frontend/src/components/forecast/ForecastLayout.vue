@@ -52,29 +52,25 @@
     <div class="card glass adjustments-grid">
       <div>
         <h3 class="adjustments-title">Manual Adjustments</h3>
-        <p v-if="manualAppliedAdjustments.length === 0" class="adjustments-empty">
+        <p v-if="manualAdjustmentPoints.length === 0" class="adjustments-empty">
           No manual adjustments applied.
         </p>
         <ul v-else class="adjustments-list">
-          <li v-for="(item, idx) in manualAppliedAdjustments" :key="`manual-${idx}`">
-            <span>{{ item.label || 'Manual adjustment' }}</span>
-            <strong
-              >{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong
-            >
+          <li v-for="(item, idx) in manualAdjustmentPoints" :key="`manual-${idx}`">
+            <span>{{ item.label || 'Manual adjustment' }} ({{ item.date || 'scheduled' }})</span>
+            <strong>{{ item.value < 0 ? '-' : '+' }}${{ Math.abs(item.value).toFixed(2) }}</strong>
           </li>
         </ul>
       </div>
       <div>
-        <h3 class="adjustments-title">Auto-Detected Income</h3>
-        <p v-if="autoDetectedAdjustments.length === 0" class="adjustments-empty">
-          No auto-detected income events found.
+        <h3 class="adjustments-title">Realized Income Used for Auto-Calculation</h3>
+        <p v-if="realizedIncomePoints.length === 0" class="adjustments-empty">
+          No realized income points were provided for auto-calculation.
         </p>
         <ul v-else class="adjustments-list auto">
-          <li v-for="(item, idx) in autoDetectedAdjustments" :key="`auto-${idx}`">
-            <span>{{ item.label || 'Auto income' }} ({{ item.date || 'scheduled' }})</span>
-            <strong
-              >{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount).toFixed(2) }}</strong
-            >
+          <li v-for="(item, idx) in realizedIncomePoints" :key="`auto-${idx}`">
+            <span>{{ item.label || 'Realized income' }} ({{ item.date || 'scheduled' }})</span>
+            <strong>{{ item.value < 0 ? '-' : '+' }}${{ Math.abs(item.value).toFixed(2) }}</strong>
           </li>
         </ul>
       </div>
@@ -85,6 +81,7 @@
       :view-type="viewType"
       :graph-mode="graphMode"
       :realized-history="realizedHistory"
+      :series="series"
       :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
@@ -103,7 +100,9 @@ import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import {
   type ForecastAdjustmentInput,
+  type ForecastAspectSeries,
   type ForecastGraphMode,
+  type ForecastSeriesPoint,
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
@@ -157,8 +156,8 @@ const { groups: accountSnapshotGroups } = useAccountGroups({ userId: userId.valu
 const {
   timeline,
   summary,
-  cashflows,
   adjustments: appliedAdjustments,
+  series,
   metadata,
   loading,
   error,
@@ -186,10 +185,11 @@ const netBalance = computed(() =>
   Number(metadata.value?.net_balance ?? summary.value?.starting_balance ?? 0),
 )
 
+const seriesEntries = computed(() => Object.values(series.value || {}))
 const forecastItems = computed(() =>
-  cashflows.value.map((item) => ({
-    label: item.label,
-    amount: item.amount,
+  seriesEntries.value.map((entry) => ({
+    label: entry.label,
+    amount: entry.points.reduce((total, point) => total + Number(point.value ?? 0), 0),
   })),
 )
 const baselineTrendAdjustment = computed<ForecastAdjustmentInput | null>(() => {
@@ -213,13 +213,17 @@ const autoDetectedAdjustments = computed(() => [
   ),
   ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
 ])
-const manualAppliedAdjustments = computed(() =>
-  (appliedAdjustments.value || []).filter(
-    (adjustment) =>
-      !String(adjustment?.adjustment_type || '')
-        .toLowerCase()
-        .startsWith('auto'),
-  ),
+const manualAdjustmentSeries = computed<ForecastAspectSeries | null>(
+  () => series.value?.manual_adjustments ?? null,
+)
+const realizedIncomeSeries = computed<ForecastAspectSeries | null>(
+  () => series.value?.realized_income ?? null,
+)
+const manualAdjustmentPoints = computed<ForecastSeriesPoint[]>(() =>
+  (manualAdjustmentSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
+)
+const realizedIncomePoints = computed<ForecastSeriesPoint[]>(() =>
+  (realizedIncomeSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
 const forecastAccountIdSet = computed(
   () => new Set(forecastAccounts.value.map((account) => account.account_id)),

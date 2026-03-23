@@ -9,8 +9,10 @@ if BASE_BACKEND not in sys.path:
 
 from forecast.models import (  # noqa: E402
     ForecastAdjustment,
+    ForecastAspectSeries,
     ForecastCashflowItem,
     ForecastResult,
+    ForecastSeriesPoint,
     ForecastSummary,
     ForecastTimelinePoint,
 )
@@ -47,6 +49,19 @@ def test_forecast_result_to_dict_serializes_nested_models():
         adjustment_id="adj-001",
         metadata={"approved_by": "ops"},
     )
+    manual_series = ForecastAspectSeries(
+        id="manual_adjustments",
+        label="Manual adjustments",
+        points=[
+            ForecastSeriesPoint(
+                date=date(2026, 1, 2),
+                label="2026-01-02",
+                value=Decimal("-50.00"),
+                metadata={"source": "manual"},
+            )
+        ],
+        metadata={"timeframe": "forecast"},
+    )
     summary = ForecastSummary(
         start_date=date(2026, 1, 1),
         end_date=date(2026, 1, 31),
@@ -68,6 +83,7 @@ def test_forecast_result_to_dict_serializes_nested_models():
         summary=summary,
         cashflows=[cashflow_item],
         adjustments=[adjustment],
+        series={"manual_adjustments": manual_series},
         metadata={"generated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)},
     )
 
@@ -77,6 +93,8 @@ def test_forecast_result_to_dict_serializes_nested_models():
     assert payload["timeline"][0]["forecast_balance"] == 1200.5
     assert payload["cashflows"][0]["date"].startswith("2026-01-02T08:30:00")
     assert payload["adjustments"][0]["amount"] == -50.0
+    assert payload["series"]["manual_adjustments"]["id"] == "manual_adjustments"
+    assert payload["series"]["manual_adjustments"]["points"][0]["value"] == -50.0
     assert payload["cashflows"][0]["type"] == "income"
     assert payload["cashflows"][0]["confidence"] == 0.92
     assert payload["summary"]["ending_balance"] == 1500.0

@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-01-25
+Last Updated: 2026-03-22
 Status: Active
 ---
 
@@ -101,6 +101,7 @@ projected balance is at or below zero).
 - Building a baseline projection with `project_balances`.
 - Applying adjustments with `apply_adjustments`.
 - Generating cashflow breakdowns and summary metrics.
+- Building typed aspect series for realized income, manual adjustments, spending, and debt totals.
 - Returning a fully serialized `ForecastResult` payload for the API layer.
 
 
@@ -109,3 +110,19 @@ projected balance is at or below zero).
 `compute_forecast` supports optional `moving_average_window` (7/30/60/90), `normalize`, and `graph_mode` controls.
 Manual adjustments may include `distribution: "spread"` plus `range_start` and `range_end` to distribute an amount evenly across a date range.
 Response metadata now includes `projected_amount`, change metrics, and `realized_history` for centered historical + forecast chart rendering.
+
+## Aspect series payload
+
+`compute_forecast` now also attaches a top-level `series` object to the response. Each entry is a
+typed named series with `id`, `label`, and daily `points`.
+
+Current emitted aspect keys:
+
+- `realized_income`: historical inflow values from the moving-average lookback window used to
+  support auto-calculation context in the UI.
+- `manual_adjustments`: per-day totals for non-auto adjustments entered by the user.
+- `spending`: per-day projected spending totals derived from negative cashflow items.
+- `debt_totals`: liability totals carried across the forecast horizon from the latest snapshot set.
+
+These series are additive to the existing `timeline`, `cashflows`, and `summary` fields so current
+consumers remain compatible during the frontend migration.

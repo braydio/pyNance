@@ -109,6 +109,58 @@ class ForecastCashflowItem:
 
 
 @dataclass
+class ForecastSeriesPoint:
+    """Point within an aspect-specific daily chart series.
+
+    Attributes:
+        date: ISO date or datetime for the series point.
+        label: Display label aligned to the shared chart axis.
+        value: Numeric value for the aspect on the given day.
+        metadata: Optional metadata for UI annotations.
+    """
+
+    date: DateLike
+    label: str
+    value: float
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation."""
+        return {
+            "date": _serialize_value(self.date),
+            "label": self.label,
+            "value": _serialize_value(self.value),
+            "metadata": _serialize_value(self.metadata),
+        }
+
+
+@dataclass
+class ForecastAspectSeries:
+    """Named aspect-specific chart series attached to a forecast result.
+
+    Attributes:
+        id: Stable identifier for the series.
+        label: Human-readable series label for UI copy.
+        points: Daily points belonging to the series.
+        metadata: Optional metadata for chart configuration or diagnostics.
+    """
+
+    id: str
+    label: str
+    points: list[ForecastSeriesPoint] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation."""
+        return {
+            "id": self.id,
+            "label": self.label,
+            "points": [point.to_dict() for point in self.points],
+            "metadata": _serialize_value(self.metadata),
+        }
+
+
+@dataclass
 class ForecastAdjustment:
     """Manual or automated adjustment applied to the forecast model.
 
@@ -214,6 +266,7 @@ class ForecastResult:
         summary: Summary statistics for the forecast horizon.
         cashflows: List of cashflow line items that drive the forecast.
         adjustments: Manual or automated adjustments applied to the forecast.
+        series: Aspect-specific chart series keyed by stable aspect name.
         metadata: Additional metadata for diagnostics or UI features.
     """
 
@@ -221,6 +274,7 @@ class ForecastResult:
     summary: Optional[ForecastSummary] = None
     cashflows: list[ForecastCashflowItem] = field(default_factory=list)
     adjustments: list[ForecastAdjustment] = field(default_factory=list)
+    series: dict[str, ForecastAspectSeries] = field(default_factory=dict)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -230,5 +284,6 @@ class ForecastResult:
             "summary": self.summary.to_dict() if self.summary else None,
             "cashflows": [item.to_dict() for item in self.cashflows],
             "adjustments": [item.to_dict() for item in self.adjustments],
+            "series": {key: value.to_dict() for key, value in self.series.items()},
             "metadata": _serialize_value(self.metadata),
         }

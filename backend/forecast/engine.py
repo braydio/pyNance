@@ -10,8 +10,10 @@ from typing import Any
 from .models import (
     DateLike,
     ForecastAdjustment,
+    ForecastAspectSeries,
     ForecastCashflowItem,
     ForecastResult,
+    ForecastSeriesPoint,
     ForecastSummary,
     ForecastTimelinePoint,
 )
@@ -20,6 +22,16 @@ DEFAULT_CATEGORY_CONFIDENCE = Decimal("0.6")
 DEFAULT_RECURRING_CONFIDENCE = Decimal("0.85")
 DEFAULT_UNCATEGORIZED_CONFIDENCE = Decimal("0.3")
 DEFAULT_ADJUSTMENT_CONFIDENCE = Decimal("0.95")
+LIABILITY_ACCOUNT_TYPE_TOKENS = {
+    "credit",
+    "credit card",
+    "loan",
+    "liability",
+    "line of credit",
+    "mortgage",
+    "student",
+    "debt",
+}
 
 
 def _parse_date(value: DateLike | None, fallback: date) -> date:
@@ -84,6 +96,16 @@ def _normalize_window(value: Any) -> int:
     except (TypeError, ValueError):
         return 30
     return parsed if parsed in allowed else 30
+
+
+def _is_liability_account_type(raw_account_type: object) -> bool:
+    """Return ``True`` when an account type should be treated as a liability."""
+    normalized = str(raw_account_type or "").strip().lower().replace("_", " ")
+    if not normalized:
+        return False
+
+    normalized = normalized.replace("-", " ").replace("/", " ")
+    return any(token in normalized for token in LIABILITY_ACCOUNT_TYPE_TOKENS)
 
 
 def _matches_frequency(current_date: date, start_date: date, frequency: str | None) -> bool:
@@ -613,6 +635,130 @@ def _build_adjustment_models(
     return models
 
 
+def _build_daily_series(
+    *,
+    series_id: str,
+    label: str,
+    dates: Sequence[date],
+    values_by_date: Mapping[date, Decimal],
+    metadata: Mapping[str, Any] | None = None,
+) -> ForecastAspectSeries:
+    """Build a named daily series from per-date decimal values."""
+    return ForecastAspectSeries(
+        id=series_id,
+        label=label,
+        points=[
+            ForecastSeriesPoint(
+                date=current_date,
+                label=current_date.isoformat(),
+                value=float(values_by_date.get(current_date, Decimal("0"))),
+            )
+            for current_date in dates
+        ],
+        metadata=dict(metadata or {}),
+    )
+
+
+def _manual_adjustment_values_by_date(
+    adjustments: Sequence[Mapping[str, Any]] | None,
+    timeline_dates: Sequence[date],
+) -> dict[date, Decimal]:
+    """Return per-day totals for manual user-entered adjustments."""
+    manual_adjustments = [
+        adjustment
+        for adjustment in adjustments or []
+        if not str(_read_entry_value(adjustment, "adjustment_type", "manual")).strip().lower().startswith("auto")
+    ]
+    return _build_adjustment_schedule(manual_adjustments, timeline_dates)
+
+
+def _realized_income_values_by_date(
+    historical_aggregates: Sequence[Mapping[str, Any]],
+    dates: Sequence[date],
+) -> dict[date, Decimal]:
+    """Return realized income totals keyed by the supplied historical dates."""
+    income_by_date: dict[date, Decimal] = {current_date: Decimal("0") for current_date in dates}
+    for entry in historical_aggregates:
+        current_date = _parse_date(entry.get("date"), fallback=date.today())
+        if current_date not in income_by_date:
+            continue
+        income_by_date[current_date] += _extract_amount(entry, ("inflow", "income", "credit", "average_inflow"))
+    return income_by_date
+
+
+def _spending_values_by_date(
+    cashflows: Sequence[ForecastCashflowItem],
+    timeline_dates: Sequence[date],
+) -> dict[date, Decimal]:
+    """Return realized/projected spending totals from cashflows as negative values."""
+    spending_by_date: dict[date, Decimal] = {current_date: Decimal("0") for current_date in timeline_dates}
+    for cashflow in cashflows:
+        current_date = _parse_date(cashflow.date, fallback=timeline_dates[0] if timeline_dates else date.today())
+        if current_date not in spending_by_date:
+            continue
+        if str(cashflow.source).strip().lower() == "adjustment":
+            continue
+        amount = _to_decimal(cashflow.amount)
+        if amount < 0:
+            spending_by_date[current_date] += amount
+    return spending_by_date
+
+
+def _debt_values_by_date(
+    latest_snapshots: Sequence[Mapping[str, Any]],
+    timeline_dates: Sequence[date],
+) -> dict[date, Decimal]:
+    """Return constant debt totals across the forecast horizon."""
+    debt_total = Decimal("0")
+    for snapshot in latest_snapshots:
+        balance = _to_decimal(snapshot.get("balance"))
+        if _is_liability_account_type(snapshot.get("account_type")):
+            debt_total += abs(balance)
+    return {current_date: debt_total for current_date in timeline_dates}
+
+
+def _build_forecast_series(
+    *,
+    historical_aggregates: Sequence[Mapping[str, Any]],
+    historical_dates: Sequence[date],
+    adjustments: Sequence[Mapping[str, Any]] | None,
+    timeline_dates: Sequence[date],
+    cashflows: Sequence[ForecastCashflowItem],
+    latest_snapshots: Sequence[Mapping[str, Any]],
+) -> dict[str, ForecastAspectSeries]:
+    """Build typed aspect series for frontend charting and summaries."""
+    return {
+        "realized_income": _build_daily_series(
+            series_id="realized_income",
+            label="Realized income used for auto-calculation",
+            dates=historical_dates,
+            values_by_date=_realized_income_values_by_date(historical_aggregates, historical_dates),
+            metadata={"timeframe": "historical", "source": "historical_aggregates"},
+        ),
+        "manual_adjustments": _build_daily_series(
+            series_id="manual_adjustments",
+            label="Manual adjustments",
+            dates=timeline_dates,
+            values_by_date=_manual_adjustment_values_by_date(adjustments, timeline_dates),
+            metadata={"timeframe": "forecast", "source": "adjustments"},
+        ),
+        "spending": _build_daily_series(
+            series_id="spending",
+            label="Spending",
+            dates=timeline_dates,
+            values_by_date=_spending_values_by_date(cashflows, timeline_dates),
+            metadata={"timeframe": "forecast", "source": "cashflows"},
+        ),
+        "debt_totals": _build_daily_series(
+            series_id="debt_totals",
+            label="Debt totals",
+            dates=timeline_dates,
+            values_by_date=_debt_values_by_date(latest_snapshots, timeline_dates),
+            metadata={"timeframe": "forecast", "source": "latest_snapshots"},
+        ),
+    }
+
+
 def compute_forecast(
     *,
     user_id: int,
@@ -708,6 +854,16 @@ def compute_forecast(
         recurring_sources=recurring_sources,
         adjustments=adjustments,
     )
+    historical_dates = [_parse_date(item.get("date"), fallback=date.today()) for item in historical_window]
+    timeline_dates = [_parse_date(point.date, fallback=date.today()) for point in adjusted_timeline]
+    series = _build_forecast_series(
+        historical_aggregates=historical_window,
+        historical_dates=historical_dates,
+        adjustments=adjustments,
+        timeline_dates=timeline_dates,
+        cashflows=cashflows,
+        latest_snapshots=latest_snapshots,
+    )
     summary = compute_summary(adjusted_timeline)
     summary.currency = currency
     projected_amount = summary.ending_balance
@@ -789,6 +945,7 @@ def compute_forecast(
         summary=summary,
         cashflows=cashflows,
         adjustments=_build_adjustment_models(adjustments),
+        series=series,
         metadata={
             **metadata_map,
             "moving_average_window": window,
