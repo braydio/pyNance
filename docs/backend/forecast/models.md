@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-01-25
+Last Updated: 2026-03-22
 Status: Active
 ---
 
@@ -9,8 +9,8 @@ Status: Active
 ## Purpose
 
 `backend/forecast/models.py` defines typed, JSON-serializable models for the forecast API payload. The
-module provides structured objects for timeline charting, cashflow breakdowns, adjustments, and
-summary metrics so the frontend can render forecast insights consistently.
+module provides structured objects for timeline charting, cashflow breakdowns, adjustments, aspect-
+specific chart series, and summary metrics so the frontend can render forecast insights consistently.
 
 ## Models
 
@@ -24,6 +24,17 @@ this for chart series and balance deltas.
 Captures a single cashflow line item that drives the projection. Each item includes the date, amount,
 category, source, optional type/confidence annotations, and optional account identifiers for
 breakdown widgets.
+
+### `ForecastSeriesPoint`
+
+Represents a single daily point in a named aspect series. These points are designed for frontend
+chart overlays and summary widgets that should not infer meaning from generic cashflow rows.
+
+### `ForecastAspectSeries`
+
+Encapsulates a named daily series with a stable `id`, user-facing `label`, and ordered `points`.
+The forecast compute response currently emits aspect series for realized income used by the
+auto-calculation baseline, manual user adjustments, spending totals, and debt totals.
 
 ### `ForecastAdjustment`
 
@@ -39,10 +50,14 @@ depletion date when balances reach zero or below.
 ### `ForecastResult`
 
 Encapsulates the full response payload for the forecast endpoint. Use `ForecastResult.to_dict()` to
-produce the JSON payload with `timeline`, `summary`, `cashflows`, and `adjustments` keys.
+produce the JSON payload with `timeline`, `summary`, `cashflows`, `adjustments`, and `series`
+keys. Existing consumers can continue to read the legacy fields while newer clients use `series`
+for aspect-specific chart data.
 
 ## Usage Notes
 
 - All models are import-safe with no side effects.
 - Dates accept ISO strings, `date`, or `datetime` instances and serialize to ISO strings.
 - Decimal values are normalized to floats during serialization for JSON compatibility.
+- `ForecastResult.series` is keyed by stable aspect names so the frontend can read data without
+  reverse-engineering line items from `cashflows`.

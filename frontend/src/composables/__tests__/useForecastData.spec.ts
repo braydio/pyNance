@@ -50,6 +50,13 @@ describe('useForecastData', () => {
         },
         cashflows: [{ label: 'Manual bonus', amount: 200 }],
         adjustments: [],
+        series: {
+          manual_adjustments: {
+            id: 'manual_adjustments',
+            label: 'Manual adjustments',
+            points: [{ date: '2024-01-01', label: '2024-01-01', value: 200 }],
+          },
+        },
         metadata: {
           included_account_ids: ['acc-1', 'acc-2'],
           excluded_account_ids: ['acc-3'],
@@ -57,7 +64,7 @@ describe('useForecastData', () => {
       }),
     })
 
-    const { fetchData, timeline, cashflows } = useForecastData({
+    const { fetchData, timeline, cashflows, series } = useForecastData({
       viewType,
       manualIncome,
       liabilityRate,
@@ -102,6 +109,9 @@ describe('useForecastData', () => {
 
     expect(timeline.value).toHaveLength(1)
     expect(cashflows.value).toEqual([{ label: 'Manual bonus', amount: 200 }])
+    expect(series.value.manual_adjustments?.points).toEqual([
+      { date: '2024-01-01', label: '2024-01-01', value: 200 },
+    ])
   })
 
   it('returns an error when userId is missing', async () => {

@@ -64,6 +64,9 @@ def test_compute_forecast_serializes_full_payload():
     assert payload["summary"]["ending_balance"] == 70.0
     assert payload["summary"]["depletion_date"] is None
     assert payload["adjustments"][0]["amount"] == -50.0
+    assert payload["series"]["manual_adjustments"]["points"][0]["value"] == -50.0
+    assert payload["series"]["spending"]["points"][0]["value"] == 0.0
+    assert payload["series"]["debt_totals"]["points"][0]["value"] == 0.0
 
 
 def test_compute_forecast_is_deterministic():
@@ -239,6 +242,50 @@ def test_compute_forecast_uses_provided_realized_history():
     )
 
     assert payload["metadata"]["realized_history"] == realized_history
+
+
+def test_compute_forecast_builds_aspect_series_for_history_and_liabilities():
+    """Forecast payload should expose typed series for frontend chart aspects."""
+    payload = compute_forecast(
+        user_id=9,
+        start_date=date(2026, 1, 3),
+        horizon_days=2,
+        latest_snapshots=[
+            {"account_id": "asset-1", "balance": 200.0, "date": "2026-01-03", "account_type": "depository"},
+            {"account_id": "debt-1", "balance": -75.0, "date": "2026-01-03", "account_type": "credit_card"},
+        ],
+        historical_aggregates=[
+            {"date": "2026-01-01", "inflow": 20.0, "outflow": 5.0},
+            {"date": "2026-01-02", "inflow": 30.0, "outflow": 10.0},
+        ],
+        adjustments=[
+            {
+                "label": "Manual buffer",
+                "amount": 10.0,
+                "date": "2026-01-04",
+                "adjustment_type": "manual",
+            },
+            {
+                "label": "Auto income",
+                "amount": 40.0,
+                "date": "2026-01-04",
+                "adjustment_type": "auto_income",
+            },
+        ],
+    )
+
+    assert payload["series"]["realized_income"]["points"] == [
+        {"date": "2026-01-01", "label": "2026-01-01", "value": 20.0, "metadata": {}},
+        {"date": "2026-01-02", "label": "2026-01-02", "value": 30.0, "metadata": {}},
+    ]
+    assert payload["series"]["manual_adjustments"]["points"] == [
+        {"date": "2026-01-03", "label": "2026-01-03", "value": 0.0, "metadata": {}},
+        {"date": "2026-01-04", "label": "2026-01-04", "value": 10.0, "metadata": {}},
+    ]
+    assert payload["series"]["debt_totals"]["points"] == [
+        {"date": "2026-01-03", "label": "2026-01-03", "value": 75.0, "metadata": {}},
+        {"date": "2026-01-04", "label": "2026-01-04", "value": 75.0, "metadata": {}},
+    ]
 
 
 def test_apply_adjustments_distributed_range_spread():

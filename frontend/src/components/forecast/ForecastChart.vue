@@ -1,4 +1,3 @@
-<!-- src/components/forecast/ForecastChart.vue -->
 <template>
   <div class="chart-container">
     <!-- HEADER -->
@@ -16,6 +15,7 @@
           </p>
         </details>
       </div>
+      <button class="toggle-button" @click="toggleView">
 
       <button @click="toggleView" class="toggle-button">
         Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
@@ -26,12 +26,73 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { Chart, registerables } from 'chart.js'
+import {
+  Chart,
+  LineController,
+  LineElement,
+  BarController,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Legend,
+  Tooltip,
+  Filler,
+  type ChartConfiguration,
+  type ChartDataset,
+} from 'chart.js'
+import type {
+  ForecastGraphMode,
+  ForecastSeriesMap,
+  ForecastTimelinePoint,
+  ForecastViewType,
+} from '@/composables/useForecastData'
 
-Chart.register(...registerables)
+Chart.register(
+  LineController,
+  LineElement,
+  BarController,
+  BarElement,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  Legend,
+  Tooltip,
+  Filler,
+)
 
+type RealizedHistoryPoint = {
+  date?: string
+  label: string
+  balance: number
+}
+
+type ForecastComputeMeta = {
+  lookbackDays?: number
+  movingAverageWindow?: number
+  normalize?: boolean
+  includesAutoDetectedAdjustments?: boolean
+  autoDetectedAdjustmentCount?: number
+}
+
+const props = withDefaults(
+  defineProps<{
+    timeline?: ForecastTimelinePoint[]
+    realizedHistory?: RealizedHistoryPoint[]
+    viewType?: ForecastViewType
+    graphMode?: ForecastGraphMode
+    series?: ForecastSeriesMap
+    computeMeta?: ForecastComputeMeta
+  }>(),
+  {
+    timeline: () => [],
+    realizedHistory: () => [],
+    viewType: 'Month',
+    graphMode: 'combined',
+    series: () => ({}),
+    computeMeta: () => ({}),
 const ASPECT_META = {
   balances: {
     label: 'Balances',
@@ -85,13 +146,39 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+)
+
+const emit = defineEmits<{
+  (event: 'update:viewType', value: ForecastViewType): void
+}>()
+
+const chartCanvas = ref<HTMLCanvasElement | null>(null)
+const isMethodologyOpen = ref(false)
+let chartInstance: Chart | null = null
+
+/**
+ * Normalize any series point list into a sorted date-keyed axis.
+ */
+const axisDates = computed(() => {
+  const dateSet = new Set<string>()
+
+  props.realizedHistory.forEach((point) => {
+    dateSet.add(point.date || point.label)
+  })
+  props.timeline.forEach((point) => {
+    dateSet.add(point.date || point.label)
+  })
+  Object.values(props.series || {}).forEach((entry) => {
+    entry.points.forEach((point) => {
+      dateSet.add(point.date || point.label)
+    })
+  })
+
+  return Array.from(dateSet).sort((left, right) => left.localeCompare(right))
 })
 
-const emit = defineEmits(['update:viewType'])
-const chartCanvas = ref(null)
-const isMethodologyOpen = ref(false)
-let chartInstance = null
-
+const labels = computed(() => axisDates.value)
+const hasData = computed(() => labels.value.length > 0)
 const historyLabels = computed(() => props.realizedHistory.map((point) => point.label))
 const forecastLabels = computed(() => props.timeline.map((point) => point.label))
 const labels = computed(() => [...historyLabels.value, ...forecastLabels.value])
@@ -156,6 +243,121 @@ function destroyChart() {
 }
 
 /**
+ * Align a date-keyed point collection to the chart axis, inserting null gaps.
+ */
+function alignSeriesValues(
+  points: Array<{ date?: string; label: string; value: number | null | undefined }>,
+): Array<number | null> {
+  const valuesByDate = new Map<string, number>()
+  points.forEach((point) => {
+    const axisDate = point.date || point.label
+    if (axisDate) {
+      valuesByDate.set(axisDate, Number(point.value ?? 0))
+    }
+  })
+
+  return axisDates.value.map((axisDate) => valuesByDate.get(axisDate) ?? null)
+}
+
+/**
+ * Build balance and aspect datasets from typed backend series.
+ */
+const chartDatasets = computed(() => {
+  const historicalOnly = props.graphMode === 'historical'
+  const forecastOnly = props.graphMode === 'forecast'
+
+  const datasets: ChartDataset<'line' | 'bar', Array<number | null>>[] = []
+
+  const historicalDataset = alignSeriesValues(
+    props.realizedHistory.map((point) => ({
+      date: point.date || point.label,
+      label: point.label,
+      value: point.balance,
+    })),
+  )
+  const forecastDataset = alignSeriesValues(
+    props.timeline.map((point) => ({
+      date: point.date || point.label,
+      label: point.label,
+      value: point.forecast_balance,
+    })),
+  )
+
+  if (!forecastOnly) {
+    datasets.push({
+      type: 'line',
+      label: 'Historical balance',
+      data: historicalDataset,
+      borderColor: '#10B981',
+      backgroundColor: 'rgba(16, 185, 129, 0.15)',
+      yAxisID: 'yBalance',
+      tension: 0.3,
+      spanGaps: true,
+    })
+  }
+
+  if (!historicalOnly) {
+    datasets.push({
+      type: 'line',
+      label: 'Forecast balance',
+      data: forecastDataset,
+      borderColor: '#3B82F6',
+      backgroundColor: 'rgba(59, 130, 246, 0.15)',
+      yAxisID: 'yBalance',
+      tension: 0.3,
+      borderDash: [5, 5],
+      spanGaps: true,
+    })
+  }
+
+  const aspectConfigs: Array<{
+    key: keyof ForecastSeriesMap | string
+    color: string
+    type: 'line' | 'bar'
+    yAxisID: 'yBalance' | 'yFlow'
+  }> = [
+    { key: 'realized_income', color: '#16A34A', type: 'bar', yAxisID: 'yFlow' },
+    { key: 'manual_adjustments', color: '#8B5CF6', type: 'bar', yAxisID: 'yFlow' },
+    { key: 'spending', color: '#DC2626', type: 'bar', yAxisID: 'yFlow' },
+    { key: 'debt_totals', color: '#F59E0B', type: 'line', yAxisID: 'yBalance' },
+  ]
+
+  aspectConfigs.forEach((config) => {
+    const entry = props.series?.[config.key]
+    if (!entry || !entry.points.length) {
+      return
+    }
+
+    datasets.push({
+      type: config.type,
+      label: entry.label,
+      data: alignSeriesValues(entry.points),
+      borderColor: config.color,
+      backgroundColor: `${config.color}${config.type === 'bar' ? '66' : '22'}`,
+      yAxisID: config.yAxisID,
+      tension: config.type === 'line' ? 0.25 : 0,
+      borderDash: entry.id === 'debt_totals' ? [3, 3] : [],
+      spanGaps: true,
+    })
+  })
+
+  return datasets
+})
+
+function renderChart() {
+  if (!chartCanvas.value || !hasData.value) {
+    destroyChart()
+    return
+  }
+
+  const ctx = chartCanvas.value.getContext('2d')
+  if (!ctx) {
+    return
+  }
+
+  destroyChart()
+
+  const configuration: ChartConfiguration<'line' | 'bar', Array<number | null>, string> = {
  * Render the chart with the currently selected aspect datasets.
  */
 function renderChart() {
@@ -179,6 +381,24 @@ function renderChart() {
     options: {
       responsive: true,
       interaction: { mode: 'index', intersect: false },
+      scales: {
+        yBalance: {
+          type: 'linear',
+          position: 'left',
+          beginAtZero: false,
+          title: {
+            display: true,
+            text: 'Balance',
+          },
+        },
+        yFlow: {
+          type: 'linear',
+          position: 'right',
+          grid: { drawOnChartArea: false },
+          title: {
+            display: true,
+            text: 'Daily amount',
+          },
       scales: { y: { beginAtZero: false } },
       plugins: {
         legend: {
@@ -186,7 +406,9 @@ function renderChart() {
         },
       },
     },
-  })
+  }
+
+  chartInstance = new Chart(ctx, configuration)
 }
 
 /**
@@ -396,6 +618,9 @@ function aggregateCashflowsByLabel({ labels, cashflows, include, transform }) {
 
 onMounted(renderChart)
 onBeforeUnmount(destroyChart)
+watch(() => [props.timeline, props.realizedHistory, props.graphMode, props.series], renderChart, {
+  deep: true,
+})
 watch(
   () => [
     props.timeline,
