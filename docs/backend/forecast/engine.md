@@ -104,7 +104,6 @@ projected balance is at or below zero).
 - Building typed aspect series for realized income, manual adjustments, spending, and debt totals.
 - Returning a fully serialized `ForecastResult` payload for the API layer.
 
-
 ## Extended compute options
 
 `compute_forecast` supports optional `moving_average_window` (7/30/60/90), `normalize`, and `graph_mode` controls.
