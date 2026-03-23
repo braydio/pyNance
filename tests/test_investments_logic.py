@@ -112,6 +112,17 @@ def test_get_investment_accounts(db_ctx):
 def test_upsert_investment_transactions_persists_json(db_ctx):
     db, models, logic = db_ctx
 
+    db.session.add(
+        models.Account(
+            account_id="acct-raw",
+            user_id="u-raw",
+            name="Raw Brokerage",
+            type="investment",
+            is_investment=True,
+        )
+    )
+    db.session.commit()
+
     payload = {
         "investment_transaction_id": "tx-raw",
         "account_id": "acct-raw",
@@ -140,6 +151,11 @@ def test_upsert_investment_transactions_persists_json(db_ctx):
     assert stored.raw["nested"]["posted_at"] == datetime(2024, 1, 1, 12, 30).isoformat()
     assert stored.raw["nested"]["legs"][0] == pytest.approx(5.25)
     assert stored.raw["nested"]["legs"][1]["when"] == date(2024, 1, 2).isoformat()
+
+    placeholder = db.session.get(models.Security, "sec-raw")
+    assert placeholder is not None
+    assert placeholder.raw["placeholder_from_transaction"] is True
+    assert placeholder.raw["transaction"]["investment_transaction_id"] == "tx-raw"
 
 
 def test_upsert_investment_transactions_rolls_back_on_failure(db_ctx, monkeypatch):

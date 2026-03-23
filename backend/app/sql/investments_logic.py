@@ -212,6 +212,56 @@ def upsert_investment_holdings(
         raise
 
 
+def _ensure_transaction_security_rows(items: List[dict]) -> int:
+    """Create placeholder security parents for transaction payloads when needed.
+
+    Plaid can return investment transactions that reference a ``security_id``
+    omitted from the securities/holdings payloads for the same sync window. The
+    database FK still requires the parent security row to exist before an
+    investment transaction insert or update can flush successfully.
+
+    Args:
+        items: Plaid investment transaction payloads.
+
+    Returns:
+        Number of placeholder security rows merged into the current session.
+    """
+
+    security_ids = {str(item.get("security_id")) for item in (items or []) if item.get("security_id")}
+    if not security_ids:
+        return 0
+
+    existing_ids = {
+        security_id
+        for (security_id,) in db.session.query(Security.security_id)
+        .filter(Security.security_id.in_(security_ids))
+        .all()
+    }
+
+    placeholders_created = 0
+    for item in items or []:
+        security_id = item.get("security_id")
+        if not security_id or security_id in existing_ids:
+            continue
+
+        db.session.merge(
+            Security(
+                security_id=security_id,
+                name=item.get("name"),
+                ticker_symbol=item.get("ticker_symbol"),
+                iso_currency_code=item.get("iso_currency_code"),
+                raw={"placeholder_from_transaction": True, "transaction": _json_safe(item)},
+            )
+        )
+        existing_ids.add(security_id)
+        placeholders_created += 1
+
+    if placeholders_created:
+        db.session.flush()
+
+    return placeholders_created
+
+
 def upsert_investments_from_plaid(user_id: str, access_token: str, *, commit: bool = True) -> dict:
     """Fetch investments via Plaid and persist securities and holdings.
 
@@ -247,6 +297,8 @@ def upsert_investment_transactions(items: List[dict], *, commit: bool = True) ->
         The number of transactions processed.
     """
     try:
+        _ensure_transaction_security_rows(items)
+
         count = 0
         for t in items or []:
             tx = InvestmentTransaction(
