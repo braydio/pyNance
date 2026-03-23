@@ -30,6 +30,14 @@
 
     <div class="card glass text-sm control-row">
       <label>
+        Chart aspect
+        <select v-model="selectedAspect" class="input ml-2">
+          <option v-for="aspect in forecastAspectOptions" :key="aspect.value" :value="aspect.value">
+            {{ aspect.label }}
+          </option>
+        </select>
+      </label>
+      <label>
         Graph mode
         <select v-model="graphMode" class="input ml-2">
           <option value="combined">Combined</option>
@@ -85,6 +93,11 @@
       :view-type="viewType"
       :graph-mode="graphMode"
       :realized-history="realizedHistory"
+      :selected-aspect="selectedAspect"
+      :cashflows="cashflows"
+      :asset-balance="assetBalance"
+      :liability-balance="liabilityBalance"
+      :net-balance="netBalance"
       :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
@@ -95,44 +108,25 @@
   </div>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import ForecastChart from './ForecastChart.vue'
 import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
-import {
-  type ForecastAdjustmentInput,
-  type ForecastGraphMode,
-  type ForecastViewType,
-  useForecastData,
-} from '@/composables/useForecastData'
+import { useForecastData } from '@/composables/useForecastData'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
 
-type ForecastAccountOption = {
-  account_id: string
-  name: string
-  institution_name?: string
-}
+const FORECAST_ASPECT_OPTIONS = [
+  { value: 'balances', label: 'Balances' },
+  { value: 'realized_income', label: 'Realized income' },
+  { value: 'manual_adjustments', label: 'Manual adjustments' },
+  { value: 'spending', label: 'Spending' },
+  { value: 'debt', label: 'Debt composition' },
+]
 
-type ForecastAccountGroupOption = {
-  id: string
-  name: string
-  accountIds: string[]
-}
-
-type SnapshotGroupAccount = {
-  account_id?: string
-  id?: string
-}
-
-type SnapshotGroup = {
-  id?: string
-  name?: string
-  accounts?: SnapshotGroupAccount[]
-}
-
+const viewType = ref('Month')
 type ForecastComputeMeta = {
   lookbackDays: number
   movingAverageWindow: 7 | 30 | 60 | 90
@@ -144,14 +138,16 @@ type ForecastComputeMeta = {
 const viewType = ref<ForecastViewType>('Month')
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
-const adjustments = ref<ForecastAdjustmentInput[]>([])
+const adjustments = ref([])
 const userId = ref(import.meta.env.VITE_USER_ID_PLAID || '')
-const forecastAccounts = ref<ForecastAccountOption[]>([])
-const includedAccountIds = ref<string[]>([])
-const excludedAccountIds = ref<string[]>([])
-const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
+const forecastAccounts = ref([])
+const includedAccountIds = ref([])
+const excludedAccountIds = ref([])
+const movingAverageWindow = ref(30)
 const normalize = ref(false)
-const graphMode = ref<ForecastGraphMode>('combined')
+const graphMode = ref('combined')
+const selectedAspect = ref('balances')
+const forecastAspectOptions = computed(() => FORECAST_ASPECT_OPTIONS)
 const { groups: accountSnapshotGroups } = useAccountGroups({ userId: userId.value })
 
 const {
@@ -192,11 +188,12 @@ const forecastItems = computed(() =>
     amount: item.amount,
   })),
 )
-const baselineTrendAdjustment = computed<ForecastAdjustmentInput | null>(() => {
+const baselineTrendAdjustment = computed(() => {
   const avgDaily = Number(summary.value?.average_daily_change ?? 0)
   if (!Number.isFinite(avgDaily) || avgDaily === 0) {
     return null
   }
+
   return {
     label: `Historical ${movingAverageWindow.value}d avg/day`,
     amount: avgDaily,
@@ -224,18 +221,17 @@ const manualAppliedAdjustments = computed(() =>
 const forecastAccountIdSet = computed(
   () => new Set(forecastAccounts.value.map((account) => account.account_id)),
 )
-const accountGroupOptions = computed<ForecastAccountGroupOption[]>(() =>
+const accountGroupOptions = computed(() =>
   (accountSnapshotGroups.value || [])
-    .map((group: SnapshotGroup) => {
+    .map((group) => {
       const uniqueAccountIds = Array.from(
         new Set(
           (group?.accounts || [])
-            .map((account: SnapshotGroupAccount) =>
-              String(account?.account_id || account?.id || ''),
-            )
-            .filter((id: string) => id && forecastAccountIdSet.value.has(id)),
+            .map((account) => String(account?.account_id || account?.id || ''))
+            .filter((id) => id && forecastAccountIdSet.value.has(id)),
         ),
       )
+
       return {
         id: String(group?.id || ''),
         name: String(group?.name || 'Group'),
@@ -244,13 +240,12 @@ const accountGroupOptions = computed<ForecastAccountGroupOption[]>(() =>
     })
     .filter((group) => group.id && group.accountIds.length > 0),
 )
-const hasForecastData = computed(() => timeline.value.length > 0)
+const hasForecastData = computed(
+  () => timeline.value.length > 0 || hasRenderableCashflows(cashflows.value),
+)
 const isLoading = computed(() => loading.value)
 const realizedHistory = computed(
-  () =>
-    (metadata.value?.realized_history as any[]) ??
-    (summary.value?.metadata?.realized_history as any[]) ??
-    [],
+  () => metadata.value?.realized_history ?? summary.value?.metadata?.realized_history ?? [],
 )
 
 const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
@@ -289,7 +284,19 @@ watch(
 )
 
 /**
+ * Determine whether any cashflow items exist that can feed non-balance chart aspects.
+ *
+ * @param {Array<{ amount?: number | null }>} entries
+ * @returns {boolean}
+ */
+function hasRenderableCashflows(entries) {
+  return entries.some((entry) => Number(entry?.amount ?? 0) !== 0)
+}
+
+/**
  * Load forecast account options and default to including all visible accounts.
+ *
+ * @returns {Promise<void>}
  */
 async function fetchForecastAccounts() {
   try {
@@ -310,8 +317,10 @@ async function fetchForecastAccounts() {
 
 /**
  * Capture adjustment inputs so the compute request can include them.
+ *
+ * @param {import('@/composables/useForecastData').ForecastAdjustmentInput} adjustment
  */
-function addAdjustment(adjustment: ForecastAdjustmentInput) {
+function addAdjustment(adjustment) {
   adjustments.value = [...adjustments.value, adjustment]
 }
 </script>
