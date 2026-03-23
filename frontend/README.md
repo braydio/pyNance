@@ -86,6 +86,9 @@ restored on reload.
 
 3. Navigate to `http://localhost:5173/arbit` to view the dashboard.
 
+### Forecast chart data
+
+Forecast chart aspect wiring is documented in `frontend/docs/forecast-data-contract.md`. The forecast UI now consumes the backend's typed `series` payload for realized income, manual adjustments, spending, and debt totals instead of reconstructing those series from generic cashflow rows.
 
 ### Accounts view loading behavior
 

@@ -9,13 +9,14 @@
     <div v-else-if="!hasForecastData" class="card glass text-sm text-gray-500">
       Forecast data is not available yet. Add adjustments or try again later.
     </div>
+
     <ForecastSummaryPanel
       :asset-balance="assetBalance"
       :liability-balance="liabilityBalance"
       :net-balance="netBalance"
       :manual-income="manualIncome"
       :liability-rate="liabilityRate"
-      :net-change="summary?.net_change"
+      :net-change="summary?.net_change ?? null"
       :view-type="viewType"
       :account-options="forecastAccounts"
       :account-group-options="accountGroupOptions"
@@ -54,7 +55,7 @@
           <option :value="90">90 days</option>
         </select>
       </label>
-      <label> <input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history </label>
+      <label><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label>
     </div>
 
     <div class="card glass adjustments-grid">
@@ -91,10 +92,6 @@
       :realized-history="realizedHistory"
       :series="series"
       :selected-aspect="selectedAspect"
-      :cashflows="cashflows"
-      :asset-balance="assetBalance"
-      :liability-balance="liabilityBalance"
-      :net-balance="netBalance"
       :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
@@ -107,18 +104,10 @@
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
-import ForecastChart from './ForecastChart.vue'
-import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
-import {
-  type ForecastAdjustmentInput,
-  type ForecastAspectSeries,
-  type ForecastGraphMode,
-  type ForecastSeriesPoint,
-  type ForecastViewType,
-  useForecastData,
-} from '@/composables/useForecastData'
+import ForecastBreakdown from './ForecastBreakdown.vue'
+import ForecastChart from './ForecastChart.vue'
+import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import { useForecastData } from '@/composables/useForecastData'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
@@ -128,19 +117,10 @@ const FORECAST_ASPECT_OPTIONS = [
   { value: 'realized_income', label: 'Realized income' },
   { value: 'manual_adjustments', label: 'Manual adjustments' },
   { value: 'spending', label: 'Spending' },
-  { value: 'debt', label: 'Debt composition' },
+  { value: 'debt_totals', label: 'Debt totals' },
 ]
 
 const viewType = ref('Month')
-type ForecastComputeMeta = {
-  lookbackDays: number
-  movingAverageWindow: 7 | 30 | 60 | 90
-  normalize: boolean
-  includesAutoDetectedAdjustments: boolean
-  autoDetectedAdjustmentCount: number
-}
-
-const viewType = ref<ForecastViewType>('Month')
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 const adjustments = ref([])
@@ -187,7 +167,9 @@ const netBalance = computed(() =>
   Number(metadata.value?.net_balance ?? summary.value?.starting_balance ?? 0),
 )
 
-const seriesEntries = computed(() => Object.values(series.value || {}))
+const seriesEntries = computed(() =>
+  Object.values(series.value ?? {}).filter((entry) => Array.isArray(entry?.points)),
+)
 const forecastItems = computed(() =>
   seriesEntries.value.map((entry) => ({
     label: entry.label,
@@ -216,16 +198,12 @@ const autoDetectedAdjustments = computed(() => [
   ),
   ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
 ])
-const manualAdjustmentSeries = computed<ForecastAspectSeries | null>(
-  () => series.value?.manual_adjustments ?? null,
-)
-const realizedIncomeSeries = computed<ForecastAspectSeries | null>(
-  () => series.value?.realized_income ?? null,
-)
-const manualAdjustmentPoints = computed<ForecastSeriesPoint[]>(() =>
+const manualAdjustmentSeries = computed(() => series.value?.manual_adjustments ?? null)
+const realizedIncomeSeries = computed(() => series.value?.realized_income ?? null)
+const manualAdjustmentPoints = computed(() =>
   (manualAdjustmentSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
-const realizedIncomePoints = computed<ForecastSeriesPoint[]>(() =>
+const realizedIncomePoints = computed(() =>
   (realizedIncomeSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
 const forecastAccountIdSet = computed(
@@ -251,14 +229,15 @@ const accountGroupOptions = computed(() =>
     .filter((group) => group.id && group.accountIds.length > 0),
 )
 const hasForecastData = computed(
-  () => timeline.value.length > 0 || hasRenderableCashflows(cashflows.value),
+  () => timeline.value.length > 0 || seriesEntries.value.some((entry) => entry.points.length > 0),
 )
 const isLoading = computed(() => loading.value)
-const realizedHistory = computed(
-  () => metadata.value?.realized_history ?? summary.value?.metadata?.realized_history ?? [],
-)
+const realizedHistory = computed(() => {
+  const value = metadata.value?.realized_history ?? summary.value?.metadata?.realized_history
+  return Array.isArray(value) ? value : []
+})
 
-const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
+const forecastComputeMeta = computed(() => ({
   lookbackDays: Number(
     metadata.value?.lookback_days ??
       summary.value?.metadata?.lookback_days ??
@@ -267,8 +246,14 @@ const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
       realizedHistory.value.length ??
       0,
   ),
-  movingAverageWindow: movingAverageWindow.value,
-  normalize: normalize.value,
+  movingAverageWindow: Number(
+    metadata.value?.moving_average_window ??
+      summary.value?.metadata?.moving_average_window ??
+      movingAverageWindow.value,
+  ),
+  normalize: Boolean(
+    metadata.value?.normalize ?? summary.value?.metadata?.normalize ?? normalize.value,
+  ),
   includesAutoDetectedAdjustments: autoDetectedAdjustments.value.length > 0,
   autoDetectedAdjustmentCount: autoDetectedAdjustments.value.length,
 }))
@@ -294,28 +279,16 @@ watch(
 )
 
 /**
- * Determine whether any cashflow items exist that can feed non-balance chart aspects.
- *
- * @param {Array<{ amount?: number | null }>} entries
- * @returns {boolean}
- */
-function hasRenderableCashflows(entries) {
-  return entries.some((entry) => Number(entry?.amount ?? 0) !== 0)
-}
-
-/**
  * Load forecast account options and default to including all visible accounts.
- *
- * @returns {Promise<void>}
  */
 async function fetchForecastAccounts() {
   try {
     const response = await api.getAccounts()
     const accounts = Array.isArray(response.accounts) ? response.accounts : []
     forecastAccounts.value = accounts.map((account) => ({
-      account_id: account.account_id,
-      name: account.name,
-      institution_name: account.institution_name,
+      account_id: String(account.account_id || ''),
+      name: String(account.name || 'Account'),
+      institution_name: String(account.institution_name || ''),
     }))
     if (includedAccountIds.value.length === 0) {
       includedAccountIds.value = forecastAccounts.value.map((account) => account.account_id)
@@ -327,8 +300,6 @@ async function fetchForecastAccounts() {
 
 /**
  * Capture adjustment inputs so the compute request can include them.
- *
- * @param {import('@/composables/useForecastData').ForecastAdjustmentInput} adjustment
  */
 function addAdjustment(adjustment) {
   adjustments.value = [...adjustments.value, adjustment]

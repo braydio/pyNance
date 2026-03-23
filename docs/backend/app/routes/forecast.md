@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-17
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -31,7 +31,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts.
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, `series`, and `metadata`. The typed `series` object exposes `realized_income`, `manual_adjustments`, `spending`, and `debt_totals` without requiring the frontend to infer them from `cashflows`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts.
 
 ## Auth
 
@@ -88,11 +88,9 @@ Content-Type: application/json
 }
 ```
 
-
 ## Serialization notes
 
 Latest snapshot serialization now includes explicit account investment metadata (`account_type`, `is_investment`, `investment_has_holdings`, `investment_has_transactions`) so forecast computation and downstream consumers do not need to infer investment semantics from `type` strings.
-
 
 ```json
 {

@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-22
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -101,7 +101,7 @@ projected balance is at or below zero).
 - Building a baseline projection with `project_balances`.
 - Applying adjustments with `apply_adjustments`.
 - Generating cashflow breakdowns and summary metrics.
-- Building typed aspect series for realized income, manual adjustments, spending, and debt totals.
+- Building a typed `ForecastSeriesCollection` for realized income, manual adjustments, spending, and debt totals.
 - Returning a fully serialized `ForecastResult` payload for the API layer.
 
 ## Extended compute options
@@ -113,7 +113,7 @@ Response metadata now includes `projected_amount`, change metrics, and `realized
 ## Aspect series payload
 
 `compute_forecast` now also attaches a top-level `series` object to the response. Each entry is a
-typed named series with `id`, `label`, and daily `points`.
+typed named series with `id`, `label`, and daily `points`, exposed through a stable keyed object.
 
 Current emitted aspect keys:
 

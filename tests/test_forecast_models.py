@@ -12,6 +12,7 @@ from forecast.models import (  # noqa: E402
     ForecastAspectSeries,
     ForecastCashflowItem,
     ForecastResult,
+    ForecastSeriesCollection,
     ForecastSeriesPoint,
     ForecastSummary,
     ForecastTimelinePoint,
@@ -83,7 +84,7 @@ def test_forecast_result_to_dict_serializes_nested_models():
         summary=summary,
         cashflows=[cashflow_item],
         adjustments=[adjustment],
-        series={"manual_adjustments": manual_series},
+        series=ForecastSeriesCollection(manual_adjustments=manual_series),
         metadata={"generated_at": datetime(2026, 1, 1, tzinfo=timezone.utc)},
     )
 
