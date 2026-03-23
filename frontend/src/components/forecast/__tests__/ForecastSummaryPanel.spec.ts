@@ -105,6 +105,9 @@ describe('ForecastSummaryPanel', () => {
 
     expect(wrapper.text()).toContain('Manual Income adds $120.00 per day')
     expect(wrapper.text()).toContain('Liability Rate subtracts $40.00 per day')
+    expect(wrapper.text()).toContain(
+      'classifies that manual control as debt growth from new spending',
+    )
 
     await wrapper.setProps({
       manualIncome: 225,

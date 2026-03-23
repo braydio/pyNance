@@ -14,7 +14,7 @@ compute settings behind the current projection.
 - `viewType`: Display mode (`Month` or `Year`).
 - `graphMode`: Chart mode (`combined`, `forecast`, or `historical`).
 - `series`: Structured aspect series keyed by stable names such as `realized_income`,
-  `manual_adjustments`, `spending`, and `debt_totals`.
+  `manual_adjustments`, `spending`, `debt_totals`, `debt_interest`, and `debt_new_spending`.
 - `computeMeta`: Forecast compute metadata from `ForecastLayout`, including lookback days, moving-average window, normalization state, and whether auto-detected adjustments were included.
 - `graphMode`: Overlay mode (`combined`, `forecast`, or `historical`).
 - `selectedAspect`: Active chart aspect (`balances`, `realized_income`, `manual_adjustments`, `spending`, or `debt`).
@@ -45,5 +45,6 @@ The compact “How this forecast is calculated” element summarizes:
 - Balance mode still overlays realized history with projected balances.
 - Graph mode continues to control the balance overlay, while the aspect selector remains orthogonal for income, manual-adjustment, spending, and debt views so those series remain visible when users keep the same timeframe but change what is being visualized.
 - Income, manual-adjustment, and spending modes rebuild datasets from forecast cashflows rather than relying on the original hard-coded two-line balance chart.
-- Debt mode presents current asset, liability, and net snapshot lines for quick composition comparison.
+- Debt mode now prioritizes the backend’s debt series contract so the chart can render projected
+  total debt alongside daily debt-interest and debt-new-spending components.
 - If the active aspect has no renderable data, the component renders a friendly empty-state message instead of the chart canvas.

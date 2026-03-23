@@ -290,10 +290,10 @@ const tooltipCopy = computed(() => {
     liabilities: `Liabilities total included debt balances that reduce the starting position. Click the amount to review ${forecastScope}.`,
     currentBalance: `Current Balance is assets minus liabilities across ${forecastScope} before projected cashflow changes are applied.`,
     manualIncome: `Manual Income adds $${incomeValue} per day to the projection in ${props.viewType} view. Use it for steady income not captured automatically.`,
-    liabilityRate: `Liability Rate subtracts $${liabilityValue} per day from the projection in ${props.viewType} view to model recurring debt growth or payments.`,
+    liabilityRate: `Liability Rate subtracts $${liabilityValue} per day from the projection in ${props.viewType} view and classifies that manual control as debt growth from new spending, not interest accrual.`,
     netDelta: Number.isFinite(Number(props.netChange))
       ? `Net Delta is the forecasted change between the starting and ending balance. It uses a ${movingAverageWindow || 'current'}-day moving average${lookbackDays ? ` across the latest ${lookbackDays} days of history` : ''}${includesAutoDetectedAdjustments ? ` and includes ${autoDetectedAdjustmentCount} auto-detected adjustment${autoDetectedAdjustmentCount === 1 ? '' : 's'}` : ''}.`
-      : 'Net Delta falls back to manual income minus liability rate until computed forecast output is available.',
+      : 'Net Delta falls back to manual income minus liability rate until computed forecast output is available, with the liability control treated as debt growth from new spending.',
   }
 })
 
