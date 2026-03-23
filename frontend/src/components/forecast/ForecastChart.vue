@@ -16,11 +16,11 @@
           </p>
         </details>
       </div>
-  
+
       <button @click="toggleView" class="toggle-button">
         Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
       </button>
-    </div>    
+    </div>
     <div v-if="!hasData" class="chart-empty">Forecast chart data is not available yet.</div>
     <canvas v-else ref="chartCanvas"></canvas>
   </div>
