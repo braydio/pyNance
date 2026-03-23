@@ -18,6 +18,16 @@
 
 - `update:viewType`: Emitted when the toggle button requests a new view type.
 
+## Methodology help text
+
+The compact “How this forecast is calculated” element summarizes:
+
+- the realized-history lookback period used for the projection baseline,
+- the moving-average window currently selected in the parent layout,
+- whether normalization is on or off,
+- the active graph mode shown in the chart, and
+- whether auto-detected adjustments are currently included, including the detected count when available.
+
 ## Notes
 
 - The chart title combines the current timeframe and active aspect so users can quickly confirm what they are viewing.

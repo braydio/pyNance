@@ -1,15 +1,26 @@
 <!-- src/components/forecast/ForecastChart.vue -->
 <template>
   <div class="chart-container">
+    <!-- HEADER -->
     <div class="chart-header">
-      <div>
+      <div class="chart-header-copy">
         <h2 class="chart-title">{{ chartTitle }}</h2>
         <p class="chart-subtitle">{{ chartSubtitle }}</p>
+
+        <details class="chart-methodology" :open="isMethodologyOpen">
+          <summary class="chart-methodology-summary" @click.prevent="toggleMethodology">
+            How this forecast is calculated
+          </summary>
+          <p class="chart-methodology-body">
+            {{ methodologyCopy }}
+          </p>
+        </details>
       </div>
+  
       <button @click="toggleView" class="toggle-button">
         Switch to {{ viewType === 'Month' ? 'Year' : 'Month' }}
       </button>
-    </div>
+    </div>    
     <div v-if="!hasData" class="chart-empty">Forecast chart data is not available yet.</div>
     <canvas v-else ref="chartCanvas"></canvas>
   </div>
@@ -54,10 +65,31 @@ const props = defineProps({
   assetBalance: { type: Number, default: 0 },
   liabilityBalance: { type: Number, default: 0 },
   netBalance: { type: Number, default: 0 },
+  timeline: {
+    type: Array,
+    default: () => [],
+  },
+  realizedHistory: {
+    type: Array,
+    default: () => [],
+  },
+  viewType: {
+    type: String,
+    default: 'Month',
+  },
+  graphMode: {
+    type: String,
+    default: 'combined',
+  },
+  computeMeta: {
+    type: Object,
+    default: () => ({}),
+  },
 })
 
 const emit = defineEmits(['update:viewType'])
 const chartCanvas = ref(null)
+const isMethodologyOpen = ref(false)
 let chartInstance = null
 
 const historyLabels = computed(() => props.realizedHistory.map((point) => point.label))
@@ -87,6 +119,22 @@ const hasData = computed(
 /**
  * Emit the opposite timeframe while leaving the active aspect untouched.
  */
+ * Summarize the compute controls shown above the chart for quick reference.
+ */
+const methodologyCopy = computed(() => {
+  const lookbackDays = Number(props.computeMeta?.lookbackDays ?? 0)
+  const movingAverageWindow = Number(props.computeMeta?.movingAverageWindow ?? 0)
+  const normalizeState = props.computeMeta?.normalize
+    ? 'Normalization is on'
+    : 'Normalization is off'
+  const autoDetectedCount = Number(props.computeMeta?.autoDetectedAdjustmentCount ?? 0)
+  const autoDetectedCopy = props.computeMeta?.includesAutoDetectedAdjustments
+    ? `Auto-detected adjustments are included${autoDetectedCount > 0 ? ` (${autoDetectedCount} detected)` : ''}.`
+    : 'Auto-detected adjustments are not included.'
+
+  return `It uses the latest ${lookbackDays || 'available'} days of realized history, applies a ${movingAverageWindow || 'current'}-day moving average, and renders in ${props.graphMode} mode. ${normalizeState}. ${autoDetectedCopy}`
+})
+
 function toggleView() {
   emit('update:viewType', props.viewType === 'Month' ? 'Year' : 'Month')
 }
@@ -94,6 +142,12 @@ function toggleView() {
 /**
  * Tear down any prior Chart.js instance before a re-render.
  */
+ * Keep the methodology copy compact until the user requests it.
+ */
+function toggleMethodology() {
+  isMethodologyOpen.value = !isMethodologyOpen.value
+}
+
 function destroyChart() {
   if (chartInstance) {
     chartInstance.destroy()
@@ -370,9 +424,14 @@ watch(
 .chart-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  gap: 1rem;
   margin-bottom: 1rem;
   gap: 1rem;
+}
+.chart-header-copy {
+  display: grid;
+  gap: 0.35rem;
 }
 .chart-title {
   font-size: 1.125rem;
@@ -382,6 +441,27 @@ watch(
   margin-top: 0.25rem;
   font-size: 0.875rem;
   color: var(--text-muted);
+}
+.chart-methodology {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+.chart-methodology-summary {
+  cursor: pointer;
+  list-style: none;
+  font-weight: 500;
+}
+.chart-methodology-summary::-webkit-details-marker {
+  display: none;
+}
+.chart-methodology-summary::before {
+  content: 'ⓘ';
+  margin-right: 0.35rem;
+}
+.chart-methodology-body {
+  margin-top: 0.35rem;
+  max-width: 36rem;
+  line-height: 1.45;
 }
 .toggle-button {
   font-size: 0.875rem;

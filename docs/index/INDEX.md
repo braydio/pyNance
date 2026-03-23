@@ -25,6 +25,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
 - [Component Migration Guide](../frontend/component-migration.md) – frontend component organization strategy
 - [Tailwind + Vite Style Reference](../frontend/tailwind-vite-style-reference.md) – CSS utilities and build notes
+- [Forecast Frontend Components](../frontend/src/components/forecast/ForecastComponent.md) – forecast layout, summary, chart, and adjustment component docs.
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
 
 ## High-Traffic Backend References

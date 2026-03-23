@@ -20,43 +20,91 @@
 
     <div class="summary-grid">
       <div class="field-group">
-        <p class="label">Assets</p>
+        <p class="label tooltip-label">
+          Assets
+          <span class="tooltip-affordance">
+            <button type="button" class="tooltip-trigger" aria-label="Explain Assets">?</button>
+            <span role="tooltip" class="tooltip-content">
+              {{ tooltipCopy.assets }}
+            </span>
+          </span>
+        </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
           ${{ assetBalance.toFixed(2) }}
         </button>
       </div>
       <div class="field-group">
-        <p class="label">Liabilities</p>
+        <p class="label tooltip-label">
+          Liabilities
+          <span class="tooltip-affordance">
+            <button type="button" class="tooltip-trigger" aria-label="Explain Liabilities">
+              ?
+            </button>
+            <span role="tooltip" class="tooltip-content">
+              {{ tooltipCopy.liabilities }}
+            </span>
+          </span>
+        </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
           ${{ liabilityBalance.toFixed(2) }}
         </button>
       </div>
       <div class="field-group">
-        <p class="label">Net</p>
+        <p class="label tooltip-label">
+          Current Balance
+          <span class="tooltip-affordance">
+            <button type="button" class="tooltip-trigger" aria-label="Explain Current Balance">
+              ?
+            </button>
+            <span role="tooltip" class="tooltip-content">
+              {{ tooltipCopy.currentBalance }}
+            </span>
+          </span>
+        </p>
         <button type="button" class="value-link" @click="isSelectorOpen = true">
           ${{ netBalance.toFixed(2) }}
         </button>
       </div>
       <div class="field-group">
-        <label class="label" for="manual-income-input">Manual Income</label>
+        <label class="label tooltip-label" for="manual-income-input">
+          Manual Income
+          <span class="tooltip-affordance">
+            <button type="button" class="tooltip-trigger" aria-label="Explain Manual Income">
+              ?
+            </button>
+            <span role="tooltip" class="tooltip-content">
+              {{ tooltipCopy.manualIncome }}
+            </span>
+          </span>
+        </label>
         <input
           id="manual-income-input"
           type="number"
           class="input"
           :value="localIncome"
           inputmode="decimal"
-          @input="emit('update:manualIncome', +$event.target.value)"
+          @input="handleManualIncomeInput"
         />
       </div>
       <div class="field-group">
-        <label class="label" for="liability-rate-input">Liability Rate</label>
+        <label class="label tooltip-label" for="liability-rate-input">
+          Liability Rate
+          <span class="tooltip-affordance">
+            <button type="button" class="tooltip-trigger" aria-label="Explain Liability Rate">
+              ?
+            </button>
+            <span role="tooltip" class="tooltip-content">
+              {{ tooltipCopy.liabilityRate }}
+            </span>
+          </span>
+        </label>
         <input
           id="liability-rate-input"
           type="number"
           class="input"
           :value="localRate"
           inputmode="decimal"
-          @input="emit('update:liabilityRate', +$event.target.value)"
+          @input="handleLiabilityRateInput"
         />
       </div>
     </div>
@@ -120,8 +168,14 @@
     </div>
 
     <div class="summary-footer">
-      <p>
+      <p class="tooltip-label">
         Net Delta: <strong>{{ netDelta }}</strong>
+        <span class="tooltip-affordance inline-help">
+          <button type="button" class="tooltip-trigger" aria-label="Explain Net Delta">?</button>
+          <span role="tooltip" class="tooltip-content">
+            {{ tooltipCopy.netDelta }}
+          </span>
+        </span>
       </p>
       <p class="summary-selection-copy">
         Included: {{ includedSet.size }} • Excluded: {{ excludedSet.size }}
@@ -146,13 +200,22 @@ const props = defineProps({
     type: Number,
     default: 0,
   },
-  manualIncome: Number,
-  liabilityRate: Number,
+  manualIncome: {
+    type: Number,
+    default: 0,
+  },
+  liabilityRate: {
+    type: Number,
+    default: 0,
+  },
   netChange: {
     type: Number,
     default: null,
   },
-  viewType: String,
+  viewType: {
+    type: String,
+    default: 'Month',
+  },
   accountOptions: {
     type: Array,
     default: () => [],
@@ -168,6 +231,10 @@ const props = defineProps({
   excludedAccountIds: {
     type: Array,
     default: () => [],
+  },
+  computeMeta: {
+    type: Object,
+    default: () => ({}),
   },
 })
 
@@ -191,7 +258,7 @@ const availableGroupOptions = computed(() =>
 )
 
 /**
- * Provide a simple net delta hint based on manual adjustments.
+ * Provide a simple net delta hint based on either compute output or local manual inputs.
  */
 const netDelta = computed(() => {
   const fromForecast = Number(props.netChange)
@@ -202,12 +269,55 @@ const netDelta = computed(() => {
 })
 
 /**
+ * Build contextual tooltip copy so the help text stays aligned with current controls.
+ */
+const tooltipCopy = computed(() => {
+  const lookbackDays = Number(props.computeMeta?.lookbackDays ?? 0)
+  const movingAverageWindow = Number(props.computeMeta?.movingAverageWindow ?? 0)
+  const includesAutoDetectedAdjustments = Boolean(
+    props.computeMeta?.includesAutoDetectedAdjustments,
+  )
+  const autoDetectedAdjustmentCount = Number(props.computeMeta?.autoDetectedAdjustmentCount ?? 0)
+  const incomeValue = Number(localIncome.value || 0).toFixed(2)
+  const liabilityValue = Number(localRate.value || 0).toFixed(2)
+  const forecastScope =
+    includedSet.value.size > 0
+      ? `${includedSet.value.size} included account${includedSet.value.size === 1 ? '' : 's'}`
+      : 'all available forecast accounts'
+
+  return {
+    assets: `Assets total the positive-balance accounts currently included in the forecast. Click the amount to review ${forecastScope}.`,
+    liabilities: `Liabilities total included debt balances that reduce the starting position. Click the amount to review ${forecastScope}.`,
+    currentBalance: `Current Balance is assets minus liabilities across ${forecastScope} before projected cashflow changes are applied.`,
+    manualIncome: `Manual Income adds $${incomeValue} per day to the projection in ${props.viewType} view. Use it for steady income not captured automatically.`,
+    liabilityRate: `Liability Rate subtracts $${liabilityValue} per day from the projection in ${props.viewType} view to model recurring debt growth or payments.`,
+    netDelta: Number.isFinite(Number(props.netChange))
+      ? `Net Delta is the forecasted change between the starting and ending balance. It uses a ${movingAverageWindow || 'current'}-day moving average${lookbackDays ? ` across the latest ${lookbackDays} days of history` : ''}${includesAutoDetectedAdjustments ? ` and includes ${autoDetectedAdjustmentCount} auto-detected adjustment${autoDetectedAdjustmentCount === 1 ? '' : 's'}` : ''}.`
+      : 'Net Delta falls back to manual income minus liability rate until computed forecast output is available.',
+  }
+})
+
+/**
  * Return a readable label for account-group shortcut chips.
  */
 function groupLabel(group) {
   const name = String(group?.name || 'Group').trim() || 'Group'
   const count = Array.isArray(group?.accountIds) ? group.accountIds.length : 0
   return `${name} (${count})`
+}
+
+/**
+ * Emit manual income changes using numeric input values.
+ */
+function handleManualIncomeInput(event) {
+  emit('update:manualIncome', Number(event.target?.value || 0))
+}
+
+/**
+ * Emit manual liability-rate changes using numeric input values.
+ */
+function handleLiabilityRateInput(event) {
+  emit('update:liabilityRate', Number(event.target?.value || 0))
 }
 
 /**
@@ -320,131 +430,159 @@ function toggleExcluded(accountId) {
   color: var(--text-muted);
 }
 
-.value-link {
-  font-weight: 700;
+.tooltip-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.tooltip-affordance {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.inline-help {
+  margin-left: 0.35rem;
+}
+
+.tooltip-trigger {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
   border: 1px solid var(--divider);
-  border-radius: 0.5rem;
   background: var(--surface-muted, var(--surface));
-  padding: 0.45rem 0.6rem;
-  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  line-height: 1;
+  cursor: help;
+}
+
+.tooltip-content {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 20;
+  width: min(18rem, 70vw);
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--divider);
+  background: var(--surface);
+  color: var(--theme-fg);
+  box-shadow: 0 10px 25px rgb(15 23 42 / 0.12);
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-0.2rem);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.tooltip-affordance:hover .tooltip-content,
+.tooltip-affordance:focus-within .tooltip-content {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.value-link {
+  border: 0;
+  padding: 0;
+  background: transparent;
   color: var(--theme-fg);
   text-align: left;
+  font-size: 1.15rem;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .input {
   width: 100%;
-  padding: 0.45rem 0.55rem;
-  font-size: 0.9rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.5rem;
-  background: var(--input-bg);
-  color: var(--theme-fg);
 }
 
 .selector-panel {
-  margin-top: 0.9rem;
+  margin-top: 1rem;
   border-top: 1px solid var(--divider);
-  padding-top: 0.85rem;
+  padding-top: 1rem;
 }
 
 .selector-title {
-  font-size: 0.95rem;
   font-weight: 600;
 }
 
-.selector-subtitle {
-  margin-top: 0.25rem;
+.selector-subtitle,
+.summary-selection-copy,
+.selector-empty,
+.account-meta,
+.shortcut-label {
   font-size: 0.8rem;
   color: var(--text-muted);
 }
 
 .group-shortcuts {
   margin-top: 0.75rem;
-  padding: 0.6rem;
-  border: 1px solid var(--divider);
-  border-radius: 0.65rem;
-  background: var(--surface-muted, var(--surface));
-}
-
-.shortcut-label {
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.shortcut-list {
-  margin-top: 0.45rem;
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
   gap: 0.45rem;
 }
 
-.shortcut-chip {
-  font-size: 0.76rem;
+.shortcut-list,
+.selector-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .selector-list {
-  margin-top: 0.7rem;
   list-style: none;
   padding: 0;
+  margin: 0.75rem 0 0;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.75rem;
 }
 
 .selector-item {
   display: flex;
   justify-content: space-between;
-  gap: 0.75rem;
-  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem;
   border: 1px solid var(--divider);
   border-radius: 0.65rem;
-  padding: 0.6rem;
 }
 
 .account-name {
-  font-size: 0.9rem;
-  font-weight: 500;
-}
-
-.account-meta {
-  font-size: 0.75rem;
-  color: var(--text-muted);
-}
-
-.selector-actions {
-  display: flex;
-  gap: 0.35rem;
+  font-weight: 600;
 }
 
 .chip {
-  padding: 0.3rem 0.55rem;
   border: 1px solid var(--divider);
   border-radius: 999px;
-  background: transparent;
-  font-size: 0.75rem;
+  padding: 0.35rem 0.7rem;
+  background: var(--surface-muted, var(--surface));
+  font-size: 0.8rem;
 }
 
 .chip.active {
-  border-color: var(--color-accent-cyan, #0ea5e9);
-  background: var(--brand-soft, #dbeafe);
+  border-color: var(--accent, #2563eb);
+  color: var(--accent, #2563eb);
 }
 
 .chip-exclude.active {
-  border-color: var(--color-accent-red, #ef4444);
-  background: var(--danger-soft, #fee2e2);
+  border-color: #dc2626;
+  color: #dc2626;
 }
 
 .summary-footer {
-  margin-top: 1rem;
-  font-size: 0.9rem;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   justify-content: space-between;
-  gap: 0.6rem;
-}
-
-.summary-selection-copy {
-  font-size: 0.8rem;
-  color: var(--text-muted);
+  gap: 1rem;
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--divider);
+  flex-wrap: wrap;
 }
 </style>

@@ -12,4 +12,6 @@
 
 ## Related Components
 
-- `ForecastLayout` orchestrates the data flow and child components.
+- `ForecastLayout` orchestrates forecast data loading, account scoping, and child compute metadata.
+- `ForecastSummaryPanel` explains starting balances, manual controls, and account-selector scope.
+- `ForecastChart` renders the projection and summarizes the active methodology inputs.

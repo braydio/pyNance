@@ -3,23 +3,32 @@ import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import ForecastSummaryPanel from '../ForecastSummaryPanel.vue'
 
+const baseProps = {
+  assetBalance: 900,
+  liabilityBalance: 500,
+  netBalance: 400,
+  manualIncome: 120,
+  liabilityRate: 40,
+  viewType: 'Month',
+  includedAccountIds: ['acc-1'],
+  excludedAccountIds: [],
+  accountOptions: [
+    { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank A' },
+    { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank B' },
+  ],
+  computeMeta: {
+    lookbackDays: 90,
+    movingAverageWindow: 30,
+    normalize: false,
+    includesAutoDetectedAdjustments: true,
+    autoDetectedAdjustmentCount: 2,
+  },
+}
+
 describe('ForecastSummaryPanel', () => {
   it('emits include/exclude account updates when toggles are clicked', async () => {
     const wrapper = mount(ForecastSummaryPanel, {
-      props: {
-        assetBalance: 900,
-        liabilityBalance: 500,
-        netBalance: 400,
-        manualIncome: 0,
-        liabilityRate: 0,
-        viewType: 'Month',
-        includedAccountIds: ['acc-1'],
-        excludedAccountIds: [],
-        accountOptions: [
-          { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank A' },
-          { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank B' },
-        ],
-      },
+      props: baseProps,
     })
 
     await wrapper.get('.value-link').trigger('click')
@@ -38,18 +47,9 @@ describe('ForecastSummaryPanel', () => {
   it('applies dashboard group shortcut as include selection', async () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
-        assetBalance: 1200,
-        liabilityBalance: 700,
-        netBalance: 500,
-        manualIncome: 0,
-        liabilityRate: 0,
-        viewType: 'Month',
+        ...baseProps,
         includedAccountIds: [],
         excludedAccountIds: ['acc-2'],
-        accountOptions: [
-          { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank A' },
-          { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank B' },
-        ],
         accountGroupOptions: [
           { id: 'group-1', name: 'Core accounts', accountIds: ['acc-1', 'acc-2'] },
         ],
@@ -63,18 +63,13 @@ describe('ForecastSummaryPanel', () => {
     expect(wrapper.emitted('update:excludedAccountIds')?.at(-1)?.[0]).toEqual([])
   })
 
-  it('renders asset, liability, and net balances', () => {
+  it('renders asset, liability, and current balance values with tooltip copy', () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
+        ...baseProps,
         assetBalance: 2500,
         liabilityBalance: 800,
         netBalance: 1700,
-        manualIncome: 0,
-        liabilityRate: 0,
-        viewType: 'Month',
-        includedAccountIds: [],
-        excludedAccountIds: [],
-        accountOptions: [],
       },
     })
 
@@ -82,27 +77,46 @@ describe('ForecastSummaryPanel', () => {
     expect(wrapper.text()).toContain('$2500.00')
     expect(wrapper.text()).toContain('Liabilities')
     expect(wrapper.text()).toContain('$800.00')
-    expect(wrapper.text()).toContain('Net')
+    expect(wrapper.text()).toContain('Current Balance')
     expect(wrapper.text()).toContain('$1700.00')
+    expect(wrapper.text()).toContain('positive-balance accounts currently included in the forecast')
+    expect(wrapper.text()).toContain('Current Balance is assets minus liabilities')
   })
 
-  it('prefers computed forecast net change when provided', () => {
+  it('prefers computed forecast net change when provided and explains the calculation inputs', () => {
     const wrapper = mount(ForecastSummaryPanel, {
       props: {
-        assetBalance: 900,
-        liabilityBalance: 500,
-        netBalance: 400,
-        manualIncome: 0,
-        liabilityRate: 0,
+        ...baseProps,
         netChange: 123.45,
-        viewType: 'Month',
-        includedAccountIds: [],
-        excludedAccountIds: [],
-        accountOptions: [],
       },
     })
 
     expect(wrapper.text()).toContain('Net Delta:')
     expect(wrapper.text()).toContain('123.45')
+    expect(wrapper.text()).toContain('30-day moving average')
+    expect(wrapper.text()).toContain('latest 90 days of history')
+    expect(wrapper.text()).toContain('includes 2 auto-detected adjustments')
+  })
+
+  it('updates manual input tooltip copy when the controls change', async () => {
+    const wrapper = mount(ForecastSummaryPanel, {
+      props: baseProps,
+    })
+
+    expect(wrapper.text()).toContain('Manual Income adds $120.00 per day')
+    expect(wrapper.text()).toContain('Liability Rate subtracts $40.00 per day')
+
+    await wrapper.setProps({
+      manualIncome: 225,
+      liabilityRate: 65,
+      viewType: 'Year',
+    })
+
+    expect(wrapper.text()).toContain(
+      'Manual Income adds $225.00 per day to the projection in Year view',
+    )
+    expect(wrapper.text()).toContain(
+      'Liability Rate subtracts $65.00 per day from the projection in Year view',
+    )
   })
 })

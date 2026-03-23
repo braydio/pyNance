@@ -21,6 +21,7 @@
       :account-group-options="accountGroupOptions"
       :included-account-ids="includedAccountIds"
       :excluded-account-ids="excludedAccountIds"
+      :compute-meta="forecastComputeMeta"
       @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event"
       @update:includedAccountIds="includedAccountIds = $event"
@@ -97,6 +98,7 @@
       :asset-balance="assetBalance"
       :liability-balance="liabilityBalance"
       :net-balance="netBalance"
+      :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
 
@@ -125,6 +127,15 @@ const FORECAST_ASPECT_OPTIONS = [
 ]
 
 const viewType = ref('Month')
+type ForecastComputeMeta = {
+  lookbackDays: number
+  movingAverageWindow: 7 | 30 | 60 | 90
+  normalize: boolean
+  includesAutoDetectedAdjustments: boolean
+  autoDetectedAdjustmentCount: number
+}
+
+const viewType = ref<ForecastViewType>('Month')
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
 const adjustments = ref([])
@@ -236,6 +247,21 @@ const isLoading = computed(() => loading.value)
 const realizedHistory = computed(
   () => metadata.value?.realized_history ?? summary.value?.metadata?.realized_history ?? [],
 )
+
+const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
+  lookbackDays: Number(
+    metadata.value?.lookback_days ??
+      summary.value?.metadata?.lookback_days ??
+      metadata.value?.realized_history_lookback_days ??
+      summary.value?.metadata?.realized_history_lookback_days ??
+      realizedHistory.value.length ??
+      0,
+  ),
+  movingAverageWindow: movingAverageWindow.value,
+  normalize: normalize.value,
+  includesAutoDetectedAdjustments: autoDetectedAdjustments.value.length > 0,
+  autoDetectedAdjustmentCount: autoDetectedAdjustments.value.length,
+}))
 
 onMounted(async () => {
   await fetchForecastAccounts()
