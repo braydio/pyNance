@@ -277,6 +277,9 @@ import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
 
+const DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY = 'dashboard:last-account-sync-at'
+const DASHBOARD_ACCOUNT_SYNC_INTERVAL_MS = 30 * 60 * 1000
+
 /* Async components */
 const NetOverviewSection = defineAsyncComponent(
   () => import('@/components/dashboard/NetOverviewSection.vue'),
@@ -319,7 +322,8 @@ const showCategoryModal = isVisible('category')
 const categoryModalTransactions = ref([])
 const categoryModalSubtitle = ref('')
 const categoryModalSubtitlePrefix = ref('')
-const userName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
+const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
+const userName = plaidUserId || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
   month: 'long',
   day: 'numeric',
@@ -677,7 +681,48 @@ async function setDashboardBreakdownMode(mode) {
   }
 }
 
-onMounted(loadDashboardData)
+function getStoredDashboardAccountSyncAt() {
+  if (typeof localStorage === 'undefined') return 0
+
+  try {
+    return Number(localStorage.getItem(DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY) || 0)
+  } catch {
+    return 0
+  }
+}
+
+function setStoredDashboardAccountSyncAt(timestamp = Date.now()) {
+  if (typeof localStorage === 'undefined') return
+
+  try {
+    localStorage.setItem(DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY, String(timestamp))
+  } catch {
+    // Ignore storage errors and keep the dashboard usable.
+  }
+}
+
+async function maybeAutoSyncAccounts() {
+  if (!plaidUserId) return
+
+  const lastSyncAt = getStoredDashboardAccountSyncAt()
+  if (Date.now() - lastSyncAt < DASHBOARD_ACCOUNT_SYNC_INTERVAL_MS) {
+    return
+  }
+
+  setStoredDashboardAccountSyncAt()
+
+  try {
+    await api.refreshAccounts({ user_id: plaidUserId })
+    await loadDashboardData()
+  } catch (error) {
+    console.error('Failed to auto-sync dashboard accounts:', error)
+  }
+}
+
+onMounted(() => {
+  loadDashboardData()
+  maybeAutoSyncAccounts()
+})
 watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
 
 /**
