@@ -23,4 +23,5 @@
 - `forecastComputeMeta` prefers API metadata for lookback values and falls back to realized-history length when needed.
 - Auto-detected adjustment metadata includes both explicit API adjustments and the derived baseline trend adjustment shown in the layout.
 - The manual adjustments panel now reads the `manual_adjustments` series, while the realized-income
-  panel reads the `realized_income` series emitted by the backend.
+  panel reads the `realized_income` series emitted by the backend. The layout keeps `cashflows` available
+  for backward compatibility but no longer depends on them to reconstruct user-visible aspect summaries.

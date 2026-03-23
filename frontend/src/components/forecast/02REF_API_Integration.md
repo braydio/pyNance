@@ -77,6 +77,20 @@ This module defines the **forecast engine API design**, backend routing strategy
 }
 ```
 
+#### Forecast aspect series
+
+`POST /api/forecast/compute` also returns a top-level `series` object keyed by stable aspect names.
+Each entry includes an `id`, `label`, and ordered daily `points`. The frontend now reads these
+series directly for:
+
+- `realized_income`
+- `manual_adjustments`
+- `spending`
+- `debt_totals`
+
+This keeps `timeline`, `cashflows`, and `summary` available for backwards compatibility while
+removing the need to infer chart datasets from flat cashflow rows.
+
 ---
 
 ## ⚙️ Backend Flow

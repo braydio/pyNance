@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-22
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -50,14 +50,15 @@ depletion date when balances reach zero or below.
 ### `ForecastResult`
 
 Encapsulates the full response payload for the forecast endpoint. Use `ForecastResult.to_dict()` to
-produce the JSON payload with `timeline`, `summary`, `cashflows`, `adjustments`, and `series`
-keys. Existing consumers can continue to read the legacy fields while newer clients use `series`
-for aspect-specific chart data.
+produce the JSON payload with `timeline`, `summary`, `cashflows`, `adjustments`, and a typed `series`
+object. Existing consumers can continue to read the legacy fields while newer clients use `series`
+for aspect-specific chart data keyed by stable backend identifiers.
 
 ## Usage Notes
 
 - All models are import-safe with no side effects.
 - Dates accept ISO strings, `date`, or `datetime` instances and serialize to ISO strings.
 - Decimal values are normalized to floats during serialization for JSON compatibility.
-- `ForecastResult.series` is keyed by stable aspect names so the frontend can read data without
-  reverse-engineering line items from `cashflows`.
+- `ForecastResult.series` serializes a dedicated `ForecastSeriesCollection`, which guarantees the
+  top-level `series` object uses the supported aspect keys (`realized_income`, `manual_adjustments`,
+  `spending`, and `debt_totals`).

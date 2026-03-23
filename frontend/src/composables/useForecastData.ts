@@ -1,8 +1,8 @@
-// src/composables/useForecastData.ts
-
-import { ref, computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
 export type ForecastViewType = 'Month' | 'Year'
+export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
+export type ForecastSeriesId = 'realized_income' | 'manual_adjustments' | 'spending' | 'debt_totals'
 
 export type ForecastAdjustmentInput = {
   label: string
@@ -16,6 +16,22 @@ export type ForecastAdjustmentInput = {
   range_end?: string
 }
 
+export type ForecastMetadata = {
+  asset_balance?: number
+  liability_balance?: number
+  net_balance?: number
+  lookback_days?: number
+  realized_history_lookback_days?: number
+  moving_average_window?: number
+  normalize?: boolean
+  graph_mode?: ForecastGraphMode
+  projected_amount?: number
+  projected_change?: number
+  projected_change_percent?: number
+  realized_history?: ForecastRealizedHistoryPoint[]
+  [key: string]: unknown
+}
+
 export type ForecastTimelinePoint = {
   date: string
   label: string
@@ -23,13 +39,6 @@ export type ForecastTimelinePoint = {
   actual_balance: number | null
   delta?: number | null
   metadata?: ForecastMetadata
-}
-
-export type ForecastMetadata = {
-  asset_balance?: number
-  liability_balance?: number
-  net_balance?: number
-  [key: string]: unknown
 }
 
 export type ForecastSummary = {
@@ -73,13 +82,19 @@ export type ForecastSeriesPoint = {
 }
 
 export type ForecastAspectSeries = {
-  id: string
+  id: ForecastSeriesId
   label: string
   points: ForecastSeriesPoint[]
   metadata?: ForecastMetadata
 }
 
-export type ForecastSeriesMap = Record<string, ForecastAspectSeries>
+export type ForecastSeriesMap = Partial<Record<ForecastSeriesId, ForecastAspectSeries>>
+
+export type ForecastRealizedHistoryPoint = {
+  date: string
+  label: string
+  balance: number
+}
 
 type ForecastComputeResponse = {
   timeline: ForecastTimelinePoint[]
@@ -90,9 +105,7 @@ type ForecastComputeResponse = {
   metadata: ForecastMetadata
 }
 
-export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
-
-type UseForecastDataOptions = {
+export type UseForecastDataOptions = {
   viewType: Ref<ForecastViewType>
   manualIncome: Ref<number>
   liabilityRate: Ref<number>
@@ -103,6 +116,10 @@ type UseForecastDataOptions = {
   movingAverageWindow: Ref<7 | 30 | 60 | 90>
   normalize: Ref<boolean>
   graphMode: Ref<ForecastGraphMode>
+}
+
+function isSeriesMap(value: unknown): value is ForecastSeriesMap {
+  return Boolean(value) && typeof value === 'object'
 }
 
 /**
@@ -217,11 +234,8 @@ export function useForecastData({
       summary.value = data.summary ?? null
       cashflows.value = Array.isArray(data.cashflows) ? data.cashflows : []
       appliedAdjustments.value = Array.isArray(data.adjustments) ? data.adjustments : []
-      series.value = data?.series && typeof data.series === 'object' ? data.series : {}
-      metadata.value =
-        data?.metadata && typeof data.metadata === 'object'
-          ? (data.metadata as ForecastMetadata)
-          : {}
+      series.value = isSeriesMap(data.series) ? data.series : {}
+      metadata.value = data?.metadata && typeof data.metadata === 'object' ? data.metadata : {}
     } catch (err) {
       error.value = err as Error
     } finally {
