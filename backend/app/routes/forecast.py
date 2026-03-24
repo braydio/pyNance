@@ -1,8 +1,9 @@
+from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, request
 from forecast.engine import compute_forecast
-from sqlalchemy import case, func
+from sqlalchemy import func
 
 from app.config import logger
 from app.extensions import db
@@ -22,6 +23,7 @@ LIABILITY_ACCOUNT_TYPE_TOKENS = {
     "student",
     "debt",
 }
+INTEREST_PFC_CATEGORIES = {"BANK_FEES_INTEREST"}
 
 
 def _is_liability_account_type(raw_account_type: object) -> bool:
@@ -38,6 +40,60 @@ def _is_liability_account_type(raw_account_type: object) -> bool:
 
     normalized = normalized.replace("-", " ").replace("/", " ")
     return any(token in normalized for token in LIABILITY_ACCOUNT_TYPE_TOKENS)
+
+
+def _is_interest_charge_transaction(tx: Transaction) -> bool:
+    """Return ``True`` when a liability transaction appears to be interest accrual."""
+    text_fields = [
+        str(tx.description or "").strip().lower(),
+        str(tx.merchant_name or "").strip().lower(),
+        str(tx.category or "").strip().lower(),
+        str(tx.category_slug or "").strip().upper(),
+        str(tx.category_display or "").strip().lower(),
+    ]
+    if any("interest" in value for value in text_fields if value):
+        return True
+
+    pfc = tx.personal_finance_category if isinstance(tx.personal_finance_category, dict) else {}
+    pfc_detailed = str(
+        pfc.get("detailed") or pfc.get("detailed_category") or pfc.get("detailed_category_name") or ""
+    ).upper()
+    if pfc_detailed in INTEREST_PFC_CATEGORIES:
+        return True
+
+    plaid_meta = getattr(tx, "plaid_meta", None)
+    plaid_meta_category = getattr(plaid_meta, "category", None) if plaid_meta else None
+    if isinstance(plaid_meta_category, list):
+        category_path = [str(value or "").strip().lower() for value in plaid_meta_category]
+        return category_path[:2] == ["bank fees", "interest"]
+    if isinstance(plaid_meta_category, dict):
+        category_path = [str(value or "").strip().lower() for value in plaid_meta_category.values()]
+        return category_path[:2] == ["bank fees", "interest"]
+
+    return False
+
+
+def _apply_transaction_to_historical_aggregate(
+    aggregate: dict[str, float | date],
+    *,
+    amount: float,
+    account_type: object,
+    is_interest_charge: bool,
+) -> None:
+    """Apply one transaction to a daily aggregate with explicit debt attribution."""
+    if _is_liability_account_type(account_type):
+        if amount > 0:
+            aggregate["outflow"] = float(aggregate.get("outflow", 0.0)) + amount
+            debt_key = "debt_interest" if is_interest_charge else "debt_new_spending"
+            aggregate[debt_key] = float(aggregate.get(debt_key, 0.0)) + amount
+        elif amount < 0:
+            aggregate["inflow"] = float(aggregate.get("inflow", 0.0)) + abs(amount)
+        return
+
+    if amount > 0:
+        aggregate["inflow"] = float(aggregate.get("inflow", 0.0)) + amount
+    elif amount < 0:
+        aggregate["outflow"] = float(aggregate.get("outflow", 0.0)) + abs(amount)
 
 
 def _snapshot_balance_breakdown(
@@ -237,17 +293,18 @@ def _load_historical_aggregates(
     included_account_ids: list[str] | None = None,
     excluded_account_ids: list[str] | None = None,
 ) -> list[dict[str, object]]:
-    """Return daily inflow/outflow aggregates for the lookback window."""
+    """Return daily inflow/outflow aggregates for the lookback window.
+
+    Liability transactions are additionally classified into explicit debt-growth
+    buckets so the forecast engine can distinguish new spending from interest
+    accrual when building debt-focused chart series.
+    """
     included_ids = included_account_ids or []
     excluded_ids = excluded_account_ids or []
 
     lookback_start = start_date - timedelta(days=LOOKBACK_DAYS)
-    date_expr = func.date(Transaction.date).label("date")
-    inflow_sum = func.sum(case((Transaction.amount > 0, Transaction.amount), else_=0)).label("inflow")
-    outflow_sum = func.sum(case((Transaction.amount < 0, func.abs(Transaction.amount)), else_=0)).label("outflow")
-
     query = (
-        db.session.query(date_expr, inflow_sum, outflow_sum)
+        db.session.query(Transaction, Account.account_type)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
         .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
@@ -263,15 +320,26 @@ def _load_historical_aggregates(
     if excluded_ids:
         query = query.filter(~Transaction.account_id.in_(excluded_ids))
 
-    rows = query.group_by(date_expr).order_by(date_expr).all()
-    return [
-        {
-            "date": row.date,
-            "inflow": float(row.inflow or 0),
-            "outflow": float(row.outflow or 0),
+    daily_aggregates: dict[date, dict[str, float | date]] = defaultdict(
+        lambda: {
+            "inflow": 0.0,
+            "outflow": 0.0,
+            "debt_interest": 0.0,
+            "debt_new_spending": 0.0,
         }
-        for row in rows
-    ]
+    )
+    for tx, account_type in query.order_by(Transaction.date.asc()).all():
+        tx_date = tx.date.date() if isinstance(tx.date, datetime) else tx.date
+        aggregate = daily_aggregates[tx_date]
+        aggregate["date"] = tx_date
+        _apply_transaction_to_historical_aggregate(
+            aggregate,
+            amount=float(tx.amount or 0),
+            account_type=account_type,
+            is_interest_charge=_is_interest_charge_transaction(tx),
+        )
+
+    return [daily_aggregates[current_date] for current_date in sorted(daily_aggregates)]
 
 
 def _build_realized_history(
@@ -533,6 +601,8 @@ def compute_forecast_route():
         asset_balance, liability_balance, net_snapshot_balance = _snapshot_balance_breakdown(latest_snapshots)
         total_inflow = sum(float(item.get("inflow", 0) or 0) for item in historical_aggregates)
         total_outflow = sum(float(item.get("outflow", 0) or 0) for item in historical_aggregates)
+        total_debt_interest = sum(float(item.get("debt_interest", 0) or 0) for item in historical_aggregates)
+        total_debt_new_spending = sum(float(item.get("debt_new_spending", 0) or 0) for item in historical_aggregates)
         non_zero_historical_days = sum(
             1
             for item in historical_aggregates
@@ -575,6 +645,8 @@ def compute_forecast_route():
                     "snapshot_balance": net_snapshot_balance,
                     "historical_inflow": total_inflow,
                     "historical_outflow": total_outflow,
+                    "debt_interest": total_debt_interest,
+                    "debt_new_spending": total_debt_new_spending,
                 },
                 "historical_aggregate_days": len(historical_aggregates),
                 "historical_aggregate_non_zero_days": non_zero_historical_days,

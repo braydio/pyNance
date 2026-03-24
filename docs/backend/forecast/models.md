@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-22
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -22,8 +22,9 @@ this for chart series and balance deltas.
 ### `ForecastCashflowItem`
 
 Captures a single cashflow line item that drives the projection. Each item includes the date, amount,
-category, source, optional type/confidence annotations, and optional account identifiers for
-breakdown widgets.
+category, source, optional type/confidence annotations, optional account identifiers for
+breakdown widgets, and metadata that can now carry explicit debt-attribution semantics such as
+`debt_component`, `debt_series_key`, and `debt_growth_amount`.
 
 ### `ForecastSeriesPoint`
 
@@ -34,7 +35,8 @@ chart overlays and summary widgets that should not infer meaning from generic ca
 
 Encapsulates a named daily series with a stable `id`, user-facing `label`, and ordered `points`.
 The forecast compute response currently emits aspect series for realized income used by the
-auto-calculation baseline, manual user adjustments, spending totals, and debt totals.
+auto-calculation baseline, manual user adjustments, spending totals, projected debt totals, and
+the debt-growth component series `debt_interest` and `debt_new_spending`.
 
 ### `ForecastAdjustment`
 

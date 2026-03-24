@@ -9,6 +9,7 @@
     <div v-else-if="!hasForecastData" class="card glass text-sm text-gray-500">
       Forecast data is not available yet. Add adjustments or try again later.
     </div>
+
     <ForecastSummaryPanel
       :asset-balance="assetBalance"
       :liability-balance="liabilityBalance"
@@ -54,7 +55,7 @@
           <option :value="90">90 days</option>
         </select>
       </label>
-      <label> <input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history </label>
+      <label><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label>
     </div>
 
     <div class="card glass adjustments-grid">
@@ -105,12 +106,12 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
-import ForecastChart from './ForecastChart.vue'
-import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
+import ForecastBreakdown from './ForecastBreakdown.vue'
+import ForecastChart from './ForecastChart.vue'
+import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
 import {
   type ForecastAdjustmentInput,
   type ForecastAspectSeries,
@@ -119,7 +120,6 @@ import {
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
-import { useForecastData } from '@/composables/useForecastData'
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
 
@@ -129,9 +129,8 @@ const FORECAST_ASPECT_OPTIONS = [
   { value: 'manual_adjustments', label: 'Manual adjustments' },
   { value: 'spending', label: 'Spending' },
   { value: 'debt', label: 'Debt composition' },
-]
+] as const
 
-const viewType = ref('Month')
 type ForecastComputeMeta = {
   lookbackDays: number
   movingAverageWindow: 7 | 30 | 60 | 90
@@ -140,24 +139,31 @@ type ForecastComputeMeta = {
   autoDetectedAdjustmentCount: number
 }
 
+type ForecastAccountOption = {
+  account_id: string
+  name: string
+  institution_name: string
+}
+
 const viewType = ref<ForecastViewType>('Month')
 const manualIncome = ref(0)
 const liabilityRate = ref(0)
-const adjustments = ref([])
+const adjustments = ref<ForecastAdjustmentInput[]>([])
 const userId = ref(import.meta.env.VITE_USER_ID_PLAID || '')
-const forecastAccounts = ref([])
-const includedAccountIds = ref([])
-const excludedAccountIds = ref([])
-const movingAverageWindow = ref(30)
+const forecastAccounts = ref<ForecastAccountOption[]>([])
+const includedAccountIds = ref<string[]>([])
+const excludedAccountIds = ref<string[]>([])
+const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
 const normalize = ref(false)
-const graphMode = ref('combined')
-const selectedAspect = ref('balances')
+const graphMode = ref<ForecastGraphMode>('combined')
+const selectedAspect = ref<(typeof FORECAST_ASPECT_OPTIONS)[number]['value']>('balances')
 const forecastAspectOptions = computed(() => FORECAST_ASPECT_OPTIONS)
 const { groups: accountSnapshotGroups } = useAccountGroups({ userId: userId.value })
 
 const {
   timeline,
   summary,
+  cashflows,
   adjustments: appliedAdjustments,
   series,
   metadata,
@@ -187,14 +193,14 @@ const netBalance = computed(() =>
   Number(metadata.value?.net_balance ?? summary.value?.starting_balance ?? 0),
 )
 
-const seriesEntries = computed(() => Object.values(series.value || {}))
 const forecastItems = computed(() =>
-  seriesEntries.value.map((entry) => ({
+  Object.values(series.value || {}).map((entry) => ({
     label: entry.label,
     amount: entry.points.reduce((total, point) => total + Number(point.value ?? 0), 0),
   })),
 )
-const baselineTrendAdjustment = computed(() => {
+
+const baselineTrendAdjustment = computed<ForecastAdjustmentInput | null>(() => {
   const avgDaily = Number(summary.value?.average_daily_change ?? 0)
   if (!Number.isFinite(avgDaily) || avgDaily === 0) {
     return null
@@ -208,6 +214,7 @@ const baselineTrendAdjustment = computed(() => {
     reason: 'Derived from historical average net change.',
   }
 })
+
 const autoDetectedAdjustments = computed(() => [
   ...(appliedAdjustments.value || []).filter((adjustment) =>
     String(adjustment?.adjustment_type || '')
@@ -216,6 +223,7 @@ const autoDetectedAdjustments = computed(() => [
   ),
   ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
 ])
+
 const manualAdjustmentSeries = computed<ForecastAspectSeries | null>(
   () => series.value?.manual_adjustments ?? null,
 )
@@ -228,6 +236,7 @@ const manualAdjustmentPoints = computed<ForecastSeriesPoint[]>(() =>
 const realizedIncomePoints = computed<ForecastSeriesPoint[]>(() =>
   (realizedIncomeSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
+
 const forecastAccountIdSet = computed(
   () => new Set(forecastAccounts.value.map((account) => account.account_id)),
 )
@@ -250,8 +259,14 @@ const accountGroupOptions = computed(() =>
     })
     .filter((group) => group.id && group.accountIds.length > 0),
 )
+
 const hasForecastData = computed(
-  () => timeline.value.length > 0 || hasRenderableCashflows(cashflows.value),
+  () =>
+    timeline.value.length > 0 ||
+    cashflows.value.some((entry) => Number(entry?.amount ?? 0) !== 0) ||
+    Object.values(series.value || {}).some((entry) =>
+      entry.points.some((point) => Number(point.value ?? 0) !== 0),
+    ),
 )
 const isLoading = computed(() => loading.value)
 const realizedHistory = computed(
@@ -267,8 +282,14 @@ const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
       realizedHistory.value.length ??
       0,
   ),
-  movingAverageWindow: movingAverageWindow.value,
-  normalize: normalize.value,
+  movingAverageWindow: Number(
+    metadata.value?.moving_average_window ??
+      summary.value?.metadata?.moving_average_window ??
+      movingAverageWindow.value,
+  ) as 7 | 30 | 60 | 90,
+  normalize: Boolean(
+    metadata.value?.normalize ?? summary.value?.metadata?.normalize ?? normalize.value,
+  ),
   includesAutoDetectedAdjustments: autoDetectedAdjustments.value.length > 0,
   autoDetectedAdjustmentCount: autoDetectedAdjustments.value.length,
 }))
@@ -290,32 +311,20 @@ watch(
     normalize,
     graphMode,
   ],
-  fetchData,
+  () => {
+    void fetchData()
+  },
+  { deep: true },
 )
 
-/**
- * Determine whether any cashflow items exist that can feed non-balance chart aspects.
- *
- * @param {Array<{ amount?: number | null }>} entries
- * @returns {boolean}
- */
-function hasRenderableCashflows(entries) {
-  return entries.some((entry) => Number(entry?.amount ?? 0) !== 0)
-}
-
-/**
- * Load forecast account options and default to including all visible accounts.
- *
- * @returns {Promise<void>}
- */
 async function fetchForecastAccounts() {
   try {
     const response = await api.getAccounts()
     const accounts = Array.isArray(response.accounts) ? response.accounts : []
     forecastAccounts.value = accounts.map((account) => ({
-      account_id: account.account_id,
-      name: account.name,
-      institution_name: account.institution_name,
+      account_id: String(account.account_id),
+      name: String(account.name || 'Unknown account'),
+      institution_name: String(account.institution_name || 'Unknown institution'),
     }))
     if (includedAccountIds.value.length === 0) {
       includedAccountIds.value = forecastAccounts.value.map((account) => account.account_id)
@@ -325,18 +334,14 @@ async function fetchForecastAccounts() {
   }
 }
 
-/**
- * Capture adjustment inputs so the compute request can include them.
- *
- * @param {import('@/composables/useForecastData').ForecastAdjustmentInput} adjustment
- */
-function addAdjustment(adjustment) {
+function addAdjustment(adjustment: ForecastAdjustmentInput) {
   adjustments.value = [...adjustments.value, adjustment]
 }
 </script>
 
 <style scoped>
 @reference "../../assets/css/main.css";
+
 .forecast-layout {
   display: flex;
   flex-direction: column;
@@ -359,30 +364,16 @@ function addAdjustment(adjustment) {
 .adjustments-title {
   font-size: 0.95rem;
   font-weight: 600;
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.5rem;
 }
 
 .adjustments-empty {
-  font-size: 0.85rem;
-  color: var(--text-muted);
+  color: #6b7280;
 }
 
 .adjustments-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.adjustments-list li {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 0.5rem;
-  font-size: 0.85rem;
-}
-
-.adjustments-list.auto strong {
-  color: #047857;
 }
 </style>
