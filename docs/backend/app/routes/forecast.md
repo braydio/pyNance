@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-17
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -25,13 +25,13 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `user_id` (string, required)
     - `start_date` (ISO date string, optional; defaults to today)
     - `horizon_days` (integer, optional; defaults to 30)
-    - `adjustments` (list, optional; supports empty list or multiple adjustments, with optional `distribution`, `range_start`, and `range_end` for spread entries)
+    - `adjustments` (list, optional; supports empty list or multiple adjustments, with optional `distribution`, `range_start`, and `range_end` for spread entries; debt adjustments may include `metadata.debt_component` / `metadata.debt_series_key` to classify debt growth semantics)
     - `moving_average_window` (integer, optional; 7, 30, 60, or 90; defaults to 30)
     - `normalize` (boolean, optional; normalizes historical aggregates before projection)
     - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts.
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts, including explicit debt-growth totals for `debt_interest` and `debt_new_spending`.
 
 ## Auth
 
@@ -46,6 +46,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
 ## Behaviors/Edge Cases
 
 - Historical transaction patterns combined with recurring and nonrecurring projections drive the response.
+- Liability-account transactions are classified into `debt_interest` and `debt_new_spending` while historical aggregates are built so projected debt totals can expose both the total debt line and its daily growth composition.
 - Override parameters (`manual_income`, `liability_rate`) are applied to adjust the forecast.
 - View selection switches horizon lengths (30 days for month, 365 days for year).
 - Forecast recompute uses the most recent account snapshots and a 90-day lookback of transaction inflow/outflow aggregates.

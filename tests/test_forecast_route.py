@@ -459,6 +459,8 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(cli
         "snapshot_balance": 100.0,
         "historical_inflow": 40.0,
         "historical_outflow": 15.0,
+        "debt_interest": 0.0,
+        "debt_new_spending": 0.0,
     }
     realized_history = captured["metadata"]["realized_history"]
     assert isinstance(realized_history, list)
@@ -562,3 +564,37 @@ def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(c
     assert captured["metadata"]["liability_balance"] == 350.0
     assert captured["metadata"]["net_balance"] == 650.0
     assert captured["metadata"]["starting_balance"] == 650.0
+
+
+def test_apply_transaction_to_historical_aggregate_tracks_debt_components():
+    aggregate = {
+        "date": datetime(2024, 1, 1).date(),
+        "inflow": 0.0,
+        "outflow": 0.0,
+        "debt_interest": 0.0,
+        "debt_new_spending": 0.0,
+    }
+
+    forecast_module._apply_transaction_to_historical_aggregate(
+        aggregate,
+        amount=12.5,
+        account_type="credit_card",
+        is_interest_charge=True,
+    )
+    forecast_module._apply_transaction_to_historical_aggregate(
+        aggregate,
+        amount=30.0,
+        account_type="credit_card",
+        is_interest_charge=False,
+    )
+    forecast_module._apply_transaction_to_historical_aggregate(
+        aggregate,
+        amount=-18.0,
+        account_type="credit_card",
+        is_interest_charge=False,
+    )
+
+    assert aggregate["outflow"] == 42.5
+    assert aggregate["inflow"] == 18.0
+    assert aggregate["debt_interest"] == 12.5
+    assert aggregate["debt_new_spending"] == 30.0

@@ -1,8 +1,18 @@
-// src/composables/useForecastData.ts
-
-import { ref, computed, type Ref } from 'vue'
+import { computed, ref, type Ref } from 'vue'
 
 export type ForecastViewType = 'Month' | 'Year'
+export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
+export type DebtComponentType = 'interest' | 'new_spending'
+
+export type ForecastMetadata = {
+  asset_balance?: number
+  liability_balance?: number
+  net_balance?: number
+  debt_component?: DebtComponentType | 'debt_interest' | 'debt_new_spending'
+  debt_series_key?: 'debt_interest' | 'debt_new_spending'
+  semantic_type?: string
+  [key: string]: unknown
+}
 
 export type ForecastAdjustmentInput = {
   label: string
@@ -14,6 +24,7 @@ export type ForecastAdjustmentInput = {
   distribution?: 'single' | 'spread'
   range_start?: string
   range_end?: string
+  metadata?: ForecastMetadata
 }
 
 export type ForecastTimelinePoint = {
@@ -23,13 +34,6 @@ export type ForecastTimelinePoint = {
   actual_balance: number | null
   delta?: number | null
   metadata?: ForecastMetadata
-}
-
-export type ForecastMetadata = {
-  asset_balance?: number
-  liability_balance?: number
-  net_balance?: number
-  [key: string]: unknown
 }
 
 export type ForecastSummary = {
@@ -90,8 +94,6 @@ type ForecastComputeResponse = {
   metadata: ForecastMetadata
 }
 
-export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
-
 type UseForecastDataOptions = {
   viewType: Ref<ForecastViewType>
   manualIncome: Ref<number>
@@ -103,6 +105,28 @@ type UseForecastDataOptions = {
   movingAverageWindow: Ref<7 | 30 | 60 | 90>
   normalize: Ref<boolean>
   graphMode: Ref<ForecastGraphMode>
+}
+
+/**
+ * Build the explicit debt-growth adjustment emitted for the summary panel's liability control.
+ */
+function buildDebtContributionAdjustment(
+  startDate: string,
+  amount: number,
+): ForecastAdjustmentInput {
+  return {
+    label: 'Debt new spending',
+    amount: -Math.abs(amount),
+    date: startDate,
+    frequency: 'daily',
+    adjustment_type: 'manual_debt',
+    reason: 'Manual daily debt contribution from forecast summary controls.',
+    metadata: {
+      debt_component: 'new_spending',
+      debt_series_key: 'debt_new_spending',
+      semantic_type: 'debt_contribution',
+    },
+  }
 }
 
 /**
@@ -155,13 +179,7 @@ export function useForecastData({
       })
     }
     if (liabilityRate.value) {
-      manualEntries.push({
-        label: 'Liability rate',
-        amount: -Math.abs(liabilityRate.value),
-        date: startDate,
-        frequency: 'daily',
-        adjustment_type: 'manual',
-      })
+      manualEntries.push(buildDebtContributionAdjustment(startDate, liabilityRate.value))
     }
 
     return [...entries, ...manualEntries].filter((entry) => entry.amount !== 0)

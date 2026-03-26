@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-22
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -71,6 +71,8 @@ adjustments.
 ### Behavior
 
 - Computes daily deltas from the baseline timeline without mutating it.
+- Emits explicit debt cashflow rows first when timeline metadata carries projected debt-interest or
+  debt-new-spending averages.
 - Allocates deltas to recurring sources first, then scales category averages to match the remaining
   delta.
 - Adds an `Uncategorized` fallback item when the delta cannot be fully attributed.
@@ -101,7 +103,7 @@ projected balance is at or below zero).
 - Building a baseline projection with `project_balances`.
 - Applying adjustments with `apply_adjustments`.
 - Generating cashflow breakdowns and summary metrics.
-- Building typed aspect series for realized income, manual adjustments, spending, and debt totals.
+- Building typed aspect series for realized income, manual adjustments, spending, and debt totals plus debt-growth component series for interest accrual and new spending.
 - Returning a fully serialized `ForecastResult` payload for the API layer.
 
 ## Extended compute options
@@ -121,7 +123,20 @@ Current emitted aspect keys:
   support auto-calculation context in the UI.
 - `manual_adjustments`: per-day totals for non-auto adjustments entered by the user.
 - `spending`: per-day projected spending totals derived from negative cashflow items.
-- `debt_totals`: liability totals carried across the forecast horizon from the latest snapshot set.
+- `debt_totals`: projected total debt balance across the forecast horizon.
+- `debt_interest`: per-day debt growth attributed to interest accrual.
+- `debt_new_spending`: per-day debt growth attributed to new liability spending.
 
 These series are additive to the existing `timeline`, `cashflows`, and `summary` fields so current
 consumers remain compatible during the frontend migration.
+
+## Debt attribution flow
+
+- Route-level historical aggregates now classify liability transactions into `debt_interest` and
+  `debt_new_spending`.
+- `project_balances` carries those averages into each timeline point’s metadata as
+  `average_debt_interest` and `average_debt_new_spending`.
+- `build_cashflow_items` emits explicit debt cashflow rows with matching metadata so downstream
+  consumers do not need to reverse-engineer debt semantics from generic outflows.
+- Adjustment entries can also declare debt metadata (`debt_component` / `debt_series_key`), allowing
+  manual forecast controls to flow into both cashflow metadata and the debt-focused chart series.

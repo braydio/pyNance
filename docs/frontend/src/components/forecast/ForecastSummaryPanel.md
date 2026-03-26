@@ -10,7 +10,9 @@
 - `liabilityBalance`: Included liability-account total used as the negative side of the starting balance.
 - `netBalance`: Current starting balance shown as assets minus liabilities for the selected account scope.
 - `manualIncome`: Manual daily income adjustment value.
-- `liabilityRate`: Manual daily liability adjustment value.
+- `liabilityRate`: Manual daily liability adjustment value. The compute payload now classifies this
+  control as debt growth from new spending so backend debt series do not treat it as generic
+  liability drift.
 - `netChange`: Computed net delta returned by the forecast API when available.
 - `viewType`: Current view mode (`Month` or `Year`).
 - `accountGroupOptions`: Dashboard Account Snapshot groups exposed as quick-select account shortcuts.
@@ -29,7 +31,7 @@
 - `Liabilities`: Explains that the value totals included debt balances that offset the starting position.
 - `Current Balance`: Explains that the displayed starting balance is assets minus liabilities before any projected cashflow changes.
 - `Manual Income`: Explains that the input adds a daily manual income amount to each forecasted day and reflects the current control value.
-- `Liability Rate`: Explains that the input subtracts a daily manual liability amount from each forecasted day and reflects the current control value.
+- `Liability Rate`: Explains that the input subtracts a daily manual liability amount from each forecasted day, classifies it as manual debt growth from new spending, and reflects the current control value.
 - `Net Delta`: Explains whether the displayed delta comes from computed forecast output or a fallback of manual income minus liability rate, and references the active moving-average/lookback settings when available.
 
 ## Account Selector

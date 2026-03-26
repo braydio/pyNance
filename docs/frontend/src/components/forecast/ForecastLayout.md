@@ -8,7 +8,8 @@
 
 - Fetch forecast data through `useForecastData`.
 - Load available forecast accounts and Dashboard Account Snapshot groups.
-- Read typed aspect series from the forecast response for sidebar summaries and chart overlays.
+- Read typed aspect series from the forecast response for sidebar summaries and chart overlays,
+  including the debt-total and debt-component series used by the debt chart aspect.
 - Build `forecastComputeMeta` so child components can describe the active lookback window, moving-average selection, normalization state, and auto-detected adjustment usage.
 
 ## Child metadata flow

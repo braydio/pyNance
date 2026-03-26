@@ -22,6 +22,9 @@ DEFAULT_CATEGORY_CONFIDENCE = Decimal("0.6")
 DEFAULT_RECURRING_CONFIDENCE = Decimal("0.85")
 DEFAULT_UNCATEGORIZED_CONFIDENCE = Decimal("0.3")
 DEFAULT_ADJUSTMENT_CONFIDENCE = Decimal("0.95")
+DEBT_SERIES_TOTAL_KEY = "debt_totals"
+DEBT_SERIES_INTEREST_KEY = "debt_interest"
+DEBT_SERIES_NEW_SPENDING_KEY = "debt_new_spending"
 LIABILITY_ACCOUNT_TYPE_TOKENS = {
     "credit",
     "credit card",
@@ -131,6 +134,37 @@ def _cashflow_direction(amount: Decimal) -> str:
 def _cashflow_type(amount: Decimal) -> str:
     """Return the cashflow type for a signed amount."""
     return "income" if amount >= 0 else "expense"
+
+
+def _normalize_debt_component(value: Any) -> str | None:
+    """Normalize debt component labels into stable forecast series keys."""
+    normalized = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if normalized in {"interest", DEBT_SERIES_INTEREST_KEY}:
+        return DEBT_SERIES_INTEREST_KEY
+    if normalized in {"new_spending", "principal", "spending", DEBT_SERIES_NEW_SPENDING_KEY}:
+        return DEBT_SERIES_NEW_SPENDING_KEY
+    return None
+
+
+def _debt_component_from_entry(entry: Mapping[str, Any] | ForecastCashflowItem | Any) -> str | None:
+    """Read normalized debt attribution metadata from an entry."""
+    metadata = _read_entry_value(entry, "metadata", {}) or {}
+    if isinstance(metadata, Mapping):
+        for key in ("debt_series_key", "debt_component", "debt_contribution_type"):
+            component = _normalize_debt_component(metadata.get(key))
+            if component:
+                return component
+
+    for key in ("debt_series_key", "debt_component", "debt_contribution_type"):
+        component = _normalize_debt_component(_read_entry_value(entry, key))
+        if component:
+            return component
+
+    label = str(_read_entry_value(entry, "label", "")).strip().lower()
+    adjustment_type = str(_read_entry_value(entry, "adjustment_type", "")).strip().lower()
+    if "debt" in label or "liability" in label or "debt" in adjustment_type:
+        return DEBT_SERIES_NEW_SPENDING_KEY
+    return None
 
 
 def _daily_deltas(
@@ -353,7 +387,7 @@ def build_cashflow_items(
     category_sources = _category_sources(category_averages)
     recurring_by_date = _recurring_sources_by_date(recurring_sources, timeline_dates)
 
-    for current_date, delta in daily_deltas:
+    for point, (current_date, delta) in zip(timeline, daily_deltas):
         day_items: list[tuple[Decimal, ForecastCashflowItem]] = []
         recurring_items = recurring_by_date.get(current_date, [])
         recurring_total = sum((_to_decimal(item.get("amount")) for item in recurring_items), Decimal("0"))
@@ -379,7 +413,12 @@ def build_cashflow_items(
                 )
             )
 
-        remaining = delta - recurring_total
+        debt_component_total = Decimal("0")
+        for debt_amount, debt_item in _build_baseline_debt_cashflows(current_date, point.metadata or {}):
+            debt_component_total += debt_amount
+            day_items.append((debt_amount, debt_item))
+
+        remaining = delta - recurring_total - debt_component_total
         for entry in _scaled_category_items(remaining, category_sources):
             amount = _to_decimal(entry.get("amount"))
             if amount == 0:
@@ -429,6 +468,47 @@ def build_cashflow_items(
     return cashflows
 
 
+def _build_baseline_debt_cashflows(
+    current_date: date,
+    point_metadata: Mapping[str, Any],
+) -> list[tuple[Decimal, ForecastCashflowItem]]:
+    """Build explicit cashflow rows for projected debt growth components."""
+    component_configs = (
+        (DEBT_SERIES_INTEREST_KEY, "Debt interest accrual", point_metadata.get("average_debt_interest")),
+        (DEBT_SERIES_NEW_SPENDING_KEY, "Debt new spending", point_metadata.get("average_debt_new_spending")),
+    )
+    items: list[tuple[Decimal, ForecastCashflowItem]] = []
+    for component_key, label, raw_amount in component_configs:
+        growth_amount = _to_decimal(raw_amount)
+        if growth_amount <= 0:
+            continue
+
+        signed_amount = -growth_amount
+        items.append(
+            (
+                signed_amount,
+                ForecastCashflowItem(
+                    date=current_date,
+                    amount=float(signed_amount),
+                    label=label,
+                    category="Debt",
+                    source="historical_debt_average",
+                    type="expense",
+                    confidence=float(DEFAULT_CATEGORY_CONFIDENCE),
+                    direction="outflow",
+                    metadata={
+                        "debt_component": component_key,
+                        "debt_series_key": component_key,
+                        "semantic_type": "debt_contribution",
+                        "affects_debt_total": True,
+                        "debt_growth_amount": float(growth_amount),
+                    },
+                ),
+            )
+        )
+    return items
+
+
 def _build_adjustment_cashflows(
     adjustments: Sequence[Mapping[str, Any]], timeline_dates: Sequence[date]
 ) -> list[ForecastCashflowItem]:
@@ -448,9 +528,27 @@ def _build_adjustment_cashflows(
             fallback=timeline_dates[0],
         )
         confidence = float(_read_entry_value(adjustment, "confidence", DEFAULT_ADJUSTMENT_CONFIDENCE))
+        debt_component = _debt_component_from_entry(adjustment)
 
         for current_date in timeline_dates:
             if _matches_frequency(current_date, start_date, frequency):
+                metadata = {
+                    "adjustment_type": adjustment_type,
+                    "adjustment_id": adjustment_id,
+                    "reason": reason,
+                    "frequency": frequency or "one-time",
+                }
+                if debt_component:
+                    metadata.update(
+                        {
+                            "debt_component": debt_component,
+                            "debt_series_key": debt_component,
+                            "semantic_type": "debt_contribution",
+                            "affects_debt_total": True,
+                            "debt_growth_amount": float(abs(amount)),
+                        }
+                    )
+
                 cashflows.append(
                     ForecastCashflowItem(
                         date=current_date,
@@ -461,12 +559,7 @@ def _build_adjustment_cashflows(
                         type=_cashflow_type(amount),
                         confidence=confidence,
                         direction=_cashflow_direction(amount),
-                        metadata={
-                            "adjustment_type": adjustment_type,
-                            "adjustment_id": adjustment_id,
-                            "reason": reason,
-                            "frequency": frequency or "one-time",
-                        },
+                        metadata=metadata,
                     )
                 )
                 if frequency is None:
@@ -616,10 +709,15 @@ def _build_adjustment_models(
             adjustment_date = date.today()
         reason = _read_entry_value(adjustment, "reason")
         adjustment_id = _read_entry_value(adjustment, "adjustment_id", _read_entry_value(adjustment, "id"))
-        metadata: dict[str, Any] = {}
+        metadata: dict[str, Any] = dict(_read_entry_value(adjustment, "metadata", {}) or {})
         frequency = _read_entry_value(adjustment, "frequency")
         if frequency:
             metadata["frequency"] = frequency
+        debt_component = _debt_component_from_entry(adjustment)
+        if debt_component:
+            metadata.setdefault("debt_component", debt_component)
+            metadata.setdefault("debt_series_key", debt_component)
+            metadata.setdefault("semantic_type", "debt_contribution")
 
         models.append(
             ForecastAdjustment(
@@ -704,17 +802,89 @@ def _spending_values_by_date(
     return spending_by_date
 
 
-def _debt_values_by_date(
-    latest_snapshots: Sequence[Mapping[str, Any]],
-    timeline_dates: Sequence[date],
-) -> dict[date, Decimal]:
-    """Return constant debt totals across the forecast horizon."""
+def _initial_debt_total(latest_snapshots: Sequence[Mapping[str, Any]]) -> Decimal:
+    """Return the total liability balance present in the latest snapshots."""
     debt_total = Decimal("0")
     for snapshot in latest_snapshots:
         balance = _to_decimal(snapshot.get("balance"))
         if _is_liability_account_type(snapshot.get("account_type")):
             debt_total += abs(balance)
-    return {current_date: debt_total for current_date in timeline_dates}
+    return debt_total
+
+
+def _baseline_debt_component_values_by_date(
+    timeline: Sequence[ForecastTimelinePoint],
+) -> dict[str, dict[date, Decimal]]:
+    """Return projected baseline debt growth values keyed by component."""
+    component_map = {
+        DEBT_SERIES_INTEREST_KEY: {},
+        DEBT_SERIES_NEW_SPENDING_KEY: {},
+    }
+    for point in timeline:
+        current_date = _parse_date(point.date, fallback=date.today())
+        metadata = point.metadata or {}
+        component_map[DEBT_SERIES_INTEREST_KEY][current_date] = _to_decimal(metadata.get("average_debt_interest"))
+        component_map[DEBT_SERIES_NEW_SPENDING_KEY][current_date] = _to_decimal(
+            metadata.get("average_debt_new_spending")
+        )
+    return component_map
+
+
+def _adjustment_debt_component_values_by_date(
+    adjustments: Sequence[Mapping[str, Any]] | None,
+    timeline_dates: Sequence[date],
+) -> dict[str, dict[date, Decimal]]:
+    """Return per-day debt component deltas contributed by adjustments."""
+    component_map = {
+        DEBT_SERIES_INTEREST_KEY: {current_date: Decimal("0") for current_date in timeline_dates},
+        DEBT_SERIES_NEW_SPENDING_KEY: {current_date: Decimal("0") for current_date in timeline_dates},
+    }
+    for adjustment in adjustments or []:
+        component = _debt_component_from_entry(adjustment)
+        if not component:
+            continue
+
+        scheduled_values = _build_adjustment_schedule([adjustment], timeline_dates)
+        for current_date, signed_balance_delta in scheduled_values.items():
+            component_map[component][current_date] += -signed_balance_delta
+
+    return component_map
+
+
+def _debt_series_values(
+    *,
+    latest_snapshots: Sequence[Mapping[str, Any]],
+    baseline_timeline: Sequence[ForecastTimelinePoint],
+    adjustments: Sequence[Mapping[str, Any]] | None,
+    timeline_dates: Sequence[date],
+) -> dict[str, dict[date, Decimal]]:
+    """Build debt balance and component series for the forecast horizon."""
+    baseline_components = _baseline_debt_component_values_by_date(baseline_timeline)
+    adjustment_components = _adjustment_debt_component_values_by_date(adjustments, timeline_dates)
+
+    interest_values = {
+        current_date: baseline_components[DEBT_SERIES_INTEREST_KEY].get(current_date, Decimal("0"))
+        + adjustment_components[DEBT_SERIES_INTEREST_KEY].get(current_date, Decimal("0"))
+        for current_date in timeline_dates
+    }
+    new_spending_values = {
+        current_date: baseline_components[DEBT_SERIES_NEW_SPENDING_KEY].get(current_date, Decimal("0"))
+        + adjustment_components[DEBT_SERIES_NEW_SPENDING_KEY].get(current_date, Decimal("0"))
+        for current_date in timeline_dates
+    }
+
+    running_total = _initial_debt_total(latest_snapshots)
+    total_values: dict[date, Decimal] = {}
+    for current_date in timeline_dates:
+        running_total += interest_values.get(current_date, Decimal("0"))
+        running_total += new_spending_values.get(current_date, Decimal("0"))
+        total_values[current_date] = running_total
+
+    return {
+        DEBT_SERIES_TOTAL_KEY: total_values,
+        DEBT_SERIES_INTEREST_KEY: interest_values,
+        DEBT_SERIES_NEW_SPENDING_KEY: new_spending_values,
+    }
 
 
 def _build_forecast_series(
@@ -722,11 +892,18 @@ def _build_forecast_series(
     historical_aggregates: Sequence[Mapping[str, Any]],
     historical_dates: Sequence[date],
     adjustments: Sequence[Mapping[str, Any]] | None,
+    baseline_timeline: Sequence[ForecastTimelinePoint],
     timeline_dates: Sequence[date],
     cashflows: Sequence[ForecastCashflowItem],
     latest_snapshots: Sequence[Mapping[str, Any]],
 ) -> dict[str, ForecastAspectSeries]:
     """Build typed aspect series for frontend charting and summaries."""
+    debt_values = _debt_series_values(
+        latest_snapshots=latest_snapshots,
+        baseline_timeline=baseline_timeline,
+        adjustments=adjustments,
+        timeline_dates=timeline_dates,
+    )
     return {
         "realized_income": _build_daily_series(
             series_id="realized_income",
@@ -749,12 +926,26 @@ def _build_forecast_series(
             values_by_date=_spending_values_by_date(cashflows, timeline_dates),
             metadata={"timeframe": "forecast", "source": "cashflows"},
         ),
-        "debt_totals": _build_daily_series(
-            series_id="debt_totals",
-            label="Debt totals",
+        DEBT_SERIES_TOTAL_KEY: _build_daily_series(
+            series_id=DEBT_SERIES_TOTAL_KEY,
+            label="Total debt",
             dates=timeline_dates,
-            values_by_date=_debt_values_by_date(latest_snapshots, timeline_dates),
-            metadata={"timeframe": "forecast", "source": "latest_snapshots"},
+            values_by_date=debt_values[DEBT_SERIES_TOTAL_KEY],
+            metadata={"timeframe": "forecast", "source": "debt_projection", "value_mode": "balance"},
+        ),
+        DEBT_SERIES_INTEREST_KEY: _build_daily_series(
+            series_id=DEBT_SERIES_INTEREST_KEY,
+            label="Debt interest accrual",
+            dates=timeline_dates,
+            values_by_date=debt_values[DEBT_SERIES_INTEREST_KEY],
+            metadata={"timeframe": "forecast", "source": "debt_projection", "value_mode": "daily_change"},
+        ),
+        DEBT_SERIES_NEW_SPENDING_KEY: _build_daily_series(
+            series_id=DEBT_SERIES_NEW_SPENDING_KEY,
+            label="Debt new spending",
+            dates=timeline_dates,
+            values_by_date=debt_values[DEBT_SERIES_NEW_SPENDING_KEY],
+            metadata={"timeframe": "forecast", "source": "debt_projection", "value_mode": "daily_change"},
         ),
     }
 
@@ -820,6 +1011,12 @@ def compute_forecast(
                         **item,
                         "inflow": float(_extract_amount(item, ("inflow", "income", "credit")) / normalization_factor),
                         "outflow": float(_extract_amount(item, ("outflow", "expense", "debit")) / normalization_factor),
+                        DEBT_SERIES_INTEREST_KEY: float(
+                            _extract_amount(item, (DEBT_SERIES_INTEREST_KEY,)) / normalization_factor
+                        ),
+                        DEBT_SERIES_NEW_SPENDING_KEY: float(
+                            _extract_amount(item, (DEBT_SERIES_NEW_SPENDING_KEY,)) / normalization_factor
+                        ),
                     }
                 )
 
@@ -860,6 +1057,7 @@ def compute_forecast(
         historical_aggregates=historical_window,
         historical_dates=historical_dates,
         adjustments=adjustments,
+        baseline_timeline=baseline_timeline,
         timeline_dates=timeline_dates,
         cashflows=cashflows,
         latest_snapshots=latest_snapshots,
@@ -1084,6 +1282,8 @@ def project_balances(
 
     total_inflow = Decimal("0")
     total_outflow = Decimal("0")
+    total_debt_interest = Decimal("0")
+    total_debt_new_spending = Decimal("0")
     aggregate_dates: set[date] = set()
 
     for aggregate in historical_aggregates:
@@ -1103,14 +1303,20 @@ def project_balances(
 
         total_inflow += inflow
         total_outflow += outflow
+        total_debt_interest += _extract_amount(aggregate, (DEBT_SERIES_INTEREST_KEY,))
+        total_debt_new_spending += _extract_amount(aggregate, (DEBT_SERIES_NEW_SPENDING_KEY,))
 
     day_count = len(aggregate_dates) if aggregate_dates else len(historical_aggregates)
     if day_count <= 0:
         average_inflow = Decimal("0")
         average_outflow = Decimal("0")
+        average_debt_interest = Decimal("0")
+        average_debt_new_spending = Decimal("0")
     else:
         average_inflow = total_inflow / Decimal(day_count)
         average_outflow = total_outflow / Decimal(day_count)
+        average_debt_interest = total_debt_interest / Decimal(day_count)
+        average_debt_new_spending = total_debt_new_spending / Decimal(day_count)
 
     # Build the projection by applying the average daily net change to the latest balance.
     points: list[ForecastTimelinePoint] = []
@@ -1129,6 +1335,8 @@ def project_balances(
                 metadata={
                     "average_inflow": float(average_inflow),
                     "average_outflow": float(average_outflow),
+                    "average_debt_interest": float(average_debt_interest),
+                    "average_debt_new_spending": float(average_debt_new_spending),
                     "starting_balance": float(starting_balance),
                 },
             )
