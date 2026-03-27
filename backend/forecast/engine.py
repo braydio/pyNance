@@ -597,7 +597,11 @@ def compute_summary(
 def _build_adjustment_models(
     adjustments: Sequence[Mapping[str, Any]] | None,
 ) -> list[ForecastAdjustment]:
-    """Normalize adjustment payloads into forecast adjustment models."""
+    """Normalize adjustment payloads into forecast adjustment models.
+
+    Existing adjustment metadata is preserved so API consumers can render
+    drill-down details for inferred and manual entries.
+    """
     models: list[ForecastAdjustment] = []
     for adjustment in adjustments or []:
         amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
@@ -616,7 +620,8 @@ def _build_adjustment_models(
             adjustment_date = date.today()
         reason = _read_entry_value(adjustment, "reason")
         adjustment_id = _read_entry_value(adjustment, "adjustment_id", _read_entry_value(adjustment, "id"))
-        metadata: dict[str, Any] = {}
+        raw_metadata = _read_entry_value(adjustment, "metadata", {})
+        metadata: dict[str, Any] = dict(raw_metadata) if isinstance(raw_metadata, Mapping) else {}
         frequency = _read_entry_value(adjustment, "frequency")
         if frequency:
             metadata["frequency"] = frequency

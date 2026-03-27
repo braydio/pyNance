@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-17
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -31,7 +31,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), and aggregate contribution totals for the selected accounts.
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), aggregate contribution totals for the selected accounts, and preserved adjustment metadata such as `metadata.source_transactions` for auto-detected wage entries.
 
 ## Auth
 
@@ -49,6 +49,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
 - Override parameters (`manual_income`, `liability_rate`) are applied to adjust the forecast.
 - View selection switches horizon lengths (30 days for month, 365 days for year).
 - Forecast recompute uses the most recent account snapshots and a 90-day lookback of transaction inflow/outflow aggregates.
+- Auto wage detection samples up to five recent matching transactions and stores those references on each inferred adjustment under `metadata.source_transactions` so clients can render a drill-down explanation.
 
 ## Sample Request/Response
 
