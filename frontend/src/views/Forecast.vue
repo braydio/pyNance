@@ -3,7 +3,7 @@
   <BasePageLayout class="forecast-view">
     <PageHeader :icon="LineChart">
       <template #title>Forecast</template>
-      <template #subtitle>Project your financial future</template>
+      <template #subtitle>With complex voodoo magic</template>
     </PageHeader>
     <ForecastLayout />
   </BasePageLayout>
