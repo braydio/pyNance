@@ -14,6 +14,7 @@ export type ForecastAdjustmentInput = {
   distribution?: 'single' | 'spread'
   range_start?: string
   range_end?: string
+  metadata?: ForecastMetadata
 }
 
 export type ForecastMetadata = {
