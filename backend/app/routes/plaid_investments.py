@@ -1,5 +1,7 @@
 """Routes for Plaid investments flows and account syncing."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -14,7 +16,6 @@ from app.sql.account_logic import (
     save_plaid_account,
     upsert_accounts,
 )
-from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
 

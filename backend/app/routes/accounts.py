@@ -5,6 +5,8 @@ import time
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
+from flask import Blueprint, g, jsonify, request
+
 from app.config import logger
 from app.extensions import db
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
@@ -20,7 +22,6 @@ from app.utils.finance_utils import (
     display_transaction_amount,
     normalize_account_balance,
 )
-from flask import Blueprint, g, jsonify, request
 
 # Blueprint for generic accounts routes
 accounts = Blueprint("accounts", __name__)
@@ -273,9 +274,9 @@ def refresh_all_accounts():
 
                                 if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                     error_map[key]["requires_reauth"] = True
-                                    error_map[key]["update_link_token_endpoint"] = (
-                                        "/api/plaid/transactions/generate_update_link_token"
-                                    )
+                                    error_map[key][
+                                        "update_link_token_endpoint"
+                                    ] = "/api/plaid/transactions/generate_update_link_token"
                                     error_map[key]["affected_account_ids"] = [account.account_id]
                             else:
                                 error_map[key]["account_ids"].append(account.account_id)
@@ -853,8 +854,9 @@ def account_net_changes(account_id):
     """
 
     try:
-        from app.sql import account_logic
         from sqlalchemy import case, func
+
+        from app.sql import account_logic
 
         start_date_str = request.args.get("start_date")
         end_date_str = request.args.get("end_date")
