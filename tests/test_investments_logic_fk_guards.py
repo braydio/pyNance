@@ -41,7 +41,13 @@ def _load_logic_module():
     extensions_stub.db = types.SimpleNamespace(session=SessionStub())
     sys.modules["app.extensions"] = extensions_stub
 
+    class _SecurityColumn:
+        def in_(self, values):
+            return ("in", tuple(values))
+
     class Security:
+        security_id = _SecurityColumn()
+
         def __init__(self, **kwargs):
             self.__dict__.update(kwargs)
 
@@ -119,3 +125,49 @@ def test_upsert_investments_creates_missing_security_before_holding(monkeypatch)
     assert placeholder.security_id == "sec-missing"
     assert placeholder.raw["placeholder_from_holding"] is True
     assert placeholder.raw["holding"]["security_id"] == "sec-missing"
+
+
+def test_upsert_transactions_creates_missing_security_before_transaction(monkeypatch):
+    logic, events = _load_logic_module()
+
+    query_events = []
+
+    class QueryStub:
+        def filter(self, *args, **kwargs):
+            query_events.append(("filter", args, kwargs))
+            return self
+
+        def all(self):
+            query_events.append(("all", None))
+            return []
+
+    monkeypatch.setattr(logic.db.session, "query", lambda *_args, **_kwargs: QueryStub(), raising=False)
+
+    class InvestmentTransaction:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    monkeypatch.setattr(logic, "InvestmentTransaction", InvestmentTransaction)
+
+    processed = logic.upsert_investment_transactions(
+        [
+            {
+                "investment_transaction_id": "tx-missing",
+                "account_id": "acct-1",
+                "security_id": "sec-missing",
+                "name": "Fallback security transaction",
+                "iso_currency_code": "USD",
+            }
+        ]
+    )
+
+    assert processed == 1
+    assert query_events
+    assert [event[0] for event in events] == ["merge", "flush", "merge", "commit"]
+
+    placeholder = events[0][1]
+    transaction = events[2][1]
+    assert placeholder.security_id == "sec-missing"
+    assert placeholder.raw["placeholder_from_transaction"] is True
+    assert placeholder.raw["transaction"]["security_id"] == "sec-missing"
+    assert transaction.security_id == "sec-missing"

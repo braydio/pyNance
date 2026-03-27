@@ -16,7 +16,7 @@
       :net-balance="netBalance"
       :manual-income="manualIncome"
       :liability-rate="liabilityRate"
-      :net-change="summary?.net_change"
+      :net-change="summary?.net_change ?? null"
       :view-type="viewType"
       :account-options="forecastAccounts"
       :account-group-options="accountGroupOptions"
@@ -55,7 +55,7 @@
           <option :value="90">90 days</option>
         </select>
       </label>
-      <label> <input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history </label>
+      <label><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label>
     </div>
 
     <div class="card glass adjustments-grid">
@@ -182,10 +182,6 @@
       :realized-history="realizedHistory"
       :series="series"
       :selected-aspect="selectedAspect"
-      :cashflows="cashflows"
-      :asset-balance="assetBalance"
-      :liability-balance="liabilityBalance"
-      :net-balance="netBalance"
       :compute-meta="forecastComputeMeta"
       @update:viewType="viewType = $event"
     />
@@ -198,9 +194,6 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import ForecastSummaryPanel from './ForecastSummaryPanel.vue'
-import ForecastChart from './ForecastChart.vue'
-import ForecastBreakdown from './ForecastBreakdown.vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import {
   type ForecastAdjustmentInput,
@@ -322,7 +315,9 @@ const netBalance = computed(() =>
   Number(metadata.value?.net_balance ?? summary.value?.starting_balance ?? 0),
 )
 
-const seriesEntries = computed(() => Object.values(series.value || {}))
+const seriesEntries = computed(() =>
+  Object.values(series.value ?? {}).filter((entry) => Array.isArray(entry?.points)),
+)
 const forecastItems = computed(() =>
   seriesEntries.value.map((entry) => ({
     label: entry.label,
@@ -352,16 +347,12 @@ const autoDetectedAdjustments = computed<ForecastAdjustmentWithMetadata[]>(() =>
   ) as ForecastAdjustmentWithMetadata[]),
   ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
 ])
-const manualAdjustmentSeries = computed<ForecastAspectSeries | null>(
-  () => series.value?.manual_adjustments ?? null,
-)
-const realizedIncomeSeries = computed<ForecastAspectSeries | null>(
-  () => series.value?.realized_income ?? null,
-)
-const manualAdjustmentPoints = computed<ForecastSeriesPoint[]>(() =>
+const manualAdjustmentSeries = computed(() => series.value?.manual_adjustments ?? null)
+const realizedIncomeSeries = computed(() => series.value?.realized_income ?? null)
+const manualAdjustmentPoints = computed(() =>
   (manualAdjustmentSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
-const realizedIncomePoints = computed<ForecastSeriesPoint[]>(() =>
+const realizedIncomePoints = computed(() =>
   (realizedIncomeSeries.value?.points || []).filter((point) => Number(point.value ?? 0) !== 0),
 )
 const forecastAccountIdSet = computed(
@@ -387,14 +378,15 @@ const accountGroupOptions = computed<ForecastGroupOption[]>(() =>
     .filter((group) => group.id && group.accountIds.length > 0),
 )
 const hasForecastData = computed(
-  () => timeline.value.length > 0 || hasRenderableCashflows(cashflows.value),
+  () => timeline.value.length > 0 || seriesEntries.value.some((entry) => entry.points.length > 0),
 )
 const isLoading = computed(() => loading.value)
-const realizedHistory = computed(
-  () => metadata.value?.realized_history ?? summary.value?.metadata?.realized_history ?? [],
-)
+const realizedHistory = computed(() => {
+  const value = metadata.value?.realized_history ?? summary.value?.metadata?.realized_history
+  return Array.isArray(value) ? value : []
+})
 
-const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
+const forecastComputeMeta = computed(() => ({
   lookbackDays: Number(
     metadata.value?.lookback_days ??
       summary.value?.metadata?.lookback_days ??
@@ -403,8 +395,14 @@ const forecastComputeMeta = computed<ForecastComputeMeta>(() => ({
       realizedHistory.value.length ??
       0,
   ),
-  movingAverageWindow: movingAverageWindow.value,
-  normalize: normalize.value,
+  movingAverageWindow: Number(
+    metadata.value?.moving_average_window ??
+      summary.value?.metadata?.moving_average_window ??
+      movingAverageWindow.value,
+  ),
+  normalize: Boolean(
+    metadata.value?.normalize ?? summary.value?.metadata?.normalize ?? normalize.value,
+  ),
   includesAutoDetectedAdjustments: autoDetectedAdjustments.value.length > 0,
   autoDetectedAdjustmentCount: autoDetectedAdjustments.value.length,
 }))

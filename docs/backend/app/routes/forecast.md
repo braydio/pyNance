@@ -89,11 +89,9 @@ Content-Type: application/json
 }
 ```
 
-
 ## Serialization notes
 
 Latest snapshot serialization now includes explicit account investment metadata (`account_type`, `is_investment`, `investment_has_holdings`, `investment_has_transactions`) so forecast computation and downstream consumers do not need to infer investment semantics from `type` strings.
-
 
 ```json
 {
