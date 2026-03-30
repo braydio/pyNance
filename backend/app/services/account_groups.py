@@ -5,12 +5,7 @@ from __future__ import annotations
 from typing import Sequence
 
 from app.extensions import db
-from app.models import (
-    Account,
-    AccountGroup,
-    AccountGroupMembership,
-    AccountGroupPreference,
-)
+from app.models import Account, AccountGroup, AccountGroupMembership, AccountGroupPreference
 from app.utils.finance_utils import normalize_account_balance
 
 DEFAULT_USER_SCOPE = "default"

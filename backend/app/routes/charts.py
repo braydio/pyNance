@@ -13,10 +13,7 @@ from app.config import logger
 from app.extensions import db
 from app.models import Account, Category, Tag, Transaction, transaction_tags
 from app.services.forecast_orchestrator import ForecastOrchestrator
-from app.utils.finance_utils import (
-    display_transaction_amount,
-    normalize_account_balance,
-)
+from app.utils.finance_utils import display_transaction_amount, normalize_account_balance
 
 charts = Blueprint("charts", __name__)
 

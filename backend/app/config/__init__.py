@@ -8,13 +8,7 @@ Flask-specific environment variables and relies solely on ENV.
 
 import logging
 
-from .constants import (
-    DATABASE_NAME,
-    DB_IDENTITY,
-    FILES,
-    SQLALCHEMY_DATABASE_URI,
-    SQLALCHEMY_ENGINE_OPTIONS,
-)
+from .constants import DATABASE_NAME, DB_IDENTITY, FILES, SQLALCHEMY_DATABASE_URI, SQLALCHEMY_ENGINE_OPTIONS
 from .environment import (
     ARBIT_EXPORTER_URL,
     BACKEND_PUBLIC_URL,

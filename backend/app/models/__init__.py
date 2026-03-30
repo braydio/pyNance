@@ -22,12 +22,7 @@ from .investment_models import InvestmentHolding, InvestmentTransaction, Securit
 from .mixins import TimestampMixin
 
 # Planning
-from .planning_models import (
-    AllocationType,
-    PlannedBill,
-    PlanningScenario,
-    ScenarioAllocation,
-)
+from .planning_models import AllocationType, PlannedBill, PlanningScenario, ScenarioAllocation
 
 # Transactions
 from .transaction_models import (

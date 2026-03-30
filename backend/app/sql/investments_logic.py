@@ -8,13 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from app.config import logger
 from app.extensions import db
-from app.models import (
-    Account,
-    InvestmentHolding,
-    InvestmentTransaction,
-    PlaidAccount,
-    Security,
-)
+from app.models import Account, InvestmentHolding, InvestmentTransaction, PlaidAccount, Security
 
 
 def _json_safe(obj: Any) -> Any:

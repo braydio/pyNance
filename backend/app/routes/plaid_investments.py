@@ -1,20 +1,13 @@
 """Routes for Plaid investments flows and account syncing."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.extensions import db
-from app.helpers.plaid_helpers import (
-    exchange_public_token,
-    generate_link_token,
-    get_accounts,
-)
+from app.helpers.plaid_helpers import exchange_public_token, generate_link_token, get_accounts
 from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
-from app.sql.account_logic import (
-    canonicalize_plaid_products,
-    save_plaid_account,
-    upsert_accounts,
-)
-from flask import Blueprint, jsonify, request
+from app.sql.account_logic import canonicalize_plaid_products, save_plaid_account, upsert_accounts
 
 plaid_investments = Blueprint("plaid_investments", __name__)
 

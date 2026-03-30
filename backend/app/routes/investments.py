@@ -6,13 +6,7 @@ from typing import Dict, Mapping, Optional
 from flask import Blueprint, g, jsonify, request, session
 
 from app.extensions import db
-from app.models import (
-    Account,
-    InvestmentHolding,
-    InvestmentTransaction,
-    PlaidAccount,
-    Security,
-)
+from app.models import Account, InvestmentHolding, InvestmentTransaction, PlaidAccount, Security
 from app.sql import investments_logic
 
 investments = Blueprint("investments", __name__)
