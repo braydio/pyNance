@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-20
+Last Updated: 2026-03-23
 Status: Active
 ---
 
@@ -93,6 +93,11 @@ Refresh holdings/securities plus investment transactions for a specific linked P
   - `404` with `{ "error": "Investments account not found" }` when no `PlaidAccount` matches the provided `item_id` with a parsed product scope containing `investments` (supports canonical comma-delimited strings such as `"investments,transactions"`).
   - `500` with `{ "error": "..." }` for unexpected refresh failures.
 
+Refresh metadata behavior:
+
+- On success, the matched `PlaidAccount.last_refreshed` timestamp is advanced and `PlaidAccount.last_error` is overwritten with a structured JSON payload such as `{ "status": "success", "timestamp": "...", "version": 1 }`.
+- On failure after the item account is resolved, the route stores a structured error payload in `PlaidAccount.last_error` using the shared refresh-status helpers. Payloads include `status`, `code`, `message`, `timestamp`, and `version`; Plaid API failures also preserve `request_id` and `cooldown_until` when available.
+
 ### `POST /api/plaid/investments/refresh_all`
 
 Refresh holdings/securities and transactions for all active Plaid accounts whose parsed scopes include the `investments` product.
@@ -127,6 +132,7 @@ Notes:
 
 - Per-item refresh errors are logged and skipped (`continue`), so the route can still return `200` with partial aggregate results.
 - Each item refresh now uses a single transaction boundary: holdings, securities, and investment transactions are written together and rolled back together on failure.
+- Each attempted item refresh also persists per-account refresh metadata: successes advance `last_refreshed` and mark the stored status as `success`, while failures keep the aggregate route alive but write a structured failure payload to the affected account row.
 
 ## Auth
 
@@ -148,3 +154,12 @@ Notes:
 
 - `POST /api/plaid/investments/refresh` delegates to `sync_investments_from_plaid(..., commit=False)` and issues one final `db.session.commit()` only after all investment writes succeed.
 - `POST /api/plaid/investments/refresh_all` repeats that same per-item pattern so failures in transaction ingest do not leave partial holdings/security rows committed for the affected item.
+
+## Refresh-status alignment
+
+Investment refresh routes now follow the same metadata model used by transaction refresh flows:
+
+- Shared helpers in `app.sql.account_logic` build and persist structured refresh status payloads so manual investments refreshes and webhook-driven refreshes report the same schema.
+- Success clears stale failure details by replacing `last_error` with a structured success payload and updating `last_refreshed`.
+- Failures preserve machine-readable diagnostics on the account row instead of only logging server-side exceptions.
+- Rate-limit style Plaid API failures use the same `rate_limited` status and optional `cooldown_until` semantics as the transaction refresh path.

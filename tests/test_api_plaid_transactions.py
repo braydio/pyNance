@@ -11,6 +11,19 @@ from flask import Flask
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 sys.path.insert(0, BASE_BACKEND)
+_ORIGINAL_APP_MODULES = {
+    "app": sys.modules.get("app"),
+    "app.config": sys.modules.get("app.config"),
+    "app.extensions": sys.modules.get("app.extensions"),
+    "app.config.environment": sys.modules.get("app.config.environment"),
+    "app.sql": sys.modules.get("app.sql"),
+    "app.sql.account_logic": sys.modules.get("app.sql.account_logic"),
+    "app.services": sys.modules.get("app.services"),
+    "app.services.plaid_sync": sys.modules.get("app.services.plaid_sync"),
+    "app.helpers": sys.modules.get("app.helpers"),
+    "app.helpers.plaid_helpers": sys.modules.get("app.helpers.plaid_helpers"),
+    "app.models": sys.modules.get("app.models"),
+}
 sys.modules.pop("app", None)
 
 # Config stub
@@ -201,6 +214,13 @@ spec = importlib.util.spec_from_file_location("app.routes.plaid_transactions", R
 plaid_module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(plaid_module)
 plaid_module.joinedload = lambda *a, **k: None
+
+
+for _name, _original in _ORIGINAL_APP_MODULES.items():
+    if _original is None:
+        sys.modules.pop(_name, None)
+    else:
+        sys.modules[_name] = _original
 
 
 @pytest.fixture

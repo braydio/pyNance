@@ -1,5 +1,7 @@
 """Routes for Plaid investments flows and account syncing."""
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
@@ -11,10 +13,11 @@ from app.models import PlaidAccount, PlaidItem
 from app.sql import investments_logic
 from app.sql.account_logic import (
     canonicalize_plaid_products,
+    mark_refresh_failure,
+    mark_refresh_success,
     save_plaid_account,
     upsert_accounts,
 )
-from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
 
@@ -156,6 +159,7 @@ def refresh_investments_endpoint():
             end_date,
             commit=False,
         )
+        mark_refresh_success(account, commit=False)
         db.session.commit()
         return (
             jsonify(
@@ -169,6 +173,7 @@ def refresh_investments_endpoint():
     except Exception as e:
         db.session.rollback()
         logger.error("Error refreshing investments: %s", e, exc_info=True)
+        mark_refresh_failure(account if "account" in locals() else None, e, commit=True)
         return jsonify({"error": str(e)}), 500
 
 
@@ -205,6 +210,7 @@ def refresh_all_investments():
                     end_date,
                     commit=False,
                 )
+                mark_refresh_success(pa, commit=False)
                 db.session.commit()
                 for k in ("securities", "holdings", "investment_transactions"):
                     total[k] += int(sums.get(k, 0))
@@ -215,6 +221,7 @@ def refresh_all_investments():
                     pa.item_id,
                     inner,
                 )
+                mark_refresh_failure(pa, inner, commit=True)
                 continue
 
         return (
