@@ -7,10 +7,6 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
-from plaid import ApiException
-from sqlalchemy import case, func, or_
-from sqlalchemy.orm import aliased
-
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
@@ -23,6 +19,9 @@ from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
 from app.utils.merchant_normalization import resolve_merchant
+from plaid import ApiException
+from sqlalchemy import case, func, or_
+from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 

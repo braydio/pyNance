@@ -6,16 +6,19 @@ from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
 
-from flask import Blueprint, Request, jsonify, request
-from sqlalchemy.orm import joinedload
-
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
 from app.models import Account, PlaidAccount, PlaidWebhookLog
 from app.services import plaid_sync
 from app.sql import investments_logic
-from app.sql.account_logic import canonicalize_plaid_products, mark_refresh_failure, mark_refresh_success
+from app.sql.account_logic import (
+    canonicalize_plaid_products,
+    mark_refresh_failure,
+    mark_refresh_success,
+)
+from flask import Blueprint, Request, jsonify, request
+from sqlalchemy.orm import joinedload
 
 try:  # pragma: no cover - optional dependency
     from prometheus_client import Counter as PrometheusCounter
@@ -167,7 +170,7 @@ def handle_plaid_webhook():
     item_id = payload.get("item_id")
 
     logger.info(
-        ("Received Plaid webhook %s:%s for item %s " "(new_transactions=%s, delivery_id=%s)"),
+        ("Received Plaid webhook %s:%s for item %s (new_transactions=%s, delivery_id=%s)"),
         webhook_type or "UNKNOWN",
         webhook_code or "UNKNOWN",
         item_id or "UNKNOWN",
