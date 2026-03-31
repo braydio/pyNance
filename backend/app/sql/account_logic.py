@@ -7,10 +7,6 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
-from plaid import ApiException
-from sqlalchemy import case, func, or_
-from sqlalchemy.orm import aliased
-
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
@@ -23,6 +19,9 @@ from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
 from app.utils.merchant_normalization import resolve_merchant
+from plaid import ApiException
+from sqlalchemy import case, func, or_
+from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 
@@ -178,6 +177,20 @@ def _build_refresh_status(
     request_id: str | None = None,
     cooldown_until: datetime | None = None,
 ):
+    """Build the structured refresh-status payload stored on ``PlaidAccount.last_error``.
+
+    Args:
+        status: Refresh outcome label such as ``"success"``, ``"error"``, or
+            ``"rate_limited"``.
+        code: Optional provider or application error code.
+        message: Optional human-readable detail about the outcome.
+        request_id: Optional upstream request identifier for support/debugging.
+        cooldown_until: Optional timestamp indicating when retries are allowed.
+
+    Returns:
+        Dict suitable for JSON serialization and UI/API status reporting.
+    """
+
     payload = {
         "status": status,
         "code": code,
@@ -189,6 +202,107 @@ def _build_refresh_status(
     if cooldown_until:
         payload["cooldown_until"] = _coerce_iso_datetime(cooldown_until).isoformat()
     return {k: v for k, v in payload.items() if v is not None}
+
+
+def build_refresh_failure_status(error: Exception) -> dict:
+    """Translate an exception into a structured refresh-status payload.
+
+    The helper is intentionally provider-agnostic for callers, but understands
+    Plaid ``ApiException`` details when available so rate-limit cooldowns and
+    request identifiers remain consistent across transactions and investments
+    refresh flows.
+
+    Args:
+        error: Exception raised while attempting a refresh.
+
+    Returns:
+        Structured refresh status payload for persistence.
+    """
+
+    if isinstance(error, ApiException):
+        try:
+            plaid_err = json.loads(error.body or "{}")
+        except json.JSONDecodeError:
+            plaid_err = {}
+
+        plaid_error_code = plaid_err.get("error_code", "unknown")
+        plaid_error_message = plaid_err.get("error_message", str(error))
+        request_id = plaid_err.get("request_id") or getattr(error, "request_id", None)
+        cooldown_until = None
+        status_label = "error"
+        if plaid_error_code in PLAID_RATE_LIMIT_CODES:
+            status_label = "rate_limited"
+            cooldown_until = _now_utc() + PLAID_RATE_LIMIT_COOLDOWN
+
+        return _build_refresh_status(
+            status=status_label,
+            code=plaid_error_code,
+            message=plaid_error_message,
+            request_id=request_id,
+            cooldown_until=cooldown_until,
+        )
+
+    return _build_refresh_status(
+        status="error",
+        code=getattr(error, "code", error.__class__.__name__),
+        message=str(error),
+    )
+
+
+def mark_refresh_success(
+    plaid_account: PlaidAccount | None,
+    *,
+    commit: bool,
+    refreshed_at: datetime | None = None,
+    message: str | None = None,
+    request_id: str | None = None,
+) -> None:
+    """Persist a successful refresh outcome on a Plaid-linked account.
+
+    Args:
+        plaid_account: Linked Plaid account to update.
+        commit: Whether to commit the session after persisting metadata.
+        refreshed_at: Optional explicit success timestamp.
+        message: Optional message to include in the stored status payload.
+        request_id: Optional upstream request identifier.
+    """
+
+    if not plaid_account:
+        return
+
+    persist_refresh_status(
+        plaid_account,
+        _build_refresh_status(status="success", message=message, request_id=request_id),
+        commit=False,
+    )
+    plaid_account.last_refreshed = _coerce_iso_datetime(refreshed_at) or _now_utc()
+    db.session.add(plaid_account)
+    if commit:
+        db.session.commit()
+
+
+def mark_refresh_failure(
+    plaid_account: PlaidAccount | None,
+    error: Exception | dict,
+    *,
+    commit: bool,
+) -> dict:
+    """Persist a failed refresh outcome on a Plaid-linked account.
+
+    Args:
+        plaid_account: Linked Plaid account to update.
+        error: Exception to normalize or a prebuilt status payload.
+        commit: Whether to commit the session after persisting metadata.
+
+    Returns:
+        The structured status payload that was stored (or would be stored when
+        ``plaid_account`` is ``None``).
+    """
+
+    status = error if isinstance(error, dict) else build_refresh_failure_status(error)
+    if plaid_account:
+        persist_refresh_status(plaid_account, status, commit=commit)
+    return status
 
 
 def _parse_refresh_status(raw_status: str | None) -> dict:
@@ -1267,10 +1381,7 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
                     refresh_or_insert_plaid_metadata(txn, new_txn, plaid_account_obj.account_id)
                 detect_internal_transfer(new_txn)
 
-        if plaid_account_obj:
-            success_status = _build_refresh_status(status="success")
-            persist_refresh_status(plaid_account_obj, success_status, commit=False)
-            plaid_account_obj.last_refreshed = _now_utc()
+        mark_refresh_success(plaid_account_obj, commit=False)
 
         db.session.commit()
         if updated:
@@ -1293,38 +1404,19 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
         return updated, None
 
     except ApiException as e:
-        try:
-            plaid_err = json.loads(e.body or "{}")
-        except json.JSONDecodeError:
-            plaid_err = {}
-        plaid_error_code = plaid_err.get("error_code", "unknown")
-        plaid_error_message = plaid_err.get("error_message", str(e))
-        request_id = plaid_err.get("request_id") or getattr(e, "request_id", None)
-        cooldown_until = None
-        status_label = "error"
-        if plaid_error_code in PLAID_RATE_LIMIT_CODES:
-            status_label = "rate_limited"
-            cooldown_until = _now_utc() + PLAID_RATE_LIMIT_COOLDOWN
+        status = build_refresh_failure_status(e)
         institution = getattr(account, "institution_name", "Unknown")
         account_name = getattr(account, "name", account_id)
         logger.error(
             "Plaid error refreshing transactions for %s / %s: %s - %s",
             institution,
             account_name,
-            plaid_error_code,
-            plaid_error_message,
+            status.get("code", "unknown"),
+            status.get("message", str(e)),
             exc_info=True,
         )
         db.session.rollback()
-        if plaid_account_obj:
-            status = _build_refresh_status(
-                status=status_label,
-                code=plaid_error_code,
-                message=plaid_error_message,
-                request_id=request_id,
-                cooldown_until=cooldown_until,
-            )
-            persist_refresh_status(plaid_account_obj, status, commit=True)
+        mark_refresh_failure(plaid_account_obj, status, commit=True)
         return False, str(e)
 
     except Exception as e:
@@ -1335,13 +1427,7 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
             exc_info=True,
         )
         db.session.rollback()
-        if plaid_account_obj:
-            status = _build_refresh_status(
-                status="error",
-                code=getattr(e, "code", "unknown"),
-                message=str(e),
-            )
-            persist_refresh_status(plaid_account_obj, status, commit=True)
+        mark_refresh_failure(plaid_account_obj, e, commit=True)
         return False, str(e)
 
     return updated, None

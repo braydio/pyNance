@@ -6,16 +6,19 @@ from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
 
-from flask import Blueprint, Request, jsonify, request
-from sqlalchemy.orm import joinedload
-
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
 from app.models import Account, PlaidAccount, PlaidWebhookLog
 from app.services import plaid_sync
 from app.sql import investments_logic
-from app.sql.account_logic import canonicalize_plaid_products
+from app.sql.account_logic import (
+    canonicalize_plaid_products,
+    mark_refresh_failure,
+    mark_refresh_success,
+)
+from flask import Blueprint, Request, jsonify, request
+from sqlalchemy.orm import joinedload
 
 try:  # pragma: no cover - optional dependency
     from prometheus_client import Counter as PrometheusCounter
@@ -167,7 +170,7 @@ def handle_plaid_webhook():
     item_id = payload.get("item_id")
 
     logger.info(
-        ("Received Plaid webhook %s:%s for item %s " "(new_transactions=%s, delivery_id=%s)"),
+        ("Received Plaid webhook %s:%s for item %s (new_transactions=%s, delivery_id=%s)"),
         webhook_type or "UNKNOWN",
         webhook_code or "UNKNOWN",
         item_id or "UNKNOWN",
@@ -223,7 +226,7 @@ def handle_plaid_webhook():
                 plaid_sync.sync_account_transactions(pa.account_id)
 
                 timestamp = datetime.now(timezone.utc)
-                pa.last_refreshed = timestamp
+                mark_refresh_success(pa, commit=False, refreshed_at=timestamp)
 
                 account: Optional[Account] = pa.account
                 if account is None:
@@ -247,6 +250,7 @@ def handle_plaid_webhook():
             except Exception as e:
                 logger.error("Sync failed for account %s: %s", pa.account_id, e)
                 db.session.rollback()
+                mark_refresh_failure(pa, e, commit=True)
                 failure_count += 1
                 webhook_metrics.increment("failure", webhook_code)
 
@@ -283,8 +287,11 @@ def handle_plaid_webhook():
             try:
                 txs = get_investment_transactions(pa.access_token, start_date, end_date)
                 count = investments_logic.upsert_investment_transactions(txs)
+                mark_refresh_success(pa, commit=True)
                 triggered.append({"account_id": pa.account_id, "investment_txs": count})
             except Exception as e:
+                db.session.rollback()
+                mark_refresh_failure(pa, e, commit=True)
                 logger.error(
                     "Investments tx refresh failed for account %s: %s",
                     pa.account_id,
@@ -309,8 +316,11 @@ def handle_plaid_webhook():
                 sums = investments_logic.upsert_investments_from_plaid(
                     pa.account.user_id if pa.account else None, pa.access_token
                 )
+                mark_refresh_success(pa, commit=True)
                 triggered.append({"account_id": pa.account_id, **sums})
             except Exception as e:
+                db.session.rollback()
+                mark_refresh_failure(pa, e, commit=True)
                 logger.error(
                     "Investments holdings refresh failed for account %s: %s",
                     pa.account_id,

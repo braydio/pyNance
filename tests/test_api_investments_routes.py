@@ -1,11 +1,12 @@
 """Route tests for investments, Plaid investments, and Plaid webhook flows."""
 
 import importlib.util
+import json
 import os
 import sys
 import types
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 from flask import Flask
@@ -124,6 +125,8 @@ class PlaidAccountStub:
         product: str = "investments",
         is_active: bool = True,
         account=None,
+        last_refreshed=None,
+        last_error=None,
     ):
         self.account_id = account_id
         self.item_id = item_id
@@ -131,6 +134,9 @@ class PlaidAccountStub:
         self.product = product
         self.is_active = is_active
         self.account = account
+        self.last_refreshed = last_refreshed
+        self.last_error = last_error
+        self.updated_at = None
 
 
 class PlaidQueryStub:
@@ -508,6 +514,38 @@ def plaid_investments_client():
     account_logic_stub.canonicalize_plaid_products = lambda value: [
         token.strip() for token in str(value or "").split(",") if token.strip()
     ]
+
+    def _mark_refresh_success(plaid_account, *, commit=False, refreshed_at=None, message=None, request_id=None):
+        if plaid_account is None:
+            return
+        timestamp = refreshed_at or datetime(2026, 3, 23, 12, 0, 0)
+        plaid_account.last_refreshed = timestamp
+        plaid_account.last_error = json.dumps(
+            {
+                "status": "success",
+                "timestamp": timestamp.isoformat(),
+                "version": 1,
+                **({"message": message} if message else {}),
+                **({"request_id": request_id} if request_id else {}),
+            }
+        )
+
+    def _mark_refresh_failure(plaid_account, error, *, commit=False):
+        if plaid_account is None:
+            return {}
+        code = getattr(error, "code", error.__class__.__name__)
+        payload = {
+            "status": "error",
+            "code": code,
+            "message": str(error),
+            "timestamp": datetime(2026, 3, 23, 12, 0, 0).isoformat(),
+            "version": 1,
+        }
+        plaid_account.last_error = json.dumps(payload)
+        return payload
+
+    account_logic_stub.mark_refresh_success = _mark_refresh_success
+    account_logic_stub.mark_refresh_failure = _mark_refresh_failure
     account_logic_stub.save_plaid_account = lambda *_a, **_k: None
     account_logic_stub.upsert_accounts = lambda *_a, **_k: None
 
@@ -692,6 +730,69 @@ def test_plaid_investments_refresh_supports_canonical_scope_strings(plaid_invest
     assert resp.get_json()["upserts"]["investment_transactions"] == 1
 
 
+def test_plaid_investments_refresh_records_success_status(plaid_investments_client, monkeypatch):
+    """Successful manual investment refreshes persist timestamp and success metadata."""
+    client, module = plaid_investments_client
+
+    account = PlaidAccountStub("acct-1", "item-1", "token-1")
+    module.PlaidAccount.query = PlaidQueryStub([account])
+
+    monkeypatch.setattr(
+        module.investments_logic,
+        "sync_investments_from_plaid",
+        lambda *_a, **_k: {"securities": 2, "holdings": 3, "investment_transactions": 4},
+    )
+
+    resp = client.post(
+        "/api/plaid/investments/refresh",
+        json={
+            "user_id": "u1",
+            "item_id": "item-1",
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-31",
+        },
+    )
+
+    assert resp.status_code == 200
+    assert isinstance(account.last_refreshed, datetime)
+    assert json.loads(account.last_error)["status"] == "success"
+
+
+def test_plaid_investments_refresh_records_failure_status(plaid_investments_client, monkeypatch):
+    """Failed manual investment refreshes persist structured error metadata."""
+    client, module = plaid_investments_client
+
+    account = PlaidAccountStub("acct-1", "item-1", "token-1")
+    module.PlaidAccount.query = PlaidQueryStub([account])
+
+    def _raise(*_a, **_k):
+        err = RuntimeError("investments unavailable")
+        err.code = "INVESTMENTS_DOWN"
+        raise err
+
+    monkeypatch.setattr(module.investments_logic, "sync_investments_from_plaid", _raise)
+
+    resp = client.post(
+        "/api/plaid/investments/refresh",
+        json={
+            "user_id": "u1",
+            "item_id": "item-1",
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-31",
+        },
+    )
+
+    assert resp.status_code == 500
+    assert account.last_refreshed is None
+    assert json.loads(account.last_error) == {
+        "status": "error",
+        "code": "INVESTMENTS_DOWN",
+        "message": "investments unavailable",
+        "timestamp": "2026-03-23T12:00:00",
+        "version": 1,
+    }
+
+
 def test_plaid_investments_refresh_all_aggregates_summary(plaid_investments_client, monkeypatch):
     client, module = plaid_investments_client
 
@@ -763,6 +864,34 @@ def test_plaid_investments_refresh_all_rolls_back_failed_item(plaid_investments_
     assert rollback_calls == ["rolled-back"]
 
 
+def test_plaid_investments_refresh_all_updates_per_account_status(plaid_investments_client, monkeypatch):
+    """Bulk investment refreshes persist success and failure metadata per account."""
+    client, module = plaid_investments_client
+
+    first = PlaidAccountStub("acct-1", "item-1", "token-1", account=types.SimpleNamespace(user_id="u1"))
+    second = PlaidAccountStub("acct-2", "item-2", "token-2", account=types.SimpleNamespace(user_id="u2"))
+    module.PlaidAccount.query = PlaidQueryStub([first, second])
+
+    def _sync(_user_id, token, *_a, **_k):
+        if token == "token-1":
+            err = RuntimeError("item refresh failed")
+            err.code = "ITEM_FAILED"
+            raise err
+        return {"securities": 2, "holdings": 3, "investment_transactions": 1}
+
+    monkeypatch.setattr(module.investments_logic, "sync_investments_from_plaid", _sync)
+
+    resp = client.post(
+        "/api/plaid/investments/refresh_all",
+        json={"start_date": "2024-01-01", "end_date": "2024-01-31"},
+    )
+
+    assert resp.status_code == 200
+    assert json.loads(first.last_error)["code"] == "ITEM_FAILED"
+    assert json.loads(second.last_error)["status"] == "success"
+    assert isinstance(second.last_refreshed, datetime)
+
+
 @pytest.fixture
 def plaid_webhook_client():
     models_stub = types.ModuleType("app.models")
@@ -781,6 +910,38 @@ def plaid_webhook_client():
     account_logic_stub.canonicalize_plaid_products = lambda value: [
         token.strip() for token in str(value or "").split(",") if token.strip()
     ]
+
+    def _mark_refresh_success(plaid_account, *, commit=False, refreshed_at=None, message=None, request_id=None):
+        if plaid_account is None:
+            return
+        timestamp = refreshed_at or datetime(2026, 3, 23, 12, 0, 0)
+        plaid_account.last_refreshed = timestamp
+        plaid_account.last_error = json.dumps(
+            {
+                "status": "success",
+                "timestamp": timestamp.isoformat(),
+                "version": 1,
+                **({"message": message} if message else {}),
+                **({"request_id": request_id} if request_id else {}),
+            }
+        )
+
+    def _mark_refresh_failure(plaid_account, error, *, commit=False):
+        if plaid_account is None:
+            return {}
+        code = getattr(error, "code", error.__class__.__name__)
+        payload = {
+            "status": "error",
+            "code": code,
+            "message": str(error),
+            "timestamp": datetime(2026, 3, 23, 12, 0, 0).isoformat(),
+            "version": 1,
+        }
+        plaid_account.last_error = json.dumps(payload)
+        return payload
+
+    account_logic_stub.mark_refresh_success = _mark_refresh_success
+    account_logic_stub.mark_refresh_failure = _mark_refresh_failure
 
     sql_pkg = types.ModuleType("app.sql")
     sql_pkg.account_logic = account_logic_stub
@@ -906,6 +1067,67 @@ def test_plaid_webhook_investments_transactions_dispatch(plaid_webhook_client, m
     assert resp.get_json()["triggered"] == [{"account_id": "acct-1", "investment_txs": 3}]
 
 
+def test_plaid_webhook_investments_transactions_persists_success_status(plaid_webhook_client, monkeypatch):
+    """Investment transaction webhooks mark affected accounts refreshed on success."""
+    client, module = plaid_webhook_client
+
+    acct = PlaidAccountStub("acct-1", "item-1", "token-1")
+    module.PlaidAccount.query = PlaidQueryStub([acct])
+
+    monkeypatch.setattr(module, "get_investment_transactions", lambda *_a, **_k: [{"id": "a"}])
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", lambda txs: len(txs))
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "INVESTMENTS_TRANSACTIONS",
+            "webhook_code": "DEFAULT_UPDATE",
+            "item_id": "item-1",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert json.loads(acct.last_error)["status"] == "success"
+    assert isinstance(acct.last_refreshed, datetime)
+
+
+def test_plaid_webhook_investments_transactions_persists_failure_status(plaid_webhook_client, monkeypatch):
+    """Investment transaction webhooks store structured failures per account."""
+    client, module = plaid_webhook_client
+
+    acct = PlaidAccountStub("acct-1", "item-1", "token-1")
+    module.PlaidAccount.query = PlaidQueryStub([acct])
+
+    def _raise(*_a, **_k):
+        err = RuntimeError("transactions webhook failed")
+        err.code = "TX_WEBHOOK_FAILED"
+        raise err
+
+    monkeypatch.setattr(module, "get_investment_transactions", lambda *_a, **_k: [{"id": "a"}])
+    monkeypatch.setattr(module.investments_logic, "upsert_investment_transactions", _raise)
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "INVESTMENTS_TRANSACTIONS",
+            "webhook_code": "DEFAULT_UPDATE",
+            "item_id": "item-1",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["triggered"] == []
+    assert json.loads(acct.last_error) == {
+        "status": "error",
+        "code": "TX_WEBHOOK_FAILED",
+        "message": "transactions webhook failed",
+        "timestamp": "2026-03-23T12:00:00",
+        "version": 1,
+    }
+
+
 def test_plaid_webhook_investments_transactions_accepts_mixed_product_scopes(plaid_webhook_client, monkeypatch):
     """Webhook dispatch should include accounts with canonical mixed Plaid scopes."""
     client, module = plaid_webhook_client
@@ -953,6 +1175,35 @@ def test_plaid_webhook_holdings_dispatch(plaid_webhook_client, monkeypatch):
 
     assert resp.status_code == 200
     assert resp.get_json()["triggered"] == [{"account_id": "acct-9", "securities": 7, "holdings": 11}]
+
+
+def test_plaid_webhook_holdings_persists_failure_status(plaid_webhook_client, monkeypatch):
+    """Holdings webhooks store failure metadata per affected account."""
+    client, module = plaid_webhook_client
+
+    acct = PlaidAccountStub("acct-9", "item-9", "token-9", account=types.SimpleNamespace(user_id="u9"))
+    module.PlaidAccount.query = PlaidQueryStub([acct])
+
+    def _raise(*_a, **_k):
+        err = RuntimeError("holdings webhook failed")
+        err.code = "HOLDINGS_FAILED"
+        raise err
+
+    monkeypatch.setattr(module.investments_logic, "upsert_investments_from_plaid", _raise)
+
+    resp = client.post(
+        "/api/webhooks/plaid",
+        json={
+            "webhook_type": "HOLDINGS",
+            "webhook_code": "DEFAULT_UPDATE",
+            "item_id": "item-9",
+        },
+        headers={"Plaid-Signature": "t=1,v1=ok"},
+    )
+
+    assert resp.status_code == 200
+    assert resp.get_json()["triggered"] == []
+    assert json.loads(acct.last_error)["code"] == "HOLDINGS_FAILED"
 
 
 def test_plaid_webhook_investments_missing_item_id_is_ignored(plaid_webhook_client):
