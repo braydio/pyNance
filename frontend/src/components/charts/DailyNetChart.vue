@@ -42,10 +42,7 @@
           aria-live="polite"
           aria-label="Active day details"
         >
-          <span
-            class="daily-net-chart__details-top-accent"
-            aria-hidden="true"
-          ></span>
+          <span class="daily-net-chart__details-top-accent" aria-hidden="true"></span>
           <div class="daily-net-chart__details-header">
             <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
             <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>

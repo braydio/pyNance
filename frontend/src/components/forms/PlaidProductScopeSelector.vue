@@ -13,7 +13,9 @@
       >
         <span class="scope-card__header">
           <span class="text-sm font-semibold">{{ product.label }}</span>
-          <span v-if="modelValue.includes(product.id)" class="scope-card__selected-pill">Selected</span>
+          <span v-if="modelValue.includes(product.id)" class="scope-card__selected-pill"
+            >Selected</span
+          >
         </span>
         <span class="text-xs text-muted">{{ product.helper }}</span>
       </button>
