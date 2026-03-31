@@ -205,6 +205,7 @@ import { Wallet } from 'lucide-vue-next'
 import api from '@/services/api'
 import { fetchNetChanges, fetchRecentTransactions, rangeToDates } from '@/api/accounts'
 import { useAccountHistory } from '@/composables/useAccountHistory'
+import { useRefreshNotification } from '@/composables/useRefreshNotification'
 
 import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
@@ -223,6 +224,7 @@ import AccountActionsSidebar from '@/components/forms/AccountActionsSidebar.vue'
 
 const route = useRoute()
 const toast = useToast()
+const { notifyRefreshStarted, notifyRefreshSuccess, notifyRefreshError } = useRefreshNotification()
 
 const accounts = ref([])
 const accountsLoading = ref(false)
@@ -309,7 +311,7 @@ async function loadAccounts() {
 }
 
 async function loadData() {
-  if (!canFetchAccountData.value) return
+  if (!canFetchAccountData.value) return false
 
   const { start, end } = rangeToDates(selectedRange.value)
 
@@ -334,17 +336,25 @@ async function loadData() {
     }
 
     recentTransactions.value = transactions?.transactions ?? []
+    return true
   } catch (err) {
     summaryError.value = err
     transactionsError.value = err
+    return false
   } finally {
     loadingSummary.value = false
     loadingTransactions.value = false
   }
 }
 
-function refreshSelectedAccountData() {
-  loadData()
+async function refreshSelectedAccountData() {
+  notifyRefreshStarted('Refreshing account data…')
+  const didSucceed = await loadData()
+  if (didSucceed) {
+    notifyRefreshSuccess('Account data refreshed.')
+    return
+  }
+  notifyRefreshError('Unable to refresh account data.')
 }
 
 function retrySummary() {

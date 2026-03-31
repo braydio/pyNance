@@ -11,7 +11,10 @@
         class="scope-card"
         :class="{ 'is-selected': modelValue.includes(product.id) }"
       >
-        <span class="text-sm font-semibold">{{ product.label }}</span>
+        <span class="scope-card__header">
+          <span class="text-sm font-semibold">{{ product.label }}</span>
+          <span v-if="modelValue.includes(product.id)" class="scope-card__selected-pill">Selected</span>
+        </span>
         <span class="text-xs text-muted">{{ product.helper }}</span>
       </button>
     </div>
@@ -96,7 +99,8 @@ function toggle(product) {
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease,
-    transform 0.2s ease;
+    transform 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .scope-card:hover {
@@ -104,8 +108,29 @@ function toggle(product) {
 }
 
 .scope-card.is-selected {
-  border-color: var(--color-accent-purple);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+  border-color: color-mix(in srgb, var(--color-accent-cyan) 45%, var(--color-accent-purple));
+  background: color-mix(in srgb, var(--color-accent-cyan) 18%, var(--color-bg));
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--color-accent-cyan) 65%, transparent),
+    0 10px 24px rgba(0, 0, 0, 0.16);
   transform: translateY(-1px);
+}
+
+.scope-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.scope-card__selected-pill {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--color-bg-dark);
+  background: color-mix(in srgb, var(--color-accent-cyan) 80%, white 20%);
+  border-radius: 999px;
+  padding: 0.12rem 0.4rem;
 }
 </style>

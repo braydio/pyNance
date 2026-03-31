@@ -4,6 +4,8 @@ This component renders a daily summary of income and expenses using stacked bars
 
 By default the chart displays every day in the selected month, including future dates in the current month. Days without data are padded with zeroed income/expense/net values so the X-axis remains complete, while tooltip summaries and dashboard totals continue to reflect month-to-date activity.
 
+The chart title block now includes compact period totals directly under the title (`Income` and `Expenses`) so users can read aggregate values without scanning the separate summary panel.
+
 The chart emits a `bar-click` event with the associated date whenever a bar is clicked. See [DASHBOARD_MODAL_GUIDE.md](./DASHBOARD_MODAL_GUIDE.md) for how these events open the transaction modal.
 
 ## Comparison Overlay
@@ -15,7 +17,7 @@ The dashboard overlay sidebar now supports a comparison series that fetches a pr
 - **Last 30 days vs previous 30** aligns the prior 30-day period by day index.
 
 The comparison series renders as a faint, dashed line so it is visible without overpowering the primary
-income and expense bars.
+income and expense bars. Active overlays (averages + comparison) render in a single horizontal legend row with horizontal scrolling when needed, avoiding vertical stacking in dense combinations.
 
 ## Details Panel Behavior
 

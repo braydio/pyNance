@@ -62,6 +62,10 @@
                 <span class="title-text">Net Income</span>
                 <span class="title-subtitle">(Daily)</span>
               </h2>
+              <p class="daily-net-chart-totals">
+                Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
+                {{ formatAmount(netSummary.totalExpenses) }}
+              </p>
             </div>
           </template>
           <template #controls>
@@ -129,6 +133,7 @@ import ChartDetailsSidebar from '@/components/charts/ChartDetailsSidebar.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
+import { formatAmount } from '@/utils/format'
 
 const props = defineProps({
   userName: { type: String, default: 'Guest' },
@@ -257,6 +262,12 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   flex-direction: column;
   gap: 0.15rem;
   min-width: 0;
+}
+
+.daily-net-chart-totals {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
 }
 
 .daily-net-chart-toolbar {
