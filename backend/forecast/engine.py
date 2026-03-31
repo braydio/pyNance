@@ -13,6 +13,7 @@ from .models import (
     ForecastAspectSeries,
     ForecastCashflowItem,
     ForecastResult,
+    ForecastSeriesCollection,
     ForecastSeriesPoint,
     ForecastSummary,
     ForecastTimelinePoint,
@@ -597,7 +598,11 @@ def compute_summary(
 def _build_adjustment_models(
     adjustments: Sequence[Mapping[str, Any]] | None,
 ) -> list[ForecastAdjustment]:
-    """Normalize adjustment payloads into forecast adjustment models."""
+    """Normalize adjustment payloads into forecast adjustment models.
+
+    Existing adjustment metadata is preserved so API consumers can render
+    drill-down details for inferred and manual entries.
+    """
     models: list[ForecastAdjustment] = []
     for adjustment in adjustments or []:
         amount = _to_decimal(_read_entry_value(adjustment, "amount", 0))
@@ -616,7 +621,8 @@ def _build_adjustment_models(
             adjustment_date = date.today()
         reason = _read_entry_value(adjustment, "reason")
         adjustment_id = _read_entry_value(adjustment, "adjustment_id", _read_entry_value(adjustment, "id"))
-        metadata: dict[str, Any] = {}
+        raw_metadata = _read_entry_value(adjustment, "metadata", {})
+        metadata: dict[str, Any] = dict(raw_metadata) if isinstance(raw_metadata, Mapping) else {}
         frequency = _read_entry_value(adjustment, "frequency")
         if frequency:
             metadata["frequency"] = frequency
@@ -725,38 +731,38 @@ def _build_forecast_series(
     timeline_dates: Sequence[date],
     cashflows: Sequence[ForecastCashflowItem],
     latest_snapshots: Sequence[Mapping[str, Any]],
-) -> dict[str, ForecastAspectSeries]:
+) -> ForecastSeriesCollection:
     """Build typed aspect series for frontend charting and summaries."""
-    return {
-        "realized_income": _build_daily_series(
+    return ForecastSeriesCollection(
+        realized_income=_build_daily_series(
             series_id="realized_income",
             label="Realized income used for auto-calculation",
             dates=historical_dates,
             values_by_date=_realized_income_values_by_date(historical_aggregates, historical_dates),
             metadata={"timeframe": "historical", "source": "historical_aggregates"},
         ),
-        "manual_adjustments": _build_daily_series(
+        manual_adjustments=_build_daily_series(
             series_id="manual_adjustments",
             label="Manual adjustments",
             dates=timeline_dates,
             values_by_date=_manual_adjustment_values_by_date(adjustments, timeline_dates),
             metadata={"timeframe": "forecast", "source": "adjustments"},
         ),
-        "spending": _build_daily_series(
+        spending=_build_daily_series(
             series_id="spending",
             label="Spending",
             dates=timeline_dates,
             values_by_date=_spending_values_by_date(cashflows, timeline_dates),
             metadata={"timeframe": "forecast", "source": "cashflows"},
         ),
-        "debt_totals": _build_daily_series(
+        debt_totals=_build_daily_series(
             series_id="debt_totals",
             label="Debt totals",
             dates=timeline_dates,
             values_by_date=_debt_values_by_date(latest_snapshots, timeline_dates),
             metadata={"timeframe": "forecast", "source": "latest_snapshots"},
         ),
-    }
+    )
 
 
 def compute_forecast(

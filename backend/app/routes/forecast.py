@@ -12,6 +12,7 @@ from app.services.forecast_orchestrator import ForecastOrchestrator
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
 WAGE_LOOKBACK_DAYS = 180
+AUTO_WAGE_SOURCE_TRANSACTION_LIMIT = 5
 LIABILITY_ACCOUNT_TYPE_TOKENS = {
     "credit",
     "credit card",
@@ -344,6 +345,7 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
         str(tx.category or "").lower(),
         str(tx.category_slug or "").lower(),
     ]
+    fields.extend(tag.lower() for tag in _serialize_transaction_tags(tx))
     plaid_meta = getattr(tx, "plaid_meta", None)
     plaid_meta_category = getattr(plaid_meta, "category", None) if plaid_meta else None
     if isinstance(plaid_meta_category, list):
@@ -379,6 +381,51 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
     return False
 
 
+def _serialize_transaction_tags(tx: Transaction) -> list[str]:
+    """Return normalized transaction tag names for matching and metadata."""
+    names: list[str] = []
+    for tag in getattr(tx, "tags", []) or []:
+        name = str(getattr(tag, "name", "") or "").strip()
+        if name:
+            names.append(name)
+    return names
+
+
+def _matching_reference_fields(tx: Transaction) -> dict[str, object]:
+    """Return category and tag fields used by wage matching heuristics."""
+    plaid_meta = getattr(tx, "plaid_meta", None)
+    plaid_category = getattr(plaid_meta, "category", None) if plaid_meta else None
+    personal_finance_category = tx.personal_finance_category if isinstance(tx.personal_finance_category, dict) else None
+
+    return {
+        "category": str(getattr(tx, "category", "") or ""),
+        "category_display": str(getattr(tx, "category_display", "") or ""),
+        "category_slug": str(getattr(tx, "category_slug", "") or ""),
+        "personal_finance_category": personal_finance_category,
+        "plaid_category": plaid_category,
+        "tags": _serialize_transaction_tags(tx),
+    }
+
+
+def _source_transaction_reference(tx: Transaction) -> dict[str, object]:
+    """Build a JSON-serializable transaction reference for auto adjustments."""
+    raw_date = getattr(tx, "date", None)
+    if isinstance(raw_date, datetime):
+        transaction_date = raw_date.date().isoformat()
+    elif isinstance(raw_date, date):
+        transaction_date = raw_date.isoformat()
+    else:
+        transaction_date = str(raw_date or "")
+
+    return {
+        "id": str(getattr(tx, "transaction_id", None) or getattr(tx, "id", "") or ""),
+        "date": transaction_date,
+        "amount": float(getattr(tx, "amount", 0) or 0),
+        "description": str(getattr(tx, "description", "") or getattr(tx, "merchant_name", "") or ""),
+        "matching_fields": _matching_reference_fields(tx),
+    }
+
+
 def _auto_wage_adjustments(
     *,
     user_id: str,
@@ -387,7 +434,11 @@ def _auto_wage_adjustments(
     included_account_ids: list[str] | None = None,
     excluded_account_ids: list[str] | None = None,
 ) -> list[dict[str, object]]:
-    """Infer recurring wage income adjustments from historical transactions."""
+    """Infer recurring wage income adjustments from historical transactions.
+
+    The generated adjustment metadata includes a bounded sample of recent source
+    transactions so the API and frontend can explain why the income was inferred.
+    """
     included_ids = included_account_ids or []
     excluded_ids = excluded_account_ids or []
     lookback_start = start_date - timedelta(days=WAGE_LOOKBACK_DAYS)
@@ -431,6 +482,9 @@ def _auto_wage_adjustments(
     if not positive_amounts:
         return []
     avg_wage_amount = round(sum(positive_amounts) / len(positive_amounts), 2)
+    source_transactions = [
+        _source_transaction_reference(row) for row in wage_rows[-AUTO_WAGE_SOURCE_TRANSACTION_LIMIT:]
+    ]
 
     gaps = [
         (right - left).days for left, right in zip(observed_dates, observed_dates[1:]) if 1 <= (right - left).days <= 45
@@ -463,6 +517,8 @@ def _auto_wage_adjustments(
                     "source": "auto_wage_detection",
                     "observed_count": len(positive_amounts),
                     "median_gap_days": median_gap,
+                    "source_transaction_count": len(wage_rows),
+                    "source_transactions": source_transactions,
                 },
             }
         )

@@ -1163,6 +1163,11 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
         if primary and (not category.primary_category or category.primary_category == "Unknown"):
             category.primary_category = primary
         if detailed and (not category.detailed_category or category.detailed_category == "Unknown"):
+            duplicate = (
+                db.session.query(Category).filter_by(primary_category=primary, detailed_category=detailed).first()
+            )
+            if duplicate and duplicate.id != category.id:
+                return duplicate
             category.detailed_category = detailed
         if pfc_primary:
             category.pfc_primary = pfc_primary

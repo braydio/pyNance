@@ -15,16 +15,10 @@ from plaid.model.accounts_get_request import AccountsGetRequest
 from plaid.model.country_code import CountryCode
 from plaid.model.institutions_get_by_id_request import InstitutionsGetByIdRequest
 from plaid.model.investments_holdings_get_request import InvestmentsHoldingsGetRequest
-from plaid.model.investments_transactions_get_request import (
-    InvestmentsTransactionsGetRequest,
-)
-from plaid.model.investments_transactions_get_request_options import (
-    InvestmentsTransactionsGetRequestOptions,
-)
+from plaid.model.investments_transactions_get_request import InvestmentsTransactionsGetRequest
+from plaid.model.investments_transactions_get_request_options import InvestmentsTransactionsGetRequestOptions
 from plaid.model.item_get_request import ItemGetRequest
-from plaid.model.item_public_token_exchange_request import (
-    ItemPublicTokenExchangeRequest,
-)
+from plaid.model.item_public_token_exchange_request import ItemPublicTokenExchangeRequest
 from plaid.model.item_remove_request import ItemRemoveRequest
 from plaid.model.link_token_create_request import LinkTokenCreateRequest
 from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
@@ -32,13 +26,7 @@ from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
-from app.config import (
-    BACKEND_PUBLIC_URL,
-    FILES,
-    PLAID_CLIENT_NAME,
-    logger,
-    plaid_client,
-)
+from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, logger, plaid_client
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history

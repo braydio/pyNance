@@ -4,10 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app.config import logger
 from app.services import account_groups as account_group_service
-from app.services.account_snapshot import (
-    build_snapshot_payload,
-    update_snapshot_selection,
-)
+from app.services.account_snapshot import build_snapshot_payload, update_snapshot_selection
 
 dashboard = Blueprint("dashboard", __name__)
 

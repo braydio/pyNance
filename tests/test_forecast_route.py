@@ -5,6 +5,7 @@ import os
 import sys
 import types
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 from flask import Flask
@@ -312,6 +313,27 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
 
 def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
     captured = {}
+    auto_wage_adjustment = {
+        "label": "Auto wage income",
+        "amount": 1000.0,
+        "date": "2024-01-05",
+        "adjustment_type": "auto_income",
+        "metadata": {
+            "source_transactions": [
+                {
+                    "id": "txn-1",
+                    "date": "2023-12-15",
+                    "amount": 1000.0,
+                    "description": "Employer Payroll",
+                    "matching_fields": {
+                        "category_display": "Income - Wages",
+                        "category_slug": "income-wages",
+                        "tags": ["payroll"],
+                    },
+                }
+            ]
+        },
+    }
 
     def fake_compute_forecast(**kwargs):
         captured["adjustments"] = kwargs["adjustments"]
@@ -344,14 +366,7 @@ def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
     monkeypatch.setattr(
         forecast_module,
         "_auto_wage_adjustments",
-        lambda **_: [
-            {
-                "label": "Auto wage income",
-                "amount": 1000.0,
-                "date": "2024-01-05",
-                "adjustment_type": "auto_income",
-            }
-        ],
+        lambda **_: [auto_wage_adjustment],
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
 
@@ -369,7 +384,16 @@ def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
     assert len(captured["adjustments"]) == 2
     assert captured["adjustments"][0]["label"] == "Manual"
     assert captured["adjustments"][1]["label"] == "Auto wage income"
+    assert (
+        captured["adjustments"][1]["metadata"]["source_transactions"][0]["matching_fields"]["category_display"]
+        == "Income - Wages"
+    )
     assert captured["metadata"]["auto_wage_adjustment_count"] == 1
+    response_payload = resp.get_json()
+    assert (
+        response_payload["adjustments"][1]["metadata"]["source_transactions"]
+        == auto_wage_adjustment["metadata"]["source_transactions"]
+    )
 
 
 def test_forecast_compute_includes_account_filters_and_contribution_metadata(client, monkeypatch):
@@ -523,6 +547,100 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
     assert captured["moving_average_window"] == 60
     assert captured["normalize"] is True
     assert captured["graph_mode"] == "historical"
+
+
+def test_auto_wage_adjustments_include_bounded_source_transaction_references(monkeypatch):
+    class FieldStub:
+        def is_(self, other):
+            return self
+
+        def in_(self, other):
+            return self
+
+        def asc(self):
+            return self
+
+        def __or__(self, other):
+            return self
+
+        def __eq__(self, other):
+            return self
+
+        def __ge__(self, other):
+            return self
+
+        def __le__(self, other):
+            return self
+
+    class QueryStub:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def join(self, *args, **kwargs):
+            return self
+
+        def filter(self, *args, **kwargs):
+            return self
+
+        def order_by(self, *args, **kwargs):
+            return self
+
+        def all(self):
+            return self.rows
+
+    wage_rows = []
+    for index in range(6):
+        wage_rows.append(
+            SimpleNamespace(
+                id=index + 1,
+                transaction_id=f"txn-{index + 1}",
+                amount=1000 + index,
+                date=datetime(2024, 1, 1) + timedelta(days=index * 14),
+                description=f"Payroll {index + 1}",
+                merchant_name="Employer",
+                category="Income",
+                category_display="Income - Wages",
+                category_slug="income-wages",
+                personal_finance_category={"primary": "INCOME", "detailed": "INCOME_WAGES"},
+                plaid_meta=SimpleNamespace(category=["Income", "Payroll"]),
+                tags=[SimpleNamespace(name="payroll"), SimpleNamespace(name="salary")],
+            )
+        )
+
+    monkeypatch.setattr(
+        forecast_module,
+        "db",
+        SimpleNamespace(session=SimpleNamespace(query=lambda *args, **kwargs: QueryStub(wage_rows))),
+    )
+    field = FieldStub()
+    monkeypatch.setattr(forecast_module.Transaction, "account_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "is_internal", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "date", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "user_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "account_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "is_hidden", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "user_id", field, raising=False)
+
+    adjustments = forecast_module._auto_wage_adjustments(
+        user_id="user-1",
+        start_date=datetime(2024, 4, 1).date(),
+        horizon_days=30,
+    )
+
+    assert adjustments
+    metadata = adjustments[0]["metadata"]
+    assert metadata["source_transaction_count"] == 6
+    assert len(metadata["source_transactions"]) == forecast_module.AUTO_WAGE_SOURCE_TRANSACTION_LIMIT
+    assert metadata["source_transactions"][0]["id"] == "txn-2"
+    assert metadata["source_transactions"][-1]["id"] == "txn-6"
+    assert metadata["source_transactions"][-1]["matching_fields"] == {
+        "category": "Income",
+        "category_display": "Income - Wages",
+        "category_slug": "income-wages",
+        "personal_finance_category": {"primary": "INCOME", "detailed": "INCOME_WAGES"},
+        "plaid_category": ["Income", "Payroll"],
+        "tags": ["payroll", "salary"],
+    }
 
 
 def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(client, monkeypatch):

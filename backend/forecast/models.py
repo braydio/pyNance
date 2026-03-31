@@ -1,7 +1,8 @@
 """Typed models for forecast responses.
 
 These dataclasses define the serialized shape of forecast responses delivered to the
-frontend, including the timeline, summary, and supporting cashflow details.
+frontend, including the timeline, summary, supporting cashflow details, and
+aspect-specific series keyed by stable chart identifiers.
 """
 
 from __future__ import annotations
@@ -9,9 +10,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Any, Mapping, Optional, Sequence
+from typing import Any, Literal, Mapping, Optional, Sequence, TypeAlias
 
 DateLike = str | date | datetime
+ForecastSeriesId: TypeAlias = Literal[
+    "realized_income",
+    "manual_adjustments",
+    "spending",
+    "debt_totals",
+]
 
 
 def _serialize_value(value: Any) -> Any:
@@ -145,7 +152,7 @@ class ForecastAspectSeries:
         metadata: Optional metadata for chart configuration or diagnostics.
     """
 
-    id: str
+    id: ForecastSeriesId
     label: str
     points: list[ForecastSeriesPoint] = field(default_factory=list)
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -158,6 +165,37 @@ class ForecastAspectSeries:
             "points": [point.to_dict() for point in self.points],
             "metadata": _serialize_value(self.metadata),
         }
+
+
+ForecastSeriesMap: TypeAlias = dict[ForecastSeriesId, ForecastAspectSeries]
+
+
+@dataclass
+class ForecastSeriesCollection:
+    """Top-level typed collection of aspect-specific chart series.
+
+    The API serializes this collection as a `series` object keyed by stable aspect
+    names so the frontend can read user-visible datasets directly instead of
+    reverse-engineering them from generic cashflow rows.
+    """
+
+    realized_income: Optional[ForecastAspectSeries] = None
+    manual_adjustments: Optional[ForecastAspectSeries] = None
+    spending: Optional[ForecastAspectSeries] = None
+    debt_totals: Optional[ForecastAspectSeries] = None
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the keyed aspect-series object used by the API payload."""
+        series: ForecastSeriesMap = {}
+        if self.realized_income is not None:
+            series["realized_income"] = self.realized_income
+        if self.manual_adjustments is not None:
+            series["manual_adjustments"] = self.manual_adjustments
+        if self.spending is not None:
+            series["spending"] = self.spending
+        if self.debt_totals is not None:
+            series["debt_totals"] = self.debt_totals
+        return {key: value.to_dict() for key, value in series.items()}
 
 
 @dataclass
@@ -266,7 +304,7 @@ class ForecastResult:
         summary: Summary statistics for the forecast horizon.
         cashflows: List of cashflow line items that drive the forecast.
         adjustments: Manual or automated adjustments applied to the forecast.
-        series: Aspect-specific chart series keyed by stable aspect name.
+        series: Typed aspect-series collection keyed by stable aspect name.
         metadata: Additional metadata for diagnostics or UI features.
     """
 
@@ -274,7 +312,7 @@ class ForecastResult:
     summary: Optional[ForecastSummary] = None
     cashflows: list[ForecastCashflowItem] = field(default_factory=list)
     adjustments: list[ForecastAdjustment] = field(default_factory=list)
-    series: dict[str, ForecastAspectSeries] = field(default_factory=dict)
+    series: ForecastSeriesCollection = field(default_factory=ForecastSeriesCollection)
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -284,6 +322,6 @@ class ForecastResult:
             "summary": self.summary.to_dict() if self.summary else None,
             "cashflows": [item.to_dict() for item in self.cashflows],
             "adjustments": [item.to_dict() for item in self.adjustments],
-            "series": {key: value.to_dict() for key, value in self.series.items()},
+            "series": self.series.to_dict(),
             "metadata": _serialize_value(self.metadata),
         }
