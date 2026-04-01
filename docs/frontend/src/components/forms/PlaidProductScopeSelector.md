@@ -14,7 +14,7 @@ Card-style selector for picking Plaid product scopes before launching Link. It i
 
 - Available products: `transactions`, `investments`, `liabilities`.
 - The selector renders a "Choose what data to share" legend and matching group aria-label with segmented cards that explain what each scope enables in the app.
-- Click to toggle a product; active cards render with a highlighted border and shadow, inactive cards retain the default border.
+- Click to toggle a product; active cards render with higher-contrast styling (accent-tinted background, stronger focus ring/shadow) and an inline `Selected` pill to make state differences clear at a glance.
 - No validation is enforced here; parent components provide empty-state messaging and block Link launch if the array is empty.
 
 ### Usage

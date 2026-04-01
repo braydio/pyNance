@@ -627,6 +627,50 @@ describe('DailyNetChart.vue', () => {
     expect(legendLabels).toEqual(['Avg Income', '30-Day Avg', '7-Day Avg'])
   })
 
+  it('includes comparison overlay in the horizontal legend when enabled', async () => {
+    fetchDailyNet
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-06-02',
+            income: { parsedValue: 180 },
+            expenses: { parsedValue: -80 },
+            net: { parsedValue: 100 },
+            transaction_count: 2,
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        status: 'success',
+        data: [
+          {
+            date: '2024-05-02',
+            net: { parsedValue: 70 },
+          },
+        ],
+      })
+
+    const wrapper = mount(DailyNetChart, {
+      props: {
+        startDate: '2024-06-01',
+        endDate: '2024-06-30',
+        zoomedOut: false,
+        showComparisonOverlay: true,
+        showAvgExpenses: true,
+      },
+    })
+
+    await flushRender()
+    await flushRender()
+
+    const legendLabels = wrapper
+      .findAll('.daily-net-chart__legend-label')
+      .map((node) => node.text())
+
+    expect(legendLabels).toEqual(['Avg Expenses', 'This Day Last Month'])
+  })
+
   it('renders an empty state and skips chart creation when range has no transactions', async () => {
     fetchDailyNet.mockResolvedValueOnce({ status: 'success', data: [] })
 

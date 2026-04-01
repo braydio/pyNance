@@ -42,10 +42,7 @@
           aria-live="polite"
           aria-label="Active day details"
         >
-          <span
-            class="daily-net-chart__details-top-accent"
-            aria-hidden="true"
-          ></span>
+          <span class="daily-net-chart__details-top-accent" aria-hidden="true"></span>
           <div class="daily-net-chart__details-header">
             <p class="daily-net-chart__details-date">{{ activeDetails.date }}</p>
             <p class="daily-net-chart__details-net">Net: {{ formatAmount(activeDetails.net) }}</p>
@@ -738,7 +735,9 @@ async function renderChart() {
 
   legendItems.value = datasets
     .filter((dataset) =>
-      ['Avg Income', 'Avg Expenses', '30-Day Avg', '7-Day Avg'].includes(dataset.label),
+      ['Avg Income', 'Avg Expenses', 'This Day Last Month', '30-Day Avg', '7-Day Avg'].includes(
+        dataset.label,
+      ),
     )
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
     .map((dataset) => ({ label: dataset.label, color: dataset.borderColor || '#fff' }))
@@ -938,9 +937,12 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__legend {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.75rem;
   align-items: center;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding-bottom: 0.2rem;
 }
 
 .daily-net-chart__legend-shell {
