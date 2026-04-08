@@ -356,7 +356,8 @@ function buildReminderKey(reminder) {
 function normalizeReminder(reminder, accountId) {
   const occurrences = Number(reminder?.auto_detection?.occurrences ?? 0)
   const serverConfidence = Number(reminder?.auto_detection?.confidence_score)
-  const fallbackConfidence = (reminder?.source === 'auto' ? 40 : 20) + Math.min(occurrences * 12, 60)
+  const fallbackConfidence =
+    (reminder?.source === 'auto' ? 40 : 20) + Math.min(occurrences * 12, 60)
   return {
     ...reminder,
     account_id: reminder?.account_id || accountId,
@@ -380,7 +381,8 @@ function compareReminders(left, right) {
     (right?.auto_detection?.confidence_score || 0) - (left?.auto_detection?.confidence_score || 0)
   if (confidenceDelta !== 0) return confidenceDelta
 
-  const occurrenceDelta = (right?.auto_detection?.occurrences || 0) - (left?.auto_detection?.occurrences || 0)
+  const occurrenceDelta =
+    (right?.auto_detection?.occurrences || 0) - (left?.auto_detection?.occurrences || 0)
   if (occurrenceDelta !== 0) return occurrenceDelta
 
   return String(left?.next_due_date || '').localeCompare(String(right?.next_due_date || ''))
@@ -418,7 +420,9 @@ async function loadUpcomingRecurringTransactions() {
       selectedAccountIds.map(async (accountId) => {
         const response = await getRecurringTransactions(accountId)
         const rawReminders =
-          response?.status === 'success' && Array.isArray(response?.reminders) ? response.reminders : []
+          response?.status === 'success' && Array.isArray(response?.reminders)
+            ? response.reminders
+            : []
         return rawReminders.map((reminder) => normalizeReminder(reminder, accountId))
       }),
     )

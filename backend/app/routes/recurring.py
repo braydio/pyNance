@@ -2,13 +2,12 @@
 import types
 from datetime import date, datetime, timedelta, timezone
 
-from flask import Blueprint, jsonify, request
-from sqlalchemy import func
-
 from app.config import logger
 from app.extensions import db
 from app.models import RecurringTransaction, Transaction
 from app.services.recurring_bridge import RecurringBridge
+from flask import Blueprint, jsonify, request
+from sqlalchemy import func
 
 recurring = Blueprint("recurring", __name__)
 
