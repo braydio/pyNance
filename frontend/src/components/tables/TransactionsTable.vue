@@ -440,7 +440,8 @@ export default {
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 
 .table-panel {
-  @apply shadow-xl rounded-2xl p-4 md:p-6;
+  @apply shadow-xl p-4 md:p-6;
+  border-radius: var(--radius-3);
   background-color: var(--table-surface-strong);
   border: 1px solid var(--table-border);
 }
@@ -454,7 +455,8 @@ export default {
 }
 
 .table-shell {
-  @apply overflow-x-auto rounded-xl border;
+  @apply overflow-x-auto border;
+  border-radius: var(--radius-2);
   background-color: var(--table-surface);
   border-color: var(--table-border);
 }
@@ -516,7 +518,7 @@ export default {
 .category-chip {
   display: inline-flex;
   align-items: center;
-  border-radius: 999px;
+  border-radius: var(--radius-1);
   border: 1px solid var(--table-border);
   background: color-mix(in srgb, var(--table-surface-alt) 92%, transparent);
   padding: 0.35rem 0.75rem;
@@ -527,7 +529,8 @@ export default {
 }
 
 .control-surface {
-  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 rounded-2xl p-4 shadow-inner;
+  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 p-4 shadow-inner;
+  border-radius: var(--radius-3);
   background-color: var(--table-control);
   border: 1px solid var(--table-border);
 }
@@ -542,7 +545,8 @@ export default {
 }
 
 .control-select {
-  @apply rounded-xl px-3 py-2 shadow-sm outline-none transition;
+  @apply px-3 py-2 shadow-sm outline-none transition;
+  border-radius: var(--radius-2);
   background-color: var(--table-surface);
   border: 1px solid var(--table-border);
   color: var(--text-primary);
@@ -553,7 +557,8 @@ export default {
 }
 
 .pill {
-  @apply text-xs md:text-sm px-3 py-2 rounded-full border transition shadow-sm;
+  @apply text-xs md:text-sm px-3 py-2 border transition shadow-sm;
+  border-radius: var(--radius-1);
   background-color: var(--table-surface);
   border-color: var(--table-border);
   color: var(--text-primary);
@@ -570,7 +575,8 @@ export default {
 }
 
 .filter-tag {
-  @apply inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs;
+  @apply inline-flex items-center gap-2 px-3 py-1 text-xs;
+  border-radius: var(--radius-1);
   background-color: color-mix(in srgb, var(--color-accent-blue) 12%, transparent);
   border: 1px solid var(--table-border);
   color: var(--text-primary);
