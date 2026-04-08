@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-23
+Last Updated: 2026-04-08
 Status: Active
 ---
 
@@ -75,6 +75,8 @@ adjustments.
   delta.
 - Adds an `Uncategorized` fallback item when the delta cannot be fully attributed.
 - Emits adjustment cashflow items so adjustment impacts appear in breakdowns.
+- Attaches optional per-item `sources` references for recurring, historical-average, and adjustment
+  cashflows when source metadata is derivable from inputs.
 
 ## `apply_adjustments`
 

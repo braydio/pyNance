@@ -223,6 +223,7 @@ def _category_sources(
                     "amount": inflow,
                     "confidence": confidence,
                     "source": "category_average",
+                    "sources": _derive_cashflow_sources(entry, default_type="historical_average"),
                 }
             )
         if outflow:
@@ -233,6 +234,7 @@ def _category_sources(
                     "amount": -outflow,
                     "confidence": confidence,
                     "source": "category_average",
+                    "sources": _derive_cashflow_sources(entry, default_type="historical_average"),
                 }
             )
         if not inflow and not outflow and explicit_amount:
@@ -247,6 +249,7 @@ def _category_sources(
                     "amount": amount,
                     "confidence": confidence,
                     "source": "category_average",
+                    "sources": _derive_cashflow_sources(entry, default_type="historical_average"),
                 }
             )
 
@@ -289,6 +292,7 @@ def _recurring_sources_by_date(
                         "amount": amount,
                         "confidence": confidence,
                         "source": "recurring",
+                        "sources": _derive_cashflow_sources(entry, default_type="recurring_rule"),
                         "metadata": metadata,
                     }
                 )
@@ -320,9 +324,54 @@ def _scaled_category_items(remaining: Decimal, category_sources: Sequence[dict[s
                 "amount": amount,
                 "confidence": source.get("confidence", DEFAULT_CATEGORY_CONFIDENCE),
                 "source": source.get("source", "category_average"),
+                "sources": source.get("sources"),
             }
         )
     return scaled_items
+
+
+def _derive_cashflow_sources(entry: Mapping[str, Any], *, default_type: str) -> list[dict[str, Any]] | None:
+    """Return source references for a cashflow item when identifiable fields are present."""
+    references: list[dict[str, Any]] = []
+
+    existing_sources = entry.get("sources")
+    if isinstance(existing_sources, Sequence) and not isinstance(existing_sources, (str, bytes, bytearray)):
+        for source in existing_sources:
+            if isinstance(source, Mapping):
+                references.append(dict(source))
+        if references:
+            return references
+
+    raw_reference = entry.get("source_reference")
+    if isinstance(raw_reference, Mapping):
+        references.append(dict(raw_reference))
+
+    reference: dict[str, Any] = {"type": default_type}
+    for key in (
+        "id",
+        "transaction_id",
+        "recurring_id",
+        "account_id",
+        "date",
+        "description",
+        "merchant",
+        "event",
+        "event_id",
+        "event_type",
+        "frequency",
+        "category",
+        "category_display",
+        "category_slug",
+        "tags",
+    ):
+        value = entry.get(key)
+        if value is not None:
+            reference[key] = value
+
+    if len(reference) > 1:
+        references.append(reference)
+
+    return references or None
 
 
 def build_cashflow_items(
@@ -375,6 +424,7 @@ def build_cashflow_items(
                         type=_cashflow_type(amount),
                         confidence=float(entry.get("confidence", DEFAULT_RECURRING_CONFIDENCE)),
                         direction=_cashflow_direction(amount),
+                        sources=_derive_cashflow_sources(entry, default_type="recurring_rule"),
                         metadata=entry.get("metadata", {}),
                     ),
                 )
@@ -397,6 +447,7 @@ def build_cashflow_items(
                         type=_cashflow_type(amount),
                         confidence=float(entry.get("confidence", DEFAULT_CATEGORY_CONFIDENCE)),
                         direction=_cashflow_direction(amount),
+                        sources=_derive_cashflow_sources(entry, default_type="historical_average"),
                         metadata={},
                     ),
                 )
@@ -417,6 +468,7 @@ def build_cashflow_items(
                         type=_cashflow_type(remainder),
                         confidence=float(DEFAULT_UNCATEGORIZED_CONFIDENCE),
                         direction=_cashflow_direction(remainder),
+                        sources=None,
                         metadata={"reason": "delta-remainder"},
                     ),
                 )
@@ -462,6 +514,7 @@ def _build_adjustment_cashflows(
                         type=_cashflow_type(amount),
                         confidence=confidence,
                         direction=_cashflow_direction(amount),
+                        sources=_derive_cashflow_sources(adjustment, default_type="adjustment"),
                         metadata={
                             "adjustment_type": adjustment_type,
                             "adjustment_id": adjustment_id,

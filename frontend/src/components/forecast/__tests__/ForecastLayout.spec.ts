@@ -34,17 +34,16 @@ vi.mock('../ForecastChart.vue', () => ({
   },
 }))
 
-vi.mock('../ForecastBreakdown.vue', () => ({
-  default: { template: '<div class="forecast-breakdown-stub" />' },
-}))
-
 vi.mock('../ForecastAdjustmentsForm.vue', () => ({
   default: { template: '<div class="forecast-adjustments-form-stub" />' },
 }))
 
 import ForecastLayout from '../ForecastLayout.vue'
 
-function buildUseForecastDataReturn(adjustments: Array<Record<string, unknown>>) {
+function buildUseForecastDataReturn(
+  adjustments: Array<Record<string, unknown>>,
+  cashflows: Array<Record<string, unknown>> = [],
+) {
   return {
     timeline: computed(() => [
       { date: '2026-03-23', label: '2026-03-23', forecast_balance: 100, actual_balance: null },
@@ -56,7 +55,7 @@ function buildUseForecastDataReturn(adjustments: Array<Record<string, unknown>>)
       starting_balance: 100,
     })),
     adjustments: computed(() => adjustments),
-    cashflows: computed(() => []),
+    cashflows: computed(() => cashflows),
     series: computed(() => ({
       manual_adjustments: { id: 'manual_adjustments', label: 'Manual adjustments', points: [] },
       realized_income: { id: 'realized_income', label: 'Realized income', points: [] },
@@ -162,5 +161,66 @@ describe('ForecastLayout', () => {
 
     expect(chartStub.attributes('data-view-type')).toBe('Month')
     expect(chartStub.attributes('data-selected-aspect')).toBe('spending')
+  })
+
+  it('opens and closes the cashflow details modal for selected breakdown items', async () => {
+    useForecastDataMock.mockReturnValue(
+      buildUseForecastDataReturn([], [
+        {
+          date: '2026-03-25',
+          label: 'Employer Payroll',
+          amount: 1200,
+          category: 'Income',
+          source: 'recurring',
+          confidence: 0.88,
+          sources: [
+            {
+              type: 'recurring_rule',
+              transaction_id: 'txn-100',
+              date: '2026-03-12',
+              description: 'Employer Payroll',
+              category_display: 'Income - Wages',
+              tags: ['payroll'],
+            },
+          ],
+        },
+      ]),
+    )
+
+    const wrapper = mount(ForecastLayout, {})
+    await flushPromises()
+
+    expect(wrapper.find('.forecast-item-modal').exists()).toBe(false)
+    await wrapper.get('.line-item-button').trigger('click')
+
+    expect(wrapper.text()).toContain('Source transactions/events')
+    expect(wrapper.text()).toContain('Employer Payroll')
+    expect(wrapper.text()).toContain('Income - Wages')
+    expect(wrapper.text()).toContain('Tags payroll')
+    expect(wrapper.text()).toContain('Recurring rule')
+
+    await wrapper.get('.forecast-item-modal__close').trigger('click')
+    expect(wrapper.find('.forecast-item-modal').exists()).toBe(false)
+  })
+
+  it('shows an empty source state when selected cashflow item has no attached sources', async () => {
+    useForecastDataMock.mockReturnValue(
+      buildUseForecastDataReturn([], [
+        {
+          date: '2026-03-25',
+          label: 'Uncategorized delta',
+          amount: -20,
+          category: 'Uncategorized',
+          source: 'uncategorized',
+          confidence: 0.3,
+        },
+      ]),
+    )
+
+    const wrapper = mount(ForecastLayout, {})
+    await flushPromises()
+    await wrapper.get('.line-item-button').trigger('click')
+
+    expect(wrapper.text()).toContain('No source transactions or events are attached to this forecast item.')
   })
 })

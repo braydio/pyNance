@@ -39,6 +39,13 @@ def test_forecast_result_to_dict_serializes_nested_models():
         account_id=42,
         recurring_id=7,
         direction="inflow",
+        sources=[
+            {
+                "type": "recurring_rule",
+                "transaction_id": "txn-100",
+                "category_display": "Income - Wages",
+            }
+        ],
         metadata={"tags": ["salary"]},
     )
     adjustment = ForecastAdjustment(
@@ -98,6 +105,7 @@ def test_forecast_result_to_dict_serializes_nested_models():
     assert payload["series"]["manual_adjustments"]["points"][0]["value"] == -50.0
     assert payload["cashflows"][0]["type"] == "income"
     assert payload["cashflows"][0]["confidence"] == 0.92
+    assert payload["cashflows"][0]["sources"][0]["transaction_id"] == "txn-100"
     assert payload["summary"]["ending_balance"] == 1500.0
     assert payload["summary"]["breakdowns"] == {"income": 800.0, "expenses": 300.0}
     assert payload["metadata"]["generated_at"].startswith("2026-01-01T00:00:00")

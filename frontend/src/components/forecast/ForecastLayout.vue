@@ -186,7 +186,88 @@
       @update:viewType="viewType = $event"
     />
 
-    <ForecastBreakdown :forecast-items="forecastItems" :view-type="viewType" />
+    <ForecastBreakdown
+      :forecast-items="forecastItems"
+      :view-type="viewType"
+      @select-item="openCashflowModal"
+    />
+
+    <div
+      v-if="selectedCashflowItem"
+      class="forecast-item-modal-overlay"
+      role="presentation"
+      @click.self="closeCashflowModal"
+    >
+      <section class="forecast-item-modal" role="dialog" aria-modal="true" aria-label="Cashflow source details">
+        <header class="forecast-item-modal__header">
+          <div>
+            <h3 class="forecast-item-modal__title">{{ selectedCashflowItem.label }}</h3>
+            <p class="forecast-item-modal__amount">{{ formatSignedCurrency(selectedCashflowItem.amount) }}</p>
+          </div>
+          <button type="button" class="forecast-item-modal__close" @click="closeCashflowModal">Close</button>
+        </header>
+
+        <dl class="forecast-item-modal__meta">
+          <div>
+            <dt>Category</dt>
+            <dd>{{ selectedCashflowItem.category || 'Uncategorized' }}</dd>
+          </div>
+          <div>
+            <dt>Confidence</dt>
+            <dd>{{ selectedCashflowItem.confidence ?? 'Unknown' }}</dd>
+          </div>
+          <div>
+            <dt>Detected as</dt>
+            <dd>{{ itemOriginLabel(selectedCashflowItem) }}</dd>
+          </div>
+        </dl>
+
+        <section>
+          <h4 class="forecast-item-modal__sources-title">Source transactions/events</h4>
+          <p v-if="cashflowSources(selectedCashflowItem).length === 0" class="forecast-item-modal__empty">
+            No source transactions or events are attached to this forecast item.
+          </p>
+          <ul v-else class="forecast-item-modal__source-list">
+            <li
+              v-for="(sourceItem, index) in cashflowSources(selectedCashflowItem)"
+              :key="sourceItem.id || sourceItem.transaction_id || sourceItem.event_id || index"
+            >
+              <p class="forecast-item-modal__source-title">
+                {{
+                  sourceItem.description ||
+                  sourceItem.merchant ||
+                  sourceItem.event ||
+                  sourceItem.category_display ||
+                  sourceItem.category ||
+                  'Reference'
+                }}
+              </p>
+              <p class="forecast-item-modal__source-meta">
+                {{ sourceItem.date || 'Unknown date' }}
+                <span v-if="sourceItem.type"> · {{ sourceItem.type }}</span>
+                <span v-if="sourceItem.frequency"> · {{ sourceItem.frequency }}</span>
+              </p>
+              <p
+                v-if="
+                  sourceItem.category_display ||
+                  sourceItem.category ||
+                  sourceItem.category_slug ||
+                  (Array.isArray(sourceItem.tags) && sourceItem.tags.length > 0)
+                "
+                class="forecast-item-modal__source-meta"
+              >
+                <span v-if="sourceItem.category_display">Category {{ sourceItem.category_display }}</span>
+                <span v-else-if="sourceItem.category">Category {{ sourceItem.category }}</span>
+                <span v-if="sourceItem.category_slug"> · Slug {{ sourceItem.category_slug }}</span>
+                <span v-if="Array.isArray(sourceItem.tags) && sourceItem.tags.length > 0">
+                  · Tags {{ sourceItem.tags.join(', ') }}
+                </span>
+              </p>
+            </li>
+          </ul>
+        </section>
+      </section>
+    </div>
 
     <ForecastAdjustmentsForm @add-adjustment="addAdjustment" />
   </div>
@@ -197,6 +278,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import {
   type ForecastAdjustmentInput,
+  type ForecastCashflowItem,
+  type ForecastCashflowSource,
   type ForecastGraphMode,
   type ForecastMetadata,
   type ForecastViewType,
@@ -317,12 +400,8 @@ const netBalance = computed(() =>
 const seriesEntries = computed(() =>
   Object.values(series.value ?? {}).filter((entry) => Array.isArray(entry?.points)),
 )
-const forecastItems = computed(() =>
-  seriesEntries.value.map((entry) => ({
-    label: entry.label,
-    amount: entry.points.reduce((total, point) => total + Number(point.value ?? 0), 0),
-  })),
-)
+const forecastItems = computed(() => cashflows.value ?? [])
+const selectedCashflowItem = ref<ForecastCashflowItem | null>(null)
 const baselineTrendAdjustment = computed<ForecastAdjustmentWithMetadata | null>(() => {
   const avgDaily = Number(summary.value?.average_daily_change ?? 0)
   if (!Number.isFinite(avgDaily) || avgDaily === 0) {
@@ -521,6 +600,68 @@ function sourceTransactionsForAdjustment(
 }
 
 /**
+ * Normalize source references emitted with a forecast cashflow item.
+ *
+ * @param item Selected cashflow item from the breakdown list.
+ * @returns Source references as a typed array.
+ */
+function cashflowSources(item: ForecastCashflowItem | null): ForecastCashflowSource[] {
+  if (!item || !Array.isArray(item.sources)) {
+    return []
+  }
+  return item.sources
+}
+
+/**
+ * Derive a human-readable provenance label for breakdown details.
+ *
+ * @param item Selected forecast cashflow item.
+ * @returns Source mode label used in the modal.
+ */
+function itemOriginLabel(item: ForecastCashflowItem | null) {
+  if (!item) {
+    return 'Unknown'
+  }
+
+  const source = String(item.source || '').toLowerCase()
+  if (source === 'category_average') {
+    return 'Historical average'
+  }
+  if (source === 'recurring') {
+    return 'Recurring rule'
+  }
+  if (source === 'adjustment') {
+    const adjustmentType = String(item.metadata?.adjustment_type || '').toLowerCase()
+    if (adjustmentType.startsWith('auto')) {
+      return 'Auto-detected'
+    }
+    return 'Manual adjustment'
+  }
+  if (source.includes('manual')) {
+    return 'Manual adjustment'
+  }
+  if (source.includes('auto')) {
+    return 'Auto-detected'
+  }
+
+  return 'Auto-detected'
+}
+
+/**
+ * Open details modal for a selected forecast cashflow line item.
+ *
+ * @param item Cashflow entry selected in the breakdown list.
+ */
+function openCashflowModal(item: ForecastCashflowItem) {
+  selectedCashflowItem.value = item
+}
+
+/** Close cashflow details modal. */
+function closeCashflowModal() {
+  selectedCashflowItem.value = null
+}
+
+/**
  * Format signed currency values for forecast adjustment summaries.
  *
  * @param value Signed numeric amount.
@@ -711,5 +852,103 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
   border-radius: 0.65rem;
   background: rgba(248, 250, 252, 0.85);
   padding: 0.75rem 0.85rem;
+}
+
+.forecast-item-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 1rem;
+  z-index: 50;
+}
+
+.forecast-item-modal {
+  width: min(640px, 100%);
+  max-height: 85vh;
+  overflow: auto;
+  background: var(--surface);
+  border-radius: 0.75rem;
+  border: 1px solid var(--divider);
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.forecast-item-modal__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.forecast-item-modal__title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.forecast-item-modal__amount {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+}
+
+.forecast-item-modal__close {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 0.4rem;
+  background: transparent;
+  padding: 0.35rem 0.6rem;
+  font-size: 0.85rem;
+}
+
+.forecast-item-modal__meta {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.forecast-item-modal__meta dt {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.forecast-item-modal__meta dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.9rem;
+}
+
+.forecast-item-modal__sources-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.forecast-item-modal__empty,
+.forecast-item-modal__source-meta {
+  margin: 0.2rem 0 0;
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.forecast-item-modal__source-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.forecast-item-modal__source-list li {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.6rem;
+  padding: 0.65rem;
+}
+
+.forecast-item-modal__source-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 </style>
