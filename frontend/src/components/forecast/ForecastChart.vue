@@ -72,9 +72,10 @@ const ASPECT_META = {
     label: 'Spending',
     subtitle: 'Spending points use the backend-provided daily outflow totals.',
   },
-  debt_totals: {
-    label: 'Debt totals',
-    subtitle: 'Debt totals use the backend-provided liability series across the forecast horizon.',
+  debt: {
+    label: 'Debt composition',
+    subtitle:
+      'Debt composition uses the backend-provided liability totals across the forecast horizon.',
   },
 }
 
@@ -83,6 +84,12 @@ const ASPECT_STYLES = {
   manual_adjustments: { color: '#7C3AED', type: 'bar', axis: 'yFlow' },
   spending: { color: '#DC2626', type: 'bar', axis: 'yFlow' },
   debt_totals: { color: '#F59E0B', type: 'line', axis: 'yBalance' },
+}
+const ASPECT_SERIES_ID_BY_SELECTION = {
+  realized_income: 'realized_income',
+  manual_adjustments: 'manual_adjustments',
+  spending: 'spending',
+  debt: 'debt_totals',
 }
 
 const props = defineProps({
@@ -126,7 +133,8 @@ const activeSeries = computed(() => {
   if (props.selectedAspect === 'balances') {
     return null
   }
-  return props.series?.[props.selectedAspect] ?? null
+  const seriesId = ASPECT_SERIES_ID_BY_SELECTION[props.selectedAspect]
+  return props.series?.[seriesId] ?? null
 })
 
 const axisDates = computed(() => {
@@ -164,26 +172,7 @@ const chartDatasets = computed(() => {
   if (props.selectedAspect === 'balances') {
     return buildBalanceDatasets()
   }
-
-  const seriesEntry = activeSeries.value
-  if (!seriesEntry) {
-    return []
-  }
-
-  const style = ASPECT_STYLES[seriesEntry.id]
-  return [
-    {
-      type: style.type,
-      label: seriesEntry.label,
-      data: alignSeriesValues(seriesEntry.points),
-      borderColor: style.color,
-      backgroundColor: toRgba(style.color, style.type === 'bar' ? 0.45 : 0.15),
-      yAxisID: style.axis,
-      tension: style.type === 'line' ? 0.25 : 0,
-      borderDash: seriesEntry.id === 'debt_totals' ? [4, 4] : [],
-      spanGaps: true,
-    },
-  ]
+  return buildAspectDatasets()
 })
 
 const hasData = computed(
@@ -282,6 +271,35 @@ function buildBalanceDatasets() {
   }
 
   return datasets
+}
+
+/**
+ * Build the active non-balance aspect dataset from backend-typed series payloads.
+ */
+function buildAspectDatasets() {
+  const seriesEntry = activeSeries.value
+  if (!seriesEntry) {
+    return []
+  }
+
+  const style = ASPECT_STYLES[seriesEntry.id]
+  if (!style) {
+    return []
+  }
+
+  return [
+    {
+      type: style.type,
+      label: seriesEntry.label,
+      data: alignSeriesValues(seriesEntry.points),
+      borderColor: style.color,
+      backgroundColor: toRgba(style.color, style.type === 'bar' ? 0.45 : 0.15),
+      yAxisID: style.axis,
+      tension: style.type === 'line' ? 0.25 : 0,
+      borderDash: seriesEntry.id === 'debt_totals' ? [4, 4] : [],
+      spanGaps: true,
+    },
+  ]
 }
 
 /**

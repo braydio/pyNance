@@ -9,6 +9,9 @@
 - Fetch forecast data through `useForecastData`.
 - Load available forecast accounts and Dashboard Account Snapshot groups.
 - Read typed aspect series from the forecast response for sidebar summaries and chart overlays.
+- Maintain an orthogonal chart aspect selector (`balances`, `realized_income`,
+  `manual_adjustments`, `spending`, `debt`) so users can keep the same timeframe while changing
+  what is visualized.
 - Build `forecastComputeMeta` so child components can describe the active lookback window, moving-average selection, normalization state, and auto-detected adjustment usage.
 - Render an auto-detected adjustment drill-down so users can inspect backend-provided `metadata.source_transactions` references for inferred wage entries.
 

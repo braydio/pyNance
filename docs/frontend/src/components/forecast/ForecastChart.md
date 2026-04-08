@@ -17,7 +17,8 @@ compute settings behind the current projection.
   `manual_adjustments`, `spending`, and `debt_totals`.
 - `computeMeta`: Forecast compute metadata from `ForecastLayout`, including lookback days, moving-average window, normalization state, and whether auto-detected adjustments were included.
 - `graphMode`: Overlay mode (`combined`, `forecast`, or `historical`).
-- `selectedAspect`: Active chart aspect (`balances`, `realized_income`, `manual_adjustments`, `spending`, or `debt_totals`).
+- `selectedAspect`: Active chart aspect (`balances`, `realized_income`, `manual_adjustments`,
+  `spending`, or `debt`). The `debt` selector reads from the backend `debt_totals` typed series.
 
 ## Events
 

@@ -27,7 +27,11 @@ vi.mock('../ForecastSummaryPanel.vue', () => ({
 }))
 
 vi.mock('../ForecastChart.vue', () => ({
-  default: { template: '<div class="forecast-chart-stub" />' },
+  default: {
+    props: ['selectedAspect', 'viewType'],
+    template:
+      '<div class="forecast-chart-stub" :data-selected-aspect="selectedAspect" :data-view-type="viewType" />',
+  },
 }))
 
 vi.mock('../ForecastBreakdown.vue', () => ({
@@ -141,5 +145,22 @@ describe('ForecastLayout', () => {
     expect(wrapper.text()).toContain(
       'No source transactions are available for this auto-detected adjustment.',
     )
+  })
+
+  it('keeps timeframe intact while sending the selected chart aspect to the chart', async () => {
+    useForecastDataMock.mockReturnValue(buildUseForecastDataReturn([]))
+
+    const wrapper = mount(ForecastLayout, {})
+    await flushPromises()
+
+    const chartStub = wrapper.get('.forecast-chart-stub')
+    expect(chartStub.attributes('data-view-type')).toBe('Month')
+    expect(chartStub.attributes('data-selected-aspect')).toBe('balances')
+
+    const aspectSelect = wrapper.get('select')
+    await aspectSelect.setValue('spending')
+
+    expect(chartStub.attributes('data-view-type')).toBe('Month')
+    expect(chartStub.attributes('data-selected-aspect')).toBe('spending')
   })
 })
