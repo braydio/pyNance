@@ -83,6 +83,7 @@ class ForecastCashflowItem:
         account_id: Optional account identifier.
         recurring_id: Optional recurring transaction identifier.
         direction: Optional direction hint ("inflow" or "outflow").
+        sources: Optional source references that explain where this line item came from.
         metadata: Optional metadata for extended breakdowns.
     """
 
@@ -96,6 +97,7 @@ class ForecastCashflowItem:
     account_id: Optional[int] = None
     recurring_id: Optional[int] = None
     direction: Optional[str] = None
+    sources: Optional[list[dict[str, Any]]] = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -111,6 +113,7 @@ class ForecastCashflowItem:
             "account_id": self.account_id,
             "recurring_id": self.recurring_id,
             "direction": self.direction,
+            "sources": _serialize_value(self.sources),
             "metadata": _serialize_value(self.metadata),
         }
 

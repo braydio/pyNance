@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-23
+Last Updated: 2026-04-08
 Status: Active
 ---
 
@@ -23,7 +23,8 @@ this for chart series and balance deltas.
 
 Captures a single cashflow line item that drives the projection. Each item includes the date, amount,
 category, source, optional type/confidence annotations, and optional account identifiers for
-breakdown widgets.
+breakdown widgets. Items may now also include optional `sources` references (transactions/events)
+when attribution can be derived from recurring rules, category averages, or adjustments.
 
 ### `ForecastSeriesPoint`
 

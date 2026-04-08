@@ -3,19 +3,27 @@
     <h3 class="breakdown-header">Forecast Breakdown</h3>
     <ul v-if="forecastItems.length" class="breakdown-list">
       <li v-for="(item, i) in forecastItems" :key="i">
-        <span class="label">{{ item.label }}</span>
-        <span class="amount">{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount) }}</span>
+        <button type="button" class="line-item-button" @click="emit('select-item', item)">
+          <span class="label">{{ item.label }}</span>
+          <span class="amount">{{ item.amount < 0 ? '-' : '+' }}${{ Math.abs(item.amount) }}</span>
+        </button>
       </li>
     </ul>
     <p v-else class="breakdown-empty">No forecast cashflows available.</p>
   </div>
 </template>
 
-<script setup>
-defineProps({
-  forecastItems: Array,
-  viewType: String,
-})
+<script setup lang="ts">
+import type { ForecastCashflowItem } from '@/composables/useForecastData'
+
+defineProps<{
+  forecastItems: ForecastCashflowItem[]
+  viewType: string
+}>()
+
+const emit = defineEmits<{
+  (event: 'select-item', item: ForecastCashflowItem): void
+}>()
 </script>
 
 <style scoped>
@@ -40,9 +48,25 @@ defineProps({
 }
 
 .breakdown-list li {
+  margin-bottom: 0.5rem;
+}
+
+.line-item-button {
+  width: 100%;
   display: flex;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  gap: 0.75rem;
+  align-items: center;
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.4rem;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.line-item-button:hover {
+  border-color: rgba(148, 163, 184, 0.35);
+  background: rgba(148, 163, 184, 0.08);
 }
 
 .label {

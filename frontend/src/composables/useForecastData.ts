@@ -72,7 +72,28 @@ export type ForecastCashflowItem = {
   account_id?: number | null
   recurring_id?: number | null
   direction?: string | null
+  sources?: ForecastCashflowSource[] | null
   metadata?: ForecastMetadata
+}
+
+export type ForecastCashflowSource = {
+  type?: string
+  id?: string
+  transaction_id?: string
+  recurring_id?: string | number
+  account_id?: string | number
+  date?: string
+  description?: string
+  merchant?: string
+  event?: string
+  event_id?: string
+  event_type?: string
+  frequency?: string
+  category?: string
+  category_display?: string
+  category_slug?: string
+  tags?: string[]
+  [key: string]: unknown
 }
 
 export type ForecastSeriesPoint = {

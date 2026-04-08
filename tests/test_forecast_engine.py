@@ -226,6 +226,55 @@ def test_cashflow_items_sum_to_timeline_deltas():
         previous_balance = point.forecast_balance
 
 
+def test_build_cashflow_items_attaches_derivable_sources():
+    """Recurring and adjustment cashflows should include source references when derivable."""
+    timeline = [
+        ForecastTimelinePoint(
+            date=date(2026, 4, 1),
+            label="2026-04-01",
+            forecast_balance=110.0,
+            metadata={"starting_balance": 100.0},
+        ),
+    ]
+
+    cashflows = build_cashflow_items(
+        timeline,
+        recurring_sources=[
+            {
+                "label": "Paycheck",
+                "amount": 10.0,
+                "date": "2026-04-01",
+                "recurring_id": "rec-1",
+                "description": "Employer Payroll",
+                "tags": ["payroll"],
+            }
+        ],
+        adjustments=[
+            {
+                "label": "Manual tweak",
+                "amount": -5.0,
+                "date": "2026-04-01",
+                "adjustment_type": "manual",
+                "event_id": "adj-evt-1",
+            }
+        ],
+    )
+
+    recurring_item = next((item for item in cashflows if item.source == "recurring"), None)
+    adjustment_item = next((item for item in cashflows if item.source == "adjustment"), None)
+
+    assert recurring_item is not None
+    assert recurring_item.sources is not None
+    assert recurring_item.sources[0]["type"] == "recurring_rule"
+    assert recurring_item.sources[0]["recurring_id"] == "rec-1"
+    assert recurring_item.sources[0]["tags"] == ["payroll"]
+
+    assert adjustment_item is not None
+    assert adjustment_item.sources is not None
+    assert adjustment_item.sources[0]["type"] == "adjustment"
+    assert adjustment_item.sources[0]["event_id"] == "adj-evt-1"
+
+
 def test_compute_forecast_respects_moving_average_window():
     """Use only selected moving-average window entries for projection."""
     payload = compute_forecast(
