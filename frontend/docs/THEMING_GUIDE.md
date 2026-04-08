@@ -116,6 +116,16 @@ Data tables prioritize neutral, token-driven surfaces so hero metrics and gradie
 
 Use these classes for dashboard toggles (for example, overlay toggles, date range zoom controls, summary detail toggles, and timeframe buttons) instead of redefining color-mix or gradient values in component-scoped styles.
 
+## Shared button interaction treatment
+
+Primary button classes in `frontend/src/assets/css/main.css` (`.btn`, `.btn-outline`, `.btn-primary`, `.btn-success`, and `.btn-alert`) now share a two-tone treatment and consistent interaction model:
+
+- Rest state uses a two-tone fill (or a tinted two-tone surface for outline variants) so controls remain visually distinct on dark panels.
+- Hover/focus state increases highlight contrast and elevation.
+- Active/pressed state flips the visual emphasis by swapping from filled positive space to outlined negative space (transparent fill + accent foreground/border).
+
+When introducing new button variants, follow this same progression so click states feel consistent across modal and page-level workflows.
+
 ## Conclusion
 
 This guide establishes a foundation for consistent theming. By defining all
