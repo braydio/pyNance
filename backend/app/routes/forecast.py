@@ -1,13 +1,12 @@
 from datetime import date, datetime, timedelta
 
-from flask import Blueprint, jsonify, request
-from forecast.engine import compute_forecast
-from sqlalchemy import case, func
-
 from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
+from flask import Blueprint, jsonify, request
+from forecast.engine import compute_forecast
+from sqlalchemy import case, func
 
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
