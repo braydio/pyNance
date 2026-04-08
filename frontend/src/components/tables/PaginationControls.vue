@@ -182,7 +182,7 @@ export default {
 @reference "../../assets/css/main.css";
 
 .pagination-container {
-  @apply mt-4 flex flex-col gap-3 rounded-2xl border border-neutral-800 bg-neutral-950/80 px-4 py-3 shadow-lg;
+  @apply mt-4 flex flex-col gap-3 rounded-2xl border border-subtle bg-surface-3 px-4 py-3 shadow-lg;
 }
 
 .pagination-row {
@@ -190,47 +190,58 @@ export default {
 }
 
 .pagination-button {
-  @apply rounded-full border border-cyan-400/40 bg-cyan-500/10 px-3 py-1.5 font-semibold text-cyan-100 transition;
-  @apply hover:border-cyan-300 hover:bg-cyan-500/20 disabled:cursor-not-allowed disabled:opacity-50;
+  @apply rounded-full border border-subtle bg-surface-1 px-3 py-1.5 font-semibold text-secondary transition;
+  @apply hover:border-strong hover-surface disabled:cursor-not-allowed disabled:opacity-50;
 }
 
 .page-list {
-  @apply flex items-center gap-1 rounded-full border border-neutral-800 bg-neutral-900/80 px-2 py-1 shadow-inner;
+  @apply flex items-center gap-1 rounded-full border border-subtle bg-surface-2 px-2 py-1 shadow-inner;
 }
 
 .pagination-chip {
-  @apply min-w-[36px] rounded-full px-3 py-1 text-sm font-semibold text-neutral-200 transition;
-  @apply hover:bg-cyan-500/20 hover:text-cyan-100;
+  @apply min-w-[36px] rounded-full px-3 py-1 text-sm font-semibold text-secondary transition;
+  @apply hover-surface hover:text-primary;
 }
 
 .pagination-chip.active {
-  @apply bg-cyan-500/25 text-cyan-100 border border-cyan-400/50 shadow;
+  @apply bg-surface-1 text-primary border border-strong shadow;
 }
 
 .gap {
-  @apply px-1 text-neutral-500;
+  @apply px-1 text-muted;
 }
 
 .info-row {
-  @apply flex flex-col items-center justify-center gap-2 text-xs text-neutral-400 sm:flex-row sm:text-sm;
+  @apply flex flex-col items-center justify-center gap-2 text-xs text-muted sm:flex-row sm:text-sm;
 }
 
 .page-input {
-  @apply flex items-center gap-2 rounded-full border border-neutral-800 bg-neutral-900/60 px-3 py-2 shadow-inner;
+  @apply flex items-center gap-2 rounded-full border border-subtle bg-surface-2 px-3 py-2 shadow-inner;
 }
 
 .page-field {
-  @apply w-16 rounded-md border border-neutral-700 bg-neutral-900 px-2 py-1 text-center text-neutral-100 outline-none;
-  @apply focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400;
+  @apply w-16 rounded-md border border-subtle bg-surface-1 px-2 py-1 text-center text-primary outline-none;
+  @apply focus:border-strong focus:ring-1;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-focus) 65%, transparent);
 }
 
 .go-button {
-  @apply rounded-md bg-cyan-600 px-3 py-1 text-xs font-semibold text-white transition;
-  @apply hover:bg-cyan-500 focus:ring-2 focus:ring-cyan-400 focus:ring-offset-1 focus:ring-offset-neutral-900;
+  @apply rounded-md px-3 py-1 text-xs font-semibold transition;
+  background-color: var(--accent-primary);
+  color: var(--accent-primary-contrast);
+}
+
+.go-button:hover {
+  background-color: color-mix(in srgb, var(--accent-primary) 85%, #ffffff 15%);
+}
+
+.go-button:focus-visible {
+  @apply outline-none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent);
 }
 
 .range-label {
-  @apply text-neutral-400;
+  @apply text-muted;
 }
 
 .sr-only {
