@@ -9,8 +9,13 @@
   --frosted-bg: var(--themed-bg);
   --themed-border: rgba(57, 80, 109, 0.4);
   --surface: #212e3f;
+  --surface-1: color-mix(in srgb, var(--color-bg-secondary) 86%, var(--color-bg-dark) 14%);
+  --surface-2: color-mix(in srgb, var(--color-bg-secondary) 70%, var(--color-bg-dark) 30%);
+  --surface-3: color-mix(in srgb, var(--color-bg) 78%, var(--color-bg-dark) 22%);
   --input-bg: #2b3b51;
   --divider: #39506d;
+  --border-subtle: color-mix(in srgb, var(--divider) 62%, transparent);
+  --border-strong: color-mix(in srgb, var(--divider) 88%, #dce3ec 12%);
   --color-border-secondary: #39506d;
   --table-surface: color-mix(in srgb, var(--color-bg) 82%, #e5e7eb 18%);
   --table-surface-alt: color-mix(in srgb, var(--color-bg-secondary) 84%, #dce3ec 16%);
@@ -27,9 +32,11 @@
 
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;
+  --text-secondary: color-mix(in srgb, var(--text-primary) 78%, #9fb1c7 22%);
+  --text-muted: #71839b;
   --color-text-dark: #000000;
   --color-text-light: var(--text-primary);
-  --color-text-muted: #71839b;
+  --color-text-muted: var(--text-muted);
 
   --color-accent-cyan: #63cdcf;
   --color-accent-purple: #9d79d6;
@@ -65,6 +72,9 @@
   --color-bg-info: var(--color-accent-blue);
 
   --hover-bg: rgba(255, 255, 255, 0.05);
+  --interactive-hover: color-mix(in srgb, var(--surface-2) 74%, #f8fafc 26%);
+  --interactive-focus: color-mix(in srgb, var(--accent-primary) 48%, transparent);
+  --interactive-pressed: color-mix(in srgb, var(--surface-2) 82%, #0f172a 18%);
   --color-hover-light: rgba(255, 255, 255, 0.08);
   --hover-glow: 0 0 8px rgba(113, 156, 214, 0.6);
 

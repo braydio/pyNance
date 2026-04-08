@@ -321,7 +321,7 @@
     </div>
 
     <!-- Empty State -->
-    <div v-if="!hasVisibleTransactions" class="text-center text-gray-500">
+    <div v-if="!hasVisibleTransactions" class="text-center text-secondary">
       No transactions found.
     </div>
     <Modal v-if="showInternalModal" @close="showInternalModal = false">

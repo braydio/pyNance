@@ -5,18 +5,15 @@
   persist or Cancel to revert to the last saved snapshot.
 -->
 <template>
-  <div class="bg-bg-secondary ui-radius-3 p-6 shadow-card w-full max-w-3xl">
+  <div class="ui-panel p-6 w-full max-w-3xl">
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-1">
-        <h3 class="text-lg font-semibold text-blue-950 dark:text-blue-100">Account Snapshot</h3>
-        <p class="text-sm text-gray-500 dark:text-gray-400">
+        <h3 class="text-lg font-semibold text-primary">Account Snapshot</h3>
+        <p class="text-sm text-secondary">
           Persisted to your dashboard. Choose up to {{ maxSelection }} accounts to stay in sync.
         </p>
         <p v-if="errorMessage" class="text-xs text-red-500">{{ errorMessage }}</p>
-        <p
-          v-else-if="metadata.discarded_ids?.length"
-          class="text-xs text-amber-600 dark:text-amber-400"
-        >
+        <p v-else-if="metadata.discarded_ids?.length" class="text-xs text-[var(--color-warning)]">
           Removed {{ metadata.discarded_ids.length }} saved account
           {{ metadata.discarded_ids.length === 1 ? '' : 's' }} that are no longer available.
         </p>
@@ -24,7 +21,7 @@
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <button
           type="button"
-          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="ui-control text-xs active:scale-[0.98]"
           @click="handleRefresh"
           :disabled="isLoading || isSaving"
           aria-label="Refresh account snapshot"
@@ -35,7 +32,7 @@
         <button
           v-if="!isEditing"
           type="button"
-          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="ui-control text-xs active:scale-[0.99]"
           @click="startEditing"
           :disabled="isLoading || isSaving"
           aria-label="Edit snapshot selection"
@@ -46,7 +43,7 @@
         <button
           v-else
           type="button"
-          class="inline-flex items-center gap-1 ui-radius-2 border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200 dark:focus-visible:ring-offset-gray-900"
+          class="ui-control ui-control--success text-xs active:scale-[0.99]"
           @click="saveEditing"
           :disabled="isSaving || !hasStagedChanges"
           :aria-label="isSaving ? 'Saving snapshot' : 'Save snapshot selection'"
@@ -57,7 +54,7 @@
         <button
           v-if="isEditing"
           type="button"
-          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="ui-control text-xs active:scale-[0.99]"
           @click="cancelEditing"
           :disabled="isSaving"
           aria-label="Cancel snapshot edits"
@@ -70,7 +67,7 @@
             v-model="selectionCandidate"
             :disabled="isSaving || !stagedAvailableAccounts.length || !isEditing"
             @change="handleAddAccount"
-            class="ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            class="ui-control-input min-w-[12rem]"
           >
             <option value="">Add account…</option>
             <option
@@ -90,18 +87,16 @@
       </div>
     </header>
 
-    <section
-      class="mt-6 ui-radius-3 border border-gray-100 bg-white/80 p-4 dark:border-gray-800 dark:bg-gray-900/60"
-    >
+    <section class="mt-6 ui-card p-4">
       <dl class="grid gap-4 sm:grid-cols-2">
         <div>
-          <dt class="text-xs uppercase tracking-wide text-gray-400">Total balance</dt>
-          <dd class="mt-1 text-2xl font-semibold text-blue-950 dark:text-blue-100">
+          <dt class="text-xs uppercase tracking-wide text-muted">Total balance</dt>
+          <dd class="mt-1 text-2xl font-semibold text-primary">
             {{ formatAccounting(totalBalance) }}
           </dd>
         </div>
         <div>
-          <dt class="text-xs uppercase tracking-wide text-gray-400">Upcoming 7 days</dt>
+          <dt class="text-xs uppercase tracking-wide text-muted">Upcoming 7 days</dt>
           <dd
             class="mt-1 flex items-center gap-2 text-lg font-medium"
             :class="upcomingClass(totalUpcoming)"
@@ -116,17 +111,17 @@
           </dd>
         </div>
       </dl>
-      <p class="mt-3 text-xs text-gray-400">
+      <p class="mt-3 text-xs text-muted">
         {{ isEditing ? 'Staged' : 'Selected' }} {{ stagedSelection.length }} /
         {{ maxSelection }} accounts
       </p>
-      <p v-if="isEditing" class="text-[11px] text-amber-600">
+      <p v-if="isEditing" class="text-[11px] text-[var(--color-warning)]">
         Changes are staged until you click Save.
       </p>
     </section>
 
     <section class="mt-6">
-      <h4 class="text-xs uppercase tracking-wide text-gray-400">Snapshot selection</h4>
+      <h4 class="text-xs uppercase tracking-wide text-muted">Snapshot selection</h4>
       <div class="mt-2 flex flex-wrap gap-2">
         <span
           v-for="account in stagedAccounts"
@@ -143,7 +138,7 @@
             :aria-label="`Remove ${account.name} from snapshot`"
           ></button>
         </span>
-        <p v-if="!stagedAccounts.length && !isLoading" class="text-sm text-gray-400">
+        <p v-if="!stagedAccounts.length && !isLoading" class="text-sm text-muted">
           Choose accounts to populate the snapshot preview.
         </p>
       </div>
@@ -154,12 +149,12 @@
         <div
           v-for="s in 3"
           :key="`snapshot-skeleton-${s}`"
-          class="h-20 animate-pulse ui-radius-3 bg-gray-100 dark:bg-gray-800/70"
+          class="h-20 animate-pulse ui-radius-3 bg-surface-1"
         ></div>
       </div>
       <div
         v-else-if="!stagedAccounts.length"
-        class="ui-radius-3 border border-dashed border-gray-300 bg-white/40 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400"
+        class="ui-radius-3 border border-dashed border-subtle bg-surface-1 p-6 text-center text-sm text-secondary"
       >
         No accounts selected yet. Use the control above to build your snapshot.
       </div>
@@ -167,11 +162,11 @@
         <article
           v-for="account in stagedAccounts"
           :key="account.account_id"
-          class="overflow-hidden ui-radius-3 border border-gray-100 bg-white p-4 shadow-sm transition hover:border-primary/40 dark:border-gray-800 dark:bg-gray-900"
+          class="overflow-hidden ui-card p-4 transition hover:border-strong"
         >
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-4 ui-radius-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] dark:focus-visible:ring-offset-gray-900"
+            class="flex w-full items-center justify-between gap-4 ui-radius-2 text-left focus-ring active:scale-[0.99]"
             @click="toggleDetails(account.account_id)"
             @keydown.enter.prevent="toggleDetails(account.account_id)"
             @keydown.space.prevent="toggleDetails(account.account_id)"
@@ -180,23 +175,19 @@
             :aria-label="`Toggle details for ${account.name}`"
           >
             <div class="flex flex-col gap-1">
-              <span class="text-sm font-semibold text-blue-950 dark:text-blue-100">{{
-                account.name
-              }}</span>
-              <span class="text-xs text-gray-500 dark:text-gray-400">{{
-                account.institution_name || '—'
-              }}</span>
-              <span class="text-[10px] uppercase tracking-wide text-gray-400">
+              <span class="text-sm font-semibold text-primary">{{ account.name }}</span>
+              <span class="text-xs text-secondary">{{ account.institution_name || '—' }}</span>
+              <span class="text-[10px] uppercase tracking-wide text-muted">
                 Balance as of {{ formatAsOf(account.last_refreshed) }}
               </span>
-              <span class="text-[10px] uppercase tracking-wide text-gray-400">
+              <span class="text-[10px] uppercase tracking-wide text-muted">
                 Tap to view recent activity
               </span>
             </div>
             <div class="flex flex-col items-end gap-1 text-right">
-              <span class="text-[10px] uppercase tracking-wide text-gray-400">Balance</span>
+              <span class="text-[10px] uppercase tracking-wide text-muted">Balance</span>
               <span
-                class="font-mono text-lg font-semibold text-blue-900 dark:text-blue-100"
+                class="font-mono text-lg font-semibold text-primary"
                 data-testid="account-balance"
               >
                 {{ formatAccounting(resolveAccountBalance(account)) }}
@@ -212,28 +203,28 @@
           </button>
           <div
             v-if="openAccountId === account.account_id"
-            class="mt-4 grid gap-4 border-t border-gray-100 pt-4 dark:border-gray-800 sm:grid-cols-2"
+            class="mt-4 grid gap-4 border-t border-subtle pt-4 sm:grid-cols-2"
           >
             <div>
-              <h5 class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <h5 class="text-xs font-semibold uppercase tracking-wide text-muted">
                 Upcoming (next 7 days)
               </h5>
-              <ul class="mt-2 space-y-2 text-xs text-gray-600 dark:text-gray-300">
-                <li v-if="!upcomingForAccount(account).length" class="italic text-gray-400">
+              <ul class="mt-2 space-y-2 text-xs text-secondary">
+                <li v-if="!upcomingForAccount(account).length" class="italic text-muted">
                   No reminders due.
                 </li>
                 <li
                   v-for="(reminder, idx) in upcomingForAccount(account)"
                   :key="reminder.id || reminder.description + reminder.next_due_date + idx"
-                  class="flex items-start justify-between gap-3 ui-radius-2 bg-gray-50 px-3 py-2 dark:bg-gray-800/60"
+                  class="flex items-start justify-between gap-3 ui-radius-2 bg-surface-1 px-3 py-2"
                 >
                   <div>
-                    <p class="font-semibold text-gray-700 dark:text-gray-200">
+                    <p class="font-semibold text-primary">
                       {{ reminder.description }}
                     </p>
                     <p
                       v-if="reminder.next_due_date"
-                      class="text-[10px] uppercase tracking-wide text-gray-400"
+                      class="text-[10px] uppercase tracking-wide text-muted"
                     >
                       {{ reminder.next_due_date }}
                     </p>
@@ -245,23 +236,23 @@
               </ul>
             </div>
             <div>
-              <h5 class="text-xs font-semibold uppercase tracking-wide text-gray-400">
+              <h5 class="text-xs font-semibold uppercase tracking-wide text-muted">
                 Recent activity
               </h5>
-              <ul class="mt-2 space-y-2 text-xs text-gray-600 dark:text-gray-300">
-                <li v-if="recentTxs[account.account_id] === undefined" class="italic text-gray-400">
+              <ul class="mt-2 space-y-2 text-xs text-secondary">
+                <li v-if="recentTxs[account.account_id] === undefined" class="italic text-muted">
                   Loading…
                 </li>
                 <li
                   v-else-if="recentTxs[account.account_id]?.length === 0"
-                  class="italic text-gray-400"
+                  class="italic text-muted"
                 >
                   No recent transactions.
                 </li>
                 <li
                   v-for="tx in recentTxs[account.account_id]"
                   :key="tx.id || tx.transaction_id"
-                  class="flex items-center justify-between gap-3 ui-radius-2 bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 active:scale-[0.99] dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900"
+                  class="flex items-center justify-between gap-3 ui-radius-2 bg-surface-1 px-3 py-2 transition hover-surface focus-ring active:scale-[0.99]"
                   role="button"
                   tabindex="0"
                   data-testid="account-snapshot-transaction"
@@ -271,10 +262,10 @@
                   :aria-label="`View transaction ${tx.name || tx.merchant_name || tx.description || ''}`"
                 >
                   <div class="flex-1 truncate">
-                    <p class="truncate font-medium text-gray-700 dark:text-gray-200">
+                    <p class="truncate font-medium text-primary">
                       {{ tx.name || tx.merchant_name || tx.description }}
                     </p>
-                    <p class="text-[10px] uppercase tracking-wide text-gray-400">
+                    <p class="text-[10px] uppercase tracking-wide text-muted">
                       {{ tx.date || tx.transaction_date || '' }}
                     </p>
                   </div>
@@ -454,7 +445,7 @@ function upcomingClass(val) {
   const num = parseFloat(val || 0)
   if (num > 0) return 'text-green-600 dark:text-green-400'
   if (num < 0) return 'text-red-500 dark:text-red-400'
-  return 'text-gray-500 dark:text-gray-300'
+  return 'text-secondary'
 }
 
 /**
@@ -485,33 +476,9 @@ function resolveAccountBalance(account) {
 function upcomingPillClass(val) {
   // Pill palettes: emerald for positive (success), rose for negative (risk), blue for neutral/info.
   const palette = {
-    positive: [
-      'bg-emerald-50',
-      'text-emerald-800',
-      'ring-1',
-      'ring-emerald-200',
-      'dark:bg-emerald-900/60',
-      'dark:text-emerald-200',
-      'dark:ring-emerald-700/60',
-    ],
-    negative: [
-      'bg-rose-50',
-      'text-rose-800',
-      'ring-1',
-      'ring-rose-200',
-      'dark:bg-rose-900/60',
-      'dark:text-rose-200',
-      'dark:ring-rose-700/60',
-    ],
-    neutral: [
-      'bg-blue-50',
-      'text-blue-800',
-      'ring-1',
-      'ring-blue-200',
-      'dark:bg-blue-900/60',
-      'dark:text-blue-100',
-      'dark:ring-blue-700/60',
-    ],
+    positive: ['ui-pill-success'],
+    negative: ['ui-pill-danger'],
+    neutral: ['ui-pill-info'],
   }
 
   const base = [

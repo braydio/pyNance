@@ -63,8 +63,51 @@
 }
 
 @layer utilities {
+  .bg-surface-1 {
+    background-color: var(--surface-1);
+  }
+
+  .bg-surface-2 {
+    background-color: var(--surface-2);
+  }
+
+  .bg-surface-3 {
+    background-color: var(--surface-3);
+  }
+
+  .border-subtle {
+    border-color: var(--border-subtle);
+  }
+
+  .border-strong {
+    border-color: var(--border-strong);
+  }
+
+  .text-primary {
+    color: var(--text-primary);
+  }
+
+  .text-secondary {
+    color: var(--text-secondary);
+  }
+
   .text-muted {
-    color: var(--color-text-muted);
+    color: var(--text-muted);
+  }
+
+  .hover-surface:hover {
+    background-color: var(--interactive-hover);
+  }
+
+  .pressed-surface:active {
+    background-color: var(--interactive-pressed);
+  }
+
+  .focus-ring:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--interactive-focus) 60%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
   }
 
   .ui-radius-0 {
@@ -86,6 +129,80 @@
 
 /* Shared component classes */
 @layer components {
+  .ui-panel {
+    @apply ui-radius-3 border shadow-card;
+    background-color: var(--surface-2);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+  }
+
+  .ui-card {
+    @apply ui-radius-3 border shadow-sm;
+    background-color: var(--surface-1);
+    border-color: var(--border-subtle);
+    color: var(--text-primary);
+  }
+
+  .ui-control {
+    @apply inline-flex items-center gap-1 ui-radius-2 border px-3 py-1.5 font-medium transition disabled:cursor-not-allowed disabled:opacity-60;
+    background-color: var(--surface-1);
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+  }
+
+  .ui-control:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+    background-color: var(--interactive-hover);
+  }
+
+  .ui-control:focus-visible {
+    outline: none;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
+  }
+
+  .ui-control:active {
+    background-color: var(--interactive-pressed);
+  }
+
+  .ui-control--success {
+    background-color: color-mix(in srgb, var(--color-success) 20%, var(--surface-1));
+    border-color: color-mix(in srgb, var(--color-success) 44%, var(--border-subtle));
+    color: color-mix(in srgb, var(--color-success) 78%, var(--text-primary));
+  }
+
+  .ui-control-input {
+    @apply ui-radius-2 border px-3 py-1.5 text-sm focus:outline-none disabled:cursor-not-allowed disabled:opacity-70;
+    background-color: var(--surface-1);
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+  }
+
+  .ui-control-input:focus {
+    border-color: var(--border-strong);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-focus) 45%, transparent);
+  }
+
+  .ui-pill-info {
+    background-color: color-mix(in srgb, var(--color-info) 22%, var(--surface-1));
+    color: color-mix(in srgb, var(--color-info) 80%, var(--text-primary));
+    border: 1px solid color-mix(in srgb, var(--color-info) 34%, var(--border-subtle));
+  }
+
+  .ui-pill-success {
+    background-color: color-mix(in srgb, var(--color-success) 24%, var(--surface-1));
+    color: color-mix(in srgb, var(--color-success) 82%, var(--text-primary));
+    border: 1px solid color-mix(in srgb, var(--color-success) 38%, var(--border-subtle));
+  }
+
+  .ui-pill-danger {
+    background-color: color-mix(in srgb, var(--color-error) 24%, var(--surface-1));
+    color: color-mix(in srgb, var(--color-error) 82%, var(--text-primary));
+    border: 1px solid color-mix(in srgb, var(--color-error) 38%, var(--border-subtle));
+  }
+
   .container {
     @apply mx-auto px-4;
     max-width: 1200px;
