@@ -132,11 +132,11 @@ describe('ForecastChart', () => {
     const wrapper = mount(ForecastChart, {
       props: {
         ...baseProps,
-        selectedAspect: 'debt_totals',
+        selectedAspect: 'debt',
       },
     })
 
-    expect(wrapper.text()).toContain('Month · Debt totals')
+    expect(wrapper.text()).toContain('Month · Debt composition')
     expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
       expect.objectContaining({
         label: 'Debt totals',

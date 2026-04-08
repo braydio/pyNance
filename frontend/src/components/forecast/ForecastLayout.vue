@@ -197,10 +197,8 @@ import { computed, onMounted, ref, watch } from 'vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
 import {
   type ForecastAdjustmentInput,
-  type ForecastAspectSeries,
   type ForecastGraphMode,
   type ForecastMetadata,
-  type ForecastSeriesPoint,
   type ForecastViewType,
   useForecastData,
 } from '@/composables/useForecastData'
@@ -259,6 +257,7 @@ const FORECAST_ASPECT_OPTIONS = [
   { value: 'spending', label: 'Spending' },
   { value: 'debt', label: 'Debt composition' },
 ] as const
+type ForecastAspectSelection = (typeof FORECAST_ASPECT_OPTIONS)[number]['value']
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
@@ -276,7 +275,7 @@ const excludedAccountIds = ref<string[]>([])
 const movingAverageWindow = ref<7 | 30 | 60 | 90>(30)
 const normalize = ref(false)
 const graphMode = ref<ForecastGraphMode>('combined')
-const selectedAspect = ref('balances')
+const selectedAspect = ref<ForecastAspectSelection>('balances')
 const expandedAdjustmentKeys = ref<string[]>([])
 
 const forecastAspectOptions = computed(() => FORECAST_ASPECT_OPTIONS)
@@ -433,16 +432,6 @@ watch(autoDetectedAdjustments, (nextAdjustments) => {
   )
   expandedAdjustmentKeys.value = expandedAdjustmentKeys.value.filter((key) => validKeys.has(key))
 })
-
-/**
- * Determine whether any cashflow items exist that can feed non-balance chart aspects.
- *
- * @param entries Cashflow entries returned by the forecast endpoint.
- * @returns Whether at least one non-zero cashflow exists.
- */
-function hasRenderableCashflows(entries: Array<{ amount?: number | null }>) {
-  return entries.some((entry) => Number(entry?.amount ?? 0) !== 0)
-}
 
 /**
  * Load forecast account options and default to including all visible accounts.
