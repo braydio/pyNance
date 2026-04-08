@@ -1,8 +1,25 @@
 // @vitest-environment jsdom
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import FinancialSummary from '../FinancialSummary.vue'
+
+vi.mock('@/services/api', () => ({
+  default: {
+    getAccountSnapshot: vi.fn(async () => ({
+      data: { selected_account_ids: ['acc-1'] },
+    })),
+  },
+}))
+
+vi.mock('@/api/recurring', () => ({
+  getRecurringTransactions: vi.fn(async () => ({
+    status: 'success',
+    reminders: [],
+  })),
+}))
+
+const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))
 
 describe('FinancialSummary trends', () => {
   it('uses shared accent utility classes for the global detail toggle', () => {
@@ -186,5 +203,52 @@ describe('FinancialSummary trends', () => {
     expect(metrics.avgDailyNet).toBeCloseTo(16)
     expect(metrics.netMA7).toBeCloseTo(16)
     expect(metrics.netMA30).toBeCloseTo(16)
+  })
+
+  it('ranks upcoming recurring reminders by confidence and occurrences', async () => {
+    const { getRecurringTransactions } = await import('@/api/recurring')
+    getRecurringTransactions.mockImplementation(async () => ({
+      status: 'success',
+      reminders: [
+        {
+          source: 'auto',
+          description: 'Gym Membership',
+          amount: '($45.00)',
+          next_due_date: '2026-04-11',
+          auto_detection: { occurrences: 4, confidence_score: 78 },
+        },
+        {
+          source: 'auto',
+          description: 'Streaming',
+          amount: '($18.00)',
+          next_due_date: '2026-04-10',
+          auto_detection: { occurrences: 6, confidence_score: 92 },
+        },
+      ],
+    }))
+
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 600, totalExpenses: 300, totalNet: 300 },
+        chartData: [],
+      },
+      global: {
+        stubs: {
+          DailySpendingPanel: {
+            template: '<div data-test="daily-spending-panel"></div>',
+          },
+        },
+      },
+    })
+
+    await wrapper.find('.accent-toggle-btn').trigger('click')
+    await nextTick()
+    await flushPromises()
+    await nextTick()
+    await flushPromises()
+
+    const reminders = wrapper.findAll('.recurring-upcoming-description').map((node) => node.text())
+    expect(reminders[0]).toContain('Streaming')
+    expect(reminders[1]).toContain('Gym Membership')
   })
 })

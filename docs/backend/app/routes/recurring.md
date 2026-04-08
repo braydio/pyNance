@@ -1,24 +1,35 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-16
+Last Updated: 2026-04-08
 Status: Active
 ---
 
 # Recurring Transactions Route (`recurring.py`)
 
 ## Purpose
+
 Detect, configure, and track recurring transactions such as subscriptions, rent, or utilities to provide visibility into fixed obligations.
 
 ## Endpoints
+
 - `GET /recurring` – Return detected recurring transactions.
 - `POST /recurring/confirm` – Confirm a transaction pattern as recurring.
 - `DELETE /recurring/<id>` – Remove or disable tracking of a recurring item.
 - `POST /recurring/scan/<account_id>` – Scan an account and persist newly detected recurring entries.
 
 ## Inputs/Outputs
+
 - **GET /recurring**
   - **Inputs:** None.
   - **Outputs:** Array of recurring entries with description, amount, frequency, and next expected date.
+- **GET /<account_id>/recurring**
+  - **Inputs:** Path parameter `account_id`.
+  - **Outputs:** `{ "status": "success", "reminders": [...] }` where each reminder now includes:
+    - `account_id`
+    - `days_until_due`
+    - `auto_detection.occurrences`
+    - `auto_detection.latest_transaction_date`
+    - `auto_detection.confidence_score` (0-100 ranking heuristic used by dashboard prioritization)
 - **POST /recurring/confirm**
   - **Inputs:** `{ "transaction_id": "txn_812", "confirmed_label": "Spotify Subscription" }`.
   - **Outputs:** Updated recurring entry metadata.
@@ -30,17 +41,21 @@ Detect, configure, and track recurring transactions such as subscriptions, rent,
   - **Outputs:** `{ "status": "success", "actions": [] }` summarizing detected changes.
 
 ## Auth
+
 - Requires authenticated user; recurring items are scoped to the user's accounts.
 
 ## Dependencies
+
 - `services.recurring_detector` for detection logic.
 - `models.RecurringTransaction` and `models.Transaction` for storage.
 
 ## Behaviors/Edge Cases
+
 - Recurrence inferred from merchant and cadence heuristics; user confirmation stabilizes predictions.
 - Confirmed recurring entries feed budgeting and forecast views.
 
 ## Sample Request/Response
+
 ```http
 POST /recurring/confirm HTTP/1.1
 Content-Type: application/json
@@ -49,5 +64,10 @@ Content-Type: application/json
 ```
 
 ```json
-{ "id": "rec_001", "description": "Spotify Subscription", "amount": 9.99, "frequency": "monthly" }
+{
+  "id": "rec_001",
+  "description": "Spotify Subscription",
+  "amount": 9.99,
+  "frequency": "monthly"
+}
 ```
