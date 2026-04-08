@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-23
+Last Updated: 2026-04-08
 Status: Active
 ---
 
@@ -31,7 +31,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
     - `graph_mode` (`combined`, `forecast`, or `historical`; optional chart rendering hint)
     - `included_account_ids` (list of account IDs, optional; defaults to all visible accounts)
     - `excluded_account_ids` (list of account IDs, optional; applied after includes)
-  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), aggregate contribution totals for the selected accounts, and preserved adjustment metadata such as `metadata.source_transactions` for auto-detected wage entries.
+  - **Outputs:** `ForecastResult` JSON containing `timeline`, `summary`, `cashflows`, `adjustments`, and `metadata`. Metadata now includes account filters (`included_account_ids`, `excluded_account_ids`), balance breakdowns (`asset_balance`, `liability_balance`, `net_balance`), aggregate contribution totals for the selected accounts, and preserved adjustment metadata such as `metadata.source_transactions` for auto-detected wage and rent entries.
 
 ## Auth
 
@@ -50,6 +50,7 @@ Provides projected balances and metadata for dashboard forecasting views by dele
 - View selection switches horizon lengths (30 days for month, 365 days for year).
 - Forecast recompute uses the most recent account snapshots and a 90-day lookback of transaction inflow/outflow aggregates.
 - Auto wage detection samples up to five recent matching transactions and stores those references on each inferred adjustment under `metadata.source_transactions` so clients can render a drill-down explanation.
+- Auto rent detection mirrors the wage cadence inference flow (median observed gap with bounded cadence), emits negative `auto_rent` adjustments, and publishes confidence/sampling metadata for each inferred rent row.
 
 ## Sample Request/Response
 

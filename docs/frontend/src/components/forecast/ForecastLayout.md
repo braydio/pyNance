@@ -13,7 +13,7 @@
   `manual_adjustments`, `spending`, `debt`) so users can keep the same timeframe while changing
   what is visualized.
 - Build `forecastComputeMeta` so child components can describe the active lookback window, moving-average selection, normalization state, and auto-detected adjustment usage.
-- Render an auto-detected adjustment drill-down so users can inspect backend-provided `metadata.source_transactions` references for inferred wage entries.
+- Render auto-detected adjustment drill-downs so users can inspect backend-provided `metadata.source_transactions` references for inferred wage and rent entries.
 
 ## Child metadata flow
 
@@ -26,6 +26,7 @@
 
 - `forecastComputeMeta` prefers API metadata for lookback values and falls back to realized-history length when needed.
 - Auto-detected adjustment metadata includes both explicit API adjustments and the derived baseline trend adjustment shown in the layout.
+- Auto-detected adjustments are grouped by detection type in the UI so wage-income and rent-expense inferences are visually distinct while still sharing a common drill-down pattern.
 - The manual adjustments panel now reads the `manual_adjustments` series, while the realized-income
   panel reads the `realized_income` series emitted by the backend.
 - Auto-detected adjustment rows only show the drill-down toggle when source transactions are present; adjustments without sources render a passive empty-state message instead of an expandable panel.

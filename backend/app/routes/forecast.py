@@ -13,6 +13,14 @@ forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
 WAGE_LOOKBACK_DAYS = 180
 AUTO_WAGE_SOURCE_TRANSACTION_LIMIT = 5
+AUTO_RENT_SOURCE_TRANSACTION_LIMIT = 5
+RENT_KEYWORDS = (
+    "rent",
+    "apartment",
+    "property management",
+    "leasing",
+    "landlord",
+)
 LIABILITY_ACCOUNT_TYPE_TOKENS = {
     "credit",
     "credit card",
@@ -381,6 +389,65 @@ def _looks_like_wage_income(tx: Transaction) -> bool:
     return False
 
 
+def _looks_like_rent_expense(tx: Transaction) -> bool:
+    """Return ``True`` when a transaction appears to be rent or lease spending."""
+    pfc = tx.personal_finance_category if isinstance(tx.personal_finance_category, dict) else {}
+    pfc_primary = str(
+        pfc.get("primary") or pfc.get("primary_category") or pfc.get("primary_category_name") or ""
+    ).lower()
+    pfc_detailed = str(
+        pfc.get("detailed") or pfc.get("detailed_category") or pfc.get("detailed_category_name") or ""
+    ).lower()
+
+    if "rent" in pfc_detailed:
+        return True
+    if "housing" in pfc_primary and "rent" in pfc_detailed:
+        return True
+
+    plaid_meta = getattr(tx, "plaid_meta", None)
+    plaid_meta_raw = getattr(plaid_meta, "raw", None) if plaid_meta else None
+    if isinstance(plaid_meta_raw, dict):
+        pfc_raw = plaid_meta_raw.get("personal_finance_category")
+        if isinstance(pfc_raw, dict):
+            pfc_raw_primary = str(
+                pfc_raw.get("primary") or pfc_raw.get("primary_category") or pfc_raw.get("primary_category_name") or ""
+            ).lower()
+            pfc_raw_detailed = str(
+                pfc_raw.get("detailed")
+                or pfc_raw.get("detailed_category")
+                or pfc_raw.get("detailed_category_name")
+                or ""
+            ).lower()
+            if "rent" in pfc_raw_detailed:
+                return True
+            if "housing" in pfc_raw_primary and "rent" in pfc_raw_detailed:
+                return True
+
+    fields = [
+        str(getattr(tx, "description", "") or "").lower(),
+        str(getattr(tx, "merchant_name", "") or "").lower(),
+        str(tx.category_display or "").lower(),
+        str(tx.category or "").lower(),
+        str(tx.category_slug or "").lower(),
+    ]
+    fields.extend(tag.lower() for tag in _serialize_transaction_tags(tx))
+
+    plaid_meta_category = getattr(plaid_meta, "category", None) if plaid_meta else None
+    if isinstance(plaid_meta_category, list):
+        fields.extend(str(part or "").lower() for part in plaid_meta_category)
+    elif isinstance(plaid_meta_category, dict):
+        fields.extend(str(value or "").lower() for value in plaid_meta_category.values())
+
+    for value in fields:
+        if not value:
+            continue
+        if "housing" in value and "rent" in value:
+            return True
+        if any(keyword in value for keyword in RENT_KEYWORDS):
+            return True
+    return False
+
+
 def _serialize_transaction_tags(tx: Transaction) -> list[str]:
     """Return normalized transaction tag names for matching and metadata."""
     names: list[str] = []
@@ -527,6 +594,108 @@ def _auto_wage_adjustments(
     return adjustments
 
 
+def _auto_rent_adjustments(
+    *,
+    user_id: str,
+    start_date: date,
+    horizon_days: int,
+    included_account_ids: list[str] | None = None,
+    excluded_account_ids: list[str] | None = None,
+) -> list[dict[str, object]]:
+    """Infer recurring rent expense adjustments from historical transactions."""
+    included_ids = included_account_ids or []
+    excluded_ids = excluded_account_ids or []
+    lookback_start = start_date - timedelta(days=WAGE_LOOKBACK_DAYS)
+    horizon_end = start_date + timedelta(days=max(horizon_days - 1, 0))
+
+    query = (
+        db.session.query(Transaction)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+        .filter(Transaction.date >= lookback_start)
+        .filter(Transaction.date <= start_date)
+    )
+    if user_id and not included_ids:
+        query = query.filter(
+            (Account.user_id == user_id) | (Transaction.user_id == user_id) | (Account.user_id.is_(None))
+        )
+    if included_ids:
+        query = query.filter(Transaction.account_id.in_(included_ids))
+    if excluded_ids:
+        query = query.filter(~Transaction.account_id.in_(excluded_ids))
+
+    rent_rows: list[Transaction] = []
+    for tx in query.order_by(Transaction.date.asc()).all():
+        amount = float(tx.amount or 0)
+        if amount >= 0:
+            continue
+        if _looks_like_rent_expense(tx):
+            rent_rows.append(tx)
+
+    if not rent_rows:
+        return []
+
+    observed_dates = sorted(
+        {(row.date.date() if isinstance(row.date, datetime) else row.date) for row in rent_rows if row.date is not None}
+    )
+    if not observed_dates:
+        return []
+
+    expense_amounts = [abs(float(row.amount or 0)) for row in rent_rows if float(row.amount or 0) < 0]
+    if not expense_amounts:
+        return []
+    avg_rent_amount = round(sum(expense_amounts) / len(expense_amounts), 2)
+    source_transactions = [
+        _source_transaction_reference(row) for row in rent_rows[-AUTO_RENT_SOURCE_TRANSACTION_LIMIT:]
+    ]
+
+    gaps = [
+        (right - left).days for left, right in zip(observed_dates, observed_dates[1:]) if 1 <= (right - left).days <= 45
+    ]
+    if gaps:
+        sorted_gaps = sorted(gaps)
+        mid = len(sorted_gaps) // 2
+        if len(sorted_gaps) % 2 == 0:
+            median_gap = int(round((sorted_gaps[mid - 1] + sorted_gaps[mid]) / 2))
+        else:
+            median_gap = int(sorted_gaps[mid])
+    else:
+        median_gap = 30
+    median_gap = min(max(median_gap, 20), 35)
+
+    cadence_confidence = max(0.0, 1 - (abs(median_gap - 30) / 15))
+    sample_confidence = min(len(expense_amounts) / 4, 1)
+    confidence = round((0.65 * cadence_confidence) + (0.35 * sample_confidence), 2)
+
+    next_due_date = observed_dates[-1]
+    while next_due_date < start_date:
+        next_due_date += timedelta(days=median_gap)
+
+    adjustments: list[dict[str, object]] = []
+    while next_due_date <= horizon_end:
+        adjustments.append(
+            {
+                "label": "Auto rent expense",
+                "amount": -avg_rent_amount,
+                "date": next_due_date.isoformat(),
+                "adjustment_type": "auto_rent",
+                "reason": "Derived from recent rent-category transactions.",
+                "metadata": {
+                    "source": "auto_rent_detection",
+                    "observed_count": len(expense_amounts),
+                    "median_gap_days": median_gap,
+                    "confidence": confidence,
+                    "source_transaction_count": len(rent_rows),
+                    "source_transactions": source_transactions,
+                },
+            }
+        )
+        next_due_date += timedelta(days=median_gap)
+
+    return adjustments
+
+
 @forecast.route("", methods=["GET"])
 def get_forecast():
     """Return forecast payload generated by :class:`ForecastOrchestrator`."""
@@ -607,7 +776,14 @@ def compute_forecast_route():
             included_account_ids=included_account_ids,
             excluded_account_ids=excluded_account_ids,
         )
-        merged_adjustments = list(adjustments) + inferred_wage_adjustments
+        inferred_rent_adjustments = _auto_rent_adjustments(
+            user_id=str(user_id),
+            start_date=start_date,
+            horizon_days=horizon_days,
+            included_account_ids=included_account_ids,
+            excluded_account_ids=excluded_account_ids,
+        )
+        merged_adjustments = list(adjustments) + inferred_wage_adjustments + inferred_rent_adjustments
 
         result = compute_forecast(
             user_id=str(user_id),
@@ -637,6 +813,7 @@ def compute_forecast_route():
                 "realized_history_lookback_days": LOOKBACK_DAYS,
                 "realized_history": realized_history,
                 "auto_wage_adjustment_count": len(inferred_wage_adjustments),
+                "auto_rent_adjustment_count": len(inferred_rent_adjustments),
             },
         )
         return jsonify(result), 200
