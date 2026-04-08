@@ -72,3 +72,7 @@ The review call-to-action card now uses a themed gradient treatment and stronger
 to match the dashboard visual language. Inside the modal, editable fields are grouped into bordered
 cards and primary/secondary actions are visually separated to make keyboard and pointer workflows
 more intuitive without changing existing behavior.
+
+Review modal action buttons also inherit the shared two-tone button treatment from `main.css`, including
+hover highlights and a pressed-state inversion (filled to outlined) so approve/edit/next actions remain
+visually distinct while stepping through each batch.
