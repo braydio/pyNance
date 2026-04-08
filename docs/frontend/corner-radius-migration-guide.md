@@ -15,14 +15,14 @@ Defined in `frontend/src/styles/theme.css`:
 
 ## Allowed corner usage by component type
 
-| Component type | Allowed token(s) | Notes |
-| --- | --- | --- |
-| Page/section wrappers, hero cards, dashboard panels | `--radius-3` | Use for prominent, high-visibility surfaces only. |
-| Cards and table containers | `--radius-2` to `--radius-3` | Prefer `--radius-3` for dashboard hero surfaces, `--radius-2` for nested shells. |
-| Buttons, selects, form controls | `--radius-1` to `--radius-2` | Primary buttons typically use `--radius-2`; dense controls can use `--radius-1`. |
-| Chips, filter tags, decorative pills | `--radius-1` | Do not use fully rounded pills for decorative tags. |
-| Hard-edge elements (dividers, bars, strict rectangular surfaces) | `--radius-0` | Explicit no-rounding token for angular edges. |
-| Semantic circles (avatars, status dots, presence indicators) | Circle (`rounded-full`) | Keep circular treatment only when meaning requires a circle. |
+| Component type                                                   | Allowed token(s)             | Notes                                                                            |
+| ---------------------------------------------------------------- | ---------------------------- | -------------------------------------------------------------------------------- |
+| Page/section wrappers, hero cards, dashboard panels              | `--radius-3`                 | Use for prominent, high-visibility surfaces only.                                |
+| Cards and table containers                                       | `--radius-2` to `--radius-3` | Prefer `--radius-3` for dashboard hero surfaces, `--radius-2` for nested shells. |
+| Buttons, selects, form controls                                  | `--radius-1` to `--radius-2` | Primary buttons typically use `--radius-2`; dense controls can use `--radius-1`. |
+| Chips, filter tags, decorative pills                             | `--radius-1`                 | Do not use fully rounded pills for decorative tags.                              |
+| Hard-edge elements (dividers, bars, strict rectangular surfaces) | `--radius-0`                 | Explicit no-rounding token for angular edges.                                    |
+| Semantic circles (avatars, status dots, presence indicators)     | Circle (`rounded-full`)      | Keep circular treatment only when meaning requires a circle.                     |
 
 ## Migration checklist
 
