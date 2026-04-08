@@ -66,6 +66,40 @@
 
         <DailySpendingPanel :detail-date="detailDate" :min-detail-date="minDetailDate" />
 
+        <section class="recurring-upcoming-panel" aria-live="polite">
+          <div class="recurring-upcoming-header">
+            <h4 class="group-title mb-0">Upcoming Transactions</h4>
+            <p class="recurring-upcoming-subtitle">
+              Prioritized by recurrence confidence and history depth.
+            </p>
+          </div>
+          <p v-if="recurringError" class="recurring-upcoming-state">
+            Unable to load recurring reminders right now.
+          </p>
+          <p v-else-if="isLoadingRecurring" class="recurring-upcoming-state">
+            Loading upcoming recurring transactions…
+          </p>
+          <p v-else-if="!prioritizedReminders.length" class="recurring-upcoming-state">
+            No recurring reminders due in the next 7 days.
+          </p>
+          <ul v-else class="recurring-upcoming-list">
+            <li
+              v-for="reminder in prioritizedReminders"
+              :key="buildReminderKey(reminder)"
+              class="recurring-upcoming-item"
+            >
+              <div>
+                <div class="recurring-upcoming-description">{{ reminder.description }}</div>
+                <div class="recurring-upcoming-meta">
+                  Due {{ reminder.next_due_date }} ·
+                  {{ reminder.auto_detection.occurrences }} matching transactions
+                </div>
+              </div>
+              <div class="recurring-upcoming-amount">{{ reminder.amount }}</div>
+            </li>
+          </ul>
+        </section>
+
         <div class="stats-grid">
           <!-- Averages (Daily + Moving) -->
           <div class="stat-group">
@@ -177,7 +211,9 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import api from '@/services/api'
+import { getRecurringTransactions } from '@/api/recurring'
 import { formatAmount } from '@/utils/format'
 import DailySpendingPanel from './DailySpendingPanel.vue'
 
@@ -237,6 +273,10 @@ const TODAY_ISO = formatAsISODate(TODAY)
 
 const detailDate = ref(TODAY_ISO)
 const userAdjustedDate = ref(false)
+const prioritizedReminders = ref([])
+const isLoadingRecurring = ref(false)
+const recurringError = ref(null)
+const remindersFetched = ref(false)
 
 const chartDateBounds = computed(() => {
   const data = Array.isArray(props.chartData) ? props.chartData : []
@@ -295,6 +335,115 @@ function resetDetailDate() {
   userAdjustedDate.value = false
   detailDate.value = defaultDetailDate.value
 }
+
+/**
+ * Build a stable key for rendering recurring reminders.
+ *
+ * @param {Record<string, unknown>} reminder - Reminder payload from recurring endpoints.
+ * @returns {string} Unique-ish key for list rendering.
+ */
+function buildReminderKey(reminder) {
+  return `${reminder.account_id}-${reminder.description}-${reminder.next_due_date}-${reminder.amount}`
+}
+
+/**
+ * Normalize a reminder payload with deterministic fallback confidence.
+ *
+ * @param {Record<string, unknown>} reminder - Raw reminder response item.
+ * @param {string} accountId - Account identifier that produced the reminder.
+ * @returns {Record<string, unknown>} Reminder augmented with sorting metadata.
+ */
+function normalizeReminder(reminder, accountId) {
+  const occurrences = Number(reminder?.auto_detection?.occurrences ?? 0)
+  const serverConfidence = Number(reminder?.auto_detection?.confidence_score)
+  const fallbackConfidence = (reminder?.source === 'auto' ? 40 : 20) + Math.min(occurrences * 12, 60)
+  return {
+    ...reminder,
+    account_id: reminder?.account_id || accountId,
+    auto_detection: {
+      occurrences,
+      latest_transaction_date: reminder?.auto_detection?.latest_transaction_date || '',
+      confidence_score: Number.isFinite(serverConfidence) ? serverConfidence : fallbackConfidence,
+    },
+  }
+}
+
+/**
+ * Sort reminders so high-confidence recurring patterns surface first.
+ *
+ * @param {Record<string, unknown>} left - Left reminder item.
+ * @param {Record<string, unknown>} right - Right reminder item.
+ * @returns {number} Comparator compatible with Array.sort.
+ */
+function compareReminders(left, right) {
+  const confidenceDelta =
+    (right?.auto_detection?.confidence_score || 0) - (left?.auto_detection?.confidence_score || 0)
+  if (confidenceDelta !== 0) return confidenceDelta
+
+  const occurrenceDelta = (right?.auto_detection?.occurrences || 0) - (left?.auto_detection?.occurrences || 0)
+  if (occurrenceDelta !== 0) return occurrenceDelta
+
+  return String(left?.next_due_date || '').localeCompare(String(right?.next_due_date || ''))
+}
+
+/**
+ * Load recurring reminders for selected dashboard snapshot accounts.
+ *
+ * Retrieves up to six reminders due within seven days and ranks them by confidence
+ * and observed recurrence history.
+ *
+ * @returns {Promise<void>} Resolves once reminders are loaded (or gracefully degraded).
+ */
+async function loadUpcomingRecurringTransactions() {
+  if (remindersFetched.value) {
+    return
+  }
+
+  isLoadingRecurring.value = true
+  recurringError.value = null
+
+  try {
+    const snapshotResponse = await api.getAccountSnapshot()
+    const selectedAccountIds = Array.isArray(snapshotResponse?.data?.selected_account_ids)
+      ? snapshotResponse.data.selected_account_ids
+      : []
+
+    if (!selectedAccountIds.length) {
+      prioritizedReminders.value = []
+      remindersFetched.value = true
+      return
+    }
+
+    const reminderGroups = await Promise.all(
+      selectedAccountIds.map(async (accountId) => {
+        const response = await getRecurringTransactions(accountId)
+        const rawReminders =
+          response?.status === 'success' && Array.isArray(response?.reminders) ? response.reminders : []
+        return rawReminders.map((reminder) => normalizeReminder(reminder, accountId))
+      }),
+    )
+
+    prioritizedReminders.value = reminderGroups.flat().sort(compareReminders).slice(0, 6)
+    remindersFetched.value = true
+  } catch (error) {
+    recurringError.value = error
+    prioritizedReminders.value = []
+  } finally {
+    isLoadingRecurring.value = false
+  }
+}
+
+watch(isExtendedView, (showExtended) => {
+  if (showExtended) {
+    loadUpcomingRecurringTransactions()
+  }
+})
+
+onMounted(() => {
+  if (isExtendedView.value) {
+    loadUpcomingRecurringTransactions()
+  }
+})
 
 /**
  * Build an inclusive list of date labels between two ISO date strings.
@@ -818,6 +967,68 @@ function clampDateString(value, min, max) {
 .detail-date-helper {
   font-size: 0.75rem;
   color: var(--color-text-muted);
+}
+
+.recurring-upcoming-panel {
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 25%, transparent);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
+  background: color-mix(in srgb, var(--color-bg-sec) 88%, black 12%);
+  margin-top: 0.75rem;
+}
+
+.recurring-upcoming-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.recurring-upcoming-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.recurring-upcoming-state {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--color-text-muted);
+}
+
+.recurring-upcoming-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.recurring-upcoming-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.6rem;
+  background: color-mix(in srgb, var(--color-accent-cyan) 9%, transparent);
+}
+
+.recurring-upcoming-description {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.recurring-upcoming-meta {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+}
+
+.recurring-upcoming-amount {
+  align-self: center;
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .stats-grid {

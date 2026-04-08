@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-16
+Last Updated: 2026-04-08
 Status: Active
 ---
 
@@ -19,6 +19,14 @@ Detect, configure, and track recurring transactions such as subscriptions, rent,
 - **GET /recurring**
   - **Inputs:** None.
   - **Outputs:** Array of recurring entries with description, amount, frequency, and next expected date.
+- **GET /<account_id>/recurring**
+  - **Inputs:** Path parameter `account_id`.
+  - **Outputs:** `{ "status": "success", "reminders": [...] }` where each reminder now includes:
+    - `account_id`
+    - `days_until_due`
+    - `auto_detection.occurrences`
+    - `auto_detection.latest_transaction_date`
+    - `auto_detection.confidence_score` (0-100 ranking heuristic used by dashboard prioritization)
 - **POST /recurring/confirm**
   - **Inputs:** `{ "transaction_id": "txn_812", "confirmed_label": "Spotify Subscription" }`.
   - **Outputs:** Updated recurring entry metadata.

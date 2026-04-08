@@ -29,6 +29,26 @@ def add_months(original_date, months=1):
         return original_date.replace(year=new_year, month=new_month, day=28)
 
 
+def _build_auto_confidence_score(occurrences, latest_date, recent_cutoff, today):
+    """Score auto-detected recurring confidence from history depth and recency.
+
+    Args:
+        occurrences (int): Number of matching transactions in the recent window.
+        latest_date (date): Most recent observed transaction date for the pattern.
+        recent_cutoff (date): Inclusive lower bound used for detection.
+        today (date): Current day.
+
+    Returns:
+        int: Confidence score on a 0-100 scale.
+    """
+    occurrence_score = min(max(occurrences - 1, 0) * 15, 60)
+    lookback_days = max((today - recent_cutoff).days, 1)
+    recency_days = max((today - latest_date).days, 0)
+    recency_ratio = max(0.0, 1 - (recency_days / lookback_days))
+    recency_score = round(recency_ratio * 40)
+    return max(0, min(100, occurrence_score + recency_score))
+
+
 # --------------------------------------
 # PUT /accounts/<account_id>/recurringTx
 # Save or update a recurring transaction
@@ -214,13 +234,26 @@ def get_structured_recurring(account_id):
             if isinstance(next_due, datetime):
                 next_due = next_due.date()
             if 0 <= (next_due - today).days <= 7:
+                confidence_score = _build_auto_confidence_score(
+                    occurrences=row.occurrences,
+                    latest_date=latest_date,
+                    recent_cutoff=recent_cutoff,
+                    today=today,
+                )
                 dummy_tx = types.SimpleNamespace(amount=row.amount)
                 reminders.append(
                     {
                         "source": "auto",
+                        "account_id": account_id,
                         "description": row.description,
                         "amount": display_transaction_amount(dummy_tx),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
+                        "days_until_due": (next_due - today).days,
+                        "auto_detection": {
+                            "occurrences": row.occurrences,
+                            "latest_transaction_date": latest_date.strftime("%Y-%m-%d"),
+                            "confidence_score": confidence_score,
+                        },
                     }
                 )
 
@@ -235,11 +268,18 @@ def get_structured_recurring(account_id):
                 reminders.append(
                     {
                         "source": "user",
+                        "account_id": account_id,
                         "description": row.description,
                         "amount": display_transaction_amount(row),
                         "next_due_date": next_due.strftime("%Y-%m-%d"),
+                        "days_until_due": (next_due - today).days,
                         "notes": row.notes,
                         "frequency": row.frequency,
+                        "auto_detection": {
+                            "occurrences": 1,
+                            "latest_transaction_date": next_due.strftime("%Y-%m-%d"),
+                            "confidence_score": 35,
+                        },
                     }
                 )
 

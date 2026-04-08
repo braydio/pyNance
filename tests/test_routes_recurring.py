@@ -2,7 +2,7 @@ import importlib.util
 import os
 import sys
 import types
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
@@ -64,7 +64,7 @@ class DummyTransaction:
         self.amount = 1.0
         self.description = "d"
         self.merchant_name = ""
-        self.date = datetime.now(UTC)
+        self.date = datetime.now(timezone.utc)
         self.account_id = "acc1"
 
 
@@ -131,7 +131,7 @@ def test_scan_route_returns_list(client, monkeypatch):
         amount=1.0,
         description="d",
         merchant_name="",
-        date=datetime.now(UTC),
+        date=datetime.now(timezone.utc),
         account_id="acc1",  # ✅ Required field
     )
     mock_query.filter_by.return_value = mock_query
@@ -162,3 +162,47 @@ def test_scan_route_returns_list(client, monkeypatch):
     resp = client.post("/api/recurring/scan/acc1")
     assert resp.status_code == 200
     assert isinstance(resp.get_json()["reminders"], list)
+
+
+def test_get_structured_recurring_includes_confidence_metadata(client, monkeypatch):
+    today = recurring_module.date.today()
+    latest_date = today - recurring_module.timedelta(days=3)
+    auto_row = types.SimpleNamespace(
+        description="Rent",
+        amount=-1200.0,
+        occurrences=4,
+        latest_date=latest_date,
+    )
+
+    mock_auto_query = MagicMock()
+    mock_auto_query.filter.return_value = mock_auto_query
+    mock_auto_query.group_by.return_value = mock_auto_query
+    mock_auto_query.having.return_value = mock_auto_query
+    mock_auto_query.all.return_value = [auto_row]
+
+    mock_db = types.SimpleNamespace(session=types.SimpleNamespace(query=MagicMock(return_value=mock_auto_query)))
+    monkeypatch.setattr(recurring_module, "db", mock_db)
+
+    mock_transaction_model = MagicMock()
+    mock_transaction_model.account_id = "account_id"
+    mock_transaction_model.date = "date"
+    mock_transaction_model.id = "id"
+    mock_transaction_model.description = "description"
+    mock_transaction_model.amount = "amount"
+    monkeypatch.setattr(recurring_module, "Transaction", mock_transaction_model)
+
+    mock_recurring_query = MagicMock()
+    mock_recurring_query.filter_by.return_value = mock_recurring_query
+    mock_recurring_query.all.return_value = []
+    mock_recurring_model = MagicMock()
+    mock_recurring_model.query = mock_recurring_query
+    monkeypatch.setattr(recurring_module, "RecurringTransaction", mock_recurring_model)
+
+    response = client.get("/api/recurring/acc1/recurring")
+    assert response.status_code == 200
+    payload = response.get_json()
+    reminder = payload["reminders"][0]
+    assert reminder["source"] == "auto"
+    assert reminder["auto_detection"]["occurrences"] == 4
+    assert 0 <= reminder["auto_detection"]["confidence_score"] <= 100
+    assert reminder["account_id"] == "acc1"
