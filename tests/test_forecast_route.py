@@ -233,6 +233,7 @@ def test_forecast_compute_accepts_empty_adjustments(client, monkeypatch):
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -296,6 +297,7 @@ def test_forecast_compute_accepts_multiple_adjustments(client, monkeypatch):
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -368,6 +370,7 @@ def test_forecast_compute_appends_auto_wage_adjustments(client, monkeypatch):
         "_auto_wage_adjustments",
         lambda **_: [auto_wage_adjustment],
     )
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
 
     resp = client.post(
@@ -449,6 +452,7 @@ def test_forecast_compute_includes_account_filters_and_contribution_metadata(cli
     monkeypatch.setattr(forecast_module, "_load_historical_aggregates", fake_aggregates)
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -523,6 +527,7 @@ def test_forecast_compute_accepts_new_compute_contract_fields(client, monkeypatc
     monkeypatch.setattr(forecast_module, "_load_historical_aggregates", lambda *a, **k: [])
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
 
     resp = client.post(
         "/api/forecast/compute",
@@ -643,6 +648,125 @@ def test_auto_wage_adjustments_include_bounded_source_transaction_references(mon
     }
 
 
+def test_looks_like_rent_expense_detects_user_category_and_tags():
+    tx = SimpleNamespace(
+        description="Monthly transfer",
+        merchant_name="Landlord LLC",
+        category="Housing",
+        category_display="Housing - Rent",
+        category_slug="housing-rent",
+        personal_finance_category={"primary": "TRANSFER", "detailed": "TRANSFER_OUT_ACCOUNT_TRANSFER"},
+        tags=[SimpleNamespace(name="Rent"), SimpleNamespace(name="Fixed Expense")],
+        plaid_meta=SimpleNamespace(category=["Transfer", "Other"]),
+    )
+
+    assert forecast_module._looks_like_rent_expense(tx) is True
+
+
+def test_looks_like_rent_expense_rejects_non_rent_signals():
+    tx = SimpleNamespace(
+        description="Utility bill payment",
+        merchant_name="City Utilities",
+        category="Utilities",
+        category_display="Home - Utilities",
+        category_slug="home-utilities",
+        personal_finance_category={"primary": "GENERAL_MERCHANDISE", "detailed": "GENERAL_MERCHANDISE_OTHER"},
+        tags=[SimpleNamespace(name="Bills")],
+        plaid_meta=SimpleNamespace(category=["Home", "Utilities"]),
+    )
+
+    assert forecast_module._looks_like_rent_expense(tx) is False
+
+
+def test_auto_rent_adjustments_include_confidence_and_sources(monkeypatch):
+    class FieldStub:
+        def is_(self, other):
+            return self
+
+        def in_(self, other):
+            return self
+
+        def asc(self):
+            return self
+
+        def __or__(self, other):
+            return self
+
+        def __eq__(self, other):
+            return self
+
+        def __ge__(self, other):
+            return self
+
+        def __le__(self, other):
+            return self
+
+    class QueryStub:
+        def __init__(self, rows):
+            self.rows = rows
+
+        def join(self, *args, **kwargs):
+            return self
+
+        def filter(self, *args, **kwargs):
+            return self
+
+        def order_by(self, *args, **kwargs):
+            return self
+
+        def all(self):
+            return self.rows
+
+    rent_rows = []
+    for index in range(4):
+        rent_rows.append(
+            SimpleNamespace(
+                id=index + 1,
+                transaction_id=f"rent-{index + 1}",
+                amount=-1600 - index,
+                date=datetime(2024, 1, 2) + timedelta(days=index * 30),
+                description=f"Monthly Rent {index + 1}",
+                merchant_name="Main Street Property Management",
+                category="Housing",
+                category_display="Housing - Rent",
+                category_slug="housing-rent",
+                personal_finance_category={"primary": "HOUSING", "detailed": "HOUSING_RENT"},
+                plaid_meta=SimpleNamespace(category=["Housing", "Rent"]),
+                tags=[SimpleNamespace(name="rent"), SimpleNamespace(name="housing")],
+            )
+        )
+
+    monkeypatch.setattr(
+        forecast_module,
+        "db",
+        SimpleNamespace(session=SimpleNamespace(query=lambda *args, **kwargs: QueryStub(rent_rows))),
+    )
+    field = FieldStub()
+    monkeypatch.setattr(forecast_module.Transaction, "account_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "is_internal", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "date", field, raising=False)
+    monkeypatch.setattr(forecast_module.Transaction, "user_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "account_id", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "is_hidden", field, raising=False)
+    monkeypatch.setattr(forecast_module.Account, "user_id", field, raising=False)
+
+    adjustments = forecast_module._auto_rent_adjustments(
+        user_id="user-1",
+        start_date=datetime(2024, 5, 1).date(),
+        horizon_days=60,
+    )
+
+    assert adjustments
+    assert adjustments[0]["adjustment_type"] == "auto_rent"
+    assert adjustments[0]["amount"] < 0
+    metadata = adjustments[0]["metadata"]
+    assert metadata["source_transaction_count"] == 4
+    assert metadata["observed_count"] == 4
+    assert 0 <= metadata["confidence"] <= 1
+    assert len(metadata["source_transactions"]) == 4
+    assert metadata["source_transactions"][0]["matching_fields"]["category_display"] == "Housing - Rent"
+
+
 def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(client, monkeypatch):
     captured = {}
 
@@ -672,6 +796,7 @@ def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(c
     )
     monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
     monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(forecast_module, "_auto_rent_adjustments", lambda **_: [])
 
     resp = client.post("/api/forecast/compute", json={"user_id": "user-balance"})
 
@@ -680,3 +805,42 @@ def test_forecast_compute_metadata_balance_breakdown_uses_account_type_mapping(c
     assert captured["metadata"]["liability_balance"] == 350.0
     assert captured["metadata"]["net_balance"] == 650.0
     assert captured["metadata"]["starting_balance"] == 650.0
+
+
+def test_forecast_compute_appends_auto_rent_adjustments(client, monkeypatch):
+    captured = {}
+
+    def fake_compute_forecast(**kwargs):
+        captured["adjustments"] = kwargs["adjustments"]
+        captured["metadata"] = kwargs["metadata"]
+        return {
+            "timeline": [],
+            "summary": None,
+            "cashflows": [],
+            "adjustments": kwargs["adjustments"],
+            "metadata": kwargs["metadata"],
+        }
+
+    monkeypatch.setattr(forecast_module, "_load_latest_snapshots", lambda *a, **k: [])
+    monkeypatch.setattr(forecast_module, "_load_historical_aggregates", lambda *a, **k: [])
+    monkeypatch.setattr(forecast_module, "_auto_wage_adjustments", lambda **_: [])
+    monkeypatch.setattr(
+        forecast_module,
+        "_auto_rent_adjustments",
+        lambda **_: [
+            {
+                "label": "Auto rent expense",
+                "amount": -1400.0,
+                "date": "2024-01-10",
+                "adjustment_type": "auto_rent",
+                "metadata": {"confidence": 0.85},
+            }
+        ],
+    )
+    monkeypatch.setattr(forecast_module, "compute_forecast", fake_compute_forecast)
+
+    resp = client.post("/api/forecast/compute", json={"user_id": "user-rent"})
+
+    assert resp.status_code == 200
+    assert any(item.get("adjustment_type") == "auto_rent" for item in captured["adjustments"])
+    assert captured["metadata"]["auto_rent_adjustment_count"] == 1

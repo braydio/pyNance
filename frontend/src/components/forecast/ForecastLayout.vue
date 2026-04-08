@@ -90,8 +90,7 @@
         <div>
           <h3 class="adjustments-title">Auto-Detected Adjustments</h3>
           <p class="adjustments-empty">
-            Review the transactions used to infer forecasted wage income when source references are
-            available.
+            Review source transactions used to infer forecasted wage income and rent expense.
           </p>
         </div>
       </div>
@@ -100,79 +99,173 @@
         No auto-detected adjustments are active for this forecast.
       </p>
 
-      <ul v-else class="auto-adjustments-list">
-        <li
-          v-for="(adjustment, index) in autoDetectedAdjustments"
-          :key="adjustmentKey(adjustment, index)"
-          class="auto-adjustment-item"
-        >
-          <div class="auto-adjustment-item__summary">
-            <div>
-              <p class="auto-adjustment-item__label">
-                {{ adjustment.label || 'Auto adjustment' }}
-              </p>
-              <p class="auto-adjustment-item__meta">
-                {{ adjustment.date || 'scheduled' }}
-                <span v-if="adjustment.reason">· {{ adjustment.reason }}</span>
-              </p>
-            </div>
-            <div class="auto-adjustment-item__actions">
-              <strong>{{ formatSignedCurrency(Number(adjustment.amount ?? 0)) }}</strong>
-              <button
-                v-if="sourceTransactionsForAdjustment(adjustment).length > 0"
-                type="button"
-                class="auto-adjustment-toggle"
-                @click="toggleAdjustmentDetails(adjustment, index)"
-              >
-                {{
-                  isAdjustmentExpanded(adjustment, index)
-                    ? 'Hide source transactions'
-                    : 'View source transactions'
-                }}
-              </button>
-            </div>
-          </div>
-
-          <p
-            v-if="sourceTransactionsForAdjustment(adjustment).length === 0"
-            class="auto-adjustment-item__empty"
-          >
-            No source transactions are available for this auto-detected adjustment.
+      <div v-else class="auto-adjustments-groups">
+        <div>
+          <h4 class="auto-adjustments-group-title">Wage Income Detections</h4>
+          <p v-if="autoDetectedWageAdjustments.length === 0" class="adjustments-empty">
+            No wage income detections are active.
           </p>
-
-          <div
-            v-else-if="isAdjustmentExpanded(adjustment, index)"
-            class="auto-adjustment-item__details"
-          >
-            <ul class="source-transactions-list">
-              <li
-                v-for="transaction in sourceTransactionsForAdjustment(adjustment)"
-                :key="transaction.id || `${transaction.date}-${transaction.amount}`"
-                class="source-transaction-item"
-              >
-                <div class="source-transaction-item__summary">
-                  <div>
-                    <p class="source-transaction-item__description">
-                      {{ transaction.description || 'Transaction reference' }}
-                    </p>
-                    <p class="source-transaction-item__meta">
-                      {{ transaction.date || 'Unknown date' }}
-                      <span v-if="transaction.id">· {{ transaction.id }}</span>
-                    </p>
-                  </div>
-                  <strong>{{ formatSignedCurrency(Number(transaction.amount ?? 0)) }}</strong>
+          <ul v-else class="auto-adjustments-list">
+            <li
+              v-for="(adjustment, index) in autoDetectedWageAdjustments"
+              :key="adjustmentKey(adjustment, index)"
+              class="auto-adjustment-item"
+            >
+              <div class="auto-adjustment-item__summary">
+                <div>
+                  <p class="auto-adjustment-item__label">
+                    {{ adjustment.label || 'Auto adjustment' }}
+                  </p>
+                  <p class="auto-adjustment-item__meta">
+                    {{ adjustment.date || 'scheduled' }}
+                    <span v-if="adjustment.reason">· {{ adjustment.reason }}</span>
+                    <span v-if="adjustment.metadata?.confidence !== undefined">
+                      · Confidence {{ Number(adjustment.metadata?.confidence).toFixed(2) }}
+                    </span>
+                  </p>
                 </div>
-                <p
-                  v-if="summarizeMatchingFields(transaction.matching_fields)"
-                  class="source-transaction-item__matching"
-                >
-                  Matching fields: {{ summarizeMatchingFields(transaction.matching_fields) }}
-                </p>
-              </li>
-            </ul>
-          </div>
-        </li>
-      </ul>
+                <div class="auto-adjustment-item__actions">
+                  <strong>{{ formatSignedCurrency(Number(adjustment.amount ?? 0)) }}</strong>
+                  <button
+                    v-if="sourceTransactionsForAdjustment(adjustment).length > 0"
+                    type="button"
+                    class="auto-adjustment-toggle"
+                    @click="toggleAdjustmentDetails(adjustment, index)"
+                  >
+                    {{
+                      isAdjustmentExpanded(adjustment, index)
+                        ? 'Hide source transactions'
+                        : 'View source transactions'
+                    }}
+                  </button>
+                </div>
+              </div>
+
+              <p
+                v-if="sourceTransactionsForAdjustment(adjustment).length === 0"
+                class="auto-adjustment-item__empty"
+              >
+                No source transactions are available for this auto-detected adjustment.
+              </p>
+
+              <div
+                v-else-if="isAdjustmentExpanded(adjustment, index)"
+                class="auto-adjustment-item__details"
+              >
+                <ul class="source-transactions-list">
+                  <li
+                    v-for="transaction in sourceTransactionsForAdjustment(adjustment)"
+                    :key="transaction.id || `${transaction.date}-${transaction.amount}`"
+                    class="source-transaction-item"
+                  >
+                    <div class="source-transaction-item__summary">
+                      <div>
+                        <p class="source-transaction-item__description">
+                          {{ transaction.description || 'Transaction reference' }}
+                        </p>
+                        <p class="source-transaction-item__meta">
+                          {{ transaction.date || 'Unknown date' }}
+                          <span v-if="transaction.id">· {{ transaction.id }}</span>
+                        </p>
+                      </div>
+                      <strong>{{ formatSignedCurrency(Number(transaction.amount ?? 0)) }}</strong>
+                    </div>
+                    <p
+                      v-if="summarizeMatchingFields(transaction.matching_fields)"
+                      class="source-transaction-item__matching"
+                    >
+                      Matching fields: {{ summarizeMatchingFields(transaction.matching_fields) }}
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="auto-adjustments-group-title">Rent Expense Detections</h4>
+          <p v-if="autoDetectedRentAdjustments.length === 0" class="adjustments-empty">
+            No rent expense detections are active.
+          </p>
+          <ul v-else class="auto-adjustments-list auto-adjustments-list--rent">
+            <li
+              v-for="(adjustment, index) in autoDetectedRentAdjustments"
+              :key="adjustmentKey(adjustment, index)"
+              class="auto-adjustment-item"
+            >
+              <div class="auto-adjustment-item__summary">
+                <div>
+                  <p class="auto-adjustment-item__label">
+                    {{ adjustment.label || 'Auto adjustment' }}
+                  </p>
+                  <p class="auto-adjustment-item__meta">
+                    {{ adjustment.date || 'scheduled' }}
+                    <span v-if="adjustment.reason">· {{ adjustment.reason }}</span>
+                    <span v-if="adjustment.metadata?.confidence !== undefined">
+                      · Confidence {{ Number(adjustment.metadata?.confidence).toFixed(2) }}
+                    </span>
+                  </p>
+                </div>
+                <div class="auto-adjustment-item__actions">
+                  <strong>{{ formatSignedCurrency(Number(adjustment.amount ?? 0)) }}</strong>
+                  <button
+                    v-if="sourceTransactionsForAdjustment(adjustment).length > 0"
+                    type="button"
+                    class="auto-adjustment-toggle"
+                    @click="toggleAdjustmentDetails(adjustment, index)"
+                  >
+                    {{
+                      isAdjustmentExpanded(adjustment, index)
+                        ? 'Hide source transactions'
+                        : 'View source transactions'
+                    }}
+                  </button>
+                </div>
+              </div>
+
+              <p
+                v-if="sourceTransactionsForAdjustment(adjustment).length === 0"
+                class="auto-adjustment-item__empty"
+              >
+                No source transactions are available for this auto-detected adjustment.
+              </p>
+
+              <div
+                v-else-if="isAdjustmentExpanded(adjustment, index)"
+                class="auto-adjustment-item__details"
+              >
+                <ul class="source-transactions-list">
+                  <li
+                    v-for="transaction in sourceTransactionsForAdjustment(adjustment)"
+                    :key="transaction.id || `${transaction.date}-${transaction.amount}`"
+                    class="source-transaction-item"
+                  >
+                    <div class="source-transaction-item__summary">
+                      <div>
+                        <p class="source-transaction-item__description">
+                          {{ transaction.description || 'Transaction reference' }}
+                        </p>
+                        <p class="source-transaction-item__meta">
+                          {{ transaction.date || 'Unknown date' }}
+                          <span v-if="transaction.id">· {{ transaction.id }}</span>
+                        </p>
+                      </div>
+                      <strong>{{ formatSignedCurrency(Number(transaction.amount ?? 0)) }}</strong>
+                    </div>
+                    <p
+                      v-if="summarizeMatchingFields(transaction.matching_fields)"
+                      class="source-transaction-item__matching"
+                    >
+                      Matching fields: {{ summarizeMatchingFields(transaction.matching_fields) }}
+                    </p>
+                  </li>
+                </ul>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
     </div>
 
     <ForecastChart
@@ -243,6 +336,7 @@ type SourceTransactionReference = {
 }
 
 type AdjustmentMetadata = ForecastMetadata & {
+  confidence?: number
   source_transactions?: SourceTransactionReference[]
 }
 
@@ -346,6 +440,16 @@ const autoDetectedAdjustments = computed<ForecastAdjustmentWithMetadata[]>(() =>
   ) as ForecastAdjustmentWithMetadata[]),
   ...(baselineTrendAdjustment.value ? [baselineTrendAdjustment.value] : []),
 ])
+const autoDetectedWageAdjustments = computed(() =>
+  autoDetectedAdjustments.value.filter((adjustment) =>
+    ['auto_income', 'auto_wage'].includes(String(adjustment.adjustment_type || '').toLowerCase()),
+  ),
+)
+const autoDetectedRentAdjustments = computed(() =>
+  autoDetectedAdjustments.value.filter(
+    (adjustment) => String(adjustment.adjustment_type || '').toLowerCase() === 'auto_rent',
+  ),
+)
 const manualAdjustmentSeries = computed(() => series.value?.manual_adjustments ?? null)
 const realizedIncomeSeries = computed(() => series.value?.realized_income ?? null)
 const manualAdjustmentPoints = computed(() =>
@@ -639,6 +743,22 @@ function summarizeMatchingFields(fields?: SourceTransactionMatchingFields) {
   padding: 0;
   display: grid;
   gap: 0.75rem;
+}
+
+.auto-adjustments-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.auto-adjustments-group-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+}
+
+.auto-adjustments-list--rent .auto-adjustment-item {
+  border-left: 3px solid rgba(220, 38, 38, 0.4);
 }
 
 .auto-adjustment-item {
