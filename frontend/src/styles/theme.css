@@ -20,6 +20,11 @@
   --table-hover: color-mix(in srgb, var(--hover-bg) 68%, #e5e7eb 32%);
   --table-control: color-mix(in srgb, var(--color-bg-secondary) 80%, #e6edf5 20%);
 
+  --radius-0: 0;
+  --radius-1: 0.25rem;
+  --radius-2: 0.5rem;
+  --radius-3: 0.75rem;
+
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;
   --color-text-dark: #000000;

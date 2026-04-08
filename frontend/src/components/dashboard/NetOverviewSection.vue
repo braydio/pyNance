@@ -5,10 +5,10 @@
 <template>
   <section class="flex flex-col gap-6">
     <div
-      class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
+      class="h-3 w-full ui-radius-1 bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
     ></div>
     <div
-      class="w-full mb-8 bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] rounded-2xl shadow-2xl p-8 flex flex-col items-center gap-2"
+      class="w-full mb-8 bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] ui-radius-3 shadow-2xl p-8 flex flex-col items-center gap-2"
     >
       <h1
         class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"
@@ -20,7 +20,7 @@
       <p class="italic text-muted">{{ netWorthMessage }}</p>
     </div>
     <div
-      class="h-3 w-full rounded bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
+      class="h-3 w-full ui-radius-1 bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
     ></div>
     <div class="flex justify-end mb-4">
       <DateRangeSelector
@@ -34,12 +34,12 @@
     </div>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
       <div
-        class="col-span-1 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col"
+        class="col-span-1 bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col"
       >
         <TopAccountSnapshot />
       </div>
       <div
-        class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
+        class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
       >
         <DailyNetChart
           :start-date="activeRange.start"
@@ -108,7 +108,7 @@
     </div>
 
     <div
-      class="net-overview-summary-panel bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
+      class="net-overview-summary-panel bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
     >
       <slot name="summary">
         <FinancialSummary

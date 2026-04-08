@@ -5,7 +5,7 @@
   persist or Cancel to revert to the last saved snapshot.
 -->
 <template>
-  <div class="bg-bg-secondary rounded-3xl p-6 shadow-card w-full max-w-3xl">
+  <div class="bg-bg-secondary ui-radius-3 p-6 shadow-card w-full max-w-3xl">
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-1">
         <h3 class="text-lg font-semibold text-blue-950 dark:text-blue-100">Account Snapshot</h3>
@@ -24,7 +24,7 @@
       <div class="flex flex-wrap items-center gap-2 text-xs">
         <button
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="handleRefresh"
           :disabled="isLoading || isSaving"
           aria-label="Refresh account snapshot"
@@ -35,7 +35,7 @@
         <button
           v-if="!isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="startEditing"
           :disabled="isLoading || isSaving"
           aria-label="Edit snapshot selection"
@@ -46,7 +46,7 @@
         <button
           v-else
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200 dark:focus-visible:ring-offset-gray-900"
+          class="inline-flex items-center gap-1 ui-radius-2 border border-emerald-200 bg-emerald-50 px-3 py-1.5 font-medium text-emerald-700 transition hover:border-emerald-400 hover:text-emerald-800 focus-visible:ring-2 focus-visible:ring-emerald-400/60 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-200 dark:focus-visible:ring-offset-gray-900"
           @click="saveEditing"
           :disabled="isSaving || !hasStagedChanges"
           :aria-label="isSaving ? 'Saving snapshot' : 'Save snapshot selection'"
@@ -57,7 +57,7 @@
         <button
           v-if="isEditing"
           type="button"
-          class="inline-flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
+          class="inline-flex items-center gap-1 ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 font-medium text-gray-600 transition hover:border-primary hover:text-primary focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 dark:focus-visible:ring-offset-gray-900"
           @click="cancelEditing"
           :disabled="isSaving"
           aria-label="Cancel snapshot edits"
@@ -70,7 +70,7 @@
             v-model="selectionCandidate"
             :disabled="isSaving || !stagedAvailableAccounts.length || !isEditing"
             @change="handleAddAccount"
-            class="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+            class="ui-radius-2 border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:border-gray-100 disabled:text-gray-300 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
           >
             <option value="">Add account…</option>
             <option
@@ -91,7 +91,7 @@
     </header>
 
     <section
-      class="mt-6 rounded-2xl border border-gray-100 bg-white/80 p-4 dark:border-gray-800 dark:bg-gray-900/60"
+      class="mt-6 ui-radius-3 border border-gray-100 bg-white/80 p-4 dark:border-gray-800 dark:bg-gray-900/60"
     >
       <dl class="grid gap-4 sm:grid-cols-2">
         <div>
@@ -131,7 +131,7 @@
         <span
           v-for="account in stagedAccounts"
           :key="account.account_id"
-          class="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/5 px-3 py-1 text-xs text-primary dark:border-primary/60"
+          class="inline-flex items-center gap-2 ui-radius-2 border border-primary/40 bg-primary/5 px-3 py-1 text-xs text-primary dark:border-primary/60"
         >
           <span class="i-carbon-chart-multitype text-sm" aria-hidden="true"></span>
           <span class="max-w-[140px] truncate">{{ account.name }}</span>
@@ -154,12 +154,12 @@
         <div
           v-for="s in 3"
           :key="`snapshot-skeleton-${s}`"
-          class="h-20 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800/70"
+          class="h-20 animate-pulse ui-radius-3 bg-gray-100 dark:bg-gray-800/70"
         ></div>
       </div>
       <div
         v-else-if="!stagedAccounts.length"
-        class="rounded-2xl border border-dashed border-gray-300 bg-white/40 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400"
+        class="ui-radius-3 border border-dashed border-gray-300 bg-white/40 p-6 text-center text-sm text-gray-500 dark:border-gray-700 dark:bg-gray-900/40 dark:text-gray-400"
       >
         No accounts selected yet. Use the control above to build your snapshot.
       </div>
@@ -167,11 +167,11 @@
         <article
           v-for="account in stagedAccounts"
           :key="account.account_id"
-          class="overflow-hidden rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:border-primary/40 dark:border-gray-800 dark:bg-gray-900"
+          class="overflow-hidden ui-radius-3 border border-gray-100 bg-white p-4 shadow-sm transition hover:border-primary/40 dark:border-gray-800 dark:bg-gray-900"
         >
           <button
             type="button"
-            class="flex w-full items-center justify-between gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] dark:focus-visible:ring-offset-gray-900"
+            class="flex w-full items-center justify-between gap-4 ui-radius-2 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-white active:scale-[0.99] dark:focus-visible:ring-offset-gray-900"
             @click="toggleDetails(account.account_id)"
             @keydown.enter.prevent="toggleDetails(account.account_id)"
             @keydown.space.prevent="toggleDetails(account.account_id)"
@@ -202,7 +202,7 @@
                 {{ formatAccounting(resolveAccountBalance(account)) }}
               </span>
               <span
-                class="inline-flex items-center gap-1 rounded-full text-xs font-medium"
+                class="inline-flex items-center gap-1 ui-radius-2 text-xs font-medium"
                 :class="upcomingPillClass(netUpcoming(account))"
               >
                 <span class="i-carbon-calendar text-sm" aria-hidden="true"></span>
@@ -225,7 +225,7 @@
                 <li
                   v-for="(reminder, idx) in upcomingForAccount(account)"
                   :key="reminder.id || reminder.description + reminder.next_due_date + idx"
-                  class="flex items-start justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 dark:bg-gray-800/60"
+                  class="flex items-start justify-between gap-3 ui-radius-2 bg-gray-50 px-3 py-2 dark:bg-gray-800/60"
                 >
                   <div>
                     <p class="font-semibold text-gray-700 dark:text-gray-200">
@@ -261,7 +261,7 @@
                 <li
                   v-for="tx in recentTxs[account.account_id]"
                   :key="tx.id || tx.transaction_id"
-                  class="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 active:scale-[0.99] dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900"
+                  class="flex items-center justify-between gap-3 ui-radius-2 bg-gray-50 px-3 py-2 transition hover:bg-gray-100 focus-visible:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-50 active:scale-[0.99] dark:bg-gray-800/60 dark:hover:bg-gray-800 dark:focus-visible:ring-offset-gray-900"
                   role="button"
                   tabindex="0"
                   data-testid="account-snapshot-transaction"

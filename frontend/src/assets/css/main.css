@@ -66,6 +66,22 @@
   .text-muted {
     color: var(--color-text-muted);
   }
+
+  .ui-radius-0 {
+    border-radius: var(--radius-0);
+  }
+
+  .ui-radius-1 {
+    border-radius: var(--radius-1);
+  }
+
+  .ui-radius-2 {
+    border-radius: var(--radius-2);
+  }
+
+  .ui-radius-3 {
+    border-radius: var(--radius-3);
+  }
 }
 
 /* Shared component classes */
@@ -76,14 +92,16 @@
   }
 
   .card {
-    @apply rounded-lg shadow-lg p-6;
+    @apply shadow-lg p-6;
+    border-radius: var(--radius-3);
     background-color: var(--color-bg-secondary);
     border: 1px solid var(--divider);
     color: var(--color-text-light);
   }
 
   .btn {
-    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @apply inline-flex items-center px-4 py-2 border font-semibold;
+    border-radius: var(--radius-2);
     background-color: var(--accent-primary);
     border-color: var(--accent-primary);
     color: var(--accent-primary-contrast);
@@ -98,7 +116,8 @@
   }
 
   .btn-outline {
-    @apply inline-flex items-center px-4 py-2 border rounded-md bg-transparent font-semibold;
+    @apply inline-flex items-center px-4 py-2 border bg-transparent font-semibold;
+    border-radius: var(--radius-2);
     color: var(--accent-primary);
     border-color: var(--accent-primary);
   }
@@ -114,7 +133,7 @@
     border: 1px solid var(--accent-primary);
     color: var(--accent-primary);
     padding: 0.35rem 0.9rem;
-    border-radius: 0.65rem;
+    border-radius: var(--radius-2);
     font-size: 0.85rem;
     font-weight: 600;
     cursor: pointer;
@@ -199,7 +218,8 @@
   }
 
   .btn-primary {
-    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @apply inline-flex items-center px-4 py-2 border font-semibold;
+    border-radius: var(--radius-2);
     background-color: var(--primary);
     border-color: var(--primary);
     color: var(--accent-primary-contrast);
@@ -211,7 +231,8 @@
   }
 
   .btn-success {
-    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @apply inline-flex items-center px-4 py-2 border font-semibold;
+    border-radius: var(--radius-2);
     background-color: var(--color-success);
     border-color: var(--color-success);
     color: var(--accent-primary-contrast);
@@ -222,7 +243,8 @@
   }
 
   .btn-alert {
-    @apply inline-flex items-center px-4 py-2 border rounded-md font-semibold;
+    @apply inline-flex items-center px-4 py-2 border font-semibold;
+    border-radius: var(--radius-2);
     background-color: var(--color-error);
     border-color: var(--color-error);
     color: var(--color-bg-dark);
@@ -233,7 +255,8 @@
   }
 
   .input {
-    @apply w-full px-2 py-1 rounded border text-sm;
+    @apply w-full px-2 py-1 border text-sm;
+    border-radius: var(--radius-1);
     background-color: var(--color-bg-dark);
     border-color: var(--divider);
     color: var(--color-text-light);
