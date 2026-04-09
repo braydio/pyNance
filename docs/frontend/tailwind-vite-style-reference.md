@@ -103,6 +103,24 @@ These are exposed through utility classes in `frontend/src/assets/css/main.css` 
 - `text-primary`, `text-secondary`, `text-muted`
 - `hover-surface`, `pressed-surface`, `focus-ring`
 
+## Base Primitives Contract
+
+To reduce radius/focus regressions, interactive geometry now lives in `frontend/src/components/base/` primitives:
+
+- `BaseButton`
+- `BaseInput`
+- `BaseSelect`
+- `BaseChip`
+- `BasePanel`
+
+These components are the only place where angular geometry, spacing presets, border treatment, and focus-ring behavior should be defined for shared controls. Feature components should consume variant props (`tone`, `variant`, `radius`, `size`, etc.) and avoid re-declaring local border-radius/focus rules when a primitive is already applicable.
+
+Initial adoption targets are:
+
+- Dashboard section shells
+- Transactions table controls
+- Account snapshot controls
+
 ## Rule: No Hardcoded Neutrals
 
 Do not use hardcoded neutral palettes in Vue templates or scoped styles (for example `bg-gray-*`, `text-gray-*`, `border-slate-*`, `bg-neutral-*`).

@@ -5,7 +5,14 @@
   persist or Cancel to revert to the last saved snapshot.
 -->
 <template>
-  <div class="ui-panel p-6 w-full max-w-3xl">
+  <BasePanel
+    class="w-full max-w-3xl"
+    surface="secondary"
+    border-tone="subtle"
+    radius="lg"
+    padding="md"
+    shadow="md"
+  >
     <header class="flex flex-wrap items-start justify-between gap-4">
       <div class="space-y-1">
         <h3 class="text-lg font-semibold text-primary">Account Snapshot</h3>
@@ -19,55 +26,67 @@
         </p>
       </div>
       <div class="flex flex-wrap items-center gap-2 text-xs">
-        <button
+        <BaseButton
           type="button"
-          class="ui-control text-xs active:scale-[0.98]"
+          class="text-xs"
           @click="handleRefresh"
           :disabled="isLoading || isSaving"
           aria-label="Refresh account snapshot"
+          tone="neutral"
+          variant="outline"
+          size="sm"
         >
           <span class="i-carbon-renew text-sm" aria-hidden="true"></span>
           <span>{{ isLoading ? 'Refreshing…' : 'Refresh' }}</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           v-if="!isEditing"
           type="button"
-          class="ui-control text-xs active:scale-[0.99]"
+          class="text-xs"
           @click="startEditing"
           :disabled="isLoading || isSaving"
           aria-label="Edit snapshot selection"
+          tone="neutral"
+          variant="outline"
+          size="sm"
         >
           <span class="i-carbon-edit text-sm" aria-hidden="true"></span>
           <span>Edit</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           v-else
           type="button"
-          class="ui-control ui-control--success text-xs active:scale-[0.99]"
+          class="text-xs"
           @click="saveEditing"
           :disabled="isSaving || !hasStagedChanges"
           :aria-label="isSaving ? 'Saving snapshot' : 'Save snapshot selection'"
+          tone="success"
+          variant="solid"
+          size="sm"
         >
           <span class="i-carbon-save text-sm" aria-hidden="true"></span>
           <span>{{ isSaving ? 'Saving…' : 'Save' }}</span>
-        </button>
-        <button
+        </BaseButton>
+        <BaseButton
           v-if="isEditing"
           type="button"
-          class="ui-control text-xs active:scale-[0.99]"
+          class="text-xs"
           @click="cancelEditing"
           :disabled="isSaving"
           aria-label="Cancel snapshot edits"
+          tone="neutral"
+          variant="outline"
+          size="sm"
         >
           <span class="i-carbon-close text-sm" aria-hidden="true"></span>
           <span>Cancel</span>
-        </button>
+        </BaseButton>
         <div class="relative">
-          <select
+          <BaseSelect
             v-model="selectionCandidate"
             :disabled="isSaving || !stagedAvailableAccounts.length || !isEditing"
             @change="handleAddAccount"
-            class="ui-control-input min-w-[12rem]"
+            class="min-w-[12rem]"
           >
             <option value="">Add account…</option>
             <option
@@ -77,7 +96,7 @@
             >
               {{ accountOptionLabel(account) }}
             </option>
-          </select>
+          </BaseSelect>
           <span
             v-if="isSaving"
             class="absolute -right-3 -top-3 i-carbon-circle-dash animate-spin text-primary"
@@ -87,7 +106,15 @@
       </div>
     </header>
 
-    <section class="mt-6 ui-card p-4">
+    <BasePanel
+      tag="section"
+      class="mt-6"
+      surface="primary"
+      border-tone="subtle"
+      radius="lg"
+      padding="sm"
+      shadow="sm"
+    >
       <dl class="grid gap-4 sm:grid-cols-2">
         <div>
           <dt class="text-xs uppercase tracking-wide text-muted">Total balance</dt>
@@ -118,15 +145,17 @@
       <p v-if="isEditing" class="text-[11px] text-[var(--color-warning)]">
         Changes are staged until you click Save.
       </p>
-    </section>
+    </BasePanel>
 
     <section class="mt-6">
       <h4 class="text-xs uppercase tracking-wide text-muted">Snapshot selection</h4>
       <div class="mt-2 flex flex-wrap gap-2">
-        <span
+        <BaseChip
           v-for="account in stagedAccounts"
           :key="account.account_id"
-          class="inline-flex items-center gap-2 ui-radius-2 border border-primary/40 bg-primary/5 px-3 py-1 text-xs text-primary dark:border-primary/60"
+          class="text-primary"
+          tone="accent"
+          radius="md"
         >
           <span class="i-carbon-chart-multitype text-sm" aria-hidden="true"></span>
           <span class="max-w-[140px] truncate">{{ account.name }}</span>
@@ -137,7 +166,7 @@
             @click="handleRemoveAccount(account.account_id)"
             :aria-label="`Remove ${account.name} from snapshot`"
           ></button>
-        </span>
+        </BaseChip>
         <p v-if="!stagedAccounts.length && !isLoading" class="text-sm text-muted">
           Choose accounts to populate the snapshot preview.
         </p>
@@ -279,7 +308,7 @@
         </article>
       </div>
     </section>
-  </div>
+  </BasePanel>
 </template>
 
 <script setup>
@@ -291,6 +320,10 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useSnapshotAccounts } from '@/composables/useSnapshotAccounts.js'
 import { fetchRecentTransactions } from '@/api/transactions'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseChip from '@/components/base/BaseChip.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
+import BaseSelect from '@/components/base/BaseSelect.vue'
 
 const selectionCandidate = ref('')
 const openAccountId = ref(null)

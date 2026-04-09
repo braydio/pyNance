@@ -70,6 +70,11 @@ const PaginationControlsStub = {
   template: '<div class="pagination-stub" @click="$emit(\'change-page\', 2)" />',
 }
 const SpendingInsightsStub = { name: 'SpendingInsights', template: '<div class="insights-stub" />' }
+const BaseButtonStub = {
+  name: 'BaseButton',
+  template: '<button class="base-button-stub" @click="$emit(\'click\')"><slot /></button>',
+}
+const BasePanelStub = { name: 'BasePanel', template: '<div class="base-panel-stub"><slot /></div>' }
 
 describe('Dashboard section components', () => {
   it('renders net overview content and forwards slot content', () => {
@@ -142,6 +147,8 @@ describe('Dashboard section components', () => {
           ChartWidgetTopBar: ChartWidgetTopBarStub,
           GroupedCategoryDropdown: GroupedCategoryDropdownStub,
           CategoryBreakdownChart: CategoryBreakdownChartStub,
+          BaseButton: BaseButtonStub,
+          BasePanel: BasePanelStub,
         },
       },
       slots: {
@@ -167,7 +174,13 @@ describe('Dashboard section components', () => {
 
   it('shows accounts section content and emits close', async () => {
     const wrapper = shallowMount(AccountsSection, {
-      global: { stubs: { AccountsTable: AccountsTableStub } },
+      global: {
+        stubs: {
+          AccountsTable: AccountsTableStub,
+          BaseButton: BaseButtonStub,
+          BasePanel: BasePanelStub,
+        },
+      },
       slots: { default: '<div class="accounts-slot">Slot Content</div>' },
     })
 
@@ -193,6 +206,8 @@ describe('Dashboard section components', () => {
         stubs: {
           TransactionsTable: TransactionsTableStub,
           PaginationControls: PaginationControlsStub,
+          BaseButton: BaseButtonStub,
+          BasePanel: BasePanelStub,
         },
       },
       slots: { default: '<div class="transactions-slot">Extra</div>' },

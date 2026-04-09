@@ -1,84 +1,126 @@
 <template>
   <div class="pagination-container">
     <div class="pagination-row" role="group" aria-label="Pagination controls">
-      <button
+      <BaseButton
         class="pagination-button"
         :disabled="currentPage <= 1"
         @click="goToFirst"
         aria-label="Go to first page"
+        tone="neutral"
+        variant="outline"
+        radius="pill"
+        size="sm"
       >
         « First
-      </button>
-      <button
+      </BaseButton>
+      <BaseButton
         class="pagination-button"
         :disabled="currentPage <= 1"
         @click="goToPrev"
         aria-label="Go to previous page"
+        tone="neutral"
+        variant="outline"
+        radius="pill"
+        size="sm"
       >
         ‹ Prev
-      </button>
+      </BaseButton>
 
       <div class="page-list" aria-label="Select page">
-        <button
+        <BaseButton
           v-if="hasLeadingGap"
           class="pagination-chip"
           @click="goToPage(1)"
           aria-label="Go to page 1"
+          tone="neutral"
+          variant="ghost"
+          radius="pill"
+          size="sm"
         >
           1
-        </button>
+        </BaseButton>
         <span v-if="hasLeadingGap" class="gap">…</span>
 
-        <button
+        <BaseButton
           v-for="pageNumber in visiblePages"
           :key="pageNumber"
           class="pagination-chip"
-          :class="{ active: pageNumber === currentPage }"
+          :active="pageNumber === currentPage"
           @click="goToPage(pageNumber)"
           :aria-current="pageNumber === currentPage ? 'page' : undefined"
+          tone="neutral"
+          variant="ghost"
+          radius="pill"
+          size="sm"
         >
           {{ pageNumber }}
-        </button>
+        </BaseButton>
 
         <span v-if="hasTrailingGap" class="gap">…</span>
-        <button v-if="hasTrailingGap" class="pagination-chip" @click="goToPage(totalPages)">
+        <BaseButton
+          v-if="hasTrailingGap"
+          class="pagination-chip"
+          @click="goToPage(totalPages)"
+          tone="neutral"
+          variant="ghost"
+          radius="pill"
+          size="sm"
+        >
           {{ totalPages }}
-        </button>
+        </BaseButton>
       </div>
 
-      <button
+      <BaseButton
         class="pagination-button"
         :disabled="currentPage >= totalPages"
         @click="goToNext"
         aria-label="Go to next page"
+        tone="neutral"
+        variant="outline"
+        radius="pill"
+        size="sm"
       >
         Next ›
-      </button>
-      <button
+      </BaseButton>
+      <BaseButton
         class="pagination-button"
         :disabled="currentPage >= totalPages"
         @click="goToLast"
         aria-label="Go to last page"
+        tone="neutral"
+        variant="outline"
+        radius="pill"
+        size="sm"
       >
         Last »
-      </button>
+      </BaseButton>
     </div>
 
     <div class="info-row">
       <div class="page-input">
         <label class="sr-only" for="page-entry">Jump to page</label>
         <span>Page</span>
-        <input
+        <BaseInput
           id="page-entry"
           type="number"
           min="1"
           :max="totalPages"
           v-model.number="editablePage"
-          @keyup.enter="jumpToPage"
+          @enter="jumpToPage"
           class="page-field"
+          size="sm"
+          radius="sm"
         />
         <span>of {{ totalPages }}</span>
-        <button class="go-button" @click="jumpToPage">Go</button>
+        <BaseButton
+          class="go-button"
+          tone="accent"
+          variant="solid"
+          radius="sm"
+          size="sm"
+          @click="jumpToPage"
+          >Go</BaseButton
+        >
       </div>
       <span v-if="rangeLabel" class="range-label">{{ rangeLabel }}</span>
     </div>
@@ -86,6 +128,9 @@
 </template>
 
 <script>
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseInput from '@/components/base/BaseInput.vue'
+
 /**
  * PaginationControls
  *
@@ -94,6 +139,7 @@
  */
 export default {
   name: 'PaginationControls',
+  components: { BaseButton, BaseInput },
   props: {
     currentPage: { type: Number, required: true },
     totalPages: { type: Number, required: true },
@@ -190,8 +236,7 @@ export default {
 }
 
 .pagination-button {
-  @apply rounded-full border border-subtle bg-surface-1 px-3 py-1.5 font-semibold text-secondary transition;
-  @apply hover:border-strong hover-surface disabled:cursor-not-allowed disabled:opacity-50;
+  @apply font-semibold;
 }
 
 .page-list {
@@ -199,12 +244,7 @@ export default {
 }
 
 .pagination-chip {
-  @apply min-w-[36px] rounded-full px-3 py-1 text-sm font-semibold text-secondary transition;
-  @apply hover-surface hover:text-primary;
-}
-
-.pagination-chip.active {
-  @apply bg-surface-1 text-primary border border-strong shadow;
+  min-width: 36px;
 }
 
 .gap {
@@ -220,24 +260,11 @@ export default {
 }
 
 .page-field {
-  @apply w-16 rounded-md border border-subtle bg-surface-1 px-2 py-1 text-center text-primary outline-none;
-  @apply focus:border-strong focus:ring-1;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--interactive-focus) 65%, transparent);
+  @apply w-16 text-center;
 }
 
 .go-button {
-  @apply rounded-md px-3 py-1 text-xs font-semibold transition;
-  background-color: var(--accent-primary);
-  color: var(--accent-primary-contrast);
-}
-
-.go-button:hover {
-  background-color: color-mix(in srgb, var(--accent-primary) 85%, #ffffff 15%);
-}
-
-.go-button:focus-visible {
-  @apply outline-none;
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent);
+  @apply text-xs font-semibold;
 }
 
 .range-label {
