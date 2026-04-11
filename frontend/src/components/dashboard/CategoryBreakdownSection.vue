@@ -3,8 +3,14 @@
   Displays spending breakdown controls and chart results.
 -->
 <template>
-  <div
-    class="md:col-span-2 w-full bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-yellow)] p-6 flex flex-col gap-4 overflow-hidden"
+  <BasePanel
+    tag="div"
+    class="md:col-span-2 w-full flex flex-col gap-4 overflow-hidden"
+    border-tone="accent-yellow"
+    surface="secondary"
+    radius="lg"
+    padding="md"
+    shadow="md"
   >
     <div class="flex items-center justify-between mb-2">
       <div class="flex flex-col">
@@ -18,28 +24,24 @@
         <template #controls>
           <div class="flex flex-wrap gap-2 items-center">
             <div class="inline-flex rounded-lg border border-[var(--divider)] overflow-hidden">
-              <button
-                class="px-3 py-1 text-sm transition"
-                :class="
-                  breakdownType === 'category'
-                    ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                    : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                "
+              <BaseButton
+                size="sm"
+                tone="accent"
+                radius="sm"
+                :active="breakdownType === 'category'"
                 @click="emit('change-breakdown', 'category')"
               >
                 Categories
-              </button>
-              <button
-                class="px-3 py-1 text-sm transition"
-                :class="
-                  breakdownType === 'merchant'
-                    ? 'bg-[var(--color-accent-yellow)] text-[var(--color-bg)]'
-                    : 'text-muted hover:bg-[var(--color-bg-dark)]'
-                "
+              </BaseButton>
+              <BaseButton
+                size="sm"
+                tone="accent"
+                radius="sm"
+                :active="breakdownType === 'merchant'"
                 @click="emit('change-breakdown', 'merchant')"
               >
                 Merchants
-              </button>
+              </BaseButton>
             </div>
             <GroupedCategoryDropdown
               v-if="breakdownType === 'category'"
@@ -48,9 +50,14 @@
               @update:modelValue="emit('update-selection', $event)"
               class="w-full md:w-64"
             />
-            <button class="btn btn-outline hover-lift" @click="emit('toggle-group-others')">
+            <BaseButton
+              tone="accent"
+              variant="outline"
+              size="sm"
+              @click="emit('toggle-group-others')"
+            >
               {{ groupOthers ? 'Expand All' : 'Consolidate Minor Items' }}
-            </button>
+            </BaseButton>
           </div>
         </template>
       </ChartWidgetTopBar>
@@ -105,7 +112,7 @@
       }}</span>
       <slot name="after-total" />
     </div>
-  </div>
+  </BasePanel>
 </template>
 
 <script setup>
@@ -114,6 +121,8 @@
  */
 import { computed, ref } from 'vue'
 import ChartWidgetTopBar from '@/components/ui/ChartWidgetTopBar.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
 import CategoryBreakdownChart from '@/components/charts/CategoryBreakdownChart.vue'
 import { formatAmount } from '@/utils/format'

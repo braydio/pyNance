@@ -49,3 +49,15 @@ The summary card is hidden while loading, while showing an error state, or when 
 
 - `frontend/src/components/tables/UpdateTransactionsTable.vue`
 - `frontend/src/views/Transactions.vue`
+
+## Shared Base Primitive Usage
+
+Transactions table control surfaces now rely on base primitives for consistent control geometry and interaction states:
+
+- `BasePanel` wraps the controls surface.
+- `BaseSelect` powers account filtering.
+- `BaseButton` powers transaction type toggles and pagination actions.
+- `BaseChip` renders active filter tags.
+- `BaseInput` powers pagination jump-to-page entry.
+
+This keeps border radius, spacing density, border treatment, and focus rings centralized in `frontend/src/components/base/`.

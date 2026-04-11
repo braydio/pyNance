@@ -4,7 +4,15 @@
       <span class="title-icon i-ph:currency-circle-dollar-duotone text-2xl mr-2"></span>
       Recent Transactions
     </h3>
-    <div class="control-surface md:flex-row md:items-center">
+    <BasePanel
+      tag="div"
+      class="control-surface md:flex-row md:items-center"
+      surface="tertiary"
+      border-tone="subtle"
+      radius="lg"
+      padding="sm"
+      shadow="none"
+    >
       <DateRangeSelector
         :start-date="startDate"
         :end-date="endDate"
@@ -14,7 +22,7 @@
       />
       <div class="control-group">
         <label class="control-label" for="account-filter">Account</label>
-        <select
+        <BaseSelect
           id="account-filter"
           v-model="accountId"
           data-test="account-filter"
@@ -24,46 +32,55 @@
           <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
             {{ formatName(acc.name) }}
           </option>
-        </select>
+        </BaseSelect>
       </div>
       <div class="control-group">
         <label class="control-label" for="type-filter">Type</label>
         <div class="pill-row">
-          <button
-            class="pill md:text-sm"
-            :class="{ active: txType === '' }"
+          <BaseButton
+            tone="accent"
+            variant="outline"
+            radius="pill"
+            size="sm"
+            :active="txType === ''"
             @click="txType = ''"
             type="button"
           >
             All
-          </button>
-          <button
-            class="pill md:text-sm"
-            :class="{ active: txType === 'credit' }"
+          </BaseButton>
+          <BaseButton
+            tone="accent"
+            variant="outline"
+            radius="pill"
+            size="sm"
+            :active="txType === 'credit'"
             @click="txType = 'credit'"
             type="button"
           >
             Credit
-          </button>
-          <button
-            class="pill md:text-sm"
-            :class="{ active: txType === 'debit' }"
+          </BaseButton>
+          <BaseButton
+            tone="accent"
+            variant="outline"
+            radius="pill"
+            size="sm"
+            :active="txType === 'debit'"
             @click="txType = 'debit'"
             type="button"
           >
             Debit
-          </button>
+          </BaseButton>
         </div>
       </div>
-    </div>
+    </BasePanel>
     <div v-if="activeFilters.length" class="filter-tags" data-testid="transactions-filter-tags">
-      <span v-for="filter in activeFilters" :key="filter.key" class="filter-tag">
+      <BaseChip v-for="filter in activeFilters" :key="filter.key" class="filter-tag">
         <span class="filter-tag__label">{{ filter.label }}:</span>
         <span class="filter-tag__value">{{ filter.value }}</span>
         <button type="button" class="filter-tag__remove" @click="removeFilter(filter.key)">
           ×
         </button>
-      </span>
+      </BaseChip>
     </div>
     <div class="mb-8">
       <canvas ref="transactionsChart" height="110"></canvas>
@@ -158,6 +175,10 @@ import { ref, computed, onMounted, watch } from 'vue'
 import Chart from 'chart.js/auto'
 import DateRangeSelector from '../DateRangeSelector.vue'
 import PaginationControls from './PaginationControls.vue'
+import BaseButton from '@/components/base/BaseButton.vue'
+import BaseChip from '@/components/base/BaseChip.vue'
+import BasePanel from '@/components/base/BasePanel.vue'
+import BaseSelect from '@/components/base/BaseSelect.vue'
 import { fetchTransactions } from '@/api/transactions'
 import { formatAmount as formatCurrency } from '@/utils/format'
 
@@ -171,7 +192,14 @@ import { formatAmount as formatCurrency } from '@/utils/format'
  */
 export default {
   name: 'TransactionsTable',
-  components: { DateRangeSelector, PaginationControls },
+  components: {
+    DateRangeSelector,
+    PaginationControls,
+    BaseButton,
+    BaseChip,
+    BasePanel,
+    BaseSelect,
+  },
   setup() {
     const transactionsChart = ref(null)
     const transactions = ref([])

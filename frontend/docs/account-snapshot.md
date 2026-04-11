@@ -40,3 +40,14 @@ For exact implementation details, see:
 
 - Account groups configured for `TopAccountSnapshot` are also surfaced in the Forecast summary account selector as quick-select shortcuts.
 - Forecast only includes group accounts that are currently available in forecast account options, preventing stale or orphaned IDs from being applied.
+
+## Shared Base Primitive Usage
+
+`AccountSnapshot.vue` controls (refresh/edit/save/cancel actions, account add select, and selection chips) now use frontend base primitives to centralize:
+
+- angular geometry and radius rules
+- spacing presets
+- border styles
+- focus-ring behavior
+
+Primitives used: `BaseButton`, `BaseSelect`, `BaseChip`, and `BasePanel`.
