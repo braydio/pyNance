@@ -1,27 +1,35 @@
 version = 1
 
-[[analyzers]]
-name = "test-coverage"
-
+exclude_patterns = [
+  "node_modules/**",
+  "frontend/node_modules/**",
+  "dist/**",
+  "build/**",
+  ".venv/**",
+  "env/**",
+  "__pycache__/**",
+  "frontend/cypress/videos/**",
+  "frontend/cypress/screenshots/**",
+  "frontend/coverage/**",
+]
 
 [[analyzers]]
 name = "sql"
+enabled = true
 
 [[analyzers]]
 name = "python"
+enabled = true
 
   [analyzers.meta]
-  runtime_version = "3.x.x"
+  runtime_version = "3.11"
 
 [[analyzers]]
 name = "javascript"
+enabled = true
 
   [analyzers.meta]
   plugins = ["vue"]
-  environment = [
-   "vitest", 
-   "cypress"
-  ]
 
 [[code_formatters]]
 name = "prettier"
