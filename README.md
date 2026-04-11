@@ -123,6 +123,13 @@ To surface live R/S arbitrage data in the UI, add the dashboard flag and run the
   npm run test:unit
   ```
 
+## DeepSource analysis notes
+
+- DeepSource static analysis is configured in `.deepsource.toml`.
+- The repository currently enables `python`, `javascript` (Vue plugin), and `sql` analyzers.
+- Coverage analyzer support is intentionally disabled until a dedicated coverage artifact upload pipeline is added.
+- Large/generated paths (for example virtual environments, build outputs, and Cypress artifacts) are excluded to keep analysis runtime stable.
+
 ## Documentation
 
 - Browse `docs/index/INDEX.md` for the structured documentation tree.
