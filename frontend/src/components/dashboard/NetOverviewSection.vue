@@ -4,11 +4,12 @@
 -->
 <template>
   <section class="flex flex-col gap-6">
+    <div class="angular-divider mb-2" aria-hidden="true">
+      <span class="angular-divider__rule"></span>
+      <span class="angular-divider__step"></span>
+    </div>
     <div
-      class="h-3 w-full ui-radius-1 bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
-    ></div>
-    <div
-      class="w-full mb-8 bg-[var(--color-bg-sec)] border-2 border-[var(--color-accent-cyan)] ui-radius-3 shadow-2xl p-8 flex flex-col items-center gap-2"
+      class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] ui-radius-2 p-6 md:p-7 flex flex-col items-center gap-2"
     >
       <h1
         class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"
@@ -19,9 +20,10 @@
       <p class="text-lg text-muted">Today is {{ currentDate }}</p>
       <p class="italic text-muted">{{ netWorthMessage }}</p>
     </div>
-    <div
-      class="h-3 w-full ui-radius-1 bg-gradient-to-r from-[var(--color-accent-cyan)] via-[var(--color-accent-purple)] to-[var(--color-accent-magenta)] mb-6"
-    ></div>
+    <div class="angular-divider mb-2" aria-hidden="true">
+      <span class="angular-divider__rule"></span>
+      <span class="angular-divider__step"></span>
+    </div>
     <div class="flex justify-end mb-4">
       <DateRangeSelector
         :start-date="dateRange.start"
@@ -34,12 +36,12 @@
     </div>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
       <div
-        class="col-span-1 bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-green)] p-4 flex flex-col"
+        class="net-overview-panel net-overview-panel--accent-green col-span-1 bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
       >
         <TopAccountSnapshot />
       </div>
       <div
-        class="daily-net-chart-panel md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 flex flex-col gap-3 relative"
+        class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6 flex flex-col gap-3 relative"
       >
         <DailyNetChart
           :start-date="activeRange.start"
@@ -108,7 +110,7 @@
     </div>
 
     <div
-      class="net-overview-summary-panel bg-[var(--color-bg-sec)] ui-radius-3 shadow-xl border-2 border-[var(--color-accent-cyan)] p-6"
+      class="net-overview-summary-panel net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6"
     >
       <slot name="summary">
         <FinancialSummary
@@ -216,10 +218,10 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 </script>
 
 <style scoped>
-@import '../../assets/css/main.css';
-
 .username {
-  @apply text-[var(--color-accent-cyan)] text-lg;
+  color: var(--color-accent-cyan);
+  font-size: 1.125rem;
+  font-weight: 600;
   text-shadow: 2px 6px 8px var(--bar-gradient-end);
 }
 
@@ -244,9 +246,56 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   isolation: isolate;
 }
 
+.net-overview-hero {
+  border: 2px solid var(--edge-contrast-accent-cyan);
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-raised);
+}
+
+.net-overview-panel {
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
+}
+
+.net-overview-panel--accent-cyan {
+  border-width: 2px;
+  border-color: var(--edge-contrast-accent-cyan);
+}
+
+.net-overview-panel--accent-green {
+  border-width: 2px;
+  border-color: var(--edge-contrast-accent-green);
+}
+
 .net-overview-summary-panel {
   position: relative;
   z-index: 1;
+}
+
+.angular-divider {
+  position: relative;
+  height: 0.65rem;
+}
+
+.angular-divider__rule {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--color-accent-cyan) 75%, transparent) 0%,
+    color-mix(in srgb, var(--color-accent-purple) 80%, transparent) 45%,
+    color-mix(in srgb, var(--color-accent-magenta) 74%, transparent) 100%
+  );
+}
+
+.angular-divider__step {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 5.5rem;
+  height: 0.45rem;
+  clip-path: polygon(0 100%, 18% 0, 100% 0, 82% 100%);
+  background: color-mix(in srgb, var(--color-accent-cyan) 38%, transparent);
 }
 
 .daily-net-chart-controls {
