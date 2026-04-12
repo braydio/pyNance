@@ -1,12 +1,26 @@
 """Dashboard-specific API routes."""
 
-from flask import Blueprint, jsonify, request
+from datetime import datetime
 
 from app.config import logger
 from app.services import account_groups as account_group_service
-from app.services.account_snapshot import build_snapshot_payload, update_snapshot_selection
+from app.services.account_snapshot import (
+    build_snapshot_payload,
+    update_snapshot_selection,
+)
+from app.services.dashboard_activity_status import generate_activity_status
+from flask import Blueprint, jsonify, request
 
 dashboard = Blueprint("dashboard", __name__)
+
+
+def _parse_iso_date_arg(name: str) -> datetime | None:
+    """Parse an optional ``YYYY-MM-DD`` query arg into a datetime."""
+
+    raw = request.args.get(name)
+    if not raw:
+        return None
+    return datetime.strptime(raw, "%Y-%m-%d")
 
 
 @dashboard.route("/account_snapshot", methods=["GET"])
@@ -18,6 +32,25 @@ def get_account_snapshot():
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.error("Failed to load account snapshot preferences: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@dashboard.route("/activity-status", methods=["GET"])
+def get_activity_status():
+    """Return a parseable dashboard greeting status generated from recent activity."""
+
+    try:
+        start_date = _parse_iso_date_arg("start_date")
+        end_date = _parse_iso_date_arg("end_date")
+    except ValueError:
+        return jsonify({"status": "error", "message": "start_date and end_date must use YYYY-MM-DD"}), 400
+
+    user_id = request.args.get("user_id")
+    try:
+        data = generate_activity_status(start_date=start_date, end_date=end_date, user_id=user_id)
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to generate dashboard activity status: %s", exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 

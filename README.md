@@ -101,6 +101,7 @@ For auto-reloading during collaborative work, run the watcher from the project r
 ## Configuration
 
 - `ENABLE_ARBIT_DASHBOARD` – set to `true` to enable the experimental arbitrage dashboard.
+- `OPENAI_API_KEY` – optional key used by `GET /api/dashboard/activity-status` to generate a single parseable dashboard greeting tip from balances and recent transactions. When omitted, the backend uses a deterministic fallback message.
 
 ### Discord arbitrage feed
 

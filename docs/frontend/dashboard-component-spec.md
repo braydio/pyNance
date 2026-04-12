@@ -156,6 +156,8 @@
   - **Acceptance criteria:** Components load data in correct order, no dependency conflicts
 - [x] **Synchronize net overview range and fallback messaging** - Keep the hero chart aligned to the active net range while surfacing unified load failures.
   - **Acceptance criteria:** `frontend/src/components/dashboard/NetOverviewSection.vue` consumes the `netRange` override for hero charts and summaries, and `frontend/src/views/Dashboard.vue` surfaces a single fallback string when the initial Promise.all load fails.
+- [x] **Power dashboard greeting with parseable activity status** - Replace static net-worth quips with one actionable insight generated from account balances plus recent transactions.
+  - **Acceptance criteria:** `frontend/src/views/Dashboard.vue` requests `/api/dashboard/activity-status` during dashboard loads, forwards the returned single-message tip into `NetOverviewSection`, and keeps the existing fallback copy when API loads fail.
 
 ### UI/UX Refactoring
 

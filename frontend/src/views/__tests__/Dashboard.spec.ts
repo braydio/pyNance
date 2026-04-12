@@ -10,7 +10,13 @@ import { fetchTransactions } from '@/api/transactions'
 
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
-  default: { fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }) },
+  default: {
+    fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }),
+    fetchDashboardActivityStatus: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: { message: 'Review your largest recent expense for accuracy.' },
+    }),
+  },
 }))
 
 const mockFetchTransactions = vi.fn().mockResolvedValue({})
@@ -562,7 +568,7 @@ describe('Dashboard.vue', () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
 
-    expect(wrapper.vm.netWorthMessage).toContain('Unable to refresh dashboard data')
+    expect(wrapper.vm.greetingMessage).toContain('Unable to refresh dashboard data')
   })
 
   it('runs a single fetch cycle when the date range changes', async () => {
