@@ -9,11 +9,10 @@ from decimal import Decimal
 from typing import Any
 
 import requests
-from sqlalchemy import or_
-
 from app.config import logger
 from app.extensions import db
 from app.models import Account, Transaction
+from sqlalchemy import or_
 
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"

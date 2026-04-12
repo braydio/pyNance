@@ -12,9 +12,10 @@ import { fetchTransactions } from '@/api/transactions'
 vi.mock('@/services/api', () => ({
   default: {
     fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }),
-    fetchDashboardActivityStatus: vi
-      .fn()
-      .mockResolvedValue({ status: 'success', data: { message: 'Review your largest recent expense for accuracy.' } }),
+    fetchDashboardActivityStatus: vi.fn().mockResolvedValue({
+      status: 'success',
+      data: { message: 'Review your largest recent expense for accuracy.' },
+    }),
   },
 }))
 

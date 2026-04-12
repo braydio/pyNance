@@ -487,12 +487,13 @@ async function loadDashboardData(range = debouncedRange.value) {
   }
 
   try {
-    const [netAssetsResult, categoriesResult, transactionsResult, activityStatusResult] = await Promise.all([
-      api.fetchNetAssets().catch(recordFailure),
-      refreshOptions(params).catch(recordFailure),
-      loadTransactions(1, { force: true }).catch(recordFailure),
-      api.fetchDashboardActivityStatus(params).catch(recordFailure),
-    ])
+    const [netAssetsResult, categoriesResult, transactionsResult, activityStatusResult] =
+      await Promise.all([
+        api.fetchNetAssets().catch(recordFailure),
+        refreshOptions(params).catch(recordFailure),
+        loadTransactions(1, { force: true }).catch(recordFailure),
+        api.fetchDashboardActivityStatus(params).catch(recordFailure),
+      ])
     loadReviewCount(reviewFilters.value)
 
     if (loadToken !== activeLoadToken) {
@@ -502,7 +503,8 @@ async function loadDashboardData(range = debouncedRange.value) {
     const hadFailure =
       [categoriesResult, transactionsResult, activityStatusResult].some(
         (result) => result && '__error' in result,
-      ) || (netAssetsResult && '__error' in netAssetsResult)
+      ) ||
+      (netAssetsResult && '__error' in netAssetsResult)
 
     if (netAssetsResult?.status === 'success' && Array.isArray(netAssetsResult.data)) {
       const lastPoint = netAssetsResult.data[netAssetsResult.data.length - 1]
