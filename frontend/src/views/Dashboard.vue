@@ -12,7 +12,7 @@
         <NetOverviewSection
           :user-name="userName"
           :current-date="currentDate"
-          :net-worth-message="netWorthMessage"
+          :net-worth-message="greetingMessage"
           :date-range="dateRange"
           :debounced-range="debouncedRange"
           :net-range="netRange"
@@ -331,10 +331,12 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 })
 const netWorth = ref(0)
 const loadErrorMessage = ref('')
-const netWorthMessage = computed(() => {
+const activityStatusMessage = ref('')
+const greetingMessage = computed(() => {
   if (loadErrorMessage.value) {
     return loadErrorMessage.value
   }
+  if (activityStatusMessage.value) return activityStatusMessage.value
   if (netWorth.value < 0) return '... and things are looking quite bleak.'
   if (netWorth.value > 1000) return 'Ahh... well in the black.'
   return 'Uhh... keep up the... whatever this is.'
@@ -485,10 +487,11 @@ async function loadDashboardData(range = debouncedRange.value) {
   }
 
   try {
-    const [netAssetsResult, categoriesResult, transactionsResult] = await Promise.all([
+    const [netAssetsResult, categoriesResult, transactionsResult, activityStatusResult] = await Promise.all([
       api.fetchNetAssets().catch(recordFailure),
       refreshOptions(params).catch(recordFailure),
       loadTransactions(1, { force: true }).catch(recordFailure),
+      api.fetchDashboardActivityStatus(params).catch(recordFailure),
     ])
     loadReviewCount(reviewFilters.value)
 
@@ -497,14 +500,20 @@ async function loadDashboardData(range = debouncedRange.value) {
     }
 
     const hadFailure =
-      [categoriesResult, transactionsResult].some((result) => result && '__error' in result) ||
-      (netAssetsResult && '__error' in netAssetsResult)
+      [categoriesResult, transactionsResult, activityStatusResult].some(
+        (result) => result && '__error' in result,
+      ) || (netAssetsResult && '__error' in netAssetsResult)
 
     if (netAssetsResult?.status === 'success' && Array.isArray(netAssetsResult.data)) {
       const lastPoint = netAssetsResult.data[netAssetsResult.data.length - 1]
       netWorth.value = lastPoint?.net_assets ?? 0
     } else {
       loadErrorMessage.value = fallback
+    }
+    if (activityStatusResult?.status === 'success' && activityStatusResult.data?.message) {
+      activityStatusMessage.value = activityStatusResult.data.message
+    } else if (!loadErrorMessage.value) {
+      activityStatusMessage.value = ''
     }
 
     if (hadFailure) {

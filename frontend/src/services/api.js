@@ -70,6 +70,11 @@ export default {
     return response.data
   },
 
+  async fetchDashboardActivityStatus(params = {}) {
+    const response = await apiClient.get('/dashboard/activity-status', { params })
+    return response.data
+  },
+
   async updateTransaction(transactionData) {
     const response = await apiClient.put('/transactions/update', transactionData)
     return response.data
