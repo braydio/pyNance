@@ -69,9 +69,9 @@ const panelClasses = computed(() => {
   }
   const shadow = {
     none: '',
-    sm: 'shadow-sm',
-    md: 'shadow-lg',
-    lg: 'shadow-2xl',
+    sm: 'shadow-[var(--depth-shadow-resting)]',
+    md: 'shadow-[var(--depth-shadow-raised)]',
+    lg: 'shadow-[var(--depth-shadow-overlay)]',
   }
 
   return [

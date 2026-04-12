@@ -24,11 +24,32 @@
   --table-border: color-mix(in srgb, var(--divider) 68%, #cbd5e1 32%);
   --table-hover: color-mix(in srgb, var(--hover-bg) 68%, #e5e7eb 32%);
   --table-control: color-mix(in srgb, var(--color-bg-secondary) 80%, #e6edf5 20%);
+  --depth-shadow-resting: 0 8px 20px rgba(5, 10, 18, 0.32);
+  --depth-shadow-raised: 0 12px 28px rgba(5, 10, 18, 0.4);
+  --depth-shadow-overlay: 0 16px 34px rgba(5, 10, 18, 0.46);
+  --depth-inner-glow: inset 0 1px 0 rgba(240, 248, 255, 0.08);
+  --edge-contrast-1: color-mix(in srgb, var(--divider) 62%, #d9e7f5 38%);
+  --edge-contrast-2: color-mix(in srgb, var(--divider) 48%, #eff6ff 52%);
+  --edge-contrast-accent-cyan: color-mix(
+    in srgb,
+    var(--color-accent-cyan) 52%,
+    var(--edge-contrast-2)
+  );
+  --edge-contrast-accent-green: color-mix(
+    in srgb,
+    var(--color-accent-green) 52%,
+    var(--edge-contrast-2)
+  );
 
   --radius-0: 0;
   --radius-1: 0.25rem;
   --radius-2: 0.5rem;
   --radius-3: 0.75rem;
+  --panel-radius-tight: var(--radius-2);
+  --panel-radius-roomy: 0.625rem;
+  --panel-space-1: 1rem;
+  --panel-space-2: 1.25rem;
+  --panel-space-3: 1.5rem;
 
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;

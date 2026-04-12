@@ -20,6 +20,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Integrations](../integrations/) – third-party connections
 - [Stake Cleanup Audit](../integrations/stake_cleanup.md) – confirmation that the legacy Stake integration has no remaining code paths
 - [Devnotes](../devnotes/) – working notes and scratch references
+- [Elevation vs Border Contrast](../devnotes/elevation-vs-border-contrast.md) – dashboard depth and framing rules for consistent panel hierarchy.
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details

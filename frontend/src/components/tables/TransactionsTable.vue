@@ -468,10 +468,11 @@ export default {
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 
 .table-panel {
-  @apply shadow-xl p-4 md:p-6;
-  border-radius: var(--radius-3);
+  padding: var(--panel-space-2);
+  border-radius: var(--panel-radius-roomy);
   background-color: var(--table-surface-strong);
-  border: 1px solid var(--table-border);
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
 }
 
 .table-title {
@@ -557,10 +558,14 @@ export default {
 }
 
 .control-surface {
-  @apply flex flex-col md:flex-row md:items-center gap-4 mb-4 p-4 shadow-inner;
-  border-radius: var(--radius-3);
+  @apply flex flex-col md:flex-row md:items-center;
+  gap: var(--panel-space-1);
+  margin-bottom: var(--panel-space-2);
+  padding: var(--panel-space-1);
+  border-radius: var(--panel-radius-tight);
   background-color: var(--table-control);
-  border: 1px solid var(--table-border);
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow);
 }
 
 .control-group {

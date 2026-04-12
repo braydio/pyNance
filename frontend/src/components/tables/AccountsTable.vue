@@ -448,9 +448,11 @@ export default {
 @reference "tailwindcss"; /* Keep Tailwind utilities available for scoped @apply (Tailwind v4) */
 
 .table-panel {
-  @apply shadow-xl rounded-2xl p-5 md:p-7;
+  padding: var(--panel-space-3);
+  border-radius: var(--panel-radius-roomy);
   background-color: var(--table-surface-strong);
-  border: 1px solid var(--table-border);
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
 }
 
 .table-panel-header {
@@ -554,9 +556,14 @@ export default {
 }
 
 .control-surface {
-  @apply flex flex-col gap-3 mb-4 rounded-2xl p-3 shadow-inner;
+  @apply flex flex-col;
+  gap: var(--panel-space-1);
+  margin-bottom: var(--panel-space-2);
+  padding: var(--panel-space-1);
+  border-radius: var(--panel-radius-tight);
   background-color: var(--table-control);
-  border: 1px solid var(--table-border);
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow);
 }
 
 .input-shell {

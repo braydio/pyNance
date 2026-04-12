@@ -45,7 +45,7 @@
       <template #fallback>
         <section
           data-testid="net-overview-skeleton"
-          class="flex flex-col gap-4 bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
+          class="dashboard-skeleton-panel flex flex-col gap-4 bg-[var(--color-bg-sec)] ui-radius-2 border-2 border-[var(--edge-contrast-accent-cyan)] p-6 animate-pulse"
           aria-busy="true"
         >
           <div class="h-6 w-1/3 bg-[var(--divider)] rounded mb-2" />
@@ -85,7 +85,7 @@
         <template #fallback>
           <section
             data-testid="breakdown-skeleton"
-            class="bg-[var(--color-bg-sec)] rounded-2xl shadow-xl border-2 border-[var(--color-accent-cyan)] p-6 animate-pulse"
+            class="dashboard-skeleton-panel bg-[var(--color-bg-sec)] ui-radius-2 border-2 border-[var(--edge-contrast-accent-cyan)] p-6 animate-pulse"
           >
             <div class="h-6 w-40 bg-[var(--divider)] rounded mb-4" />
             <div class="grid grid-cols-2 gap-3">
@@ -738,6 +738,10 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
     color-mix(in srgb, var(--color-accent-purple) 18%, var(--color-bg-sec)) 0%,
     color-mix(in srgb, var(--color-accent-cyan) 10%, var(--color-bg-sec)) 100%
   );
+}
+
+.dashboard-skeleton-panel {
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
 }
 
 .review-cta-grid {
