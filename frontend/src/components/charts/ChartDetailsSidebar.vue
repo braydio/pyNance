@@ -8,7 +8,7 @@
   >
     <button
       type="button"
-      class="chart-details-sidebar__toggle accent-toggle-btn"
+      class="chart-details-sidebar__toggle accent-toggle-btn angular-chart-chip"
       :aria-expanded="isOpen.toString()"
       :aria-controls="contentId"
       @click="toggleSidebar"
@@ -29,7 +29,7 @@
     <div
       v-show="isOpen"
       :id="contentId"
-      class="chart-details-sidebar__content accent-popover-surface"
+      class="chart-details-sidebar__content accent-popover-surface angular-chart-container"
       role="region"
       :aria-labelledby="headerId"
     >
@@ -47,7 +47,7 @@
       </p>
       <fieldset class="chart-details-sidebar__fieldset">
         <legend class="sr-only">Chart overlay toggles</legend>
-        <label>
+        <label class="chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="show7Day"
@@ -55,7 +55,7 @@
           />
           7 Day Trended
         </label>
-        <label>
+        <label class="chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="show30Day"
@@ -63,7 +63,7 @@
           />
           30 Day Trended
         </label>
-        <label>
+        <label class="chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="showAvgIncome"
@@ -71,7 +71,7 @@
           />
           Avg Income
         </label>
-        <label>
+        <label class="chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="showAvgExpenses"
@@ -79,7 +79,7 @@
           />
           Avg Expenses
         </label>
-        <label class="chart-details-sidebar__comparison-toggle">
+        <label class="chart-details-sidebar__comparison-toggle chart-details-sidebar__chip">
           <input
             type="checkbox"
             :checked="showComparisonOverlay"
@@ -184,7 +184,7 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   gap: 0.5rem;
   padding: 0.3rem 0.65rem;
-  border-radius: 0.35rem;
+  border-radius: var(--chart-shell-radius-tight);
   font-size: 0.78rem;
   font-weight: 600;
   line-height: 1;
@@ -217,7 +217,7 @@ onBeforeUnmount(() => {
   min-width: 12rem;
   max-width: min(18rem, calc(100vw - 2rem));
   padding: 0.6rem;
-  border-radius: 0.35rem;
+  border-radius: var(--chart-shell-radius);
   display: grid;
   gap: 0.55rem;
   position: relative;
@@ -261,7 +261,7 @@ onBeforeUnmount(() => {
   right: 0.35rem;
   width: 1.4rem;
   height: 1.4rem;
-  border-radius: 0.2rem;
+  border-radius: var(--chart-shell-radius-tight);
   font-size: 1rem;
   line-height: 1;
   display: inline-flex;
@@ -281,6 +281,11 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  width: 100%;
+  padding: 0.32rem 0.45rem;
+  border: 1px solid var(--chart-shell-border);
+  border-radius: var(--chart-shell-radius-tight);
+  background: var(--chart-shell-bg-strong);
   font-size: 0.78rem;
   color: var(--color-text-light);
 }
@@ -295,5 +300,16 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.chart-details-sidebar__chip {
+  clip-path: polygon(
+    var(--chart-shell-corner-cut) 0,
+    100% 0,
+    100% calc(100% - var(--chart-shell-corner-cut)),
+    calc(100% - var(--chart-shell-corner-cut)) 100%,
+    0 100%,
+    0 var(--chart-shell-corner-cut)
+  );
 }
 </style>

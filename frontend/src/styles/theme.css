@@ -50,6 +50,18 @@
   --panel-space-1: 1rem;
   --panel-space-2: 1.25rem;
   --panel-space-3: 1.5rem;
+  --chart-shell-radius: var(--radius-2);
+  --chart-shell-radius-tight: var(--radius-1);
+  --chart-shell-corner-cut: 0.4rem;
+  --chart-shell-border: color-mix(in srgb, var(--divider) 78%, #d9e7f5 22%);
+  --chart-shell-border-accent: color-mix(
+    in srgb,
+    var(--accent-primary) 56%,
+    var(--chart-shell-border)
+  );
+  --chart-shell-bg: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  --chart-shell-bg-strong: color-mix(in srgb, var(--surface-1) 82%, var(--color-bg-dark) 18%);
+  --chart-shell-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
 
   --theme-fg: #cdcecf;
   --text-primary: #cdcecf;

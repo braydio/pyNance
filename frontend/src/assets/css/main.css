@@ -415,6 +415,61 @@
     outline: none;
   }
 
+  .angular-chart-container {
+    border: 1px solid var(--chart-shell-border);
+    border-radius: var(--chart-shell-radius);
+    background: var(--chart-shell-bg);
+    box-shadow: var(--chart-shell-shadow);
+  }
+
+  .angular-chart-zone {
+    border: 1px solid var(--chart-shell-border);
+    border-radius: var(--chart-shell-radius-tight);
+    background: var(--chart-shell-bg-strong);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 8px 18px rgba(0, 0, 0, 0.2);
+  }
+
+  .angular-chart-chip {
+    border: 1px solid var(--chart-shell-border-accent);
+    border-radius: var(--chart-shell-radius-tight);
+    background: linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--accent-surface) 85%, var(--color-bg-dark) 15%),
+      color-mix(in srgb, var(--chart-shell-bg-strong) 84%, var(--color-bg-dark) 16%)
+    );
+    clip-path: polygon(
+      var(--chart-shell-corner-cut) 0,
+      100% 0,
+      100% calc(100% - var(--chart-shell-corner-cut)),
+      calc(100% - var(--chart-shell-corner-cut)) 100%,
+      0 100%,
+      0 var(--chart-shell-corner-cut)
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 8px 16px rgba(0, 0, 0, 0.2);
+  }
+
+  .angular-chart-chip:focus-visible {
+    outline: none;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
+  }
+
+  .angular-chart-chip--active {
+    border-color: color-mix(in srgb, var(--accent-primary-strong) 76%, white 24%);
+    color: var(--color-text-light);
+    background: linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--accent-primary) 56%, var(--color-bg-dark) 44%),
+      color-mix(in srgb, var(--accent-primary-strong) 64%, var(--color-bg-dark) 36%)
+    );
+  }
+
   .btn-primary {
     @apply inline-flex items-center px-4 py-2 border font-semibold;
     border-radius: var(--radius-2);

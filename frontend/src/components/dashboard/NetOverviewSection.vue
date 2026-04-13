@@ -72,7 +72,7 @@
           </template>
           <template #controls>
             <div class="daily-net-chart-controls">
-              <div class="daily-net-chart-toolbar">
+              <div class="daily-net-chart-toolbar angular-chart-container">
                 <ChartDetailsSidebar
                   class="chart-details-sidebar--inline"
                   v-model:show7-day="show7DayModel"
@@ -84,8 +84,11 @@
                 />
                 <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
                   <button
-                    class="accent-toggle-btn daily-net-timeframe-btn"
-                    :class="{ 'accent-toggle-btn--active': netTimeframe === 'mtd' }"
+                    class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
+                    :class="{
+                      'accent-toggle-btn--active angular-chart-chip--active':
+                        netTimeframe === 'mtd',
+                    }"
                     type="button"
                     :aria-pressed="netTimeframe === 'mtd'"
                     @click="emit('update:net-timeframe', 'mtd')"
@@ -93,8 +96,11 @@
                     MTD
                   </button>
                   <button
-                    class="accent-toggle-btn daily-net-timeframe-btn"
-                    :class="{ 'accent-toggle-btn--active': netTimeframe === 'rolling_30' }"
+                    class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
+                    :class="{
+                      'accent-toggle-btn--active angular-chart-chip--active':
+                        netTimeframe === 'rolling_30',
+                    }"
                     type="button"
                     :aria-pressed="netTimeframe === 'rolling_30'"
                     @click="emit('update:net-timeframe', 'rolling_30')"
@@ -326,13 +332,13 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   gap: 0.35rem;
   flex-wrap: wrap;
   padding: 0.35rem 0.45rem;
-  border-radius: 999px;
-  border: 1px solid var(--themed-border);
-  background: color-mix(in srgb, var(--themed-bg) 88%, transparent);
+  border-radius: var(--chart-shell-radius);
+  border-color: var(--chart-shell-border);
+  background: var(--chart-shell-bg);
   backdrop-filter: blur(6px);
   position: relative;
   z-index: 12;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.14);
+  box-shadow: var(--chart-shell-shadow);
 }
 
 .title-text {
@@ -358,8 +364,8 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 
 .daily-net-timeframe-btn {
   font-size: 0.65rem;
-  padding: 0.15rem 0.55rem;
-  border-radius: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: var(--chart-shell-radius-tight);
   line-height: 1;
 }
 
