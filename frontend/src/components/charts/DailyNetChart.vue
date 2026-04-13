@@ -12,7 +12,7 @@
     </div>
 
     <template v-else>
-      <div class="daily-net-chart__meta">
+      <div class="daily-net-chart__meta angular-chart-container">
         <div v-if="$slots.title" class="daily-net-chart__title-shell">
           <slot name="title" />
         </div>
@@ -26,7 +26,7 @@
             <span
               v-for="item in legendItems"
               :key="item.label"
-              class="daily-net-chart__legend-item"
+              class="daily-net-chart__legend-item angular-chart-chip"
               :style="{ '--legend-color': item.color }"
             >
               <span class="daily-net-chart__legend-swatch" />
@@ -38,7 +38,7 @@
 
         <section
           v-if="activeDetails"
-          class="daily-net-chart__details"
+          class="daily-net-chart__details angular-chart-zone"
           aria-live="polite"
           aria-label="Active day details"
         >
@@ -85,7 +85,7 @@
         <canvas ref="chartCanvas" style="width: 100%; height: 100%"></canvas>
         <div
           v-show="hoverIndicator.visible"
-          class="daily-net-chart__hover-indicator"
+          class="daily-net-chart__hover-indicator angular-chart-chip"
           :style="{ left: `${hoverIndicator.x}px`, top: `${hoverIndicator.y}px` }"
           aria-hidden="true"
         >
@@ -965,9 +965,7 @@ onUnmounted(() => chartInstance.value?.destroy())
   align-items: center;
   gap: 0.375rem;
   padding: 0.28rem 0.58rem;
-  border: 1px solid color-mix(in srgb, var(--divider) 90%, transparent);
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 64%, transparent);
+  border-radius: var(--chart-shell-radius-tight);
 }
 
 .daily-net-chart__legend-swatch {
@@ -988,8 +986,7 @@ onUnmounted(() => chartInstance.value?.destroy())
   min-height: 124px;
   margin-bottom: 1rem;
   padding: 0.9rem 1rem 1rem;
-  border: 1px solid color-mix(in srgb, var(--divider) 92%, transparent);
-  border-radius: 18px;
+  border-radius: var(--chart-shell-radius);
   background:
     linear-gradient(
       135deg,
@@ -997,7 +994,7 @@ onUnmounted(() => chartInstance.value?.destroy())
       transparent 42%
     ),
     color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 84%, transparent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  box-shadow: var(--chart-shell-shadow);
 }
 
 .daily-net-chart__legend-placeholder {
@@ -1017,10 +1014,12 @@ onUnmounted(() => chartInstance.value?.destroy())
   max-width: 290px;
   min-height: 108px;
   padding: 0.7rem 0.8rem 0.75rem;
-  border: 1px solid var(--divider);
-  border-radius: 14px;
+  border-color: var(--chart-shell-border);
+  border-radius: var(--chart-shell-radius-tight);
   background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 90%, transparent);
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 10px 24px rgba(0, 0, 0, 0.18);
   backdrop-filter: blur(6px);
   display: flex;
   flex-direction: column;
@@ -1105,8 +1104,8 @@ onUnmounted(() => chartInstance.value?.destroy())
   align-items: center;
   gap: 0.35rem;
   padding: 0.2rem 0.4rem;
-  border-radius: 999px;
-  border: 1px solid var(--divider);
+  border-radius: var(--chart-shell-radius-tight);
+  border-color: var(--chart-shell-border);
   background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 92%, transparent);
   color: var(--color-text-light);
   font-size: 0.65rem;
