@@ -165,26 +165,29 @@ describe('ForecastLayout', () => {
 
   it('opens and closes the cashflow details modal for selected breakdown items', async () => {
     useForecastDataMock.mockReturnValue(
-      buildUseForecastDataReturn([], [
-        {
-          date: '2026-03-25',
-          label: 'Employer Payroll',
-          amount: 1200,
-          category: 'Income',
-          source: 'recurring',
-          confidence: 0.88,
-          sources: [
-            {
-              type: 'recurring_rule',
-              transaction_id: 'txn-100',
-              date: '2026-03-12',
-              description: 'Employer Payroll',
-              category_display: 'Income - Wages',
-              tags: ['payroll'],
-            },
-          ],
-        },
-      ]),
+      buildUseForecastDataReturn(
+        [],
+        [
+          {
+            date: '2026-03-25',
+            label: 'Employer Payroll',
+            amount: 1200,
+            category: 'Income',
+            source: 'recurring',
+            confidence: 0.88,
+            sources: [
+              {
+                type: 'recurring_rule',
+                transaction_id: 'txn-100',
+                date: '2026-03-12',
+                description: 'Employer Payroll',
+                category_display: 'Income - Wages',
+                tags: ['payroll'],
+              },
+            ],
+          },
+        ],
+      ),
     )
 
     const wrapper = mount(ForecastLayout, {})
@@ -205,22 +208,27 @@ describe('ForecastLayout', () => {
 
   it('shows an empty source state when selected cashflow item has no attached sources', async () => {
     useForecastDataMock.mockReturnValue(
-      buildUseForecastDataReturn([], [
-        {
-          date: '2026-03-25',
-          label: 'Uncategorized delta',
-          amount: -20,
-          category: 'Uncategorized',
-          source: 'uncategorized',
-          confidence: 0.3,
-        },
-      ]),
+      buildUseForecastDataReturn(
+        [],
+        [
+          {
+            date: '2026-03-25',
+            label: 'Uncategorized delta',
+            amount: -20,
+            category: 'Uncategorized',
+            source: 'uncategorized',
+            confidence: 0.3,
+          },
+        ],
+      ),
     )
 
     const wrapper = mount(ForecastLayout, {})
     await flushPromises()
     await wrapper.get('.line-item-button').trigger('click')
 
-    expect(wrapper.text()).toContain('No source transactions or events are attached to this forecast item.')
+    expect(wrapper.text()).toContain(
+      'No source transactions or events are attached to this forecast item.',
+    )
   })
 })

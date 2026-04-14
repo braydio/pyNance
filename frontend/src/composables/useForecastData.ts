@@ -2,7 +2,13 @@ import { computed, ref, type Ref } from 'vue'
 
 export type ForecastViewType = 'Month' | 'Year'
 export type ForecastGraphMode = 'combined' | 'forecast' | 'historical'
-export type ForecastSeriesId = 'realized_income' | 'manual_adjustments' | 'spending' | 'debt_totals'
+export type ForecastSeriesId =
+  | 'realized_income'
+  | 'manual_adjustments'
+  | 'spending'
+  | 'debt_totals'
+  | 'debt_interest'
+  | 'debt_new_spending'
 
 export type ForecastAdjustmentInput = {
   label: string
