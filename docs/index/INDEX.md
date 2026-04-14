@@ -21,12 +21,14 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Stake Cleanup Audit](../integrations/stake_cleanup.md) – confirmation that the legacy Stake integration has no remaining code paths
 - [Devnotes](../devnotes/) – working notes and scratch references
 - [Elevation vs Border Contrast](../devnotes/elevation-vs-border-contrast.md) – dashboard depth and framing rules for consistent panel hierarchy.
+- [Radius Rollout Visual QA Checklist](../devnotes/radius-rollout-visual-qa.md) – required before/after capture protocol and review checklist for corner, border, spacing, and focus.
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
 - [Component Migration Guide](../frontend/component-migration.md) – frontend component organization strategy
 - [Tailwind + Vite Style Reference](../frontend/tailwind-vite-style-reference.md) – CSS utilities and build notes
 - [Corner Radius Migration Guide](../frontend/corner-radius-migration-guide.md) – token scale and allowed corner usage by component type.
+- [Radius/Depth Rollout Plan](../frontend/radius-rollout-phases.md) – three-phase rollout for tokens, core surfaces, and secondary surfaces with required captures and QA gates.
 - [Forecast Frontend Components](../frontend/src/components/forecast/ForecastComponent.md) – forecast layout, summary, chart, and adjustment component docs.
 - [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
 

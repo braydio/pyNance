@@ -30,3 +30,13 @@ Defined in `frontend/src/styles/theme.css`:
 2. Prefer `.ui-radius-*` helpers from `frontend/src/assets/css/main.css` in templates.
 3. Keep `rounded-full` only for semantic circles; convert decorative pills to `--radius-1`.
 4. During review, verify new components do not introduce larger radii outside this scale.
+
+## Rollout governance
+
+For phased delivery expectations and route-level capture requirements, follow:
+
+- `docs/frontend/radius-rollout-phases.md`
+- `docs/devnotes/radius-rollout-visual-qa.md`
+
+Any PR changing frontend surface geometry should include the visual QA template and before/after captures.
+
