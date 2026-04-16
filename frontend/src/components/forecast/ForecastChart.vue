@@ -84,6 +84,8 @@ const ASPECT_STYLES = {
   manual_adjustments: { color: '#7C3AED', type: 'bar', axis: 'yFlow' },
   spending: { color: '#DC2626', type: 'bar', axis: 'yFlow' },
   debt_totals: { color: '#F59E0B', type: 'line', axis: 'yBalance' },
+  debt_interest: { color: '#F97316', type: 'bar', axis: 'yFlow' },
+  debt_new_spending: { color: '#EF4444', type: 'bar', axis: 'yFlow' },
 }
 const ASPECT_SERIES_ID_BY_SELECTION = {
   realized_income: 'realized_income',
@@ -91,6 +93,7 @@ const ASPECT_SERIES_ID_BY_SELECTION = {
   spending: 'spending',
   debt: 'debt_totals',
 }
+const DEBT_COMPONENT_SERIES_IDS = ['debt_interest', 'debt_new_spending']
 
 const props = defineProps({
   timeline: {
@@ -136,6 +139,11 @@ const activeSeries = computed(() => {
   const seriesId = ASPECT_SERIES_ID_BY_SELECTION[props.selectedAspect]
   return props.series?.[seriesId] ?? null
 })
+const activeDebtComponentSeries = computed(() =>
+  DEBT_COMPONENT_SERIES_IDS.map((seriesId) => props.series?.[seriesId]).filter(
+    (seriesEntry) => seriesEntry && Array.isArray(seriesEntry.points),
+  ),
+)
 
 const axisDates = computed(() => {
   const dateSet = new Set()
@@ -143,6 +151,9 @@ const axisDates = computed(() => {
   props.realizedHistory.forEach((point) => dateSet.add(point.date || point.label))
   props.timeline.forEach((point) => dateSet.add(point.date || point.label))
   activeSeries.value?.points.forEach((point) => dateSet.add(point.date || point.label))
+  activeDebtComponentSeries.value.forEach((seriesEntry) => {
+    seriesEntry.points.forEach((point) => dateSet.add(point.date || point.label))
+  })
 
   return Array.from(dateSet).sort((left, right) => left.localeCompare(right))
 })
@@ -277,29 +288,31 @@ function buildBalanceDatasets() {
  * Build the active non-balance aspect dataset from backend-typed series payloads.
  */
 function buildAspectDatasets() {
-  const seriesEntry = activeSeries.value
-  if (!seriesEntry) {
+  const seriesEntries = [activeSeries.value, ...activeDebtComponentSeries.value].filter(Boolean)
+  if (seriesEntries.length === 0) {
     return []
   }
 
-  const style = ASPECT_STYLES[seriesEntry.id]
-  if (!style) {
-    return []
-  }
+  return seriesEntries
+    .map((seriesEntry) => {
+      const style = ASPECT_STYLES[seriesEntry.id]
+      if (!style) {
+        return null
+      }
 
-  return [
-    {
-      type: style.type,
-      label: seriesEntry.label,
-      data: alignSeriesValues(seriesEntry.points),
-      borderColor: style.color,
-      backgroundColor: toRgba(style.color, style.type === 'bar' ? 0.45 : 0.15),
-      yAxisID: style.axis,
-      tension: style.type === 'line' ? 0.25 : 0,
-      borderDash: seriesEntry.id === 'debt_totals' ? [4, 4] : [],
-      spanGaps: true,
-    },
-  ]
+      return {
+        type: style.type,
+        label: seriesEntry.label,
+        data: alignSeriesValues(seriesEntry.points),
+        borderColor: style.color,
+        backgroundColor: toRgba(style.color, style.type === 'bar' ? 0.45 : 0.15),
+        yAxisID: style.axis,
+        tension: style.type === 'line' ? 0.25 : 0,
+        borderDash: seriesEntry.id === 'debt_totals' ? [4, 4] : [],
+        spanGaps: true,
+      }
+    })
+    .filter(Boolean)
 }
 
 /**

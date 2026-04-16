@@ -52,8 +52,18 @@ const baseProps = {
     },
     debt_totals: {
       id: 'debt_totals' as const,
-      label: 'Debt totals',
+      label: 'Total debt',
       points: [{ date: '2024-01-02', label: '2024-01-02', value: 40 }],
+    },
+    debt_interest: {
+      id: 'debt_interest' as const,
+      label: 'Debt interest',
+      points: [{ date: '2024-01-02', label: '2024-01-02', value: 9 }],
+    },
+    debt_new_spending: {
+      id: 'debt_new_spending' as const,
+      label: 'Debt from new spending',
+      points: [{ date: '2024-01-02', label: '2024-01-02', value: 31 }],
     },
   },
   computeMeta: {
@@ -110,16 +120,43 @@ describe('ForecastChart', () => {
     ])
   })
 
-  it('renders the selected typed series without reconstructing from cashflows', () => {
+  it('changes rendered datasets when the aspect changes while keeping the active timeframe', async () => {
     const wrapper = mount(ForecastChart, {
       props: {
         ...baseProps,
-        selectedAspect: 'realized_income',
-        graphMode: 'historical',
+        selectedAspect: 'manual_adjustments',
       },
     })
 
-    expect(wrapper.text()).toContain('Month · Realized income')
+    expect(wrapper.text()).toContain('Month · Manual adjustments')
+    expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
+      expect.objectContaining({
+        label: 'Manual adjustments',
+        data: [null, 5],
+      }),
+    ])
+
+    await wrapper.setProps({
+      selectedAspect: 'spending',
+    })
+
+    expect(wrapper.text()).toContain('Month · Spending')
+    expect(chartConstructor.mock.calls.at(-1)?.[1].data.datasets).toEqual([
+      expect.objectContaining({
+        label: 'Spending',
+        data: [null, -12],
+      }),
+    ])
+  })
+
+  it('renders realized income labels and values from typed backend series', () => {
+    mount(ForecastChart, {
+      props: {
+        ...baseProps,
+        selectedAspect: 'realized_income',
+      },
+    })
+
     expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
       expect.objectContaining({
         label: 'Realized income used for auto-calculation',
@@ -128,7 +165,7 @@ describe('ForecastChart', () => {
     ])
   })
 
-  it('renders debt totals from the backend series', () => {
+  it('renders debt totals and debt components from backend series', () => {
     const wrapper = mount(ForecastChart, {
       props: {
         ...baseProps,
@@ -139,9 +176,17 @@ describe('ForecastChart', () => {
     expect(wrapper.text()).toContain('Month · Debt composition')
     expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
       expect.objectContaining({
-        label: 'Debt totals',
+        label: 'Total debt',
         data: [null, 40],
         borderDash: [4, 4],
+      }),
+      expect.objectContaining({
+        label: 'Debt interest',
+        data: [null, 9],
+      }),
+      expect.objectContaining({
+        label: 'Debt from new spending',
+        data: [null, 31],
       }),
     ])
   })

@@ -56,6 +56,21 @@ describe('useForecastData', () => {
             label: 'Manual adjustments',
             points: [{ date: '2024-01-01', label: '2024-01-01', value: 200 }],
           },
+          debt_totals: {
+            id: 'debt_totals',
+            label: 'Total debt',
+            points: [{ date: '2024-01-01', label: '2024-01-01', value: 1200 }],
+          },
+          debt_interest: {
+            id: 'debt_interest',
+            label: 'Debt interest',
+            points: [{ date: '2024-01-01', label: '2024-01-01', value: 42 }],
+          },
+          debt_new_spending: {
+            id: 'debt_new_spending',
+            label: 'Debt from new spending',
+            points: [{ date: '2024-01-01', label: '2024-01-01', value: 18 }],
+          },
         },
         metadata: {
           included_account_ids: ['acc-1', 'acc-2'],
@@ -111,6 +126,15 @@ describe('useForecastData', () => {
     expect(cashflows.value).toEqual([{ label: 'Manual bonus', amount: 200 }])
     expect(series.value.manual_adjustments?.points).toEqual([
       { date: '2024-01-01', label: '2024-01-01', value: 200 },
+    ])
+    expect(series.value.debt_totals?.points).toEqual([
+      { date: '2024-01-01', label: '2024-01-01', value: 1200 },
+    ])
+    expect(series.value.debt_interest?.points).toEqual([
+      { date: '2024-01-01', label: '2024-01-01', value: 42 },
+    ])
+    expect(series.value.debt_new_spending?.points).toEqual([
+      { date: '2024-01-01', label: '2024-01-01', value: 18 },
     ])
   })
 
