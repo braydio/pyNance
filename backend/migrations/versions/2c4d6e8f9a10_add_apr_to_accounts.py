@@ -17,7 +17,12 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column("accounts", sa.Column("apr", sa.Numeric(precision=7, scale=4), nullable=True))
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    account_columns = {column["name"] for column in inspector.get_columns("accounts")}
+
+    if "apr" not in account_columns:
+        op.add_column("accounts", sa.Column("apr", sa.Numeric(precision=7, scale=4), nullable=True))
 
 
 def downgrade():

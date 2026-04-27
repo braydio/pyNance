@@ -6,8 +6,8 @@ Reads `account_id,access_token,item_id` rows and upserts:
 
 Usage example (from `backend/` directory):
 
-    flask --app backend.run import-plaid-tokens
-    flask --app backend.run import-plaid-tokens --csv-path app/data/PlaidAccessTokens.csv
+    flask --app 'app:create_app' import-plaid-tokens
+    flask --app 'app:create_app' import-plaid-tokens --csv-path app/data/PlaidAccessTokens.csv
 """
 
 from __future__ import annotations

@@ -83,7 +83,7 @@ def _build_fallback_message(accounts: list[dict[str, Any]], transactions: list[d
     if not transactions:
         return {
             "status_key": "no_recent_activity",
-            "message": "No recent activity was found. Review linked accounts to make sure data is syncing.",
+            "message": "No recent activity found. Check linked accounts.",
         }
 
     largest_expense = min((tx for tx in transactions), key=lambda tx: tx["amount"], default=None)

@@ -43,6 +43,7 @@ vi.mock('@/api/transactions', () => ({
   fetchTopCategories: vi.fn().mockResolvedValue([]),
 }))
 
+
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url))
 const DASHBOARD_SOURCE = readFileSync(path.resolve(TEST_DIR, '../Dashboard.vue'), 'utf-8')
 
@@ -496,6 +497,10 @@ beforeEach(async () => {
   transactionsSectionProps = null
   const apiService = (await import('@/services/api')).default
   apiService.fetchNetAssets.mockResolvedValue({ status: 'success', data: [] })
+  apiService.fetchDashboardActivityStatus.mockResolvedValue({
+    status: 'success',
+    data: { message: 'Review your largest recent expense for accuracy.' },
+  })
   mockFetchTransactions.mockResolvedValue({})
   mockFetchTransactions.mockClear()
 })
@@ -855,4 +860,5 @@ describe('Dashboard.vue', () => {
     await nextTick()
     expect(wrapper.findAll('.transaction-modal')).toHaveLength(0)
   })
+
 })

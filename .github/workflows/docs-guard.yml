@@ -1,0 +1,137 @@
+name: Documentation Guard
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+  statuses: write
+
+jobs:
+  docs:
+    name: Docs drift and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve pull request context
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '[no-docs]';
+            const eventName = context.eventName;
+            let pr = context.payload.pull_request;
+
+            if (eventName === 'issue_comment') {
+              const issue = context.payload.issue;
+              if (!issue.pull_request) {
+                core.setOutput('skip', 'true');
+                core.setOutput('reason', 'comment is not on a pull request');
+                return;
+              }
+
+              const response = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: issue.number,
+              });
+              pr = response.data;
+            }
+
+            if (!pr) {
+              core.setOutput('skip', 'true');
+              core.setOutput('reason', 'no pull request context');
+              return;
+            }
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: pr.number,
+              per_page: 100,
+            });
+
+            const override = comments.some((comment) => (comment.body || '').includes(marker));
+
+            core.setOutput('skip', 'false');
+            core.setOutput('override', override ? 'true' : 'false');
+            core.setOutput('number', String(pr.number));
+            core.setOutput('base_sha', pr.base.sha);
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('reason', override ? `${marker} override comment found` : 'docs guard enabled');
+
+      - name: Report skipped event
+        if: steps.pr.outputs.skip == 'true'
+        run: echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
+
+      - name: Report documentation override
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override == 'true'
+        run: echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
+
+      - name: Check out pull request
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: refs/pull/${{ steps.pr.outputs.number }}/head
+
+      - name: Fetch base commit
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base_sha }}
+        run: git fetch origin "$BASE_SHA" --depth=1
+
+      - name: Set up Python
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check documentation coverage
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base_sha }}
+        run: python scripts/check_docs.py --changed-since "$BASE_SHA" --verbose
+
+      - name: Check documentation drift
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        env:
+          BASE_SHA: ${{ steps.pr.outputs.base_sha }}
+        run: python scripts/check_docs_drift.py --changed-since "$BASE_SHA"
+
+      - name: Lint documentation front matter
+        if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
+        run: python scripts/frontmatter_lint.py
+
+      - name: Update PR head status for comment-triggered run
+        if: always() && github.event_name == 'issue_comment' && steps.pr.outputs.skip != 'true'
+        uses: actions/github-script@v7
+        env:
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          OVERRIDE: ${{ steps.pr.outputs.override }}
+          JOB_STATUS: ${{ job.status }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        with:
+          script: |
+            const override = process.env.OVERRIDE === 'true';
+            const jobStatus = process.env.JOB_STATUS;
+            const state = override || jobStatus === 'success' ? 'success' : 'failure';
+            const description = override
+              ? '[no-docs] override comment found'
+              : state === 'success'
+                ? 'Documentation guard passed'
+                : 'Documentation guard failed';
+
+            await github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: process.env.HEAD_SHA,
+              state,
+              context: 'Documentation Guard',
+              description,
+              target_url: process.env.RUN_URL,
+            });

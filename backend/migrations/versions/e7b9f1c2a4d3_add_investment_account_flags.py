@@ -18,37 +18,45 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "accounts",
-        sa.Column(
-            "is_investment",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("false"),
-        ),
-    )
-    op.add_column(
-        "accounts",
-        sa.Column(
-            "investment_has_holdings",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("false"),
-        ),
-    )
-    op.add_column(
-        "accounts",
-        sa.Column(
-            "investment_has_transactions",
-            sa.Boolean(),
-            nullable=False,
-            server_default=sa.text("false"),
-        ),
-    )
-    op.add_column(
-        "accounts",
-        sa.Column("product_provenance", sa.String(length=64), nullable=True),
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    account_columns = {column["name"] for column in inspector.get_columns("accounts")}
+
+    if "is_investment" not in account_columns:
+        op.add_column(
+            "accounts",
+            sa.Column(
+                "is_investment",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+        )
+    if "investment_has_holdings" not in account_columns:
+        op.add_column(
+            "accounts",
+            sa.Column(
+                "investment_has_holdings",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+        )
+    if "investment_has_transactions" not in account_columns:
+        op.add_column(
+            "accounts",
+            sa.Column(
+                "investment_has_transactions",
+                sa.Boolean(),
+                nullable=False,
+                server_default=sa.text("false"),
+            ),
+        )
+    if "product_provenance" not in account_columns:
+        op.add_column(
+            "accounts",
+            sa.Column("product_provenance", sa.String(length=64), nullable=True),
+        )
 
 
 def downgrade() -> None:

@@ -4,8 +4,8 @@
 
 - The Planning view (`frontend/src/views/Planning.vue`) is routed and wired to a persistence layer through `frontend/src/services/planningService.ts` and the `usePlanning` composable. The singleton now supports versioned local storage (v4) and an API mode toggle for optimistic sync.
 - Frontend layout and interaction details live in [docs/frontend/planning-view.md](../frontend/planning-view.md) so UI changes stay aligned with planning contracts.
-- Flask routes live in `backend/app/routes/planning.py`, delegating to the in-memory service in `backend/app/services/planning_service.py`.
-- Scenario-level API tests exist in `tests/test_api_planning.py`, exercising bill creation, allocation caps, and retrieval through a FastAPI harness that mirrors the Flask contract.
+- Flask routes live in `backend/app/routes/planning.py`, delegating to the SQL-backed service in `backend/app/services/planning_service.py`.
+- Scenario-level API tests exist in `tests/test_api_planning.py`, exercising bill creation, validation failures, allocation caps, and retrieval through the Flask blueprint.
 
 ## Remaining work
 
@@ -39,21 +39,21 @@
 ### Backend
 
 1. **Persistence & validation**
-   - Replace the in-memory service with the SQLAlchemy flow defined in `backend/app/models/planning_models.py` and `backend/app/sql/planning_logic.py`. Update `backend/app/routes/planning.py` to inject the new SQL-backed service, translate database exceptions into Flask `BadRequest`/`Conflict` responses, and serialise responses with the same schema used for request validation.
-   - Introduce schema validation using Marshmallow or Pydantic dataclasses to keep request handling explicit, and ensure outbound payloads reuse the serializer so route responses stay in sync with the persisted models.
+   - ✅ Replace the in-memory service with SQLAlchemy-backed Planning models and route responses that match the frontend camelCase contract.
+   - Introduce dedicated schema classes if validation grows beyond the current service-level checks.
 2. **Schema migrations**
-   - Author Alembic migrations that create the `planning_scenarios`, `planned_bills`, and `scenario_allocations` tables. Store the migration scripts under `backend/migrations/versions/` with clear revision slugs and upgrade/downgrade paths that mirror the SQLAlchemy models.
+   - ✅ Author Alembic migration `6b0f2c9d1a34_add_planning_persistence_tables.py` for `planning_scenarios`, `planned_bills`, and `scenario_allocations`.
 3. **Service coverage**
    - Expand tests around `planning_service.update_allocations` to cover concurrency and negative flows.
    - Ensure Flask blueprints raise `BadRequest`/`Conflict` with descriptive messages for failed validations.
 4. **Test updates**
-   - Extend `tests/test_api_planning.py` to cover database-backed CRUD flows, schema validation failures, and enforcement of the 100% allocation cap.
-   - Add Flask integration tests (or adapt existing FastAPI harness cases) that execute against the migrated schema to confirm persistence wiring, serialisation, and error translation once the SQL service is active.
+   - ✅ Extend `tests/test_api_planning.py` to cover database-backed CRUD flows, schema validation failures, and enforcement of the 100% allocation cap.
+   - Continue expanding Flask integration tests against the migrated schema for less common error-translation and rollback paths.
 
 ### Quality & automation
 
 - Augment Cypress specs in `frontend/src/views/__tests__/Planning.cy.js` (and Vue component specs where appropriate) to cover CRUD flows, allocation caps, and empty states.
-- Keep backend tests hermetic by stubbing notification hooks; the existing FastAPI harness can be extended with additional cases before the Flask app is exercised end-to-end.
+- Keep backend tests hermetic by stubbing notification hooks and avoiding module-level `sys.modules` stubs that leak across test collection.
 - Track code paths with coverage tooling—flag missing scenarios (e.g., deleting the last bill) for follow-up tests.
 
 ## Milestones
@@ -82,7 +82,7 @@
 
 3. **M3 – Persistence & validation hardening (backend-first)**
    - **Deliverables**
-     - Replace the in-memory planning store with SQLAlchemy models under `backend/app/models/` and update `backend/app/services/planning_service.py` to enforce allocation caps and bill uniqueness.
+     - ✅ Replace the in-memory planning store with SQLAlchemy models under `backend/app/models/` and update `backend/app/services/planning_service.py` to enforce allocation caps.
      - Add Marshmallow/Pydantic schemas in `backend/app/schemas/planning.py` (or equivalent) and integrate them into `backend/app/routes/planning.py`.
      - Align frontend validation helpers in `frontend/src/composables/usePlanning.ts` and supporting components with backend rules to display consistent feedback.
    - **Acceptance tests & docs**
@@ -102,4 +102,4 @@
    - **Dependencies**
      - Depends on stable backend persistence (M3) and API-integrated frontend (M2); serves as the release gate for planning features.
 
-_Last updated: 2024-05-29_
+_Last updated: 2026-04-26_

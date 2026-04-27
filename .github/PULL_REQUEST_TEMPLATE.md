@@ -36,3 +36,5 @@
 - [ ] Updated docs in `docs/frontend/` when frontend behavior/patterns changed.
 - [ ] Updated docs in `docs/devnotes/` with implementation notes and QA rationale.
 - [ ] Updated `docs/index/INDEX.md` for any new docs pages.
+
+If documentation is intentionally unchanged for a source change, leave a PR comment containing `[no-docs]` with a short rationale. The Documentation Guard workflow treats that comment as an explicit override.

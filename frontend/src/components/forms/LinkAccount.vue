@@ -3,14 +3,14 @@
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="text-xs uppercase tracking-wide text-muted">New Account</p>
-        <p class="text-sm text-muted">Choose data scope</p>
+        <p class="text-sm text-muted">Choose data and connect.</p>
       </div>
       <UiButton
         variant="primary"
         class="shadow-lg transition hover:-translate-y-0.5 hover:shadow-xl"
         @click="openDialog"
       >
-        Link a New Account with Plaid
+        Link Account
       </UiButton>
     </div>
 
@@ -26,10 +26,10 @@
         >
           <header class="flex items-start justify-between gap-3">
             <div>
-              <p class="text-xs uppercase tracking-wide text-muted">Scope Selection</p>
-              <h3 id="link-account-title" class="text-lg font-semibold">Choose data scope</h3>
+              <p class="text-xs uppercase tracking-wide text-muted">Link Account</p>
+              <h3 id="link-account-title" class="text-lg font-semibold">Choose what to sync</h3>
               <p id="link-account-description" class="text-sm text-muted">
-                Choose what data to share so pyNance can enable the matching account insights.
+                Pick at least one data type, then continue to Plaid.
                 <span v-if="selectedSummary" class="block text-xs text-muted mt-1">
                   Selected: {{ selectedSummary }}
                 </span>
@@ -50,9 +50,9 @@
             <section>
               <div class="flex items-center justify-between gap-3">
                 <p class="text-xs uppercase tracking-wide text-muted">Step 1</p>
-                <p class="text-xs text-muted">Choose what data to share</p>
+                <p class="text-xs text-muted">Select data</p>
               </div>
-              <p class="text-sm text-muted mt-2">Choose at least one data scope to continue.</p>
+              <p class="text-sm text-muted mt-2">Pick at least one option.</p>
               <PlaidProductScopeSelector
                 :model-value="selectedProducts"
                 @update:model-value="updateSelectedProducts"
@@ -62,9 +62,9 @@
             <section class="border-t border-[var(--divider)] pt-4">
               <div class="flex items-center justify-between gap-3">
                 <p class="text-xs uppercase tracking-wide text-muted">Step 2</p>
-                <p class="text-xs text-muted">Connect with Plaid</p>
+                <p class="text-xs text-muted">Open Plaid</p>
               </div>
-              <p class="text-sm text-muted mt-2">Choose at least one data scope to continue.</p>
+              <p class="text-sm text-muted mt-2">Continue once your selection is ready.</p>
               <div
                 v-if="launcherErrorMessage"
                 class="mt-3 rounded-lg border border-[var(--color-danger,#dc2626)]/40 bg-[var(--color-danger,#dc2626)]/10 px-3 py-2 text-sm"
@@ -258,20 +258,34 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 50;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  padding: 2rem 1rem;
+  overflow-y: auto;
+  padding: 1rem;
   background: rgba(0, 0, 0, 0.45);
 }
 
 .link-dialog {
-  width: min(640px, 100%);
+  width: min(560px, 100%);
+  max-height: min(85vh, 44rem);
+  overflow-y: auto;
   background: var(--color-bg);
   color: var(--color-text-light);
   border: 1px solid var(--divider);
   border-radius: 1rem;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.28);
   padding: 1.5rem;
+}
+
+@media (max-height: 760px) {
+  .link-dialog-backdrop {
+    align-items: flex-start;
+  }
+
+  .link-dialog {
+    max-height: calc(100vh - 2rem);
+    padding: 1rem;
+  }
 }
 
 .fade-enter-active,

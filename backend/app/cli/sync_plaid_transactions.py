@@ -1,9 +1,9 @@
 """CLI: Trigger Plaid transactions refreshes.
 
 Usage:
-- flask --app backend.run sync-plaid-tx              # sync all items
-- flask --app backend.run sync-plaid-tx --item ITEM  # sync a specific item
-- flask --app backend.run sync-plaid-tx --account ACC# sync a specific account
+- flask --app 'app:create_app' sync-plaid-tx               # sync all items
+- flask --app 'app:create_app' sync-plaid-tx --item ITEM   # sync a specific item
+- flask --app 'app:create_app' sync-plaid-tx --account ACC # sync a specific account
 """
 
 from datetime import datetime, timezone

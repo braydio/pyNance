@@ -58,9 +58,8 @@ until ${DOCKER_COMPOSE_CMD} exec db pg_isready -U user -d pynance >/dev/null 2>&
 done
 echo "==> Postgres is ready."
 
-echo "==> Running database migrations (flask db upgrade)"
-flask --app backend.run db upgrade
+echo "==> Running database migrations (flask --app 'app:create_app' db upgrade)"
+flask --app 'app:create_app' db upgrade
 
 echo "==> Backend setup complete. You can now run:"
 echo "    python run.py"
-

@@ -257,6 +257,10 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   box-shadow: var(--depth-inner-glow), var(--depth-shadow-raised);
 }
 
+.net-overview-cta {
+  margin-top: 0.75rem;
+}
+
 .net-overview-panel {
   border: 1px solid var(--edge-contrast-1);
   box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);

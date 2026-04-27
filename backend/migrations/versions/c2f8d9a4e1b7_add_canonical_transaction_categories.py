@@ -69,17 +69,25 @@ def _canonicalize(
 
 def upgrade() -> None:
     bind = op.get_bind()
+    inspector = sa.inspect(bind)
 
-    op.add_column("categories", sa.Column("category_slug", sa.String(length=128), nullable=True))
-    op.add_column(
-        "categories",
-        sa.Column("category_display", sa.String(length=256), nullable=True),
-    )
-    op.add_column("transactions", sa.Column("category_slug", sa.String(length=128), nullable=True))
-    op.add_column(
-        "transactions",
-        sa.Column("category_display", sa.String(length=256), nullable=True),
-    )
+    category_columns = {column["name"] for column in inspector.get_columns("categories")}
+    transaction_columns = {column["name"] for column in inspector.get_columns("transactions")}
+
+    if "category_slug" not in category_columns:
+        op.add_column("categories", sa.Column("category_slug", sa.String(length=128), nullable=True))
+    if "category_display" not in category_columns:
+        op.add_column(
+            "categories",
+            sa.Column("category_display", sa.String(length=256), nullable=True),
+        )
+    if "category_slug" not in transaction_columns:
+        op.add_column("transactions", sa.Column("category_slug", sa.String(length=128), nullable=True))
+    if "category_display" not in transaction_columns:
+        op.add_column(
+            "transactions",
+            sa.Column("category_display", sa.String(length=256), nullable=True),
+        )
 
     categories = (
         bind.execute(
@@ -152,8 +160,13 @@ def upgrade() -> None:
         )
     )
 
-    op.create_index("ix_categories_category_slug", "categories", ["category_slug"], unique=True)
-    op.create_index("ix_transactions_category_slug", "transactions", ["category_slug"], unique=False)
+    category_indexes = {index["name"] for index in inspector.get_indexes("categories")}
+    transaction_indexes = {index["name"] for index in inspector.get_indexes("transactions")}
+
+    if "ix_categories_category_slug" not in category_indexes:
+        op.create_index("ix_categories_category_slug", "categories", ["category_slug"], unique=True)
+    if "ix_transactions_category_slug" not in transaction_indexes:
+        op.create_index("ix_transactions_category_slug", "transactions", ["category_slug"], unique=False)
 
 
 def downgrade() -> None:

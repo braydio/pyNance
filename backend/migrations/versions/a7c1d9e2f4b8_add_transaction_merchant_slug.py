@@ -17,8 +17,15 @@ depends_on = None
 
 def upgrade() -> None:
     """Add nullable merchant slug field used for canonical analytics grouping."""
-    op.add_column("transactions", sa.Column("merchant_slug", sa.String(length=128), nullable=True))
-    op.create_index("ix_transactions_merchant_slug", "transactions", ["merchant_slug"], unique=False)
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    transaction_columns = {column["name"] for column in inspector.get_columns("transactions")}
+    transaction_indexes = {index["name"] for index in inspector.get_indexes("transactions")}
+
+    if "merchant_slug" not in transaction_columns:
+        op.add_column("transactions", sa.Column("merchant_slug", sa.String(length=128), nullable=True))
+    if "ix_transactions_merchant_slug" not in transaction_indexes:
+        op.create_index("ix_transactions_merchant_slug", "transactions", ["merchant_slug"], unique=False)
 
 
 def downgrade() -> None:

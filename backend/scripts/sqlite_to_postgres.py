@@ -141,7 +141,7 @@ def main() -> None:
         for table in metadata.sorted_tables:
             copy_table(sqlite_engine, pg_engine, table, args.chunk_size)
 
-    print("Data migration complete. Run 'flask db upgrade' if additional migrations exist.")
+    print("Data migration complete. Run \"flask --app 'app:create_app' db upgrade\" if additional migrations exist.")
 
 
 if __name__ == "__main__":

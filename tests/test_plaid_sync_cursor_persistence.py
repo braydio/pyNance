@@ -1,8 +1,25 @@
 """Unit tests for item-scoped cursor persistence in Plaid sync."""
 
+import importlib
+import sys
 from types import SimpleNamespace
 
-from app.services import plaid_sync
+for module_name in list(sys.modules):
+    if not (
+        module_name in {"app.config", "app.services", "app.services.plaid_sync", "app.sql"}
+        or module_name.startswith("app.config.")
+        or module_name.startswith("app.sql.")
+    ):
+        continue
+    existing = sys.modules.get(module_name)
+    if existing is None or getattr(existing, "__file__", None) is None:
+        sys.modules.pop(module_name, None)
+
+app_module = sys.modules.get("app")
+if app_module is not None and getattr(app_module, "__file__", None) is None:
+    sys.modules.pop("app", None)
+
+plaid_sync = importlib.import_module("app.services.plaid_sync")
 
 
 class _FakeColumn:

@@ -5,7 +5,7 @@ This guide documents how to migrate an existing SQLite deployment of pyNance to 
 ## Prerequisites
 
 - PostgreSQL 14+ accessible from your workstation or CI environment.
-- `SQLALCHEMY_DATABASE_URI` configured for the target database (see `example.env`).
+- `SQLALCHEMY_DATABASE_URI` configured for the target database (see `.env.example`).
 - Legacy SQLite file (default `app/data/dashboard_database.db`) available for export.
 
 ## Recent migrations
@@ -38,7 +38,7 @@ set `DB_SCHEMA` and keep `ENV` set to `development` so the schema guard can run.
 ## 3. Bootstrap Schema With Alembic
 
 ```bash
-flask db upgrade
+flask --app 'app:create_app' db upgrade
 ```
 
 The new baseline migration calls `metadata.create_all`, so this step lays down every table defined by the
@@ -58,7 +58,7 @@ The stub (to be expanded) iterates over core tables (`accounts`, `transactions`,
 
 - Run `pytest -q` to ensure the API can talk to the new database.
 - Spot-check counts: `SELECT count(*) FROM transactions;`, `SELECT count(*) FROM accounts;` and compare with the SQLite totals.
-- Trigger a lightweight ingest (`flask sync-accounts`) to confirm upstream integrations still write cleanly.
+- Trigger a lightweight ingest (`flask --app 'app:create_app' sync-accounts`) to confirm upstream integrations still write cleanly.
 
 ## 6. Decommission SQLite Artifacts
 
@@ -71,7 +71,7 @@ Once PostgreSQL is verified:
 ## Troubleshooting
 
 - **psycopg.errors.UniqueViolation**: Ensure dependent tables are loaded before child tables and use `ON CONFLICT` upserts only after the initial insert.
-- **psycopg.errors.UndefinedTable**: Run `flask db upgrade` again; missing tables indicate the schema bootstrap did not complete.
+- **psycopg.errors.UndefinedTable**: Run `flask --app 'app:create_app' db upgrade` again; missing tables indicate the schema bootstrap did not complete.
 - **Timezone differences**: Explicitly normalise `datetime` columns to UTC before insert if the original SQLite data stored naive timestamps.
 
 Document the steps you took (especially any manual fixes) so we can automate them in a future migration script.

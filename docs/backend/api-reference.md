@@ -45,10 +45,48 @@ GET    /api/planning/bills
 POST   /api/planning/bills
 PUT    /api/planning/bills/<bill_id>
 DELETE /api/planning/bills/<bill_id>
-GET    /api/planning/allocations
-PUT    /api/planning/allocations
+GET    /api/planning/scenarios
+POST   /api/planning/scenarios
 GET    /api/planning/scenarios/<scenario_id>/allocations
+POST   /api/planning/scenarios/<scenario_id>/allocations
 PUT    /api/planning/scenarios/<scenario_id>/allocations
+PUT    /api/planning/scenarios/<scenario_id>/allocations/<allocation_id>
+DELETE /api/planning/scenarios/<scenario_id>/allocations/<allocation_id>
+```
+
+Planning API payloads use the frontend camelCase contract from `frontend/src/types/planning.ts`. The backend maps these fields onto SQLAlchemy snake_case columns and returns server-generated UUIDs as strings.
+
+**POST /api/planning/bills**
+
+Creates a planned bill.
+
+```json
+{
+  "name": "Rent",
+  "amountCents": 120000,
+  "dueDate": "2026-05-01",
+  "frequency": "monthly",
+  "category": "Housing",
+  "origin": "manual",
+  "accountId": "checking-1",
+  "scenarioId": "0f99b98d-6905-4eca-a7ea-e7d26beab7a9"
+}
+```
+
+Response body:
+
+```json
+{
+  "id": "dc56446f-1b44-49b4-8be1-d72424574546",
+  "name": "Rent",
+  "amountCents": 120000,
+  "dueDate": "2026-05-01",
+  "frequency": "monthly",
+  "category": "Housing",
+  "origin": "manual",
+  "accountId": "checking-1",
+  "scenarioId": "0f99b98d-6905-4eca-a7ea-e7d26beab7a9"
+}
 ```
 
 **PUT /api/planning/scenarios/<scenario_id>/allocations**

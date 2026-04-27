@@ -27,10 +27,9 @@ ${DOCKER_COMPOSE_CMD} exec -T db psql -U user -d postgres -c "DROP DATABASE IF E
 ${DOCKER_COMPOSE_CMD} exec -T db psql -U user -d postgres -c "CREATE DATABASE pynance;"
 
 echo "==> Running migrations after reset"
-flask --app backend.run db upgrade
+flask --app 'app:create_app' db upgrade
 
 echo "==> Seeding demo data"
-flask --app backend.run seed-dev
+flask --app 'app:create_app' seed-dev
 
 echo "==> Database reset and seed complete."
-

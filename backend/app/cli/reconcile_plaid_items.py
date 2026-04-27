@@ -2,8 +2,8 @@
 
 Usage examples:
 
-- flask --app backend.run reconcile-plaid-items
-- flask --app backend.run reconcile-plaid-items --verbose
+- flask --app 'app:create_app' reconcile-plaid-items
+- flask --app 'app:create_app' reconcile-plaid-items --verbose
 
 This command:
 - Collects distinct item_ids from local storage (PlaidItem, PlaidAccount)

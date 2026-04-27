@@ -1,13 +1,7 @@
 <template>
   <div class="space-y-4" data-testid="account-actions-sidebar">
-    <LinkAccount
-      v-model:selected-products="selectedProducts"
-      @manual-token-click="toggleManualToken"
-    />
+    <LinkAccount v-model:selected-products="selectedProducts" @manual-token-click="toggleManualToken" />
     <TokenUpload v-if="showTokenForm" @cancel="toggleManualToken" class="w-full" />
-    <TogglePanel v-model="showPlaidRefresh" title="Refresh Plaid Accounts">
-      <RefreshPlaidControls />
-    </TogglePanel>
   </div>
 </template>
 
@@ -19,12 +13,9 @@
 import { ref } from 'vue'
 import LinkAccount from '@/components/forms/LinkAccount.vue'
 import TokenUpload from '@/components/forms/TokenUpload.vue'
-import TogglePanel from '@/components/ui/TogglePanel.vue'
-import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 
 const selectedProducts = ref([])
 const showTokenForm = ref(false)
-const showPlaidRefresh = ref(false)
 
 function toggleManualToken() {
   showTokenForm.value = !showTokenForm.value

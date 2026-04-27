@@ -18,16 +18,23 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "transactions",
-        sa.Column("transfer_type", sa.String(length=32), nullable=True),
-    )
-    op.create_index(
-        "ix_transactions_transfer_type",
-        "transactions",
-        ["transfer_type"],
-        unique=False,
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    transaction_columns = {column["name"] for column in inspector.get_columns("transactions")}
+    transaction_indexes = {index["name"] for index in inspector.get_indexes("transactions")}
+
+    if "transfer_type" not in transaction_columns:
+        op.add_column(
+            "transactions",
+            sa.Column("transfer_type", sa.String(length=32), nullable=True),
+        )
+    if "ix_transactions_transfer_type" not in transaction_indexes:
+        op.create_index(
+            "ix_transactions_transfer_type",
+            "transactions",
+            ["transfer_type"],
+            unique=False,
+        )
 
 
 def downgrade() -> None:

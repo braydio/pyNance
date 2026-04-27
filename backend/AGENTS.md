@@ -10,7 +10,7 @@
 ## Build, Test, and Development Commands
 
 - `bash scripts/setup.sh` – installs Python/Node deps, configures hooks, and primes environments.
-- `python backend/run.py` or `flask --app backend.run run` – launches the API with reloading; set `SQLALCHEMY_DATABASE_URI` first.
+- `python run.py` or `flask --app 'app:create_app' run --debug` – launches the API with reloading; set `SQLALCHEMY_DATABASE_URI` first.
 - `cd frontend && npm run dev` – starts the Vue dev server alongside the API.
 - `pytest -q` – runs the backend test suite; narrow with `pytest tests/test_<feature>.py -q`.
 - `pre-commit run --all-files` – executes Black, Ruff, MyPy, Pylint, and Bandit gates before review.
@@ -36,6 +36,6 @@
 
 ## Security & Configuration Tips
 
-- Copy `backend/example.env` to `backend/.env` (and frontend equivalents) without committing secrets.
+- Copy `backend/.env.example` to `backend/.env` (and frontend equivalents) without committing secrets.
 - Run `bandit -r backend/app/routes` regularly and treat findings as blockers.
 - Guard optional API responses with try/except or UI fallbacks (`Promise.allSettled`) to prevent cascading failures.

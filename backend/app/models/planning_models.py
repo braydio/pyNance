@@ -21,6 +21,9 @@ class PlanningScenario(db.Model, TimestampMixin):
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = db.Column(db.String(120), nullable=False)
+    account_id = db.Column(db.String(128), nullable=True, index=True)
+    planning_balance_cents = db.Column(db.Integer, nullable=False, default=0)
+    currency_code = db.Column(db.String(3), nullable=False, default="USD")
 
     #: Relationship to all bills associated with the scenario.
     bills = db.relationship(
@@ -56,7 +59,10 @@ class PlannedBill(db.Model, TimestampMixin):
     name = db.Column(db.String(120), nullable=False)
     amount_cents = db.Column(db.Integer, nullable=False)
     due_date = db.Column(db.Date, nullable=True)
+    frequency = db.Column(db.String(20), nullable=False, default="monthly")
     category = db.Column(db.String(80), nullable=True)
+    origin = db.Column(db.String(20), nullable=False, default="manual")
+    account_id = db.Column(db.String(128), nullable=True, index=True)
     predicted = db.Column(db.Boolean, default=False, nullable=False)
 
     __table_args__ = (

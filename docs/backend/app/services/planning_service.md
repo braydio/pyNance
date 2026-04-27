@@ -2,20 +2,33 @@
 
 ## Responsibility
 
-- Maintain an in-memory prototype of budgeting data structures for bills and allocation percentages.
-- Provide CRUD utilities that power early planning UI experiments.
+- Persist Planning scenarios, bills, and allocation targets through SQLAlchemy.
+- Validate frontend API payloads and return canonical camelCase response shapes.
+- Enforce scenario-level percent allocation totals at or below 100%.
 
 ## Key Functions
 
-- [`get_bills()`](../../../../backend/app/services/planning_service.py) / [`create_bill(bill)`](../../../../backend/app/services/planning_service.py) / [`update_bill(bill_id, bill)`](../../../../backend/app/services/planning_service.py) / [`delete_bill(bill_id)`](../../../../backend/app/services/planning_service.py): Read and mutate the ephemeral `BILLS` list.
-- [`get_allocations()`](../../../../backend/app/services/planning_service.py) / [`update_allocations(allocations)`](../../../../backend/app/services/planning_service.py): Expose and replace allocation data while enforcing a 100% aggregate cap.
+- [`list_scenarios()`](../../../../backend/app/services/planning_service.py): Return persisted scenarios with embedded allocations.
+- [`create_scenario(data)`](../../../../backend/app/services/planning_service.py): Create a scenario using `name`, `accountId`, `planningBalanceCents`, and `currencyCode`.
+- [`get_bills()`](../../../../backend/app/services/planning_service.py) / [`create_bill(data)`](../../../../backend/app/services/planning_service.py) / [`update_bill(bill_id, data)`](../../../../backend/app/services/planning_service.py) / [`delete_bill(bill_id)`](../../../../backend/app/services/planning_service.py): Manage durable bill records.
+- [`get_allocations(scenario_id)`](../../../../backend/app/services/planning_service.py) / [`create_allocation(scenario_id, data)`](../../../../backend/app/services/planning_service.py) / [`update_allocation(scenario_id, allocation_id, data)`](../../../../backend/app/services/planning_service.py) / [`delete_allocation(scenario_id, allocation_id)`](../../../../backend/app/services/planning_service.py): Manage scenario-scoped allocation records.
+- [`replace_allocations(scenario_id, allocations)`](../../../../backend/app/services/planning_service.py): Replace the full allocation list used by the frontend optimistic API mode.
+
+## Contract Notes
+
+- Request and response payloads intentionally match `frontend/src/types/planning.ts`.
+- Bills use `amountCents`, `dueDate`, `accountId`, and `scenarioId` at the API boundary; the service maps those fields to snake_case model columns.
+- Allocation `kind` must be `fixed` or `percent`; percent values are validated both individually and in aggregate.
+- Missing resources raise `NotFound`; malformed payloads raise `BadRequest`.
 
 ## Dependencies & Collaborators
 
-- Operates purely in memory—no database or external service dependencies.
-- Intended as a lightweight partner for eventual persistence logic in the planning suite (e.g., SQL counterparts once implemented).
+- `app.extensions.db`
+- `app.models.PlanningScenario`
+- `app.models.PlannedBill`
+- `app.models.ScenarioAllocation`
+- `frontend/src/services/planningService.ts`
 
-## Usage Notes
+## Tests
 
-- Because the store is process-local, data is reset on application restarts; callers should treat it as non-durable test scaffolding.
-- `update_allocations` raises `ValueError` when provided percentages exceed 100, protecting UI workflows from inconsistent totals.
+- `tests/test_api_planning.py` covers scenario creation, bill CRUD, validation failures, and scenario allocation cap enforcement.

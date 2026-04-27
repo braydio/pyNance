@@ -17,6 +17,21 @@ os.environ.setdefault("PLAID_SECRET_KEY", "sandbox-secret")
 os.environ.setdefault("CLIENT_NAME", "pyNance Test Suite")
 os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
 
+for module_name in list(sys.modules):
+    if not (
+        module_name in {"app.config", "app.models", "app.services", "app.sql"}
+        or module_name.startswith("app.config.")
+        or module_name.startswith("app.sql.")
+    ):
+        continue
+    existing = sys.modules.get(module_name)
+    if existing is not None and getattr(existing, "__file__", None) is None:
+        sys.modules.pop(module_name, None)
+
+app_module = sys.modules.get("app")
+if app_module is not None and getattr(app_module, "__file__", None) is None:
+    sys.modules.pop("app", None)
+
 from app.extensions import db
 from app.models import Account, Category, Transaction
 from app.routes.summary import summary

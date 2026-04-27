@@ -34,7 +34,7 @@
 
 ### Planning
 
-- [`planning_service.py`](planning_service.md): In-memory prototype for bills and allocation planning workflows.
+- [`planning_service.py`](planning_service.md): SQL-backed scenarios, bills, and allocation planning workflows.
 
 ---
 

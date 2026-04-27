@@ -19,7 +19,8 @@ This document consolidates active development plans across the repository so the
 - **Docs:** `docs/roadmaps/planning.md`, `docs/ui/planning.md`
 - ✅ Frontend components (`BillForm`, `BillList`, `Allocator`, `PlanningSummary`) now compose the Planning view with documented props/emits and local persistence hooks.
 - ✅ `usePlanning` exposes API-aware helpers (`persistBill`, `removeBill`, `persistScenarioAllocations`) and a mode toggle so the UI can run against local storage or optimistic network flows.
-- Transition the Flask planning routes from in-memory storage to persistent models and enforce allocation caps end-to-end.
+- ✅ Flask planning routes now use SQL-backed models and enforce scenario allocation caps through `planning_service`.
+- Add end-to-end API-mode frontend coverage and tighten auth/user scoping before multi-user rollout.
 
 ## Investments & Liabilities Sync
 
