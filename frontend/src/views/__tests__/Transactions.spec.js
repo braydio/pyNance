@@ -151,6 +151,10 @@ describe('Transactions.vue', () => {
 
     const summary = wrapper.find('[data-testid="filter-summary"]')
     expect(summary.exists()).toBe(true)
+    expect(summary.classes()).toContain('ui-panel')
+    expect(summary.classes()).toContain('ui-radius-3')
+    expect(summary.find('.text-muted').exists()).toBe(true)
+    expect(summary.find('.text-primary').exists()).toBe(true)
     const text = summary.text()
 
     expect(text).toContain('Transactions')
@@ -171,5 +175,19 @@ describe('Transactions.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="filter-summary"]').exists()).toBe(false)
+  })
+
+  it('uses tokenized panel and surface classes for top controls', async () => {
+    const { wrapper } = mountView({ filtered: [{ transaction_id: 'tx-1', amount: 12 }] })
+
+    await flushPromises()
+
+    const controls = wrapper.find('#top-controls')
+    expect(controls.exists()).toBe(true)
+    expect(controls.classes()).toContain('ui-panel')
+    expect(controls.classes()).toContain('ui-radius-3')
+    expect(wrapper.find('#top-controls .bg-surface-1').exists()).toBe(true)
+    expect(wrapper.find('#top-controls .border-subtle').exists()).toBe(true)
+    expect(wrapper.find('#top-controls .text-muted').exists()).toBe(true)
   })
 })

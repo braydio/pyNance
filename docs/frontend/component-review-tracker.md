@@ -76,7 +76,7 @@ This document consolidates **FileLegend.md** and **ProcessLegend.md** into a sin
 - **Files:** [TAS], [DNC], [CBC], [CWTB], [AS], [AT], [TT], [PC], [TM], [GCD], [D]
 
 Note: See `docs/frontend/sparklines.md` for AccountSparkline integration details used by [TAS].
-Also see `docs/frontend/transactions-ui.md` for recent transactions formatting rules used by [TAS].
+Also see `docs/frontend/transactions-ui.md` for recent transactions formatting rules used by [TAS] and the tokenized styling contract for `frontend/src/views/Transactions.vue`.
 
 ### 3.2 Scoped Slots/Reusable Headers
 
