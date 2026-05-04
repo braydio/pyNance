@@ -18,7 +18,7 @@
       </PageHeader>
     </template>
     <!-- Internal Transfer Scanner (moved to top) -->
-    <Card class="p-6 rounded-3xl card-surface">
+    <Card class="p-6 ui-radius-3 card-surface">
       <div class="flex items-center justify-between">
         <div>
           <p class="eyebrow">Automation</p>
@@ -39,8 +39,8 @@
     </Card>
 
     <!-- Top Controls -->
-    <Card v-if="showControls" id="top-controls" class="p-6 rounded-3xl card-surface space-y-4">
-      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 pb-4">
+    <Card v-if="showControls" id="top-controls" class="ui-panel p-6 ui-radius-3 space-y-4">
+      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-subtle pb-4">
         <div class="space-y-1">
           <p class="eyebrow">Controls</p>
           <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
@@ -53,27 +53,27 @@
         <span class="pill">Transactions</span>
       </div>
       <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)]">
-        <div class="rounded-2xl border border-dashed border-slate-200 bg-white/90 p-4 shadow-inner">
+        <div class="ui-radius-2 border border-dashed border-subtle bg-surface-1 p-4 shadow-inner">
           <ImportFileSelector />
         </div>
         <div
-          class="relative rounded-2xl border border-dashed border-slate-200 bg-white/80 shadow-inner"
+          class="relative ui-radius-2 border border-dashed border-subtle bg-surface-1 shadow-inner"
         >
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
             <Search class="w-4 h-4" />
           </span>
           <input
             v-model="searchQuery"
             type="text"
             placeholder="Search transactions..."
-            class="input w-full border-none bg-transparent pl-10 pr-4 py-3 focus:ring-2 focus:ring-[var(--color-accent-purple)] search-input"
+            class="input ui-control-input w-full border-none bg-transparent pl-10 pr-4 py-3 text-secondary focus:ring-2 focus:ring-[var(--color-accent-purple)] search-input"
           />
         </div>
       </div>
     </Card>
 
     <!-- Filter Controls -->
-    <Card class="p-6 rounded-3xl card-surface space-y-4">
+    <Card class="ui-panel p-6 ui-radius-3 space-y-4">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="eyebrow">Filters</p>
@@ -90,7 +90,7 @@
         </div>
       </div>
       <div class="grid w-full gap-3 md:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <DateRangeSelector
             :start-date="startDate"
             :end-date="endDate"
@@ -99,10 +99,10 @@
             @update:endDate="endDate = $event"
           />
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <AccountFilter v-model="accountFilter" />
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <TypeSelector v-model="txType" />
         </div>
       </div>
@@ -110,7 +110,7 @@
 
     <Card
       v-if="hasActiveFilters && !isLoading && !error"
-      class="p-6 rounded-3xl card-surface space-y-4"
+      class="ui-panel p-6 ui-radius-3 space-y-4"
       data-testid="filter-summary"
     >
       <div>
@@ -120,51 +120,41 @@
         </h3>
       </div>
       <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Transactions
-          </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Transactions</p>
+          <p class="text-2xl font-semibold text-primary">
             {{ filterSummary.transactionCount }}
           </p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Total amount
-          </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Total amount</p>
+          <p class="text-2xl font-semibold text-primary">
             {{ formatCurrency(filterSummary.totalAmount) }}
           </p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Unique categories
-          </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique categories</p>
+          <p class="text-2xl font-semibold text-primary">
             {{ filterSummary.uniqueCounts.categories }}
           </p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Unique merchants
-          </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique merchants</p>
+          <p class="text-2xl font-semibold text-primary">
             {{ filterSummary.uniqueCounts.merchants }}
           </p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
-            Unique accounts
-          </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique accounts</p>
+          <p class="text-2xl font-semibold text-primary">
             {{ filterSummary.uniqueCounts.accounts }}
           </p>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-[var(--color-text-muted)]">
+        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
+          <p class="text-xs font-semibold uppercase tracking-wide text-muted">
             Unique institutions
           </p>
-          <p class="text-2xl font-semibold text-[var(--color-text-light)]">
+          <p class="text-2xl font-semibold text-primary">
             {{ filterSummary.uniqueCounts.institutions }}
           </p>
         </div>
@@ -172,7 +162,7 @@
     </Card>
 
     <!-- Main Table -->
-    <Card class="p-6 space-y-4 rounded-3xl card-surface">
+    <Card class="p-6 space-y-4 ui-radius-3 card-surface">
       <div class="flex items-center justify-between">
         <h2 class="section-title">Recent Transactions</h2>
         <div class="flex items-center gap-2">
@@ -211,7 +201,7 @@
 
     <!-- Activity Tab -->
     <template #Activity>
-      <Card class="p-6 space-y-4 rounded-3xl card-surface">
+      <Card class="p-6 space-y-4 ui-radius-3 card-surface">
         <div class="flex items-center justify-between">
           <h2 class="section-title">Recent Transactions</h2>
           <button
@@ -257,7 +247,7 @@
 
     <!-- Recurring Tab -->
     <template #Recurring>
-      <Card class="p-6 space-y-4 rounded-3xl card-surface">
+      <Card class="p-6 space-y-4 ui-radius-3 card-surface">
         <h2 class="text-2xl font-bold text-[var(--color-text-light)]">Recurring Transactions</h2>
         <RecurringTransactionSection ref="recurringFormRef" provider="plaid" />
       </Card>
@@ -265,7 +255,7 @@
 
     <!-- Scanner Tab -->
     <template #Scanner>
-      <Card class="p-6 rounded-3xl card-surface">
+      <Card class="p-6 ui-radius-3 card-surface">
         <InternalTransferScanner />
       </Card>
     </template>
@@ -283,7 +273,6 @@ import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
 import UpdateTransactionsTable from '@/components/tables/UpdateTransactionsTable.vue'
 import RecurringTransactionSection from '@/components/recurring/RecurringTransactionSection.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
-import UiButton from '@/components/ui/Button.vue'
 import Card from '@/components/ui/Card.vue'
 import { CreditCard, Search } from 'lucide-vue-next'
 import TabbedPageLayout from '@/components/layout/TabbedPageLayout.vue'
@@ -301,7 +290,6 @@ export default {
     UpdateTransactionsTable,
     RecurringTransactionSection,
     PageHeader,
-    UiButton,
     Card,
     TabbedPageLayout,
     InternalTransferScanner,
@@ -555,7 +543,8 @@ export default {
         let expectedTotal = 0
         const allRows = []
 
-        while (true) {
+        let shouldContinue = true
+        while (shouldContinue) {
           const response = await fetchTransactionsApi({
             ...activeFilters,
             page,
@@ -565,9 +554,13 @@ export default {
           expectedTotal = Number(response?.total || 0)
           allRows.push(...batch)
 
-          if (!batch.length) break
-          if (expectedTotal > 0 && allRows.length >= expectedTotal) break
-          page += 1
+          if (!batch.length) {
+            shouldContinue = false
+          } else if (expectedTotal > 0 && allRows.length >= expectedTotal) {
+            shouldContinue = false
+          } else {
+            page += 1
+          }
         }
 
         const search = searchQuery.value.trim().toLowerCase()

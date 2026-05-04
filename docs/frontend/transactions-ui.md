@@ -2,6 +2,36 @@
 
 This document standardizes formatting and styling rules for recent transactions displayed under account details in TopAccountSnapshot.
 
+## Transactions View Styling Contract
+
+The route-level transactions view (`frontend/src/views/Transactions.vue`) now uses token-backed utility classes for control and summary surfaces.
+
+### Required semantic classes
+
+- Replace neutral Tailwind color shortcuts with theme-token utilities:
+  - `bg-surface-*` for backgrounds.
+  - `border-subtle` (or `border-strong` when needed) for borders.
+  - `text-primary`, `text-secondary`, and `text-muted` for foreground text.
+- Use radius tokens instead of one-off rounded values:
+  - `ui-radius-1`, `ui-radius-2`, `ui-radius-3`.
+
+### Shared primitives to reuse
+
+- Control and summary wrappers should favor `ui-panel` for elevated containers.
+- Nested metric/control cards should favor `ui-card`.
+- Inputs in control rows should reuse `ui-control-input` and add local spacing utilities only as needed.
+
+### Example class patterns
+
+- Top controls panel:
+  - `ui-panel p-6 ui-radius-3 space-y-4`
+- Dashed import/search containers:
+  - `ui-radius-2 border border-dashed border-subtle bg-surface-1`
+- Filter summary stat tile:
+  - `ui-card ui-radius-2 px-4 py-3 shadow-inner`
+- Summary label/value text:
+  - `text-muted` for labels and `text-primary` for metric values.
+
 ## Date Formatting
 
 - Use short, locale-friendly dates.
