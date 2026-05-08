@@ -65,6 +65,26 @@ Additional variables such as `--color-accent-magenta`, `--color-accent-indigo`,
 `--liability-gradient-start`/`--liability-gradient-end` are used by specific
 charts and widgets. Review the default theme for the full list.
 
+## Status badge and alert pattern
+
+For account sync states and other inline status UI:
+
+- Use semantic status tokens only (`--color-success/error/warning/info` and matching `--color-bg-*`).
+- Build tinted backgrounds and readable foregrounds with `color-mix(...)` against `--surface-1` rather than hardcoded hex values.
+- Use `--radius-1` (or `ui-radius-1`) for decorative badges/pills.
+- Keep fully rounded corners (`rounded-full`) only for semantic circles (presence dots, avatars, and similar circular indicators).
+
+Example:
+
+```css
+.status-pill--ok {
+  background: color-mix(in srgb, var(--color-bg-success) 22%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--color-success) 38%, var(--border-subtle));
+  color: color-mix(in srgb, var(--color-success) 78%, var(--text-primary));
+  border-radius: var(--radius-1);
+}
+```
+
 ## How the Theme Loads
 
 `main.css` imports `global-colors.css` before Tailwind base layers. This ensures
