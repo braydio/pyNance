@@ -21,15 +21,15 @@ enabled = true
 name = "python"
 enabled = true
 
-  [analyzers.meta]
-  runtime_version = "3.11"
+[analyzers.meta]
+runtime_version = "3.xx"
 
 [[analyzers]]
 name = "javascript"
 enabled = true
 
-  [analyzers.meta]
-  plugins = ["vue"]
+[analyzers.meta]
+plugins = ["vue"]
 
 [[code_formatters]]
 name = "prettier"
