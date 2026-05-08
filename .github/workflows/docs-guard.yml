@@ -66,11 +66,13 @@ jobs:
 
       - name: Report skipped event
         if: steps.pr.outputs.skip == 'true'
-        run: echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
+        run: |
+          echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
 
       - name: Report documentation override
         if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override == 'true'
-        run: echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
+        run: |
+          echo "Skipping docs guard: ${{ steps.pr.outputs.reason }}"
 
       - name: Check out pull request
         if: steps.pr.outputs.skip != 'true' && steps.pr.outputs.override != 'true'
