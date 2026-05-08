@@ -10,7 +10,7 @@ name = "sql"
 name = "python"
 
   [analyzers.meta]
-  runtime_version = "3.x.x"
+  runtime_version = "3.1.2"
 
 [[analyzers]]
 name = "javascript"
