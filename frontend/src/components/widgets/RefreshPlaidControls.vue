@@ -353,7 +353,7 @@ export default {
 }
 .institution-block {
   border: 1px solid var(--divider);
-  border-radius: 8px;
+  border-radius: var(--radius-2);
   padding: 0.5rem;
 }
 .institution-header {
@@ -387,25 +387,28 @@ export default {
 }
 .status-pill {
   padding: 0.1rem 0.5rem;
-  border-radius: 999px;
+  border-radius: var(--radius-1);
   font-size: 0.75rem;
+  border: 1px solid transparent;
 }
 .pill-ok {
-  background: #e6f9ef;
-  color: #0f5132;
+  background: color-mix(in srgb, var(--color-bg-success) 22%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--color-success) 38%, var(--border-subtle));
+  color: color-mix(in srgb, var(--color-success) 78%, var(--text-primary));
 }
 .pill-error {
-  background: #fde2e1;
-  color: #842029;
+  background: color-mix(in srgb, var(--color-bg-error) 22%, var(--surface-1));
+  border-color: color-mix(in srgb, var(--color-error) 38%, var(--border-subtle));
+  color: color-mix(in srgb, var(--color-error) 78%, var(--text-primary));
 }
 .account-details {
   margin-top: 0.25rem;
 }
 .error-details {
-  background: #fff5f5;
-  border: 1px solid #fecaca;
-  color: #7f1d1d;
-  border-radius: 6px;
+  background: color-mix(in srgb, var(--color-bg-error) 14%, var(--surface-1));
+  border: 1px solid color-mix(in srgb, var(--color-error) 42%, var(--border-subtle));
+  color: color-mix(in srgb, var(--color-error) 82%, var(--text-primary));
+  border-radius: var(--radius-1);
   padding: 0.5rem;
 }
 .error-title {
@@ -417,7 +420,7 @@ export default {
 }
 .tx-list {
   border: 1px solid var(--divider);
-  border-radius: 6px;
+  border-radius: var(--radius-1);
   padding: 0.25rem;
 }
 .tx-list.loading {
