@@ -65,13 +65,16 @@ The modal remains visible until the user triggers the `close` event.
 `Dashboard.vue` also exposes a dedicated **Review Transactions** entry point that opens
 `TransactionReviewModal.vue`. The modal uses `useDashboardModals` with the `review` key to remain
 mutually exclusive with the chart-driven overlays. It fetches transactions in batches of 10 using
-`useTransactions`, supports keyboard-first shortcuts (← edit, → approve/save, `1-5` focus fields, `Tab` cycles fields, `Enter` saves, `Esc` cancels), and uses
+`useTransactions`, supports keyboard-first shortcuts (← edit, → approve/save, `1-5` focus fields, `Tab` cycles fields, `Enter` saves, `Esc` cancels, `N` starts the next batch, `0` closes the modal), and uses
 `updateTransaction` / `createTransactionRule` to persist edits before advancing through each batch.
 
 The review call-to-action card now uses a themed gradient treatment and stronger field/button affordances
 to match the dashboard visual language. Inside the modal, editable fields are grouped into bordered
 cards and primary/secondary actions are visually separated to make keyboard and pointer workflows
 more intuitive without changing existing behavior.
+
+To reinforce keyboard-first affordances, each editable field and primary action now includes a small
+themed shortcut chip that mirrors the active key binding.
 
 Review modal action buttons also inherit the shared two-tone button treatment from `main.css`, including
 hover highlights and a pressed-state inversion (filled to outlined) so approve/edit/next actions remain
