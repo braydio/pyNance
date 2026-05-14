@@ -25,7 +25,7 @@
             <p
               class="review-shortcuts text-xs uppercase tracking-widest text-[var(--color-text-muted)]"
             >
-              Use ← to edit, → to approve, 1-5 to jump fields, Enter to save
+              Use ← to edit, → to approve, 1-5 to jump fields, Enter to save, and Esc to cancel
             </p>
           </div>
           <div class="flex items-center gap-3">
@@ -33,10 +33,11 @@
               Batch {{ currentPage }} / {{ totalPages }} • {{ progressLabel }}
             </span>
             <button
-              class="inline-flex items-center justify-center w-9 h-9 rounded-full text-[var(--color-accent-cyan)] border border-[var(--color-accent-cyan)]/40 hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition"
+              class="review-action-button inline-flex items-center justify-center w-9 h-9 rounded-full text-[var(--color-accent-cyan)] border border-[var(--color-accent-cyan)]/40 hover:bg-[var(--color-accent-cyan)] hover:text-[var(--color-bg-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition"
               @click="emitClose"
               aria-label="Close Review Modal"
             >
+              <span class="shortcut-chip">0</span>
               <svg
                 class="w-5 h-5"
                 fill="none"
@@ -57,9 +58,13 @@
           <div v-else-if="!currentTransaction && !batchComplete" class="text-center">
             <p class="text-[var(--color-text-muted)]">No transactions found for this range.</p>
             <div class="mt-4 flex justify-center gap-3">
-              <button class="btn" @click="emitClose">Exit</button>
-              <button class="btn" :disabled="!hasNextBatch" @click="startNextBatch">
+              <button class="btn review-action-button" @click="emitClose">
+                Exit
+                <span class="shortcut-chip">0</span>
+              </button>
+              <button class="btn review-action-button" :disabled="!hasNextBatch" @click="startNextBatch">
                 Start next batch
+                <span class="shortcut-chip">N</span>
               </button>
             </div>
           </div>
@@ -68,9 +73,13 @@
             <h3 class="text-2xl font-bold text-[var(--color-accent-cyan)]">Batch complete</h3>
             <p class="text-[var(--color-text-muted)]">You finished reviewing this batch.</p>
             <div class="flex justify-center gap-3">
-              <button class="btn" @click="emitClose">Exit</button>
-              <button class="btn" :disabled="!hasNextBatch" @click="startNextBatch">
+              <button class="btn review-action-button" @click="emitClose">
+                Exit
+                <span class="shortcut-chip">0</span>
+              </button>
+              <button class="btn review-action-button" :disabled="!hasNextBatch" @click="startNextBatch">
                 Start next batch
+                <span class="shortcut-chip">N</span>
               </button>
             </div>
           </div>
@@ -107,15 +116,10 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div v-for="field in displayFields" :key="field.key" class="review-field space-y-1">
-                <label class="text-xs uppercase tracking-wide text-[var(--color-text-muted)]">{{
-                  field.label
-                }}</label>
-                <p
-                  v-if="isEditing && field.shortcutIndex"
-                  class="text-[11px] uppercase tracking-wide text-[var(--color-text-muted)]"
-                >
-                  {{ field.shortcutIndex }}
-                </p>
+                <label class="review-field-label text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+                  <span>{{ field.label }}</span>
+                  <span v-if="field.shortcutIndex" class="shortcut-chip">{{ field.shortcutIndex }}</span>
+                </label>
                 <div v-if="isEditing" class="space-y-2">
                   <input
                     v-if="field.type === 'input'"
@@ -146,11 +150,13 @@
             </div>
 
             <div class="review-actions flex flex-wrap gap-3 mt-6 items-center">
-              <button class="btn btn-outline review-btn-secondary" @click="handleEditToggle">
-                {{ isEditing ? 'Cancel' : 'Edit (←)' }}
+              <button class="btn btn-outline review-btn-secondary review-action-button" @click="handleEditToggle">
+                {{ isEditing ? 'Cancel' : 'Edit' }}
+                <span class="shortcut-chip">{{ isEditing ? 'Esc' : '←' }}</span>
               </button>
-              <button class="btn review-btn-primary" @click="handleApprove">
-                {{ isEditing ? 'Save & Next (→)' : 'Approve (→)' }}
+              <button class="btn review-btn-primary review-action-button" @click="handleApprove">
+                {{ isEditing ? 'Save & Next' : 'Approve' }}
+                <span class="shortcut-chip">{{ isEditing ? 'Enter' : '→' }}</span>
               </button>
               <span class="text-sm text-[var(--color-text-muted)]">
                 {{ progressLabel }} of {{ totalCount }} total
@@ -808,6 +814,12 @@ function handleKeydown(event) {
       target.tagName === 'SELECT' ||
       target.isContentEditable)
 
+  if (event.key === '0') {
+    event.preventDefault()
+    emitClose()
+    return
+  }
+
   if (isEditing.value && event.key === 'Escape') {
     event.preventDefault()
     cancelEdit()
@@ -823,6 +835,12 @@ function handleKeydown(event) {
   if (isEditing.value && event.key === 'Tab') {
     event.preventDefault()
     cycleShortcutField(event.shiftKey ? -1 : 1)
+    return
+  }
+
+  if (!isEditing.value && (event.key === 'n' || event.key === 'N')) {
+    event.preventDefault()
+    startNextBatch()
     return
   }
 
@@ -877,6 +895,34 @@ onUnmounted(() => {
 
 .review-shortcuts {
   letter-spacing: 0.12em;
+}
+
+.review-field-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.shortcut-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.2rem;
+  height: 1.2rem;
+  border-radius: 9999px;
+  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 50%, transparent);
+  color: var(--color-accent-cyan);
+  background: color-mix(in srgb, var(--color-accent-cyan) 18%, transparent);
+  font-size: 0.65rem;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 0.35rem;
+}
+
+.review-action-button {
+  gap: 0.45rem;
 }
 
 .review-field {
@@ -945,3 +991,4 @@ onUnmounted(() => {
   }
 }
 </style>
+

@@ -48,7 +48,7 @@ vi.mock('@/api/categories', () => ({
 }))
 
 function findInputByLabel(wrapper, labelText) {
-  const labelWrapper = wrapper.findAll('label').find((node) => node.text() === labelText)
+  const labelWrapper = wrapper.findAll('label').find((node) => node.text().trim().startsWith(labelText))
   if (!labelWrapper) return null
   return labelWrapper.element.parentElement.querySelector('input')
 }
@@ -145,5 +145,21 @@ describe('TransactionReviewModal.vue', () => {
     await flushPromises()
 
     expect(createTransactionRule).not.toHaveBeenCalled()
+  })
+
+  it('supports keyboard shortcuts for next batch and close', async () => {
+    const wrapper = mount(TransactionReviewModal, {
+      props: { show: true, filters: {} },
+      attachTo: document.body,
+    })
+    await flushPromises()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'N', bubbles: true }))
+    await flushPromises()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '0', bubbles: true }))
+    await flushPromises()
+
+    expect(wrapper.emitted('close')).toBeTruthy()
   })
 })
