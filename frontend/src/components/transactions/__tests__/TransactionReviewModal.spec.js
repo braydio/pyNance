@@ -48,7 +48,9 @@ vi.mock('@/api/categories', () => ({
 }))
 
 function findInputByLabel(wrapper, labelText) {
-  const labelWrapper = wrapper.findAll('label').find((node) => node.text().trim().startsWith(labelText))
+  const labelWrapper = wrapper
+    .findAll('label')
+    .find((node) => node.text().trim().startsWith(labelText))
   if (!labelWrapper) return null
   return labelWrapper.element.parentElement.querySelector('input')
 }

@@ -62,7 +62,11 @@
                 Exit
                 <span class="shortcut-chip">0</span>
               </button>
-              <button class="btn review-action-button" :disabled="!hasNextBatch" @click="startNextBatch">
+              <button
+                class="btn review-action-button"
+                :disabled="!hasNextBatch"
+                @click="startNextBatch"
+              >
                 Start next batch
                 <span class="shortcut-chip">N</span>
               </button>
@@ -77,7 +81,11 @@
                 Exit
                 <span class="shortcut-chip">0</span>
               </button>
-              <button class="btn review-action-button" :disabled="!hasNextBatch" @click="startNextBatch">
+              <button
+                class="btn review-action-button"
+                :disabled="!hasNextBatch"
+                @click="startNextBatch"
+              >
                 Start next batch
                 <span class="shortcut-chip">N</span>
               </button>
@@ -116,9 +124,13 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div v-for="field in displayFields" :key="field.key" class="review-field space-y-1">
-                <label class="review-field-label text-xs uppercase tracking-wide text-[var(--color-text-muted)]">
+                <label
+                  class="review-field-label text-xs uppercase tracking-wide text-[var(--color-text-muted)]"
+                >
                   <span>{{ field.label }}</span>
-                  <span v-if="field.shortcutIndex" class="shortcut-chip">{{ field.shortcutIndex }}</span>
+                  <span v-if="field.shortcutIndex" class="shortcut-chip">{{
+                    field.shortcutIndex
+                  }}</span>
                 </label>
                 <div v-if="isEditing" class="space-y-2">
                   <input
@@ -150,7 +162,10 @@
             </div>
 
             <div class="review-actions flex flex-wrap gap-3 mt-6 items-center">
-              <button class="btn btn-outline review-btn-secondary review-action-button" @click="handleEditToggle">
+              <button
+                class="btn btn-outline review-btn-secondary review-action-button"
+                @click="handleEditToggle"
+              >
                 {{ isEditing ? 'Cancel' : 'Edit' }}
                 <span class="shortcut-chip">{{ isEditing ? 'Esc' : '←' }}</span>
               </button>
@@ -991,4 +1006,3 @@ onUnmounted(() => {
   }
 }
 </style>
-
