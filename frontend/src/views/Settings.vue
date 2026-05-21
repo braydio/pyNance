@@ -8,11 +8,47 @@
     <section class="settings-panel">
       <h2 class="settings-panel-title">Appearance</h2>
       <label for="themes" class="settings-label">Theme</label>
-      <select id="themes" v-model="selectedTheme" class="input settings-select" @change="setTheme">
+      <BaseSelect
+        id="themes"
+        v-model="selectedTheme"
+        class="settings-select"
+        size="md"
+        radius="md"
+        @change="setTheme"
+      >
         <option v-for="theme in themes" :key="theme" :value="theme">
           {{ theme }}
         </option>
-      </select>
+      </BaseSelect>
+    </section>
+
+    <section class="settings-panel">
+      <h2 class="settings-panel-title">Command</h2>
+      <p class="settings-panel-copy">Choose a command template and provide task-specific input.</p>
+      <div class="settings-command-fields">
+        <label for="command-template" class="settings-label">Template</label>
+        <BaseSelect
+          id="command-template"
+          v-model="selectedCommandTemplate"
+          class="settings-select"
+          size="md"
+          radius="md"
+        >
+          <option v-for="template in commandTemplates" :key="template.value" :value="template.value">
+            {{ template.label }}
+          </option>
+        </BaseSelect>
+
+        <label for="command-argument" class="settings-label">Task argument</label>
+        <BaseInput
+          id="command-argument"
+          v-model="commandArgument"
+          placeholder="Enter command argument"
+          class="settings-input"
+          size="md"
+          radius="md"
+        />
+      </div>
     </section>
 
     <section class="settings-panel">
@@ -27,6 +63,8 @@
 
 <script>
 import axios from 'axios'
+import BaseInput from '@/components/base/BaseInput.vue'
+import BaseSelect from '@/components/base/BaseSelect.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
@@ -35,6 +73,8 @@ import { Settings as SettingsIcon } from 'lucide-vue-next'
 export default {
   name: 'Settings',
   components: {
+    BaseInput,
+    BaseSelect,
     BasePageLayout,
     PageHeader,
     RefreshPlaidControls,
@@ -43,6 +83,13 @@ export default {
     return {
       themes: [],
       selectedTheme: '',
+      commandTemplates: [
+        { label: 'Refresh account balances', value: 'refresh-balances' },
+        { label: 'Sync transaction history', value: 'sync-transactions' },
+        { label: 'Rebuild reporting cache', value: 'rebuild-cache' },
+      ],
+      selectedCommandTemplate: 'refresh-balances',
+      commandArgument: '',
       SettingsIcon,
     }
   },
@@ -100,7 +147,14 @@ export default {
   color: var(--color-text-muted);
 }
 
-.settings-select {
+.settings-command-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.settings-select,
+.settings-input {
   max-width: 18rem;
 }
 </style>

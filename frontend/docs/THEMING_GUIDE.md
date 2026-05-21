@@ -152,3 +152,7 @@ This guide establishes a foundation for consistent theming. By defining all
 colors and common surfaces in a dedicated theme file, future designs can be
 implemented simply by creating additional theme files and adjusting the import in
 `global-colors.css`.
+
+## Settings control primitives
+
+Settings screens must use shared base form primitives (`BaseSelect`, `BaseInput`, and related base controls) instead of raw `<select>` or `<input>` elements. This keeps spacing, radius, focus treatments, and token usage consistent with the shared style model.
