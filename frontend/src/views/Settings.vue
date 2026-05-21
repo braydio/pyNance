@@ -34,7 +34,11 @@
           size="md"
           radius="md"
         >
-          <option v-for="template in commandTemplates" :key="template.value" :value="template.value">
+          <option
+            v-for="template in commandTemplates"
+            :key="template.value"
+            :value="template.value"
+          >
             {{ template.label }}
           </option>
         </BaseSelect>
