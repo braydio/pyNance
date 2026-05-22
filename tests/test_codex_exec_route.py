@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-from flask import Flask
-
 from app.routes.codex_exec import codex_exec
+from flask import Flask
 
 
 def _build_client():

@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, jsonify, request
-
 from app.services.codex_exec_service import (
     CodexExecAuthorizationError,
     CodexExecValidationError,
@@ -12,6 +10,7 @@ from app.services.codex_exec_service import (
     log_exec_audit,
     validate_task,
 )
+from flask import Blueprint, jsonify, request
 
 codex_exec = Blueprint("codex_exec", __name__)
 
@@ -36,14 +35,23 @@ def execute_codex_task():
     try:
         task = validate_task(payload.get("task"))
     except CodexExecValidationError as exc:
-        log_exec_audit(requester=requester, task="", preset=preset if isinstance(preset, str) else None, status="invalid")
+        log_exec_audit(
+            requester=requester, task="", preset=preset if isinstance(preset, str) else None, status="invalid"
+        )
         return jsonify({"status": "error", "error": str(exc)}), 400
 
     result = execute_task(task)
-    log_exec_audit(requester=requester, task=task, preset=preset if isinstance(preset, str) else None, status=result.status)
+    log_exec_audit(
+        requester=requester, task=task, preset=preset if isinstance(preset, str) else None, status=result.status
+    )
 
     if result.status == "timeout":
-        return jsonify({"status": "error", "error": "command timed out", "stdout": result.stdout, "stderr": result.stderr}), 504
+        return (
+            jsonify(
+                {"status": "error", "error": "command timed out", "stdout": result.stdout, "stderr": result.stderr}
+            ),
+            504,
+        )
     if result.status == "execution_unavailable":
         return jsonify({"status": "error", "error": "execution backend unavailable"}), 503
     if result.status == "failed":
