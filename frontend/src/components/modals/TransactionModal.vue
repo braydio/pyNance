@@ -106,6 +106,8 @@
             :title-date="''"
             :show-date-column="kind === 'category' && showDateColumn"
             :show-category-visuals="showCategoryVisuals"
+            :details-header="detailsHeader"
+            :primary-field="primaryField"
             @row-click="onRowClick"
           />
         </div>
@@ -129,7 +131,7 @@ const props = defineProps({
   transactions: { type: Array, default: () => [] },
   subtitle: { type: String, default: '' },
   subtitlePrefix: { type: String, default: '' }, // Override prefix (e.g., 'Merchant')
-  kind: { type: String, default: 'date' }, // 'date' | 'category'
+  kind: { type: String, default: 'date' }, // 'date' | 'category' | 'merchant'
   showDateColumn: { type: Boolean, default: true },
   hideCategoryVisuals: { type: Boolean, default: true },
 })
@@ -147,11 +149,15 @@ function emitClose() {
   emit('close')
 }
 
-const titleLabel = computed(() =>
-  props.kind === 'category' ? 'Category Transactions' : 'Transactions',
-)
+const titleLabel = computed(() => {
+  if (props.kind === 'category') return 'Category Transactions'
+  if (props.kind === 'merchant') return 'Merchant Transactions'
+  return 'Transactions'
+})
 const subtitlePrefix = computed(
-  () => props.subtitlePrefix || (props.kind === 'category' ? 'Category' : 'Date'),
+  () =>
+    props.subtitlePrefix ||
+    (props.kind === 'category' ? 'Category' : props.kind === 'merchant' ? 'Merchant' : 'Date'),
 )
 
 /**
@@ -159,6 +165,8 @@ const subtitlePrefix = computed(
  * consumer. Non-category modals always render visuals.
  */
 const showCategoryVisuals = computed(() => props.kind !== 'category' || !props.hideCategoryVisuals)
+const detailsHeader = computed(() => (props.kind === 'merchant' ? 'Description' : 'Merchant'))
+const primaryField = computed(() => (props.kind === 'merchant' ? 'description' : 'merchant_name'))
 
 // --- SUMMARY COMPUTATION ---
 const summary = computed(() => {

@@ -243,9 +243,9 @@
     />
     <TransactionModal
       :show="showCategoryModal"
-      kind="category"
+      :kind="categoryModalKind"
       :show-date-column="true"
-      :hide-category-visuals="false"
+      :hide-category-visuals="true"
       :subtitle="categoryModalSubtitle"
       :subtitle-prefix="categoryModalSubtitlePrefix"
       :transactions="categoryModalTransactions"
@@ -322,6 +322,7 @@ const showCategoryModal = isVisible('category')
 const categoryModalTransactions = ref([])
 const categoryModalSubtitle = ref('')
 const categoryModalSubtitlePrefix = ref('')
+const categoryModalKind = ref('category')
 const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || ''
 const userName = plaidUserId || 'Guest'
 const currentDate = new Date().toLocaleDateString(undefined, {
@@ -639,6 +640,7 @@ async function onCategoryBarClick(payload) {
   categoryModalTransactions.value = result.transactions || []
   categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
   categoryModalSubtitlePrefix.value = 'Category'
+  categoryModalKind.value = 'category'
   openModal('category')
 }
 
@@ -665,6 +667,7 @@ async function onMerchantBarClick({ label, merchantId }) {
   categoryModalTransactions.value = result.transactions || []
   categoryModalSubtitle.value = label
   categoryModalSubtitlePrefix.value = 'Merchant'
+  categoryModalKind.value = 'merchant'
   openModal('category')
 }
 

@@ -10,7 +10,7 @@
       <thead>
         <tr class="bg-[var(--color-bg-dark)] text-[var(--color-text-light)]">
           <th class="pl-8 pr-6 py-4 font-semibold text-left">Account</th>
-          <th class="px-6 py-4 font-semibold text-left">Merchant</th>
+          <th class="px-6 py-4 font-semibold text-left">{{ detailsHeader }}</th>
           <th class="px-6 py-4 text-right font-semibold whitespace-nowrap">Amount</th>
           <th v-if="showDateColumn" class="px-6 py-4 text-right font-semibold whitespace-nowrap">
             Date
@@ -64,9 +64,9 @@
                 class="h-6 w-6 object-contain filter drop-shadow-sm flex-shrink-0"
               />
               <div class="flex flex-col flex-1">
-                <div class="font-semibold truncate">{{ tx.merchant_name }}</div>
+                <div class="font-semibold truncate">{{ rowPrimaryLabel(tx) }}</div>
                 <div class="text-xs text-[var(--color-text-muted)] truncate">
-                  {{ tx.description }}
+                  {{ rowSecondaryLabel(tx) }}
                 </div>
                 <div
                   v-if="showCategoryVisuals && getCategoryDisplayName(tx)"
@@ -114,11 +114,13 @@
 <script setup>
 import { formatAmount as utilFormatAmount } from '../../utils/format'
 
-defineProps({
+const props = defineProps({
   transactions: { type: Array, default: () => [] },
   titleDate: { type: String, default: '' },
   showDateColumn: { type: Boolean, default: false },
   showCategoryVisuals: { type: Boolean, default: true },
+  detailsHeader: { type: String, default: 'Merchant' },
+  primaryField: { type: String, default: 'merchant_name' }, // merchant_name | description
 })
 
 /**
@@ -192,5 +194,26 @@ function getCategoryDisplayName(tx) {
   }
 
   return ''
+}
+
+/**
+ * Resolve the primary text shown in the details column so callers can hide
+ * redundant merchant labels in merchant-filtered modals.
+ */
+function rowPrimaryLabel(tx) {
+  if (props.primaryField === 'description') {
+    return tx?.description || tx?.merchant_name || '—'
+  }
+  return tx?.merchant_name || tx?.description || '—'
+}
+
+/**
+ * Resolve the secondary text shown in the details column.
+ */
+function rowSecondaryLabel(tx) {
+  if (props.primaryField === 'description') {
+    return tx?.merchant_name || tx?.description || '—'
+  }
+  return tx?.description || tx?.merchant_name || '—'
 }
 </script>
