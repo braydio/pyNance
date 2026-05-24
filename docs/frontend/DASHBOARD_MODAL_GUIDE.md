@@ -6,6 +6,8 @@
 
 Both `DailyNetChart.vue` and `CategoryBreakdownChart.vue` emit a `bar-click` event whenever a user clicks on a bar. The event payload represents either the date (daily net chart) or the category label (breakdown chart).
 
+When the breakdown is switched to Merchant mode, merchant bar clicks open the same transaction modal shell used by daily/category drill-downs, but with merchant-specific filtering and non-redundant row fields (description-first details instead of repeating the selected merchant name per row).
+
 ```vue
 <!-- example usage -->
 <DailyNetChart @bar-click="openModalByDate" />
