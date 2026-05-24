@@ -3,14 +3,13 @@
 import logging
 import os
 
-from flask import Flask
-from flask_cors import CORS
-from flask_migrate import Migrate
-
 from app.cli.sync import sync_accounts
 from app.config import DB_IDENTITY, DB_SCHEMA, IS_DEV, IS_TEST, logger, plaid_client
 from app.database.schema import ensure_schema
 from app.extensions import db
+from flask import Flask
+from flask_cors import CORS
+from flask_migrate import Migrate
 
 
 def create_app():
@@ -32,6 +31,7 @@ def create_app():
     from app.routes.accounts import accounts
     from app.routes.categories import categories
     from app.routes.charts import charts
+    from app.routes.codex_exec import codex_exec
     from app.routes.dashboard import dashboard
     from app.routes.docs import docs
     from app.routes.export import export
@@ -56,6 +56,7 @@ def create_app():
     app.register_blueprint(dashboard, url_prefix="/api/dashboard")
     app.register_blueprint(docs, url_prefix="/api/docs")
     app.register_blueprint(categories, url_prefix="/api/categories")
+    app.register_blueprint(codex_exec, url_prefix="/api/codex")
     app.register_blueprint(transactions, url_prefix="/api/transactions")
     app.register_blueprint(rules_bp, url_prefix="/api/rules")
     app.register_blueprint(accounts, url_prefix="/api/accounts")

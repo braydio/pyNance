@@ -28,6 +28,7 @@
 
 ### Synchronization & Storage
 
+- [`codex_exec_service.py`](codex_exec_service.md): Validates and executes constrained `codex exec` tasks with auth and audit controls.
 - [`plaid_sync.py`](plaid_sync.md): Plaid `/transactions/sync` integration and reconciliation logic.
 - [`sync_service.py`](sync_service.md): Orchestrates transaction ingestion from APIs or files.
 - [`transactions.py`](transactions.md): Core logic for interacting with transaction data.

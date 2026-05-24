@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-03-04
+Last Updated: 2026-05-21
 Status: Active
 ---
 
@@ -64,6 +64,7 @@ Use the links below to open a specific route reference.
 
 ### Integrations & Sync
 
+- [codex_exec.md](codex_exec.md) – Admin-only constrained Codex task execution endpoint.
 - [plaid_transactions.md](plaid_transactions.md) – Plaid transaction sync APIs.
 - [investments.md](investments.md) – Persisted investment accounts, holdings, and transaction queries.
 - [plaid_investments.md](plaid_investments.md) – Plaid investments link and refresh flows.
