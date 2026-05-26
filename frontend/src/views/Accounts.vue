@@ -58,7 +58,9 @@
             <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 class="accounts-panel-title">Most Active Accounts</h2>
-                <p class="text-sm text-muted">Ranked by recent transaction activity in the selected date range.</p>
+                <p class="text-sm text-muted">
+                  Ranked by recent transaction activity in the selected date range.
+                </p>
               </div>
 
               <select
@@ -85,16 +87,28 @@
                 class="accounts-activity-item rounded-xl p-4"
               >
                 <div class="flex items-center justify-between gap-3">
-                  <p class="text-sm font-semibold text-[var(--theme-fg)]">{{ index + 1 }}. {{ row.name }}</p>
-                  <span class="accounts-activity-score text-xs font-semibold">{{ row.primaryMetricLabel }}</span>
+                  <p class="text-sm font-semibold text-[var(--theme-fg)]">
+                    {{ index + 1 }}. {{ row.name }}
+                  </p>
+                  <span class="accounts-activity-score text-xs font-semibold">{{
+                    row.primaryMetricLabel
+                  }}</span>
                 </div>
                 <div class="mt-3 grid gap-2 text-xs text-muted sm:grid-cols-2">
-                  <p>Transaction count: <span class="text-[var(--theme-fg)]">{{ row.transactionCount }}</span></p>
-                  <p>Total transaction value: <span class="text-[var(--theme-fg)]">{{ row.totalValueLabel }}</span></p>
+                  <p>
+                    Transaction count:
+                    <span class="text-[var(--theme-fg)]">{{ row.transactionCount }}</span>
+                  </p>
+                  <p>
+                    Total transaction value:
+                    <span class="text-[var(--theme-fg)]">{{ row.totalValueLabel }}</span>
+                  </p>
                 </div>
               </article>
             </div>
-            <p v-else class="text-sm text-muted">No activity data is available for the selected range.</p>
+            <p v-else class="text-sm text-muted">
+              No activity data is available for the selected range.
+            </p>
           </Card>
 
           <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
@@ -363,7 +377,9 @@ const mostActiveAccounts = computed(() => {
       ...row,
       totalValueLabel: formatAmount(row.totalValue),
       primaryMetricLabel:
-        metric === 'totalValue' ? `${formatAmount(row.totalValue)} total value` : `${row.transactionCount} transactions`,
+        metric === 'totalValue'
+          ? `${formatAmount(row.totalValue)} total value`
+          : `${row.transactionCount} transactions`,
     }))
 })
 
