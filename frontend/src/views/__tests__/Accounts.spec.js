@@ -32,7 +32,10 @@ vi.mock('vue-toastification', () => ({
 vi.mock('@/services/api', () => ({
   default: {
     getAccounts: vi.fn().mockResolvedValue({
-      accounts: [{ account_id: 'acc-1', name: 'Checking', display_name: 'Primary Checking' }],
+      accounts: [
+        { account_id: 'acc-1', name: 'Checking', display_name: 'Primary Checking' },
+        { account_id: 'acc-2', name: 'Savings', display_name: 'Rainy Day Savings' },
+      ],
     }),
   },
 }))
@@ -45,7 +48,12 @@ vi.mock('@/api/accounts', () => ({
   fetchNetChanges: vi
     .fn()
     .mockResolvedValue({ status: 'success', data: { income: 0, expense: 0, net: 0 } }),
-  fetchRecentTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
+  fetchRecentTransactions: vi.fn(async (accountId) => {
+    if (accountId === 'acc-2') {
+      return { transactions: [{ amount: 500 }, { amount: -250 }] }
+    }
+    return { transactions: [{ amount: 100 }, { amount: -20 }, { amount: 10 }] }
+  }),
   rangeToDates: vi.fn().mockReturnValue({ start: '2024-01-01', end: '2024-01-30' }),
 }))
 
@@ -195,5 +203,35 @@ describe('Accounts.vue', () => {
 
     const chart = wrapper.getComponent({ name: 'AccountBalanceHistoryChart' })
     expect(chart.props('historyData')).toEqual(normalizedHistory.value)
+  })
+
+  it('defaults most-active ranking to transaction count and supports value toggle', async () => {
+    const wrapper = shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: { template: '<div><slot name="Summary" /></div>' },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+          Card: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
+          UiButton: { template: '<button><slot /></button>' },
+          SkeletonCard: true,
+          RetryError: true,
+          AccountBalanceHistoryChart: true,
+          TransactionsTable: true,
+          NetYearComparisonChart: true,
+          AssetsBarTrended: true,
+          AccountsReorderChart: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('1. Primary Checking')
+
+    const select = wrapper.find('select.input.w-full.sm\\:w-72')
+    await select.setValue('value')
+    await wrapper.vm.$nextTick()
+    expect(wrapper.text()).toContain('1. Rainy Day Savings')
   })
 })

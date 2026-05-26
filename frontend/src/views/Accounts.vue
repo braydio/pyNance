@@ -54,6 +54,49 @@
         </Card>
 
         <template v-else>
+          <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
+            <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 class="accounts-panel-title">Most Active Accounts</h2>
+                <p class="text-sm text-muted">Ranked by recent transaction activity in the selected date range.</p>
+              </div>
+
+              <select
+                v-model="activityMode"
+                class="input w-full sm:w-72"
+                :disabled="loadingActivityBreakdown || !accountActivityBreakdown.length"
+              >
+                <option value="count">Most active by transaction count</option>
+                <option value="value">Most active by total transaction value</option>
+              </select>
+            </header>
+
+            <SkeletonCard v-if="loadingActivityBreakdown" />
+            <RetryError
+              v-else-if="activityBreakdownError"
+              message="Failed to load account activity"
+              @retry="loadActivityBreakdown"
+            />
+
+            <div v-else-if="mostActiveAccounts.length" class="accounts-activity-list">
+              <article
+                v-for="(row, index) in mostActiveAccounts"
+                :key="row.accountId"
+                class="accounts-activity-item rounded-xl p-4"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-sm font-semibold text-[var(--theme-fg)]">{{ index + 1 }}. {{ row.name }}</p>
+                  <span class="accounts-activity-score text-xs font-semibold">{{ row.primaryMetricLabel }}</span>
+                </div>
+                <div class="mt-3 grid gap-2 text-xs text-muted sm:grid-cols-2">
+                  <p>Transaction count: <span class="text-[var(--theme-fg)]">{{ row.transactionCount }}</span></p>
+                  <p>Total transaction value: <span class="text-[var(--theme-fg)]">{{ row.totalValueLabel }}</span></p>
+                </div>
+              </article>
+            </div>
+            <p v-else class="text-sm text-muted">No activity data is available for the selected range.</p>
+          </Card>
+
           <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
             <header class="flex justify-between items-center">
               <div>
@@ -235,6 +278,7 @@ const recentTransactions = ref([])
 
 const ranges = ['7d', '30d', '90d', '365d']
 const selectedRange = ref('30d')
+const activityMode = ref('count')
 
 const {
   history: accountHistory,
@@ -245,9 +289,12 @@ const {
 
 const loadingSummary = ref(false)
 const loadingTransactions = ref(false)
+const loadingActivityBreakdown = ref(false)
 
 const summaryError = ref(null)
 const transactionsError = ref(null)
+const activityBreakdownError = ref(null)
+const accountActivityBreakdown = ref([])
 
 const activeTab = ref('Summary')
 
@@ -296,6 +343,30 @@ const netSummaryStats = computed(() => [
   },
 ])
 
+/**
+ * Resolves a numeric amount from supported transaction response fields.
+ * @param {Record<string, any>} transaction
+ * @returns {number}
+ */
+function transactionAmount(transaction) {
+  const raw = transaction?.amount ?? transaction?.signed_amount ?? transaction?.value ?? 0
+  const normalized = Number(raw)
+  return Number.isFinite(normalized) ? normalized : 0
+}
+
+const mostActiveAccounts = computed(() => {
+  const metric = activityMode.value === 'value' ? 'totalValue' : 'transactionCount'
+  return [...accountActivityBreakdown.value]
+    .sort((left, right) => right[metric] - left[metric])
+    .slice(0, 5)
+    .map((row) => ({
+      ...row,
+      totalValueLabel: formatAmount(row.totalValue),
+      primaryMetricLabel:
+        metric === 'totalValue' ? `${formatAmount(row.totalValue)} total value` : `${row.transactionCount} transactions`,
+    }))
+})
+
 function handleAccountSelection(e) {
   accountId.value = e.target.value || null
 }
@@ -307,6 +378,44 @@ async function loadAccounts() {
     accounts.value = resp?.accounts || []
   } finally {
     accountsLoading.value = false
+  }
+}
+
+/**
+ * Loads account-level transaction activity and computes breakdown metrics for ranking.
+ * @returns {Promise<void>}
+ */
+async function loadActivityBreakdown() {
+  if (!hasAccounts.value) {
+    accountActivityBreakdown.value = []
+    return
+  }
+
+  loadingActivityBreakdown.value = true
+  activityBreakdownError.value = null
+
+  try {
+    const results = await Promise.allSettled(
+      accounts.value.map(async (account) => {
+        const response = await fetchRecentTransactions(account.account_id, 100)
+        const transactions = response?.transactions ?? []
+        return {
+          accountId: account.account_id,
+          name: account.display_name || account.name || 'Unnamed account',
+          transactionCount: transactions.length,
+          totalValue: transactions.reduce((sum, tx) => sum + Math.abs(transactionAmount(tx)), 0),
+        }
+      }),
+    )
+
+    accountActivityBreakdown.value = results
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value)
+      .filter((row) => row.transactionCount > 0 || row.totalValue > 0)
+  } catch (error) {
+    activityBreakdownError.value = error
+  } finally {
+    loadingActivityBreakdown.value = false
   }
 }
 
@@ -378,11 +487,12 @@ onMounted(async () => {
   if (!accountId.value && accounts.value.length) {
     accountId.value = accounts.value[0].account_id
   }
-  await loadData()
+  await Promise.all([loadData(), loadActivityBreakdown()])
 })
 
 watch(accountId, loadData)
 watch(selectedRange, loadData)
+watch(selectedRange, loadActivityBreakdown)
 </script>
 <style scoped>
 .accounts-tab-panel {
@@ -434,6 +544,20 @@ watch(selectedRange, loadData)
 .accounts-kpi-card {
   border: 1px solid var(--themed-border);
   background: var(--table-surface);
+}
+
+.accounts-activity-list {
+  display: grid;
+  gap: var(--space-3, 0.75rem);
+}
+
+.accounts-activity-item {
+  border: 1px solid var(--table-border);
+  background: var(--table-surface);
+}
+
+.accounts-activity-score {
+  color: color-mix(in srgb, var(--color-accent-indigo) 70%, var(--theme-fg));
 }
 
 @media (max-width: 768px) {
