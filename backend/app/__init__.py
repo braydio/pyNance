@@ -3,13 +3,14 @@
 import logging
 import os
 
+from flask import Flask
+from flask_cors import CORS
+from flask_migrate import Migrate
+
 from app.cli.sync import sync_accounts
 from app.config import DB_IDENTITY, DB_SCHEMA, IS_DEV, IS_TEST, logger, plaid_client
 from app.database.schema import ensure_schema
 from app.extensions import db
-from flask import Flask
-from flask_cors import CORS
-from flask_migrate import Migrate
 
 
 def create_app():
@@ -47,6 +48,7 @@ def create_app():
     from app.routes.plaid_webhook_admin import plaid_webhook_admin
     from app.routes.planning import planning
     from app.routes.recurring import recurring
+    from app.routes.rsa_monitor import rsa_monitor
     from app.routes.rules import rules as rules_bp
     from app.routes.summary import summary
     from app.routes.transactions import transactions
@@ -64,6 +66,7 @@ def create_app():
     app.register_blueprint(charts, url_prefix="/api/charts")
     app.register_blueprint(forecast, url_prefix="/api/forecast")
     app.register_blueprint(recurring, url_prefix="/api/recurring")
+    app.register_blueprint(rsa_monitor, url_prefix="/api/rsa-monitor")
     app.register_blueprint(goals, url_prefix="/api/goals")
     app.register_blueprint(plaid_transactions, url_prefix="/api/plaid/transactions")
     app.register_blueprint(plaid_webhooks, url_prefix="/api/webhooks")

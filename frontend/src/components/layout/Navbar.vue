@@ -8,6 +8,7 @@
       <router-link to="/forecast" class="nav-link">Forecasting</router-link>
       <router-link to="/planning" class="nav-link">Planning</router-link>
       <router-link to="/investments" class="nav-link">Investments</router-link>
+      <router-link to="/rsa-monitor" class="nav-link">RSA Monitor</router-link>
     </div>
   </nav>
 </template>

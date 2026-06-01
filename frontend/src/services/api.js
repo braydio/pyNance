@@ -75,6 +75,11 @@ export default {
     return response.data
   },
 
+  async fetchRsaMonitorStatus() {
+    const response = await apiClient.get('/rsa-monitor/status')
+    return response.data
+  },
+
   async updateTransaction(transactionData) {
     const response = await apiClient.put('/transactions/update', transactionData)
     return response.data

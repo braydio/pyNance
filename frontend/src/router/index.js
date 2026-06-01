@@ -16,6 +16,7 @@ import AccountsTable from '@/components/tables/AccountsTable.vue'
 import FinancialSummaryDetailed from '@/views/FinancialSummaryDetailed.vue'
 
 const Investments = () => import('@/views/Investments.vue')
+const RsaMonitor = () => import('@/views/RsaMonitor.vue')
 const routes = [
   { path: '/', name: 'Dashboard', component: Dashboard },
   { path: '/accounts', name: 'Accounts', component: Accounts },
@@ -31,6 +32,7 @@ const routes = [
     component: NetYearComparisonChart,
   },
   { path: '/investments', name: 'Investments', component: Investments },
+  { path: '/rsa-monitor', name: 'RsaMonitor', component: RsaMonitor },
   { path: '/institutions', name: 'Institutions', component: Institutions },
   { path: '/accounts/table', name: 'AccountsTable', component: AccountsTable },
   { path: '/summary', name: 'FinancialSummaryDetailed', component: FinancialSummaryDetailed },

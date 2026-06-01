@@ -44,6 +44,7 @@ Use the links below to open a specific route reference.
 - [summary.md](summary.md) – Financial aggregates used on the dashboard.
 - [charts.md](charts.md) – Time-series visualizations and chart helpers.
 - [forecast.md](forecast.md) – Cash flow forecasting endpoints.
+- [rsa_monitor.md](rsa_monitor.md) – Local RSAssistant and AutoRSA runtime status.
 
 ### Planning & Goals
 
