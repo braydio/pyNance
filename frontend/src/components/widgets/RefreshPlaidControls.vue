@@ -74,6 +74,23 @@
                 <div v-if="errorByAccountId[acct.account_id].requires_reauth" class="reauth-hint">
                   Re-authentication required. Use Link update mode to resolve.
                 </div>
+                <UiButton
+                  v-if="errorByAccountId[acct.account_id].requires_reauth"
+                  class="reauth-button"
+                  type="button"
+                  variant="primary"
+                  :disabled="reauthingAccountId === acct.account_id"
+                  @click.stop="handlePlaidReauth(acct)"
+                >
+                  <span v-if="reauthingAccountId === acct.account_id">Opening Plaid…</span>
+                  <span v-else>Reconnect with Plaid</span>
+                </UiButton>
+                <div
+                  v-if="reauthMessage && reauthingAccountId === acct.account_id"
+                  class="reauth-status"
+                >
+                  {{ reauthMessage }}
+                </div>
               </div>
               <div v-else class="tx-list" :class="{ loading: accountDetailsLoading }">
                 <div v-if="accountDetailsLoading" class="loading-msg">
@@ -111,6 +128,41 @@
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import api from '@/services/api'
+
+let plaidScriptPromise = null
+
+async function ensurePlaidScript() {
+  if (window.Plaid) return
+
+  if (plaidScriptPromise) {
+    return plaidScriptPromise
+  }
+
+  const existing = document.querySelector('script[data-plaid-link]')
+  if (existing) {
+    plaidScriptPromise = new Promise((resolve, reject) => {
+      if (window.Plaid) {
+        resolve()
+        return
+      }
+      existing.addEventListener('load', resolve, { once: true })
+      existing.addEventListener('error', reject, { once: true })
+    })
+    return plaidScriptPromise
+  }
+
+  plaidScriptPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.dataset.plaidLink = 'true'
+    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
+    script.async = true
+    script.onload = resolve
+    script.onerror = reject
+    document.head.appendChild(script)
+  })
+  return plaidScriptPromise
+}
+
 export default {
   name: 'RefreshPlaidControls',
   components: {
@@ -136,6 +188,8 @@ export default {
       accountTransactions: {},
       accountDetailsLoading: false,
       openAccountId: null,
+      reauthingAccountId: null,
+      reauthMessage: '',
     }
   },
   methods: {
@@ -224,6 +278,45 @@ export default {
         this.messageType = 'error'
       } finally {
         this.isRefreshing = false
+      }
+    },
+    async handlePlaidReauth(acct) {
+      const errorInfo = this.errorByAccountId[acct.account_id] || {}
+      const accountId = errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
+      this.reauthingAccountId = acct.account_id
+      this.reauthMessage = 'Preparing Plaid update mode…'
+
+      try {
+        await ensurePlaidScript()
+        const response = await api.generatePlaidUpdateLinkToken({ account_id: accountId })
+        if (response.status === 'error' || !response.link_token) {
+          this.reauthMessage = response.message || 'Unable to start Plaid reconnect.'
+          return
+        }
+
+        this.reauthMessage = 'Opening Plaid Link…'
+        const handler = window.Plaid.create({
+          token: response.link_token,
+          onSuccess: async () => {
+            this.reauthMessage = 'Plaid reconnect complete. Refreshing activity…'
+            await this.handlePlaidRefresh()
+            this.reauthMessage = ''
+            this.reauthingAccountId = null
+          },
+          onExit: (err) => {
+            if (err) {
+              this.reauthMessage = err.display_message || err.error_message || 'Plaid reconnect was not completed.'
+            } else {
+              this.reauthMessage = ''
+            }
+            this.reauthingAccountId = null
+          },
+        })
+        handler.open()
+      } catch (err) {
+        console.error('Error launching Plaid update mode:', err)
+        this.reauthMessage = 'Unable to open Plaid reconnect. Please try again.'
+        this.reauthingAccountId = null
       }
     },
   },
@@ -417,6 +510,13 @@ export default {
 .reauth-hint {
   font-size: 0.85rem;
   margin-top: 0.25rem;
+}
+.reauth-button {
+  margin-top: 0.5rem;
+}
+.reauth-status {
+  margin-top: 0.375rem;
+  font-size: 0.85rem;
 }
 .tx-list {
   border: 1px solid var(--divider);

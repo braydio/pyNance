@@ -6,9 +6,11 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Optional
 
 from flask import Blueprint, g, jsonify, request
+from plaid.exceptions import ApiException
 
 from app.config import logger
 from app.extensions import db
+from app.helpers.plaid_helpers import extract_plaid_error_payload
 from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
@@ -160,6 +162,40 @@ def _is_plaid_link_type(value) -> bool:
         return False
 
 
+def _append_refresh_error(error_map: dict, account: Account, err_payload: dict) -> None:
+    """Aggregate a Plaid refresh error into the API response payload."""
+
+    inst = account.institution_name or "Unknown"
+    key = (
+        inst,
+        err_payload.get("plaid_error_code"),
+        err_payload.get("plaid_error_message"),
+    )
+    if key not in error_map:
+        error_map[key] = {
+            "institution_name": inst,
+            "account_ids": [account.account_id],
+            "account_names": [account.name],
+            "plaid_error_code": err_payload.get("plaid_error_code"),
+            "plaid_error_message": err_payload.get("plaid_error_message"),
+            "plaid_error_type": err_payload.get("plaid_error_type"),
+            "plaid_error_code_reason": err_payload.get("plaid_error_code_reason"),
+            "plaid_request_id": err_payload.get("plaid_request_id"),
+            "plaid_documentation_url": err_payload.get("plaid_documentation_url"),
+        }
+    else:
+        error_map[key]["account_ids"].append(account.account_id)
+        error_map[key]["account_names"].append(account.name)
+
+    if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+        affected_ids = set(error_map[key].get("affected_account_ids", []))
+        affected_ids.add(account.account_id)
+        error_map[key]["affected_account_ids"] = sorted(affected_ids)
+        error_map[key]["requires_reauth"] = True
+        error_map[key]["reauth_account_id"] = sorted(affected_ids)[0]
+        error_map[key]["update_link_token_endpoint"] = "/api/plaid/transactions/generate_update_link_token"
+
+
 @accounts.route("/refresh_accounts", methods=["POST"])
 def refresh_all_accounts():
     """Refresh all linked accounts for their enabled products."""
@@ -222,7 +258,19 @@ def refresh_all_accounts():
                 previous_institution = inst
                 accounts_data = token_account_cache.get(access_token)
                 if accounts_data is None:
-                    accounts_data = fetch_accounts(access_token, account.user_id)
+                    try:
+                        accounts_data = fetch_accounts(access_token, account.user_id)
+                    except ApiException as exc:
+                        err_payload = extract_plaid_error_payload(exc)
+                        _append_refresh_error(error_map, account, err_payload)
+                        logger.warning(
+                            "Plaid accounts refresh failed | institution=%s | account=%s | code=%s | message=%s",
+                            inst,
+                            account.name,
+                            err_payload.get("plaid_error_code"),
+                            err_payload.get("plaid_error_message"),
+                        )
+                        continue
                     if accounts_data is None:
                         skipped_rate_limited += 1
                         logger.info(
@@ -255,34 +303,7 @@ def refresh_all_accounts():
                                     "plaid_error_message": str(err),
                                 }
                             )
-                            key = (
-                                inst,
-                                err_payload.get("plaid_error_code"),
-                                err_payload.get("plaid_error_message"),
-                            )
-                            if key not in error_map:
-                                error_map[key] = {
-                                    "institution_name": inst,
-                                    "account_ids": [account.account_id],
-                                    "account_names": [account.name],
-                                    "plaid_error_code": err_payload.get("plaid_error_code"),
-                                    "plaid_error_message": err_payload.get("plaid_error_message"),
-                                }
-
-                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                                    error_map[key]["requires_reauth"] = True
-                                    error_map[key][
-                                        "update_link_token_endpoint"
-                                    ] = "/api/plaid/transactions/generate_update_link_token"
-                                    error_map[key]["affected_account_ids"] = [account.account_id]
-                            else:
-                                error_map[key]["account_ids"].append(account.account_id)
-                                error_map[key]["account_names"].append(account.name)
-
-                                if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
-                                    affected_ids = set(error_map[key].get("affected_account_ids", []))
-                                    affected_ids.add(account.account_id)
-                                    error_map[key]["affected_account_ids"] = list(affected_ids)
+                            _append_refresh_error(error_map, account, err_payload)
 
                             if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
                                 logger.warning(

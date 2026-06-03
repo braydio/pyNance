@@ -18,6 +18,11 @@ export default {
     return response.data
   },
 
+  async generatePlaidUpdateLinkToken(payload = {}) {
+    const response = await apiClient.post('/plaid/transactions/generate_update_link_token', payload)
+    return response.data
+  },
+
   async fetchAccountTransactions(accountId, params = {}) {
     const response = await apiClient.get(`/transactions/${accountId}/transactions`, { params })
     return response.data

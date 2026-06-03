@@ -26,7 +26,7 @@ from plaid.model.products import Products
 from plaid.model.transactions_get_request import TransactionsGetRequest
 from plaid.model.transactions_get_request_options import TransactionsGetRequestOptions
 
-from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, logger, plaid_client
+from app.config import BACKEND_PUBLIC_URL, FILES, PLAID_CLIENT_NAME, PLAID_REDIRECT_URI, logger, plaid_client
 from app.extensions import db
 from app.models import Category
 from app.sql.forecast_logic import update_account_history
@@ -86,6 +86,34 @@ def save_plaid_tokens(tokens):
             e,
             exc_info=True,
         )
+
+
+def extract_plaid_error_payload(error: Exception) -> dict:
+    """Return normalized Plaid error details from SDK exception shapes."""
+
+    body = getattr(error, "body", None)
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="ignore")
+
+    payload = {}
+    if isinstance(body, str) and body:
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            payload = {}
+    elif isinstance(body, dict):
+        payload = body
+
+    code = payload.get("error_code") or getattr(error, "error_code", None)
+    message = payload.get("error_message") or payload.get("display_message") or str(error)
+    return {
+        "plaid_error_code": code or "unknown",
+        "plaid_error_message": message,
+        "plaid_error_type": payload.get("error_type"),
+        "plaid_error_code_reason": payload.get("error_code_reason"),
+        "plaid_request_id": payload.get("request_id") or getattr(error, "request_id", None),
+        "plaid_documentation_url": payload.get("documentation_url"),
+    }
 
 
 def save_transactions_json(transactions):
@@ -203,6 +231,8 @@ def generate_link_token(user_id: str, products=None):
         # Only include webhook when configured; Plaid rejects None
         if webhook_url:
             request_kwargs["webhook"] = webhook_url
+        if PLAID_REDIRECT_URI:
+            request_kwargs["redirect_uri"] = PLAID_REDIRECT_URI
 
         plaid_request = LinkTokenCreateRequest(**request_kwargs)
 
@@ -211,6 +241,37 @@ def generate_link_token(user_id: str, products=None):
 
     except Exception as e:
         logger.error("Error generating link token: %s", e, exc_info=True)
+        raise
+
+
+def generate_update_link_token(user_id: str, access_token: str):
+    """Create a Plaid Link token in update mode for an existing item."""
+
+    logger.info("Generating Plaid update link token for user %s", user_id)
+    try:
+        country_enum = [CountryCode("US")]
+        webhook_url = None
+        if BACKEND_PUBLIC_URL:
+            base = str(BACKEND_PUBLIC_URL).rstrip("/")
+            webhook_url = f"{base}/api/webhooks/plaid"
+
+        request_kwargs = dict(
+            user=LinkTokenCreateRequestUser(client_user_id=str(user_id)),
+            client_name=PLAID_CLIENT_NAME,
+            language="en",
+            country_codes=country_enum,
+            access_token=access_token,
+        )
+        if webhook_url:
+            request_kwargs["webhook"] = webhook_url
+        if PLAID_REDIRECT_URI:
+            request_kwargs["redirect_uri"] = PLAID_REDIRECT_URI
+
+        plaid_request = LinkTokenCreateRequest(**request_kwargs)
+        response = plaid_client.link_token_create(plaid_request)
+        return response
+    except Exception as e:
+        logger.error("Error generating update link token: %s", e, exc_info=True)
         raise
 
 

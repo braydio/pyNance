@@ -7,6 +7,10 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Optional
 
+from plaid import ApiException
+from sqlalchemy import case, func, or_
+from sqlalchemy.orm import aliased
+
 from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
@@ -19,9 +23,6 @@ from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
 from app.utils.merchant_normalization import resolve_merchant
-from plaid import ApiException
-from sqlalchemy import case, func, or_
-from sqlalchemy.orm import aliased
 
 ParentCategory = aliased(Category)
 
@@ -44,6 +45,34 @@ TX_CACHE_VERSION = 0
 
 def _now_utc():
     return datetime.now(timezone.utc)
+
+
+def _extract_plaid_error_payload(error: Exception) -> dict:
+    """Return normalized Plaid error details without requiring helper imports in tests."""
+
+    body = getattr(error, "body", None)
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", errors="ignore")
+
+    payload = {}
+    if isinstance(body, str) and body:
+        try:
+            payload = json.loads(body)
+        except json.JSONDecodeError:
+            payload = {}
+    elif isinstance(body, dict):
+        payload = body
+
+    code = payload.get("error_code") or getattr(error, "error_code", None)
+    message = payload.get("error_message") or payload.get("display_message") or str(error)
+    return {
+        "plaid_error_code": code or "unknown",
+        "plaid_error_message": message,
+        "plaid_error_type": payload.get("error_type"),
+        "plaid_error_code_reason": payload.get("error_code_reason"),
+        "plaid_request_id": payload.get("request_id") or getattr(error, "request_id", None),
+        "plaid_documentation_url": payload.get("documentation_url"),
+    }
 
 
 def canonicalize_plaid_products(value) -> list[str]:
@@ -220,14 +249,10 @@ def build_refresh_failure_status(error: Exception) -> dict:
     """
 
     if isinstance(error, ApiException):
-        try:
-            plaid_err = json.loads(error.body or "{}")
-        except json.JSONDecodeError:
-            plaid_err = {}
-
-        plaid_error_code = plaid_err.get("error_code", "unknown")
-        plaid_error_message = plaid_err.get("error_message", str(error))
-        request_id = plaid_err.get("request_id") or getattr(error, "request_id", None)
+        plaid_err = _extract_plaid_error_payload(error)
+        plaid_error_code = plaid_err.get("plaid_error_code", "unknown")
+        plaid_error_message = plaid_err.get("plaid_error_message", str(error))
+        request_id = plaid_err.get("plaid_request_id") or getattr(error, "request_id", None)
         cooldown_until = None
         status_label = "error"
         if plaid_error_code in PLAID_RATE_LIMIT_CODES:
@@ -1417,7 +1442,7 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
         )
         db.session.rollback()
         mark_refresh_failure(plaid_account_obj, status, commit=True)
-        return False, str(e)
+        return False, _extract_plaid_error_payload(e)
 
     except Exception as e:
         logger.error(

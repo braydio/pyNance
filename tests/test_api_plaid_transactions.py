@@ -88,7 +88,15 @@ helpers_pkg = types.ModuleType("app.helpers")
 plaid_helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
 plaid_helpers_stub.refresh_plaid_categories = lambda *a, **k: None
 plaid_helpers_stub.exchange_public_token = lambda *a, **k: None
+plaid_helpers_stub.extract_plaid_error_payload = lambda error: {
+    "plaid_error_code": "PLAID_ERROR",
+    "plaid_error_message": str(error),
+}
 plaid_helpers_stub.generate_link_token = lambda *a, **k: None
+plaid_helpers_stub.generate_update_link_token = lambda *a, **k: types.SimpleNamespace(
+    link_token="update-link-token",
+    expiration=None,
+)
 plaid_helpers_stub.get_accounts = lambda *a, **k: []
 plaid_helpers_stub.get_institution_name = lambda *a, **k: ""
 plaid_helpers_stub.get_item = lambda *a, **k: {}
@@ -183,6 +191,9 @@ class QueryStub:
 
     def all(self):
         return self.accts
+
+    def first(self):
+        return self.accts[0] if self.accts else None
 
 
 models_stub.Account = DummyAccount
@@ -400,6 +411,36 @@ def test_delete_account_calls_remove_item(client, monkeypatch):
     resp = client.delete("/api/accounts/delete_account", json={"account_id": "acct"})
     assert resp.status_code == 200
     assert called.get("token") == "tok123"
+
+
+def test_generate_update_link_token_uses_existing_item_token(client, monkeypatch):
+    account = DummyAccount("acct-reauth", "user-1", "Main")
+    account.plaid_account.access_token = "existing-access-token"
+    plaid_module.Account.query = QueryStub([account])
+
+    captured = {}
+
+    def fake_create_update_link_token(user_id, access_token):
+        captured["user_id"] = user_id
+        captured["access_token"] = access_token
+        return types.SimpleNamespace(link_token="link-update-1", expiration=None)
+
+    monkeypatch.setattr(plaid_module, "create_update_link_token", fake_create_update_link_token)
+
+    resp = client.post(
+        "/api/accounts/generate_update_link_token",
+        json={"account_id": "acct-reauth"},
+    )
+
+    assert resp.status_code == 200
+    payload = resp.get_json()
+    assert payload["status"] == "success"
+    assert payload["link_token"] == "link-update-1"
+    assert payload["account_id"] == "acct-reauth"
+    assert captured == {
+        "user_id": "user-1",
+        "access_token": "existing-access-token",
+    }
 
 
 def test_sync_endpoint_returns_sync_counters(client, monkeypatch):
