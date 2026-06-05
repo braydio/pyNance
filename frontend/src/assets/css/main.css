@@ -319,427 +319,427 @@
   }
 }
 
-  .accent-toggle-btn,
-  .gradient-toggle-btn {
-    background: linear-gradient(135deg, var(--accent-surface) 0%, var(--color-bg-dark) 100%);
-    border: 1px solid var(--accent-primary);
-    color: var(--accent-primary);
-    padding: 0.35rem 0.9rem;
-    border-radius: var(--radius-2);
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    text-decoration: none;
-    white-space: nowrap;
-  }
+.accent-toggle-btn,
+.gradient-toggle-btn {
+  background: linear-gradient(135deg, var(--accent-surface) 0%, var(--color-bg-dark) 100%);
+  border: 1px solid var(--accent-primary);
+  color: var(--accent-primary);
+  padding: 0.35rem 0.9rem;
+  border-radius: var(--radius-2);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
 
-  .accent-toggle-btn:hover,
-  .accent-toggle-btn:focus-visible,
-  .gradient-toggle-btn:hover,
-  .gradient-toggle-btn:focus-visible {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
-      color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
-    );
-    color: var(--color-text-light);
-    border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 10px 22px rgba(0, 0, 0, 0.28);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-    outline: none;
-  }
+.accent-toggle-btn:hover,
+.accent-toggle-btn:focus-visible,
+.gradient-toggle-btn:hover,
+.gradient-toggle-btn:focus-visible {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
+    color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
+  );
+  color: var(--color-text-light);
+  border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+  outline: none;
+}
 
-  .accent-toggle-btn.extended,
-  .accent-toggle-btn.is-active,
-  .accent-toggle-btn--active,
-  .gradient-toggle-btn.extended,
-  .gradient-toggle-btn.is-active,
-  .gradient-toggle-btn--active {
-    background: linear-gradient(
-      135deg,
-      color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
-      color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
-    );
-    color: var(--color-text-light);
-    border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
-    box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
-      0 10px 22px rgba(0, 0, 0, 0.28);
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
-  }
+.accent-toggle-btn.extended,
+.accent-toggle-btn.is-active,
+.accent-toggle-btn--active,
+.gradient-toggle-btn.extended,
+.gradient-toggle-btn.is-active,
+.gradient-toggle-btn--active {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--accent-primary) 58%, var(--color-bg-dark)) 0%,
+    color-mix(in srgb, var(--accent-primary-strong) 72%, var(--color-bg-dark)) 100%
+  );
+  color: var(--color-text-light);
+  border-color: color-mix(in srgb, var(--accent-primary-strong) 82%, white 18%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 22px rgba(0, 0, 0, 0.28);
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.45);
+}
 
-  .accent-toggle-btn:disabled,
-  .gradient-toggle-btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+.accent-toggle-btn:disabled,
+.gradient-toggle-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
-  .accent-popover-surface {
-    border: 1px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
-    background: linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--color-bg-dark) 78%, var(--accent-primary) 22%),
-      color-mix(in srgb, var(--color-bg-sec) 70%, var(--accent-primary-strong) 30%)
-    );
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
-  }
+.accent-popover-surface {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 55%, transparent);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--color-bg-dark) 78%, var(--accent-primary) 22%),
+    color-mix(in srgb, var(--color-bg-sec) 70%, var(--accent-primary-strong) 30%)
+  );
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.35);
+}
 
-  .accent-popover-close-btn {
-    border: 0.5px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
-    color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
-    background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
-    transition:
-      color 0.2s ease,
-      background 0.2s ease,
-      box-shadow 0.2s ease;
-  }
+.accent-popover-close-btn {
+  border: 0.5px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 65%, transparent);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
 
-  .accent-popover-close-btn:hover,
-  .accent-popover-close-btn:focus-visible {
-    color: var(--color-text-light);
-    background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--accent-primary) 50%, transparent);
-    outline: none;
-  }
+.accent-popover-close-btn:hover,
+.accent-popover-close-btn:focus-visible {
+  color: var(--color-text-light);
+  background: color-mix(in srgb, var(--accent-primary) 22%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--accent-primary) 50%, transparent);
+  outline: none;
+}
 
-  .angular-chart-container {
-    border: 1px solid var(--chart-shell-border);
-    border-radius: var(--chart-shell-radius);
-    background: var(--chart-shell-bg);
-    box-shadow: var(--chart-shell-shadow);
-  }
+.angular-chart-container {
+  border: 1px solid var(--chart-shell-border);
+  border-radius: var(--chart-shell-radius);
+  background: var(--chart-shell-bg);
+  box-shadow: var(--chart-shell-shadow);
+}
 
-  .angular-chart-zone {
-    border: 1px solid var(--chart-shell-border);
-    border-radius: var(--chart-shell-radius-tight);
-    background: var(--chart-shell-bg-strong);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.04),
-      0 8px 18px rgba(0, 0, 0, 0.2);
-  }
+.angular-chart-zone {
+  border: 1px solid var(--chart-shell-border);
+  border-radius: var(--chart-shell-radius-tight);
+  background: var(--chart-shell-bg-strong);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 8px 18px rgba(0, 0, 0, 0.2);
+}
 
-  .angular-chart-chip {
-    border: 1px solid var(--chart-shell-border-accent);
-    border-radius: var(--chart-shell-radius-tight);
-    background: linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--accent-surface) 85%, var(--color-bg-dark) 15%),
-      color-mix(in srgb, var(--chart-shell-bg-strong) 84%, var(--color-bg-dark) 16%)
-    );
-    clip-path: polygon(
-      var(--chart-shell-corner-cut) 0,
-      100% 0,
-      100% calc(100% - var(--chart-shell-corner-cut)),
-      calc(100% - var(--chart-shell-corner-cut)) 100%,
-      0 100%,
-      0 var(--chart-shell-corner-cut)
-    );
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.07),
-      0 8px 16px rgba(0, 0, 0, 0.2);
-  }
+.angular-chart-chip {
+  border: 1px solid var(--chart-shell-border-accent);
+  border-radius: var(--chart-shell-radius-tight);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--accent-surface) 85%, var(--color-bg-dark) 15%),
+    color-mix(in srgb, var(--chart-shell-bg-strong) 84%, var(--color-bg-dark) 16%)
+  );
+  clip-path: polygon(
+    var(--chart-shell-corner-cut) 0,
+    100% 0,
+    100% calc(100% - var(--chart-shell-corner-cut)),
+    calc(100% - var(--chart-shell-corner-cut)) 100%,
+    0 100%,
+    0 var(--chart-shell-corner-cut)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 8px 16px rgba(0, 0, 0, 0.2);
+}
 
-  .angular-chart-chip:focus-visible {
-    outline: none;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.08),
-      0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent),
-      0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
-  }
+.angular-chart-chip:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 2px color-mix(in srgb, var(--interactive-focus) 65%, transparent),
+    0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
+}
 
-  .angular-chart-chip--active {
-    border-color: color-mix(in srgb, var(--accent-primary-strong) 76%, white 24%);
-    color: var(--color-text-light);
-    background: linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--accent-primary) 56%, var(--color-bg-dark) 44%),
-      color-mix(in srgb, var(--accent-primary-strong) 64%, var(--color-bg-dark) 36%)
-    );
-  }
+.angular-chart-chip--active {
+  border-color: color-mix(in srgb, var(--accent-primary-strong) 76%, white 24%);
+  color: var(--color-text-light);
+  background: linear-gradient(
+    140deg,
+    color-mix(in srgb, var(--accent-primary) 56%, var(--color-bg-dark) 44%),
+    color-mix(in srgb, var(--accent-primary-strong) 64%, var(--color-bg-dark) 36%)
+  );
+}
 
-  .btn-primary {
-    @apply inline-flex items-center px-4 py-2 border font-semibold;
-    border-radius: var(--radius-2);
-    background-color: var(--primary);
-    border-color: var(--primary);
-    color: var(--accent-primary-contrast);
-    transition:
-      transform 0.18s ease,
-      box-shadow 0.18s ease,
-      filter 0.2s ease;
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
-      0 7px 18px color-mix(in srgb, var(--primary) 25%, transparent);
-  }
+.btn-primary {
+  @apply inline-flex items-center px-4 py-2 border font-semibold;
+  border-radius: var(--radius-2);
+  background-color: var(--primary);
+  border-color: var(--primary);
+  color: var(--accent-primary-contrast);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 22%, transparent),
+    0 7px 18px color-mix(in srgb, var(--primary) 25%, transparent);
+}
 
-  .btn-primary:hover,
-  .btn-primary:focus-visible {
-    filter: brightness(1.08);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent),
-      0 10px 22px color-mix(in srgb, var(--primary) 30%, transparent);
-    outline: none;
-  }
+.btn-primary:hover,
+.btn-primary:focus-visible {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 34%, transparent),
+    0 10px 22px color-mix(in srgb, var(--primary) 30%, transparent);
+  outline: none;
+}
 
-  .btn-primary:active {
-    background-color: transparent;
-    color: var(--primary);
-    transform: translateY(0);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 38%, transparent);
-  }
+.btn-primary:active {
+  background-color: transparent;
+  color: var(--primary);
+  transform: translateY(0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--primary) 38%, transparent);
+}
 
-  .btn-success {
-    @apply inline-flex items-center px-4 py-2 border font-semibold;
-    border-radius: var(--radius-2);
-    background-color: var(--color-success);
-    border-color: var(--color-success);
-    color: var(--accent-primary-contrast);
-    transition:
-      transform 0.18s ease,
-      box-shadow 0.18s ease,
-      filter 0.2s ease;
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 20%, transparent),
-      0 7px 18px color-mix(in srgb, var(--color-success) 24%, transparent);
-  }
+.btn-success {
+  @apply inline-flex items-center px-4 py-2 border font-semibold;
+  border-radius: var(--radius-2);
+  background-color: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--accent-primary-contrast);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 20%, transparent),
+    0 7px 18px color-mix(in srgb, var(--color-success) 24%, transparent);
+}
 
-  .btn-success:hover,
-  .btn-success:focus-visible {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 30%, transparent),
-      0 10px 22px color-mix(in srgb, var(--color-success) 28%, transparent);
-    outline: none;
-  }
+.btn-success:hover,
+.btn-success:focus-visible {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 30%, transparent),
+    0 10px 22px color-mix(in srgb, var(--color-success) 28%, transparent);
+  outline: none;
+}
 
-  .btn-success:active {
-    background-color: transparent;
-    color: var(--color-success);
-    transform: translateY(0);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-success) 40%, transparent);
-  }
+.btn-success:active {
+  background-color: transparent;
+  color: var(--color-success);
+  transform: translateY(0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-success) 40%, transparent);
+}
 
-  .btn-alert {
-    @apply inline-flex items-center px-4 py-2 border font-semibold;
-    border-radius: var(--radius-2);
-    background-color: var(--color-error);
-    border-color: var(--color-error);
-    color: var(--color-bg-dark);
-    transition:
-      transform 0.18s ease,
-      box-shadow 0.18s ease,
-      filter 0.2s ease;
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent),
-      0 7px 18px color-mix(in srgb, var(--color-error) 24%, transparent);
-  }
+.btn-alert {
+  @apply inline-flex items-center px-4 py-2 border font-semibold;
+  border-radius: var(--radius-2);
+  background-color: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-bg-dark);
+  transition:
+    transform 0.18s ease,
+    box-shadow 0.18s ease,
+    filter 0.2s ease;
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 18%, transparent),
+    0 7px 18px color-mix(in srgb, var(--color-error) 24%, transparent);
+}
 
-  .btn-alert:hover,
-  .btn-alert:focus-visible {
-    filter: brightness(1.1);
-    transform: translateY(-1px);
-    box-shadow:
-      inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent),
-      0 10px 22px color-mix(in srgb, var(--color-error) 30%, transparent);
-    outline: none;
-  }
+.btn-alert:hover,
+.btn-alert:focus-visible {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #ffffff 28%, transparent),
+    0 10px 22px color-mix(in srgb, var(--color-error) 30%, transparent);
+  outline: none;
+}
 
-  .btn-alert:active {
-    background-color: transparent;
-    color: var(--color-error);
-    transform: translateY(0);
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 40%, transparent);
-  }
+.btn-alert:active {
+  background-color: transparent;
+  color: var(--color-error);
+  transform: translateY(0);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 40%, transparent);
+}
 
-  .input {
-    @apply w-full px-2 py-1 border text-sm;
-    border-radius: var(--radius-1);
-    background-color: var(--color-bg-dark);
-    border-color: var(--divider);
-    color: var(--color-text-light);
-    font-family: var(--font-sans);
-  }
+.input {
+  @apply w-full px-2 py-1 border text-sm;
+  border-radius: var(--radius-1);
+  background-color: var(--color-bg-dark);
+  border-color: var(--divider);
+  color: var(--color-text-light);
+  font-family: var(--font-sans);
+}
 
-  .input:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px var(--color-accent-purple);
-  }
+.input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent-purple);
+}
 
-  .glass {
-    background-color: var(--frosted-bg);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-  }
+.glass {
+  background-color: var(--frosted-bg);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
 
-  .flex-center {
-    @apply flex items-center justify-center;
-  }
+.flex-center {
+  @apply flex items-center justify-center;
+}
 
-  .flex-between {
-    @apply flex items-center justify-between;
-  }
+.flex-between {
+  @apply flex items-center justify-between;
+}
 
-  .grid-2col {
-    @apply grid grid-cols-2 gap-6;
-  }
+.grid-2col {
+  @apply grid grid-cols-2 gap-6;
+}
 
-  table {
-    @apply w-full divide-y;
-    border-color: var(--divider);
-  }
+table {
+  @apply w-full divide-y;
+  border-color: var(--divider);
+}
 
-  thead tr {
-    background-color: var(--color-bg-secondary);
-  }
+thead tr {
+  background-color: var(--color-bg-secondary);
+}
 
-  th {
-    @apply px-4 py-2 text-left font-semibold uppercase;
-    color: var(--color-text-light);
-  }
+th {
+  @apply px-4 py-2 text-left font-semibold uppercase;
+  color: var(--color-text-light);
+}
 
-  td {
-    @apply px-4 py-2;
-    color: var(--color-text-light);
-  }
+td {
+  @apply px-4 py-2;
+  color: var(--color-text-light);
+}
 
-  tr:nth-child(even) {
-    background-color: var(--color-bg-secondary);
-  }
+tr:nth-child(even) {
+  background-color: var(--color-bg-secondary);
+}
 
-  .env-banner-dev {
-    @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
-  }
+.env-banner-dev {
+  @apply bg-red-100 text-red-800 text-center font-bold p-2 border-b-2 border-red-500 uppercase shadow;
+}
 
-  .heading-md {
-    @apply text-center text-xl font-bold mb-3;
-    color: var(--color-accent-cyan);
-    text-shadow: 0 0 6px var(--color-accent-purple);
-  }
+.heading-md {
+  @apply text-center text-xl font-bold mb-3;
+  color: var(--color-accent-cyan);
+  text-shadow: 0 0 6px var(--color-accent-purple);
+}
 
-  .dashboard-panel {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--color-bg-sec) 92%, rgba(99, 205, 207, 0.08)) 0%,
-      color-mix(in srgb, var(--color-bg-dark) 82%, rgba(122, 162, 247, 0.06)) 100%
-    );
-    border: 1px solid var(--edge-contrast-1);
-    box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
-    border-radius: var(--panel-radius-roomy);
-  }
+.dashboard-panel {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--color-bg-sec) 92%, rgba(99, 205, 207, 0.08)) 0%,
+    color-mix(in srgb, var(--color-bg-dark) 82%, rgba(122, 162, 247, 0.06)) 100%
+  );
+  border: 1px solid var(--edge-contrast-1);
+  box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
+  border-radius: var(--panel-radius-roomy);
+}
 
-  .dashboard-panel-header {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 1rem;
-  }
+.dashboard-panel-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
 
-  .dashboard-panel-kicker {
-    font-family: var(--font-display);
-    font-size: 0.7rem;
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--color-accent-cyan);
-    opacity: 0.9;
-  }
+.dashboard-panel-kicker {
+  font-family: var(--font-display);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-accent-cyan);
+  opacity: 0.9;
+}
 
-  .dashboard-panel-title {
-    font-family: var(--font-display);
-    font-size: 1.2rem;
-    font-weight: 700;
-    letter-spacing: 0.05em;
-    color: var(--color-text-light);
-  }
+.dashboard-panel-title {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--color-text-light);
+}
 
-  .dashboard-panel-copy {
-    max-width: 42rem;
-    color: color-mix(in srgb, var(--color-text-light) 72%, var(--color-text-muted));
-    font-size: 0.92rem;
-    line-height: 1.6;
-  }
+.dashboard-panel-copy {
+  max-width: 42rem;
+  color: color-mix(in srgb, var(--color-text-light) 72%, var(--color-text-muted));
+  font-size: 0.92rem;
+  line-height: 1.6;
+}
 
-  .dashboard-status-pill {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--color-accent-indigo) 54%, transparent);
-    background: color-mix(in srgb, var(--color-bg-dark) 80%, transparent);
-    padding: 0.45rem 0.8rem;
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--color-text-light);
-  }
+.dashboard-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-accent-indigo) 54%, transparent);
+  background: color-mix(in srgb, var(--color-bg-dark) 80%, transparent);
+  padding: 0.45rem 0.8rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-light);
+}
 
-  .dashboard-status-dot {
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 999px;
-    background: var(--color-accent-indigo);
-    box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-indigo) 80%, transparent);
-  }
+.dashboard-status-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--color-accent-indigo);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--color-accent-indigo) 80%, transparent);
+}
 
-  .dashboard-shell-footer {
-    width: 100%;
-    max-width: 72rem;
-    margin: 0 auto;
-    padding: 1rem 1.5rem;
-  }
+.dashboard-shell-footer {
+  width: 100%;
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem 1.5rem;
+}
 
-  .dashboard-footer-nav {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-    font-family: var(--font-display);
-    font-size: 0.72rem;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-    color: var(--color-text-muted);
-  }
+.dashboard-footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
 
-  .dashboard-footer-link {
-    color: var(--color-text-light);
-    text-decoration: none;
-    transition:
-      color 0.2s ease,
-      text-shadow 0.2s ease;
-  }
+.dashboard-footer-link {
+  color: var(--color-text-light);
+  text-decoration: none;
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
+}
 
-  .dashboard-footer-link:hover {
-    color: var(--color-accent-cyan);
-    text-shadow: 0 0 12px rgba(99, 205, 207, 0.35);
-  }
+.dashboard-footer-link:hover {
+  color: var(--color-accent-cyan);
+  text-shadow: 0 0 12px rgba(99, 205, 207, 0.35);
+}
 
-  .dashboard-footer-version {
-    color: var(--color-accent-yellow);
-  }
+.dashboard-footer-version {
+  color: var(--color-accent-yellow);
+}
 
-  .success-badge,
-  .error-badge {
-    @apply font-semibold px-3 py-1 rounded;
-    color: var(--color-bg-dark);
-  }
+.success-badge,
+.error-badge {
+  @apply font-semibold px-3 py-1 rounded;
+  color: var(--color-bg-dark);
+}
 
-  .success-badge {
-    background-color: var(--color-bg-success);
-  }
+.success-badge {
+  background-color: var(--color-bg-success);
+}
 
-  .error-badge {
-    background-color: var(--color-bg-error);
-  }
+.error-badge {
+  background-color: var(--color-bg-error);
+}

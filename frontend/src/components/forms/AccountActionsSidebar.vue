@@ -1,6 +1,9 @@
 <template>
   <div class="space-y-4" data-testid="account-actions-sidebar">
-    <LinkAccount v-model:selected-products="selectedProducts" @manual-token-click="toggleManualToken" />
+    <LinkAccount
+      v-model:selected-products="selectedProducts"
+      @manual-token-click="toggleManualToken"
+    />
     <TokenUpload v-if="showTokenForm" @cancel="toggleManualToken" class="w-full" />
   </div>
 </template>

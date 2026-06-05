@@ -43,7 +43,6 @@ vi.mock('@/api/transactions', () => ({
   fetchTopCategories: vi.fn().mockResolvedValue([]),
 }))
 
-
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url))
 const DASHBOARD_SOURCE = readFileSync(path.resolve(TEST_DIR, '../Dashboard.vue'), 'utf-8')
 
@@ -860,5 +859,4 @@ describe('Dashboard.vue', () => {
     await nextTick()
     expect(wrapper.findAll('.transaction-modal')).toHaveLength(0)
   })
-
 })

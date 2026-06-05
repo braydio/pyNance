@@ -29,12 +29,8 @@
               maxlength="30"
               @blur="finishActiveTitleEdit"
               @keyup.enter="finishActiveTitleEdit"
-            >
-            <span
-              v-else
-              class="bs-group-name muted"
-              :title="effectiveGroup?.name || 'Group'"
-            >
+            />
+            <span v-else class="bs-group-name muted" :title="effectiveGroup?.name || 'Group'">
               {{ effectiveGroup?.name || 'Group' }}
             </span>
             <button
@@ -47,20 +43,14 @@
             </button>
           </div>
           <template v-else>
-            <span
-              class="bs-group-name"
-              :title="effectiveGroup?.name || 'Group'"
-            >
+            <span class="bs-group-name" :title="effectiveGroup?.name || 'Group'">
               {{ effectiveGroup?.name || 'Group' }}
             </span>
           </template>
         </div>
         <div class="bs-banner-meta">
           <span class="bs-banner-label">Total Balance</span>
-          <span
-            class="bs-banner-value"
-            :class="totalValueClass"
-          >
+          <span class="bs-banner-value" :class="totalValueClass">
             {{ format(visibleTotal) }}
           </span>
         </div>
@@ -68,10 +58,7 @@
     </div>
     <!-- Group Selector -->
     <div class="bs-toggle-row">
-      <div
-        class="bs-group-dropdown"
-        :style="{ '--accent': groupAccent }"
-      >
+      <div class="bs-group-dropdown" :style="{ '--accent': groupAccent }">
         <button
           ref="groupMenuButtonRef"
           type="button"
@@ -93,14 +80,8 @@
             @end="persistGroupOrder"
           >
             <template #item="{ element: g }">
-              <li
-                :key="g.id"
-                class="bs-group-row"
-              >
-                <GripVertical
-                  class="bs-group-handle"
-                  aria-hidden="true"
-                />
+              <li :key="g.id" class="bs-group-row">
+                <GripVertical class="bs-group-handle" aria-hidden="true" />
                 <template v-if="editingGroupId === g.id">
                   <input
                     v-model="g.name"
@@ -108,7 +89,7 @@
                     maxlength="30"
                     @blur="finishEdit(g)"
                     @keyup.enter="finishEdit(g)"
-                  >
+                  />
                 </template>
                 <template v-else>
                   <button
@@ -122,10 +103,7 @@
                     @click="selectGroup(g.id)"
                     @dblclick.stop="startEdit(g.id)"
                   >
-                    <Check
-                      v-if="g.id === activeGroupId"
-                      class="bs-group-check"
-                    />
+                    <Check v-if="g.id === activeGroupId" class="bs-group-check" />
                     {{ g.name || '(unnamed)' }}
                   </button>
                 </template>
@@ -162,16 +140,8 @@
               </li>
             </template>
           </Draggable>
-          <ul
-            v-else-if="showGroupMenu"
-            ref="groupMenuRef"
-            class="bs-group-menu"
-          >
-            <li
-              v-for="g in groups"
-              :key="g.id"
-              class="bs-group-row"
-            >
+          <ul v-else-if="showGroupMenu" ref="groupMenuRef" class="bs-group-menu">
+            <li v-for="g in groups" :key="g.id" class="bs-group-row">
               <button
                 type="button"
                 class="bs-group-item"
@@ -182,10 +152,7 @@
                 :aria-pressed="g.id === activeGroupId"
                 @click="selectGroup(g.id)"
               >
-                <Check
-                  v-if="g.id === activeGroupId"
-                  class="bs-group-check"
-                />
+                <Check v-if="g.id === activeGroupId" class="bs-group-check" />
                 {{ g.name || '(unnamed)' }}
               </button>
             </li>
@@ -216,10 +183,7 @@
       @end="persistAccountOrder"
     >
       <template #item="{ element: account }">
-        <li
-          :key="accountId(account)"
-          class="bs-account-container"
-        >
+        <li :key="accountId(account)" class="bs-account-container">
           <!-- Enter and space should toggle details without moving focus -->
           <div
             class="bs-row"
@@ -230,11 +194,7 @@
             @keydown.enter.prevent="toggleDetails(accountId(account), $event)"
             @keydown.space.prevent="toggleDetails(accountId(account), $event)"
           >
-            <GripVertical
-              class="bs-drag-handle"
-              @mousedown.stop
-              @touchstart.stop
-            />
+            <GripVertical class="bs-drag-handle" @mousedown.stop @touchstart.stop />
 
             <div class="bs-stripe" />
             <div class="bs-logo-container">
@@ -244,11 +204,8 @@
                 alt="Bank logo"
                 class="bs-logo"
                 loading="lazy"
-              >
-              <span
-                v-else
-                class="bs-logo-fallback"
-              >{{ initials(account.name) }}</span>
+              />
+              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
             <div class="bs-details">
               <div class="bs-name">
@@ -261,12 +218,10 @@
                   class="bs-no-mask-icon"
                   role="img"
                   aria-label="Account number unavailable"
-                >∗</span>
+                  >∗</span
+                >
               </div>
-              <div
-                v-if="creditUtilization(account)"
-                class="bs-utilization"
-              >
+              <div v-if="creditUtilization(account)" class="bs-utilization">
                 <div class="bs-utilization-header">
                   <span class="bs-utilization-label">Utilization</span>
                   <span class="bs-utilization-percent">
@@ -293,22 +248,13 @@
             </div>
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
-                <span
-                  class="bs-amount"
-                  :class="balanceClass(account)"
-                >{{
+                <span class="bs-amount" :class="balanceClass(account)">{{
                   format(resolveAccountBalance(account))
                 }}</span>
-                <div
-                  v-if="showUtilization(account)"
-                  class="bs-utilization"
-                >
+                <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
                   <span class="bs-utilization-value">{{ formatUtilization(account) }}</span>
-                  <span
-                    class="bs-utilization-bar"
-                    aria-hidden="true"
-                  >
+                  <span class="bs-utilization-bar" aria-hidden="true">
                     <span
                       class="bs-utilization-fill"
                       :style="{ width: utilizationWidth(account) }"
@@ -333,10 +279,7 @@
               />
             </div>
           </div>
-          <div
-            v-if="openAccountId === accountId(account)"
-            class="bs-details-row"
-          >
+          <div v-if="openAccountId === accountId(account)" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
                 <li
@@ -350,17 +293,11 @@
                   <span class="bs-tx-name">{{
                     tx.merchant_name || tx.name || tx.description
                   }}</span>
-                  <span
-                    class="bs-tx-amount"
-                    :class="amountClass(tx.amount)"
-                  >{{
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{
                     format(tx.amount)
                   }}</span>
                 </li>
-                <li
-                  v-if="recentTxs[accountId(account)]?.length === 0"
-                  class="bs-tx-empty"
-                >
+                <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
                 </li>
               </ul>
@@ -376,21 +313,9 @@
           class="bs-account-container bs-add-account"
           :class="{ 'bs-disabled': activeAccounts.length >= MAX_ACCOUNTS_PER_GROUP }"
         >
-          <div
-            v-if="showAccountSelector"
-            class="bs-row"
-          >
-            <select
-              v-model="selectedAccountId"
-              class="bs-add-select"
-              @change="confirmAddAccount"
-            >
-              <option
-                value=""
-                disabled
-              >
-                Select account
-              </option>
+          <div v-if="showAccountSelector" class="bs-row">
+            <select v-model="selectedAccountId" class="bs-add-select" @change="confirmAddAccount">
+              <option value="" disabled>Select account</option>
               <option
                 v-for="acct in availableAccounts"
                 :key="accountId(acct)"
@@ -410,19 +335,14 @@
             @keydown.space.prevent="startAddAccount"
           >
             <div class="bs-details">
-              <div class="bs-name">
-                Add Account
-              </div>
+              <div class="bs-name">Add Account</div>
             </div>
           </div>
         </li>
       </template>
     </Draggable>
 
-    <div
-      v-else-if="fallbackAccounts.length"
-      class="bs-fallback"
-    >
+    <div v-else-if="fallbackAccounts.length" class="bs-fallback">
       <p class="bs-fallback-note">
         {{
           offlineMode
@@ -445,10 +365,7 @@
             @keydown.enter.prevent="toggleDetails(accountId(account), $event)"
             @keydown.space.prevent="toggleDetails(accountId(account), $event)"
           >
-            <div
-              class="bs-static-spacer"
-              aria-hidden="true"
-            />
+            <div class="bs-static-spacer" aria-hidden="true" />
             <div class="bs-stripe" />
             <div class="bs-logo-container">
               <img
@@ -457,11 +374,8 @@
                 alt="Bank logo"
                 class="bs-logo"
                 loading="lazy"
-              >
-              <span
-                v-else
-                class="bs-logo-fallback"
-              >{{ initials(account.name) }}</span>
+              />
+              <span v-else class="bs-logo-fallback">{{ initials(account.name) }}</span>
             </div>
             <div class="bs-details">
               <div class="bs-name">
@@ -474,12 +388,10 @@
                   class="bs-no-mask-icon"
                   role="img"
                   aria-label="Account number unavailable"
-                >∗</span>
+                  >∗</span
+                >
               </div>
-              <div
-                v-if="creditUtilization(account)"
-                class="bs-utilization"
-              >
+              <div v-if="creditUtilization(account)" class="bs-utilization">
                 <div class="bs-utilization-header">
                   <span class="bs-utilization-label">Utilization</span>
                   <span class="bs-utilization-percent">
@@ -506,22 +418,13 @@
             </div>
             <div class="bs-amount-section">
               <div class="bs-amount-stack">
-                <span
-                  class="bs-amount"
-                  :class="balanceClass(account)"
-                >{{
+                <span class="bs-amount" :class="balanceClass(account)">{{
                   format(resolveAccountBalance(account))
                 }}</span>
-                <div
-                  v-if="showUtilization(account)"
-                  class="bs-utilization"
-                >
+                <div v-if="showUtilization(account)" class="bs-utilization">
                   <span class="bs-utilization-label">Utilization</span>
                   <span class="bs-utilization-value">{{ formatUtilization(account) }}</span>
-                  <span
-                    class="bs-utilization-bar"
-                    aria-hidden="true"
-                  >
+                  <span class="bs-utilization-bar" aria-hidden="true">
                     <span
                       class="bs-utilization-fill"
                       :style="{ width: utilizationWidth(account) }"
@@ -541,10 +444,7 @@
               </button>
             </div>
           </div>
-          <div
-            v-if="openAccountId === accountId(account)"
-            class="bs-details-row"
-          >
+          <div v-if="openAccountId === accountId(account)" class="bs-details-row">
             <div class="bs-details-content">
               <ul class="bs-details-list">
                 <li
@@ -558,17 +458,11 @@
                   <span class="bs-tx-name">{{
                     tx.merchant_name || tx.name || tx.description
                   }}</span>
-                  <span
-                    class="bs-tx-amount"
-                    :class="amountClass(tx.amount)"
-                  >{{
+                  <span class="bs-tx-amount" :class="amountClass(tx.amount)">{{
                     format(tx.amount)
                   }}</span>
                 </li>
-                <li
-                  v-if="recentTxs[accountId(account)]?.length === 0"
-                  class="bs-tx-empty"
-                >
+                <li v-if="recentTxs[accountId(account)]?.length === 0" class="bs-tx-empty">
                   No recent transactions
                 </li>
               </ul>
@@ -577,17 +471,9 @@
         </li>
       </ul>
     </div>
-    <div
-      v-else
-      class="bs-empty"
-    >
-      No accounts to display
-    </div>
+    <div v-else class="bs-empty">No accounts to display</div>
 
-    <div
-      v-if="isEditingGroups"
-      class="bs-editing-footer"
-    >
+    <div v-if="isEditingGroups" class="bs-editing-footer">
       <span class="bs-editing-chip">Editing groups</span>
       <button
         type="button"

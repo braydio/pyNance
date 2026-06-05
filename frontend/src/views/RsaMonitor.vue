@@ -43,7 +43,11 @@
     </section>
 
     <section v-if="monitorData" class="component-grid">
-      <article v-for="component in monitorData.components" :key="component.name" class="component-panel">
+      <article
+        v-for="component in monitorData.components"
+        :key="component.name"
+        class="component-panel"
+      >
         <div class="panel-heading">
           <Server aria-hidden="true" />
           <div>

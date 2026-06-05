@@ -1,22 +1,12 @@
 <!-- Investments.vue - Skeleton layout for the future Investments dashboard. -->
 <template>
-  <BasePageLayout
-    class="investments-view"
-    gap="gap-8"
-  >
+  <BasePageLayout class="investments-view" gap="gap-8">
     <PageHeader :icon="TrendingUp">
-      <template #title>
-        Investments
-      </template>
-      <template #subtitle>
-        Monitor performance across your linked investment accounts
-      </template>
+      <template #title> Investments </template>
+      <template #subtitle> Monitor performance across your linked investment accounts </template>
     </PageHeader>
 
-    <Card
-      class="section-nav"
-      aria-label="Investments page navigation"
-    >
+    <Card class="section-nav" aria-label="Investments page navigation">
       <nav class="section-nav__buttons">
         <button
           v-for="item in sectionNavItems"
@@ -34,17 +24,10 @@
       </nav>
     </Card>
 
-    <section
-      id="portfolio-overview"
-      ref="overviewSection"
-    >
-      <h2 class="text-xl font-semibold mb-2">
-        Portfolio Overview
-      </h2>
+    <section id="portfolio-overview" ref="overviewSection">
+      <h2 class="text-xl font-semibold mb-2">Portfolio Overview</h2>
       <div class="link-box">
-        <h3 class="text-md font-medium mb-1">
-          Link New Investments Account
-        </h3>
+        <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
         <LinkProviderLauncher
           :selected-products="['investments']"
           :user-id="plaidUserId"
@@ -54,40 +37,19 @@
       <div class="controls">
         <label>
           <span>Start</span>
-          <input
-            v-model="startDate"
-            type="date"
-          >
+          <input v-model="startDate" type="date" />
         </label>
         <label>
           <span>End</span>
-          <input
-            v-model="endDate"
-            type="date"
-          >
+          <input v-model="endDate" type="date" />
         </label>
-        <button
-          class="btn"
-          :disabled="refreshing"
-          @click="refreshAll"
-        >
+        <button class="btn" :disabled="refreshing" @click="refreshAll">
           {{ refreshing ? 'Refreshing…' : 'Refresh Investments' }}
         </button>
-        <span
-          v-if="refreshMsg"
-          class="msg"
-        >{{ refreshMsg }}</span>
+        <span v-if="refreshMsg" class="msg">{{ refreshMsg }}</span>
       </div>
-      <div
-        v-if="loading"
-        class="text-muted"
-      >
-        Loading…
-      </div>
-      <div
-        v-else
-        class="overview-grid"
-      >
+      <div v-if="loading" class="text-muted">Loading…</div>
+      <div v-else class="overview-grid">
         <div class="metric">
           <span class="k">Holdings</span><span class="v">{{ holdings.length }}</span>
         </div>
@@ -97,23 +59,14 @@
       </div>
     </section>
 
-    <section
-      id="holdings"
-      ref="holdingsSection"
-    >
-      <h2 class="text-xl font-semibold mb-2">
-        Holdings
-      </h2>
+    <section id="holdings" ref="holdingsSection">
+      <h2 class="text-xl font-semibold mb-2">Holdings</h2>
       <div class="filters">
         <label>
           <span>Institution</span>
           <select v-model="selectedInstitution">
             <option value="">All</option>
-            <option
-              v-for="inst in institutions"
-              :key="inst"
-              :value="inst"
-            >{{ inst }}</option>
+            <option v-for="inst in institutions" :key="inst" :value="inst">{{ inst }}</option>
           </select>
         </label>
         <label>
@@ -130,51 +83,25 @@
           </select>
         </label>
       </div>
-      <div
-        v-if="loading"
-        class="text-muted"
-      >
-        Loading holdings…
-      </div>
-      <div
-        v-else-if="filteredHoldings.length === 0"
-        class="text-muted"
-      >
-        No holdings yet.
-      </div>
-      <div
-        v-else
-        class="holdings-table"
-      >
+      <div v-if="loading" class="text-muted">Loading holdings…</div>
+      <div v-else-if="filteredHoldings.length === 0" class="text-muted">No holdings yet.</div>
+      <div v-else class="holdings-table">
         <div class="totals-bar">
           <div>
             Total (filtered): <strong>{{ formatCurrency(filteredTotal) }}</strong>
           </div>
-          <div class="muted">
-            Portfolio total: {{ formatCurrency(portfolioTotal) }}
-          </div>
+          <div class="muted">Portfolio total: {{ formatCurrency(portfolioTotal) }}</div>
         </div>
         <template v-if="showAggregateHoldings">
           <div class="thead holdings-summary-head">
             <div>Account</div>
             <div>Institution</div>
-            <div class="num">
-              Holdings
-            </div>
-            <div class="num">
-              Securities
-            </div>
-            <div class="num">
-              Total Value
-            </div>
-            <div class="expand-cell">
-              Details
-            </div>
+            <div class="num">Holdings</div>
+            <div class="num">Securities</div>
+            <div class="num">Total Value</div>
+            <div class="expand-cell">Details</div>
           </div>
-          <template
-            v-for="summary in summarizedHoldings"
-            :key="summary.account_id"
-          >
+          <template v-for="summary in summarizedHoldings" :key="summary.account_id">
             <button
               type="button"
               class="trow holdings-summary-row"
@@ -205,15 +132,9 @@
               <div class="holdings-details-head">
                 <div>Ticker</div>
                 <div>Name</div>
-                <div class="num">
-                  Qty
-                </div>
-                <div class="num">
-                  Price
-                </div>
-                <div class="num">
-                  Value
-                </div>
+                <div class="num">Qty</div>
+                <div class="num">Price</div>
+                <div class="num">Value</div>
               </div>
               <div
                 v-for="holding in summary.holdings"
@@ -242,21 +163,11 @@
             <div>Account</div>
             <div>Ticker</div>
             <div>Name</div>
-            <div class="num">
-              Qty
-            </div>
-            <div class="num">
-              Price
-            </div>
-            <div class="num">
-              Value
-            </div>
+            <div class="num">Qty</div>
+            <div class="num">Price</div>
+            <div class="num">Value</div>
           </div>
-          <div
-            v-for="h in filteredHoldings"
-            :key="h.account_id + ':' + h.security_id"
-            class="trow"
-          >
+          <div v-for="h in filteredHoldings" :key="h.account_id + ':' + h.security_id" class="trow">
             <div>{{ accountLabelById[h.account_id] || h.account_id }}</div>
             <div>{{ h.security?.ticker_symbol || '—' }}</div>
             <div class="name-clip">
@@ -274,141 +185,71 @@
           </div>
         </template>
       </div>
-      <div
-        v-if="showAggregateHoldings"
-        class="text-muted holdings-note"
-      >
+      <div v-if="showAggregateHoldings" class="text-muted holdings-note">
         Multiple accounts are selected. Expand an account to inspect individual holdings.
       </div>
-      <div
-        v-if="Object.keys(totalsByInstitution).length"
-        class="inst-summary"
-      >
-        <div
-          v-for="(val, inst) in totalsByInstitution"
-          :key="inst"
-          class="inst-row"
-        >
+      <div v-if="Object.keys(totalsByInstitution).length" class="inst-summary">
+        <div v-for="(val, inst) in totalsByInstitution" :key="inst" class="inst-row">
           <span class="inst">{{ inst }}</span>
           <span class="val">{{ formatCurrency(val) }}</span>
         </div>
       </div>
     </section>
 
-    <section
-      id="performance"
-      ref="performanceSection"
-    >
-      <h2 class="text-xl font-semibold mb-2">
-        Performance
-      </h2>
+    <section id="performance" ref="performanceSection">
+      <h2 class="text-xl font-semibold mb-2">Performance</h2>
       <div class="perf-grid">
         <PortfolioAllocationChart :allocations="allocationByType" />
       </div>
     </section>
 
-    <section
-      id="investment-transactions"
-      ref="transactionsSection"
-    >
-      <h2 class="text-xl font-semibold mb-2">
-        Recent Investment Transactions
-      </h2>
+    <section id="investment-transactions" ref="transactionsSection">
+      <h2 class="text-xl font-semibold mb-2">Recent Investment Transactions</h2>
       <div class="filters">
         <label>
           <span>Account</span>
-          <select
-            v-model="txAccountId"
-            data-testid="tx-filter-account"
-          >
+          <select v-model="txAccountId" data-testid="tx-filter-account">
             <option value="">All</option>
-            <option
-              v-for="acc in accounts"
-              :key="acc.account_id"
-              :value="acc.account_id"
-            >
+            <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
               {{ accDisplay(acc) }}
             </option>
           </select>
         </label>
         <label>
           <span>Security ID</span>
-          <input
-            v-model="txSecurityId"
-            data-testid="tx-filter-security-id"
-            type="text"
-          >
+          <input v-model="txSecurityId" data-testid="tx-filter-security-id" type="text" />
         </label>
         <label>
           <span>Type</span>
-          <input
-            v-model="txType"
-            data-testid="tx-filter-type"
-            type="text"
-          >
+          <input v-model="txType" data-testid="tx-filter-type" type="text" />
         </label>
         <label>
           <span>Subtype</span>
-          <input
-            v-model="txSubtype"
-            data-testid="tx-filter-subtype"
-            type="text"
-          >
+          <input v-model="txSubtype" data-testid="tx-filter-subtype" type="text" />
         </label>
         <label>
           <span>Start Date</span>
-          <input
-            v-model="txStartDate"
-            data-testid="tx-filter-start-date"
-            type="date"
-          >
+          <input v-model="txStartDate" data-testid="tx-filter-start-date" type="date" />
         </label>
         <label>
           <span>End Date</span>
-          <input
-            v-model="txEndDate"
-            data-testid="tx-filter-end-date"
-            type="date"
-          >
+          <input v-model="txEndDate" data-testid="tx-filter-end-date" type="date" />
         </label>
       </div>
-      <div
-        v-if="txLoading"
-        class="text-muted"
-      >
-        Loading transactions…
-      </div>
+      <div v-if="txLoading" class="text-muted">Loading transactions…</div>
       <div v-else>
-        <div
-          v-if="txData.length === 0"
-          class="text-muted"
-        >
-          No transactions found.
-        </div>
-        <div
-          v-else
-          class="tx-table"
-        >
+        <div v-if="txData.length === 0" class="text-muted">No transactions found.</div>
+        <div v-else class="tx-table">
           <div class="thead">
             <div>Date</div>
             <div>Account</div>
             <div>Security</div>
             <div>Name</div>
-            <div class="num">
-              Qty
-            </div>
-            <div class="num">
-              Price
-            </div>
-            <div class="num">
-              Amount
-            </div>
+            <div class="num">Qty</div>
+            <div class="num">Price</div>
+            <div class="num">Amount</div>
           </div>
-          <div
-            v-for="tx in txData"
-            :key="tx.investment_transaction_id"
-            class="trow"
-          >
+          <div v-for="tx in txData" :key="tx.investment_transaction_id" class="trow">
             <div>{{ (tx.date || '').slice(0, 10) }}</div>
             <div>{{ accountLabelById[tx.account_id] || tx.account_id }}</div>
             <div>{{ tx.security_id || '—' }}</div>
@@ -426,11 +267,7 @@
             </div>
           </div>
           <div class="pager">
-            <button
-              class="btn"
-              :disabled="txPage === 1"
-              @click="loadTransactions(txPage - 1)"
-            >
+            <button class="btn" :disabled="txPage === 1" @click="loadTransactions(txPage - 1)">
               Prev
             </button>
             <span>Page {{ txPage }} of {{ txTotalPages }}</span>
@@ -555,7 +392,9 @@ const filteredHoldings = computed(() => {
   }
   return holdings.value
 })
-const filteredAccountIds = computed(() => Array.from(new Set(filteredHoldings.value.map((h) => h.account_id))))
+const filteredAccountIds = computed(() =>
+  Array.from(new Set(filteredHoldings.value.map((h) => h.account_id))),
+)
 const showAggregateHoldings = computed(
   () => !selectedAccount.value && filteredAccountIds.value.length > 1,
 )

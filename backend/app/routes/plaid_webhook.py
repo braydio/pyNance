@@ -6,6 +6,9 @@ from collections import Counter as MemoryCounter
 from datetime import date, datetime, timedelta, timezone
 from typing import Optional, Tuple
 
+from flask import Blueprint, Request, jsonify, request
+from sqlalchemy.orm import joinedload
+
 from app.config import PLAID_WEBHOOK_SECRET, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import get_investment_transactions
@@ -17,8 +20,6 @@ from app.sql.account_logic import (
     mark_refresh_failure,
     mark_refresh_success,
 )
-from flask import Blueprint, Request, jsonify, request
-from sqlalchemy.orm import joinedload
 
 try:  # pragma: no cover - optional dependency
     from prometheus_client import Counter as PrometheusCounter

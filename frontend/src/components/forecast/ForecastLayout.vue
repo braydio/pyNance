@@ -291,13 +291,22 @@
       role="presentation"
       @click.self="closeCashflowModal"
     >
-      <section class="forecast-item-modal" role="dialog" aria-modal="true" aria-label="Cashflow source details">
+      <section
+        class="forecast-item-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cashflow source details"
+      >
         <header class="forecast-item-modal__header">
           <div>
             <h3 class="forecast-item-modal__title">{{ selectedCashflowItem.label }}</h3>
-            <p class="forecast-item-modal__amount">{{ formatSignedCurrency(selectedCashflowItem.amount) }}</p>
+            <p class="forecast-item-modal__amount">
+              {{ formatSignedCurrency(selectedCashflowItem.amount) }}
+            </p>
           </div>
-          <button type="button" class="forecast-item-modal__close" @click="closeCashflowModal">Close</button>
+          <button type="button" class="forecast-item-modal__close" @click="closeCashflowModal">
+            Close
+          </button>
         </header>
 
         <dl class="forecast-item-modal__meta">
@@ -317,7 +326,10 @@
 
         <section>
           <h4 class="forecast-item-modal__sources-title">Source transactions/events</h4>
-          <p v-if="cashflowSources(selectedCashflowItem).length === 0" class="forecast-item-modal__empty">
+          <p
+            v-if="cashflowSources(selectedCashflowItem).length === 0"
+            class="forecast-item-modal__empty"
+          >
             No source transactions or events are attached to this forecast item.
           </p>
           <ul v-else class="forecast-item-modal__source-list">
@@ -349,7 +361,9 @@
                 "
                 class="forecast-item-modal__source-meta"
               >
-                <span v-if="sourceItem.category_display">Category {{ sourceItem.category_display }}</span>
+                <span v-if="sourceItem.category_display"
+                  >Category {{ sourceItem.category_display }}</span
+                >
                 <span v-else-if="sourceItem.category">Category {{ sourceItem.category }}</span>
                 <span v-if="sourceItem.category_slug"> · Slug {{ sourceItem.category_slug }}</span>
                 <span v-if="Array.isArray(sourceItem.tags) && sourceItem.tags.length > 0">

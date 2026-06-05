@@ -282,7 +282,8 @@ export default {
     },
     async handlePlaidReauth(acct) {
       const errorInfo = this.errorByAccountId[acct.account_id] || {}
-      const accountId = errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
+      const accountId =
+        errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
       this.reauthingAccountId = acct.account_id
       this.reauthMessage = 'Preparing Plaid update mode…'
 
@@ -305,7 +306,8 @@ export default {
           },
           onExit: (err) => {
             if (err) {
-              this.reauthMessage = err.display_message || err.error_message || 'Plaid reconnect was not completed.'
+              this.reauthMessage =
+                err.display_message || err.error_message || 'Plaid reconnect was not completed.'
             } else {
               this.reauthMessage = ''
             }

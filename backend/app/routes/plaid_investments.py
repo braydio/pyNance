@@ -14,7 +14,6 @@ from app.sql.account_logic import (
     save_plaid_account,
     upsert_accounts,
 )
-from flask import Blueprint, jsonify, request
 
 plaid_investments = Blueprint("plaid_investments", __name__)
 

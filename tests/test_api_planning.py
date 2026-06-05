@@ -18,10 +18,7 @@ os.environ.setdefault("CLIENT_NAME", "pyNance Test Suite")
 os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
 
 for module_name in list(sys.modules):
-    if not (
-        module_name in {"app.config", "app.models", "app.services"}
-        or module_name.startswith("app.config.")
-    ):
+    if not (module_name in {"app.config", "app.models", "app.services"} or module_name.startswith("app.config.")):
         continue
     existing = sys.modules.get(module_name)
     if existing is not None and getattr(existing, "__file__", None) is None:
