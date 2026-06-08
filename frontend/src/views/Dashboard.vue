@@ -333,7 +333,11 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 const netWorth = ref(0)
 const loadErrorMessage = ref('')
 const activityStatusMessage = ref('')
+const accountReconnectMessage = ref('')
 const greetingMessage = computed(() => {
+  if (accountReconnectMessage.value) {
+    return accountReconnectMessage.value
+  }
   if (loadErrorMessage.value) {
     return loadErrorMessage.value
   }
@@ -726,8 +730,12 @@ async function maybeAutoSyncAccounts() {
   setStoredDashboardAccountSyncAt()
 
   try {
-    await api.refreshAccounts({ user_id: plaidUserId })
+    const response = await api.refreshAccounts({ user_id: plaidUserId })
     await loadDashboardData()
+    const requiresReauth = (response?.errors || []).some((error) => error?.requires_reauth)
+    accountReconnectMessage.value = requiresReauth
+      ? 'A linked account needs to be reconnected. Open Settings and reconnect it with Plaid.'
+      : ''
   } catch (error) {
     console.error('Failed to auto-sync dashboard accounts:', error)
   }

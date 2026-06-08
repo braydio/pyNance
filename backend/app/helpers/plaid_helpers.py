@@ -179,6 +179,14 @@ def get_accounts(access_token: str, user_id: str):
         if getattr(e, "status", None) == 429:
             logger.error("Plaid ACCOUNTS_LIMIT hit for user %s – aborting refresh", user_id)
             return None
+        error_payload = extract_plaid_error_payload(e)
+        if error_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+            logger.warning(
+                "Plaid account login required for user %s (request_id=%s); Link update mode is required.",
+                user_id,
+                error_payload.get("plaid_request_id") or "<unknown>",
+            )
+            raise
         logger.error("Error syncing accounts: %s", e, exc_info=True)
         raise
     except Exception as e:
