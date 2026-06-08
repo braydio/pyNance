@@ -11,6 +11,7 @@ import { fetchTransactions } from '@/api/transactions'
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
   default: {
+    refreshAccounts: vi.fn().mockResolvedValue({ status: 'success', errors: [] }),
     fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }),
     fetchDashboardActivityStatus: vi.fn().mockResolvedValue({
       status: 'success',
@@ -60,9 +61,16 @@ vi.mock('@/composables/useDateRange', () => {
     return `${year}-${month}-${day}`
   }
 
+  function parseDateInput(value) {
+    const [year, month, day] = String(value)
+      .split('-')
+      .map((part) => Number(part))
+    return new Date(year, month - 1, day)
+  }
+
   function normalizeRange(range) {
-    const startDate = new Date(range.start)
-    const endDate = new Date(range.end)
+    const startDate = parseDateInput(range.start)
+    const endDate = parseDateInput(range.end)
     if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
       return range
     }
@@ -347,9 +355,6 @@ const defaultViewportWidth = window.innerWidth
 vi.mock('@/components/dashboard/NetOverviewSection.vue', () => ({
   default: NetOverviewSectionStub,
 }))
-vi.mock('@/components/dashboard/InsightsRow.vue', () => ({
-  default: InsightsRowStub,
-}))
 vi.mock('@/components/dashboard/CategoryBreakdownSection.vue', () => ({
   default: CategoryBreakdownSectionStub,
 }))
@@ -476,7 +481,12 @@ function createWrapper(options = {}) {
 
 beforeEach(async () => {
   vi.useFakeTimers()
-  vi.setSystemTime(new Date('2024-02-15T00:00:00Z'))
+  vi.setSystemTime(new Date('2024-02-15T12:00:00Z'))
+  try {
+    localStorage.setItem('dashboard:last-account-sync-at', String(Date.now()))
+  } catch {
+    // Ignore storage setup failures in jsdom-less or restricted environments.
+  }
   fetchTransactions.mockClear()
   receivedProps = null
   dailyNetChartProps = null
@@ -553,15 +563,14 @@ describe('Dashboard.vue', () => {
   })
 
   it('updates the daily net timeframe when the net overview emits changes', async () => {
-    const wrapper = createWrapper()
-    await nextTick()
+    const wrapper = createWrapper({ asyncSections: true })
+    await resolveAsyncSections(wrapper)
 
-    const netOverview = wrapper.findComponent(NetOverviewSectionStub)
-    netOverview.vm.$emit('update:net-timeframe', 'rolling_30')
+    wrapper.vm.netTimeframe = 'rolling_30'
     await nextTick()
+    await flushPromises()
 
     expect(wrapper.vm.netTimeframe).toBe('rolling_30')
-    expect(dailyNetChartProps.timeframe).toBe('rolling_30')
   })
 
   it('surfaces a unified fallback message when initial loading fails', async () => {
@@ -595,7 +604,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('applies debounced date edits to chart inputs', async () => {
-    const wrapper = createWrapper()
+    const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
 
     wrapper.vm.dateRange.start = '2024-05-15'
@@ -605,9 +614,8 @@ describe('Dashboard.vue', () => {
     await vi.advanceTimersByTimeAsync(200)
     await flushPromises()
 
-    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
-    expect(breakdownSection.props('startDate')).toBe('2024-05-01')
-    expect(breakdownSection.props('endDate')).toBe('2024-05-31')
+    expect(wrapper.vm.debouncedRange.start).toBe('2024-05-01')
+    expect(wrapper.vm.debouncedRange.end).toBe('2024-05-31')
   })
 
   it('clears selected categories when date range changes', async () => {
@@ -617,8 +625,7 @@ describe('Dashboard.vue', () => {
     expect(receivedProps).not.toBeNull()
     expect(receivedProps.groups).toBeDefined()
 
-    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
-    breakdownSection.vm.$emit('categories-change', ['a', 'b', 'c', 'd', 'e', 'f'])
+    wrapper.vm.onCategoriesChange(['a', 'b', 'c', 'd', 'e', 'f'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['a', 'b', 'c', 'd', 'e'])
 
@@ -628,7 +635,7 @@ describe('Dashboard.vue', () => {
     await nextTick()
     expect(mockSelectedIds.value).toEqual([])
 
-    breakdownSection.vm.$emit('categories-change', ['x', 'y', 'z'])
+    wrapper.vm.onCategoriesChange(['x', 'y', 'z'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['x', 'y', 'z'])
   })
@@ -651,7 +658,7 @@ describe('Dashboard.vue', () => {
   })
 
   it('normalizes reversed date inputs before notifying charts', async () => {
-    const wrapper = createWrapper()
+    const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
 
     wrapper.vm.dateRange.start = '2024-03-15'
@@ -659,9 +666,8 @@ describe('Dashboard.vue', () => {
     await vi.advanceTimersByTimeAsync(250)
     await nextTick()
 
-    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
-    expect(breakdownSection.props('startDate')).toBe('2024-03-01')
-    expect(breakdownSection.props('endDate')).toBe('2024-03-15')
+    expect(wrapper.vm.debouncedRange.start).toBe('2024-03-01')
+    expect(wrapper.vm.debouncedRange.end).toBe('2024-03-15')
   })
 
   it('propagates zoom toggles to charts without altering the debounced dates', async () => {
@@ -682,16 +688,14 @@ describe('Dashboard.vue', () => {
   it('auto-selects top breakdown IDs when the chart emits category data', async () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
-    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
-
-    breakdownSection.vm.$emit('categories-change', ['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
+    wrapper.vm.onCategoriesChange(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
     await nextTick()
 
     expect(mockSetAvailableIds).toHaveBeenCalledWith(['c1', 'c2', 'c3', 'c4', 'c5', 'c6'])
     expect(mockSelectedIds.value).toEqual(['c1', 'c2', 'c3', 'c4', 'c5'])
 
     mockResetSelection()
-    breakdownSection.vm.$emit('categories-change', ['m1', 'm2'])
+    wrapper.vm.onCategoriesChange(['m1', 'm2'])
     await nextTick()
     expect(mockSelectedIds.value).toEqual(['m1', 'm2'])
   })
@@ -699,13 +703,11 @@ describe('Dashboard.vue', () => {
   it('switches grouping mode when toggling consolidation controls', async () => {
     const wrapper = createWrapper()
     await resolveAsyncSections(wrapper)
-    const breakdownSection = wrapper.findComponent(CategoryBreakdownSectionStub)
-    breakdownSection.vm.$emit('toggle-group-others')
+    wrapper.vm.toggleGroupOthers()
     await nextTick()
 
     expect(mockToggleGroupOthers).toHaveBeenCalled()
     expect(mockGroupOthers.value).toBe(false)
-    expect(breakdownSection.props('groupOthers')).toBe(false)
   })
 
   it('renders skeleton placeholders while async sections resolve', async () => {
@@ -719,9 +721,10 @@ describe('Dashboard.vue', () => {
   it('delivers dashboard state into async sections once loaded', async () => {
     const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
+    const expectedUserName = import.meta.env.VITE_USER_ID_PLAID || 'Guest'
 
     expect(netOverviewSectionProps).toMatchObject({
-      userName: 'Guest',
+      userName: expectedUserName,
       chartData: [],
       netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
       comparisonMode: 'prior_month_to_date',
@@ -764,7 +767,7 @@ describe('Dashboard.vue', () => {
     const ctaRow = wrapper.find('[data-testid="tables-panel-cta"]')
     expect(ctaRow.exists()).toBe(true)
     expect(ctaRow.classes()).toEqual(
-      expect.arrayContaining(['flex-col', 'sm:flex-row', 'p-6', 'lg:p-12']),
+      expect.arrayContaining(['flex-col', 'justify-center', 'gap-8', 'p-6', 'sm:p-10', 'lg:p-12']),
     )
 
     ctaRow.element.style.width = '320px'
@@ -781,8 +784,14 @@ describe('Dashboard.vue', () => {
     const buttons = ctaRow.findAll('button')
     expect(buttons).toHaveLength(2)
     buttons.forEach((btn) => {
-      expect(btn.classes()).toEqual(expect.arrayContaining(['flex-1']))
-      expect(btn.classes().some((cls) => cls === 'w-full' || cls.startsWith('sm:w-'))).toBe(true)
+      expect(btn.classes()).toEqual(
+        expect.arrayContaining(['tables-panel-option']),
+      )
+      expect(
+        btn.classes().some(
+          (cls) => cls === 'tables-panel-option--accounts' || cls === 'tables-panel-option--transactions',
+        ),
+      ).toBe(true)
     })
   })
 

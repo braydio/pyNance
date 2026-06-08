@@ -15,6 +15,7 @@ from app.models import Account, PlaidItem, RecurringTransaction, Transaction
 from app.services.accounts_service import fetch_accounts
 from app.sql.account_logic import (
     canonicalize_plaid_products,
+    mark_plaid_item_reauth_required,
     refresh_is_stale,
     serialized_refresh_status,
     should_throttle_refresh,
@@ -262,6 +263,7 @@ def refresh_all_accounts():
                         accounts_data = fetch_accounts(access_token, account.user_id)
                     except ApiException as exc:
                         err_payload = extract_plaid_error_payload(exc)
+                        mark_plaid_item_reauth_required(access_token, err_payload, commit=True)
                         _append_refresh_error(error_map, account, err_payload)
                         logger.warning(
                             "Plaid accounts refresh failed | institution=%s | account=%s | code=%s | message=%s",
@@ -504,6 +506,7 @@ def refresh_single_account(account_id):
             )
 
             if isinstance(err, dict) and err.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                mark_plaid_item_reauth_required(token, err, commit=True)
                 logger.warning(
                     "Plaid re-auth required for institution %s (account %s): %s. User must re-auth via Link update mode. "
                     "Call POST /api/plaid/transactions/generate_update_link_token with account_id.",

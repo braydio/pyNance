@@ -258,6 +258,8 @@ def build_refresh_failure_status(error: Exception) -> dict:
         if plaid_error_code in PLAID_RATE_LIMIT_CODES:
             status_label = "rate_limited"
             cooldown_until = _now_utc() + PLAID_RATE_LIMIT_COOLDOWN
+        elif plaid_error_code == "ITEM_LOGIN_REQUIRED":
+            status_label = "reauth_required"
 
         return _build_refresh_status(
             status=status_label,
@@ -352,11 +354,54 @@ def persist_refresh_status(plaid_account: PlaidAccount | None, status: dict, com
         db.session.commit()
 
 
+def mark_plaid_item_reauth_required(
+    access_token: str | None, error: Exception | dict, *, commit: bool
+) -> list[PlaidAccount]:
+    """Persist a reauth-required status for every Plaid account tied to an item token."""
+
+    if not access_token:
+        return []
+
+    from app import models as app_models
+
+    plaid_item_model = getattr(app_models, "PlaidItem", None)
+    if plaid_item_model is None:
+        return []
+
+    status = error if isinstance(error, dict) else build_refresh_failure_status(error)
+    status = {
+        **status,
+        "status": "reauth_required",
+        "requires_reauth": True,
+    }
+
+    plaid_items = plaid_item_model.query.filter_by(access_token=access_token).all()
+    if not plaid_items:
+        return []
+
+    affected_accounts: list[PlaidAccount] = []
+    item_ids = [item.item_id for item in plaid_items if getattr(item, "item_id", None)]
+    if not item_ids:
+        return []
+
+    plaid_accounts = PlaidAccount.query.filter(PlaidAccount.item_id.in_(item_ids)).all()
+    for plaid_account in plaid_accounts:
+        persist_refresh_status(plaid_account, status, commit=False)
+        affected_accounts.append(plaid_account)
+
+    if commit:
+        db.session.commit()
+
+    return affected_accounts
+
+
 def serialized_refresh_status(plaid_account: PlaidAccount | None) -> dict:
     status = _parse_refresh_status(getattr(plaid_account, "last_error", None))
     cooldown = _coerce_iso_datetime(status.get("cooldown_until"))
     if cooldown:
         status["cooldown_until"] = cooldown.isoformat()
+    if status.get("status") == "reauth_required" or status.get("code") == "ITEM_LOGIN_REQUIRED":
+        status["requires_reauth"] = True
     return status
 
 
