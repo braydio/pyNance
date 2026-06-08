@@ -784,13 +784,15 @@ describe('Dashboard.vue', () => {
     const buttons = ctaRow.findAll('button')
     expect(buttons).toHaveLength(2)
     buttons.forEach((btn) => {
-      expect(btn.classes()).toEqual(
-        expect.arrayContaining(['tables-panel-option']),
-      )
+      expect(btn.classes()).toEqual(expect.arrayContaining(['tables-panel-option']))
       expect(
-        btn.classes().some(
-          (cls) => cls === 'tables-panel-option--accounts' || cls === 'tables-panel-option--transactions',
-        ),
+        btn
+          .classes()
+          .some(
+            (cls) =>
+              cls === 'tables-panel-option--accounts' ||
+              cls === 'tables-panel-option--transactions',
+          ),
       ).toBe(true)
     })
   })
