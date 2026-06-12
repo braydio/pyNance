@@ -48,7 +48,11 @@ describe('RefreshPlaidControls', () => {
     cy.contains('button', 'Sync Account Activity').click()
     cy.wait('@refreshAccounts')
 
-    cy.contains('.account-row', 'Checking').find('.status-pill').should('have.class', 'status-pill--success')
-    cy.contains('.account-row', 'Savings').find('.status-pill').should('have.class', 'status-pill--error')
+    cy.contains('.account-row', 'Checking')
+      .find('.status-pill')
+      .should('have.class', 'status-pill--success')
+    cy.contains('.account-row', 'Savings')
+      .find('.status-pill')
+      .should('have.class', 'status-pill--error')
   })
 })

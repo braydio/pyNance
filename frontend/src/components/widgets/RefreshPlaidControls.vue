@@ -55,7 +55,9 @@
               <span class="account-name">{{ acct.name }}</span>
               <span
                 class="status-pill"
-                :class="errorByAccountId[acct.account_id] ? 'status-pill--error' : 'status-pill--success'"
+                :class="
+                  errorByAccountId[acct.account_id] ? 'status-pill--error' : 'status-pill--success'
+                "
               >
                 {{ errorByAccountId[acct.account_id] ? 'Needs Attention' : 'OK' }}
               </span>
