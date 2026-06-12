@@ -54,6 +54,17 @@ Retry actions are scoped by panel:
 
 Top-level refresh buttons still request all three queries.
 
+## Most Active Accounts panel loading
+
+The Accounts Summary tab starts with a Most Active Accounts panel and uses a dedicated fetch path:
+
+- `loadActivityBreakdown()` calls `fetchRecentTransactions(accountId, 100)` for each linked account.
+- Requests run with `Promise.allSettled()` so one failing account does not block the full breakdown.
+- The panel exposes two ranking modes:
+  - **Most active by transaction count** (default)
+  - **Most active by total transaction value** (absolute amount sum)
+- Rankings are computed client-side from the normalized response and constrained to the top 5 accounts.
+
 ## Payload normalization
 
 All account-history payload shape handling is centralized in `useAccountHistory`.
