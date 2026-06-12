@@ -52,14 +52,14 @@ Refer to [PageHeader docs](PageHeader.md) for prop and slot details.
 ### Usage tips
 
 - Provide an ordered array of tab labels through the `tabs` prop and pair it with `v-model` to react to tab changes.
-- Keep tab labels short (one or two words) so they remain legible inside the pill-shaped buttons.
+- Keep tab labels short (one or two words) so they remain legible inside the compact angular buttons.
 - Avoid wrapping tall content inside the sidebar slot; the layout expects action panels or compact forms.
 
 ### Navigation styling
 
-The tab bar renders a frosted glass gradient container that mirrors the dashboard theme. Active tabs use a cyan-to-magenta gradient, while inactive tabs lean on a subtle midnight glaze.
+The tab bar uses shared surface tokens (`bg-surface-2`, `border-subtle`) and approved radius utilities (`ui-radius-3` container, `ui-radius-2` tabs) so route views inherit the same dark-surface framing and corner scale.
 
-- Do not override the `.tabbed-nav__button` class; instead, adjust accent colors via CSS variables when theming a specific view.
+- Do not override `.tabbed-nav__button` button-state colors. Active/inactive/hover/focus states come from `UiButton` variants to preserve accessibility and consistent contrast on dark surfaces.
 - Tabs automatically wrap on narrow breakpoints. To keep the flow balanced on mobile, limit the tab count to four.
 
 ## Contributor guidance
