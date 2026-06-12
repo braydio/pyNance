@@ -3,7 +3,10 @@
     <slot name="header" />
     <div class="flex gap-8">
       <div class="flex-1">
-        <nav class="tabbed-nav ui-radius-3 border border-subtle bg-surface-2" data-testid="tabbed-nav">
+        <nav
+          class="tabbed-nav ui-radius-3 border border-subtle bg-surface-2"
+          data-testid="tabbed-nav"
+        >
           <ul class="tabbed-nav__list">
             <li v-for="tab in normalizedTabs" :key="tab.slot">
               <UiButton
