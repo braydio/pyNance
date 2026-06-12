@@ -40,3 +40,12 @@ For phased delivery expectations and route-level capture requirements, follow:
 
 Any PR changing frontend surface geometry should include the visual QA template and before/after captures.
 
+
+## Status surface token pattern
+
+For status indicators and alert surfaces, use semantic status tokens rather than hardcoded hex values.
+
+- Use `--color-success`, `--color-error`, `--color-warning`, and `--color-info` for semantic foreground/border intent.
+- Use matching background tokens (`--color-bg-success`, `--color-bg-error`, `--color-bg-warning`, `--color-bg-info`) blended with surfaces for dark-mode-safe contrast.
+- Prefer component-level status class names such as `status-pill--success` and `status-pill--error` that map to semantic tokens.
+- For badge/chip geometry, use `--radius-1` (or `ui-radius-1`). Do not use fully rounded pills except semantic circles.
