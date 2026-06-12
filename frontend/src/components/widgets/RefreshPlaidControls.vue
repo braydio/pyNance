@@ -55,7 +55,7 @@
               <span class="account-name">{{ acct.name }}</span>
               <span
                 class="status-pill"
-                :class="errorByAccountId[acct.account_id] ? 'pill-error' : 'pill-ok'"
+                :class="errorByAccountId[acct.account_id] ? 'status-pill--error' : 'status-pill--success'"
               >
                 {{ errorByAccountId[acct.account_id] ? 'Needs Attention' : 'OK' }}
               </span>
@@ -302,7 +302,7 @@ export default {
   background-color: var(--themed-bg);
   color: var(--color-text-light);
   border: 1px solid var(--color-border-secondary);
-  border-radius: 8px;
+  border-radius: var(--radius-2);
   padding: 1rem;
   box-shadow: 0 2px 8px var(--shadow);
   width: 100%;
@@ -335,7 +335,7 @@ export default {
 .error-badge {
   margin-top: 1rem;
   padding: 0.5rem 1rem;
-  border-radius: 6px;
+  border-radius: var(--radius-1);
   font-weight: bold;
   color: #fff;
 }
@@ -391,12 +391,12 @@ export default {
   font-size: 0.75rem;
   border: 1px solid transparent;
 }
-.pill-ok {
+.status-pill--success {
   background: color-mix(in srgb, var(--color-bg-success) 22%, var(--surface-1));
   border-color: color-mix(in srgb, var(--color-success) 38%, var(--border-subtle));
   color: color-mix(in srgb, var(--color-success) 78%, var(--text-primary));
 }
-.pill-error {
+.status-pill--error {
   background: color-mix(in srgb, var(--color-bg-error) 22%, var(--surface-1));
   border-color: color-mix(in srgb, var(--color-error) 38%, var(--border-subtle));
   color: color-mix(in srgb, var(--color-error) 78%, var(--text-primary));
@@ -439,7 +439,7 @@ export default {
   font-size: 0.9rem;
 }
 .tx-date {
-  color: #6b7280;
+  color: var(--text-muted);
 }
 .tx-name {
   overflow: hidden;
@@ -450,7 +450,7 @@ export default {
   font-variant-numeric: tabular-nums;
 }
 .empty {
-  color: #6b7280;
+  color: var(--text-muted);
   font-style: italic;
   padding: 0.25rem;
 }
