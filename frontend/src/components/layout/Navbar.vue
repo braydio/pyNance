@@ -1,46 +1,13 @@
 <template>
-  <nav
-    class="menu z-50"
-    aria-label="Primary navigation"
-  >
+  <nav class="menu z-50" aria-label="Primary navigation">
     <div class="container nav-inner">
       <div class="nav-links">
-        <router-link
-          to="/"
-          class="nav-link"
-        >
-          Dashboard
-        </router-link>
-        <router-link
-          to="/accounts"
-          class="nav-link"
-        >
-          Accounts
-        </router-link>
-        <router-link
-          to="/transactions"
-          class="nav-link"
-        >
-          Transactions
-        </router-link>
-        <router-link
-          to="/forecast"
-          class="nav-link"
-        >
-          Forecasting
-        </router-link>
-        <router-link
-          to="/planning"
-          class="nav-link"
-        >
-          Planning
-        </router-link>
-        <router-link
-          to="/investments"
-          class="nav-link"
-        >
-          Investments
-        </router-link>
+        <router-link to="/" class="nav-link"> Dashboard </router-link>
+        <router-link to="/accounts" class="nav-link"> Accounts </router-link>
+        <router-link to="/transactions" class="nav-link"> Transactions </router-link>
+        <router-link to="/forecast" class="nav-link"> Forecasting </router-link>
+        <router-link to="/planning" class="nav-link"> Planning </router-link>
+        <router-link to="/investments" class="nav-link"> Investments </router-link>
       </div>
       <button
         class="theme-toggle"
@@ -49,16 +16,8 @@
         :title="themeToggleLabel"
         @click="toggleTheme"
       >
-        <Sun
-          v-if="isLightTheme"
-          :size="16"
-          aria-hidden="true"
-        />
-        <Moon
-          v-else
-          :size="16"
-          aria-hidden="true"
-        />
+        <Sun v-if="isLightTheme" :size="16" aria-hidden="true" />
+        <Moon v-else :size="16" aria-hidden="true" />
         <span>{{ isLightTheme ? 'Light' : 'Dark' }}</span>
       </button>
     </div>

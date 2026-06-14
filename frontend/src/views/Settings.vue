@@ -1,26 +1,14 @@
 <template>
   <BasePageLayout gap="gap-6">
     <PageHeader :icon="SettingsIcon">
-      <template #title>
-        Settings
-      </template>
-      <template #subtitle>
-        Preferences and account maintenance
-      </template>
+      <template #title> Settings </template>
+      <template #subtitle> Preferences and account maintenance </template>
     </PageHeader>
 
     <section class="settings-panel">
-      <h2 class="settings-panel-title">
-        Appearance
-      </h2>
-      <p class="settings-panel-copy">
-        Choose a palette. Your preference is saved in this browser.
-      </p>
-      <div
-        class="theme-options"
-        role="radiogroup"
-        aria-label="Application theme"
-      >
+      <h2 class="settings-panel-title">Appearance</h2>
+      <p class="settings-panel-copy">Choose a palette. Your preference is saved in this browser.</p>
+      <div class="theme-options" role="radiogroup" aria-label="Application theme">
         <button
           v-for="theme in themes"
           :key="theme.id"
@@ -31,11 +19,7 @@
           :aria-checked="activeTheme === theme.id"
           @click="setTheme(theme.id)"
         >
-          <span
-            class="theme-option-swatch"
-            :data-preview-theme="theme.id"
-            aria-hidden="true"
-          >
+          <span class="theme-option-swatch" :data-preview-theme="theme.id" aria-hidden="true">
             <span />
             <span />
             <span />
@@ -49,17 +33,10 @@
     </section>
 
     <section class="settings-panel">
-      <h2 class="settings-panel-title">
-        Command
-      </h2>
-      <p class="settings-panel-copy">
-        Choose a command template and provide task-specific input.
-      </p>
+      <h2 class="settings-panel-title">Command</h2>
+      <p class="settings-panel-copy">Choose a command template and provide task-specific input.</p>
       <div class="settings-command-fields">
-        <label
-          for="command-template"
-          class="settings-label"
-        >Template</label>
+        <label for="command-template" class="settings-label">Template</label>
         <BaseSelect
           id="command-template"
           v-model="selectedCommandTemplate"
@@ -76,10 +53,7 @@
           </option>
         </BaseSelect>
 
-        <label
-          for="command-argument"
-          class="settings-label"
-        >Task argument</label>
+        <label for="command-argument" class="settings-label">Task argument</label>
         <BaseInput
           id="command-argument"
           v-model="commandArgument"
@@ -93,12 +67,8 @@
 
     <section class="settings-panel">
       <div class="settings-panel-header">
-        <h2 class="settings-panel-title">
-          Connected Accounts
-        </h2>
-        <p class="settings-panel-copy">
-          Refresh Plaid activity without leaving settings.
-        </p>
+        <h2 class="settings-panel-title">Connected Accounts</h2>
+        <p class="settings-panel-copy">Refresh Plaid activity without leaving settings.</p>
       </div>
       <RefreshPlaidControls />
     </section>
