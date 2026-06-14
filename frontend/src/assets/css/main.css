@@ -577,7 +577,7 @@
   .glass {
     background-color: var(--frosted-bg);
     backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border-subtle);
   }
 
   .flex-center {
@@ -743,3 +743,26 @@
   .error-badge {
     background-color: var(--color-bg-error);
   }
+
+
+/* Shared accent marks create a quiet visual rhythm across route-level cards and panels. */
+.card,
+.settings-panel {
+  position: relative;
+}
+
+.card::before,
+.settings-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto auto 0;
+  width: clamp(3rem, 18%, 8rem);
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--color-accent-cyan), transparent);
+  pointer-events: none;
+}
+
+::selection {
+  background: var(--accent-surface-strong);
+  color: var(--text-primary);
+}

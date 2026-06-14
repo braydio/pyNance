@@ -93,3 +93,8 @@ Forecast chart aspect wiring is documented in `frontend/docs/forecast-data-contr
 ### Accounts view loading behavior
 
 Accounts view data-loading behavior (parallel fetch, retry scope, debounce, and payload normalization) is documented in `frontend/docs/accounts-data-loading.md`.
+
+
+### Themes
+
+The navigation bar and Settings appearance panel switch between the default Nightfox dark palette and an Everforest-inspired light palette. Theme preferences are stored locally and applied before the app mounts. Theme architecture and extension guidance are documented in [`docs/devnotes/theme-system.md`](../docs/devnotes/theme-system.md).
