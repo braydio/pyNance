@@ -47,11 +47,36 @@
         <BaseInput
           id="command-argument"
           v-model="commandArgument"
+          :disabled="commandLoading"
           placeholder="Enter command argument"
           class="settings-input"
           size="md"
           radius="md"
+          @enter="executeCommand"
         />
+        <BaseButton
+          data-testid="command-submit"
+          variant="solid"
+          tone="accent"
+          :disabled="!commandCanSubmit"
+          @click="executeCommand"
+        >
+          {{ commandLoading ? 'Running command…' : 'Run command' }}
+        </BaseButton>
+        <p
+          v-if="commandFeedback"
+          data-testid="command-feedback"
+          :class="[
+            'settings-command-feedback',
+            `settings-command-feedback--${commandFeedback.type}`,
+          ]"
+          role="status"
+        >
+          {{ commandFeedback.message }}
+        </p>
+        <pre v-if="commandOutput" data-testid="command-output" class="settings-command-output">{{
+          commandOutput
+        }}</pre>
       </div>
     </section>
 
@@ -67,6 +92,7 @@
 
 <script>
 import axios from 'axios'
+import BaseButton from '@/components/base/BaseButton.vue'
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
@@ -77,6 +103,7 @@ import { Settings as SettingsIcon } from 'lucide-vue-next'
 export default {
   name: 'Settings',
   components: {
+    BaseButton,
     BaseInput,
     BaseSelect,
     BasePageLayout,
@@ -94,8 +121,19 @@ export default {
       ],
       selectedCommandTemplate: 'refresh-balances',
       commandArgument: '',
+      commandLoading: false,
+      commandFeedback: null,
+      commandOutput: '',
       SettingsIcon,
     }
+  },
+  computed: {
+    /** Return whether the current command form can start a request. */
+    commandCanSubmit() {
+      return (
+        Boolean(this.selectedCommandTemplate && this.commandArgument.trim()) && !this.commandLoading
+      )
+    },
   },
   async created() {
     await this.fetchThemes()
@@ -108,6 +146,30 @@ export default {
         this.selectedTheme = response.data.current_theme
       } catch (error) {
         console.error('Failed to fetch themes:', error)
+      }
+    },
+    /** Submit the validated command form and expose the request result inline. */
+    async executeCommand() {
+      if (!this.commandCanSubmit) return
+
+      this.commandLoading = true
+      this.commandFeedback = null
+      this.commandOutput = ''
+
+      try {
+        const response = await axios.post('/api/codex/exec', {
+          preset: this.selectedCommandTemplate,
+          task: this.commandArgument.trim(),
+        })
+        this.commandFeedback = { type: 'success', message: 'Command completed successfully.' }
+        this.commandOutput = response.data.stdout || ''
+      } catch (error) {
+        this.commandFeedback = {
+          type: 'error',
+          message: error.response?.data?.error || 'Unable to run command. Please try again.',
+        }
+      } finally {
+        this.commandLoading = false
       }
     },
     async setTheme() {
@@ -158,7 +220,28 @@ export default {
 }
 
 .settings-select,
-.settings-input {
+.settings-input,
+.settings-command-fields > button {
   max-width: 18rem;
+}
+
+.settings-command-feedback {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.settings-command-feedback--success {
+  color: var(--color-accent-green);
+}
+
+.settings-command-feedback--error {
+  color: var(--color-accent-red);
+}
+
+.settings-command-output {
+  max-width: 100%;
+  overflow-x: auto;
+  color: var(--color-text-light);
+  white-space: pre-wrap;
 }
 </style>
