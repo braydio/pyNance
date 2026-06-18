@@ -156,3 +156,7 @@ implemented simply by creating additional theme files and adjusting the import i
 ## Settings control primitives
 
 Settings screens must use shared base form primitives (`BaseSelect`, `BaseInput`, and related base controls) instead of raw `<select>` or `<input>` elements. This keeps spacing, radius, focus treatments, and token usage consistent with the shared style model.
+
+## Settings command interaction
+
+The Settings command panel submits the selected preset and trimmed task argument to `POST /api/codex/exec` using the backend contract `{ preset, task }`. The action remains disabled for blank task arguments and while a request is active, preventing duplicate submissions. Command completion, backend validation failures, and server errors are rendered inline so users can act on the result without relying on transient browser alerts.
