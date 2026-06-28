@@ -1,0 +1,49 @@
+# Version control
+.git/
+.gitignore
+.gitattributes
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Environment secrets (never ship these)
+.env
+.env.*
+exports.env
+
+# IDE / editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+coverage/
+coverage.xml
+*.log
+
+# Docker (don't send host docker files to docker daemon)
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Project-specific cache/config
+.deepsource*/
+.husky/
+.cloudflared/
+output/

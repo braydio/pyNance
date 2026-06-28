@@ -1,0 +1,92 @@
+# pyNance — Production Docker Compose
+#
+# One-command deployment for the full stack:
+#   docker compose up -d
+#
+# Services:
+#   db        — PostgreSQL 16 (data persisted in a named volume)
+#   backend   — Flask API + built Vue frontend (gunicorn)
+#   cron      — Periodic Plaid sync and balance history updates
+#
+# Prerequisites:
+#   1. Copy backend/.env.example → backend/.env and fill in your secrets
+#   2. docker compose up -d
+#   3. Open http://localhost:5000
+#
+# To stop:
+#   docker compose down
+#   docker compose down -v   # also destroy the database volume
+
+services:
+  # ── Database ────────────────────────────────────────────────────
+  db:
+    image: postgres:16
+    container_name: pynance_postgres
+    environment:
+      POSTGRES_DB: pynance
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d pynance"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ── Backend (Flask API + built frontend) ────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: pynance_backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      # Override DB host from localhost → Docker service name
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg://user:password@db:5432/pynance
+      ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ── Cron (scheduled sync & balance history) ─────────────────────
+  cron:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: pynance_cron
+    env_file:
+      - ./backend/.env
+    environment:
+      SQLALCHEMY_DATABASE_URI: postgresql+psycopg://user:password@db:5432/pynance
+      ENV: production
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Runs both sync tasks every hour with a staggered initial delay
+    command: >
+      sh -c "
+        echo '[cron] Waiting 30s for backend to apply migrations...'
+        sleep 30
+        while true; do
+          echo '[cron] --- Starting scheduled tasks ---'
+          echo '[cron] Running account sync...'
+          python /app/backend/cron_sync.py
+          echo '[cron] Running balance history update...'
+          python /app/backend/cron_balance_history.py
+          echo '[cron] --- Tasks complete. Sleeping 1 hour ---'
+          sleep 3600
+        done
+      "
+
+volumes:
+  postgres_data:
+    driver: local
