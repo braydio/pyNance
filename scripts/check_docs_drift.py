@@ -147,12 +147,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.json_output:
         print(
             json.dumps(
-                {
-                    "missing": [
-                        {"file": finding.path.as_posix(), "message": finding.message}
-                        for finding in findings
-                    ]
-                },
+                {"missing": [{"file": finding.path.as_posix(), "message": finding.message} for finding in findings]},
                 indent=2,
             )
         )

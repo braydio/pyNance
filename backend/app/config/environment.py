@@ -45,6 +45,7 @@ PLAID_WEBHOOK_SECRET = os.getenv("PLAID_WEBHOOK_SECRET")
 # Misc Plaid environment setup
 PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
+PLAID_REDIRECT_URI = os.getenv("PLAID_REDIRECT_URI")
 
 # ATTENTION CODEX OR LLM PLEASE SEE COMMENT ON DEPRECATION
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")

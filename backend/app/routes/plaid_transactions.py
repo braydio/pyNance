@@ -5,21 +5,21 @@ from datetime import datetime
 from typing import Optional
 
 from flask import Blueprint, jsonify, request
-from plaid.model.country_code import CountryCode
-from plaid.model.link_token_create_request import LinkTokenCreateRequest
-from plaid.model.link_token_create_request_user import LinkTokenCreateRequestUser
-from plaid.model.products import Products
 from sqlalchemy.orm import joinedload
 
-from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger, plaid_client
+from app.config import CLIENT_NAME, PLAID_CLIENT_ID, logger
 from app.extensions import db
 from app.helpers.plaid_helpers import (
     exchange_public_token,
+    extract_plaid_error_payload,
     generate_link_token,
     get_accounts,
     get_institution_name,
     get_item,
     remove_item,
+)
+from app.helpers.plaid_helpers import (
+    generate_update_link_token as create_update_link_token,
 )
 from app.models import Account, PlaidAccount, PlaidItem
 from app.services import plaid_sync
@@ -372,8 +372,14 @@ def generate_update_link_token():
             logger.warning("Account %s not found for update link token", account_id)
             return jsonify({"status": "error", "message": "Account not found"}), 404
 
-        # Check if account has Plaid integration
-        if not account.plaid_account or not account.plaid_account.access_token:
+        access_token = None
+        if account.plaid_account:
+            access_token = account.plaid_account.access_token
+            if not access_token and account.plaid_account.item_id:
+                plaid_item = PlaidItem.query.filter_by(item_id=account.plaid_account.item_id).first()
+                access_token = getattr(plaid_item, "access_token", None)
+
+        if not access_token:
             logger.warning("Account %s missing Plaid access token", account.account_id)
             return (
                 jsonify(
@@ -385,24 +391,13 @@ def generate_update_link_token():
                 400,
             )
 
-        access_token = account.plaid_account.access_token
         logger.info(
             "Generating update link token for account %s (user %s)",
             account.account_id,
             account.user_id,
         )
 
-        # Create Link token in update mode
-        req = LinkTokenCreateRequest(
-            user=LinkTokenCreateRequestUser(client_user_id=str(account.user_id)),
-            client_name="pyNance",
-            language="en",
-            country_codes=[CountryCode("US")],
-            products=[Products("transactions")],
-            access_token=access_token,  # This puts Link in update mode
-        )
-
-        response = plaid_client.link_token_create(req)
+        response = create_update_link_token(str(account.user_id), access_token)
 
         logger.info(
             "Successfully generated update link token for account %s",
@@ -423,23 +418,19 @@ def generate_update_link_token():
     except Exception as e:
         logger.error("Error generating update link token: %s", e, exc_info=True)
 
-        # Check if it's a Plaid API error
         if hasattr(e, "body"):
-            try:
-                error_body = e.body
-                logger.error("Plaid API error details: %s", error_body)
-                return (
-                    jsonify(
-                        {
-                            "status": "error",
-                            "message": "Plaid API error",
-                            "plaid_error": error_body,
-                        }
-                    ),
-                    502,
-                )
-            except Exception:
-                pass
+            plaid_error = extract_plaid_error_payload(e)
+            logger.error("Plaid API error details: %s", plaid_error)
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "message": "Plaid API error",
+                        "plaid_error": plaid_error,
+                    }
+                ),
+                502,
+            )
 
         return (
             jsonify(

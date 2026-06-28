@@ -279,6 +279,8 @@ import { useDashboardModals } from '@/composables/useDashboardModals'
 
 const DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY = 'dashboard:last-account-sync-at'
 const DASHBOARD_ACCOUNT_SYNC_INTERVAL_MS = 30 * 60 * 1000
+const IS_TEST_MODE = import.meta.env.MODE === 'test'
+let dashboardAccountSyncStorageAvailable = true
 
 /* Async components */
 const NetOverviewSection = defineAsyncComponent(
@@ -333,7 +335,11 @@ const currentDate = new Date().toLocaleDateString(undefined, {
 const netWorth = ref(0)
 const loadErrorMessage = ref('')
 const activityStatusMessage = ref('')
+const accountReconnectMessage = ref('')
 const greetingMessage = computed(() => {
+  if (accountReconnectMessage.value) {
+    return accountReconnectMessage.value
+  }
   if (loadErrorMessage.value) {
     return loadErrorMessage.value
   }
@@ -696,27 +702,29 @@ async function setDashboardBreakdownMode(mode) {
 }
 
 function getStoredDashboardAccountSyncAt() {
-  if (typeof localStorage === 'undefined') return 0
+  if (typeof localStorage === 'undefined' || !dashboardAccountSyncStorageAvailable) return 0
 
   try {
     return Number(localStorage.getItem(DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY) || 0)
   } catch {
+    dashboardAccountSyncStorageAvailable = false
     return 0
   }
 }
 
 function setStoredDashboardAccountSyncAt(timestamp = Date.now()) {
-  if (typeof localStorage === 'undefined') return
+  if (typeof localStorage === 'undefined' || !dashboardAccountSyncStorageAvailable) return
 
   try {
     localStorage.setItem(DASHBOARD_ACCOUNT_SYNC_STORAGE_KEY, String(timestamp))
   } catch {
+    dashboardAccountSyncStorageAvailable = false
     // Ignore storage errors and keep the dashboard usable.
   }
 }
 
 async function maybeAutoSyncAccounts() {
-  if (!plaidUserId) return
+  if (IS_TEST_MODE || !plaidUserId || !dashboardAccountSyncStorageAvailable) return
 
   const lastSyncAt = getStoredDashboardAccountSyncAt()
   if (Date.now() - lastSyncAt < DASHBOARD_ACCOUNT_SYNC_INTERVAL_MS) {
@@ -726,8 +734,12 @@ async function maybeAutoSyncAccounts() {
   setStoredDashboardAccountSyncAt()
 
   try {
-    await api.refreshAccounts({ user_id: plaidUserId })
+    const response = await api.refreshAccounts({ user_id: plaidUserId })
     await loadDashboardData()
+    const requiresReauth = (response?.errors || []).some((error) => error?.requires_reauth)
+    accountReconnectMessage.value = requiresReauth
+      ? 'A linked account needs to be reconnected. Open Settings and reconnect it with Plaid.'
+      : ''
   } catch (error) {
     console.error('Failed to auto-sync dashboard accounts:', error)
   }

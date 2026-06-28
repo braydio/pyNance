@@ -57,11 +57,36 @@
         <BaseInput
           id="command-argument"
           v-model="commandArgument"
+          :disabled="commandLoading"
           placeholder="Enter command argument"
           class="settings-input"
           size="md"
           radius="md"
+          @enter="executeCommand"
         />
+        <BaseButton
+          data-testid="command-submit"
+          variant="solid"
+          tone="accent"
+          :disabled="!commandCanSubmit"
+          @click="executeCommand"
+        >
+          {{ commandLoading ? 'Running command…' : 'Run command' }}
+        </BaseButton>
+        <p
+          v-if="commandFeedback"
+          data-testid="command-feedback"
+          :class="[
+            'settings-command-feedback',
+            `settings-command-feedback--${commandFeedback.type}`,
+          ]"
+          role="status"
+        >
+          {{ commandFeedback.message }}
+        </p>
+        <pre v-if="commandOutput" data-testid="command-output" class="settings-command-output">{{
+          commandOutput
+        }}</pre>
       </div>
     </section>
 
@@ -134,7 +159,8 @@ const commandArgument = ref('')
 }
 
 .settings-select,
-.settings-input {
+.settings-input,
+.settings-command-fields > button {
   max-width: 18rem;
 }
 

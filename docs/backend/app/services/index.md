@@ -12,6 +12,7 @@
 - [`account_snapshot.py`](account_snapshot.md): Manage preferred snapshot selections for dashboard widgets.
 - [`account_groups.py`](account_groups.md): CRUD and ordering logic for customizable dashboard account groups.
 - [`dashboard_activity_status.py`](dashboard_activity_status.md): LLM-backed (with fallback) dashboard greeting guidance from balances and transaction activity.
+- [`rsa_monitor.py`](rsa_monitor.md): Read-only local RSAssistant and AutoRSA runtime summaries.
 - [`accounts_service.py`](accounts_service.md): Lightweight Plaid account fetch adapter used by refresh routes.
 
 ### Forecasting

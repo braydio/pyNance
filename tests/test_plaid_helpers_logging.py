@@ -4,6 +4,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from plaid.exceptions import ApiException
 
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 
@@ -22,6 +23,21 @@ class _FakePlaidClient:
     def item_public_token_exchange(self, request):
         self.last_request = request
         return _FakePlaidExchangeResponse()
+
+
+class _FakeItemLoginRequiredClient:
+    def accounts_get(self, _request):
+        error = ApiException(status=400, reason="ITEM_LOGIN_REQUIRED")
+        error.body = """
+        {
+          "display_message": null,
+          "error_code": "ITEM_LOGIN_REQUIRED",
+          "error_message": "the login details of this item have changed",
+          "error_type": "ITEM_ERROR",
+          "request_id": "request-reauth-1"
+        }
+        """
+        raise error
 
 
 def test_token_file_logging_redacts_values(tmp_path: Path, monkeypatch, caplog):
@@ -64,6 +80,20 @@ def test_get_accounts_logs_error_for_missing_user(caplog):
             plaid_helpers.get_accounts("access-token", user_id="")
 
     assert "Missing user_id in get_accounts()" in caplog.text
+
+
+def test_get_accounts_logs_concise_warning_for_item_login_required(monkeypatch, caplog):
+    monkeypatch.setattr(plaid_helpers, "plaid_client", _FakeItemLoginRequiredClient())
+
+    with caplog.at_level(logging.WARNING, logger=plaid_helpers.logger.name):
+        with pytest.raises(ApiException):
+            plaid_helpers.get_accounts("access-token", user_id="user-1")
+
+    assert "Plaid account login required for user user-1" in caplog.text
+    assert "request-reauth-1" in caplog.text
+    assert "HTTP response body" not in caplog.text
+    assert "the login details of this item have changed" not in caplog.text
+    assert "Traceback" not in caplog.text
 
 
 class _FakeTransaction:
