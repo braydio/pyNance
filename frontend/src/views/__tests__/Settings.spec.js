@@ -1,34 +1,17 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
-import axios from 'axios'
+import { describe, it, expect } from 'vitest'
+import { shallowMount } from '@vue/test-utils'
 import SettingsView from '../Settings.vue'
 
-vi.mock('axios', () => ({
-  default: {
-    create: vi.fn(() => ({
-      interceptors: {
-        request: { use: vi.fn() },
-        response: { use: vi.fn() },
-      },
-      get: vi.fn(),
-      post: vi.fn(),
-    })),
-    get: vi.fn(),
-    post: vi.fn(),
-  },
-}))
-
-/** Mount Settings with only route-level layout dependencies stubbed. */
-const mountSettings = () =>
-  mount(SettingsView, {
-    global: {
-      stubs: {
-        BasePageLayout: {
-          template: '<div><slot /></div>',
-        },
-        PageHeader: {
-          template: '<div><slot name="title" /><slot name="subtitle" /></div>',
+describe('Settings.vue', () => {
+  it('renders local theme options and refresh controls', () => {
+    const wrapper = shallowMount(SettingsView, {
+      global: {
+        stubs: {
+          BasePageLayout: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
+          SettingsIcon: true,
+          RefreshPlaidControls: true,
         },
         SettingsIcon: true,
         RefreshPlaidControls: true,
@@ -59,7 +42,9 @@ describe('Settings.vue', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Appearance')
-    expect(wrapper.text()).toContain('Connected Accounts')
+    expect(wrapper.text()).toContain('Nightfox')
+    expect(wrapper.text()).toContain('Everforest Light')
+    expect(wrapper.findAll('[role="radio"]')).toHaveLength(2)
     expect(wrapper.find('refresh-plaid-controls-stub').exists()).toBe(true)
   })
 

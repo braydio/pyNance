@@ -1,25 +1,35 @@
 <template>
   <BasePageLayout gap="gap-6">
     <PageHeader :icon="SettingsIcon">
-      <template #title>Settings</template>
-      <template #subtitle>Preferences and account maintenance</template>
+      <template #title> Settings </template>
+      <template #subtitle> Preferences and account maintenance </template>
     </PageHeader>
 
     <section class="settings-panel">
       <h2 class="settings-panel-title">Appearance</h2>
-      <label for="themes" class="settings-label">Theme</label>
-      <BaseSelect
-        id="themes"
-        v-model="selectedTheme"
-        class="settings-select"
-        size="md"
-        radius="md"
-        @change="setTheme"
-      >
-        <option v-for="theme in themes" :key="theme" :value="theme">
-          {{ theme }}
-        </option>
-      </BaseSelect>
+      <p class="settings-panel-copy">Choose a palette. Your preference is saved in this browser.</p>
+      <div class="theme-options" role="radiogroup" aria-label="Application theme">
+        <button
+          v-for="theme in themes"
+          :key="theme.id"
+          type="button"
+          class="theme-option"
+          :class="{ 'theme-option--active': activeTheme === theme.id }"
+          role="radio"
+          :aria-checked="activeTheme === theme.id"
+          @click="setTheme(theme.id)"
+        >
+          <span class="theme-option-swatch" :data-preview-theme="theme.id" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+          <span>
+            <strong>{{ theme.label }}</strong>
+            <small>{{ theme.description }}</small>
+          </span>
+        </button>
+      </div>
     </section>
 
     <section class="settings-panel">
@@ -90,98 +100,27 @@
   </BasePageLayout>
 </template>
 
-<script>
-import axios from 'axios'
-import BaseButton from '@/components/base/BaseButton.vue'
+<script setup>
+/**
+ * Application settings view for local appearance preferences and account maintenance.
+ */
 import BaseInput from '@/components/base/BaseInput.vue'
 import BaseSelect from '@/components/base/BaseSelect.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
+import { useTheme } from '@/composables/useTheme'
+import { ref } from 'vue'
 import { Settings as SettingsIcon } from 'lucide-vue-next'
 
-export default {
-  name: 'Settings',
-  components: {
-    BaseButton,
-    BaseInput,
-    BaseSelect,
-    BasePageLayout,
-    PageHeader,
-    RefreshPlaidControls,
-  },
-  data() {
-    return {
-      themes: [],
-      selectedTheme: '',
-      commandTemplates: [
-        { label: 'Refresh account balances', value: 'refresh-balances' },
-        { label: 'Sync transaction history', value: 'sync-transactions' },
-        { label: 'Rebuild reporting cache', value: 'rebuild-cache' },
-      ],
-      selectedCommandTemplate: 'refresh-balances',
-      commandArgument: '',
-      commandLoading: false,
-      commandFeedback: null,
-      commandOutput: '',
-      SettingsIcon,
-    }
-  },
-  computed: {
-    /** Return whether the current command form can start a request. */
-    commandCanSubmit() {
-      return (
-        Boolean(this.selectedCommandTemplate && this.commandArgument.trim()) && !this.commandLoading
-      )
-    },
-  },
-  async created() {
-    await this.fetchThemes()
-  },
-  methods: {
-    async fetchThemes() {
-      try {
-        const response = await axios.get('/themes')
-        this.themes = response.data.themes
-        this.selectedTheme = response.data.current_theme
-      } catch (error) {
-        console.error('Failed to fetch themes:', error)
-      }
-    },
-    /** Submit the validated command form and expose the request result inline. */
-    async executeCommand() {
-      if (!this.commandCanSubmit) return
-
-      this.commandLoading = true
-      this.commandFeedback = null
-      this.commandOutput = ''
-
-      try {
-        const response = await axios.post('/api/codex/exec', {
-          preset: this.selectedCommandTemplate,
-          task: this.commandArgument.trim(),
-        })
-        this.commandFeedback = { type: 'success', message: 'Command completed successfully.' }
-        this.commandOutput = response.data.stdout || ''
-      } catch (error) {
-        this.commandFeedback = {
-          type: 'error',
-          message: error.response?.data?.error || 'Unable to run command. Please try again.',
-        }
-      } finally {
-        this.commandLoading = false
-      }
-    },
-    async setTheme() {
-      try {
-        await axios.post('/set_theme', { theme: this.selectedTheme })
-        alert(`Theme set to ${this.selectedTheme}`)
-      } catch (error) {
-        console.error('Failed to set theme:', error)
-      }
-    },
-  },
-}
+const { activeTheme, setTheme, themes } = useTheme()
+const commandTemplates = [
+  { label: 'Refresh account balances', value: 'refresh-balances' },
+  { label: 'Sync transaction history', value: 'sync-transactions' },
+  { label: 'Rebuild reporting cache', value: 'rebuild-cache' },
+]
+const selectedCommandTemplate = ref('refresh-balances')
+const commandArgument = ref('')
 </script>
 
 <style scoped>
@@ -225,23 +164,86 @@ export default {
   max-width: 18rem;
 }
 
-.settings-command-feedback {
-  margin: 0;
-  color: var(--color-text-muted);
+.theme-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+  gap: 0.75rem;
 }
 
-.settings-command-feedback--success {
-  color: var(--color-accent-green);
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.9rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-3);
+  background: var(--surface-1);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: 0.2s ease;
 }
 
-.settings-command-feedback--error {
-  color: var(--color-accent-red);
+.theme-option:hover,
+.theme-option:focus-visible,
+.theme-option--active {
+  border-color: var(--accent-primary);
+  background: var(--accent-surface);
+  outline: none;
 }
 
-.settings-command-output {
-  max-width: 100%;
-  overflow-x: auto;
-  color: var(--color-text-light);
-  white-space: pre-wrap;
+.theme-option--active {
+  box-shadow: inset 3px 0 0 var(--accent-primary);
+}
+
+.theme-option strong,
+.theme-option small {
+  display: block;
+}
+
+.theme-option small {
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+}
+
+.theme-option-swatch {
+  display: flex;
+  width: 3.4rem;
+  height: 2.6rem;
+  overflow: hidden;
+  flex: 0 0 auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2);
+  background: #192330;
+}
+
+.theme-option-swatch[data-preview-theme='everforest-light'] {
+  background: #fdf6e3;
+}
+
+.theme-option-swatch span {
+  width: 0.3rem;
+  height: 100%;
+  background: #dbc074;
+}
+
+.theme-option-swatch span:nth-child(2) {
+  background: #81b29a;
+}
+
+.theme-option-swatch span:nth-child(3) {
+  background: #63cdcf;
+}
+
+.theme-option-swatch[data-preview-theme='everforest-light'] span:nth-child(1) {
+  background: #8da101;
+}
+
+.theme-option-swatch[data-preview-theme='everforest-light'] span:nth-child(2) {
+  background: #35a77c;
+}
+
+.theme-option-swatch[data-preview-theme='everforest-light'] span:nth-child(3) {
+  background: #dfa000;
 }
 </style>

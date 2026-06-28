@@ -577,7 +577,7 @@
 .glass {
   background-color: var(--frosted-bg);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--border-subtle);
 }
 
 .flex-center {
