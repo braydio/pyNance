@@ -74,6 +74,7 @@ describe('DailySpendingPanel', () => {
 
     const rows = wrapper.findAll('.transaction-row')
     expect(rows[0].text()).toContain('Cafe')
+    expect(rows[0].find('.transaction-amount').classes()).toContain('amount-negative')
     expect(rows[1].text()).toContain('Coffee')
   })
 

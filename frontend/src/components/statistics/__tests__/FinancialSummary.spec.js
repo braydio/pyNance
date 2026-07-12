@@ -130,6 +130,9 @@ describe('FinancialSummary trends', () => {
     expect(incomeStat).toContain('$300.00')
     expect(expenseStat).toContain('($150.00)')
     expect(netStat).toContain('$150.00')
+    expect(wrapper.find('.stat-income .stat-value').classes()).toContain('amount-positive')
+    expect(wrapper.find('.stat-expenses .stat-value').classes()).toContain('amount-negative')
+    expect(wrapper.find('.stat-net .stat-value').classes()).toContain('amount-positive')
 
     expect(wrapper.find('.detail-date-helper').text()).toMatch(/2024/)
   })

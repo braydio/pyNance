@@ -36,7 +36,7 @@
             <li v-for="row in averageDisplayRows" :key="row.label" class="average-breakdown-row">
               <span class="average-breakdown-rank">{{ row.rank }}</span>
               <span class="average-breakdown-label">{{ row.label }}</span>
-              <span class="average-breakdown-amount">
+              <span class="average-breakdown-amount" :class="amountPolarityClass(row.amount)">
                 {{ formatAmount(row.amount) }}
                 <span class="average-breakdown-percent"> {{ row.percentage.toFixed(1) }}% </span>
               </span>
@@ -58,7 +58,9 @@
               <span class="transaction-name">{{ transactionLabel(transaction) }}</span>
               <span class="transaction-date">{{ formatTransactionDate(transaction.date) }}</span>
             </div>
-            <span class="transaction-amount">{{ formatAmount(transaction.amount) }}</span>
+            <span class="transaction-amount" :class="amountPolarityClass(transaction.amount)">{{
+              formatAmount(transaction.amount)
+            }}</span>
           </li>
         </ul>
       </div>
@@ -71,7 +73,7 @@ import { ref, computed, watch, onUnmounted, nextTick } from 'vue'
 import { Chart } from 'chart.js/auto'
 import { fetchCategoryBreakdownTree } from '@/api/charts'
 import { fetchTransactions } from '@/api/transactions'
-import { formatAmount } from '@/utils/format'
+import { amountPolarityClass, formatAmount } from '@/utils/format'
 import { getAccentColor } from '@/utils/colors'
 
 /**
@@ -751,6 +753,14 @@ onUnmounted(() => {
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-text-light);
+}
+
+.transaction-amount.amount-positive {
+  color: var(--color-accent-green);
+}
+
+.transaction-amount.amount-negative {
+  color: var(--color-accent-red);
 }
 
 @media (max-width: 900px) {
