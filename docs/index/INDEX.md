@@ -26,6 +26,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Codex](../codex/) – exploratory reports
 - [Latest](../latest/) – recent drafts and experiments
 - [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
+- [Safe to Spend Dashboard Widget](../frontend/safe-to-spend.md) – daily spend guardrail API, placement, and next-version horizons.
 - [Component Migration Guide](../frontend/component-migration.md) – frontend component organization strategy
 - [Tailwind + Vite Style Reference](../frontend/tailwind-vite-style-reference.md) – CSS utilities and build notes
 - [Corner Radius Migration Guide](../frontend/corner-radius-migration-guide.md) – token scale and allowed corner usage by component type.

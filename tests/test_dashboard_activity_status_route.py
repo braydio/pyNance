@@ -44,6 +44,28 @@ activity_stub.generate_activity_status = lambda **_: {
 }
 sys.modules["app.services.dashboard_activity_status"] = activity_stub
 
+safe_to_spend_stub = types.ModuleType("app.services.safe_to_spend")
+safe_to_spend_stub.DEFAULT_BUFFER_CENTS = 25000
+
+
+class SafeToSpendInputs:
+    def __init__(self, user_id=None, mode="today", as_of=None, buffer_cents=25000):
+        self.user_id = user_id
+        self.mode = mode
+        self.as_of = as_of
+        self.buffer_cents = buffer_cents
+
+
+safe_to_spend_stub.SafeToSpendInputs = SafeToSpendInputs
+safe_to_spend_stub.build_safe_to_spend_payload = lambda inputs: {
+    "amount_cents": 4200,
+    "status": "caution",
+    "mode": inputs.mode,
+    "components": {"required_buffer_cents": inputs.buffer_cents},
+    "message": "You have about $42 today.",
+}
+sys.modules["app.services.safe_to_spend"] = safe_to_spend_stub
+
 ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "dashboard.py")
 spec = importlib.util.spec_from_file_location("app.routes.dashboard", ROUTE_PATH)
 dashboard_module = importlib.util.module_from_spec(spec)
@@ -72,3 +94,25 @@ def test_activity_status_returns_parseable_payload():
     assert payload["status"] == "success"
     assert payload["data"]["status_key"] == "largest_expense"
     assert "message" in payload["data"]
+
+
+def test_safe_to_spend_validates_inputs():
+    client = _build_client()
+    response = client.get("/api/dashboard/safe-to-spend?as_of=07-12-2026")
+    assert response.status_code == 400
+    assert response.get_json()["message"] == "as_of must use YYYY-MM-DD"
+
+    response = client.get("/api/dashboard/safe-to-spend?buffer_cents=twenty")
+    assert response.status_code == 400
+    assert response.get_json()["message"] == "buffer_cents must be an integer"
+
+
+def test_safe_to_spend_returns_decision_payload():
+    client = _build_client()
+    response = client.get("/api/dashboard/safe-to-spend?mode=until_payday&buffer_cents=30000")
+    assert response.status_code == 200
+    payload = response.get_json()
+    assert payload["status"] == "success"
+    assert payload["data"]["amount_cents"] == 4200
+    assert payload["data"]["mode"] == "until_payday"
+    assert payload["data"]["components"]["required_buffer_cents"] == 30000

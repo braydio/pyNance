@@ -35,10 +35,23 @@
       />
     </div>
     <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
-      <div
-        class="net-overview-panel net-overview-panel--accent-green col-span-1 bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
-      >
-        <TopAccountSnapshot />
+      <div class="col-span-1 flex flex-col gap-6">
+        <div
+          class="net-overview-panel net-overview-panel--accent-green bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
+        >
+          <TopAccountSnapshot />
+        </div>
+        <div
+          class="net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
+        >
+          <SafeToSpendCard
+            :payload="safeToSpend"
+            :loading="safeToSpendLoading"
+            :error="safeToSpendError"
+            :selected-mode="safeToSpendMode"
+            @update:mode="emit('update:safe-to-spend-mode', $event)"
+          />
+        </div>
       </div>
       <div
         class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6 flex flex-col gap-3 relative"
@@ -140,6 +153,7 @@ import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import ChartDetailsSidebar from '@/components/charts/ChartDetailsSidebar.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
+import SafeToSpendCard from '@/components/dashboard/SafeToSpendCard.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
 
@@ -173,6 +187,10 @@ const props = defineProps({
   showAvgExpenses: { type: Boolean, default: false },
   showComparisonOverlay: { type: Boolean, default: false },
   comparisonMode: { type: String, default: 'prior_month_to_date' },
+  safeToSpend: { type: Object, default: null },
+  safeToSpendLoading: { type: Boolean, default: false },
+  safeToSpendError: { type: String, default: '' },
+  safeToSpendMode: { type: String, default: 'today' },
 })
 
 const emit = defineEmits([
@@ -186,6 +204,7 @@ const emit = defineEmits([
   'update:show-comparison-overlay',
   'update:comparison-mode',
   'update:net-timeframe',
+  'update:safe-to-spend-mode',
   'net-summary-change',
   'net-data-change',
   'net-bar-click',

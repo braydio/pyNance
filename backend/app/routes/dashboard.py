@@ -2,8 +2,6 @@
 
 from datetime import datetime
 
-from flask import Blueprint, jsonify, request
-
 from app.config import logger
 from app.services import account_groups as account_group_service
 from app.services.account_snapshot import (
@@ -11,6 +9,12 @@ from app.services.account_snapshot import (
     update_snapshot_selection,
 )
 from app.services.dashboard_activity_status import generate_activity_status
+from app.services.safe_to_spend import (
+    DEFAULT_BUFFER_CENTS,
+    SafeToSpendInputs,
+    build_safe_to_spend_payload,
+)
+from flask import Blueprint, jsonify, request
 
 dashboard = Blueprint("dashboard", __name__)
 
@@ -22,6 +26,35 @@ def _parse_iso_date_arg(name: str) -> datetime | None:
     if not raw:
         return None
     return datetime.strptime(raw, "%Y-%m-%d")
+
+
+@dashboard.route("/safe-to-spend", methods=["GET"])
+def get_safe_to_spend():
+    """Return today's spend guardrail and next-version horizon variants."""
+
+    try:
+        as_of = _parse_iso_date_arg("as_of")
+    except ValueError:
+        return jsonify({"status": "error", "message": "as_of must use YYYY-MM-DD"}), 400
+
+    raw_buffer = request.args.get("buffer_cents")
+    try:
+        buffer_cents = int(raw_buffer) if raw_buffer is not None else DEFAULT_BUFFER_CENTS
+    except ValueError:
+        return jsonify({"status": "error", "message": "buffer_cents must be an integer"}), 400
+
+    inputs = SafeToSpendInputs(
+        user_id=request.args.get("user_id"),
+        mode=request.args.get("mode") or "today",
+        as_of=as_of,
+        buffer_cents=buffer_cents,
+    )
+    try:
+        data = build_safe_to_spend_payload(inputs)
+        return jsonify({"status": "success", "data": data}), 200
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to build safe-to-spend payload: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
 
 
 @dashboard.route("/account_snapshot", methods=["GET"])

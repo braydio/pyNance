@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-04-08
+Last Updated: 2026-07-12
 Status: Active
 ---
 
@@ -24,6 +24,7 @@ Serve dashboard configuration data including account snapshot selections and cus
 - `DELETE /api/dashboard/account-groups/<group_id>/accounts/<account_id>` – Detach an account from a group.
 - `POST /api/dashboard/account-groups/<group_id>/accounts/reorder` – Save the ordering of accounts within a group.
 - `GET /api/dashboard/activity-status` – Generate a parseable greeting status message from account balances and recent transactions.
+- `GET /api/dashboard/safe-to-spend` – Return immediate spend guidance for today, until payday, or the current week.
 
 ## Inputs/Outputs
 
@@ -36,6 +37,9 @@ Serve dashboard configuration data including account snapshot selections and cus
 - **Activity status endpoint**
   - **Inputs:** Optional `start_date`, `end_date` (YYYY-MM-DD), and `user_id` query params.
   - **Outputs:** `{ "status": "success", "data": { "status_key": str, "message": str, "source": "llm"|"fallback" } }`.
+- **Safe-to-spend endpoint**
+  - **Inputs:** Optional `mode`, `as_of` (YYYY-MM-DD), `buffer_cents`, and `user_id` query params.
+  - **Outputs:** `{ "status": "success", "data": { "amount_cents": int, "components": object, "message": str } }`.
 
 ## Auth
 
@@ -46,6 +50,7 @@ Serve dashboard configuration data including account snapshot selections and cus
 - `app.services.account_snapshot` helpers (`build_snapshot_payload`, `update_snapshot_selection`).
 - `app.services.account_groups` CRUD helpers for group and membership management.
 - `app.services.dashboard_activity_status` for LLM/fallback greeting generation.
+- `app.services.safe_to_spend` for cash, bill, buffer, and same-day spending guardrails.
 - Application logger for defensive error logging.
 
 ## Behaviors/Edge Cases

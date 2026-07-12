@@ -31,6 +31,14 @@ const DailyNetChartStub = {
     '<div class="daily-net-chart" @click="$emit(\'bar-click\', startDate)"><div class="daily-net-chart__title-shell"><slot name="title" /></div><div class="daily-net-chart__controls-shell"><slot name="controls" /></div></div>',
 }
 
+const SafeToSpendCardStub = {
+  name: 'SafeToSpendCard',
+  props: ['payload', 'loading', 'error', 'selectedMode'],
+  emits: ['update:mode'],
+  template:
+    '<button class="safe-spend-stub" @click="$emit(\'update:mode\', \'week\')">Safe Spend</button>',
+}
+
 const FinancialSummaryStub = {
   name: 'FinancialSummary',
   template: '<div class="financial-summary-stub" />',
@@ -88,6 +96,8 @@ describe('Dashboard section components', () => {
         zoomedOut: false,
         netSummary: { totalIncome: 10, totalExpenses: 1, totalNet: 9 },
         chartData: [],
+        safeToSpend: { amount_cents: 4200, status: 'caution' },
+        safeToSpendMode: 'today',
       },
       global: {
         stubs: {
@@ -95,6 +105,7 @@ describe('Dashboard section components', () => {
           ChartDetailsSidebar: ChartDetailsSidebarStub,
           TopAccountSnapshot: true,
           DailyNetChart: DailyNetChartStub,
+          SafeToSpendCard: SafeToSpendCardStub,
           FinancialSummary: FinancialSummaryStub,
         },
       },
@@ -114,6 +125,10 @@ describe('Dashboard section components', () => {
     expect(wrapper.findComponent(DailyNetChartStub).props()).toMatchObject({
       startDate: '2025-01-01',
       endDate: '2025-01-31',
+    })
+    expect(wrapper.findComponent(SafeToSpendCardStub).props()).toMatchObject({
+      payload: { amount_cents: 4200, status: 'caution' },
+      selectedMode: 'today',
     })
 
     const timeframeButtons = wrapper.findAll(
@@ -156,10 +171,10 @@ describe('Dashboard section components', () => {
       },
     })
 
-    const [categoryButton, merchantButton] = wrapper.findAll('button')
-    await categoryButton.trigger('click')
-    await merchantButton.trigger('click')
-    await wrapper.find('button.btn').trigger('click')
+    const buttons = wrapper.findAllComponents(BaseButtonStub)
+    await buttons[0].vm.$emit('click')
+    await buttons[1].vm.$emit('click')
+    await buttons[2].vm.$emit('click')
 
     expect(wrapper.find('.after-total').exists()).toBe(true)
     expect(wrapper.emitted('change-breakdown')?.[0]).toEqual(['category'])
