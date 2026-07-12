@@ -3,7 +3,7 @@
 exports[`Dashboard section components > renders net overview content and forwards slot content 1`] = `
 "<section data-v-26cbed55="" class="flex flex-col gap-6">
   <div data-v-26cbed55="" class="angular-divider mb-2" aria-hidden="true"><span data-v-26cbed55="" class="angular-divider__rule"></span><span data-v-26cbed55="" class="angular-divider__step"></span></div>
-  <div data-v-26cbed55="" class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] rounded-lg p-6 md:p-7 flex flex-col items-center gap-2">
+  <div data-v-26cbed55="" class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] ui-radius-2 p-6 md:p-7 flex flex-col items-center gap-2">
     <h1 data-v-26cbed55="" class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"> Welcome, <span data-v-26cbed55="" class="username">Casey</span>! </h1>
     <p data-v-26cbed55="" class="text-lg text-muted">Today is January 1, 2025</p>
     <p data-v-26cbed55="" class="italic text-muted">In the black</p>
@@ -13,14 +13,18 @@ exports[`Dashboard section components > renders net overview content and forward
     <div data-v-26cbed55="" class="date-range-stub"></div>
   </div>
   <div data-v-26cbed55="" class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
-    <div data-v-26cbed55="" class="net-overview-panel net-overview-panel--accent-green col-span-1 bg-[var(--color-bg-sec)] rounded-lg p-4 flex flex-col">
-      <top-account-snapshot-stub data-v-26cbed55="" accountsubtype="" usespectrum="false" iseditinggroups="false"></top-account-snapshot-stub>
+    <div data-v-26cbed55="" class="col-span-1 flex flex-col gap-6">
+      <div data-v-26cbed55="" class="net-overview-panel net-overview-panel--accent-green bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col">
+        <top-account-snapshot-stub data-v-26cbed55="" accountsubtype="" usespectrum="false" iseditinggroups="false"></top-account-snapshot-stub>
+      </div>
+      <div data-v-26cbed55="" class="net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"><button data-v-26cbed55="" class="safe-spend-stub">Safe Spend</button></div>
     </div>
-    <div data-v-26cbed55="" class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] rounded-lg p-5 md:p-6 flex flex-col gap-3 relative">
+    <div data-v-26cbed55="" class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6 flex flex-col gap-3 relative">
       <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd">
         <div class="daily-net-chart__title-shell">
           <div data-v-26cbed55="" class="daily-net-chart-title-block">
             <h2 data-v-26cbed55="" class="daily-net-chart-title"><span data-v-26cbed55="" class="title-text">Net Income</span><span data-v-26cbed55="" class="title-subtitle">(Daily)</span></h2>
+            <p data-v-26cbed55="" class="daily-net-chart-totals"> Income $10.00 · Expenses $1.00</p>
           </div>
         </div>
         <div class="daily-net-chart__controls-shell">
@@ -33,7 +37,7 @@ exports[`Dashboard section components > renders net overview content and forward
       </div>
     </div>
   </div>
-  <div data-v-26cbed55="" class="net-overview-summary-panel net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] rounded-lg p-5 md:p-6">
+  <div data-v-26cbed55="" class="net-overview-summary-panel net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6">
     <div class="summary-slot">Custom Summary</div>
   </div>
 </section>"

@@ -26,6 +26,10 @@
           :show-avg-expenses="showAvgExpenses"
           :show-comparison-overlay="showComparisonOverlay"
           :comparison-mode="comparisonMode"
+          :safe-to-spend="safeToSpend"
+          :safe-to-spend-loading="safeToSpendLoading"
+          :safe-to-spend-error="safeToSpendError"
+          :safe-to-spend-mode="safeToSpendMode"
           @update:start-date="dateRange.start = $event"
           @update:end-date="dateRange.end = $event"
           @update:zoomed-out="zoomedOut = $event"
@@ -36,6 +40,7 @@
           @update:show-comparison-overlay="showComparisonOverlay = $event"
           @update:comparison-mode="comparisonMode = $event"
           @update:net-timeframe="netTimeframe = $event"
+          @update:safe-to-spend-mode="setSafeToSpendMode"
           @net-summary-change="netSummary = $event"
           @net-data-change="chartData = $event"
           @net-bar-click="onNetBarClick"
@@ -364,7 +369,12 @@ const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
 const comparisonMode = ref('prior_month_to_date')
 const netTimeframe = ref('mtd')
+const safeToSpend = ref(null)
+const safeToSpendLoading = ref(false)
+const safeToSpendError = ref('')
+const safeToSpendMode = ref('today')
 let activeLoadToken = 0
+let safeToSpendToken = 0
 
 const netRange = computed(() => {
   const today = new Date()
@@ -469,11 +479,48 @@ async function loadReviewCount(filters = reviewFilters.value) {
 }
 
 /**
+ * Refresh the safe-to-spend decision card for the selected horizon.
+ *
+ * @returns {Promise<void>} Resolves when guidance is loaded or an inline error is set.
+ */
+async function loadSafeToSpend() {
+  const token = ++safeToSpendToken
+  safeToSpendLoading.value = true
+  safeToSpendError.value = ''
+
+  try {
+    const result = await api.fetchSafeToSpend({
+      mode: safeToSpendMode.value,
+      user_id: plaidUserId || undefined,
+    })
+    if (token !== safeToSpendToken) return
+    if (result?.status === 'success') {
+      safeToSpend.value = result.data
+    } else {
+      safeToSpendError.value = result?.message || 'Unable to calculate spend room.'
+    }
+  } catch (error) {
+    if (token !== safeToSpendToken) return
+    console.error('Failed to load safe-to-spend guidance:', error)
+    safeToSpendError.value = 'Unable to calculate spend room.'
+  } finally {
+    if (token === safeToSpendToken) {
+      safeToSpendLoading.value = false
+    }
+  }
+}
+
+function setSafeToSpendMode(mode) {
+  safeToSpendMode.value = mode
+  loadSafeToSpend()
+}
+
+/**
  * Perform the dashboard's initial data load in parallel so hero, breakdown,
- * and transaction widgets all start with fresh data. Applies a shared fallback
- * message when any fetch fails so the UI surfaces a consistent error tone. The
- * optional range argument enables debounced refreshes without overlapping the
- * results from earlier requests.
+ * transaction widgets, and decision guidance all start with fresh data. Applies
+ * a shared fallback message when any fetch fails so the UI surfaces a consistent
+ * error tone. The optional range argument enables debounced refreshes without
+ * overlapping the results from earlier requests.
  *
  * @param {{ start: string; end: string }} [range] - Date boundaries to apply to
  *   option and transaction requests.
@@ -500,6 +547,7 @@ async function loadDashboardData(range = debouncedRange.value) {
         refreshOptions(params).catch(recordFailure),
         loadTransactions(1, { force: true }).catch(recordFailure),
         api.fetchDashboardActivityStatus(params).catch(recordFailure),
+        loadSafeToSpend().catch(recordFailure),
       ])
     loadReviewCount(reviewFilters.value)
 

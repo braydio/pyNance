@@ -84,6 +84,7 @@ declare module 'vue' {
     RetryError: typeof import('./components/errors/RetryError.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SafeToSpendCard: typeof import('./components/dashboard/SafeToSpendCard.vue')['default']
     Settings: typeof import('./components/unused/Settings.vue')['default']
     SkeletonCard: typeof import('./components/ui/SkeletonCard.vue')['default']
     SpendingInsights: typeof import('./components/SpendingInsights.vue')['default']

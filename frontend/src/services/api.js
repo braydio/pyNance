@@ -80,6 +80,11 @@ export default {
     return response.data
   },
 
+  async fetchSafeToSpend(params = {}) {
+    const response = await apiClient.get('/dashboard/safe-to-spend', { params })
+    return response.data
+  },
+
   async fetchRsaMonitorStatus() {
     const response = await apiClient.get('/rsa-monitor/status')
     return response.data
