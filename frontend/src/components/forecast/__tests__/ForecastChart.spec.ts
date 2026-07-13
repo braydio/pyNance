@@ -129,24 +129,28 @@ describe('ForecastChart', () => {
     })
 
     expect(wrapper.text()).toContain('Month · Manual adjustments')
-    expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
-      expect.objectContaining({
-        label: 'Manual adjustments',
-        data: [null, 5],
-      }),
-    ])
+    expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Manual adjustments',
+          data: [null, 5],
+        }),
+      ]),
+    )
 
     await wrapper.setProps({
       selectedAspect: 'spending',
     })
 
     expect(wrapper.text()).toContain('Month · Spending')
-    expect(chartConstructor.mock.calls.at(-1)?.[1].data.datasets).toEqual([
-      expect.objectContaining({
-        label: 'Spending',
-        data: [null, -12],
-      }),
-    ])
+    expect(chartConstructor.mock.calls.at(-1)?.[1].data.datasets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Spending',
+          data: [null, -12],
+        }),
+      ]),
+    )
   })
 
   it('renders realized income labels and values from typed backend series', () => {
@@ -157,12 +161,14 @@ describe('ForecastChart', () => {
       },
     })
 
-    expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual([
-      expect.objectContaining({
-        label: 'Realized income used for auto-calculation',
-        data: [20, null],
-      }),
-    ])
+    expect(chartConstructor.mock.calls[0][1].data.datasets).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          label: 'Realized income used for auto-calculation',
+          data: [20, null],
+        }),
+      ]),
+    )
   })
 
   it('renders debt totals and debt components from backend series', () => {

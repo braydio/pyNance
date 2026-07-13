@@ -87,7 +87,7 @@ describe('DailyNetChart.vue', () => {
   })
 
   it('pads chart labels and data for the full selected month', async () => {
-    const wrapper = mount(DailyNetChart, {
+    mount(DailyNetChart, {
       props: {
         startDate: '2024-06-01',
         endDate: '2024-06-30',
@@ -220,7 +220,7 @@ describe('DailyNetChart.vue', () => {
         ],
       })
 
-    const wrapper = mount(DailyNetChart, {
+    mount(DailyNetChart, {
       props: {
         startDate: '2024-06-01',
         endDate: '2024-06-30',
@@ -474,7 +474,7 @@ describe('DailyNetChart.vue', () => {
     const wrapper = mount(DailyNetChart, {
       props: {
         startDate: '2024-06-01',
-        endDate: '2024-06-02',
+        endDate: '2024-06-30',
         zoomedOut: false,
         showComparisonOverlay: true,
         timeframe: 'mtd',

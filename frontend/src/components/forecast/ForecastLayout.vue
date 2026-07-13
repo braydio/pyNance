@@ -395,14 +395,6 @@ import {
 import { useAccountGroups } from '@/composables/useAccountGroups'
 import api from '@/services/api'
 
-type ForecastComputeMeta = {
-  lookbackDays: number
-  movingAverageWindow: 7 | 30 | 60 | 90
-  normalize: boolean
-  includesAutoDetectedAdjustments: boolean
-  autoDetectedAdjustmentCount: number
-}
-
 type ForecastAccountOption = {
   account_id: string
   name?: string

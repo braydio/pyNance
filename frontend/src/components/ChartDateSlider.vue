@@ -47,7 +47,9 @@ const dateList = computed(() => {
       out.push(d.toISOString().slice(0, 10))
       d.setDate(d.getDate() + 1)
     }
-  } catch {}
+  } catch {
+    /* ignore invalid date ranges */
+  }
   return out
 })
 

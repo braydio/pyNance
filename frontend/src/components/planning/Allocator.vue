@@ -76,10 +76,10 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: Record<string, number>): void
+  (_e: 'update:modelValue', _value: Record<string, number>): void
   (
-    e: 'change',
-    payload: {
+    _e: 'change',
+    _payload: {
       allocations: Record<string, number>
       totalPercent: number
       remainingPercent: number

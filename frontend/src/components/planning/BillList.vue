@@ -60,9 +60,9 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'select', bill: Bill): void
-  (e: 'edit', bill: Bill): void
-  (e: 'delete', id: string): void
+  (_e: 'select', _bill: Bill): void
+  (_e: 'edit', _bill: Bill): void
+  (_e: 'delete', _id: string): void
 }>()
 
 interface DisplayBill extends Bill {

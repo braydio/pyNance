@@ -440,7 +440,7 @@ function buildLineDataset(label, data, color, overrides = {}) {
   }
 }
 
-function emphasizeColor(hex, channel = 'g') {
+function emphasizeColor(hex) {
   return hex
 }
 

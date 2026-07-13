@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, watch } from 'vue'
 import UiButton from '@/components/ui/Button.vue'
 import type { Bill, BillFrequency } from '@/types/planning'
 import { formatCurrency } from '@/utils/currency'
@@ -148,9 +148,9 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (e: 'update:bill', draft: BillFormState): void
-  (e: 'save', payload: BillFormSubmitPayload): void
-  (e: 'cancel'): void
+  (_e: 'update:bill', _draft: BillFormState): void
+  (_e: 'save', _payload: BillFormSubmitPayload): void
+  (_e: 'cancel'): void
 }>()
 
 const form = reactive<BillFormState>(billToFormState(props.bill))

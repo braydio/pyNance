@@ -78,6 +78,10 @@ export default defineConfig(async () => {
   const bundleVisualizer = maybeVisualizer()
 
   return {
+    test: {
+      environment: 'jsdom',
+      setupFiles: ['./test-setup.cjs'],
+    },
     plugins: [
       vue(),
       ...(devtools ? [devtools] : []),

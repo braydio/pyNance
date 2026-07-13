@@ -128,7 +128,7 @@ describe('ForecastLayout', () => {
           label: 'Historical 30d avg/day',
           amount: 15,
           date: 'daily trend',
-          adjustment_type: 'auto_trend',
+          adjustment_type: 'auto_income',
           reason: 'Derived from historical average net change.',
           metadata: {},
         },

@@ -236,16 +236,13 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
-import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import GroupedCategoryDropdown from '@/components/ui/GroupedCategoryDropdown.vue'
-import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import SpendingInsights from '@/components/SpendingInsights.vue'
 import { formatAmount } from '@/utils/format'
 import { ref, computed, onMounted } from 'vue'
 import api from '@/services/api'
-import { ref, computed, onMounted } from 'vue'
 import { useTransactions } from '@/composables/useTransactions.js'
-import { formatDateInput, useDateRange } from '@/composables/useDateRange'
+import { useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions } from '@/api/transactions'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
@@ -306,31 +303,6 @@ const show30Day = ref(false)
 const showAvgIncome = ref(false)
 const showAvgExpenses = ref(false)
 const showComparisonOverlay = ref(false)
-const netTimeframe = ref('mtd')
-
-const netRange = computed(() => {
-  const today = new Date()
-  const end = formatDateInput(today)
-
-  if (netTimeframe.value === 'rolling_30') {
-    const startDate = new Date(today)
-    startDate.setDate(startDate.getDate() - 29)
-    return {
-      start: formatDateInput(startDate),
-      end,
-    }
-  }
-
-  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1)
-  return {
-    start: formatDateInput(monthStart),
-    end,
-  }
-})
-
-function toggleNetTimeframe() {
-  netTimeframe.value = netTimeframe.value === 'mtd' ? 'rolling_30' : 'mtd'
-}
 
 const catSummary = ref({ total: 0, startDate: '', endDate: '' })
 const {

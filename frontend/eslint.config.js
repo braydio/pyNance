@@ -3,6 +3,7 @@
 import js from "@eslint/js";
 import pluginVue from "eslint-plugin-vue";
 import pluginCypress from "eslint-plugin-cypress/flat";
+import tsParser from "@typescript-eslint/parser";
 
 export default [
   js.configs.recommended,
@@ -17,6 +18,11 @@ export default [
     rules: {
       "vue/multi-word-component-names": "off",
       "no-undef": "off",
+      "no-unused-vars": ["error", {
+        argsIgnorePattern: "^_",
+        varsIgnorePattern: "^_",
+        caughtErrorsIgnorePattern: "^_",
+      }],
     },
   },
 
@@ -48,6 +54,30 @@ export default [
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
+        ecmaFeatures: { jsx: true },
+        parser: {
+          js: tsParser,
+          ts: tsParser,
+        },
+      },
+    },
+  },
+
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+      },
+    },
+  },
+
+  {
+    files: ["**/*.{jsx,tsx}"],
+    languageOptions: {
+      parserOptions: {
         ecmaFeatures: { jsx: true },
       },
     },

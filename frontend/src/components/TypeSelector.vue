@@ -15,7 +15,7 @@
 /**
  * Selector for transaction type filter (credit/debit/all).
  */
-const props = defineProps({
+defineProps({
   modelValue: { type: String, default: '' },
 })
 

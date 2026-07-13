@@ -22,7 +22,7 @@ defineProps<{
 }>()
 
 const emit = defineEmits<{
-  (event: 'select-item', item: ForecastCashflowItem): void
+  (_event: 'select-item', _item: ForecastCashflowItem): void
 }>()
 </script>
 

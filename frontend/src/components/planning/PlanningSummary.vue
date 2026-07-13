@@ -44,13 +44,7 @@ import {
   selectRemainingCents,
   selectTotalBillsCents,
 } from '@/selectors/planning'
-import api from '@/services/api'
 import { formatCurrency } from '@/utils/currency'
-
-type AccountMetadata = {
-  name?: string
-  institution?: string
-}
 
 const props = withDefaults(
   defineProps<{
@@ -62,7 +56,7 @@ const props = withDefaults(
   },
 )
 
-const emit = defineEmits<{ (e: 'refresh'): void }>()
+const emit = defineEmits<{ (_e: 'refresh'): void }>()
 
 const { state } = usePlanning()
 const accountsById = ref<Record<string, { name?: string; institution_name?: string }>>({})
@@ -72,16 +66,6 @@ const activeScenario = computed(() => {
     return state.scenarios.find((scenario) => scenario.id === props.scenarioId)
   }
   return selectActiveScenario(state)
-})
-
-const planningAccountLabel = computed(() => {
-  const accountId = activeScenario.value?.accountId
-  if (!accountId) return ''
-  const account = accountLookup.value[accountId]
-  if (!account) return accountId
-
-  const parts = [account.name, account.institution].filter(Boolean)
-  return parts.length ? parts.join(' · ') : accountId
 })
 
 const scenarioCurrency = computed(
