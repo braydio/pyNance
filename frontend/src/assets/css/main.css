@@ -94,6 +94,18 @@
   color: var(--text-muted);
 }
 
+@utility amount-positive {
+  color: var(--color-accent-green);
+}
+
+@utility amount-negative {
+  color: var(--color-accent-red);
+}
+
+@utility amount-neutral {
+  color: inherit;
+}
+
 @utility hover-surface {
   &:hover {
     background-color: var(--interactive-hover);

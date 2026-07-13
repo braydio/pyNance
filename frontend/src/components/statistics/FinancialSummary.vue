@@ -26,15 +26,21 @@
     <div class="basic-stats">
       <div class="stat-item stat-income">
         <span class="stat-label">Income:</span>
-        <span class="stat-value">{{ formatAmount(detailSummary.totalIncome) }}</span>
+        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalIncome)">{{
+          formatAmount(detailSummary.totalIncome)
+        }}</span>
       </div>
       <div class="stat-item stat-expenses">
         <span class="stat-label">Expenses:</span>
-        <span class="stat-value">{{ formatAmount(detailSummary.totalExpenses) }}</span>
+        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalExpenses)">{{
+          formatAmount(detailSummary.totalExpenses)
+        }}</span>
       </div>
       <div class="stat-item stat-net" :class="netPolarityClass">
         <span class="stat-label">Net Total:</span>
-        <span class="stat-value">{{ formatAmount(detailSummary.totalNet) }}</span>
+        <span class="stat-value" :class="amountPolarityClass(detailSummary.totalNet)">{{
+          formatAmount(detailSummary.totalNet)
+        }}</span>
       </div>
     </div>
 
@@ -107,24 +113,38 @@
             <div class="subsection-title">Daily</div>
             <div class="stat-item">
               <span class="stat-label">Income:</span>
-              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span>
+              <span
+                class="stat-value"
+                :class="amountPolarityClass(extendedMetrics.avgDailyIncome)"
+                >{{ formatAmount(extendedMetrics.avgDailyIncome) }}</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-label">Expenses:</span>
-              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span>
+              <span
+                class="stat-value"
+                :class="amountPolarityClass(extendedMetrics.avgDailyExpenses)"
+                >{{ formatAmount(extendedMetrics.avgDailyExpenses) }}</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-label">Net:</span>
-              <span class="stat-value">{{ formatAmount(extendedMetrics.avgDailyNet) }}</span>
+              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.avgDailyNet)">{{
+                formatAmount(extendedMetrics.avgDailyNet)
+              }}</span>
             </div>
             <div class="subsection-title">Moving Averages</div>
             <div class="stat-item">
               <span class="stat-label">7-Day:</span>
-              <span class="stat-value">{{ formatAmount(extendedMetrics.netMA7) }}</span>
+              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA7)">{{
+                formatAmount(extendedMetrics.netMA7)
+              }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">30-Day:</span>
-              <span class="stat-value">{{ formatAmount(extendedMetrics.netMA30) }}</span>
+              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.netMA30)">{{
+                formatAmount(extendedMetrics.netMA30)
+              }}</span>
             </div>
           </div>
 
@@ -197,11 +217,15 @@
             </div>
             <div class="stat-item">
               <span class="stat-label">Savings Amount:</span>
-              <span class="stat-value">{{ savingsAmountLabel }}</span>
+              <span class="stat-value" :class="amountPolarityClass(savingsAmountValue)">{{
+                savingsAmountLabel
+              }}</span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Avg Savings (positive):</span>
-              <span class="stat-value">{{ avgPositiveSavingsLabel }}</span>
+              <span class="stat-value" :class="amountPolarityClass(avgPositiveSavingsValue)">{{
+                avgPositiveSavingsLabel
+              }}</span>
             </div>
           </div>
         </div>
@@ -214,7 +238,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import api from '@/services/api'
 import { getRecurringTransactions } from '@/api/recurring'
-import { formatAmount } from '@/utils/format'
+import { amountPolarityClass, formatAmount } from '@/utils/format'
 import DailySpendingPanel from './DailySpendingPanel.vue'
 
 /**
@@ -749,11 +773,16 @@ const savingsRateLabel = computed(() => {
   return `${pct}%`
 })
 
-const savingsAmountLabel = computed(() => {
-  if (!filteredChartData.value.length) return 'N/A'
+const savingsAmountValue = computed(() => {
+  if (!filteredChartData.value.length) return null
   const totalIncome = detailSummary.value?.totalIncome ?? 0
   const totalExpensesAbs = Math.abs(detailSummary.value?.totalExpenses ?? 0)
-  return formatAmount(totalIncome - totalExpensesAbs)
+  return totalIncome - totalExpensesAbs
+})
+
+const savingsAmountLabel = computed(() => {
+  if (savingsAmountValue.value === null) return 'N/A'
+  return formatAmount(savingsAmountValue.value)
 })
 
 const positiveDaysLabel = computed(() => {
@@ -774,11 +803,15 @@ const negativeDaysLabel = computed(() => {
   return `${pct}% (${neg}/${n})`
 })
 
-const avgPositiveSavingsLabel = computed(() => {
+const avgPositiveSavingsValue = computed(() => {
   const values = filteredChartData.value.map((d) => d.net?.parsedValue || 0).filter((v) => v > 0)
-  if (!values.length) return 'N/A'
-  const avg = values.reduce((a, b) => a + b, 0) / values.length
-  return formatAmount(avg)
+  if (!values.length) return null
+  return values.reduce((a, b) => a + b, 0) / values.length
+})
+
+const avgPositiveSavingsLabel = computed(() => {
+  if (avgPositiveSavingsValue.value === null) return 'N/A'
+  return formatAmount(avgPositiveSavingsValue.value)
 })
 
 // Watch for chart data changes to recalculate
@@ -908,7 +941,7 @@ function clampDateString(value, min, max) {
 
 .stat-net.positive .stat-label,
 .stat-net.positive .stat-value {
-  color: var(--color-accent-cyan);
+  color: var(--color-accent-green);
 }
 
 .stat-net.negative .stat-label,
@@ -1091,6 +1124,14 @@ function clampDateString(value, min, max) {
   color: var(--color-text-light);
 }
 
+.stat-value.amount-positive {
+  color: var(--color-accent-green);
+}
+
+.stat-value.amount-negative {
+  color: var(--color-accent-red);
+}
+
 .badge-note {
   display: inline-block;
   margin-left: 0.25rem;
@@ -1108,7 +1149,7 @@ function clampDateString(value, min, max) {
 }
 
 .trend-up {
-  color: var(--color-accent-cyan);
+  color: var(--color-accent-green);
 }
 
 .trend-down {
