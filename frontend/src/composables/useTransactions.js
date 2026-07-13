@@ -127,7 +127,6 @@ export function useTransactions(
     }
   }
 
-
   /**
    * Rebuild the unpaginated transaction collection from cached pages.
    *

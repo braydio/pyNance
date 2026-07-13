@@ -2,6 +2,8 @@
 
 from datetime import datetime
 
+from flask import Blueprint, jsonify, request
+
 from app.config import logger
 from app.services import account_groups as account_group_service
 from app.services.account_snapshot import (
@@ -14,7 +16,6 @@ from app.services.safe_to_spend import (
     SafeToSpendInputs,
     build_safe_to_spend_payload,
 )
-from flask import Blueprint, jsonify, request
 
 dashboard = Blueprint("dashboard", __name__)
 

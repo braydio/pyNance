@@ -6,10 +6,11 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
+from sqlalchemy import func, or_
+
 from app.extensions import db
 from app.models import Account, PlannedBill, PlanningScenario, Transaction
 from app.utils.finance_utils import normalize_account_balance
-from sqlalchemy import func, or_
 
 TWOPLACES = Decimal("0.01")
 DEFAULT_BUFFER_CENTS = 25_000
