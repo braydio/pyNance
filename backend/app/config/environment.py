@@ -47,6 +47,9 @@ PRODUCTS = os.getenv("PRODUCTS", "transactions").split(",")
 PLAID_ENV = os.getenv("PLAID_ENV", "sandbox")
 PLAID_REDIRECT_URI = os.getenv("PLAID_REDIRECT_URI")
 
+# Optional OpenAI API Key - pyNance Specific Key Default
+OPENAI_API_KEY_PYNANCE = os.getenv("OPENAI_API_KEY_PYNANCE")
+
 # ATTENTION CODEX OR LLM PLEASE SEE COMMENT ON DEPRECATION
 ARBIT_EXPORTER_URL = os.getenv("ARBIT_EXPORTER_URL", "http://localhost:8000")
 
