@@ -86,9 +86,48 @@ describe('FinancialSummary trends', () => {
     await wrapper.find('.accent-toggle-btn').trigger('click')
     const html = wrapper.html()
     expect(html).toContain('Income:')
-    expect(html).toContain('+$100.00')
+    expect(html).toContain('$100.00')
     expect(html).toContain('Expenses:')
-    expect(html).toContain('+$100.00')
+    expect(html).toContain('$100.00')
+  })
+
+  it('uses accounting formatting and polarity classes for trend and outlier amounts', async () => {
+    const wrapper = mount(FinancialSummary, {
+      props: {
+        summary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+        chartData: [
+          {
+            date: '2024-02-01',
+            income: { parsedValue: 100 },
+            expenses: { parsedValue: 0 },
+            net: { parsedValue: 100 },
+          },
+          {
+            date: '2024-02-02',
+            income: { parsedValue: 50 },
+            expenses: { parsedValue: -100 },
+            net: { parsedValue: -50 },
+          },
+        ],
+      },
+    })
+
+    await wrapper.find('.accent-toggle-btn').trigger('click')
+    await nextTick()
+
+    const trendValues = wrapper.findAll('.trend-indicator')
+    expect(trendValues[0].text()).toBe('($150.00)')
+    expect(trendValues[0].classes()).toContain('amount-negative')
+    expect(trendValues[1].text()).toBe('($50.00)')
+    expect(trendValues[1].classes()).toContain('amount-negative')
+    expect(trendValues[2].text()).toBe('$100.00')
+    expect(trendValues[2].classes()).toContain('amount-positive')
+
+    const outlierAmounts = wrapper.findAll('.outlier-amount')
+    expect(outlierAmounts[0].text()).toBe('$100.00')
+    expect(outlierAmounts[0].classes()).toContain('amount-positive')
+    expect(outlierAmounts[1].text()).toBe('($100.00)')
+    expect(outlierAmounts[1].classes()).toContain('amount-negative')
   })
 
   it('rolls summary totals back to the selected date', async () => {
@@ -130,6 +169,9 @@ describe('FinancialSummary trends', () => {
     expect(incomeStat).toContain('$300.00')
     expect(expenseStat).toContain('($150.00)')
     expect(netStat).toContain('$150.00')
+    expect(wrapper.find('.stat-income .stat-value').classes()).toContain('amount-positive')
+    expect(wrapper.find('.stat-expenses .stat-value').classes()).toContain('amount-negative')
+    expect(wrapper.find('.stat-net .stat-value').classes()).toContain('amount-positive')
 
     expect(wrapper.find('.detail-date-helper').text()).toMatch(/2024/)
   })
