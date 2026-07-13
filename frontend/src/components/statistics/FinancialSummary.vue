@@ -155,27 +155,33 @@
             </h4>
             <div class="stat-item">
               <span class="stat-label">Net:</span>
-              <span class="stat-value trend-indicator" :class="netTrendClass">{{
-                formatSignedCurrency(extendedMetrics.netChange)
-              }}</span>
+              <span
+                class="stat-value trend-indicator"
+                :class="amountPolarityClass(extendedMetrics.netChange)"
+                >{{ formatCurrencyDelta(extendedMetrics.netChange) }}</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-label">Income:</span>
-              <span class="stat-value trend-indicator" :class="incomeTrendClass">{{
-                formatSignedCurrency(extendedMetrics.incomeChange)
-              }}</span>
+              <span
+                class="stat-value trend-indicator"
+                :class="amountPolarityClass(extendedMetrics.incomeChange)"
+                >{{ formatCurrencyDelta(extendedMetrics.incomeChange) }}</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-label">Expenses:</span>
-              <span class="stat-value trend-indicator" :class="expenseTrendClass">{{
-                formatSignedCurrency(extendedMetrics.expenseChange)
-              }}</span>
+              <span
+                class="stat-value trend-indicator"
+                :class="amountPolarityClass(extendedMetrics.expenseChange)"
+                >{{ formatCurrencyDelta(extendedMetrics.expenseChange) }}</span
+              >
             </div>
             <div class="stat-item">
               <span class="stat-label">Volatility (σ of daily net):</span>
-              <span class="stat-value"
-                >{{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})</span
-              >
+              <span class="stat-value" :class="amountPolarityClass(extendedMetrics.volatility)">
+                {{ volatilityLevel }} (σ {{ formatAmount(extendedMetrics.volatility) }})
+              </span>
             </div>
           </div>
 
@@ -186,11 +192,21 @@
             </h4>
             <div class="stat-item">
               <span class="stat-label">Income: <span class="badge-note">largest</span></span>
-              <span class="stat-value">{{ topEarningLabel }}</span>
+              <span class="stat-value outlier-value">
+                <span>{{ topEarningDateLabel }}</span>
+                <span class="outlier-amount" :class="amountPolarityClass(topEarningAmountValue)">{{
+                  topEarningAmountLabel
+                }}</span>
+              </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Expense: <span class="badge-note">largest</span></span>
-              <span class="stat-value">{{ topSpendingLabel }}</span>
+              <span class="stat-value outlier-value">
+                <span>{{ topSpendingDateLabel }}</span>
+                <span class="outlier-amount" :class="amountPolarityClass(topSpendingAmountValue)">{{
+                  topSpendingAmountLabel
+                }}</span>
+              </span>
             </div>
             <div class="stat-item">
               <span class="stat-label">Anomalies (>|2σ|):</span>
@@ -242,15 +258,13 @@ import { amountPolarityClass, formatAmount } from '@/utils/format'
 import DailySpendingPanel from './DailySpendingPanel.vue'
 
 /**
- * Format a numeric delta with an explicit sign.
+ * Format a numeric delta with shared accounting-style currency rules.
  *
  * @param {number} value - The value to format.
- * @returns {string} Signed currency string.
+ * @returns {string} Accounting-style currency string.
  */
-function formatSignedCurrency(value) {
-  const abs = Math.abs(value)
-  const formatted = formatAmount(abs)
-  return value >= 0 ? `+${formatted}` : `-${formatted}`
+function formatCurrencyDelta(value) {
+  return formatAmount(value)
 }
 
 const props = defineProps({
@@ -679,22 +693,6 @@ const extendedMetrics = computed(() => {
   }
 })
 
-const netTrendClass = computed(() => ({
-  'trend-up': extendedMetrics.value.netTrend > 0,
-  'trend-down': extendedMetrics.value.netTrend < 0,
-  'trend-flat': extendedMetrics.value.netTrend === 0,
-}))
-const incomeTrendClass = computed(() => ({
-  'trend-up': extendedMetrics.value.incomeTrend > 0,
-  'trend-down': extendedMetrics.value.incomeTrend < 0,
-  'trend-flat': extendedMetrics.value.incomeTrend === 0,
-}))
-const expenseTrendClass = computed(() => ({
-  'trend-up': extendedMetrics.value.expenseTrend > 0,
-  'trend-down': extendedMetrics.value.expenseTrend < 0,
-  'trend-flat': extendedMetrics.value.expenseTrend === 0,
-}))
-
 // Single-line trend summary subtitle
 const trendSummary = computed(() => {
   function part(change, label) {
@@ -714,17 +712,23 @@ const volatilityLevel = computed(() => {
   return 'High'
 })
 
-const topEarningLabel = computed(() => {
-  const hi = extendedMetrics.value.topEarningDay
-  if (!hi) return 'N/A'
-  const amt = formatAmount(hi.amount)
-  // Show explicit plus sign for highest income
-  return `${hi.date} (+${amt})`
+const topEarningAmountValue = computed(() => extendedMetrics.value.topEarningDay?.amount ?? null)
+const topSpendingAmountValue = computed(() => {
+  const amount = extendedMetrics.value.topSpendingDay?.amount
+  return amount == null ? null : -Math.abs(amount)
 })
 
-const topSpendingLabel = computed(() => {
-  const he = extendedMetrics.value.topSpendingDay
-  return he ? `${he.date} (${formatAmount(he.amount)})` : 'N/A'
+const topEarningDateLabel = computed(() => extendedMetrics.value.topEarningDay?.date ?? 'N/A')
+const topSpendingDateLabel = computed(() => extendedMetrics.value.topSpendingDay?.date ?? 'N/A')
+
+const topEarningAmountLabel = computed(() => {
+  if (topEarningAmountValue.value === null) return ''
+  return formatAmount(topEarningAmountValue.value)
+})
+
+const topSpendingAmountLabel = computed(() => {
+  if (topSpendingAmountValue.value === null) return ''
+  return formatAmount(topSpendingAmountValue.value)
 })
 
 // Statistical calculation functions
@@ -1130,6 +1134,16 @@ function clampDateString(value, min, max) {
 
 .stat-value.amount-negative {
   color: var(--color-accent-red);
+}
+
+.outlier-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.outlier-amount {
+  font-variant-numeric: tabular-nums;
 }
 
 .badge-note {
