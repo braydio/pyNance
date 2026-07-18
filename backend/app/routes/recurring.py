@@ -162,7 +162,7 @@ def delete_recurring_tx(account_id):
 def scan_account_for_recurring(account_id):
     """Detect recurring transactions for an account and persist them."""
     try:
-        cutoff = datetime.now(timezone.utc) - timedelta(days=90)
+        cutoff = datetime.now(timezone.utc).date() - timedelta(days=90)
         rows = (
             Transaction.query.filter_by(account_id=account_id)
             .filter(Transaction.date >= cutoff)

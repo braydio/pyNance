@@ -112,13 +112,11 @@ def _cash_account_payload(accounts: list[Account]) -> tuple[int, list[dict]]:
 def _spent_between(start: date, end: date, user_id: str | None = None) -> int:
     """Return posted non-internal outflows between inclusive date boundaries."""
 
-    start_dt = datetime.combine(start, datetime.min.time())
-    end_dt = datetime.combine(end, datetime.max.time())
     query = (
         db.session.query(func.coalesce(func.sum(func.abs(Transaction.amount)), 0))
         .join(Account, Account.account_id == Transaction.account_id)
         .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
-        .filter(Transaction.date >= start_dt, Transaction.date <= end_dt)
+        .filter(Transaction.date >= start, Transaction.date <= end)
         .filter(Transaction.amount < 0)
         .filter(or_(Transaction.is_internal.is_(False), Transaction.is_internal.is_(None)))
     )
@@ -140,12 +138,11 @@ def _looks_like_income(transaction: Transaction) -> bool:
 def _next_income_date(as_of: date, user_id: str | None = None) -> date | None:
     """Infer the next payday from recent income cadence when possible."""
 
-    lookback = datetime.combine(as_of - timedelta(days=90), datetime.min.time())
-    end = datetime.combine(as_of, datetime.max.time())
+    lookback = as_of - timedelta(days=90)
     query = (
         Transaction.query.join(Account, Account.account_id == Transaction.account_id)
         .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
-        .filter(Transaction.date >= lookback, Transaction.date <= end)
+        .filter(Transaction.date >= lookback, Transaction.date <= as_of)
         .filter(Transaction.amount > 0)
         .order_by(Transaction.date.asc())
     )

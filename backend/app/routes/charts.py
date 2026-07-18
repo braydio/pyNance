@@ -18,6 +18,26 @@ from app.utils.finance_utils import display_transaction_amount, normalize_accoun
 charts = Blueprint("charts", __name__)
 
 
+def _serialize_drilldown_transaction(txn: Transaction, account: Account, category: Category | None, amount: float):
+    """Serialize a transaction row for dashboard chart drill-down modals."""
+
+    return {
+        "transaction_id": txn.transaction_id,
+        "date": txn.date.isoformat() if txn.date else None,
+        "amount": amount,
+        "description": txn.description or txn.merchant_name or "N/A",
+        "category": txn.category or "Uncategorized",
+        "category_icon_url": getattr(category, "pfc_icon_url", None),
+        "merchant_name": txn.merchant_name or "Unknown",
+        "account_name": account.name or "Unnamed Account",
+        "institution_name": account.institution_name or "Unknown",
+        "subtype": account.subtype or "Unknown",
+        "account_id": account.account_id or "Unknown",
+        "pending": getattr(txn, "pending", False),
+        "isEditing": False,
+    }
+
+
 def _request_cache():
     if has_request_context():
         return g.setdefault("dashboard_cache", {})
@@ -160,7 +180,7 @@ def tag_metrics() -> Dict[str, Any]:
 
 @charts.route("/category_transactions", methods=["GET"])
 def category_transactions() -> Dict[str, Any]:
-    """Return transactions for the given category IDs within a date range."""
+    """Return visible expense transactions contributing to category chart bars."""
     ids_str = request.args.get("category_ids", "")
     start_date_str = request.args.get("start_date")
     end_date_str = request.args.get("end_date")
@@ -172,12 +192,14 @@ def category_transactions() -> Dict[str, Any]:
         )
 
     try:
-        cat_ids = [int(x) for x in ids_str.split(",") if x]
+        cat_ids = [int(value.strip()) for value in ids_str.split(",") if value.strip()]
     except ValueError:
         return (
             jsonify({"status": "error", "message": "invalid category_ids"}),
             400,
         )
+    if not cat_ids:
+        return jsonify({"status": "error", "message": "category_ids required"}), 400
 
     if start_date_str:
         start_date = datetime.strptime(start_date_str, "%Y-%m-%d").date()
@@ -187,12 +209,11 @@ def category_transactions() -> Dict[str, Any]:
         end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date()
     else:
         end_date = datetime.now().date()
-
     transactions = (
         db.session.query(Transaction, Account, Category)
         .join(Account, Transaction.account_id == Account.account_id)
         .outerjoin(Category, Transaction.category_id == Category.id)
-        .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+        .filter(Account.is_hidden.is_(False))
         .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .filter(Transaction.category_id.in_(cat_ids))
         .filter(Transaction.date >= start_date)
@@ -203,23 +224,49 @@ def category_transactions() -> Dict[str, Any]:
 
     serialized = []
     for txn, acc, cat in transactions:
-        serialized.append(
-            {
-                "transaction_id": txn.transaction_id,
-                "date": txn.date.isoformat() if txn.date else None,
-                "amount": display_transaction_amount(txn),
-                "description": txn.description or txn.merchant_name or "N/A",
-                "category": txn.category or "Uncategorized",
-                "category_icon_url": getattr(cat, "pfc_icon_url", None),
-                "merchant_name": txn.merchant_name or "Unknown",
-                "account_name": acc.name or "Unnamed Account",
-                "institution_name": acc.institution_name or "Unknown",
-                "subtype": acc.subtype or "Unknown",
-                "account_id": acc.account_id or "Unknown",
-                "pending": getattr(txn, "pending", False),
-                "isEditing": False,
-            }
-        )
+        amount = display_transaction_amount(txn)
+        if amount >= 0:
+            continue
+        serialized.append(_serialize_drilldown_transaction(txn, acc, cat, amount))
+
+    return jsonify({"status": "success", "data": {"transactions": serialized}}), 200
+
+
+@charts.route("/merchant_transactions", methods=["GET"])
+def merchant_transactions() -> Dict[str, Any]:
+    """Return visible expense transactions contributing to a merchant chart bar."""
+
+    merchant = (request.args.get("merchant") or "").strip()
+    if not merchant:
+        return jsonify({"status": "error", "message": "merchant required"}), 400
+
+    start_date_str = request.args.get("start_date")
+    end_date_str = request.args.get("end_date")
+    start_date = (
+        datetime.strptime(start_date_str, "%Y-%m-%d").date()
+        if start_date_str
+        else datetime.now().date() - timedelta(days=30)
+    )
+    end_date = datetime.strptime(end_date_str, "%Y-%m-%d").date() if end_date_str else datetime.now().date()
+    transactions = (
+        db.session.query(Transaction, Account, Category)
+        .join(Account, Transaction.account_id == Account.account_id)
+        .outerjoin(Category, Transaction.category_id == Category.id)
+        .filter(Account.is_hidden.is_(False))
+        .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
+        .filter(Transaction.date >= start_date)
+        .filter(Transaction.date <= end_date)
+        .order_by(Transaction.date.desc())
+        .all()
+    )
+
+    serialized = []
+    for txn, account, category in transactions:
+        merchant_label = txn.merchant_name or txn.description or "Unknown"
+        amount = display_transaction_amount(txn)
+        if merchant_label != merchant or amount >= 0:
+            continue
+        serialized.append(_serialize_drilldown_transaction(txn, account, category, amount))
 
     return jsonify({"status": "success", "data": {"transactions": serialized}}), 200
 
@@ -384,13 +431,6 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
 
     logger.info("[daily_net] start_date=%s, end_date=%s", start_date, end_date)
 
-    # Convert to timezone-aware datetime bounds so timestamped transactions are
-    # included for the entire end date. Without this, transactions occurring
-    # later in the day would be excluded and tooltips would not match modal
-    # totals.
-    start_dt = datetime.combine(start_date, datetime.min.time()).replace(tzinfo=timezone.utc)
-    end_dt = datetime.combine(end_date, datetime.max.time()).replace(tzinfo=timezone.utc)
-
     # Align filtering with transactions listing: exclude hidden accounts
     # (is_hidden == False) and internal transfers so tooltip counts match
     # the transactions modal and tables.
@@ -398,8 +438,8 @@ def get_daily_net() -> Dict[str, Dict[str, Any]]:
         db.session.query(Transaction)
         .join(Account, Transaction.account_id == Account.account_id)
         .filter(Account.is_hidden.is_(False))
-        .filter(Transaction.date >= start_dt)
-        .filter(Transaction.date <= end_dt)
+        .filter(Transaction.date >= start_date)
+        .filter(Transaction.date <= end_date)
         .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
         .all()
     )
@@ -590,19 +630,11 @@ def category_breakdown_tree():
             }
         )
 
-        # Query all relevant transactions (category join for label, account join for normalization)
-        transactions = (
-            db.session.query(Transaction)
-            .join(Category, Transaction.category_id == Category.id, isouter=True)
-            .filter(Transaction.date >= start_date)
-            .filter(Transaction.date <= end_date)
-            .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
-            .all()
-        )
-
         transactions = (
             db.session.query(Transaction, Category)
             .join(Category, Transaction.category_id == Category.id, isouter=True)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Account.is_hidden.is_(False))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)
             .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
@@ -706,7 +738,7 @@ def merchant_breakdown():
         transactions = (
             db.session.query(Transaction, Account)
             .join(Account, Transaction.account_id == Account.account_id)
-            .filter((Account.is_hidden.is_(False)) | (Account.is_hidden.is_(None)))
+            .filter(Account.is_hidden.is_(False))
             .filter((Transaction.is_internal.is_(False)) | (Transaction.is_internal.is_(None)))
             .filter(Transaction.date >= start_date)
             .filter(Transaction.date <= end_date)

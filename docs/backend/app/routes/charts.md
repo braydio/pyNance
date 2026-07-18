@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-18
+Last Updated: 2026-07-16
 Status: Active
 ---
 
@@ -13,6 +13,10 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 ## Endpoints
 
 - `GET /charts/category_breakdown` – Category spending summary.
+- `GET /charts/category_breakdown_tree` – Hierarchical expense totals used by the dashboard category chart.
+- `GET /charts/category_transactions` – Unpaginated expense transactions represented by selected category bars.
+- `GET /charts/merchant_breakdown` – Expense totals grouped by merchant.
+- `GET /charts/merchant_transactions` – Unpaginated expense transactions represented by a merchant bar.
 - `GET /charts/tag_metrics` – Tag totals and counts summary.
 - `GET /charts/daily_net` – Net income/expense per day.
 - `GET /charts/cash_flow` – Aggregated income and expenses by day or month.
@@ -25,6 +29,18 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 - **GET /charts/category_breakdown**
   - **Inputs:** `start_date`, `end_date` query params.
   - **Outputs:** `{ "status": "success", "data": [{ "category": str, "amount": float, "date": str }] }`.
+- **GET /charts/category_breakdown_tree**
+  - **Inputs:** Optional `start_date`, `end_date`, and `top_n` query params.
+  - **Outputs:** Hierarchical parent/detail category totals with the category IDs represented by each bar.
+- **GET /charts/category_transactions**
+  - **Inputs:** Required comma-delimited `category_ids`; optional `start_date` and `end_date`.
+  - **Outputs:** All visible, non-internal expense transactions matching those category IDs and the inclusive date range.
+- **GET /charts/merchant_breakdown**
+  - **Inputs:** Optional `start_date`, `end_date`, and `top_n` query params.
+  - **Outputs:** Merchant expense totals for visible, non-internal transactions in the inclusive date range.
+- **GET /charts/merchant_transactions**
+  - **Inputs:** Required `merchant`; optional `start_date` and `end_date`.
+  - **Outputs:** All visible, non-internal expense transactions represented by that merchant bar.
 - **GET /charts/tag_metrics**
   - **Inputs:** `start_date`, `end_date` query params.
   - **Outputs:** `{ "status": "success", "data": [{ "tag": str, "total": float, "count": int }] }`.
@@ -55,6 +71,9 @@ Provide chart-ready financial summaries for dashboard components, covering categ
 ## Behaviors/Edge Cases
 
 - Responses are optimized for minimal payload size and tolerate empty result sets.
+- Daily, category, and merchant chart ranges use inclusive calendar dates. Their drill-down data excludes hidden
+  accounts and internal transfers; category and merchant drill-downs include only expenses that contribute to the
+  selected bar.
 - Forecast endpoint mirrors the `/api/forecast` logic for overlayed views.
 
 ## Sample Request/Response

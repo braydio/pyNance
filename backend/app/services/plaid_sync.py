@@ -190,23 +190,23 @@ def _transactions_sync_with_retry(
             time.sleep(initial_backoff_seconds * (2 ** (attempt - 1)))
 
 
-def _parse_txn_date(val) -> datetime:
+def _parse_txn_date(val) -> date:
+    """Return Plaid's transaction calendar date without adding a timezone."""
+
     if isinstance(val, datetime):
-        # Ensure tz-aware in UTC
-        return val if val.tzinfo else val.replace(tzinfo=timezone.utc)
+        return val.date()
     if isinstance(val, date):
-        return datetime.combine(val, datetime.min.time(), tzinfo=timezone.utc)
+        return val
     # Expect YYYY-MM-DD
     try:
-        d = datetime.strptime(val, "%Y-%m-%d").date()
-        return datetime.combine(d, datetime.min.time(), tzinfo=timezone.utc)
+        return datetime.strptime(val, "%Y-%m-%d").date()
     except Exception:
         # Fallback to now to avoid crashing sync; log upstream parse issues
         logger.warning(
             "[SYNC] Unexpected date format: %r; defaulting to now()",
             val,
         )
-        return datetime.now(timezone.utc)
+        return datetime.now(timezone.utc).date()
 
 
 def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> None:

@@ -104,7 +104,7 @@ def test_institution_delete_cascades_account_tree(app_context):
         transaction_id="txn-1",
         account_id=account.account_id,
         amount=Decimal("25.00"),
-        date=datetime.now(timezone.utc),
+        date=date.today(),
     )
     transaction.category_id = category.id
     db.session.add(transaction)
@@ -187,7 +187,7 @@ def test_category_delete_retains_transactions(app_context):
         transaction_id="txn-2",
         account_id=account.account_id,
         amount=Decimal("15.00"),
-        date=datetime.now(timezone.utc),
+        date=date.today(),
     )
     txn.category_id = category.id
     db.session.add(txn)

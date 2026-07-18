@@ -1,6 +1,6 @@
 """Dashboard-specific API routes."""
 
-from datetime import datetime
+from datetime import date, datetime
 
 from flask import Blueprint, jsonify, request
 
@@ -20,13 +20,13 @@ from app.services.safe_to_spend import (
 dashboard = Blueprint("dashboard", __name__)
 
 
-def _parse_iso_date_arg(name: str) -> datetime | None:
-    """Parse an optional ``YYYY-MM-DD`` query arg into a datetime."""
+def _parse_iso_date_arg(name: str) -> date | None:
+    """Parse an optional ``YYYY-MM-DD`` query arg into a calendar date."""
 
     raw = request.args.get(name)
     if not raw:
         return None
-    return datetime.strptime(raw, "%Y-%m-%d")
+    return datetime.strptime(raw, "%Y-%m-%d").date()
 
 
 @dashboard.route("/safe-to-spend", methods=["GET"])

@@ -13,6 +13,29 @@ export async function fetchCategoryBreakdownTree(params = {}) {
 }
 
 /**
+ * Fetch every visible expense transaction represented by a category chart bar.
+ */
+export async function fetchCategoryTransactions(params = {}) {
+  const { category_ids, ...rest } = params
+  const query = { ...rest }
+  if (Array.isArray(category_ids)) {
+    query.category_ids = category_ids.join(',')
+  } else if (category_ids) {
+    query.category_ids = category_ids
+  }
+  const response = await axios.get('/api/charts/category_transactions', { params: query })
+  return response.data?.status === 'success' ? response.data.data?.transactions || [] : []
+}
+
+/**
+ * Fetch every visible expense transaction represented by a merchant chart bar.
+ */
+export async function fetchMerchantTransactions(params = {}) {
+  const response = await axios.get('/api/charts/merchant_transactions', { params })
+  return response.data?.status === 'success' ? response.data.data?.transactions || [] : []
+}
+
+/**
  * Aggregate spending by merchant name.
  *
  * @param {Object} params - Optional query params (e.g., `start_date`, `end_date`).

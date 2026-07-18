@@ -21,11 +21,11 @@ def upsert_imported_transactions(transactions, user_id=None, account_id=None):
         raw_date = tx.get("date")
         if raw_date:
             try:
-                parsed_date = datetime.fromisoformat(raw_date)
+                parsed_date = datetime.fromisoformat(raw_date).date()
             except (TypeError, ValueError):
-                parsed_date = datetime.now(timezone.utc)
+                parsed_date = datetime.now(timezone.utc).date()
         else:
-            parsed_date = datetime.now(timezone.utc)
+            parsed_date = datetime.now(timezone.utc).date()
 
         # Normalize provider to enum-compatible value
         provider_val = str(tx.get("provider", "manual") or "manual").lower()

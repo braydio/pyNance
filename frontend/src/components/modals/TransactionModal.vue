@@ -104,7 +104,7 @@
           <ModalTransactionsDisplay
             :transactions="transactions"
             :title-date="''"
-            :show-date-column="kind === 'category' && showDateColumn"
+            :show-date-column="showDateColumn"
             :show-category-visuals="showCategoryVisuals"
             :details-header="detailsHeader"
             :primary-field="primaryField"

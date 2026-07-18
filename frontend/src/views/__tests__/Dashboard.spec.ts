@@ -7,6 +7,7 @@ import path from 'path'
 import { fileURLToPath } from 'url'
 import Dashboard from '../Dashboard.vue'
 import { fetchTransactions } from '@/api/transactions'
+import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/charts'
 
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
@@ -42,6 +43,11 @@ vi.mock('@/api/transactions', () => ({
   fetchTransactions: vi.fn().mockResolvedValue({ transactions: [] }),
   fetchTopMerchants: vi.fn().mockResolvedValue([]),
   fetchTopCategories: vi.fn().mockResolvedValue([]),
+}))
+
+vi.mock('@/api/charts', () => ({
+  fetchCategoryTransactions: vi.fn().mockResolvedValue([]),
+  fetchMerchantTransactions: vi.fn().mockResolvedValue([]),
 }))
 
 const TEST_DIR = path.dirname(fileURLToPath(import.meta.url))
@@ -488,6 +494,8 @@ beforeEach(async () => {
     // Ignore storage setup failures in jsdom-less or restricted environments.
   }
   fetchTransactions.mockClear()
+  fetchCategoryTransactions.mockClear()
+  fetchMerchantTransactions.mockClear()
   receivedProps = null
   dailyNetChartProps = null
   autoSelected = false
@@ -655,6 +663,41 @@ describe('Dashboard.vue', () => {
     })
     expect(wrapper.vm.dailyModalSubtitle).toBe('2024-06-10')
     expect(wrapper.vm.showDailyModal).toBe(true)
+  })
+
+  it('loads category drill-down transactions by category IDs and active date range', async () => {
+    const categoryTransactions = [{ transaction_id: 'tx-food', amount: -24.5 }]
+    fetchCategoryTransactions.mockResolvedValueOnce(categoryTransactions)
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    await wrapper.vm.onCategoryBarClick({ label: 'Food', ids: ['12', '34'] })
+
+    expect(fetchCategoryTransactions).toHaveBeenCalledWith({
+      category_ids: ['12', '34'],
+      start_date: '2024-02-01',
+      end_date: '2024-02-29',
+    })
+    expect(wrapper.vm.categoryModalTransactions).toEqual(categoryTransactions)
+    expect(wrapper.vm.showCategoryModal).toBe(true)
+  })
+
+  it('loads merchant drill-down transactions through the matching chart endpoint', async () => {
+    const merchantTransactions = [{ transaction_id: 'tx-coffee', amount: -6.75 }]
+    fetchMerchantTransactions.mockResolvedValueOnce(merchantTransactions)
+    mockBreakdownType.value = 'merchant'
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    await wrapper.vm.onCategoryBarClick({ label: 'Coffee Shop', ids: ['Coffee Shop'] })
+
+    expect(fetchMerchantTransactions).toHaveBeenCalledWith({
+      merchant: 'Coffee Shop',
+      start_date: '2024-02-01',
+      end_date: '2024-02-29',
+    })
+    expect(wrapper.vm.categoryModalTransactions).toEqual(merchantTransactions)
+    expect(wrapper.vm.categoryModalKind).toBe('merchant')
   })
 
   it('normalizes reversed date inputs before notifying charts', async () => {

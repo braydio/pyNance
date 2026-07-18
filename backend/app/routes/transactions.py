@@ -8,7 +8,7 @@ import json
 import re
 import traceback
 from collections import defaultdict
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal, InvalidOperation
 
 from flask import Blueprint, jsonify, request
@@ -53,15 +53,6 @@ NON_TRANSFER_KEYWORDS = {
     "netflix",
     "spotify",
 }
-
-
-def _parse_iso_datetime(value: str) -> datetime:
-    """Return a timezone-aware ``datetime`` parsed from ``value``."""
-
-    dt = datetime.fromisoformat(value)
-    if dt.tzinfo is None:
-        return dt.replace(tzinfo=UTC)
-    return dt.astimezone(UTC)
 
 
 def _ensure_utc(dt: datetime | None) -> datetime | None:
@@ -130,15 +121,11 @@ def _parse_tag_filters(args) -> list[str]:
     return tags
 
 
-def _parse_iso_date(value: str | None, inclusive_end: bool = False) -> datetime | None:
-    """Parse a YYYY-MM-DD date string into a timezone-aware ``datetime``.
+def _parse_iso_date(value: str | None) -> date | None:
+    """Parse a YYYY-MM-DD string into a calendar ``date``.
 
     Args:
         value: Date string from the query arguments.
-        inclusive_end: When ``True`` the returned ``datetime`` represents
-            the final microsecond of the supplied day. This is convenient for
-            inclusive end-date filters against timestamp columns.
-
     Raises:
         ValueError: If ``value`` is provided but not a valid ISO date.
     """
@@ -147,14 +134,9 @@ def _parse_iso_date(value: str | None, inclusive_end: bool = False) -> datetime 
         return None
 
     try:
-        parsed = datetime.strptime(value, "%Y-%m-%d")
+        return datetime.strptime(value, "%Y-%m-%d").date()
     except ValueError as exc:
         raise ValueError(f"Invalid date: {value}") from exc
-
-    if inclusive_end:
-        parsed = parsed + timedelta(days=1) - timedelta(microseconds=1)
-
-    return _ensure_utc(parsed)
 
 
 def _normalize_tag_name(value: str) -> str:
@@ -212,10 +194,14 @@ def _truthy_param(value: str | None, default: bool = False) -> bool:
     return str(value).strip().lower() in {"1", "true", "yes", "on"}
 
 
-def _normalize_txn_datetime(value: datetime | None) -> datetime:
-    """Normalize transaction datetimes to UTC."""
+def _normalize_txn_datetime(value: date | datetime | None) -> datetime:
+    """Convert a transaction calendar date to UTC midnight for interval scoring."""
 
-    return _ensure_utc(value) or datetime.min.replace(tzinfo=UTC)
+    if isinstance(value, datetime):
+        return _ensure_utc(value) or datetime.min.replace(tzinfo=UTC)
+    if isinstance(value, date):
+        return datetime.combine(value, datetime.min.time(), tzinfo=UTC)
+    return datetime.min.replace(tzinfo=UTC)
 
 
 def _tokenize_transfer_text(value: str | None) -> set[str]:
@@ -329,14 +315,15 @@ def display_transaction_amount(txn: Transaction) -> float:
     return float((-amount).quantize(TWOPLACES))
 
 
-def _month_floor(value: datetime) -> datetime:
-    """Return the UTC month start for ``value``."""
+def _month_floor(value: date | datetime) -> date:
+    """Return the calendar month containing ``value``."""
 
-    value = _ensure_utc(value) or datetime.now(UTC)
-    return value.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    if isinstance(value, datetime):
+        value = (_ensure_utc(value) or datetime.now(UTC)).date()
+    return value.replace(day=1)
 
 
-def _shift_month(value: datetime, delta_months: int) -> datetime:
+def _shift_month(value: date, delta_months: int) -> date:
     """Shift ``value`` by ``delta_months`` months, preserving month-floor semantics."""
 
     year = value.year + ((value.month - 1 + delta_months) // 12)
@@ -344,7 +331,7 @@ def _shift_month(value: datetime, delta_months: int) -> datetime:
     return value.replace(year=year, month=month)
 
 
-def _trend_months(end_date: datetime, window_months: int) -> list[datetime]:
+def _trend_months(end_date: date, window_months: int) -> list[date]:
     """Return month-start buckets ending in the month of ``end_date``."""
 
     end_month = _month_floor(end_date)
@@ -416,12 +403,12 @@ def _top_spending_breakdown(group_by: str):
 
     try:
         start_date = _parse_iso_date(start_date_str)
-        end_date = _parse_iso_date(end_date_str, inclusive_end=True)
+        end_date = _parse_iso_date(end_date_str)
     except ValueError as exc:
         return jsonify({"status": "error", "message": str(exc)}), 400
 
     if end_date is None:
-        end_date = datetime.now(UTC)
+        end_date = datetime.now(UTC).date()
     if start_date is None:
         start_date = end_date - timedelta(days=180)
 
@@ -459,7 +446,7 @@ def _top_spending_breakdown(group_by: str):
 
             totals[key] += spend
 
-            txn_month = _month_floor(_ensure_utc(txn.date) or txn.date)
+            txn_month = _month_floor(txn.date)
             if txn_month < lower_month_bound:
                 continue
             idx = month_index.get(txn_month)
@@ -512,7 +499,7 @@ def update_transaction():
             changed_fields["amount"] = True
         if "date" in data:
             try:
-                txn.date = _parse_iso_datetime(data["date"])
+                txn.date = _parse_iso_date(data["date"])
             except (TypeError, ValueError):
                 return (
                     jsonify({"status": "error", "message": "Invalid date format"}),
@@ -783,7 +770,7 @@ def user_modified_update_transaction():
             changed_fields["amount"] = True
         if "date" in data:
             try:
-                txn.date = _parse_iso_datetime(data["date"])
+                txn.date = _parse_iso_date(data["date"])
             except (TypeError, ValueError):
                 return (
                     jsonify({"status": "error", "message": "Invalid date format"}),
@@ -851,7 +838,7 @@ def get_transactions_paginated():
 
         try:
             start_date = _parse_iso_date(start_date_str)
-            end_date = _parse_iso_date(end_date_str, inclusive_end=True)
+            end_date = _parse_iso_date(end_date_str)
         except ValueError as exc:
             return jsonify({"status": "error", "message": str(exc)}), 400
 
@@ -901,20 +888,16 @@ def get_account_transactions(account_id):
         recent = request.args.get("recent") == "true"
         limit = int(request.args.get("limit", 10))
 
-        start_date = _ensure_utc(datetime.strptime(start_date_str, "%Y-%m-%d") if start_date_str else None)
+        start_date = _parse_iso_date(start_date_str)
         logger.debug(
-            "Changed date string %s to datetime object: %s",
+            "Changed date string %s to date object: %s",
             start_date_str,
             start_date,
         )
 
-        end_date = _ensure_utc(
-            (datetime.strptime(end_date_str, "%Y-%m-%d") + timedelta(days=1) - timedelta(microseconds=1))
-            if end_date_str
-            else None
-        )
+        end_date = _parse_iso_date(end_date_str)
         logger.debug(
-            "Changed date string %s to datetime object: %s",
+            "Changed date string %s to date object: %s",
             end_date_str,
             end_date,
         )

@@ -115,7 +115,9 @@ class Transaction(db.Model):
     transaction_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
     account_id = db.Column(db.String(64), db.ForeignKey("accounts.account_id", ondelete="CASCADE"))
     amount = db.Column(db.Numeric(18, 2), nullable=False, default=Decimal("0.00"))
-    date = db.Column(db.DateTime(timezone=True), nullable=False)
+    # Provider transaction dates are calendar dates. Exact Plaid timestamps,
+    # when supplied, live in PlaidTransactionMeta.datetime/authorized_datetime.
+    date = db.Column(db.Date, nullable=False)
     description = db.Column(db.String(256))
     provider = db.Column(ProviderEnum, nullable=False, server_default="manual")
     merchant_name = db.Column(db.String(128), default="Unknown")
@@ -251,12 +253,12 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
 
     account_owner = db.Column(db.String(128), nullable=True)
     authorized_date = db.Column(db.Date, nullable=True)
-    authorized_datetime = db.Column(db.DateTime, nullable=True)
+    authorized_datetime = db.Column(db.DateTime(timezone=True), nullable=True)
     category = db.Column(db.JSON, nullable=True)
     category_id = db.Column(db.String(64), nullable=True)
     check_number = db.Column(db.String(64), nullable=True)
     counterparties = db.Column(db.JSON, nullable=True)
-    datetime = db.Column(db.DateTime, nullable=True)
+    datetime = db.Column(db.DateTime(timezone=True), nullable=True)
     iso_currency_code = db.Column(db.String(8), nullable=True)
     location = db.Column(db.JSON, nullable=True)
     logo_url = db.Column(db.String(256), nullable=True)

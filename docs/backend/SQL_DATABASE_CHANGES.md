@@ -7,10 +7,9 @@ Data Types
   Integer) for all money columns to eliminate rounding drift. - transactions.amount at backend/app/models/transaction_models.py:44 - accounts.balance at backend/app/models/account_models.py:28 - investment_holdings.quantity/cost_basis/institution_value at
   backend/app/models/investment_models.py:39, 40, 41 - investment_transactions.amount/price/quantity/fees at backend/app/
   models/investment_models.py:67, 68, 69, 73
-- Datetime consistency: Your timestamps are timezone‑aware in the mixin,
-  which is good. Ensure all date-like fields are semantically consistent: - transactions.date is DateTime but often used as a date in queries;
-  consider either a computed date column (materialized) or consistently cast
-  in queries and add indexes accordingly.
+- Datetime consistency: `transactions.date` was migrated to SQL `DATE` in revision `7c1e9f4a2b6d`, matching Plaid's
+  calendar-date contract. Exact Plaid timestamps remain in `plaid_transaction_meta.datetime` and
+  `plaid_transaction_meta.authorized_datetime`.
 
 Keys & Relations
 

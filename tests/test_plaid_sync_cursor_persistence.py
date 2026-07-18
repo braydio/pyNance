@@ -2,6 +2,7 @@
 
 import importlib
 import sys
+from datetime import date, datetime, timezone
 from types import SimpleNamespace
 
 for module_name in list(sys.modules):
@@ -20,6 +21,11 @@ if app_module is not None and getattr(app_module, "__file__", None) is None:
     sys.modules.pop("app", None)
 
 plaid_sync = importlib.import_module("app.services.plaid_sync")
+
+
+def test_parse_transaction_date_preserves_calendar_semantics():
+    assert plaid_sync._parse_txn_date("2026-02-24") == date(2026, 2, 24)
+    assert plaid_sync._parse_txn_date(datetime(2026, 2, 24, 0, 0, tzinfo=timezone.utc)) == date(2026, 2, 24)
 
 
 class _FakeColumn:

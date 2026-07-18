@@ -75,7 +75,7 @@ def upsert_recurring(
             transaction_id=str(uuid.uuid4())[:12],
             amount=amount,
             account_id=account_id,
-            date=datetime.now(timezone.utc),
+            date=datetime.now(timezone.utc).date(),
             description=description,
             provider="manual",
         )

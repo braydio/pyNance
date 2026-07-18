@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import os
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -47,8 +47,8 @@ def _load_accounts(user_id: str | None = None) -> list[dict[str, Any]]:
 
 
 def _load_transactions(
-    start_date: datetime,
-    end_date: datetime,
+    start_date: date,
+    end_date: date,
     user_id: str | None = None,
 ) -> list[dict[str, Any]]:
     """Load recent transactions for dashboard activity context."""
@@ -68,7 +68,7 @@ def _load_transactions(
     return [
         {
             "transaction_id": tx.transaction_id,
-            "date": tx.date.date().isoformat(),
+            "date": tx.date.isoformat(),
             "description": tx.description or tx.merchant_name or "Unknown transaction",
             "amount": _to_float(tx.amount),
             "account_id": tx.account_id,
@@ -154,29 +154,29 @@ def _call_openai_for_status(payload: dict[str, Any]) -> dict[str, str]:
 
 
 def generate_activity_status(
-    start_date: datetime | None = None,
-    end_date: datetime | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
     user_id: str | None = None,
 ) -> dict[str, Any]:
     """Generate dashboard activity status text for the greeting area.
 
     Args:
-        start_date: Optional UTC datetime lower bound for transaction context.
-        end_date: Optional UTC datetime upper bound for transaction context.
+        start_date: Optional calendar-date lower bound for transaction context.
+        end_date: Optional calendar-date upper bound for transaction context.
         user_id: Optional user scope identifier.
 
     Returns:
         Parseable response payload with a single guidance message and context metadata.
     """
 
-    resolved_end = end_date or datetime.now(UTC)
+    resolved_end = end_date or datetime.now(UTC).date()
     resolved_start = start_date or (resolved_end - timedelta(days=30))
     accounts = _load_accounts(user_id=user_id)
     transactions = _load_transactions(start_date=resolved_start, end_date=resolved_end, user_id=user_id)
     payload = {
         "range": {
-            "start_date": resolved_start.date().isoformat(),
-            "end_date": resolved_end.date().isoformat(),
+            "start_date": resolved_start.isoformat(),
+            "end_date": resolved_end.isoformat(),
         },
         "accounts": accounts,
         "transactions": transactions,

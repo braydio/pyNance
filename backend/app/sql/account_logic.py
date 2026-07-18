@@ -1348,16 +1348,18 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
                 continue
 
             txn_date = txn.get("date")
-            # Normalize txn_date to timezone-aware datetime for the DB model
+            # Plaid's transaction date is a calendar date, not an instant.
             if isinstance(txn_date, str):
                 try:
-                    parsed_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
-                    txn_date = datetime.combine(parsed_date, datetime.min.time(), tzinfo=timezone.utc)
+                    txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
                 except ValueError:
                     totals["skipped_invalid_date"] += 1
                     continue
-            elif isinstance(txn_date, pydate) and not isinstance(txn_date, datetime):
-                txn_date = datetime.combine(txn_date, datetime.min.time(), tzinfo=timezone.utc)
+            elif isinstance(txn_date, datetime):
+                txn_date = txn_date.date()
+            elif not isinstance(txn_date, pydate):
+                totals["skipped_invalid_date"] += 1
+                continue
 
             # Plaid PFC fields
             pfc_obj = txn.get("personal_finance_category", {})

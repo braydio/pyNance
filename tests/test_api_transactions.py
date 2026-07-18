@@ -4,6 +4,7 @@ import importlib.util
 import os
 import sys
 import types
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -205,6 +206,7 @@ def test_update_transaction_validates_date(client, monkeypatch):
     )
     assert resp.status_code == 200
     assert resp.get_json()["status"] == "success"
+    assert txn_stub.date == date(2024, 1, 2)
 
 
 def test_update_transaction_applies_tag_normalization(client, monkeypatch):

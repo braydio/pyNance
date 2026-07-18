@@ -68,7 +68,7 @@ Strengths
 
 - Monetary values standardized to NUMERIC(18,2) (Projects/pyNance/backend/migrations/
   versions/4b9af1d3db6d_numeric_precision_and_utc_dates.py:14)
-- Timestamps for transactions are timezone-aware; cascades and unique constraints are used appropriately
+- Transaction posting dates use SQL `DATE`; optional Plaid timestamps remain in `plaid_transaction_meta`
 - Category hierarchy supported with self‑FK and composite uniqueness
 - Planning domain has solid constraints and indices; holdings and group membership enforce uniqueness
 
@@ -86,10 +86,8 @@ Redundancies / Mixed Keys
 
 Robustness / Integrity Gaps
 
-- Mixed timestamp usage:
-  - transactions.date is tz‑aware; others like account_history.date are naive DateTime (Projects/pyNance/backend/app/models/
-    account_models.py:36)
-  - Consider normalizing to Date-only for history, or tz-aware everywhere with a documented invariant
+- Date and timestamp semantics are separated: `transactions.date` and `account_history.date` are calendar dates, while
+  audit/synchronization timestamps and optional Plaid transaction datetimes retain timestamp types.
 - Many domain enums stored as free text:
   - accounts.status, link_type, transactions.provider, account type/subtype, investment type/subtype
   - Enums or constrained domains would prevent invalid states

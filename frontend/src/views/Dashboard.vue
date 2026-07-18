@@ -240,7 +240,7 @@
     <TransactionModal
       :show="showDailyModal"
       kind="date"
-      :show-date-column="false"
+      :show-date-column="true"
       :hide-category-visuals="false"
       :subtitle="dailyModalSubtitle"
       :transactions="dailyModalTransactions"
@@ -279,6 +279,7 @@ import api from '@/services/api'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
+import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/charts'
 import { useCategories } from '@/composables/useCategories'
 import { useDashboardModals } from '@/composables/useDashboardModals'
 
@@ -686,12 +687,12 @@ async function onCategoryBarClick(payload) {
   const start = catSummary.value.startDate || debouncedRange.value.start
   const end = catSummary.value.endDate || debouncedRange.value.end
 
-  const result = await fetchTransactionsApi({
+  const transactions = await fetchCategoryTransactions({
     category_ids: ids,
     start_date: start,
     end_date: end,
   })
-  categoryModalTransactions.value = result.transactions || []
+  categoryModalTransactions.value = transactions
   categoryModalSubtitle.value = label // Focus on category label in header; dates live in table.
   categoryModalSubtitlePrefix.value = 'Category'
   categoryModalKind.value = 'category'
@@ -712,13 +713,13 @@ async function onMerchantBarClick({ label, merchantId }) {
   const start = catSummary.value.startDate || debouncedRange.value.start
   const end = catSummary.value.endDate || debouncedRange.value.end
 
-  const result = await fetchTransactionsApi({
+  const transactions = await fetchMerchantTransactions({
     merchant: merchantId,
     start_date: start,
     end_date: end,
   })
 
-  categoryModalTransactions.value = result.transactions || []
+  categoryModalTransactions.value = transactions
   categoryModalSubtitle.value = label
   categoryModalSubtitlePrefix.value = 'Merchant'
   categoryModalKind.value = 'merchant'
