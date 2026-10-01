@@ -271,8 +271,9 @@ export default {
             })
             const health = await api.getAccounts()
             const stillNeedsReauth = (health?.accounts || []).some(
-              (account) => String(account.connection_status?.connection_id) === String(errorInfo.connection_id)
-                && account.connection_status?.requires_reauth,
+              (account) =>
+                String(account.connection_status?.connection_id) ===
+                  String(errorInfo.connection_id) && account.connection_status?.requires_reauth,
             )
             this.reauthMessage = stillNeedsReauth
               ? 'Plaid still reports that this connection needs attention.'

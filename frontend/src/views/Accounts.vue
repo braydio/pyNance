@@ -178,13 +178,31 @@
 
           <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
             <h2 class="accounts-panel-title">Manage Linked Accounts</h2>
-            <div v-for="connection in reconnectConnections" :key="connection.connectionId" class="rounded-md border border-amber-400 p-4" role="status">
+            <div
+              v-for="connection in reconnectConnections"
+              :key="connection.connectionId"
+              class="rounded-md border border-amber-400 p-4"
+              role="status"
+            >
               <p class="font-medium">This Plaid connection needs to be reconnected.</p>
-              <p class="text-sm">{{ connection.accounts[0]?.institution_name || 'Linked institution' }}</p>
-              <UiButton type="button" variant="primary" :disabled="reconnectingId === connection.connectionId" @click="reconnectConnection(connection)">
-                {{ reconnectingId === connection.connectionId ? 'Reconnecting…' : 'Reconnect with Plaid' }}
+              <p class="text-sm">
+                {{ connection.accounts[0]?.institution_name || 'Linked institution' }}
+              </p>
+              <UiButton
+                type="button"
+                variant="primary"
+                :disabled="reconnectingId === connection.connectionId"
+                @click="reconnectConnection(connection)"
+              >
+                {{
+                  reconnectingId === connection.connectionId
+                    ? 'Reconnecting…'
+                    : 'Reconnect with Plaid'
+                }}
               </UiButton>
-              <p v-if="reconnectMessage[connection.connectionId]" class="text-sm">{{ reconnectMessage[connection.connectionId] }}</p>
+              <p v-if="reconnectMessage[connection.connectionId]" class="text-sm">
+                {{ reconnectMessage[connection.connectionId] }}
+              </p>
             </div>
             <LinkedAccountsSection
               :accounts="linkedAccounts"
@@ -421,13 +439,24 @@ async function reconnectConnection(connection) {
       connectionId: id,
       onSuccess: async () => {
         reconnectMessage.value = { ...reconnectMessage.value, [id]: 'Verifying connection…' }
-        await api.refreshAccounts({ account_ids: connection.accounts.map((account) => account.account_id) })
+        await api.refreshAccounts({
+          account_ids: connection.accounts.map((account) => account.account_id),
+        })
         await loadAccounts()
-        if (uniqueReconnectConnections(accounts.value).some((item) => String(item.connectionId) === String(id))) {
-          reconnectMessage.value = { ...reconnectMessage.value, [id]: 'Plaid still reports that this connection needs attention.' }
+        if (
+          uniqueReconnectConnections(accounts.value).some(
+            (item) => String(item.connectionId) === String(id),
+          )
+        ) {
+          reconnectMessage.value = {
+            ...reconnectMessage.value,
+            [id]: 'Plaid still reports that this connection needs attention.',
+          }
         }
       },
-      onError: (message) => { reconnectMessage.value = { ...reconnectMessage.value, [id]: message } },
+      onError: (message) => {
+        reconnectMessage.value = { ...reconnectMessage.value, [id]: message }
+      },
     })
   } catch (error) {
     reconnectMessage.value = { ...reconnectMessage.value, [id]: error.message }

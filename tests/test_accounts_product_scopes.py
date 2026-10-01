@@ -8,6 +8,17 @@ import types
 
 BASE_BACKEND = os.path.join(os.path.dirname(__file__), "..", "backend")
 
+_STUBBED_MODULES = (
+    "app.config",
+    "app.extensions",
+    "app.models",
+    "app.services.accounts_service",
+    "app.sql.account_logic",
+    "app.sql.forecast_logic",
+    "app.utils.finance_utils",
+)
+_ORIGINAL_MODULES = {name: sys.modules.get(name) for name in _STUBBED_MODULES}
+
 sys.modules.pop("app.sql.account_logic", None)
 sys.modules.pop("app.config", None)
 sys.modules.pop("app.models", None)
@@ -105,6 +116,12 @@ ROUTE_PATH = os.path.join(BASE_BACKEND, "app", "routes", "accounts.py")
 spec = importlib.util.spec_from_file_location("tests._accounts_route_scopes", ROUTE_PATH)
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
+
+for _name, _original in _ORIGINAL_MODULES.items():
+    if _original is None:
+        sys.modules.pop(_name, None)
+    else:
+        sys.modules[_name] = _original
 
 
 def test_normalize_products_accepts_json_and_csv_formats():

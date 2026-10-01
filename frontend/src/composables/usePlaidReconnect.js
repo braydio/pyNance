@@ -13,21 +13,33 @@ function loadPlaidScript() {
       script.onload = resolve
       script.onerror = reject
       if (!existing) document.head.appendChild(script)
-    }).catch((error) => { scriptPromise = null; throw error })
+    }).catch((error) => {
+      scriptPromise = null
+      throw error
+    })
   }
   return scriptPromise
 }
 
 export function usePlaidReconnect({ onSuccess, onError } = {}) {
-  async function reconnect({ connectionId, accountId, onSuccess: successCallback, onError: errorCallback } = {}) {
+  async function reconnect({
+    connectionId,
+    accountId,
+    onSuccess: successCallback,
+    onError: errorCallback,
+  } = {}) {
     try {
       await loadPlaidScript()
-      const payload = connectionId != null ? { connection_id: connectionId } : { account_id: accountId }
+      const payload =
+        connectionId != null ? { connection_id: connectionId } : { account_id: accountId }
       const response = await api.generatePlaidUpdateLinkToken(payload)
-      if (!response?.link_token) throw new Error(response?.message || 'Unable to start Plaid reconnect.')
+      if (!response?.link_token)
+        throw new Error(response?.message || 'Unable to start Plaid reconnect.')
       const handler = window.Plaid.create({
         token: response.link_token,
-        onSuccess: async (...args) => { await (successCallback || onSuccess)?.(...args) },
+        onSuccess: async (...args) => {
+          await (successCallback || onSuccess)?.(...args)
+        },
         onExit: (error) => {
           const message = error?.display_message || error?.error_message
           if (message) (errorCallback || onError)?.(message)
@@ -35,7 +47,9 @@ export function usePlaidReconnect({ onSuccess, onError } = {}) {
       })
       handler.open()
     } catch (error) {
-      (errorCallback || onError)?.(error?.message || 'Unable to open Plaid reconnect. Please try again.')
+      ;(errorCallback || onError)?.(
+        error?.message || 'Unable to open Plaid reconnect. Please try again.',
+      )
       throw error
     }
   }
