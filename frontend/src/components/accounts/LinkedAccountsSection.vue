@@ -54,6 +54,9 @@
                 <div class="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div class="space-y-1">
                     <p class="text-base font-medium">{{ account.name }}</p>
+                    <span v-if="account.connection_status?.requires_reauth" class="inline-flex rounded bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-900" role="status">
+                      Plaid reconnect required
+                    </span>
                     <p v-if="account.mask" class="text-sm text-muted-foreground">
                       Account •••• {{ account.mask }}
                     </p>

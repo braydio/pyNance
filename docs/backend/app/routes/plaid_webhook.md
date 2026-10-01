@@ -41,6 +41,8 @@ Validate Plaid webhook requests and dispatch downstream sync jobs for transactio
 - Dispatches sync routines based on `webhook_type`/`webhook_code` combinations.
 - `TRANSACTIONS` sync webhooks call `plaid_sync.sync_account_transactions(account_id)` for each matching account to honor item-level cursors while preserving per-account failure isolation and triggered-account reporting.
 - `INVESTMENTS_TRANSACTIONS` and `HOLDINGS` webhooks resolve accounts by `item_id`, then filter to accounts whose parsed scopes include `investments` (including canonical mixed scopes like `"investments,transactions"`).
+- `ITEM:ERROR` with `error.error_code == ITEM_LOGIN_REQUIRED` persists reconnect-required state in `PlaidItem.last_error`; this is handled as a user repair condition, not an infrastructure failure.
+- `ITEM:LOGIN_REPAIRED` clears only that Item's reconnect-required state and stale legacy account mirrors. It does not fabricate a refresh timestamp.
 
 ## Sample Request/Response
 

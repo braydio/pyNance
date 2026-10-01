@@ -17,6 +17,8 @@ from app.services import plaid_sync
 from app.sql import investments_logic
 from app.sql.account_logic import (
     canonicalize_plaid_products,
+    clear_plaid_item_reauth_required,
+    mark_plaid_item_reauth_required,
     mark_refresh_failure,
     mark_refresh_success,
 )
@@ -194,6 +196,31 @@ def handle_plaid_webhook():
     except Exception as e:
         db.session.rollback()
         logger.warning("Failed to store Plaid webhook log: %s", e)
+
+    if webhook_type == "ITEM" and webhook_code == "ERROR":
+        error = payload.get("error") or {}
+        if item_id and error.get("error_code") == "ITEM_LOGIN_REQUIRED":
+            mark_plaid_item_reauth_required(
+                item_id=item_id,
+                error={
+                    "status": "reauth_required",
+                    "code": error.get("error_code"),
+                    "message": error.get("error_message") or error.get("display_message"),
+                    "error_code_reason": error.get("error_code_reason"),
+                    "requires_reauth": True,
+                },
+                commit=True,
+            )
+            webhook_metrics.increment("success", webhook_code)
+            return jsonify({"status": "ok", "handled": True}), 200
+        return jsonify({"status": "ignored"}), 200
+
+    if webhook_type == "ITEM" and webhook_code == "LOGIN_REPAIRED":
+        if item_id:
+            clear_plaid_item_reauth_required(item_id=item_id, commit=True)
+            webhook_metrics.increment("success", webhook_code)
+            return jsonify({"status": "ok", "handled": True}), 200
+        return jsonify({"status": "ignored"}), 200
 
     # Banking transactions delta webhook
     if webhook_type == "TRANSACTIONS" and webhook_code in (

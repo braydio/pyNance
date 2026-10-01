@@ -210,8 +210,14 @@ class DummyPlaidItem:
 
 class _DummyPlaidItemQuery:
     def filter_by(self, **kwargs):
-        item_id = kwargs.get("item_id")
-        record = DummyPlaidItem._records.get(item_id)
+        record = next(
+            (
+                item
+                for item in DummyPlaidItem._records.values()
+                if all(getattr(item, key, None) == value for key, value in kwargs.items())
+            ),
+            None,
+        )
         return types.SimpleNamespace(first=lambda: record, all=lambda: [record] if record else [])
 
 
@@ -441,6 +447,31 @@ def test_generate_update_link_token_uses_existing_item_token(client, monkeypatch
         "user_id": "user-1",
         "access_token": "existing-access-token",
     }
+
+
+def test_generate_update_link_token_accepts_local_connection_id(client, monkeypatch):
+    DummyPlaidItem._records = {}
+    DummyPlaidItem.query = _DummyPlaidItemQuery()
+    item = DummyPlaidItem(id=17, item_id="external-item-secret", user_id="user-1", access_token="secret-token")
+    DummyPlaidItem._records[item.item_id] = item
+    monkeypatch.setattr(
+        plaid_module,
+        "create_update_link_token",
+        lambda user_id, access_token: types.SimpleNamespace(link_token="link-item", expiration=None),
+    )
+    response = client.post("/api/accounts/generate_update_link_token", json={"connection_id": 17})
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["connection_id"] == 17
+    assert "access_token" not in body
+    assert "item_id" not in body
+
+
+def test_generate_update_link_token_requires_identifier_and_rejects_unknown_connection(client):
+    missing = client.post("/api/accounts/generate_update_link_token", json={})
+    unknown = client.post("/api/accounts/generate_update_link_token", json={"connection_id": 999})
+    assert missing.status_code == 400
+    assert unknown.status_code == 404
 
 
 def test_sync_endpoint_returns_sync_counters(client, monkeypatch):

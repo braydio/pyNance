@@ -358,22 +358,30 @@ def generate_update_link_token():
     try:
         data = request.get_json() or {}
         account_id = data.get("account_id")
+        connection_id = data.get("connection_id")
 
-        if not account_id:
-            logger.warning("Missing account_id in update link token request")
+        if not account_id and connection_id is None:
+            logger.warning("Missing connection_id/account_id in update link token request")
             return (
-                jsonify({"status": "error", "message": "Missing account_id parameter"}),
+                jsonify({"status": "error", "message": "connection_id or account_id is required"}),
                 400,
             )
 
-        # Resolve account robustly (handles both numeric IDs and external account_ids)
-        account = resolve_account_by_any_id(account_id)
-        if not account:
-            logger.warning("Account %s not found for update link token", account_id)
+        account = resolve_account_by_any_id(account_id) if account_id else None
+        plaid_item = None
+        if connection_id is not None:
+            try:
+                plaid_item = PlaidItem.query.filter_by(id=int(connection_id)).first()
+            except (TypeError, ValueError):
+                plaid_item = None
+            if plaid_item is None:
+                return jsonify({"status": "error", "message": "Plaid connection not found"}), 404
+        if account_id and account is None:
             return jsonify({"status": "error", "message": "Account not found"}), 404
-
-        access_token = None
-        if account.plaid_account:
+        if plaid_item is None and account and account.plaid_account:
+            plaid_item = PlaidItem.query.filter_by(item_id=account.plaid_account.item_id).first()
+        access_token = getattr(plaid_item, "access_token", None)
+        if not access_token and account and account.plaid_account:
             access_token = account.plaid_account.access_token
             if not access_token and account.plaid_account.item_id:
                 plaid_item = PlaidItem.query.filter_by(item_id=account.plaid_account.item_id).first()
@@ -391,17 +399,16 @@ def generate_update_link_token():
                 400,
             )
 
+        user_id = account.user_id if account else plaid_item.user_id
         logger.info(
-            "Generating update link token for account %s (user %s)",
-            account.account_id,
-            account.user_id,
+            "Generating update link token for local connection %s (user %s)", getattr(plaid_item, "id", None), user_id
         )
 
-        response = create_update_link_token(str(account.user_id), access_token)
+        response = create_update_link_token(str(user_id), access_token)
 
         logger.info(
-            "Successfully generated update link token for account %s",
-            account.account_id,
+            "Successfully generated update link token for connection %s",
+            getattr(plaid_item, "id", None),
         )
         return (
             jsonify(
@@ -409,7 +416,8 @@ def generate_update_link_token():
                     "status": "success",
                     "link_token": response.link_token,
                     "expiration": (response.expiration.isoformat() if response.expiration else None),
-                    "account_id": account.account_id,
+                    "account_id": account.account_id if account else None,
+                    "connection_id": getattr(plaid_item, "id", None),
                 }
             ),
             200,

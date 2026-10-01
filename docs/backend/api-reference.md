@@ -324,7 +324,8 @@ Generates a Plaid Link token in "update mode" for re-authenticating an account w
 
 **Required JSON body parameters:**
 
-- `account_id` – Account identifier (accepts either numeric primary key or external account_id)
+- `connection_id` – preferred local `PlaidItem.id` for Item-scoped reconnect; or
+- `account_id` – legacy account identifier (accepts either numeric primary key or external account_id)
 
 **Response body on success:**
 
@@ -333,9 +334,12 @@ Generates a Plaid Link token in "update mode" for re-authenticating an account w
   "status": "success",
   "link_token": "link-sandbox-abc123...",
   "expiration": "2025-08-23T21:00:00Z",
-  "account_id": "uuid"
+  "account_id": "uuid",
+  "connection_id": 17
 }
 ```
+
+`GET /api/accounts/get_accounts` and `/api/accounts/refresh_status` include a `connection_status` for Plaid-linked accounts. It contains `provider`, `state` (`healthy` or `reauth_required`), `requires_reauth`, the local `connection_id`, `code`, `message`, and `updated_at`. It never contains Plaid credentials or the external Plaid Item ID.
 
 **Error responses:**
 

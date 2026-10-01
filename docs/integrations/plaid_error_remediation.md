@@ -6,6 +6,12 @@ This document outlines how pyNance handles Plaid API errors, with special focus 
 
 Plaid API errors occur when account connections become stale due to changed credentials, multi-factor authentication requirements, or security updates at the financial institution. The most common error is `ITEM_LOGIN_REQUIRED`.
 
+## Persisted connection health
+
+`PlaidItem.last_error` is the source of truth for Item-scoped login health. Plaid-linked account responses expose a safe `connection_status` object with `provider`, `state`, `requires_reauth`, local `connection_id`, `code`, `message`, and `updated_at`. The external Plaid Item ID and access token are never returned. A single Item may own several accounts, so the Accounts page presents one reconnect action per local connection ID.
+
+The state is set by an API `ITEM_LOGIN_REQUIRED` failure or an `ITEM:ERROR` webhook carrying that code. It clears only after a successful authenticated Plaid refresh or an `ITEM:LOGIN_REPAIRED` webhook. Link completion alone does not clear the warning. Use `connection_id` in `POST /api/plaid/transactions/generate_update_link_token`; legacy `account_id` remains supported.
+
 ## ITEM_LOGIN_REQUIRED Error
 
 ### What it means

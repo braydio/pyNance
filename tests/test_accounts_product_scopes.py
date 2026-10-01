@@ -47,7 +47,7 @@ class _DummyPlaidItemQuery:
     def filter_by(self, **kwargs):
         item_id = kwargs.get("item_id")
         matched = [i for i in DummyPlaidItem._items if getattr(i, "item_id", None) == item_id]
-        return types.SimpleNamespace(all=lambda: matched)
+        return types.SimpleNamespace(all=lambda: matched, first=lambda: matched[0] if matched else None)
 
 
 DummyPlaidItem.query = _DummyPlaidItemQuery()
@@ -87,6 +87,8 @@ def _canonicalize(value):
 logic_stub.canonicalize_plaid_products = _canonicalize
 logic_stub.refresh_is_stale = lambda *_a, **_k: False
 logic_stub.serialized_refresh_status = lambda *_a, **_k: {}
+logic_stub.serialized_plaid_item_connection_status = lambda *_a, **_k: None
+logic_stub.mark_plaid_item_reauth_required = lambda *_a, **_k: []
 logic_stub.should_throttle_refresh = lambda *_a, **_k: False
 sys.modules["app.sql.account_logic"] = logic_stub
 

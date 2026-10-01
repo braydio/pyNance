@@ -130,46 +130,17 @@
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import api from '@/services/api'
-
-let plaidScriptPromise = null
-
-async function ensurePlaidScript() {
-  if (window.Plaid) return
-
-  if (plaidScriptPromise) {
-    return plaidScriptPromise
-  }
-
-  const existing = document.querySelector('script[data-plaid-link]')
-  if (existing) {
-    plaidScriptPromise = new Promise((resolve, reject) => {
-      if (window.Plaid) {
-        resolve()
-        return
-      }
-      existing.addEventListener('load', resolve, { once: true })
-      existing.addEventListener('error', reject, { once: true })
-    })
-    return plaidScriptPromise
-  }
-
-  plaidScriptPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script')
-    script.dataset.plaidLink = 'true'
-    script.src = 'https://cdn.plaid.com/link/v2/stable/link-initialize.js'
-    script.async = true
-    script.onload = resolve
-    script.onerror = reject
-    document.head.appendChild(script)
-  })
-  return plaidScriptPromise
-}
+import { usePlaidReconnect } from '@/composables/usePlaidReconnect'
 
 export default {
   name: 'RefreshPlaidControls',
   components: {
     Card,
     UiButton,
+  },
+  setup() {
+    const { reconnect } = usePlaidReconnect()
+    return { reconnectWithPlaid: reconnect }
   },
   data() {
     const today = new Date().toISOString().slice(0, 10)
@@ -288,35 +259,32 @@ export default {
         errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
       this.reauthingAccountId = acct.account_id
       this.reauthMessage = 'Preparing Plaid update mode…'
-
       try {
-        await ensurePlaidScript()
-        const response = await api.generatePlaidUpdateLinkToken({ account_id: accountId })
-        if (response.status === 'error' || !response.link_token) {
-          this.reauthMessage = response.message || 'Unable to start Plaid reconnect.'
-          return
-        }
-
-        this.reauthMessage = 'Opening Plaid Link…'
-        const handler = window.Plaid.create({
-          token: response.link_token,
+        await this.reconnectWithPlaid({
+          connectionId: errorInfo.connection_id,
+          accountId,
           onSuccess: async () => {
             this.reauthMessage = 'Plaid reconnect complete. Refreshing activity…'
-            await this.handlePlaidRefresh()
-            this.reauthMessage = ''
+            this.refreshResult = await api.refreshAccounts({
+              user_id: this.user_id,
+              account_ids: errorInfo.affected_account_ids || [accountId],
+            })
+            const health = await api.getAccounts()
+            const stillNeedsReauth = (health?.accounts || []).some(
+              (account) => String(account.connection_status?.connection_id) === String(errorInfo.connection_id)
+                && account.connection_status?.requires_reauth,
+            )
+            this.reauthMessage = stillNeedsReauth
+              ? 'Plaid still reports that this connection needs attention.'
+              : ''
+            this.detailsOpen = true
             this.reauthingAccountId = null
           },
-          onExit: (err) => {
-            if (err) {
-              this.reauthMessage =
-                err.display_message || err.error_message || 'Plaid reconnect was not completed.'
-            } else {
-              this.reauthMessage = ''
-            }
+          onError: (message) => {
+            this.reauthMessage = message
             this.reauthingAccountId = null
           },
         })
-        handler.open()
       } catch (err) {
         console.error('Error launching Plaid update mode:', err)
         this.reauthMessage = 'Unable to open Plaid reconnect. Please try again.'

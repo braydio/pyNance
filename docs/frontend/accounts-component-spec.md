@@ -8,6 +8,8 @@ This document consolidates all tasks, requirements, and acceptance criteria for 
 **Dependencies:** Multiple form components, chart components, and widgets
 **Page Wrapper Impact:** [AL] - Layout affects page wrapper due to expandable sections
 
+Plaid accounts inherit persisted Item connection health through `connection_status`. Show the reconnect-required badge on affected accounts and one Link update-mode action per local `connection_id`, even when multiple accounts share an Item. After Link success, refresh those accounts and reload server state; keep the warning visible until the server reports healthy.
+
 ---
 
 ## Accounts page design system

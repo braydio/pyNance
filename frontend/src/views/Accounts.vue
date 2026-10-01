@@ -178,6 +178,14 @@
 
           <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
             <h2 class="accounts-panel-title">Manage Linked Accounts</h2>
+            <div v-for="connection in reconnectConnections" :key="connection.connectionId" class="rounded-md border border-amber-400 p-4" role="status">
+              <p class="font-medium">This Plaid connection needs to be reconnected.</p>
+              <p class="text-sm">{{ connection.accounts[0]?.institution_name || 'Linked institution' }}</p>
+              <UiButton type="button" variant="primary" :disabled="reconnectingId === connection.connectionId" @click="reconnectConnection(connection)">
+                {{ reconnectingId === connection.connectionId ? 'Reconnecting…' : 'Reconnect with Plaid' }}
+              </UiButton>
+              <p v-if="reconnectMessage[connection.connectionId]" class="text-sm">{{ reconnectMessage[connection.connectionId] }}</p>
+            </div>
             <LinkedAccountsSection
               :accounts="linkedAccounts"
               :use-demo-fallback="false"
@@ -263,6 +271,8 @@ import api from '@/services/api'
 import { fetchNetChanges, fetchRecentTransactions, rangeToDates } from '@/api/accounts'
 import { useAccountHistory } from '@/composables/useAccountHistory'
 import { useRefreshNotification } from '@/composables/useRefreshNotification'
+import { usePlaidReconnect } from '@/composables/usePlaidReconnect'
+import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
 
 import { formatAmount } from '@/utils/format'
 import UiButton from '@/components/ui/Button.vue'
@@ -284,6 +294,10 @@ const toast = useToast()
 const { notifyRefreshStarted, notifyRefreshSuccess, notifyRefreshError } = useRefreshNotification()
 
 const accounts = ref([])
+const reconnectingId = ref(null)
+const reconnectMessage = ref({})
+const reconnectConnections = computed(() => uniqueReconnectConnections(accounts.value))
+const { reconnect } = usePlaidReconnect()
 const accountsLoading = ref(false)
 const accountId = ref(route.query.accountId?.toString() || null)
 
@@ -322,6 +336,7 @@ const linkedAccounts = computed(() =>
     subtype: account.subtype || account.account_subtype || '',
     mask: account.mask || '',
     apr: account.apr,
+    connection_status: account.connection_status,
     balance: account.current_balance ?? account.balance,
     limit: account.limit,
     status: account.status,
@@ -394,6 +409,30 @@ async function loadAccounts() {
     accounts.value = resp?.accounts || []
   } finally {
     accountsLoading.value = false
+  }
+}
+
+async function reconnectConnection(connection) {
+  const id = connection.connectionId
+  reconnectingId.value = id
+  reconnectMessage.value = { ...reconnectMessage.value, [id]: '' }
+  try {
+    await reconnect({
+      connectionId: id,
+      onSuccess: async () => {
+        reconnectMessage.value = { ...reconnectMessage.value, [id]: 'Verifying connection…' }
+        await api.refreshAccounts({ account_ids: connection.accounts.map((account) => account.account_id) })
+        await loadAccounts()
+        if (uniqueReconnectConnections(accounts.value).some((item) => String(item.connectionId) === String(id))) {
+          reconnectMessage.value = { ...reconnectMessage.value, [id]: 'Plaid still reports that this connection needs attention.' }
+        }
+      },
+      onError: (message) => { reconnectMessage.value = { ...reconnectMessage.value, [id]: message } },
+    })
+  } catch (error) {
+    reconnectMessage.value = { ...reconnectMessage.value, [id]: error.message }
+  } finally {
+    reconnectingId.value = null
   }
 }
 

@@ -280,6 +280,7 @@ import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import api from '@/services/api'
+import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
 import { useTransactions } from '@/composables/useTransactions.js'
 import { formatDateInput, useDateRange } from '@/composables/useDateRange'
 import { fetchTransactions as fetchTransactionsApi } from '@/api/transactions'
@@ -778,6 +779,7 @@ function setStoredDashboardAccountSyncAt(timestamp = Date.now()) {
 }
 
 async function maybeAutoSyncAccounts() {
+  await refreshPersistedConnectionHealth()
   if (IS_TEST_MODE || !plaidUserId || !dashboardAccountSyncStorageAvailable) return
 
   const lastSyncAt = getStoredDashboardAccountSyncAt()
@@ -788,14 +790,23 @@ async function maybeAutoSyncAccounts() {
   setStoredDashboardAccountSyncAt()
 
   try {
-    const response = await api.refreshAccounts({ user_id: plaidUserId })
+    await api.refreshAccounts({ user_id: plaidUserId })
     await loadDashboardData()
-    const requiresReauth = (response?.errors || []).some((error) => error?.requires_reauth)
-    accountReconnectMessage.value = requiresReauth
-      ? 'A linked account needs to be reconnected. Open Settings and reconnect it with Plaid.'
-      : ''
+    await refreshPersistedConnectionHealth()
   } catch (error) {
     console.error('Failed to auto-sync dashboard accounts:', error)
+  }
+}
+
+async function refreshPersistedConnectionHealth() {
+  try {
+    const response = await api.getAccounts()
+    const count = uniqueReconnectConnections(response?.accounts || []).length
+    accountReconnectMessage.value = count
+      ? `${count} Plaid connection${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} to be reconnected. Open Accounts to repair ${count === 1 ? 'it' : 'them'}.`
+      : ''
+  } catch (error) {
+    console.error('Failed to load persisted Plaid connection health:', error)
   }
 }
 

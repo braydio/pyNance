@@ -15,7 +15,7 @@ from app.config import FILES, logger
 from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
-from app.models import Account, AccountHistory, Category, PlaidAccount, Tag, Transaction
+from app.models import Account, AccountHistory, Category, PlaidAccount, PlaidItem, Tag, Transaction
 from app.sql.dialect_utils import dialect_insert
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
@@ -300,6 +300,7 @@ def mark_refresh_success(
     )
     plaid_account.last_refreshed = _coerce_iso_datetime(refreshed_at) or _now_utc()
     db.session.add(plaid_account)
+    clear_plaid_item_reauth_required(item_id=getattr(plaid_account, "item_id", None), commit=False)
     if commit:
         db.session.commit()
 
@@ -325,6 +326,13 @@ def mark_refresh_failure(
     status = error if isinstance(error, dict) else build_refresh_failure_status(error)
     if plaid_account:
         persist_refresh_status(plaid_account, status, commit=commit)
+        if status.get("code") == "ITEM_LOGIN_REQUIRED" or status.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+            mark_plaid_item_reauth_required(
+                getattr(plaid_account, "access_token", None),
+                status,
+                commit=commit,
+                item_id=getattr(plaid_account, "item_id", None),
+            )
     return status
 
 
@@ -351,44 +359,76 @@ def persist_refresh_status(plaid_account: PlaidAccount | None, status: dict, com
 
 
 def mark_plaid_item_reauth_required(
-    access_token: str | None, error: Exception | dict, *, commit: bool
+    access_token: str | None = None,
+    error: Exception | dict | None = None,
+    *,
+    commit: bool,
+    item_id: str | None = None,
 ) -> list[PlaidAccount]:
-    """Persist a reauth-required status for every Plaid account tied to an item token."""
-
-    if not access_token:
+    """Persist login trouble on the Plaid Item; account statuses stay refresh-scoped."""
+    items = PlaidItem.query.filter_by(item_id=item_id).all() if item_id else []
+    if not items and access_token:
+        items = PlaidItem.query.filter_by(access_token=access_token).all()
+    if not items:
         return []
-
-    from app import models as app_models
-
-    plaid_item_model = getattr(app_models, "PlaidItem", None)
-    if plaid_item_model is None:
-        return []
-
-    status = error if isinstance(error, dict) else build_refresh_failure_status(error)
+    status = (
+        error if isinstance(error, dict) else build_refresh_failure_status(error or ValueError("Plaid login required"))
+    )
     status = {
         **status,
         "status": "reauth_required",
         "requires_reauth": True,
+        "code": status.get("code") or status.get("plaid_error_code") or "ITEM_LOGIN_REQUIRED",
+        "updated_at": _now_utc().isoformat(),
     }
-
-    plaid_items = plaid_item_model.query.filter_by(access_token=access_token).all()
-    if not plaid_items:
-        return []
-
-    affected_accounts: list[PlaidAccount] = []
-    item_ids = [item.item_id for item in plaid_items if getattr(item, "item_id", None)]
-    if not item_ids:
-        return []
-
-    plaid_accounts = PlaidAccount.query.filter(PlaidAccount.item_id.in_(item_ids)).all()
-    for plaid_account in plaid_accounts:
-        persist_refresh_status(plaid_account, status, commit=False)
-        affected_accounts.append(plaid_account)
+    for item in items:
+        item.last_error = json.dumps(status)
+        db.session.add(item)
+    affected_accounts = PlaidAccount.query.filter(PlaidAccount.item_id.in_([item.item_id for item in items])).all()
 
     if commit:
         db.session.commit()
 
     return affected_accounts
+
+
+def clear_plaid_item_reauth_required(
+    *, item_id: str | None = None, access_token: str | None = None, commit: bool = False
+) -> None:
+    """Clear only reauth errors from an Item and legacy mirrored account statuses."""
+    items = PlaidItem.query.filter_by(item_id=item_id).all() if item_id else []
+    if not items and access_token:
+        items = PlaidItem.query.filter_by(access_token=access_token).all()
+    for item in items:
+        current = _parse_refresh_status(getattr(item, "last_error", None))
+        if current.get("status") == "reauth_required" or current.get("code") == "ITEM_LOGIN_REQUIRED":
+            item.last_error = None
+            db.session.add(item)
+        if item.item_id:
+            for account in PlaidAccount.query.filter_by(item_id=item.item_id).all():
+                legacy = _parse_refresh_status(account.last_error)
+                if legacy.get("status") == "reauth_required" or legacy.get("code") == "ITEM_LOGIN_REQUIRED":
+                    account.last_error = None
+                    db.session.add(account)
+    if commit:
+        db.session.commit()
+
+
+def serialized_plaid_item_connection_status(plaid_item: PlaidItem | None) -> dict | None:
+    """Serialize safe, local-ID-only connection health for an account response."""
+    if not plaid_item:
+        return None
+    status = _parse_refresh_status(getattr(plaid_item, "last_error", None))
+    reauth = status.get("status") == "reauth_required" or status.get("code") == "ITEM_LOGIN_REQUIRED"
+    return {
+        "provider": "plaid",
+        "state": "reauth_required" if reauth else "healthy",
+        "requires_reauth": bool(reauth),
+        "connection_id": plaid_item.id,
+        "code": status.get("code") if reauth else None,
+        "message": status.get("message") if reauth else None,
+        "updated_at": status.get("updated_at", status.get("timestamp")) if reauth else None,
+    }
 
 
 def serialized_refresh_status(plaid_account: PlaidAccount | None) -> dict:

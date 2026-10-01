@@ -17,6 +17,7 @@ from app.sql.account_logic import (
     canonicalize_plaid_products,
     mark_plaid_item_reauth_required,
     refresh_is_stale,
+    serialized_plaid_item_connection_status,
     serialized_refresh_status,
     should_throttle_refresh,
 )
@@ -96,6 +97,23 @@ def _plaid_products_for_account(account: Account) -> set[str]:
     return products
 
 
+def _plaid_item_for_account(account: Account) -> PlaidItem | None:
+    """Resolve the normalized Item first, then legacy external ID/token links."""
+    pa = getattr(account, "plaid_account", None)
+    if not pa:
+        return None
+    local_id = getattr(pa, "plaid_item_id", None)
+    if local_id is not None:
+        item = PlaidItem.query.filter_by(id=local_id).first()
+        if item:
+            return item
+    if getattr(pa, "item_id", None):
+        item = PlaidItem.query.filter_by(item_id=pa.item_id).first()
+        if item:
+            return item
+    return PlaidItem.query.filter_by(access_token=pa.access_token).first() if pa.access_token else None
+
+
 def _investment_date_range(start_date, end_date) -> tuple[str, str]:
     """Return ISO formatted date range for investments refresh logic."""
 
@@ -167,13 +185,16 @@ def _append_refresh_error(error_map: dict, account: Account, err_payload: dict) 
     """Aggregate a Plaid refresh error into the API response payload."""
 
     inst = account.institution_name or "Unknown"
+    item = _plaid_item_for_account(account)
     key = (
+        getattr(item, "id", None) if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED" else None,
         inst,
         err_payload.get("plaid_error_code"),
         err_payload.get("plaid_error_message"),
     )
     if key not in error_map:
         error_map[key] = {
+            "connection_id": getattr(item, "id", None),
             "institution_name": inst,
             "account_ids": [account.account_id],
             "account_names": [account.name],
@@ -305,6 +326,13 @@ def refresh_all_accounts():
                                     "plaid_error_message": str(err),
                                 }
                             )
+                            if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
+                                mark_plaid_item_reauth_required(
+                                    access_token,
+                                    err_payload,
+                                    commit=False,
+                                    item_id=getattr(getattr(account, "plaid_account", None), "item_id", None),
+                                )
                             _append_refresh_error(error_map, account, err_payload)
 
                             if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED":
@@ -372,7 +400,7 @@ def refresh_all_accounts():
         if error_map:
             error_lines = []
             for key, error_info in error_map.items():
-                institution, error_code, error_message = key
+                _connection_id, institution, error_code, error_message = key
                 affected_count = len(error_info["account_ids"])
                 account_names = ", ".join(error_info["account_names"][:3])  # Show first 3 names
                 if len(error_info["account_names"]) > 3:
@@ -627,7 +655,9 @@ def list_accounts():
         for a in accounts:
             try:
                 last_refreshed = None
-                refresh_status = serialized_refresh_status(getattr(a, "plaid_account", None))
+                pa = getattr(a, "plaid_account", None)
+                refresh_status = serialized_refresh_status(pa)
+                plaid_item = _plaid_item_for_account(a)
                 cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
@@ -658,6 +688,11 @@ def list_accounts():
                         "last_refreshed": _to_iso(last_refreshed),
                         "is_hidden": a.is_hidden,
                         "refresh_status": refresh_status,
+                        "connection_status": (
+                            serialized_plaid_item_connection_status(plaid_item)
+                            if _is_plaid_link_type(a.link_type)
+                            else None
+                        ),
                         "refresh_stale": refresh_is_stale(getattr(a, "plaid_account", None)),
                         "refresh_cooldown_until": cooldown_until,
                     }
@@ -699,6 +734,7 @@ def refresh_status():
             continue
 
         pa = getattr(acc, "plaid_account", None)
+        plaid_item = _plaid_item_for_account(acc)
         status = serialized_refresh_status(pa)
         cooldown_until = _to_iso(status.get("cooldown_until"))
         last_refreshed = getattr(pa, "last_refreshed", None) if pa else None
@@ -710,6 +746,7 @@ def refresh_status():
                 "institution_name": acc.institution_name,
                 "last_refreshed": _to_iso(last_refreshed),
                 "refresh_status": status,
+                "connection_status": serialized_plaid_item_connection_status(plaid_item),
                 "refresh_stale": refresh_is_stale(pa, sla=sla),
                 "refresh_cooldown_until": cooldown_until,
             }
