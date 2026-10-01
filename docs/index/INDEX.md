@@ -43,6 +43,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 
 - [Transactions API](../backend/app/routes/transactions.md) – primary CRUD surface for accounts and transactions.
 - [Investments API](../backend/app/routes/investments.md) – investment accounts, holdings, and transaction query contracts.
+- [Plaid Source History and Reconciliation](../backend/app/services/plaid_audit.md) – immutable provider events, ingestion integrity, and database repair.
 - [Transactions Service](../backend/app/services/transactions.md) – ingestion and reconciliation logic powering the Transactions API.
 - [Transaction Tags](../backend/features/transaction_tags.md) – tag data model and default serialization behavior.
 - [Archived Alembic Revisions](../backend/migrations/versions_archived.md) – historical references for archived migration files.

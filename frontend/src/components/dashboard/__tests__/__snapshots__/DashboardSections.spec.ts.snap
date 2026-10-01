@@ -6,7 +6,7 @@ exports[`Dashboard section components > renders net overview content and forward
   <div data-v-26cbed55="" class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] ui-radius-2 p-6 md:p-7 flex flex-col items-center gap-2">
     <h1 data-v-26cbed55="" class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"> Welcome, <span data-v-26cbed55="" class="username">Casey</span>! </h1>
     <p data-v-26cbed55="" class="text-lg text-muted">Today is January 1, 2025</p>
-    <p data-v-26cbed55="" class="italic text-muted">In the black</p>
+    <p data-v-26cbed55="" class="italic text-muted">In the black</p><button data-v-26cbed55="" class="dashboard-status-pill net-overview-review-status mt-3" type="button" aria-label="12 transactions to review. Open transaction review workflow."><span data-v-26cbed55="" class="dashboard-status-dot" aria-hidden="true"></span> 12 transactions to review</button>
   </div>
   <div data-v-26cbed55="" class="angular-divider mb-2" aria-hidden="true"><span data-v-26cbed55="" class="angular-divider__rule"></span><span data-v-26cbed55="" class="angular-divider__step"></span></div>
   <div data-v-26cbed55="" class="flex justify-end mb-4">

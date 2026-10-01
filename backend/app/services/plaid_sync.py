@@ -8,16 +8,27 @@ from __future__ import annotations
 
 import json
 import time
+from copy import deepcopy
 from datetime import date, datetime, timezone
+from decimal import Decimal
 from typing import Dict, List, Optional
+from uuid import uuid4
 
 from app.config import logger, plaid_client
 from app.extensions import db
 from app.models import Account, Category, PlaidAccount, Transaction
+from app.services.plaid_audit import (
+    clear_transfer,
+    ingestion_lock,
+    modified_fields,
+    record_source,
+    retire_transaction,
+    source_context,
+)
 from app.sql import transaction_rules_logic
 from app.sql.account_logic import detect_internal_transfer, get_or_create_category
+from app.sql.dialect_utils import dialect_insert
 from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
-from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.merchant_normalization import resolve_merchant
 
 try:
@@ -197,119 +208,148 @@ def _parse_txn_date(val) -> date:
         return val.date()
     if isinstance(val, date):
         return val
-    # Expect YYYY-MM-DD
-    try:
-        return datetime.strptime(val, "%Y-%m-%d").date()
-    except Exception:
-        # Fallback to now to avoid crashing sync; log upstream parse issues
-        logger.warning(
-            "[SYNC] Unexpected date format: %r; defaulting to now()",
-            val,
-        )
-        return datetime.now(timezone.utc).date()
+    if not isinstance(val, str):
+        raise ValueError("Plaid date must be a calendar date")
+    return datetime.strptime(val, "%Y-%m-%d").date()
 
 
-def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> None:
+def _upsert_transaction(tx: dict, account: Account, plaid_acct: Optional[PlaidAccount]) -> str:
+    """Persist original source, then project rules without overwriting user edits."""
+    original = deepcopy(tx)
     txn_id = tx.get("transaction_id")
-    if not txn_id:
-        return
-
-    # Apply rules prior to persistence
-    tx = transaction_rules_logic.apply_rules(account.user_id, dict(tx))
-
-    # Map Plaid categories to local Category
-    pfc = tx.get("personal_finance_category") or {}
-    pfc_primary = pfc.get("primary") or "Unknown"
-    pfc_detailed = pfc.get("detailed") or "Unknown"
-    pfc_icon = tx.get("personal_finance_category_icon_url")
-
-    legacy_path = tx.get("category") or []
-    primary = legacy_path[0] if len(legacy_path) > 0 else "Unknown"
-    detailed = legacy_path[1] if len(legacy_path) > 1 else "Unknown"
-
-    category: Category = get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon)
-
-    # Normalize core fields
+    if not txn_id or tx.get("account_id") != account.account_id or not plaid_acct:
+        raise ValueError("Plaid transaction identity/account is missing or unrecognized")
+    if plaid_acct.account_id != account.account_id:
+        raise ValueError("Plaid metadata account does not match local account")
+    if not account.user_id:
+        raise ValueError("Linked Plaid account owner is required")
+    ingestion_lock("plaid-owner:" + account.user_id)
+    # Item locks protect checkpoints; identity locks cover duplicate IDs across items.
+    ingestion_lock("plaid-transaction:" + txn_id)
     txn_date = _parse_txn_date(tx.get("date"))
-    description = tx.get("name") or tx.get("description") or "[no description]"
+    amount = Decimal(str(tx.get("amount")))
+    if not amount.is_finite():
+        raise ValueError("Plaid amount must be finite")
+    record_source(original, account_id=account.account_id, item_id=plaid_acct.item_id)
+    if original.get("pending"):
+        from app.models import PlaidTransactionMeta
+
+        successors = (
+            Transaction.query.join(
+                PlaidTransactionMeta, Transaction.transaction_id == PlaidTransactionMeta.transaction_id
+            )
+            .filter(
+                PlaidTransactionMeta.pending_transaction_id == txn_id,
+                Transaction.account_id == account.account_id,
+                Transaction.pending.is_(False),
+            )
+            .all()
+        )
+        if len(successors) > 1:
+            raise ValueError("Pending transaction has multiple posted successors")
+        if successors:
+            predecessor = Transaction.query.filter_by(transaction_id=txn_id).first()
+            if predecessor:
+                retire_transaction(predecessor, reason="pending_replaced", successor=successors[0])
+                return "updated"
+            return "unchanged"
+    tx = transaction_rules_logic.apply_rules(account.user_id, deepcopy(tx))
+    txn_date = _parse_txn_date(tx.get("date"))
+    amount = Decimal(str(tx.get("amount")))
+    if not amount.is_finite():
+        raise ValueError("Rule transaction amount must be finite")
+    pfc = tx.get("personal_finance_category") or {}
+    legacy_path = tx.get("category") or []
+    if not isinstance(legacy_path, (list, tuple)):
+        legacy_path = []
+    category = None
+    if tx.get("category_id"):
+        category = db.session.get(Category, tx["category_id"])
+    if not category:
+        category = get_or_create_category(
+            legacy_path[0] if legacy_path else "Unknown",
+            legacy_path[1] if len(legacy_path) > 1 else "Unknown",
+            pfc.get("primary"),
+            pfc.get("detailed"),
+            tx.get("personal_finance_category_icon_url"),
+        )
     merchant = resolve_merchant(
-        merchant_name=tx.get("merchant_name"),
-        name=tx.get("name"),
-        description=tx.get("description"),
+        merchant_name=tx.get("merchant_name"), name=tx.get("name"), description=tx.get("description")
     )
-    merchant_name = merchant.display_name
-    tx["merchant_slug"] = merchant.merchant_slug
-    merchant_type = (tx.get("payment_meta", {}) or {}).get("payment_method") or "Unknown"
-    pending = bool(tx.get("pending", False))
-
-    _update_account_apr_from_interest_charge(account, tx)
-
+    values = dict(
+        transaction_id=txn_id,
+        account_id=account.account_id,
+        user_id=account.user_id,
+        provider="plaid",
+        amount=amount,
+        date=txn_date,
+        description=tx.get("description") or tx.get("name") or "[no description]",
+        pending=bool(tx.get("pending", False)),
+        category_id=category.id,
+        category=category.computed_display_name,
+        category_slug=category.category_slug,
+        category_display=category.computed_display_name,
+        merchant_name=merchant.display_name,
+        merchant_slug=merchant.merchant_slug,
+        merchant_type=(tx.get("payment_meta") or {}).get("payment_method") or "Unknown",
+        personal_finance_category=pfc or None,
+        personal_finance_category_icon_url=tx.get("personal_finance_category_icon_url"),
+        updated_by_rule=bool(tx.get("updated_by_rule", False)),
+    )
     existing = Transaction.query.filter_by(transaction_id=txn_id).first()
-    if existing:
-        changed = (
-            existing.amount != tx.get("amount")
-            or existing.date != txn_date
-            or existing.description != description
-            or existing.pending != pending
-            or existing.category_id != category.id
-            or existing.merchant_slug != tx.get("merchant_slug")
-            or existing.merchant_name != merchant_name
-            or existing.merchant_type != merchant_type
-        )
-        if changed:
-            existing.amount = tx.get("amount")
-            existing.date = txn_date
-            existing.description = description
-            existing.pending = pending
-            existing.category_id = category.id
-            existing.category = category.computed_display_name
-            existing.category_slug = category.category_slug
-            existing.category_display = category.computed_display_name
-            existing.merchant_slug = tx.get("merchant_slug")
-            existing.merchant_name = merchant_name
-            existing.merchant_type = merchant_type
-            existing.provider = "plaid"
-            existing.personal_finance_category = pfc or None
-            existing.personal_finance_category_icon_url = pfc_icon
-        # Always refresh Plaid metadata (keeps aux fields current)
-        if plaid_acct:
-            refresh_or_insert_plaid_metadata(tx, existing, plaid_acct.account_id)
-        detect_internal_transfer(existing)
-    else:
-        new_txn = Transaction(
-            transaction_id=txn_id,
-            amount=tx.get("amount"),
-            date=txn_date,
-            description=description,
-            pending=pending,
-            account_id=account.account_id,
-            category_id=category.id,
-            category=category.computed_display_name,
-            category_slug=category.category_slug,
-            category_display=category.computed_display_name,
-            merchant_slug=tx.get("merchant_slug"),
-            merchant_name=merchant_name,
-            merchant_type=merchant_type,
-            provider="plaid",
-            user_id=account.user_id,
-            personal_finance_category=pfc or None,
-            personal_finance_category_icon_url=pfc_icon,
-        )
-        db.session.add(new_txn)
-        if plaid_acct:
-            refresh_or_insert_plaid_metadata(tx, new_txn, plaid_acct.account_id)
-        detect_internal_transfer(new_txn)
+    inserted = existing is None
+    if not existing:
+        stmt = dialect_insert(Transaction.__table__).values(**values)
+        db.session.execute(stmt.on_conflict_do_nothing(index_elements=["transaction_id"]))
+        existing = Transaction.query.filter_by(transaction_id=txn_id).populate_existing().one()
+    if existing.account_id != account.account_id or existing.provider != "plaid":
+        raise ValueError("Provider transaction ID conflicts with another account/provider")
+    if existing.user_id and existing.user_id != account.user_id:
+        raise ValueError("Provider transaction owner conflicts with linked account")
+    protected = modified_fields(existing)
+    if protected & {"category", "category_id", "category_slug", "category_display"}:
+        protected |= {"category", "category_id", "category_slug", "category_display"}
+    if "merchant_name" in protected:
+        protected.add("merchant_slug")
+    changed = False
+    if any(
+        getattr(existing, key) != values[key]
+        for key in ("amount", "date", "pending", "description", "merchant_name", "category_slug")
+        if key not in protected
+    ):
+        clear_transfer(existing)
+    for key, value in values.items():
+        if key not in protected and getattr(existing, key) != value:
+            setattr(existing, key, value)
+            changed = True
+    refresh_or_insert_plaid_metadata(original, existing, plaid_acct.account_id)
+    pending_id = original.get("pending_transaction_id")
+    if pending_id and not original.get("pending") and pending_id != txn_id:
+        predecessor = Transaction.query.filter_by(transaction_id=pending_id).first()
+        if predecessor:
+            retire_transaction(predecessor, reason="pending_replaced", successor=existing)
+            changed = True
+    db.session.flush()
+    detect_internal_transfer(existing)
+    _update_account_apr_from_interest_charge(account, original)
+    return "inserted" if inserted else "updated" if changed else "unchanged"
 
 
-def _apply_removed(removed: List[dict]) -> int:
-    """Delete transactions that Plaid indicates were removed."""
-    if not removed:
-        return 0
-    ids = [r.get("transaction_id") for r in removed if r.get("transaction_id")]
-    if not ids:
-        return 0
-    deleted = Transaction.query.filter(Transaction.transaction_id.in_(ids)).delete(synchronize_session=False)
-    return int(deleted or 0)
+def _apply_removed(removed: List[dict], allowed_accounts: set[str]) -> int:
+    """Scope removal to the current item and retain tombstones and local state."""
+    count = 0
+    for source in removed:
+        txn_id = source.get("transaction_id")
+        if not txn_id:
+            raise ValueError("Plaid removal is missing transaction_id")
+        transaction = Transaction.query.filter_by(transaction_id=txn_id).first()
+        if transaction and (transaction.account_id not in allowed_accounts or transaction.provider != "plaid"):
+            raise ValueError("Plaid removal conflicts with a different item/provider")
+        record_source(source, event_type="removed")
+        if transaction:
+            retire_transaction(transaction, reason="provider_removed")
+            count += 1
+    return count
 
 
 def sync_account_transactions(account_id: str) -> Dict:
@@ -331,90 +371,87 @@ def sync_account_transactions(account_id: str) -> Dict:
     if not plaid_acct or not plaid_acct.access_token:
         raise ValueError(f"PlaidAccount or access_token missing for {account_id}")
 
-    cursor = plaid_acct.sync_cursor or None
-    access_token = plaid_acct.access_token
-
-    # Build per-item account maps
     item_id = plaid_acct.item_id
-    item_plaid_accts = PlaidAccount.query.filter_by(item_id=item_id).all() if item_id else [plaid_acct]
-    acct_ids = [pa.account_id for pa in item_plaid_accts if pa.account_id]
-    accounts = Account.query.filter(Account.account_id.in_(acct_ids)).all() if acct_ids else []
+    # Lock before re-reading any cursors; all ingestion paths use the same key.
+    ingestion_lock("plaid-owner:" + str(account.user_id))
+    ingestion_lock("plaid-item:" + (item_id or account_id))
+    db.session.refresh(plaid_acct)
+    access_token = plaid_acct.access_token
+    item_plaid_accts = (
+        PlaidAccount.query.filter_by(item_id=item_id).populate_existing().all() if item_id else [plaid_acct]
+    )
+    acct_ids = [pa.account_id for pa in item_plaid_accts]
+    accounts = Account.query.filter(Account.account_id.in_(acct_ids)).all()
     account_map = {a.account_id: a for a in accounts}
     plaid_map = {pa.account_id: pa for pa in item_plaid_accts}
-
-    # Choose a shared cursor if any exists
-    if cursor is None:
-        for pa in item_plaid_accts:
-            if pa.sync_cursor:
-                cursor = pa.sync_cursor
+    cursors = {pa.sync_cursor for pa in item_plaid_accts if pa.sync_cursor}
+    if len(cursors) > 1:
+        db.session.rollback()
+        raise ValueError("Plaid item has inconsistent sync checkpoints")
+    initial_cursor = next(iter(cursors), None)
+    run_id = str(uuid4())
+    # Fetch every page before projecting any of it; mutation restarts use the
+    # original checkpoint and never leave partially committed provider state.
+    try:
+        for attempt in range(3):
+            pages = []
+            next_cursor = initial_cursor
+            try:
+                while True:
+                    kwargs = {"access_token": access_token}
+                    if next_cursor:
+                        kwargs["cursor"] = next_cursor
+                    resp = _transactions_sync_with_retry(
+                        TransactionsSyncRequest(**kwargs), account_id=account_id, item_id=item_id
+                    )
+                    data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
+                    cursor_after = data.get("next_cursor")
+                    if not cursor_after or (data.get("has_more") and cursor_after == next_cursor):
+                        raise ValueError("Plaid sync returned a missing or non-progressing cursor")
+                    pages.append((next_cursor, data))
+                    next_cursor = cursor_after
+                    if not data.get("has_more"):
+                        break
                 break
+            except Exception as error:
+                if _extract_plaid_error_code(error) != "TRANSACTIONS_SYNC_MUTATION_DURING_PAGINATION" or attempt == 2:
+                    raise
+        totals = {"added": 0, "modified": 0, "removed": 0}
+        for page_index, (cursor_before, data) in enumerate(pages):
+            with source_context(
+                run_id=run_id,
+                page_index=page_index,
+                item_id=item_id,
+                endpoint="transactions/sync",
+                request_id=data.get("request_id"),
+                cursor_before=cursor_before,
+                cursor_after=data["next_cursor"],
+            ):
+                for event_type in ("added", "modified"):
+                    with source_context(event_type=event_type):
+                        for tx in data.get(event_type, []):
+                            target = account_map.get(tx.get("account_id"))
+                            if not target or target.user_id != account.user_id:
+                                raise ValueError("Plaid sync returned an unknown account or owner")
+                            _upsert_transaction(tx, target, plaid_map.get(tx.get("account_id")))
+                            totals[event_type] += 1
+                totals["removed"] += _apply_removed(data.get("removed", []), set(acct_ids))
+        for pa in item_plaid_accts:
+            pa.sync_cursor = next_cursor
+            pa.last_refreshed = datetime.now(timezone.utc)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        logger.error("[SYNC] Item sync rolled back for account=%s", account_id)
+        raise
+    from app.sql.account_logic import invalidate_tx_cache
 
-    total_added = 0
-    total_modified = 0
-    total_removed = 0
-    next_cursor = cursor
-    ensure_transactions_sequence()
-
-    while True:
-        req_kwargs = {"access_token": access_token}
-        if next_cursor:
-            req_kwargs["cursor"] = next_cursor
-        req = TransactionsSyncRequest(**req_kwargs)
-        resp = _transactions_sync_with_retry(req, account_id=account_id, item_id=item_id)
-        data = resp.to_dict() if hasattr(resp, "to_dict") else dict(resp)
-
-        added = data.get("added", [])
-        modified = data.get("modified", [])
-        removed = data.get("removed", [])
-        next_cursor = data.get("next_cursor") or next_cursor
-        has_more = bool(data.get("has_more"))
-
-        # Atomic batch apply
-        try:
-            for tx in added:
-                _upsert_transaction(
-                    tx,
-                    account_map.get(tx.get("account_id")) or account,
-                    plaid_map.get(tx.get("account_id")),
-                )
-            for tx in modified:
-                _upsert_transaction(
-                    tx,
-                    account_map.get(tx.get("account_id")) or account,
-                    plaid_map.get(tx.get("account_id")),
-                )
-            total_removed += _apply_removed(removed)
-            db.session.commit()
-        except Exception as e:
-            db.session.rollback()
-            logger.error("[SYNC] Failed applying batch for %s: %s", account_id, e)
-            raise
-
-        total_added += len(added)
-        total_modified += len(modified)
-
-        if not has_more:
-            break
-
-    # Persist one final item-scoped cursor update only after pagination succeeds.
-    # This keeps every account under the item aligned to the same sync checkpoint.
-    for pa in item_plaid_accts:
-        pa.sync_cursor = next_cursor
-        # Use naive timestamp to match DB
-        pa.last_refreshed = datetime.now()
-    db.session.commit()
-
+    invalidate_tx_cache()
     logger.info(
         "[SYNC] account=%s added=%d modified=%d removed=%d",
         account_id,
-        total_added,
-        total_modified,
-        total_removed,
+        totals["added"],
+        totals["modified"],
+        totals["removed"],
     )
-    return {
-        "account_id": account_id,
-        "added": total_added,
-        "modified": total_modified,
-        "removed": total_removed,
-        "next_cursor": next_cursor,
-    }
+    return {"account_id": account_id, **totals, "next_cursor": next_cursor}

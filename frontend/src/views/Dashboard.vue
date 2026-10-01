@@ -30,6 +30,9 @@
           :safe-to-spend-loading="safeToSpendLoading"
           :safe-to-spend-error="safeToSpendError"
           :safe-to-spend-mode="safeToSpendMode"
+          :review-count="reviewCount"
+          :review-count-loading="reviewCountLoading"
+          :review-count-error="reviewCountError"
           @update:start-date="dateRange.start = $event"
           @update:end-date="dateRange.end = $event"
           @update:zoomed-out="zoomedOut = $event"
@@ -44,6 +47,7 @@
           @net-summary-change="netSummary = $event"
           @net-data-change="chartData = $event"
           @net-bar-click="onNetBarClick"
+          @open-review="openReviewModal"
         />
       </template>
 
@@ -450,7 +454,8 @@ const reviewFilters = computed(() => {
 const reviewCountLabel = computed(() => {
   if (reviewCountLoading.value) return 'Loading…'
   if (reviewCountError.value) return 'Count unavailable'
-  return `${reviewCount.value} to review`
+  const noun = reviewCount.value === 1 ? 'transaction' : 'transactions'
+  return `${reviewCount.value} ${noun} to review`
 })
 
 async function loadReviewCount(filters = reviewFilters.value) {

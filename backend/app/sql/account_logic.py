@@ -16,13 +16,9 @@ from app.extensions import db
 from app.helpers.normalize import normalize_amount
 from app.helpers.plaid_helpers import get_accounts, get_transactions
 from app.models import Account, AccountHistory, Category, PlaidAccount, Tag, Transaction
-from app.sql import transaction_rules_logic
 from app.sql.dialect_utils import dialect_insert
-from app.sql.refresh_metadata import refresh_or_insert_plaid_metadata
-from app.sql.sequence_utils import ensure_transactions_sequence
 from app.utils.category_canonical import canonicalize_category
 from app.utils.finance_utils import display_transaction_amount
-from app.utils.merchant_normalization import resolve_merchant
 
 ParentCategory = aliased(Category)
 
@@ -574,6 +570,8 @@ def _account_transfer_context(account: Account | None) -> str:
         return "savings"
     if any(keyword in profile for keyword in ("checking", "depository", "cash management")):
         return "checking"
+    if "credit" in profile:
+        return "credit"
     return "other"
 
 
@@ -619,6 +617,23 @@ def classify_transfer_pair(
     right_score = _transfer_keyword_score(counterpart, right_context)
     total_score = left_score + right_score
 
+    if txn.pending or counterpart.pending or not txn.amount or not counterpart.amount:
+        return None
+    # A payment on one side must not turn an unrelated purchase/refund into a
+    # transfer merely because the amounts coincide.
+    for candidate, score in ((txn, left_score), (counterpart, right_score)):
+        text = _normalize_transfer_text(candidate.description, candidate.merchant_name)
+        slug = str(candidate.category_slug or "")
+        if slug.startswith("INCOME_") or "brokerage activity" in text:
+            return None
+        category_evidence = (
+            slug.startswith(("TRANSFER_IN_", "TRANSFER_OUT_")) or slug == "LOAN_PAYMENTS_CREDIT_CARD_PAYMENT"
+        )
+        if any(token in text for token in NON_TRANSFER_KEYWORDS) and not category_evidence:
+            return None
+        if not score and not category_evidence and "cardmember serv" not in text and "amex epayment" not in text:
+            return None
+
     if _appears_non_transfer_pair(txn, counterpart):
         return None
 
@@ -626,6 +641,8 @@ def classify_transfer_pair(
         return None
 
     contexts = {left_context, right_context}
+    if "credit" in contexts and ("checking" in contexts or "savings" in contexts):
+        return "credit_card_payment"
     if "brokerage" in contexts and ("checking" in contexts or "savings" in contexts):
         return "brokerage_funding"
     if contexts == {"checking", "savings"}:
@@ -633,7 +650,7 @@ def classify_transfer_pair(
     return "internal_transfer"
 
 
-def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal = Decimal("0.01")) -> None:
+def detect_internal_transfer(txn, date_epsilon: int = 4, amount_epsilon: Decimal = Decimal("0.01")) -> None:
     """Flag ``txn`` and a matching counterpart as an internal transfer.
 
     Candidates are selected using amount/date baseline matching and then
@@ -641,7 +658,11 @@ def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal
     """
 
     account = Account.query.filter_by(account_id=txn.account_id).first()
-    if not account or txn.is_internal:
+    from app.services.plaid_audit import modified_fields
+
+    if not account or not account.user_id or txn.is_internal or txn.pending or not txn.amount:
+        return
+    if "is_internal" in modified_fields(txn):
         return
 
     txn_base_date = txn.date.date() if hasattr(txn.date, "date") else txn.date
@@ -657,6 +678,7 @@ def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal
         .filter(Transaction.date <= end)
         .filter(func.abs(Transaction.amount + txn.amount) <= amount_epsilon)
         .filter(Transaction.is_internal.is_(False))
+        .filter(Transaction.pending.is_(False))
         .all()
     )
 
@@ -664,7 +686,10 @@ def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal
     best_diff = None
     best_score = None
     best_type = None
+    tied = False
     for other, other_account in candidates:
+        if "is_internal" in modified_fields(other):
+            continue
         transfer_type = classify_transfer_pair(txn, other, account, other_account)
         if not transfer_type:
             continue
@@ -678,8 +703,37 @@ def detect_internal_transfer(txn, date_epsilon: int = 1, amount_epsilon: Decimal
             best_diff = diff
             best_score = heuristic_score
             best_type = transfer_type
+            tied = False
+        elif heuristic_score == best_score and diff == best_diff:
+            tied = True
 
-    if best and best_type:
+    if best and best_type and not tied:
+        # Require a unique reciprocal best candidate, so iteration order cannot
+        # consume one side of an ambiguous set of same-amount payments.
+        reverse_candidates = (
+            db.session.query(Transaction, Account)
+            .join(Account, Transaction.account_id == Account.account_id)
+            .filter(Account.user_id == account.user_id)
+            .filter(Transaction.account_id != best.account_id)
+            .filter(Transaction.date >= best.date - timedelta(days=date_epsilon))
+            .filter(Transaction.date <= best.date + timedelta(days=date_epsilon))
+            .filter(func.abs(Transaction.amount + best.amount) <= amount_epsilon)
+            .filter(Transaction.is_internal.is_(False), Transaction.pending.is_(False))
+            .all()
+        )
+        for other, other_account in reverse_candidates:
+            if other.transaction_id == txn.transaction_id or "is_internal" in modified_fields(other):
+                continue
+            if not classify_transfer_pair(
+                best, other, Account.query.filter_by(account_id=best.account_id).first(), other_account
+            ):
+                continue
+            diff = abs((best.date - other.date).days)
+            score = _transfer_keyword_score(
+                best, _account_transfer_context(Account.query.filter_by(account_id=best.account_id).first())
+            ) + _transfer_keyword_score(other, _account_transfer_context(other_account))
+            if score > best_score or (score == best_score and diff <= best_diff):
+                return
         txn.is_internal = True
         txn.transfer_type = best_type
         txn.internal_match_id = best.transaction_id
@@ -1204,52 +1258,23 @@ def get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_ico
         pfc_detailed=pfc_detailed,
     )
 
-    category = db.session.query(Category).filter_by(category_slug=category_slug).first()
+    # Stable PFC identity; never reuse/mutate another canonical category merely
+    # because Plaid's older primary/detailed labels happen to coincide.
+    from app.services.plaid_audit import ingestion_lock
 
-    if not category and (pfc_primary or pfc_detailed):
-        category = db.session.query(Category).filter_by(pfc_primary=pfc_primary, pfc_detailed=pfc_detailed).first()
-
-    if not category:
-        category = db.session.query(Category).filter_by(primary_category=primary, detailed_category=detailed).first()
-
-    if category and category.category_slug and category.category_slug != category_slug:
-        duplicate = db.session.query(Category).filter_by(category_slug=category_slug).first()
-        if duplicate and duplicate.id != category.id:
-            return duplicate
-
-    if not category:
-        category = Category(
-            primary_category=primary,
-            detailed_category=detailed,
-            pfc_primary=pfc_primary,
-            pfc_detailed=pfc_detailed,
-            pfc_icon_url=pfc_icon_url,
-            category_slug=category_slug,
-            category_display=category_display,
-        )
-        db.session.add(category)
-        db.session.flush()
-    else:
-        if primary and (not category.primary_category or category.primary_category == "Unknown"):
-            category.primary_category = primary
-        if detailed and (not category.detailed_category or category.detailed_category == "Unknown"):
-            duplicate = (
-                db.session.query(Category).filter_by(primary_category=primary, detailed_category=detailed).first()
-            )
-            if duplicate and duplicate.id != category.id:
-                return duplicate
-            category.detailed_category = detailed
-        if pfc_primary:
-            category.pfc_primary = pfc_primary
-        if pfc_detailed:
-            category.pfc_detailed = pfc_detailed
-        if pfc_icon_url and category.pfc_icon_url != pfc_icon_url:
-            category.pfc_icon_url = pfc_icon_url
-        if category.category_slug != category_slug:
-            category.category_slug = category_slug
-        if category.category_display != category_display:
-            category.category_display = category_display
-    return category
+    ingestion_lock("plaid-categories")
+    stmt = dialect_insert(Category.__table__).values(
+        primary_category=primary,
+        detailed_category=detailed,
+        pfc_primary=pfc_primary,
+        pfc_detailed=pfc_detailed,
+        pfc_icon_url=pfc_icon_url,
+        category_slug=category_slug,
+        category_display=category_display,
+        display_name=category_display,
+    )
+    db.session.execute(stmt.on_conflict_do_nothing(index_elements=["category_slug"]))
+    return db.session.query(Category).filter_by(category_slug=category_slug).one()
 
 
 def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=None, start_date=None, end_date=None):
@@ -1285,6 +1310,14 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
             }
 
         account_id = account.account_id
+        from app.services.plaid_audit import ingestion_lock, source_context
+        from app.services.plaid_sync import _upsert_transaction
+
+        plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
+        if not plaid_account_obj:
+            raise ValueError("Plaid account metadata is missing")
+        ingestion_lock("plaid-owner:" + str(account.user_id))
+        ingestion_lock("plaid-item:" + (plaid_account_obj.item_id or account_id))
         if not accounts_data:
             logger.warning("No cached accounts_data available")
             return False, "NO_ACCOUNTS_DATA"
@@ -1309,149 +1342,24 @@ def refresh_data_for_plaid_account(access_token, account_or_id, accounts_data=No
 
         account_label = account.name or f"[unnamed account] {account_id}"
 
-        transactions = get_transactions(
-            access_token=access_token,
-            start_date=start_date_obj,
-            end_date=end_date_obj,
-        )
-        # Apply user-defined rules before upserting, with robust normalization
-        normalized = []
-        for tx in transactions:
-            tx = dict(tx)
-            # Some Plaid sandboxes can return category=None; normalize to list
-            if tx.get("category") is None:
-                tx["category"] = []
-            normalized.append(transaction_rules_logic.apply_rules(account.user_id, tx))
-        transactions = normalized
-
-        fetched_count = len(transactions)
-
-        # Only process transactions for this specific account
-        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
-
-        plaid_account_obj = PlaidAccount.query.filter_by(account_id=account_id).first()
-
-        totals = {
-            "processed": 0,
-            "inserted": 0,
-            "updated": 0,
-            "unchanged": 0,
-            "skipped_missing_id": 0,
-            "skipped_invalid_date": 0,
-        }
-        ensure_transactions_sequence()
-
-        for txn in transactions:
-            txn_id = txn.get("transaction_id")
-            if not txn_id:
-                totals["skipped_missing_id"] += 1
-                continue
-
-            txn_date = txn.get("date")
-            # Plaid's transaction date is a calendar date, not an instant.
-            if isinstance(txn_date, str):
-                try:
-                    txn_date = datetime.strptime(txn_date, "%Y-%m-%d").date()
-                except ValueError:
-                    totals["skipped_invalid_date"] += 1
-                    continue
-            elif isinstance(txn_date, datetime):
-                txn_date = txn_date.date()
-            elif not isinstance(txn_date, pydate):
-                totals["skipped_invalid_date"] += 1
-                continue
-
-            # Plaid PFC fields
-            pfc_obj = txn.get("personal_finance_category", {})
-            pfc_primary = pfc_obj.get("primary") or "Unknown"
-            pfc_detailed = pfc_obj.get("detailed") or "Unknown"
-            pfc_icon_url = txn.get("personal_finance_category_icon_url")
-
-            # Legacy Plaid category
-            category_path = txn.get("category", [])
-            if not isinstance(category_path, (list, tuple)):
-                category_path = []
-            primary = category_path[0] if len(category_path) > 0 else "Unknown"
-            detailed = category_path[1] if len(category_path) > 1 else "Unknown"
-
-            # Use robust category upsert logic
-            category = get_or_create_category(primary, detailed, pfc_primary, pfc_detailed, pfc_icon_url)
-
-            description = txn.get("name") or txn.get("description") or "[no description]"
-            merchant = resolve_merchant(
-                merchant_name=txn.get("merchant_name"),
-                name=txn.get("name"),
-                description=txn.get("description"),
+        with source_context(endpoint="transactions/get", item_id=plaid_account_obj.item_id):
+            transactions = get_transactions(
+                access_token=access_token,
+                start_date=start_date_obj,
+                end_date=end_date_obj,
+                audit_source=True,
             )
-            merchant_name = merchant.display_name
-            merchant_type = txn.get("payment_meta", {}).get("payment_method") or "Unknown"
-            txn["merchant_slug"] = merchant.merchant_slug
-            pending = txn.get("pending", False)
-            txn_amount = process_transaction_amount(txn.get("amount") or 0)
-
-            existing_txn = Transaction.query.filter_by(transaction_id=txn_id).first()
-
-            totals["processed"] += 1
-
-            if existing_txn:
-                needs_update = (
-                    existing_txn.amount != txn_amount
-                    or existing_txn.date != txn_date
-                    or existing_txn.description != description
-                    or existing_txn.pending != pending
-                    or existing_txn.category_id != category.id
-                    or existing_txn.merchant_slug != txn.get("merchant_slug")
-                    or existing_txn.merchant_name != merchant_name
-                    or existing_txn.merchant_type != merchant_type
-                )
-                if needs_update:
-                    existing_txn.amount = txn_amount
-                    existing_txn.date = txn_date
-                    existing_txn.description = description
-                    existing_txn.pending = pending
-                    existing_txn.category_id = category.id
-                    existing_txn.category = category.computed_display_name
-                    existing_txn.category_slug = category.category_slug
-                    existing_txn.category_display = category.computed_display_name
-                    existing_txn.merchant_slug = txn.get("merchant_slug")
-                    existing_txn.merchant_name = merchant_name
-                    existing_txn.merchant_type = merchant_type
-                    existing_txn.provider = "plaid"
-                    existing_txn.personal_finance_category = pfc_obj or None
-                    existing_txn.personal_finance_category_icon_url = pfc_icon_url
-                    totals["updated"] += 1
-                    updated = True
-                else:
-                    totals["unchanged"] += 1
-                # -- Update Plaid metadata on every refresh (even if not updating Transaction) --
-                if plaid_account_obj:
-                    refresh_or_insert_plaid_metadata(txn, existing_txn, plaid_account_obj.account_id)
-                detect_internal_transfer(existing_txn)
-            else:
-                new_txn = Transaction(
-                    transaction_id=txn_id,
-                    amount=txn_amount,
-                    date=txn_date,
-                    description=description,
-                    pending=pending,
-                    account_id=account_id,
-                    category_id=category.id,
-                    category=category.computed_display_name,
-                    category_slug=category.category_slug,
-                    category_display=category.computed_display_name,
-                    merchant_slug=txn.get("merchant_slug"),
-                    merchant_name=merchant_name,
-                    merchant_type=merchant_type,
-                    provider="plaid",
-                    personal_finance_category=pfc_obj or None,
-                    personal_finance_category_icon_url=pfc_icon_url,
-                )
-                db.session.add(new_txn)
-                totals["inserted"] += 1
-                updated = True
-                if plaid_account_obj:
-                    refresh_or_insert_plaid_metadata(txn, new_txn, plaid_account_obj.account_id)
-                detect_internal_transfer(new_txn)
+        fetched_count = len(transactions)
+        transactions = [txn for txn in transactions if txn.get("account_id") == account_id]
+        totals = dict.fromkeys(
+            ("processed", "inserted", "updated", "unchanged", "skipped_missing_id", "skipped_invalid_date"), 0
+        )
+        with source_context(endpoint="transactions/get", item_id=plaid_account_obj.item_id):
+            for txn in transactions:
+                result = _upsert_transaction(txn, account, plaid_account_obj)
+                totals["processed"] += 1
+                totals[result] += 1
+                updated |= result != "unchanged"
 
         mark_refresh_success(plaid_account_obj, commit=False)
 

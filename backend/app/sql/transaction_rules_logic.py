@@ -9,6 +9,29 @@ from app.extensions import db
 from app.models import Category, TransactionRule
 
 
+def resolve_category_label(value: str) -> Category:
+    """Resolve user labels without silently discarding an unrecognized rule."""
+
+    def normalize(label):
+        return re.sub(r"[^a-z0-9]+", " ", str(label or "").lower()).strip()
+
+    wanted = normalize(value)
+    for candidate in Category.query.all():
+        if wanted in {
+            normalize(candidate.display_name),
+            normalize(candidate.computed_display_name),
+            normalize(candidate.category_slug),
+        }:
+            return candidate
+    from app.sql.account_logic import get_or_create_category
+    from app.utils.category_display import humanize_enum
+
+    parts = re.split(r"\s*:\s*|\s+-\s+|\s*>\s*", value, maxsplit=1)
+    primary = humanize_enum(parts[0]) if "_" in parts[0] else parts[0]
+    detailed = parts[1] if len(parts) > 1 else None
+    return get_or_create_category(primary, detailed, None, None, None)
+
+
 def create_rule(user_id: str, match_criteria: Dict[str, Any], action: Dict[str, Any]) -> TransactionRule:
     """Insert a TransactionRule row and return it."""
     rule = TransactionRule(user_id=user_id, match_criteria=match_criteria, action=action)
@@ -38,7 +61,11 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
         if "merchant_name" in crit and crit["merchant_name"] != transaction.get("merchant_name"):
             match = False
         pattern = crit.get("description_pattern")
-        if match and pattern and not re.search(pattern, transaction.get("description", ""), re.IGNORECASE):
+        if (
+            match
+            and pattern
+            and not re.search(pattern, transaction.get("description") or transaction.get("name") or "", re.IGNORECASE)
+        ):
             match = False
         if match and "amount_min" in crit and transaction.get("amount", 0) < crit["amount_min"]:
             match = False
@@ -53,12 +80,7 @@ def apply_rules(user_id: str, transaction: Dict[str, Any]) -> Dict[str, Any]:
                 if key == "category_id" and value is not None:
                     category = Category.query.get(value)
                 elif key == "category" and value:
-                    category = Category.query.filter(Category.display_name == value).first()
-                    if not category:
-                        for candidate in Category.query.all():
-                            if candidate.computed_display_name == value:
-                                category = candidate
-                                break
+                    category = resolve_category_label(value)
                 if category:
                     transaction["category_id"] = category.id
                     transaction["category"] = category.computed_display_name

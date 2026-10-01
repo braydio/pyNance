@@ -80,6 +80,16 @@ export default {
     return response.data
   },
 
+  async getLlmSettings() {
+    const response = await apiClient.get('/dashboard/llm-settings')
+    return response.data
+  },
+
+  async updateLlmSettings(payload) {
+    const response = await apiClient.put('/dashboard/llm-settings', payload)
+    return response.data
+  },
+
   async fetchSafeToSpend(params = {}) {
     const response = await apiClient.get('/dashboard/safe-to-spend', { params })
     return response.data

@@ -24,6 +24,8 @@ Serve dashboard configuration data including account snapshot selections and cus
 - `DELETE /api/dashboard/account-groups/<group_id>/accounts/<account_id>` – Detach an account from a group.
 - `POST /api/dashboard/account-groups/<group_id>/accounts/reorder` – Save the ordering of accounts within a group.
 - `GET /api/dashboard/activity-status` – Generate a parseable greeting status message from account balances and recent transactions.
+- `GET /api/dashboard/llm-settings` – Return the persisted dashboard LLM toggle and custom URL.
+- `PUT /api/dashboard/llm-settings` – Validate and persist dashboard LLM settings.
 - `GET /api/dashboard/safe-to-spend` – Return immediate spend guidance for today, until payday, or the current week.
 
 ## Inputs/Outputs

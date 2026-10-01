@@ -33,6 +33,61 @@
     </section>
 
     <section class="settings-panel">
+      <h2 class="settings-panel-title">Dashboard AI message</h2>
+      <p class="settings-panel-copy">
+        Control the LLM-generated dashboard header and optionally use an Ollama-compatible server.
+      </p>
+      <div class="settings-command-fields">
+        <label class="settings-checkbox-label">
+          <input
+            v-model="llmSettings.custom_message_enabled"
+            data-testid="llm-message-toggle"
+            type="checkbox"
+            :disabled="llmSettingsLoading || llmSettingsSaving"
+          />
+          Enable custom LLM message header
+        </label>
+
+        <label for="llm-base-url" class="settings-label">Custom LLM URL</label>
+        <BaseInput
+          id="llm-base-url"
+          v-model="llmSettings.base_url"
+          data-testid="llm-base-url"
+          :disabled="llmSettingsLoading || llmSettingsSaving"
+          placeholder="http://localhost:11434"
+          class="settings-input"
+          size="md"
+          radius="md"
+          @enter="saveLlmSettings"
+        />
+        <p class="settings-field-help">
+          Leave blank for OpenAI, or enter an Ollama host, /v1 base URL, or full chat-completions
+          URL.
+        </p>
+        <BaseButton
+          data-testid="llm-settings-save"
+          variant="solid"
+          tone="accent"
+          :disabled="llmSettingsLoading || llmSettingsSaving"
+          @click="saveLlmSettings"
+        >
+          {{ llmSettingsSaving ? 'Saving…' : 'Save AI settings' }}
+        </BaseButton>
+        <p
+          v-if="llmSettingsFeedback"
+          data-testid="llm-settings-feedback"
+          :class="[
+            'settings-command-feedback',
+            `settings-command-feedback--${llmSettingsFeedback.type}`,
+          ]"
+          role="status"
+        >
+          {{ llmSettingsFeedback.message }}
+        </p>
+      </div>
+    </section>
+
+    <section class="settings-panel">
       <h2 class="settings-panel-title">Command</h2>
       <p class="settings-panel-copy">Choose a command template and provide task-specific input.</p>
       <div class="settings-command-fields">
@@ -110,7 +165,8 @@ import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import RefreshPlaidControls from '@/components/widgets/RefreshPlaidControls.vue'
 import { useTheme } from '@/composables/useTheme'
-import { ref } from 'vue'
+import api from '@/services/api'
+import { onMounted, reactive, ref } from 'vue'
 import { Settings as SettingsIcon } from 'lucide-vue-next'
 
 const { activeTheme, setTheme, themes } = useTheme()
@@ -121,6 +177,41 @@ const commandTemplates = [
 ]
 const selectedCommandTemplate = ref('refresh-balances')
 const commandArgument = ref('')
+const llmSettings = reactive({ custom_message_enabled: true, base_url: '' })
+const llmSettingsLoading = ref(true)
+const llmSettingsSaving = ref(false)
+const llmSettingsFeedback = ref(null)
+
+async function loadLlmSettings() {
+  llmSettingsLoading.value = true
+  try {
+    const response = await api.getLlmSettings()
+    Object.assign(llmSettings, response.data)
+  } catch (_error) {
+    llmSettingsFeedback.value = { type: 'error', message: 'Could not load AI settings.' }
+  } finally {
+    llmSettingsLoading.value = false
+  }
+}
+
+async function saveLlmSettings() {
+  llmSettingsSaving.value = true
+  llmSettingsFeedback.value = null
+  try {
+    const response = await api.updateLlmSettings({ ...llmSettings })
+    Object.assign(llmSettings, response.data)
+    llmSettingsFeedback.value = { type: 'success', message: 'AI settings saved.' }
+  } catch (error) {
+    llmSettingsFeedback.value = {
+      type: 'error',
+      message: error.response?.data?.message || 'Could not save AI settings.',
+    }
+  } finally {
+    llmSettingsSaving.value = false
+  }
+}
+
+onMounted(loadLlmSettings)
 </script>
 
 <style scoped>
@@ -156,6 +247,25 @@ const commandArgument = ref('')
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.settings-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  color: var(--color-text-light);
+}
+
+.settings-checkbox-label input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--accent-primary);
+}
+
+.settings-field-help {
+  max-width: 38rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
 }
 
 .settings-select,

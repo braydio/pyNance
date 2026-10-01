@@ -340,6 +340,8 @@ def get_transactions(
     access_token: str,
     start_date: Union[str, date, datetime],
     end_date: Union[str, date, datetime],
+    *,
+    audit_source: bool = False,
 ):
     """Return all transactions between ``start_date`` and ``end_date``.
 
@@ -373,6 +375,7 @@ def get_transactions(
         all_transactions = []
         offset = 0
         count = 500
+        page_index = 0
 
         while True:
             options = TransactionsGetRequestOptions(count=count, offset=offset)
@@ -385,12 +388,22 @@ def get_transactions(
             response = plaid_client.transactions_get(plaid_request)
 
             batch = [tx.to_dict() for tx in response.transactions]
+            if audit_source:
+                from app.services.plaid_audit import record_source, source_context
+
+                with source_context(page_index=page_index, request_id=getattr(response, "request_id", None)):
+                    for source in batch:
+                        record_source(source, event_type="fetched")
             all_transactions.extend(batch)
 
             if len(all_transactions) >= response.total_transactions:
                 break
 
+            if not batch:
+                raise ValueError("Plaid transactions/get returned an empty page before the end")
+
             offset += len(batch)
+            page_index += 1
 
         save_transactions_json(all_transactions)
         logger.info(

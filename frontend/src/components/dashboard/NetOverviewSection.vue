@@ -19,6 +19,16 @@
       </h1>
       <p class="text-lg text-muted">Today is {{ currentDate }}</p>
       <p class="italic text-muted">{{ netWorthMessage }}</p>
+      <button
+        class="dashboard-status-pill net-overview-review-status mt-3"
+        type="button"
+        :disabled="reviewCountLoading"
+        :aria-label="reviewCountAriaLabel"
+        @click="emit('open-review')"
+      >
+        <span class="dashboard-status-dot" aria-hidden="true" />
+        {{ reviewCountLabel }}
+      </button>
     </div>
     <div class="angular-divider mb-2" aria-hidden="true">
       <span class="angular-divider__rule"></span>
@@ -191,6 +201,9 @@ const props = defineProps({
   safeToSpendLoading: { type: Boolean, default: false },
   safeToSpendError: { type: String, default: '' },
   safeToSpendMode: { type: String, default: 'today' },
+  reviewCount: { type: Number, default: 0 },
+  reviewCountLoading: { type: Boolean, default: false },
+  reviewCountError: { type: Boolean, default: false },
 })
 
 const emit = defineEmits([
@@ -208,7 +221,20 @@ const emit = defineEmits([
   'net-summary-change',
   'net-data-change',
   'net-bar-click',
+  'open-review',
 ])
+
+const reviewCountLabel = computed(() => {
+  if (props.reviewCountLoading) return 'Loading review queue…'
+  if (props.reviewCountError) return 'Review count unavailable'
+  const noun = props.reviewCount === 1 ? 'transaction' : 'transactions'
+  return `${props.reviewCount} ${noun} to review`
+})
+
+const reviewCountAriaLabel = computed(() => {
+  if (props.reviewCountLoading || props.reviewCountError) return reviewCountLabel.value
+  return `${reviewCountLabel.value}. Open transaction review workflow.`
+})
 
 const show7DayModel = computed({
   get: () => props.show7Day,
@@ -276,8 +302,29 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   box-shadow: var(--depth-inner-glow), var(--depth-shadow-raised);
 }
 
-.net-overview-cta {
-  margin-top: 0.75rem;
+.net-overview-review-status {
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.net-overview-review-status:hover:not(:disabled),
+.net-overview-review-status:focus-visible {
+  border-color: var(--color-accent-cyan);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-accent-cyan) 28%, transparent);
+  transform: translateY(-1px);
+}
+
+.net-overview-review-status:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 3px;
+}
+
+.net-overview-review-status:disabled {
+  cursor: wait;
+  opacity: 0.75;
 }
 
 .net-overview-panel {

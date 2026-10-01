@@ -44,6 +44,14 @@ activity_stub.generate_activity_status = lambda **_: {
 }
 sys.modules["app.services.dashboard_activity_status"] = activity_stub
 
+llm_settings_stub = types.ModuleType("app.services.llm_settings")
+llm_settings_stub.get_llm_settings_payload = lambda: {
+    "custom_message_enabled": True,
+    "base_url": "",
+}
+llm_settings_stub.update_llm_settings = lambda payload: payload
+sys.modules["app.services.llm_settings"] = llm_settings_stub
+
 safe_to_spend_stub = types.ModuleType("app.services.safe_to_spend")
 safe_to_spend_stub.DEFAULT_BUFFER_CENTS = 25000
 
@@ -94,6 +102,20 @@ def test_activity_status_returns_parseable_payload():
     assert payload["status"] == "success"
     assert payload["data"]["status_key"] == "largest_expense"
     assert "message" in payload["data"]
+
+
+def test_llm_settings_routes_return_and_update_configuration():
+    client = _build_client()
+    response = client.get("/api/dashboard/llm-settings")
+    assert response.status_code == 200
+    assert response.get_json()["data"]["custom_message_enabled"] is True
+
+    response = client.put(
+        "/api/dashboard/llm-settings",
+        json={"custom_message_enabled": False, "base_url": "http://localhost:11434"},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["data"]["base_url"] == "http://localhost:11434"
 
 
 def test_safe_to_spend_validates_inputs():

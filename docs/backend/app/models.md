@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-02-28
+Last Updated: 2026-09-30
 Status: Active
 ---
 
@@ -11,6 +11,8 @@ This document defines the core database models for the pyNance application, incl
 ## Database Models Overview [MODELS_OVERVIEW]
 
 Defines the SQLAlchemy models for the application including `Account`, `PlaidAccount`, `AccountHistory`, `Transaction`, and related entities. Mixes in timestamp columns and sets up relationships used throughout services and routes.
+
+`LlmSettings` stores the application-wide dashboard custom-message toggle and optional OpenAI-compatible base URL. Its singleton row defaults to custom messages enabled and the standard OpenAI endpoint selected by an empty URL.
 
 ### Dependencies
 
@@ -30,3 +32,7 @@ Defines the SQLAlchemy models for the application including `Account`, `PlaidAcc
   `category_display`, while preserving raw Plaid legacy and PFC fields for
   provenance.
 - **Tag**: User-defined labels tied to transactions; names are unique per user and default to `#untagged` in serialization when no tags exist.
+
+## Plaid source events
+
+`PlaidSourceEvent` stores immutable provider observations independently of active transactions and accounts. Canonical categories use unique slugs; legacy primary/detailed paths no longer define identity. See [source history and reconciliation](services/plaid_audit.md).

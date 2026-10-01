@@ -31,7 +31,7 @@ class Category(db.Model):
     parent_id = db.Column(db.Integer, db.ForeignKey("categories.id", ondelete="SET NULL"), nullable=True)
     parent = db.relationship("Category", remote_side=[id])
 
-    __table_args__ = (db.UniqueConstraint("primary_category", "detailed_category", name="uq_category_composite"),)
+    # Legacy paths are provenance, not identity: one path can have several PFCs.
 
     @property
     def display_primary(self) -> str:
@@ -276,3 +276,28 @@ class PlaidTransactionMeta(db.Model, TimestampMixin):
     raw = db.Column(db.JSON, nullable=True)
 
     __table_args__ = (db.UniqueConstraint("transaction_id"),)
+
+
+class PlaidSourceEvent(db.Model):
+    """Immutable provider observations, retained after active transactions are removed."""
+
+    __tablename__ = "plaid_source_events"
+
+    id = db.Column(db.BigInteger().with_variant(db.Integer, "sqlite"), primary_key=True)
+    run_id = db.Column(db.String(64), nullable=False)
+    page_index = db.Column(db.Integer, nullable=False, default=0)
+    event_type = db.Column(db.String(32), nullable=False)
+    transaction_id = db.Column(db.String(64), nullable=False, index=True)
+    account_id = db.Column(db.String(64), nullable=True)
+    item_id = db.Column(db.String(64), nullable=True)
+    endpoint = db.Column(db.String(64), nullable=False)
+    request_id = db.Column(db.String(128), nullable=True)
+    fetched_at = db.Column(db.DateTime(timezone=True), nullable=False)
+    payload = db.Column(db.JSON, nullable=False)
+    payload_sha256 = db.Column(db.String(64), nullable=False)
+    cursor_before = db.Column(db.Text, nullable=True)
+    cursor_after = db.Column(db.Text, nullable=True)
+
+    __table_args__ = (
+        db.UniqueConstraint("run_id", "page_index", "event_type", "transaction_id", name="uq_plaid_source_event"),
+    )

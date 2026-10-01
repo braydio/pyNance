@@ -3,7 +3,6 @@
 This package exposes all SQLAlchemy models grouped into modules.
 """
 
-# Accounts
 from .account_models import (
     Account,
     AccountGroup,
@@ -13,6 +12,9 @@ from .account_models import (
     AccountSnapshotPreference,
     FinancialGoal,
 )
+
+# Application settings
+from .app_settings import LlmSettings
 
 # Institutions & linked accounts
 from .institution_models import Institution, PlaidAccount, PlaidItem, PlaidWebhookLog
@@ -27,6 +29,7 @@ from .planning_models import AllocationType, PlannedBill, PlanningScenario, Scen
 # Transactions
 from .transaction_models import (
     Category,
+    PlaidSourceEvent,
     PlaidTransactionMeta,
     RecurringTransaction,
     Tag,
@@ -38,6 +41,7 @@ from .transaction_models import (
 __all__ = [
     # Mixins
     "TimestampMixin",
+    "LlmSettings",
     # Institutions
     "Institution",
     "PlaidAccount",
@@ -59,6 +63,7 @@ __all__ = [
     "RecurringTransaction",
     "TransactionRule",
     "PlaidTransactionMeta",
+    "PlaidSourceEvent",
     # Planning
     "AllocationType",
     "PlanningScenario",

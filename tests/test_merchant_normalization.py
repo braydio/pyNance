@@ -112,7 +112,8 @@ def test_upsert_transaction_uses_normalized_merchant_name(app_context):
     assert saved is not None
     assert saved.description == "POS SQ *JOES COFFEE"
     assert saved.merchant_name == "Joes Coffee"
-    assert saved.plaid_meta.raw["merchant_slug"] == "joes-coffee"
+    assert saved.merchant_slug == "joes-coffee"
+    assert saved.plaid_meta.raw == tx
 
 
 def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(app_context, monkeypatch):
@@ -174,7 +175,8 @@ def test_refresh_data_for_plaid_account_uses_normalized_merchant_name(app_contex
     assert saved is not None
     assert saved.description == "POS PAYPAL *NETFLIX.COM"
     assert saved.merchant_name == "Netflix.com"
-    assert saved.plaid_meta.raw["merchant_slug"] == "netflix-com"
+    assert saved.merchant_slug == "netflix-com"
+    assert saved.plaid_meta.raw == sample_transactions[0]
 
 
 def test_sync_paths_share_transfer_classifier_for_brokerage_funding(app_context, monkeypatch):

@@ -98,6 +98,7 @@ describe('Dashboard section components', () => {
         chartData: [],
         safeToSpend: { amount_cents: 4200, status: 'caution' },
         safeToSpendMode: 'today',
+        reviewCount: 12,
       },
       global: {
         stubs: {
@@ -130,6 +131,9 @@ describe('Dashboard section components', () => {
       payload: { amount_cents: 4200, status: 'caution' },
       selectedMode: 'today',
     })
+    expect(wrapper.find('.net-overview-review-status').text()).toContain(
+      '12 transactions to review',
+    )
 
     const timeframeButtons = wrapper.findAll(
       '[data-testid="daily-net-timeframe-toggle"] .daily-net-timeframe-btn',
@@ -144,6 +148,33 @@ describe('Dashboard section components', () => {
     expect(overlayTrigger.classes()).toContain('accent-toggle-btn')
 
     expect(wrapper.html()).toMatchSnapshot()
+  })
+
+  it('opens the review workflow from the dashboard hero count', async () => {
+    const wrapper = shallowMount(NetOverviewSection, {
+      props: {
+        dateRange: { start: '2025-01-01', end: '2025-01-31' },
+        debouncedRange: { start: '2025-01-01', end: '2025-01-31' },
+        netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
+        reviewCount: 1,
+      },
+      global: {
+        stubs: {
+          DateRangeSelector: DateRangeSelectorStub,
+          ChartDetailsSidebar: ChartDetailsSidebarStub,
+          TopAccountSnapshot: true,
+          DailyNetChart: DailyNetChartStub,
+          SafeToSpendCard: SafeToSpendCardStub,
+          FinancialSummary: FinancialSummaryStub,
+        },
+      },
+    })
+
+    const reviewStatus = wrapper.get('.net-overview-review-status')
+    expect(reviewStatus.text()).toContain('1 transaction to review')
+    await reviewStatus.trigger('click')
+
+    expect(wrapper.emitted('open-review')).toHaveLength(1)
   })
 
   it('renders category breakdown controls and emits change events', async () => {

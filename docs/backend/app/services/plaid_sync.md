@@ -23,7 +23,7 @@
 ## Usage Notes
 
 - Sync cursors are persisted per Plaid item, so subsequent accounts linked to the same item reuse progress and benefit from incremental fetches.
-- Database commits occur per batch to keep additions, modifications, and deletions consistent; failures trigger rollbacks and surface through logged errors.
+- All pages are fetched before applying any changes; additions, modifications, deletions, source audit events, and the final item cursor commit in one transaction. Pagination mutation restarts from the original checkpoint.
 - Cursor state (`sync_cursor`, `last_refreshed`) is item-scoped and persisted once for every account under the Plaid item after the page loop completes successfully.
 
 ## Migration status (actual route wiring)
@@ -59,6 +59,10 @@ Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_m
 
 `_upsert_transaction` writes canonical category fields (`category_slug`, `category_display`) on every inserted/updated `Transaction`, sourced from `get_or_create_category`. It also keeps the full Plaid `personal_finance_category` payload and icon URL for provenance and auditability.
 
+## Source history and persistence integrity
+
+Both legacy refresh and sync use the shared `_upsert_transaction` projection. Original provider payloads are captured before rules, user-modified fields are protected, pending predecessors are retired, and owner/item locks serialize ingestion. See [Plaid source history and reconciliation](plaid_audit.md) for the migration, correction command, and validation contract.
+
 ## Shared transfer classifier contract
 
 `_upsert_transaction` delegates transfer detection to `app.sql.account_logic.detect_internal_transfer`, which now performs both pair matching and transfer-type classification (`transfer_type`). This keeps `/transactions/sync` behavior aligned with the legacy refresh path in `account_logic.refresh_data_for_plaid_account`.
@@ -66,7 +70,7 @@ Both transaction ingestion paths use `app.utils.merchant_normalization.resolve_m
 Both ingestion paths therefore emit the same metadata contract:
 
 - `is_internal`: existing boolean exclusion flag used across analytics.
-- `transfer_type`: explicit classifier output (`brokerage_funding`, `checking_savings_transfer`, or generic `internal_transfer`).
+- `transfer_type`: explicit classifier output (`brokerage_funding`, `checking_savings_transfer`, `credit_card_payment`, or generic `internal_transfer`).
 - `internal_transfer_flag`: model alias for compatibility-sensitive consumers.
 
 ## APR inference fallback for credit accounts

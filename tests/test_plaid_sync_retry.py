@@ -2,7 +2,6 @@
 
 import importlib.util
 import os
-import sys
 import types
 
 
@@ -25,66 +24,14 @@ class _PlaidError(Exception):
 
 
 def _load_plaid_sync_module():
-    """Load plaid_sync with minimal app module stubs for isolated tests."""
-
-    app_stub = types.ModuleType("app")
-    config_stub = types.ModuleType("app.config")
-    extensions_stub = types.ModuleType("app.extensions")
-    models_stub = types.ModuleType("app.models")
-    sql_pkg_stub = types.ModuleType("app.sql")
-    rules_stub = types.ModuleType("app.sql.transaction_rules_logic")
-    account_logic_stub = types.ModuleType("app.sql.account_logic")
-    refresh_stub = types.ModuleType("app.sql.refresh_metadata")
-    seq_stub = types.ModuleType("app.sql.sequence_utils")
-    merchant_stub = types.ModuleType("app.utils.merchant_normalization")
-
-    logger = _DummyLogger()
-    config_stub.logger = logger
-    config_stub.plaid_client = types.SimpleNamespace(transactions_sync=lambda _req: None)
-
-    extensions_stub.db = types.SimpleNamespace(session=types.SimpleNamespace())
-    models_stub.Account = object
-    models_stub.Category = object
-    models_stub.PlaidAccount = object
-    models_stub.Transaction = object
-
-    rules_stub.apply_rules = lambda _user_id, tx: tx
-    account_logic_stub.detect_internal_transfer = lambda _tx: None
-    account_logic_stub.get_or_create_category = lambda *_a, **_k: types.SimpleNamespace(
-        id="cat-1",
-        computed_display_name="Unknown",
-        category_slug="unknown",
-    )
-    refresh_stub.refresh_or_insert_plaid_metadata = lambda *_a, **_k: None
-    seq_stub.ensure_transactions_sequence = lambda: None
-    merchant_stub.resolve_merchant = lambda **_kwargs: types.SimpleNamespace(
-        display_name="Unknown",
-        merchant_slug="unknown",
-    )
-
-    sys.modules["app"] = app_stub
-    sys.modules["app.config"] = config_stub
-    sys.modules["app.extensions"] = extensions_stub
-    sys.modules["app.models"] = models_stub
-    sys.modules["app.sql"] = sql_pkg_stub
-    sys.modules["app.sql.transaction_rules_logic"] = rules_stub
-    sys.modules["app.sql.account_logic"] = account_logic_stub
-    sys.modules["app.sql.refresh_metadata"] = refresh_stub
-    sys.modules["app.sql.sequence_utils"] = seq_stub
-    sys.modules["app.utils.merchant_normalization"] = merchant_stub
-
-    module_path = os.path.join(
-        os.path.dirname(__file__),
-        "..",
-        "backend",
-        "app",
-        "services",
-        "plaid_sync.py",
-    )
+    """Load the service without replacing shared app modules in sys.modules."""
+    module_path = os.path.join(os.path.dirname(__file__), "..", "backend", "app", "services", "plaid_sync.py")
     spec = importlib.util.spec_from_file_location("plaid_sync_retry_test", module_path)
     module = importlib.util.module_from_spec(spec)
-    assert spec and spec.loader
     spec.loader.exec_module(module)
+    logger = _DummyLogger()
+    module.logger = logger
+    module.plaid_client = types.SimpleNamespace(transactions_sync=lambda _req: None)
     return module, logger
 
 

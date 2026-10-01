@@ -7,7 +7,9 @@ Build the dashboard greeting/status payload from account balances and recent tra
 ## Key behaviors
 
 - Loads visible accounts and recent non-internal transactions for a configurable date range (default: trailing 30 days).
-- Sends compact JSON context to OpenAI Chat Completions when `OPENAI_API_KEY` is present.
+- Sends compact JSON context to an OpenAI-compatible Chat Completions endpoint when the dashboard LLM message setting is enabled.
+- Uses OpenAI by default when `OPENAI_API_KEY` is present. A custom base URL can target Ollama; bare hosts are expanded to `/v1/chat/completions`, and the default local model is `llama3.2` unless `OPENAI_DASHBOARD_MODEL` is set.
+- Returns the deterministic fallback without making an LLM request when the setting is disabled.
 - Enforces a strict parseable response contract:
   - `status_key` (stable machine-friendly key)
   - `message` (single user-facing actionable sentence)

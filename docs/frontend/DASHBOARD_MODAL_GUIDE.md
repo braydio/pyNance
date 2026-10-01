@@ -70,6 +70,11 @@ mutually exclusive with the chart-driven overlays. It fetches transactions in ba
 `useTransactions`, supports keyboard-first shortcuts (← edit, → approve/save, `1-5` focus fields, `Tab` cycles fields, `Enter` saves, `Esc` cancels, `N` starts the next batch, `0` closes the modal), and uses
 `updateTransaction` / `createTransactionRule` to persist edits before advancing through each batch.
 
+The dashboard hero exposes the number of transactions in the current review queue. The count uses
+the active dashboard date range (and the optional tag filter shown on the review card), and the
+indicator opens the same review modal directly. Loading and API failure states are shown in place
+of a potentially misleading numeric count.
+
 The review call-to-action card now uses a themed gradient treatment and stronger field/button affordances
 to match the dashboard visual language. Inside the modal, editable fields are grouped into bordered
 cards and primary/secondary actions are visually separated to make keyboard and pointer workflows

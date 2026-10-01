@@ -18,6 +18,7 @@ vi.mock('@/services/api', () => ({
       status: 'success',
       data: { message: 'Review your largest recent expense for accuracy.' },
     }),
+    fetchSafeToSpend: vi.fn().mockResolvedValue({ status: 'success', data: null }),
   },
 }))
 
@@ -317,6 +318,9 @@ const NetOverviewSectionStub = defineComponent({
     showAvgExpenses: { type: Boolean, default: false },
     showComparisonOverlay: { type: Boolean, default: false },
     comparisonMode: { type: String, default: 'prior_month_to_date' },
+    reviewCount: { type: Number, default: 0 },
+    reviewCountLoading: { type: Boolean, default: false },
+    reviewCountError: { type: Boolean, default: false },
   },
   emits: [
     'update:start-date',
@@ -332,6 +336,7 @@ const NetOverviewSectionStub = defineComponent({
     'net-summary-change',
     'net-data-change',
     'net-bar-click',
+    'open-review',
   ],
   setup(props) {
     netOverviewSectionProps = props
@@ -402,6 +407,9 @@ async function resolveAsyncSections(wrapper) {
       chartData: wrapper.vm.chartData,
       netSummary: wrapper.vm.netSummary,
       comparisonMode: wrapper.vm.comparisonMode,
+      reviewCount: wrapper.vm.reviewCount,
+      reviewCountLoading: wrapper.vm.reviewCountLoading,
+      reviewCountError: wrapper.vm.reviewCountError,
     }
     receivedProps ||= { groups: mockGroupedOptions.value }
     categoryBreakdownSectionProps ||= {
@@ -494,6 +502,7 @@ beforeEach(async () => {
     // Ignore storage setup failures in jsdom-less or restricted environments.
   }
   fetchTransactions.mockClear()
+  fetchTransactions.mockResolvedValue({ transactions: [], total: 0 })
   fetchCategoryTransactions.mockClear()
   fetchMerchantTransactions.mockClear()
   receivedProps = null
@@ -552,6 +561,19 @@ describe('Dashboard.vue', () => {
     expect(mockRefreshOptions).toHaveBeenCalledTimes(1)
     expect(mockFetchTransactions).toHaveBeenCalledTimes(1)
     wrapper.unmount()
+  })
+
+  it('exposes the filtered review queue count to the dashboard overview', async () => {
+    fetchTransactions.mockResolvedValue({ transactions: [{ transaction_id: 'tx-1' }], total: 14 })
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    expect(wrapper.vm.reviewCount).toBe(14)
+    expect(netOverviewSectionProps).toMatchObject({
+      reviewCount: 14,
+      reviewCountLoading: false,
+      reviewCountError: false,
+    })
   })
 
   it('defaults the date range to the current month boundaries', async () => {
@@ -771,6 +793,8 @@ describe('Dashboard.vue', () => {
       chartData: [],
       netSummary: { totalIncome: 0, totalExpenses: 0, totalNet: 0 },
       comparisonMode: 'prior_month_to_date',
+      reviewCount: 0,
+      reviewCountError: false,
     })
 
     expect(categoryBreakdownSectionProps).toMatchObject({

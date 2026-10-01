@@ -1,26 +1,14 @@
-"""Unit tests for item-scoped cursor persistence in Plaid sync."""
+"""Regression checks for checkpoint consistency and calendar dates."""
 
-import importlib
-import sys
 from datetime import date, datetime, timezone
-from types import SimpleNamespace
 
-for module_name in list(sys.modules):
-    if not (
-        module_name in {"app.config", "app.services", "app.services.plaid_sync", "app.sql"}
-        or module_name.startswith("app.config.")
-        or module_name.startswith("app.sql.")
-    ):
-        continue
-    existing = sys.modules.get(module_name)
-    if existing is None or getattr(existing, "__file__", None) is None:
-        sys.modules.pop(module_name, None)
+import pytest
+from app.extensions import db
+from app.models import Account, PlaidAccount
+from app.services import plaid_sync
+from test_plaid_ingestion_integrity import database as database_fixture
 
-app_module = sys.modules.get("app")
-if app_module is not None and getattr(app_module, "__file__", None) is None:
-    sys.modules.pop("app", None)
-
-plaid_sync = importlib.import_module("app.services.plaid_sync")
+database = database_fixture
 
 
 def test_parse_transaction_date_preserves_calendar_semantics():
@@ -28,140 +16,14 @@ def test_parse_transaction_date_preserves_calendar_semantics():
     assert plaid_sync._parse_txn_date(datetime(2026, 2, 24, 0, 0, tzinfo=timezone.utc)) == date(2026, 2, 24)
 
 
-class _FakeColumn:
-    def in_(self, values):
-        return values
-
-
-class _FakeResponse:
-    def __init__(self, payload):
-        self._payload = payload
-
-    def to_dict(self):
-        return self._payload
-
-
-class _FakeTransactionsSyncRequest:
-    def __init__(self, **kwargs):
-        self.kwargs = kwargs
-
-
-class _FakeAccountQuery:
-    def __init__(self, accounts):
-        self._accounts = accounts
-        self._filters = {}
-
-    def filter_by(self, **kwargs):
-        self._filters = kwargs
-        return self
-
-    def filter(self, *_args, **_kwargs):
-        return self
-
-    def first(self):
-        account_id = self._filters.get("account_id")
-        for account in self._accounts:
-            if account.account_id == account_id:
-                return account
-        return None
-
-    def all(self):
-        return list(self._accounts)
-
-
-class _FakePlaidAccountQuery:
-    def __init__(self, plaid_accounts):
-        self._plaid_accounts = plaid_accounts
-        self._filters = {}
-
-    def filter_by(self, **kwargs):
-        self._filters = kwargs
-        return self
-
-    def first(self):
-        for plaid_account in self._plaid_accounts:
-            if all(getattr(plaid_account, key) == value for key, value in self._filters.items()):
-                return plaid_account
-        return None
-
-    def all(self):
-        return [
-            plaid_account
-            for plaid_account in self._plaid_accounts
-            if all(getattr(plaid_account, key) == value for key, value in self._filters.items())
+def test_sync_rejects_divergent_item_cursors(database):
+    db.session.add_all(
+        [
+            Account(account_id="sibling", user_id="owner", name="Savings"),
+            PlaidAccount(account_id="sibling", item_id="item", access_token="x", sync_cursor="cursor-other"),
         ]
-
-
-class _FakeSession:
-    def __init__(self):
-        self.commits = 0
-        self.rollbacks = 0
-
-    def commit(self):
-        self.commits += 1
-
-    def rollback(self):
-        self.rollbacks += 1
-
-
-class _FakePlaidClient:
-    def __init__(self, payload):
-        self._payload = payload
-
-    def transactions_sync(self, _req):
-        return _FakeResponse(self._payload)
-
-
-def test_sync_account_transactions_persists_item_cursor_once(monkeypatch):
-    """Final cursor persistence should run once for all Plaid accounts in the item."""
-
-    account = SimpleNamespace(account_id="acc-1", user_id="user-1")
-    plaid_accounts = [
-        SimpleNamespace(
-            account_id="acc-1",
-            item_id="item-1",
-            access_token="token",
-            sync_cursor="cursor-0",
-            last_refreshed=None,
-        ),
-        SimpleNamespace(
-            account_id="acc-2",
-            item_id="item-1",
-            access_token="token",
-            sync_cursor=None,
-            last_refreshed=None,
-        ),
-    ]
-
-    fake_session = _FakeSession()
-    monkeypatch.setattr(plaid_sync, "db", SimpleNamespace(session=fake_session))
-    monkeypatch.setattr(plaid_sync, "ensure_transactions_sequence", lambda: None)
-    monkeypatch.setattr(plaid_sync, "_upsert_transaction", lambda *_args, **_kwargs: None)
-    monkeypatch.setattr(plaid_sync, "_apply_removed", lambda removed: len(removed))
-    monkeypatch.setattr(
-        plaid_sync,
-        "plaid_client",
-        _FakePlaidClient(
-            {
-                "added": [],
-                "modified": [],
-                "removed": [],
-                "next_cursor": "cursor-1",
-                "has_more": False,
-            }
-        ),
     )
-    monkeypatch.setattr(plaid_sync, "TransactionsSyncRequest", _FakeTransactionsSyncRequest)
-
-    fake_account_cls = SimpleNamespace(query=_FakeAccountQuery([account]), account_id=_FakeColumn())
-    fake_plaid_cls = SimpleNamespace(query=_FakePlaidAccountQuery(plaid_accounts))
-    monkeypatch.setattr(plaid_sync, "Account", fake_account_cls)
-    monkeypatch.setattr(plaid_sync, "PlaidAccount", fake_plaid_cls)
-
-    result = plaid_sync.sync_account_transactions("acc-1")
-
-    assert result["next_cursor"] == "cursor-1"
-    assert fake_session.commits == 2
-    assert fake_session.rollbacks == 0
-    assert all(pa.sync_cursor == "cursor-1" for pa in plaid_accounts)
-    assert all(pa.last_refreshed is not None for pa in plaid_accounts)
+    database[1].sync_cursor = "cursor-old"
+    db.session.commit()
+    with pytest.raises(ValueError, match="inconsistent sync checkpoints"):
+        plaid_sync.sync_account_transactions("checking")

@@ -13,6 +13,7 @@ from sqlalchemy import or_
 
 from app.config import logger
 from app.models import Account, Transaction
+from app.services.llm_settings import get_llm_settings
 
 OPENAI_API_URL = "https://api.openai.com/v1/chat/completions"
 DEFAULT_OPENAI_MODEL = "gpt-4.1-mini"
@@ -104,20 +105,32 @@ def _build_fallback_message(accounts: list[dict[str, Any]], transactions: list[d
     }
 
 
-def _call_openai_for_status(payload: dict[str, Any]) -> dict[str, str]:
-    """Request a single parseable status message from OpenAI."""
+def _chat_completions_url(base_url: str | None) -> str:
+    """Resolve an OpenAI-compatible base URL to the chat completions endpoint."""
+
+    if not base_url:
+        return OPENAI_API_URL
+    cleaned = base_url.rstrip("/")
+    if cleaned.endswith("/chat/completions"):
+        return cleaned
+    if cleaned.endswith("/v1"):
+        return f"{cleaned}/chat/completions"
+    return f"{cleaned}/v1/chat/completions"
+
+
+def _call_openai_for_status(payload: dict[str, Any], base_url: str | None = None) -> dict[str, str]:
+    """Request a status message from an OpenAI-compatible provider."""
 
     api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
+    if not api_key and not base_url:
         raise RuntimeError("OPENAI_API_KEY is not configured")
 
-    model = os.getenv("OPENAI_DASHBOARD_MODEL", DEFAULT_OPENAI_MODEL)
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json",
-    }
+    model = os.getenv("OPENAI_DASHBOARD_MODEL") or ("llama3.2" if base_url else DEFAULT_OPENAI_MODEL)
+    headers = {"Content-Type": "application/json"}
+    if api_key and not base_url:
+        headers["Authorization"] = f"Bearer {api_key}"
     response = requests.post(
-        OPENAI_API_URL,
+        _chat_completions_url(base_url),
         headers=headers,
         timeout=15,
         json={
@@ -183,7 +196,10 @@ def generate_activity_status(
     }
 
     try:
-        generated = _call_openai_for_status(payload)
+        llm_settings = get_llm_settings()
+        if not llm_settings.custom_message_enabled:
+            return {**_build_fallback_message(accounts, transactions), "source": "fallback"}
+        generated = _call_openai_for_status(payload, base_url=llm_settings.base_url)
         if generated.get("message"):
             return {**generated, "source": "llm"}
     except Exception as exc:  # pragma: no cover - network + provider fallback

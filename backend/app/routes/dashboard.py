@@ -11,6 +11,7 @@ from app.services.account_snapshot import (
     update_snapshot_selection,
 )
 from app.services.dashboard_activity_status import generate_activity_status
+from app.services.llm_settings import get_llm_settings_payload, update_llm_settings
 from app.services.safe_to_spend import (
     DEFAULT_BUFFER_CENTS,
     SafeToSpendInputs,
@@ -86,6 +87,32 @@ def get_activity_status():
         return jsonify({"status": "success", "data": data}), 200
     except Exception as exc:  # pragma: no cover - defensive logging
         logger.error("Failed to generate dashboard activity status: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@dashboard.route("/llm-settings", methods=["GET"])
+def get_dashboard_llm_settings():
+    """Return settings for the optional LLM-generated dashboard message."""
+
+    try:
+        return jsonify({"status": "success", "data": get_llm_settings_payload()}), 200
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to load LLM settings: %s", exc, exc_info=True)
+        return jsonify({"status": "error", "message": str(exc)}), 500
+
+
+@dashboard.route("/llm-settings", methods=["PUT"])
+def put_dashboard_llm_settings():
+    """Validate and persist dashboard LLM settings."""
+
+    payload = request.get_json(silent=True) or {}
+    try:
+        data = update_llm_settings(payload)
+        return jsonify({"status": "success", "data": data}), 200
+    except ValueError as exc:
+        return jsonify({"status": "error", "message": str(exc)}), 400
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.error("Failed to update LLM settings: %s", exc, exc_info=True)
         return jsonify({"status": "error", "message": str(exc)}), 500
 
 
