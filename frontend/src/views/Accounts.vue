@@ -178,37 +178,14 @@
 
           <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
             <h2 class="accounts-panel-title">Manage Linked Accounts</h2>
-            <div
-              v-for="connection in reconnectConnections"
-              :key="connection.connectionId"
-              class="rounded-md border border-amber-400 p-4"
-              role="status"
-            >
-              <p class="font-medium">This Plaid connection needs to be reconnected.</p>
-              <p class="text-sm">
-                {{ connection.accounts[0]?.institution_name || 'Linked institution' }}
-              </p>
-              <UiButton
-                type="button"
-                variant="primary"
-                :disabled="reconnectingId === connection.connectionId"
-                @click="reconnectConnection(connection)"
-              >
-                {{
-                  reconnectingId === connection.connectionId
-                    ? 'Reconnecting…'
-                    : 'Reconnect with Plaid'
-                }}
-              </UiButton>
-              <p v-if="reconnectMessage[connection.connectionId]" class="text-sm">
-                {{ reconnectMessage[connection.connectionId] }}
-              </p>
-            </div>
             <LinkedAccountsSection
               :accounts="linkedAccounts"
               :use-demo-fallback="false"
               :enable-promotion-editor="false"
+              :reconnecting-id="reconnectingId"
+              :connection-messages="reconnectMessage"
               @add-promotion="handleAddPromotion"
+              @reconnect="reconnectConnection"
             />
           </Card>
         </template>
@@ -314,7 +291,6 @@ const { notifyRefreshStarted, notifyRefreshSuccess, notifyRefreshError } = useRe
 const accounts = ref([])
 const reconnectingId = ref(null)
 const reconnectMessage = ref({})
-const reconnectConnections = computed(() => uniqueReconnectConnections(accounts.value))
 const { reconnect } = usePlaidReconnect()
 const accountsLoading = ref(false)
 const accountId = ref(route.query.accountId?.toString() || null)
@@ -348,6 +324,8 @@ const hasAccounts = computed(() => accounts.value.length > 0)
 const linkedAccounts = computed(() =>
   accounts.value.map((account) => ({
     id: String(account.account_id),
+    account_id: account.account_id,
+    institution_name: account.institution_name,
     name: account.display_name || account.name || 'Unnamed account',
     institution: account.institution_name || account.institution || 'Unknown Institution',
     type: account.type || account.account_type || 'Other',

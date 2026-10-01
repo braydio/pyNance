@@ -8,6 +8,28 @@
       </p>
     </header>
 
+    <div
+      v-for="connection in reconnectConnections"
+      :key="connection.connectionId"
+      class="rounded-md border border-amber-400 bg-amber-50 p-4 dark:bg-amber-950"
+      role="status"
+      :data-testid="`connection-${connection.connectionId}`"
+    >
+      <p class="font-medium">Connection needs attention</p>
+      <p class="text-sm">Sign in again with {{ connection.accounts[0]?.institution || 'your institution' }} to resume Plaid updates.</p>
+      <UiButton
+        type="button"
+        variant="primary"
+        :disabled="String(reconnectingId) === String(connection.connectionId)"
+        @click="emit('reconnect', connection)"
+      >
+        {{ String(reconnectingId) === String(connection.connectionId) ? 'Reconnecting…' : 'Reconnect with Plaid' }}
+      </UiButton>
+      <p v-if="connectionMessages[connection.connectionId]" class="text-sm" role="alert">
+        {{ connectionMessages[connection.connectionId] }}
+      </p>
+    </div>
+
     <div v-if="!groupedAccounts.length" class="text-sm text-muted-foreground">
       No accounts available yet. Link an account to see details below.
     </div>
@@ -202,6 +224,7 @@ import { computed, reactive, watch } from 'vue'
 import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import { formatAmount } from '@/utils/format'
+import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
 
 const promotionCategories = [
   { value: 'Groceries', label: 'Groceries' },
@@ -280,9 +303,11 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  reconnectingId: { type: [String, Number], default: null },
+  connectionMessages: { type: Object, default: () => ({}) },
 })
 
-const emit = defineEmits(['add-promotion'])
+const emit = defineEmits(['add-promotion', 'reconnect'])
 
 const promotionEntries = reactive({})
 const promotionForms = reactive({})
@@ -354,6 +379,8 @@ const groupedAccounts = computed(() => {
     }
   })
 })
+
+const reconnectConnections = computed(() => uniqueReconnectConnections(resolvedAccounts.value))
 
 function ensurePromotionState(accounts) {
   const currentIds = new Set()

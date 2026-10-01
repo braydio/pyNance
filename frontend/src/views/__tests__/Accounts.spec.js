@@ -271,7 +271,7 @@ describe('Accounts.vue', () => {
         stubs: {
           TabbedPageLayout: { template: '<div><slot name="Summary" /></div>' },
           AccountActionsSidebar: true,
-          LinkedAccountsSection: true,
+          LinkedAccountsSection: false,
           Card: { template: '<div><slot /></div>' },
           PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
           UiButton: { inheritAttrs: true, template: '<button v-bind="$attrs"><slot /></button>' },
