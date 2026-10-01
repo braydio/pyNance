@@ -16,14 +16,21 @@
       :data-testid="`connection-${connection.connectionId}`"
     >
       <p class="font-medium">Connection needs attention</p>
-      <p class="text-sm">Sign in again with {{ connection.accounts[0]?.institution || 'your institution' }} to resume Plaid updates.</p>
+      <p class="text-sm">
+        Sign in again with {{ connection.accounts[0]?.institution || 'your institution' }} to resume
+        Plaid updates.
+      </p>
       <UiButton
         type="button"
         variant="primary"
         :disabled="String(reconnectingId) === String(connection.connectionId)"
         @click="emit('reconnect', connection)"
       >
-        {{ String(reconnectingId) === String(connection.connectionId) ? 'Reconnecting…' : 'Reconnect with Plaid' }}
+        {{
+          String(reconnectingId) === String(connection.connectionId)
+            ? 'Reconnecting…'
+            : 'Reconnect with Plaid'
+        }}
       </UiButton>
       <p v-if="connectionMessages[connection.connectionId]" class="text-sm" role="alert">
         {{ connectionMessages[connection.connectionId] }}
