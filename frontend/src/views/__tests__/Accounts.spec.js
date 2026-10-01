@@ -240,10 +240,32 @@ describe('Accounts.vue', () => {
 
   it('shows one persisted reconnect action per Item and keeps it until server health clears', async () => {
     const unhealthyAccounts = [
-      { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank', connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 17 } },
-      { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank', connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 17 } },
+      {
+        account_id: 'acc-1',
+        name: 'Checking',
+        institution_name: 'Bank',
+        connection_status: {
+          provider: 'plaid',
+          state: 'reauth_required',
+          requires_reauth: true,
+          connection_id: 17,
+        },
+      },
+      {
+        account_id: 'acc-2',
+        name: 'Savings',
+        institution_name: 'Bank',
+        connection_status: {
+          provider: 'plaid',
+          state: 'reauth_required',
+          requires_reauth: true,
+          connection_id: 17,
+        },
+      },
     ]
-    api.getAccounts.mockResolvedValueOnce({ accounts: unhealthyAccounts }).mockResolvedValueOnce({ accounts: unhealthyAccounts })
+    api.getAccounts
+      .mockResolvedValueOnce({ accounts: unhealthyAccounts })
+      .mockResolvedValueOnce({ accounts: unhealthyAccounts })
     const wrapper = shallowMount(Accounts, {
       global: {
         stubs: {
@@ -264,15 +286,27 @@ describe('Accounts.vue', () => {
       },
     })
     await flushPromises()
-    expect(wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid'))).toHaveLength(1)
+    expect(
+      wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid')),
+    ).toHaveLength(1)
 
     let linkSuccess
-    window.Plaid = { create: vi.fn((options) => { linkSuccess = options.onSuccess; return { open: vi.fn() } }) }
-    await wrapper.findAll('button').find((button) => button.text().includes('Reconnect with Plaid')).trigger('click')
+    window.Plaid = {
+      create: vi.fn((options) => {
+        linkSuccess = options.onSuccess
+        return { open: vi.fn() }
+      }),
+    }
+    await wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('Reconnect with Plaid'))
+      .trigger('click')
     await flushPromises()
     await linkSuccess()
     await flushPromises()
     expect(api.refreshAccounts).toHaveBeenCalledWith({ account_ids: ['acc-1', 'acc-2'] })
-    expect(wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid'))).toHaveLength(1)
+    expect(
+      wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid')),
+    ).toHaveLength(1)
   })
 })

@@ -585,9 +585,30 @@ describe('Dashboard.vue', () => {
     const apiService = (await import('@/services/api')).default
     apiService.getAccounts.mockResolvedValueOnce({
       accounts: [
-        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 1 } },
-        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 1 } },
-        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 2 } },
+        {
+          connection_status: {
+            provider: 'plaid',
+            state: 'reauth_required',
+            requires_reauth: true,
+            connection_id: 1,
+          },
+        },
+        {
+          connection_status: {
+            provider: 'plaid',
+            state: 'reauth_required',
+            requires_reauth: true,
+            connection_id: 1,
+          },
+        },
+        {
+          connection_status: {
+            provider: 'plaid',
+            state: 'reauth_required',
+            requires_reauth: true,
+            connection_id: 2,
+          },
+        },
       ],
     })
     const wrapper = createWrapper()
