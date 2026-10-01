@@ -20,6 +20,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Integrations](../integrations/) – third-party connections
 - [Stake Cleanup Audit](../integrations/stake_cleanup.md) – confirmation that the legacy Stake integration has no remaining code paths
 - [Devnotes](../devnotes/) – working notes and scratch references
+- [Plaid Connection Health Reconnect Task Packet](../devnotes/plaid-connection-health-reconnect-task-packet.md) – implementation packet for persistent Item-scoped reconnect detection, update-mode repair, UI exposure, and test coverage.
 - [Elevation vs Border Contrast](../devnotes/elevation-vs-border-contrast.md) – dashboard depth and framing rules for consistent panel hierarchy.
 - [Frontend Theme System](../devnotes/theme-system.md) – persistent palettes, semantic theme tokens, and site-wide accent policy.
 - [Radius Rollout Visual QA Checklist](../devnotes/radius-rollout-visual-qa.md) – required before/after capture protocol and review checklist for corner, border, spacing, and focus.
