@@ -127,6 +127,24 @@ def _cash_account_payload(accounts: list[Account]) -> tuple[int, list[dict]]:
     return total_cents, payload
 
 
+def _outflow_filter():
+    """Match raw Plaid debits and legacy non-Plaid expenses."""
+
+    return or_(
+        and_(Transaction.provider == "plaid", Transaction.amount > 0),
+        and_(Transaction.provider != "plaid", Transaction.amount < 0),
+    )
+
+
+def _inflow_filter():
+    """Match raw Plaid credits and legacy non-Plaid income."""
+
+    return or_(
+        and_(Transaction.provider == "plaid", Transaction.amount < 0),
+        and_(Transaction.provider != "plaid", Transaction.amount > 0),
+    )
+
+
 def _spent_between(start: date, end: date, user_id: str | None = None) -> int:
     """Return posted non-internal outflows between inclusive date boundaries."""
 

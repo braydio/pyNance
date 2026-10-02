@@ -410,3 +410,38 @@ def test_provider_change_revalidates_old_transfer_link(database):
     assert not txn.is_internal
     assert not counterpart.is_internal
     assert counterpart.internal_match_id is None
+
+
+def test_legacy_refresh_heals_null_transaction_owner(database, monkeypatch):
+    """The shared refresh upsert repairs legacy null ownership."""
+    from app.sql import account_logic
+
+    plaid_sync._upsert_transaction(payload(), *database)
+    db.session.commit()
+    transaction = Transaction.query.one()
+    transaction.user_id = None
+    db.session.commit()
+    monkeypatch.setattr(account_logic, "get_transactions", lambda **kw: [payload()])
+    updated, error = refresh_data_for_plaid_account(
+        "x", database[0], accounts_data=[{"account_id": "checking", "balances": {"current": 100}}]
+    )
+    assert error is None
+    assert updated
+    assert Transaction.query.one().user_id == database[0].user_id
+
+
+def test_legacy_refresh_preserves_conflicting_non_null_owner(database, monkeypatch):
+    """A refresh must never replace a non-null owner belonging to another user."""
+    from app.sql import account_logic
+
+    plaid_sync._upsert_transaction(payload(), *database)
+    db.session.commit()
+    Transaction.query.one().user_id = "other-owner"
+    db.session.commit()
+    monkeypatch.setattr(account_logic, "get_transactions", lambda **kw: [payload()])
+    updated, error = refresh_data_for_plaid_account(
+        "x", database[0], accounts_data=[{"account_id": "checking", "balances": {"current": 100}}]
+    )
+    assert not updated
+    assert error is not None
+    assert Transaction.query.one().user_id == "other-owner"

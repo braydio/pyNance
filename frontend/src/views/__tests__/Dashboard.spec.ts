@@ -669,6 +669,19 @@ describe('Dashboard.vue', () => {
     expect(wrapper.vm.netTimeframe).toBe('rolling_30')
   })
 
+  it.each([
+    [{ response: { data: { message: 'relation "planned_bills" does not exist' } } }, 'relation "planned_bills" does not exist'],
+    [new Error('Network unavailable'), 'Network unavailable'],
+    [{}, 'Unable to calculate spend room.'],
+  ])('passes safe-to-spend request errors to the card surface', async (error, message) => {
+    const apiService = (await import('@/services/api')).default
+    apiService.fetchSafeToSpend.mockRejectedValueOnce(error)
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    expect(wrapper.vm.safeToSpendError).toBe(message)
+  })
+
   it('surfaces a unified fallback message when initial loading fails', async () => {
     const apiService = (await import('@/services/api')).default
     apiService.fetchNetAssets.mockRejectedValueOnce(new Error('boom'))

@@ -1,120 +1,103 @@
-"""Database-backed coverage for the Safe-to-Spend dashboard route."""
+"""Real SQL coverage for safe-to-spend provider signs, ownership and route."""
 
+import importlib
 import os
+import sys
 from datetime import date
 from decimal import Decimal
-
-os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
-os.environ.setdefault("PLAID_CLIENT_ID", "sandbox-client")
-os.environ.setdefault("PLAID_SECRET_KEY", "sandbox-secret")
-os.environ.setdefault("CLIENT_NAME", "pyNance Test Suite")
-os.environ.setdefault("BACKEND_PUBLIC_URL", "http://localhost")
+from pathlib import Path
 
 import pytest
-from app.extensions import db
-from app.models import Account, PlannedBill, PlanningScenario, Transaction
-from app.routes.dashboard import dashboard
 from flask import Flask
 
 
 @pytest.fixture()
-def safe_to_spend_client():
-    app = Flask(__name__)
-    app.config.update(
-        SQLALCHEMY_DATABASE_URI="sqlite:///:memory:",
-        SQLALCHEMY_TRACK_MODIFICATIONS=False,
-        TESTING=True,
-    )
-    db.init_app(app)
-    app.register_blueprint(dashboard, url_prefix="/api/dashboard")
-    with app.app_context():
-        db.create_all()
-        with app.test_client() as client:
-            yield client
-        db.session.remove()
-        db.drop_all()
+def database():
+    """Load real app modules independently of legacy tests' import-time stubs."""
+    os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
+    saved = {key: value for key, value in sys.modules.items() if key == "app" or key.startswith("app.")}
+    for key in saved:
+        sys.modules.pop(key)
+    try:
+        db = importlib.import_module("app.extensions").db
+        models = importlib.import_module("app.models")
+        service = importlib.import_module("app.services.safe_to_spend")
+        route = importlib.import_module("app.routes.dashboard")
+        app = Flask(__name__)
+        app.config.update(SQLALCHEMY_DATABASE_URI="sqlite:///:memory:", SQLALCHEMY_TRACK_MODIFICATIONS=False)
+        db.init_app(app)
+        app.register_blueprint(route.dashboard, url_prefix="/api/dashboard")
+        with app.app_context():
+            db.create_all()
+            db.session.add_all(
+                [
+                    models.Account(account_id="a", user_id="user-a", name="Checking", type="depository", balance=1000),
+                    models.Account(account_id="b", user_id="user-b", name="Checking", type="depository", balance=100),
+                ]
+            )
+            db.session.commit()
+            yield db, models, service, app.test_client()
+            db.session.remove()
+            db.drop_all()
+    finally:
+        for key in list(sys.modules):
+            if key == "app" or key.startswith("app."):
+                sys.modules.pop(key)
+        sys.modules.update(saved)
+        sys.path.pop(0)
 
 
-def test_safe_to_spend_route_queries_accounts_transactions_and_planned_bills(safe_to_spend_client):
-    today = date.today()
-    account = Account(
-        account_id="safe-spend-account",
-        user_id="safe-spend-user",
-        name="Checking",
-        type="depository",
-        subtype="checking",
-        balance=Decimal("1000.00"),
-    )
-    scenario = PlanningScenario(name="Monthly plan", account_id=account.account_id)
-    transaction = Transaction(
-        transaction_id="safe-spend-plaid-outflow",
-        account_id=account.account_id,
-        user_id=None,
-        provider="plaid",
-        amount=Decimal("42.50"),
-        date=today,
-        description="Groceries",
-        category="Food",
-        is_internal=False,
-    )
-    manual_expense = Transaction(
-        transaction_id="safe-spend-manual-outflow",
-        account_id=account.account_id,
-        user_id=None,
-        provider="manual",
-        amount=Decimal("-12.25"),
-        date=today,
-        description="Cash purchase",
-        category="Shopping",
-        is_internal=False,
-    )
-    income_transactions = [
-        Transaction(
-            transaction_id=f"safe-spend-income-{days_ago}",
-            account_id=account.account_id,
-            user_id=None,
-            provider=provider,
-            amount=amount,
-            date=today.fromordinal(today.toordinal() - days_ago),
-            description="Payroll",
-            category="Income",
-            is_internal=False,
+@pytest.mark.parametrize("provider,expense,income", [("plaid", "42.50", "-1500"), ("manual", "-42.50", "1500")])
+def test_provider_signs_and_account_ownership(database, provider, expense, income):
+    db, models, service, _ = database
+    for txn_id, amount, day in [("expense", expense, 12), ("income-1", income, 1), ("income-2", income, 8)]:
+        db.session.add(
+            models.Transaction(
+                transaction_id=txn_id,
+                account_id="a",
+                user_id=None,
+                provider=provider,
+                amount=Decimal(amount),
+                date=date(2026, 7, day),
+                description="Payroll" if "income" in txn_id else "Shop",
+            )
         )
-        for days_ago, provider, amount in (
-            (28, "plaid", Decimal("-1500.00")),
-            (14, "manual", Decimal("1500.00")),
-        )
-    ]
-    bill = PlannedBill(
-        scenario=scenario,
-        name="Electricity",
-        amount_cents=12_500,
-        due_date=today,
-        frequency="monthly",
-        origin="manual",
-        account_id=account.account_id,
-        predicted=False,
-    )
-    db.session.add_all([account, scenario, transaction, manual_expense, *income_transactions, bill])
     db.session.commit()
+    assert service._spent_between(date(2026, 7, 1), date(2026, 7, 12), "user-a") == 4250
+    assert service._spent_between(date(2026, 7, 1), date(2026, 7, 12), "user-b") == 0
+    assert service._next_income_date(date(2026, 7, 12), "user-a") == date(2026, 7, 15)
+    assert service._next_income_date(date(2026, 7, 12), "user-b") is None
 
-    response = safe_to_spend_client.get(
-        f"/api/dashboard/safe-to-spend?as_of={today.isoformat()}&user_id=safe-spend-user&buffer_cents=0"
+
+def test_real_safe_to_spend_route(database):
+    db, models, _, client = database
+    scenario = models.PlanningScenario(name="Budget", account_id="a")
+    db.session.add(scenario)
+    db.session.flush()
+    db.session.add(
+        models.PlannedBill(scenario_id=scenario.id, name="Power", amount_cents=15000, due_date=date(2026, 7, 12))
     )
-
+    db.session.add(
+        models.Transaction(
+            transaction_id="expense",
+            account_id="a",
+            user_id=None,
+            provider="plaid",
+            amount=Decimal("42.50"),
+            date=date(2026, 7, 12),
+            description="Shop",
+        )
+    )
+    db.session.commit()
+    response = client.get("/api/dashboard/safe-to-spend?user_id=user-a&as_of=2026-07-12")
     assert response.status_code == 200
     payload = response.get_json()
     assert payload["status"] == "success"
-    assert payload["data"]["components"]["spendable_cash_cents"] == 100_000
-    assert payload["data"]["components"]["upcoming_outflows_cents"] == 12_500
-    assert payload["data"]["components"]["spent_today_cents"] == 5_475
-    assert payload["data"]["next_income_date"] == today.fromordinal(today.toordinal() + 14).isoformat()
-    assert [item["name"] for item in payload["data"]["upcoming_bills"]] == ["Electricity"]
-
-    other_user_response = safe_to_spend_client.get(
-        f"/api/dashboard/safe-to-spend?as_of={today.isoformat()}&user_id=other-user&buffer_cents=0"
-    )
-    assert other_user_response.status_code == 200
-    other_user_payload = other_user_response.get_json()["data"]
-    assert other_user_payload["components"]["spent_today_cents"] == 0
-    assert other_user_payload["upcoming_bills"] == []
+    assert payload["data"]["components"] == {
+        "spendable_cash_cents": 100000,
+        "upcoming_outflows_cents": 15000,
+        "required_buffer_cents": 25000,
+        "spent_today_cents": 4250,
+    }
+    assert payload["data"]["upcoming_bills"][0]["name"] == "Power"
