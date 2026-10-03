@@ -8,6 +8,7 @@
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261001-001-plaid-connection-health-reconnect.md`  
 **Workstream size:** One implementation packet  
+**Depends on:** None  
 **Primary objective:** Make a Plaid connection that requires a fresh login persistently visible and directly repairable in the UI without requiring the user to manually trigger another refresh first.
 
 ---
