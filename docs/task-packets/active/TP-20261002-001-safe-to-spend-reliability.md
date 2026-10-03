@@ -8,6 +8,7 @@
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261002-001-safe-to-spend-reliability.md`  
 **Workstream size:** One compact implementation packet  
+**Depends on:** None  
 **Priority:** High, runtime-blocking  
 **Goal:** Fix the dashboard Safe-to-Spend card so it reliably loads, exposes useful backend failures, applies the correct Plaid cashflow sign convention, repairs legacy planning-schema drift, and does not lose transactions because of null Transaction.user_id values.
 
