@@ -28,8 +28,12 @@ For `until_payday` and `week`, the service also divides the horizon amount into 
 
 - Visible cash-like `Account` records for spendable cash.
 - `PlannedBill` records in the selected horizon.
-- Non-internal negative `Transaction` records on the as-of date for today's spending.
-- Recent income-like transactions to infer a likely next payday.
+- Non-internal outflows on the as-of date for today's spending. Plaid uses positive
+  amounts for outflows; other providers retain the legacy negative-outflow convention.
+- Recent income-like inflows to infer a likely next payday, using the inverse
+  provider-specific sign convention.
+- Transaction ownership is scoped through the joined `Account.user_id`, which is
+  authoritative when older transaction rows have a null `Transaction.user_id`.
 
 ## Edge cases
 

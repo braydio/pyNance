@@ -4,6 +4,7 @@ import { shallowMount, flushPromises } from '@vue/test-utils'
 import { vi } from 'vitest'
 import { ref } from 'vue'
 import Accounts from '../Accounts.vue'
+import api from '@/services/api'
 import { fetchNetChanges } from '@/api/accounts'
 
 const normalizedHistory = ref([
@@ -37,6 +38,8 @@ vi.mock('@/services/api', () => ({
         { account_id: 'acc-2', name: 'Savings', display_name: 'Rainy Day Savings' },
       ],
     }),
+    refreshAccounts: vi.fn().mockResolvedValue({ status: 'success' }),
+    generatePlaidUpdateLinkToken: vi.fn().mockResolvedValue({ link_token: 'update-link' }),
   },
 }))
 
@@ -233,5 +236,43 @@ describe('Accounts.vue', () => {
     await select.setValue('value')
     await wrapper.vm.$nextTick()
     expect(wrapper.text()).toContain('1. Rainy Day Savings')
+  })
+
+  it('shows one persisted reconnect action per Item and keeps it until server health clears', async () => {
+    const unhealthyAccounts = [
+      { account_id: 'acc-1', name: 'Checking', institution_name: 'Bank', connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 17 } },
+      { account_id: 'acc-2', name: 'Savings', institution_name: 'Bank', connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 17 } },
+    ]
+    api.getAccounts.mockResolvedValueOnce({ accounts: unhealthyAccounts }).mockResolvedValueOnce({ accounts: unhealthyAccounts })
+    const wrapper = shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: { template: '<div><slot name="Summary" /></div>' },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+          Card: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
+          UiButton: { inheritAttrs: true, template: '<button v-bind="$attrs"><slot /></button>' },
+          SkeletonCard: true,
+          RetryError: true,
+          AccountBalanceHistoryChart: true,
+          TransactionsTable: true,
+          NetYearComparisonChart: true,
+          AssetsBarTrended: true,
+          AccountsReorderChart: true,
+        },
+      },
+    })
+    await flushPromises()
+    expect(wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid'))).toHaveLength(1)
+
+    let linkSuccess
+    window.Plaid = { create: vi.fn((options) => { linkSuccess = options.onSuccess; return { open: vi.fn() } }) }
+    await wrapper.findAll('button').find((button) => button.text().includes('Reconnect with Plaid')).trigger('click')
+    await flushPromises()
+    await linkSuccess()
+    await flushPromises()
+    expect(api.refreshAccounts).toHaveBeenCalledWith({ account_ids: ['acc-1', 'acc-2'] })
+    expect(wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid'))).toHaveLength(1)
   })
 })

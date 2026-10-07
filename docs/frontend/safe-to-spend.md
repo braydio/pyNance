@@ -52,6 +52,9 @@ Response shape:
 
 ## Decision math
 
+When the endpoint fails, the dashboard card displays the API's message when
+available, then the error message, with a generic fallback for unknown errors.
+
 The backend computes a horizon-level spend amount as:
 
 ```text

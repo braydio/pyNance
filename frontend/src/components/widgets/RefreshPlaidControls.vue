@@ -77,7 +77,7 @@
                   Re-authentication required. Use Link update mode to resolve.
                 </div>
                 <UiButton
-                  v-if="errorByAccountId[acct.account_id].requires_reauth"
+                  v-if="shouldOfferReconnect(acct)"
                   class="reauth-button"
                   type="button"
                   variant="primary"
@@ -166,6 +166,13 @@ export default {
     }
   },
   methods: {
+    shouldOfferReconnect(acct) {
+      const errorInfo = this.errorByAccountId[acct.account_id]
+      if (!errorInfo?.requires_reauth) return false
+      const targetAccountId =
+        errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
+      return acct.account_id === targetAccountId
+    },
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen
     },

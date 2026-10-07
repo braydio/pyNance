@@ -12,6 +12,7 @@ import { fetchCategoryTransactions, fetchMerchantTransactions } from '@/api/char
 // Mock modules used by Dashboard.vue
 vi.mock('@/services/api', () => ({
   default: {
+    getAccounts: vi.fn().mockResolvedValue({ accounts: [] }),
     refreshAccounts: vi.fn().mockResolvedValue({ status: 'success', errors: [] }),
     fetchNetAssets: vi.fn().mockResolvedValue({ status: 'success', data: [] }),
     fetchDashboardActivityStatus: vi.fn().mockResolvedValue({
@@ -522,6 +523,10 @@ beforeEach(async () => {
   categoryBreakdownSectionProps = null
   transactionsSectionProps = null
   const apiService = (await import('@/services/api')).default
+  apiService.getAccounts.mockClear()
+  apiService.getAccounts.mockResolvedValue({ accounts: [] })
+  apiService.refreshAccounts.mockClear()
+  apiService.fetchNetAssets.mockClear()
   apiService.fetchNetAssets.mockResolvedValue({ status: 'success', data: [] })
   apiService.fetchDashboardActivityStatus.mockResolvedValue({
     status: 'success',
@@ -552,6 +557,46 @@ function formatDateInput(date: Date): string {
 }
 
 describe('Dashboard.vue', () => {
+  it('shows the backend Safe-to-Spend error message', async () => {
+    const apiService = (await import('@/services/api')).default
+    apiService.fetchSafeToSpend.mockRejectedValueOnce({
+      response: { data: { message: 'column planned_bills.frequency does not exist' } },
+    })
+
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    expect(wrapper.vm.safeToSpendError).toBe('column planned_bills.frequency does not exist')
+    wrapper.unmount()
+  })
+
+  it('uses an ordinary Safe-to-Spend error message when no backend payload exists', async () => {
+    const apiService = (await import('@/services/api')).default
+    apiService.fetchSafeToSpend.mockRejectedValueOnce(new Error('network unavailable'))
+
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+
+    expect(wrapper.vm.safeToSpendError).toBe('network unavailable')
+    wrapper.unmount()
+  })
+
+  it('shows persisted reauth state even when automatic refresh is skipped', async () => {
+    const apiService = (await import('@/services/api')).default
+    apiService.getAccounts.mockResolvedValueOnce({
+      accounts: [
+        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 1 } },
+        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 1 } },
+        { connection_status: { provider: 'plaid', state: 'reauth_required', requires_reauth: true, connection_id: 2 } },
+      ],
+    })
+    const wrapper = createWrapper()
+    await resolveAsyncSections(wrapper)
+    expect(wrapper.vm.greetingMessage).toContain('2 Plaid connections')
+    expect(apiService.refreshAccounts).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
+
   it('loads net assets, categories, and transactions together on mount', async () => {
     const apiService = (await import('@/services/api')).default
     const wrapper = createWrapper()

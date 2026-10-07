@@ -8,12 +8,13 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Ready | 2026-10-02 | [active/TP-20261002-001-safe-to-spend-reliability.md](active/TP-20261002-001-safe-to-spend-reliability.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Ready | 2026-10-01 | [active/TP-20261001-001-plaid-connection-health-reconnect.md](active/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
 ## Completed
 
-None yet.
+| Packet ID | Title | Status | Created | Canonical packet |
+| --- | --- | --- | --- | --- |
+| TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | 2026-10-02 | [completed/TP-20261002-001-safe-to-spend-reliability.md](completed/TP-20261002-001-safe-to-spend-reliability.md) |
 
 ## Archived
 

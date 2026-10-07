@@ -367,7 +367,7 @@ def generate_update_link_token():
                 400,
             )
 
-        account = resolve_account_by_any_id(account_id) if account_id else None
+        account = resolve_account_by_any_id(account_id) if account_id and connection_id is None else None
         plaid_item = None
         if connection_id is not None:
             try:

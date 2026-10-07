@@ -300,7 +300,11 @@ def mark_refresh_success(
     )
     plaid_account.last_refreshed = _coerce_iso_datetime(refreshed_at) or _now_utc()
     db.session.add(plaid_account)
-    clear_plaid_item_reauth_required(item_id=getattr(plaid_account, "item_id", None), commit=False)
+    clear_plaid_item_reauth_required(
+        item_id=getattr(plaid_account, "item_id", None),
+        plaid_item_id=getattr(plaid_account, "plaid_item_id", None),
+        commit=False,
+    )
     if commit:
         db.session.commit()
 
@@ -332,6 +336,7 @@ def mark_refresh_failure(
                 status,
                 commit=commit,
                 item_id=getattr(plaid_account, "item_id", None),
+                plaid_item_id=getattr(plaid_account, "plaid_item_id", None),
             )
     return status
 
@@ -364,9 +369,11 @@ def mark_plaid_item_reauth_required(
     *,
     commit: bool,
     item_id: str | None = None,
+    plaid_item_id: int | None = None,
 ) -> list[PlaidAccount]:
     """Persist login trouble on the Plaid Item; account statuses stay refresh-scoped."""
-    items = PlaidItem.query.filter_by(item_id=item_id).all() if item_id else []
+    local_item = PlaidItem.query.filter_by(id=plaid_item_id).first() if plaid_item_id is not None else None
+    items = [local_item] if local_item else (PlaidItem.query.filter_by(item_id=item_id).all() if item_id else [])
     if not items and access_token:
         items = PlaidItem.query.filter_by(access_token=access_token).all()
     if not items:
@@ -393,10 +400,15 @@ def mark_plaid_item_reauth_required(
 
 
 def clear_plaid_item_reauth_required(
-    *, item_id: str | None = None, access_token: str | None = None, commit: bool = False
+    *,
+    item_id: str | None = None,
+    plaid_item_id: int | None = None,
+    access_token: str | None = None,
+    commit: bool = False,
 ) -> None:
     """Clear only reauth errors from an Item and legacy mirrored account statuses."""
-    items = PlaidItem.query.filter_by(item_id=item_id).all() if item_id else []
+    local_item = PlaidItem.query.filter_by(id=plaid_item_id).first() if plaid_item_id is not None else None
+    items = [local_item] if local_item else (PlaidItem.query.filter_by(item_id=item_id).all() if item_id else [])
     if not items and access_token:
         items = PlaidItem.query.filter_by(access_token=access_token).all()
     for item in items:

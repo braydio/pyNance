@@ -12,6 +12,7 @@ _STUBBED_MODULES = (
     "app.config",
     "app.extensions",
     "app.models",
+    "app.helpers.plaid_helpers",
     "app.services.accounts_service",
     "app.sql.account_logic",
     "app.sql.forecast_logic",
@@ -36,6 +37,10 @@ config_stub.DB_IDENTITY = None
 config_stub.DB_SCHEMA = None
 config_stub.IS_DEV = False
 config_stub.IS_TEST = True
+config_stub.BACKEND_PUBLIC_URL = "http://localhost"
+config_stub.FILES = {}
+config_stub.PLAID_CLIENT_NAME = "test"
+config_stub.PLAID_REDIRECT_URI = None
 config_stub.plaid_client = None
 sys.modules["app.config"] = config_stub
 
@@ -67,6 +72,13 @@ models_stub.PlaidItem = DummyPlaidItem
 models_stub.RecurringTransaction = type("RecurringTransaction", (), {})
 models_stub.Transaction = type("Transaction", (), {})
 sys.modules["app.models"] = models_stub
+
+helpers_stub = types.ModuleType("app.helpers.plaid_helpers")
+helpers_stub.extract_plaid_error_payload = lambda error: {
+    "plaid_error_code": "unknown",
+    "plaid_error_message": str(error),
+}
+sys.modules["app.helpers.plaid_helpers"] = helpers_stub
 
 svc_stub = types.ModuleType("app.services.accounts_service")
 svc_stub.fetch_accounts = lambda *a, **k: []
@@ -120,6 +132,10 @@ spec.loader.exec_module(module)
 for _name, _original in _ORIGINAL_MODULES.items():
     if _original is None:
         sys.modules.pop(_name, None)
+        _parent_name, _, _attribute = _name.rpartition(".")
+        _parent = sys.modules.get(_parent_name)
+        if _parent is not None and hasattr(_parent, _attribute):
+            delattr(_parent, _attribute)
     else:
         sys.modules[_name] = _original
 

@@ -3,7 +3,7 @@ services:
     name: pynance-backend
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn "backend.run:app" --bind 0.0.0.0:$PORT
+    startCommand: cd backend && flask --app 'app:create_app' db upgrade && gunicorn wsgi:app --bind 0.0.0.0:$PORT
     plan: free
     autoDeploy: true
     envVars:

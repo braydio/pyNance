@@ -1,12 +1,12 @@
 # TP-20261002-001: Safe-to-Spend Reliability + Correct Cashflow Semantics
 
 **Packet ID:** TP-20261002-001  
-**Status:** Ready  
+**Status:** Complete
 **Created:** 2026-10-02  
-**Last updated:** 2026-10-03  
+**Last updated:** 2026-10-07
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261002-001-safe-to-spend-reliability.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261002-001-safe-to-spend-reliability.md`
 **Workstream size:** One compact implementation packet  
 **Depends on:** None  
 **Priority:** High, runtime-blocking  
@@ -764,26 +764,26 @@ Only touch additional files when a concrete test dependency requires it.
 
 # 9. Acceptance criteria
 
-- [ ] A new idempotent reconciliation migration upgrades the legacy planning tables to the current model shape.
-- [ ] The reconciliation migration is a no-op on a database that already has the current planning columns/indexes.
-- [ ] The live failure `column planned_bills.frequency does not exist` is eliminated by schema repair, not by weakening the ORM query.
-- [ ] `planning_scenarios` has account_id, planning_balance_cents, and currency_code after upgrade.
-- [ ] `planned_bills` has frequency, origin, and account_id after upgrade.
-- [ ] Safe-to-Spend returns 200 after migrations are applied.
-- [ ] render.yaml applies Alembic migrations before starting the backend.
-- [ ] render.yaml starts the actual WSGI app rather than backend.run:app.
-- [ ] Dashboard displays a useful backend error when Safe-to-Spend returns 500.
-- [ ] Plaid positive amounts count as spending.
-- [ ] Plaid negative amounts can qualify as income.
-- [ ] Existing non-Plaid sign behavior remains unchanged.
-- [ ] Safe-to-Spend scopes transaction ownership through Account.user_id.
-- [ ] A transaction with null Transaction.user_id still counts for its owning account/user.
-- [ ] account_logic.py writes user_id on newly inserted Plaid transactions.
-- [ ] Legacy null transaction user_id values are healed during refresh if safely implemented.
-- [ ] Existing Safe-to-Spend pure calculation tests still pass.
-- [ ] At least one real database-backed Safe-to-Spend route test exists.
-- [ ] No duplicate create-table migration is added; the new migration only reconciles missing legacy columns/indexes.
-- [ ] No global transaction-sign rewrite is introduced.
+- [x] A new idempotent reconciliation migration upgrades the legacy planning tables to the current model shape.
+- [x] The reconciliation migration is a no-op on a database that already has the current planning columns/indexes.
+- [x] The live failure `column planned_bills.frequency does not exist` is eliminated by schema repair, not by weakening the ORM query.
+- [x] `planning_scenarios` has account_id, planning_balance_cents, and currency_code after upgrade.
+- [x] `planned_bills` has frequency, origin, and account_id after upgrade.
+- [x] Safe-to-Spend returns 200 after migrations are applied.
+- [x] render.yaml applies Alembic migrations before starting the backend.
+- [x] render.yaml starts the actual WSGI app rather than backend.run:app.
+- [x] Dashboard displays a useful backend error when Safe-to-Spend returns 500.
+- [x] Plaid positive amounts count as spending.
+- [x] Plaid negative amounts can qualify as income.
+- [x] Existing non-Plaid sign behavior remains unchanged.
+- [x] Safe-to-Spend scopes transaction ownership through Account.user_id.
+- [x] A transaction with null Transaction.user_id still counts for its owning account/user.
+- [x] account_logic.py writes user_id on newly inserted Plaid transactions.
+- [x] Legacy null transaction user_id values are healed during refresh if safely implemented.
+- [x] Existing Safe-to-Spend pure calculation tests still pass.
+- [x] At least one real database-backed Safe-to-Spend route test exists.
+- [x] No duplicate create-table migration is added; the new migration only reconciles missing legacy columns/indexes.
+- [x] No global transaction-sign rewrite is introduced.
 
 ---
 
@@ -836,3 +836,14 @@ Report:
 ## Design lock
 
 Safe-to-Spend must calculate against raw provider data correctly, use Account as the ownership authority, fail visibly rather than generically, and run only against an up-to-date migrated schema. Fix those seams directly. Do not broaden the task into a finance-engine rewrite.
+
+
+## Implementation record
+
+- Added an idempotent planning-schema reconciliation migration based on current head `e6a9c2f4b8d1`. SQLite migration tests verified legacy upgrades and current-schema no-op behavior.
+- Safe-to-Spend now treats positive Plaid amounts as outflows and negative Plaid amounts as inflows; non-Plaid signs retain their existing convention. Both transaction queries scope through `Account.user_id`.
+- Existing `_upsert_transaction()` already writes `account.user_id` and repairs null transaction ownership during refresh. Added a regression test; no duplicate ownership logic was added to `account_logic.py`.
+- Dashboard errors now show the API message or ordinary error message. Render startup now applies migrations and runs `wsgi:app`.
+- Focused checks passed: Safe-to-Spend service (2), route integration (1), planning migration (2), Plaid ingestion integrity (20), account logic transactions (7), dashboard route (7), and Dashboard frontend tests (25). Dashboard ESLint completed with existing warnings and no errors; Python compile and `git diff --check` passed.
+- Full `pytest -q` could not collect because existing test modules leave `app.models` stubs in `sys.modules`, causing import failures in eight test modules. The Alembic CLI could not run because the shell Python environment lacks `flask_cors`; migration behavior was instead exercised directly through Alembic operations on SQLite.
+- Deviation: no ownership implementation change in `account_logic.py` was needed because its current Plaid refresh path delegates to `_upsert_transaction()`, which already applies the required owner on insert and heals null owners on update.

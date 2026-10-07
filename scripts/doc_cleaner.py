@@ -19,7 +19,8 @@ def get_file_age(filepath):
     return (date.today() - file_date).days
 
 
-for root, _, files in os.walk(ROOT_DOC):
+for root, dirs, files in os.walk(ROOT_DOC):
+    dirs[:] = [directory for directory in dirs if directory not in {".git", ".venv", "node_modules"}]
     for filename in files:
         if not (filename.endswith(".md") or filename.endswith(".txt")):
             continue

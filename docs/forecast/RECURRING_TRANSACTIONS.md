@@ -17,7 +17,7 @@ To identify recurring financial patterns in user transactions and forecast futur
 
 ### 3. Integration
 - **Orchestrator**: `forecast_orchestrator.py`
-- **Execution Flow*ª:
+- **Execution Flow**:
    1. Pull recent transactions.
    2. Run recurrence detection.
    3. Forecast future events via bridge module.

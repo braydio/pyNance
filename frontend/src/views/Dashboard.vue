@@ -509,7 +509,8 @@ async function loadSafeToSpend() {
   } catch (error) {
     if (token !== safeToSpendToken) return
     console.error('Failed to load safe-to-spend guidance:', error)
-    safeToSpendError.value = 'Unable to calculate spend room.'
+    safeToSpendError.value =
+      error?.response?.data?.message || error?.message || 'Unable to calculate spend room.'
   } finally {
     if (token === safeToSpendToken) {
       safeToSpendLoading.value = false

@@ -88,6 +88,19 @@ def test_repeated_upsert_and_rule_source_preservation(database):
     assert PlaidSourceEvent.query.one().payload == original
 
 
+def test_upsert_repairs_legacy_null_transaction_owner(database):
+    account, linked = database
+    plaid_sync._upsert_transaction(payload(), account, linked)
+    transaction = Transaction.query.one()
+    transaction.user_id = None
+    db.session.flush()
+
+    plaid_sync._upsert_transaction(payload(amount=30), account, linked)
+
+    assert transaction.user_id == account.user_id
+    assert transaction.amount == Decimal("30")
+
+
 def test_same_legacy_path_different_pfc_is_stable(database):
     a = get_or_create_category("Transfer", "Third Party", "FOOD_AND_DRINK", "FOOD_AND_DRINK_COFFEE", None)
     b = get_or_create_category(

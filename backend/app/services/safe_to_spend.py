@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from sqlalchemy import func, or_
+from sqlalchemy import and_, func, or_
 
 from app.extensions import db
 from app.models import Account, PlannedBill, PlanningScenario, Transaction
@@ -30,6 +30,24 @@ CASH_ACCOUNT_TOKENS = {
     "money_market",
 }
 INCOME_CATEGORY_TOKENS = {"income", "payroll", "paycheck", "wages", "salary"}
+
+
+def _outflow_filter():
+    """Match provider-specific signs for money leaving an account."""
+
+    return or_(
+        and_(Transaction.provider == "plaid", Transaction.amount > 0),
+        and_(Transaction.provider != "plaid", Transaction.amount < 0),
+    )
+
+
+def _inflow_filter():
+    """Match provider-specific signs for money entering an account."""
+
+    return or_(
+        and_(Transaction.provider == "plaid", Transaction.amount < 0),
+        and_(Transaction.provider != "plaid", Transaction.amount > 0),
+    )
 
 
 @dataclass(frozen=True)
@@ -117,11 +135,11 @@ def _spent_between(start: date, end: date, user_id: str | None = None) -> int:
         .join(Account, Account.account_id == Transaction.account_id)
         .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
         .filter(Transaction.date >= start, Transaction.date <= end)
-        .filter(Transaction.amount < 0)
+        .filter(_outflow_filter())
         .filter(or_(Transaction.is_internal.is_(False), Transaction.is_internal.is_(None)))
     )
     if user_id:
-        query = query.filter(Transaction.user_id == user_id)
+        query = query.filter(Account.user_id == user_id)
     return _to_cents(query.scalar())
 
 
@@ -143,11 +161,11 @@ def _next_income_date(as_of: date, user_id: str | None = None) -> date | None:
         Transaction.query.join(Account, Account.account_id == Transaction.account_id)
         .filter(or_(Account.is_hidden.is_(False), Account.is_hidden.is_(None)))
         .filter(Transaction.date >= lookback, Transaction.date <= as_of)
-        .filter(Transaction.amount > 0)
+        .filter(_inflow_filter())
         .order_by(Transaction.date.asc())
     )
     if user_id:
-        query = query.filter(Transaction.user_id == user_id)
+        query = query.filter(Account.user_id == user_id)
 
     income_dates = []
     for transaction in query.all():

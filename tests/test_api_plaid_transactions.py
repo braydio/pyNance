@@ -236,6 +236,10 @@ plaid_module.joinedload = lambda *a, **k: None
 for _name, _original in _ORIGINAL_APP_MODULES.items():
     if _original is None:
         sys.modules.pop(_name, None)
+        _parent_name, _, _attribute = _name.rpartition(".")
+        _parent = sys.modules.get(_parent_name)
+        if _parent is not None and hasattr(_parent, _attribute):
+            delattr(_parent, _attribute)
     else:
         sys.modules[_name] = _original
 

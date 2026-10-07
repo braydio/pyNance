@@ -21,6 +21,12 @@ static markdown reference.
 | `goals.py`              | Manage user-defined financial goals                     |
 | `accounts.py`           | Account refresh, history, and transaction helpers       |
 
+### Persistence and schema references
+
+- `backend/app/models/app_settings.py` defines persisted application settings used by backend services.
+- `backend/migrations/versions/a3c8e1f4b2d7_add_llm_settings.py` adds the LLM settings schema.
+- `backend/migrations/versions/e6a9c2f4b8d1_plaid_source_audit_and_category_identity.py` adds Plaid source audit storage and canonical category identity fields.
+
 ## 🌐 API Endpoint Convention
 
 ### 🔸 Shared Resources
