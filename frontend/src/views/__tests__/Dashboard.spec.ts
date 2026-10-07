@@ -670,7 +670,10 @@ describe('Dashboard.vue', () => {
   })
 
   it.each([
-    [{ response: { data: { message: 'relation "planned_bills" does not exist' } } }, 'relation "planned_bills" does not exist'],
+    [
+      { response: { data: { message: 'relation "planned_bills" does not exist' } } },
+      'relation "planned_bills" does not exist',
+    ],
     [new Error('Network unavailable'), 'Network unavailable'],
     [{}, 'Unable to calculate spend room.'],
   ])('passes safe-to-spend request errors to the card surface', async (error, message) => {
