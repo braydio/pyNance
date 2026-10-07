@@ -8,6 +8,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
+| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Ready | 2026-10-07 | [active/TP-20261007-001-local-schema-head-activation.md](active/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Ready | 2026-10-01 | [active/TP-20261001-001-plaid-connection-health-reconnect.md](active/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
 ## Completed
