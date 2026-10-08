@@ -58,6 +58,16 @@ These rules apply to any agent, including ChatGPT/Codex, writing or revising pac
 - When runtime evidence changes the diagnosis, update the canonical packet directly, bump `Last updated`, and update the tracker. Do not leave the correction only in chat or a side note.
 - Do not broaden a packet with opportunistic cleanup unrelated to its acceptance criteria.
 
+## Main Synchronization and Publishing
+
+Keep the local repository synchronized with `origin/main` for every work run:
+
+- At the beginning of a run, inspect the working tree, fetch `origin`, and update local `main` from `origin/main` with a fast-forward or rebase before editing. Preserve pre-existing dirty work; never discard it to make the pull succeed. If the current branch is not `main`, fetch and rebase that branch onto `origin/main` instead of switching branches implicitly.
+- At the end of a run that changes repository files, validate the work, commit only the changes made for that run using a Conventional Commit message, and push the commit to `origin/main`. Do not include unrelated pre-existing changes in the commit.
+- If the push is rejected because `origin/main` advanced, fetch, rebase onto the latest `origin/main`, resolve conflicts without dropping either side's relevant work, rerun affected checks, and retry the push. Never force-push.
+- If validation, repository policy, or a protected-branch restriction prevents a safe push, preserve the changes and report the specific blocker; do not silently abandon or reset work.
+- If a run makes no repository changes, do not create an empty commit.
+
 ## Project Structure & Module Organization
 
 - `backend/app/` contains the Flask app factory, HTTP routes in `app/routes/`, and services in `app/services/`; shared extensions live in `app/extensions.py`, with Alembic migrations under `backend/migrations/versions/`.
@@ -70,11 +80,11 @@ These rules apply to any agent, including ChatGPT/Codex, writing or revising pac
 ## Build, Test, and Development Commands
 
 - `bash scripts/setup.sh` provisions Python/Node environments, installs dependencies, and wires git hooks.
-- `python backend/run.py` or `flask --app backend.run run` serves the API with hot reload.
+- `python backend/run.py` serves the API with hot reload and applies pending Alembic revisions before startup in local environments. It refuses migrations when `ENV=production`; deployed startup owns production migration execution. For Flask's development server, use `cd backend && flask --app 'app:create_app' run --debug` after applying revisions with `flask --app 'app:create_app' db upgrade`.
 - `cd frontend && npm run dev` starts the Vue dev server.
 - `pytest -q` executes backend tests; scope with `pytest tests/test_<feature>.py -q` when iterating.
 - `pre-commit run --all-files` runs Black, Ruff, MyPy, Pylint, and Bandit.
-- Configure `SQLALCHEMY_DATABASE_URI` for PostgreSQL and apply migrations with `flask db upgrade` before running the API.
+- Configure `SQLALCHEMY_DATABASE_URI` for PostgreSQL. `python backend/run.py` applies committed migrations before local startup and refuses migrations when `ENV=production`; before a manual `cd backend && flask --app 'app:create_app' db upgrade`, confirm `ENV` and `SQLALCHEMY_DATABASE_URI` target the intended development database. Use `db migrate` only when intentionally authoring a new revision after model changes.
 
 ## Coding Style & Naming Conventions
 

@@ -186,12 +186,21 @@ curl -X POST \
 
 # Database Migrations
 
-After pulling schema changes:
+After pulling schema changes, apply the revisions already committed to the repository:
 
 ```bash
-flask --app backend.run db migrate -m "update schema"
-flask --app backend.run db upgrade
+cd backend
+flask --app 'app:create_app' db upgrade
 ```
+
+`db upgrade` applies existing Alembic revisions. Use `db migrate` only when
+intentionally authoring a new revision after changing models; it is not needed
+to update a checkout after pulling changes. The normal local startup command,
+`python backend/run.py`, also applies pending revisions before serving the app.
+That local entrypoint refuses to run migrations when `ENV=production`; deployed
+startup owns production migration execution. Confirm `ENV` and
+`SQLALCHEMY_DATABASE_URI` point to the intended development database before
+running a manual upgrade.
 
 ---
 

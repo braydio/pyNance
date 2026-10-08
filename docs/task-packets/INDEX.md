@@ -16,7 +16,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261007-007 | Planning Workflow Reauthor | Ready | 2026-10-07 | [active/TP-20261007-007-planning-workflow-reauthor.md](active/TP-20261007-007-planning-workflow-reauthor.md) |
 | TP-20261007-008 | Investments Portfolio Hierarchy | Ready | 2026-10-07 | [active/TP-20261007-008-investments-portfolio-hierarchy.md](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | 2026-10-07 | [active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
-| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Ready | 2026-10-07 | [active/TP-20261007-001-local-schema-head-activation.md](active/TP-20261007-001-local-schema-head-activation.md) |
+| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Blocked | 2026-10-07 | [active/TP-20261007-001-local-schema-head-activation.md](active/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Ready | 2026-10-01 | [active/TP-20261001-001-plaid-connection-health-reconnect.md](active/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
 ## Completed

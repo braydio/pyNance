@@ -14,7 +14,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261007-007 | Planning Workflow Reauthor | Ready | High | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-007-planning-workflow-reauthor.md) |
 | TP-20261007-008 | Investments Portfolio Hierarchy | Ready | Normal | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
-| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Ready | High | TP-20261002-001 | main | 2026-10-07 | [packet](active/TP-20261007-001-local-schema-head-activation.md) |
+| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Blocked | High | TP-20261002-001 | main | 2026-10-08 | [packet](active/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | High | None | main | 2026-10-07 | [packet](completed/TP-20261002-001-safe-to-spend-reliability.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Ready | Normal | None | main | 2026-10-03 | [packet](active/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
@@ -28,4 +28,4 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 ## Blockers
 
-None currently recorded.
+- **TP-20261007-001:** The configured database target reports `ENV=production` (`pynance:public`), current revision `e6a9c2f4b8d1`, while repository head is `f84c6e2a91b7`; `planned_bills.frequency`, `origin`, and `account_id` are absent. Do not run the upgrade against this target. Resume after configuring the intended local database with `ENV=development` or receiving explicit production migration direction.

@@ -1,9 +1,9 @@
 # TP-20261007-001: Local Schema Head Activation + Safe-to-Spend Migration Guard
 
 **Packet ID:** TP-20261007-001  
-**Status:** Ready  
+**Status:** Blocked
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-08
 **Repository:** braydio/pyNance  
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261007-001-local-schema-head-activation.md`  
@@ -112,6 +112,14 @@ flask --app backend.run db upgrade
 ```
 
 Running `db migrate` after merely pulling schema changes is incorrect. It generates a new revision rather than applying the existing repository revisions and can create spurious migration files. This guidance must be corrected.
+
+### Local target verification, 2026-10-08
+
+The configured database reported `ENV=production` and target `pynance:public`. Read-only Alembic inspection found current revision `e6a9c2f4b8d1` and repository head `f84c6e2a91b7`. Read-only schema inspection confirmed `planned_bills.frequency`, `planned_bills.origin`, and `planned_bills.account_id` are absent. The `db upgrade` command was not run because this configured target is production, not a confirmed local development database.
+
+**Blocker:** The local development database target is not configured in this environment; the only configured target is production.
+
+**Resume when:** Configure `SQLALCHEMY_DATABASE_URI` to the intended local development database with `ENV=development` (or explicitly direct a production migration), then rerun `db current`, `db heads`, inspect the planning columns, and apply the existing upgrade.
 
 ## Required changes
 
@@ -293,14 +301,14 @@ column planned_bills.frequency does not exist
 
 - [ ] The active local database is upgraded through the current Alembic head containing `f84c6e2a91b7`.
 - [ ] `planned_bills.frequency`, `planned_bills.origin`, and `planned_bills.account_id` exist in the active PostgreSQL database.
-- [ ] The existing reconciliation migration is used; no duplicate migration is created.
+- [x] The existing reconciliation migration is used; no duplicate migration is created.
 - [ ] Safe-to-Spend no longer fails with `UndefinedColumn` for `planned_bills.frequency`.
-- [ ] `python backend/run.py` applies pending Alembic migrations before starting the dev server.
-- [ ] Migration failure aborts local startup rather than serving against a stale schema.
-- [ ] Direct-run migration behavior is covered by a focused unit test.
-- [ ] README no longer tells users to run `db migrate` merely to apply pulled schema changes.
-- [ ] Existing planning reconciliation tests still pass.
-- [ ] No Safe-to-Spend query weakening or planning-table rebuild is introduced.
+- [x] `python backend/run.py` applies pending Alembic migrations before starting the dev server in local environments and refuses migrations under `ENV=production`.
+- [x] Migration failure aborts local startup rather than serving against a stale schema.
+- [x] Direct-run migration behavior is covered by a focused unit test.
+- [x] README no longer tells users to run `db migrate` merely to apply pulled schema changes.
+- [x] Existing planning reconciliation tests still pass.
+- [x] No Safe-to-Spend query weakening or planning-table rebuild is introduced.
 
 ## Completion report
 
