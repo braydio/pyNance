@@ -12,7 +12,6 @@ backend/app/certs/*
 .env.*
 *.env
 !**/example.env
-
 # Python
 *.py[cod]
 __pycache__/
@@ -64,6 +63,7 @@ frontend/cypress/downloads/
 .parcel-cache/
 npm-debug.log*
 yarn-error.log*
+auto-imports.d.ts
 
 # Databases and data
 *.db
