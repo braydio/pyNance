@@ -63,7 +63,7 @@ frontend/cypress/downloads/
 .parcel-cache/
 npm-debug.log*
 yarn-error.log*
-auto-imports.d.ts
+frontend/src/auto-imports.d.ts
 
 # Databases and data
 *.db
