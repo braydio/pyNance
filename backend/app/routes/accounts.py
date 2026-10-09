@@ -7,6 +7,8 @@ from typing import Optional
 
 from flask import Blueprint, g, jsonify, request
 from plaid.exceptions import ApiException
+from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from app.config import logger
 from app.extensions import db
@@ -112,6 +114,39 @@ def _plaid_item_for_account(account: Account) -> PlaidItem | None:
         if item:
             return item
     return PlaidItem.query.filter_by(access_token=pa.access_token).first() if pa.access_token else None
+
+
+def _plaid_items_for_accounts(accounts: list[Account]) -> dict[str, PlaidItem]:
+    """Resolve each account's Item with one lookup across the request batch."""
+
+    linked = [(account, getattr(account, "plaid_account", None)) for account in accounts]
+    local_ids = {link.plaid_item_id for _, link in linked if link and link.plaid_item_id is not None}
+    item_ids = {link.item_id for _, link in linked if link and link.item_id}
+    access_tokens = {link.access_token for _, link in linked if link and link.access_token}
+    filters = []
+    if local_ids:
+        filters.append(PlaidItem.id.in_(local_ids))
+    if item_ids:
+        filters.append(PlaidItem.item_id.in_(item_ids))
+    if access_tokens:
+        filters.append(PlaidItem.access_token.in_(access_tokens))
+    if not filters:
+        return {}
+
+    items = PlaidItem.query.filter(or_(*filters)).all()
+    by_local_id = {item.id: item for item in items}
+    by_item_id = {item.item_id: item for item in items if item.item_id}
+    by_access_token = {item.access_token: item for item in items if item.access_token}
+    resolved = {}
+    for account, link in linked:
+        if not link:
+            continue
+        item = by_local_id.get(link.plaid_item_id) if link.plaid_item_id is not None else None
+        item = item or (by_item_id.get(link.item_id) if link.item_id else None)
+        item = item or (by_access_token.get(link.access_token) if link.access_token else None)
+        if item:
+            resolved[account.account_id] = item
+    return resolved
 
 
 def _investment_date_range(start_date, end_date) -> tuple[str, str]:
@@ -647,17 +682,18 @@ def list_accounts():
     """Return serialized account data for the requesting client."""
     try:
         include_hidden = request.args.get("include_hidden", "false").lower() == "true"
-        query = Account.query
+        query = Account.query.options(joinedload(Account.plaid_account))
         if not include_hidden:
             query = query.filter(Account.is_hidden.is_(False))
         accounts = query.all()
+        plaid_items = _plaid_items_for_accounts(accounts)
         data = []
         for a in accounts:
             try:
                 last_refreshed = None
                 pa = getattr(a, "plaid_account", None)
                 refresh_status = serialized_refresh_status(pa)
-                plaid_item = _plaid_item_for_account(a)
+                plaid_item = plaid_items.get(a.account_id)
                 cooldown_until = _to_iso(refresh_status.get("cooldown_until"))
                 if a.plaid_account and a.plaid_account.last_refreshed:
                     last_refreshed = a.plaid_account.last_refreshed
@@ -724,17 +760,19 @@ def refresh_status():
     sla_hours = float(request.args.get("sla_hours", 6))
     sla = timedelta(hours=sla_hours)
 
-    query = Account.query
+    query = Account.query.options(joinedload(Account.plaid_account))
     if not include_hidden:
         query = query.filter(Account.is_hidden.is_(False))
 
     rows = []
-    for acc in query.all():
+    account_rows = query.all()
+    plaid_items = _plaid_items_for_accounts(account_rows)
+    for acc in account_rows:
         if str(getattr(acc, "link_type", "")).lower() != "plaid":
             continue
 
         pa = getattr(acc, "plaid_account", None)
-        plaid_item = _plaid_item_for_account(acc)
+        plaid_item = plaid_items.get(acc.account_id)
         status = serialized_refresh_status(pa)
         cooldown_until = _to_iso(status.get("cooldown_until"))
         last_refreshed = getattr(pa, "last_refreshed", None) if pa else None

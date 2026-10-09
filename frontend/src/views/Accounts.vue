@@ -410,34 +410,36 @@ async function loadAccounts() {
 
 async function reconnectConnection(connection) {
   const id = connection.connectionId
-  reconnectingId.value = id
-  reconnectMessage.value = { ...reconnectMessage.value, [id]: '' }
+  const key = connection.key ?? `connection:${String(id)}`
+  reconnectingId.value = key
+  reconnectMessage.value = { ...reconnectMessage.value, [key]: '' }
   try {
     await reconnect({
       connectionId: id,
+      accountId: connection.accountId ?? connection.accounts[0]?.account_id,
       onSuccess: async () => {
-        reconnectMessage.value = { ...reconnectMessage.value, [id]: 'Verifying connection…' }
+        reconnectMessage.value = { ...reconnectMessage.value, [key]: 'Verifying connection…' }
         await api.refreshAccounts({
           account_ids: connection.accounts.map((account) => account.account_id),
         })
         await loadAccounts()
         if (
           uniqueReconnectConnections(accounts.value).some(
-            (item) => String(item.connectionId) === String(id),
+            (item) => item.key === key,
           )
         ) {
           reconnectMessage.value = {
             ...reconnectMessage.value,
-            [id]: 'Plaid still reports that this connection needs attention.',
+            [key]: 'Plaid still reports that this connection needs attention.',
           }
         }
       },
       onError: (message) => {
-        reconnectMessage.value = { ...reconnectMessage.value, [id]: message }
+        reconnectMessage.value = { ...reconnectMessage.value, [key]: message }
       },
     })
   } catch (error) {
-    reconnectMessage.value = { ...reconnectMessage.value, [id]: error.message }
+    reconnectMessage.value = { ...reconnectMessage.value, [key]: error.message }
   } finally {
     reconnectingId.value = null
   }

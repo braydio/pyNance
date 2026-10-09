@@ -56,6 +56,18 @@ describe('usePlaidReconnect', () => {
     expect(connections[1].connectionId).toBe(11)
   })
 
+  it('keeps legacy reauth accounts reconnectable and independent by account ID', () => {
+    const account = (account_id) => ({
+      account_id,
+      connection_status: { provider: 'plaid', state: 'reauth_required' },
+    })
+    const connections = uniqueReconnectConnections([account('legacy-a'), account('legacy-b')])
+    expect(connections.map(({ key, accountId, connectionId }) => ({ key, accountId, connectionId }))).toEqual([
+      { key: 'account:legacy-a', accountId: 'legacy-a', connectionId: undefined },
+      { key: 'account:legacy-b', accountId: 'legacy-b', connectionId: undefined },
+    ])
+  })
+
   it('loads the Plaid script once and forwards Link exit text', async () => {
     vi.spyOn(document, 'querySelector').mockReturnValue(null)
     const append = vi.spyOn(document.head, 'appendChild').mockImplementation((script) => {

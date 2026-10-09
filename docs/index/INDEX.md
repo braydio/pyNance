@@ -23,7 +23,7 @@ All documentation lives in Markdown under `docs/` and mirrors the backend struct
 - [Task Packet Index](../task-packets/INDEX.md) – canonical catalog for executable implementation packets.
 - [Task Packet Tracker](../task-packets/TRACKER.md) – live packet status, priority, dependencies, and blockers.
 - [Task Packet Authoring & Execution Rules](../task-packets/README.md) – hardened location, naming, lifecycle, execution, and packet-writing conventions.
-- [Plaid Connection Health Reconnect Task Packet](../task-packets/active/TP-20261001-001-plaid-connection-health-reconnect.md) – persistent Item-scoped reconnect detection, update-mode repair, UI exposure, and test coverage.
+- [Plaid Connection Health Reconnect Task Packet](../task-packets/completed/TP-20261001-001-plaid-connection-health-reconnect.md) – persistent Item-scoped reconnect detection, update-mode repair, UI exposure, and test coverage.
 - [Safe-to-Spend Reliability Task Packet](../task-packets/completed/TP-20261002-001-safe-to-spend-reliability.md) – schema reconciliation, provider-aware cashflow signs, transaction ownership, visible API errors, and regression coverage.
 - [Elevation vs Border Contrast](../devnotes/elevation-vs-border-contrast.md) – dashboard depth and framing rules for consistent panel hierarchy.
 - [Frontend Theme System](../devnotes/theme-system.md) – persistent palettes, semantic theme tokens, and site-wide accent policy.

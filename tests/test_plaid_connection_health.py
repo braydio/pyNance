@@ -8,6 +8,7 @@ import pytest
 from app.extensions import db
 from app.models import Account, PlaidAccount, PlaidItem
 from app.routes import plaid_webhook
+from app.routes.accounts import _append_refresh_error
 from app.routes.accounts import accounts as accounts_blueprint
 from app.sql.account_logic import (
     clear_plaid_item_reauth_required,
@@ -131,3 +132,30 @@ def test_account_endpoints_expose_item_connection_status_without_secrets(databas
     assert all(status["connection_id"] == item.id and status["requires_reauth"] for status in statuses)
     assert all("external-secret-item" not in str(status) and "secret" not in str(status) for status in statuses)
     assert all(row["connection_status"]["connection_id"] == item.id for row in refresh_response.get_json()["accounts"])
+
+
+def test_bulk_reauth_errors_aggregate_by_item_not_institution(database):
+    _app, item, links = database
+    accounts = Account.query.order_by(Account.account_id).all()
+    accounts[0].institution_name = accounts[1].institution_name = "Shared Bank"
+    second_item = PlaidItem(
+        user_id="owner", item_id="another-external-item", access_token="another-secret", product="transactions"
+    )
+    db.session.add(second_item)
+    db.session.flush()
+    links[1].item_id = second_item.item_id
+    links[1].plaid_item_id = second_item.id
+    links[1].access_token = second_item.access_token
+    db.session.commit()
+
+    errors = {}
+    payload = {"plaid_error_code": "ITEM_LOGIN_REQUIRED", "plaid_error_message": "Reauthenticate"}
+    _append_refresh_error(errors, accounts[0], payload)
+    _append_refresh_error(errors, accounts[1], payload)
+
+    assert len(errors) == 2
+    assert {error["connection_id"] for error in errors.values()} == {item.id, second_item.id}
+    assert {tuple(error["affected_account_ids"]) for error in errors.values()} == {
+        (accounts[0].account_id,),
+        (accounts[1].account_id,),
+    }

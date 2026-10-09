@@ -1,12 +1,12 @@
 # TP-20261001-001: Plaid Item Connection Health + Reconnect UI
 
 **Packet ID:** TP-20261001-001  
-**Status:** Ready  
+**Status:** Complete
 **Created:** 2026-10-01  
-**Last updated:** 2026-10-03  
+**Last updated:** 2026-10-08
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261001-001-plaid-connection-health-reconnect.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261001-001-plaid-connection-health-reconnect.md`
 **Workstream size:** One implementation packet  
 **Depends on:** None  
 **Primary objective:** Make a Plaid connection that requires a fresh login persistently visible and directly repairable in the UI without requiring the user to manually trigger another refresh first.
@@ -802,3 +802,14 @@ If a requirement cannot be completed, leave the repository in a passing state an
 ## Design lock summary
 
 Plaid Item owns reconnect health. Accounts inherit it. Persisted backend state drives the UI. Reconnect happens once per Item through Link update mode. Link completion alone never erases the warning; verified backend health does.
+
+## Completion report
+
+- Implemented the normalized `connection_status` contract with local `connection_id`, reauth state, diagnostic code/message, and updated timestamp. API responses do not expose external Item IDs or credentials.
+- PlaidItem state is set by `ITEM_LOGIN_REQUIRED` API failures and ITEM:ERROR webhooks, and cleared only by verified healthy refreshes or ITEM:LOGIN_REPAIRED. Unrelated Item and account refresh errors are preserved.
+- Accounts sharing an Item produce one reconnect action. Separate Items, including Items from the same institution, remain independent. Legacy records without a connection ID use account ID for reconnect.
+- Focused backend validation: `PYTHONPATH=backend .venv/bin/pytest -q tests/test_plaid_connection_health.py tests/test_api_plaid_transactions.py` — 14 passed.
+- Focused and full frontend Vitest suites passed; `npm run lint` passed with existing warnings. `pre-commit run --all-files` and `python scripts/check_docs.py --changed-since origin/main` passed.
+- `npm run test:unit -- --spec src/components/__tests__/RefreshPlaidControls.cy.js` could not start because the Cypress 15.14.1 binary is not installed; Vitest coverage for Dashboard, Accounts, and the shared reconnect composable passed.
+- Full Python suite could not collect: eight existing test modules fail imports from `app.models` / `app.create_app` before executing tests, including the new connection-health module. The focused backend suites pass.
+- `python scripts/doc_cleaner.py` exited successfully but rewrote the curated `docs/index/INDEX.md` into a generated file listing; that unrelated rewrite was discarded.

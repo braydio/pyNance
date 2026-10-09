@@ -10,10 +10,10 @@
 
     <div
       v-for="connection in reconnectConnections"
-      :key="connection.connectionId"
+      :key="connection.key ?? connection.connectionId"
       class="rounded-md border border-amber-400 bg-amber-50 p-4 dark:bg-amber-950"
       role="status"
-      :data-testid="`connection-${connection.connectionId}`"
+      :data-testid="`connection-${connection.key ?? connection.connectionId}`"
     >
       <p class="font-medium">Connection needs attention</p>
       <p class="text-sm">
@@ -23,17 +23,17 @@
       <UiButton
         type="button"
         variant="primary"
-        :disabled="String(reconnectingId) === String(connection.connectionId)"
+        :disabled="String(reconnectingId) === String(connection.key ?? connection.connectionId)"
         @click="emit('reconnect', connection)"
       >
         {{
-          String(reconnectingId) === String(connection.connectionId)
+          String(reconnectingId) === String(connection.key ?? connection.connectionId)
             ? 'Reconnecting…'
             : 'Reconnect with Plaid'
         }}
       </UiButton>
-      <p v-if="connectionMessages[connection.connectionId]" class="text-sm" role="alert">
-        {{ connectionMessages[connection.connectionId] }}
+      <p v-if="connectionMessages[connection.key ?? connection.connectionId]" class="text-sm" role="alert">
+        {{ connectionMessages[connection.key ?? connection.connectionId] }}
       </p>
     </div>
 
