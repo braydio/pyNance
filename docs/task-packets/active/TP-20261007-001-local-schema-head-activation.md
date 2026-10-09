@@ -3,7 +3,7 @@
 **Packet ID:** TP-20261007-001  
 **Status:** Blocked
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-08
+**Last updated:** 2026-10-09
 **Repository:** braydio/pyNance  
 **Target branch:** main  
 **Canonical path:** `docs/task-packets/active/TP-20261007-001-local-schema-head-activation.md`  
@@ -113,13 +113,15 @@ flask --app backend.run db upgrade
 
 Running `db migrate` after merely pulling schema changes is incorrect. It generates a new revision rather than applying the existing repository revisions and can create spurious migration files. This guidance must be corrected.
 
-### Local target verification, 2026-10-08
+### Local target verification, 2026-10-09
 
-The configured database reported `ENV=production` and target `pynance:public`. Read-only Alembic inspection found current revision `e6a9c2f4b8d1` and repository head `f84c6e2a91b7`. Read-only schema inspection confirmed `planned_bills.frequency`, `planned_bills.origin`, and `planned_bills.account_id` are absent. The `db upgrade` command was not run because this configured target is production, not a confirmed local development database.
+The user configured the intended development target. `ENV=development` inspection reported database identity `pynance:dev`, current Alembic revision `55d16a2ff3e7`, and repository head `f84c6e2a91b7`. Before migration, `planned_bills` lacked `frequency`, `origin`, and `account_id`; `planned_bills` and `planning_scenarios` each had zero rows. The legacy `planning_scenarios` table already existed with only `id`, `name`, `created_at`, and `updated_at`.
 
-**Blocker:** The local development database target is not configured in this environment; the only configured target is production.
+The required `db upgrade` was attempted against `pynance:dev` and stopped at revision `6b0f2c9d1a34` (`add planning persistence tables`) with PostgreSQL `DuplicateTable: relation "planning_scenarios" already exists`. After the failed upgrade, Alembic remained at `55d16a2ff3e7`; transactional DDL left the inspected schema and zero row counts unchanged.
 
-**Resume when:** Configure `SQLALCHEMY_DATABASE_URI` to the intended local development database with `ENV=development` (or explicitly direct a production migration), then rerun `db current`, `db heads`, inspect the planning columns, and apply the existing upgrade.
+**Blocker:** The existing migration history attempts to create a planning table already present in the development schema. The upgrade cannot safely continue until the existing schema/migration lineage is reconciled. No replacement or duplicate migration was generated.
+
+**Resume when:** Determine how the existing `planning_scenarios` table relates to migration `6b0f2c9d1a34` and the revision graph, then make the smallest reviewed reconciliation that preserves existing planning data. Reinspect the target and schema before retrying `db upgrade`; verify the final revision is `f84c6e2a91b7` and required columns exist.
 
 ## Required changes
 

@@ -28,4 +28,4 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 ## Blockers
 
-- **TP-20261007-001:** The configured database target reports `ENV=production` (`pynance:public`), current revision `e6a9c2f4b8d1`, while repository head is `f84c6e2a91b7`; `planned_bills.frequency`, `origin`, and `account_id` are absent. Do not run the upgrade against this target. Resume after configuring the intended local database with `ENV=development` or receiving explicit production migration direction.
+- **TP-20261007-001:** The configured development target is `pynance:dev`, current revision `55d16a2ff3e7`, repository head `f84c6e2a91b7`. `db upgrade` stopped at `6b0f2c9d1a34` with `DuplicateTable: relation "planning_scenarios" already exists`; Alembic remained at `55d16a2ff3e7`, and `planned_bills.frequency`, `origin`, and `account_id` remain absent. Resume after reconciling the existing `planning_scenarios` table with the migration history and confirming a data-preserving upgrade path.
