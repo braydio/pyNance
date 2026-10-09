@@ -31,7 +31,7 @@ def test_main_upgrades_repository_migrations_before_starting_server(monkeypatch)
 
     assert events == [
         ("upgrade", str(Path(backend_run.__file__).resolve().parent / "migrations")),
-        ("run", {"host": "0.0.0.0", "static_files": "static", "port": 5000, "debug": True}),
+        ("run", {"host": "0.0.0.0", "port": 5000, "debug": True}),
     ]
 
 

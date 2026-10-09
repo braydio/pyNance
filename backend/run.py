@@ -20,7 +20,7 @@ def _upgrade_database(app) -> None:
 def main() -> None:
     app = create_app()
     _upgrade_database(app)
-    app.run(host="0.0.0.0", static_files="static", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
 
 
 if __name__ == "__main__":

@@ -1,12 +1,12 @@
 # TP-20261007-001: Local Schema Head Activation + Safe-to-Spend Migration Guard
 
 **Packet ID:** TP-20261007-001  
-**Status:** Blocked
+**Status:** Complete
 **Created:** 2026-10-07  
 **Last updated:** 2026-10-09
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-001-local-schema-head-activation.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-001-local-schema-head-activation.md`
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261002-001 (Complete)  
 **Priority:** High, runtime-blocking  
@@ -113,15 +113,19 @@ flask --app backend.run db upgrade
 
 Running `db migrate` after merely pulling schema changes is incorrect. It generates a new revision rather than applying the existing repository revisions and can create spurious migration files. This guidance must be corrected.
 
-### Local target verification, 2026-10-09
+### Local target, backup, and migration verification, 2026-10-09
 
-The user configured the intended development target. `ENV=development` inspection reported database identity `pynance:dev`, current Alembic revision `55d16a2ff3e7`, and repository head `f84c6e2a91b7`. Before migration, `planned_bills` lacked `frequency`, `origin`, and `account_id`; `planned_bills` and `planning_scenarios` each had zero rows. The legacy `planning_scenarios` table already existed with only `id`, `name`, `created_at`, and `updated_at`.
+The user configured the intended development target. `ENV=development` inspection reported database identity `pynance:dev`, current Alembic revision `55d16a2ff3e7`, and repository head `f84c6e2a91b7`. Before migration, all three legacy Planning tables were present with zero rows. `planning_scenarios` had `id`, `name`, `created_at`, and `updated_at`; `planned_bills` had its legacy columns and both scenario indexes; `scenario_allocations` had its legacy columns and both scenario indexes. A full custom-format dump of schema `dev` was saved outside the repository at `/home/braydenchaffee/.local/state/pyNance/backups/pynance-dev-before-planning-reconciliation-20261009.dump` (78,595 bytes).
 
-The required `db upgrade` was attempted against `pynance:dev` and stopped at revision `6b0f2c9d1a34` (`add planning persistence tables`) with PostgreSQL `DuplicateTable: relation "planning_scenarios" already exists`. After the failed upgrade, Alembic remained at `55d16a2ff3e7`; transactional DDL left the inspected schema and zero row counts unchanged.
+The user identified the cause as a migration-history collision: archived revision `18acdf1fa2ca` created the legacy Planning tables, while active revision `6b0f2c9d1a34` unconditionally creates them again. The later `f84c6e2a91b7` revision already reconciles missing legacy columns and account indexes.
 
-**Blocker:** The existing migration history attempts to create a planning table already present in the development schema. The upgrade cannot safely continue until the existing schema/migration lineage is reconciled. No replacement or duplicate migration was generated.
+The actual upgrade-to-head regression exposed another defect on the same required path: `027941158fbe` drops Alembic's `alembic_version` table before Alembic can record the revision. The PostgreSQL test starts at the target's current revision `55d16a2ff3e7` and reconstructs its legacy Planning schema; it removes later-revision tables that the current model-generated baseline includes so the fixture matches that historical revision.
 
-**Resume when:** Determine how the existing `planning_scenarios` table relates to migration `6b0f2c9d1a34` and the revision graph, then make the smallest reviewed reconciliation that preserves existing planning data. Reinspect the target and schema before retrying `db upgrade`; verify the final revision is `f84c6e2a91b7` and required columns exist.
+The first upgrade attempt stopped at `6b0f2c9d1a34` with PostgreSQL `DuplicateTable: relation "planning_scenarios" already exists`. Alembic remained at `55d16a2ff3e7`; transactional DDL left all three table definitions and zero row counts unchanged.
+
+The corrected migration chain upgraded `pynance:dev` to `f84c6e2a91b7`. Post-upgrade inspection confirmed all three tables remain present with zero rows, and `planned_bills.frequency`, `planned_bills.origin`, `planned_bills.account_id`, `planning_scenarios.account_id`, `planning_scenarios.planning_balance_cents`, and `planning_scenarios.currency_code` exist. The PostgreSQL regression test also inserted legacy rows into all three tables, ran the actual Alembic upgrade from `55d16a2ff3e7` to head, and verified unchanged table OIDs and preserved rows.
+
+`ENV=development .venv/bin/python backend/run.py` started successfully after removing the invalid string `static_files` argument. `GET /api/dashboard/safe-to-spend` returned HTTP 200 and a success payload without the prior UndefinedColumn failure.
 
 ## Required changes
 
@@ -156,6 +160,12 @@ planned_bills.account_id
 Also verify the reconciliation did not drop or recreate planning data.
 
 If `db upgrade` fails, stop and report the exact Alembic current revision, head revision, and failure. Do not generate a replacement migration unless repository topology proves `f84c6e2a91b7` is unreachable.
+
+For inherited Planning tables, modify `backend/migrations/versions/6b0f2c9d1a34_add_planning_persistence_tables.py` in place. Create each table only when absent; validate required legacy columns and the primary key before accepting an existing table; preserve inherited tables during downgrade; and create indexes only when their columns exist and the named index is absent. Leave missing `account_id` columns and their indexes to the existing `f84c6e2a91b7` reconciliation migration.
+
+On the same path, keep Alembic's version table under Alembic control in `backend/migrations/versions/027941158fbe_.py`.
+
+Add a PostgreSQL-only integration test that starts from revision `55d16a2ff3e7`, creates the three legacy Planning tables, then runs the actual Alembic upgrade through head. Assert the legacy rows survive, the three tables are not recreated, current planning columns/indexes exist, and the final revision is `f84c6e2a91b7`.
 
 ### 2. Make normal local direct-run migration-safe
 
@@ -194,6 +204,7 @@ Requirements:
 - Do not alter production `wsgi.py`; deployment startup already owns migration application.
 - Keep the helper small enough to unit test.
 - Passing an absolute migrations directory is intentional so `python backend/run.py` behaves consistently regardless of the shell working directory.
+- Pass only supported Werkzeug `app.run` arguments; Flask serves its configured static folder without the old invalid `static_files="static"` string.
 
 If the current Flask-Migrate version exposes a materially different supported programmatic API, use that API, but preserve the same contract: upgrade to repository head before serving.
 
@@ -301,10 +312,12 @@ column planned_bills.frequency does not exist
 
 ## Acceptance criteria
 
-- [ ] The active local database is upgraded through the current Alembic head containing `f84c6e2a91b7`.
-- [ ] `planned_bills.frequency`, `planned_bills.origin`, and `planned_bills.account_id` exist in the active PostgreSQL database.
+- [x] The active local database is upgraded through the current Alembic head containing `f84c6e2a91b7`.
+- [x] Existing legacy Planning tables are validated and reused by `6b0f2c9d1a34`, and downgrade preserves inherited tables.
+- [x] A PostgreSQL regression test executes the actual upgrade to head from a legacy Planning schema and verifies rows, columns, indexes, and final revision.
+- [x] `planned_bills.frequency`, `planned_bills.origin`, and `planned_bills.account_id` exist in the active PostgreSQL database.
 - [x] The existing reconciliation migration is used; no duplicate migration is created.
-- [ ] Safe-to-Spend no longer fails with `UndefinedColumn` for `planned_bills.frequency`.
+- [x] Safe-to-Spend no longer fails with `UndefinedColumn` for `planned_bills.frequency`.
 - [x] `python backend/run.py` applies pending Alembic migrations before starting the dev server in local environments and refuses migrations under `ENV=production`.
 - [x] Migration failure aborts local startup rather than serving against a stale schema.
 - [x] Direct-run migration behavior is covered by a focused unit test.
@@ -314,13 +327,10 @@ column planned_bills.frequency does not exist
 
 ## Completion report
 
-Report:
-
-1. pre-fix `db current` and `db heads`;
-2. post-upgrade current revision;
-3. confirmation of the three required `planned_bills` columns;
-4. whether the failing Safe-to-Spend request now succeeds;
-5. files changed;
-6. exact local-start migration behavior implemented;
-7. focused test results;
-8. any deviation from this packet and why.
+1. Before upgrade, `db current` was `55d16a2ff3e7`; `db heads` was `f84c6e2a91b7`. After upgrade, current is `f84c6e2a91b7`.
+2. The active development schema has `planned_bills.frequency`, `origin`, and `account_id`. The three Planning table row counts stayed at zero in the active database.
+3. The Safe-to-Spend route returned HTTP 200 with `status: success` after startup through `backend/run.py`.
+4. Changed files: `backend/migrations/versions/6b0f2c9d1a34_add_planning_persistence_tables.py`, `backend/migrations/versions/027941158fbe_.py`, `backend/run.py`, `tests/test_planning_schema_migration.py`, `tests/test_planning_migration_chain_postgres.py`, `tests/test_run_entrypoint.py`, and this packet/tracker.
+5. `6b0f2c9d1a34` now validates and reuses inherited Planning tables, creates missing tables/indexes conditionally, defers account indexes to `f84c6e2a91b7`, and uses a non-destructive downgrade. `027941158fbe` no longer drops Alembic's version table. The direct-run entrypoint applies migrations before serving and refuses production; its unsupported `static_files` argument was removed after runtime smoke validation showed it prevented startup.
+6. Validation: planning migration/startup tests — 7 passed; Safe-to-Spend service/route tests — 5 passed; PostgreSQL full-chain legacy migration test — 1 passed; pre-commit and docs check passed. The full pytest suite still fails during collection in eight modules with `app.models` / `app.create_app` import errors before tests execute.
+7. A full custom-format backup of schema `dev` is at `/home/braydenchaffee/.local/state/pyNance/backups/pynance-dev-before-planning-reconciliation-20261009.dump`.

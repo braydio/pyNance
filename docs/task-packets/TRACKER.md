@@ -14,7 +14,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261007-007 | Planning Workflow Reauthor | Ready | High | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-007-planning-workflow-reauthor.md) |
 | TP-20261007-008 | Investments Portfolio Hierarchy | Ready | Normal | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
-| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Blocked | High | TP-20261002-001 | main | 2026-10-08 | [packet](active/TP-20261007-001-local-schema-head-activation.md) |
+| TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Complete | High | TP-20261002-001 | main | 2026-10-09 | [packet](completed/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | High | None | main | 2026-10-07 | [packet](completed/TP-20261002-001-safe-to-spend-reliability.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | Normal | None | main | 2026-10-08 | [packet](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
@@ -28,4 +28,4 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 ## Blockers
 
-- **TP-20261007-001:** The configured development target is `pynance:dev`, current revision `55d16a2ff3e7`, repository head `f84c6e2a91b7`. `db upgrade` stopped at `6b0f2c9d1a34` with `DuplicateTable: relation "planning_scenarios" already exists`; Alembic remained at `55d16a2ff3e7`, and `planned_bills.frequency`, `origin`, and `account_id` remain absent. Resume after reconciling the existing `planning_scenarios` table with the migration history and confirming a data-preserving upgrade path.
+None.
