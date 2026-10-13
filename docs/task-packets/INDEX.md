@@ -8,6 +8,10 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
+| TP-20261013-002 | Forecast V2 Core: Event Ledger + Liquidity Semantics | Ready | 2026-10-13 | [active/TP-20261013-002-forecast-v2-core-event-ledger.md](active/TP-20261013-002-forecast-v2-core-event-ledger.md) |
+| TP-20261013-003 | Forecast V2 Spending Intelligence: Recurrence + Residuals | Ready | 2026-10-13 | [active/TP-20261013-003-forecast-v2-recurring-residual-spending.md](active/TP-20261013-003-forecast-v2-recurring-residual-spending.md) |
+| TP-20261013-004 | Forecast V2 Probabilities + Rolling Backtesting | Ready | 2026-10-13 | [active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md](active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md) |
+| TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Ready | 2026-10-13 | [active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md](active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 | TP-20261013-001 | Plaid Reconnect Item Deduplication + Link Session Lifecycle | Ready | 2026-10-13 | [active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md](active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | In Progress | 2026-10-07 | [active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | 2026-10-01 | [completed/TP-20261001-001-plaid-connection-health-reconnect.md](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
