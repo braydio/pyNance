@@ -6,6 +6,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Ready | High | None (coordinate with 005/009) | main | 2026-10-12 | [packet](active/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Ready | High | TP-20261007-001 | main | 2026-10-07 | [packet](active/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-003 | Dashboard Decision-First Recomposition | Ready | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Ready | High | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-004-transactions-action-workbench.md) |

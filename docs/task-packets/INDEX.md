@@ -8,6 +8,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
+| TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Ready | 2026-10-12 | [active/TP-20261012-001-link-account-modal-visibility.md](active/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Ready | 2026-10-07 | [active/TP-20261007-002-ui-hierarchy-foundation-app-shell.md](active/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-003 | Dashboard Decision-First Recomposition | Ready | 2026-10-07 | [active/TP-20261007-003-dashboard-decision-first-recomposition.md](active/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Ready | 2026-10-07 | [active/TP-20261007-004-transactions-action-workbench.md](active/TP-20261007-004-transactions-action-workbench.md) |
