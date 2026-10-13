@@ -35,4 +35,12 @@ describe('PageHeader', () => {
     })
     expect(wrapper.find('.action').exists()).toBe(true)
   })
+
+  it('is an unboxed header, not a card, and omits empty actions', () => {
+    const wrapper = mount(PageHeader, { slots: { title: 'Planning' } })
+    expect(wrapper.element.tagName).toBe('HEADER')
+    expect(wrapper.find('.card').exists()).toBe(false)
+    expect(wrapper.find('.glass').exists()).toBe(false)
+    expect(wrapper.find('.page-header__actions').exists()).toBe(false)
+  })
 })

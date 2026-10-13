@@ -8,11 +8,11 @@ Use `BasePageLayout` and `PageHeader` to keep view structure and spacing consist
 
 ## BasePageLayout
 
-Wrap each top-level view with `BasePageLayout` to apply flex column layout and spacing utilities.
+Wrap each top-level view with `BasePageLayout` to apply flex column layout and vertical spacing. It does not add a max width or horizontal gutters; `AppLayout` owns those (see [PRODUCT_UI_HIERARCHY.md](PRODUCT_UI_HIERARCHY.md)).
 
 ### Props
 
-- `padding` – Tailwind padding class or `false` to remove padding. Defaults to `p-6`.
+- `padding` – Tailwind padding class or `false` to remove padding. Defaults to `py-6`.
 - `gap` – Tailwind gap utility class. Defaults to `gap-6`.
 
 ### Example: custom padding
@@ -25,7 +25,7 @@ Wrap each top-level view with `BasePageLayout` to apply flex column layout and s
 
 ## PageHeader
 
-Standard header used within `BasePageLayout`. Centers the title/subtitle stack and supports an optional icon prop with right-aligned `actions` slot.
+Unboxed page-identity header (not a card) used within `BasePageLayout`. Supports an optional icon prop with right-aligned `actions` slot.
 
 ### Example: icon and subtitle
 

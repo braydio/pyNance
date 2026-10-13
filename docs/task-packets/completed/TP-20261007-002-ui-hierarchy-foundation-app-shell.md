@@ -1,12 +1,12 @@
 # TP-20261007-002: UI Hierarchy Foundation + App Shell
 
 **Packet ID:** TP-20261007-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-002-ui-hierarchy-foundation-app-shell.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-001  
 **Priority:** High  
@@ -195,3 +195,16 @@ npm run build
 ## Completion report
 
 Report files changed, hierarchy tokens/components added, typography decision, shell width ownership, nav behavior at desktop/mobile widths, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **Shell width:** `AppLayout` is the sole owner of `max-w-7xl` + gutters; `BasePageLayout` now only `py-6` + gap (padding prop retained).
+- **PageHeader:** unboxed `<header>`, scoped styles, actions wrap below title on narrow screens, slots/icon prop unchanged; actions container omitted when empty.
+- **Typography:** `--font-sans` is a system sans stack; new `--font-data` mono token; `--font-display` unchanged for headings. No new remote fonts. Broad uppercase/tracking reduction was not swept repo-wide (deferred to per-view packets).
+- **Surfaces:** added `.surface-primary/-normal/-quiet/-attention` in `main.css`; `Card`/`BasePanel` untouched; no class migration.
+- **Navbar:** "Forecast" label; Settings link (icon + label, icon-only on mobile) outside the primary list; mobile nav scrolls horizontally, no wrap; active state without glow. `App.vue`/router not changed.
+- **Docs:** `docs/frontend/PRODUCT_UI_HIERARCHY.md` added; `PageLayout.md` updated.
+- **Tests:** Navbar (destinations, Settings, aria), PageHeader (unboxed), BasePageLayout updated; snapshots regenerated. Vitest 49 files / 208 tests pass; lint 0 errors (2109 warnings, +5 vs. baseline); build OK. Not verified visually in a browser.
+- **Deviations:** none functional; no dedicated new AppLayout test (existing spec already covers the wrapper).

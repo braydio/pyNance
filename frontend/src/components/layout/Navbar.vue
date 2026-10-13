@@ -5,10 +5,14 @@
         <router-link to="/" class="nav-link"> Dashboard </router-link>
         <router-link to="/accounts" class="nav-link"> Accounts </router-link>
         <router-link to="/transactions" class="nav-link"> Transactions </router-link>
-        <router-link to="/forecast" class="nav-link"> Forecasting </router-link>
+        <router-link to="/forecast" class="nav-link"> Forecast </router-link>
         <router-link to="/planning" class="nav-link"> Planning </router-link>
         <router-link to="/investments" class="nav-link"> Investments </router-link>
       </div>
+      <router-link to="/settings" class="nav-link nav-link--secondary" aria-label="Settings">
+        <Settings :size="16" aria-hidden="true" />
+        <span class="nav-secondary-label">Settings</span>
+      </router-link>
       <button
         class="theme-toggle"
         type="button"
@@ -29,7 +33,7 @@
  * Primary navigation bar with links to top-level routes and a persistent theme toggle.
  */
 import { computed } from 'vue'
-import { Moon, Sun } from 'lucide-vue-next'
+import { Moon, Settings, Sun } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
 
 const { activeTheme, isLightTheme, setTheme } = useTheme()
@@ -48,9 +52,18 @@ function toggleTheme() {
 
 .nav-link.router-link-exact-active {
   background-color: var(--hover-bg);
-  color: var(--accent-primary);
-  font-weight: bold;
+  color: var(--color-text-light);
+  font-weight: 600;
   box-shadow: inset 0 -2px 0 var(--accent-primary);
+}
+
+.nav-link--secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: 0 0 auto;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
 }
 
 .menu {
@@ -128,15 +141,25 @@ function toggleTheme() {
 
 @media (max-width: 760px) {
   .nav-inner {
-    align-items: flex-start;
+    align-items: center;
+    gap: 0.5rem;
+    padding-inline: 0.5rem;
   }
 
   .nav-links {
     justify-content: flex-start;
     overflow-x: auto;
     flex-wrap: nowrap;
+    min-width: 0;
+    flex: 1 1 auto;
+    scrollbar-width: none;
   }
 
+  .nav-link {
+    white-space: nowrap;
+  }
+
+  .nav-secondary-label,
   .theme-toggle span {
     display: none;
   }

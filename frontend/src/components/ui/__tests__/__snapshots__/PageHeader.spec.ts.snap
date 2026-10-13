@@ -1,14 +1,14 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
 exports[`PageHeader > renders title slot 1`] = `
-"<div class="card glass p-6 flex items-center justify-between">
-  <div class="flex items-center gap-2">
+"<header data-v-38a4346c="" class="page-header">
+  <div data-v-38a4346c="" class="page-header__identity">
     <!--v-if-->
-    <div>
-      <h1 class="text-2xl font-bold">Dashboard</h1>
+    <div data-v-38a4346c="" class="min-w-0">
+      <h1 data-v-38a4346c="" class="page-header__title">Dashboard</h1>
       <!--v-if-->
     </div>
   </div>
-  <div class="flex items-center gap-2"></div>
-</div>"
+  <!--v-if-->
+</header>"
 `;

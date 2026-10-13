@@ -3,6 +3,8 @@
 /* Entry point for theme variables. Nightfox dark palette is the default. */
 :root {
   --font-sans:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  --font-data:
     'IBM Plex Mono', 'SFMono-Regular', 'Cascadia Code', 'Roboto Mono', ui-monospace, monospace;
   --font-display: 'Share Tech Mono', 'IBM Plex Mono', 'SFMono-Regular', ui-monospace, monospace;
   --font-chart: var(--font-display);

@@ -592,6 +592,33 @@
   border: 1px solid var(--border-subtle);
 }
 
+/* Semantic surface roles (see docs/frontend/PRODUCT_UI_HIERARCHY.md). */
+.surface-primary {
+  background-color: var(--accent-surface, var(--frosted-bg));
+  border: 1px solid var(--accent-primary, var(--border-subtle));
+  border-radius: var(--radius-2, 0.5rem);
+  box-shadow: 0 6px 18px var(--shadow);
+}
+
+.surface-normal {
+  background-color: var(--frosted-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-2, 0.5rem);
+}
+
+.surface-quiet {
+  background-color: transparent;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-2, 0.5rem);
+}
+
+.surface-attention {
+  background-color: color-mix(in srgb, var(--color-danger, #dc2626) 10%, var(--frosted-bg));
+  border: 1px solid color-mix(in srgb, var(--color-danger, #dc2626) 55%, transparent);
+  border-left-width: 4px;
+  border-radius: var(--radius-2, 0.5rem);
+}
+
 .flex-center {
   @apply flex items-center justify-center;
 }
