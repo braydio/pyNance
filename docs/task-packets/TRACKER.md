@@ -6,6 +6,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261013-001 | Plaid Reconnect Item Deduplication + Link Session Lifecycle | Ready | High | None (coordinate TP-20261007-009 Settings edits) | main | 2026-10-13 | [packet](active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | In Progress | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
