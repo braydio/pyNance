@@ -32,7 +32,11 @@
             : 'Reconnect with Plaid'
         }}
       </UiButton>
-      <p v-if="connectionMessages[connection.key ?? connection.connectionId]" class="text-sm" role="alert">
+      <p
+        v-if="connectionMessages[connection.key ?? connection.connectionId]"
+        class="text-sm"
+        role="alert"
+      >
         {{ connectionMessages[connection.key ?? connection.connectionId] }}
       </p>
     </div>

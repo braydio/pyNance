@@ -423,11 +423,7 @@ async function reconnectConnection(connection) {
           account_ids: connection.accounts.map((account) => account.account_id),
         })
         await loadAccounts()
-        if (
-          uniqueReconnectConnections(accounts.value).some(
-            (item) => item.key === key,
-          )
-        ) {
+        if (uniqueReconnectConnections(accounts.value).some((item) => item.key === key)) {
           reconnectMessage.value = {
             ...reconnectMessage.value,
             [key]: 'Plaid still reports that this connection needs attention.',

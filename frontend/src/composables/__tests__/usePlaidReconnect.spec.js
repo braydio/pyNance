@@ -62,7 +62,9 @@ describe('usePlaidReconnect', () => {
       connection_status: { provider: 'plaid', state: 'reauth_required' },
     })
     const connections = uniqueReconnectConnections([account('legacy-a'), account('legacy-b')])
-    expect(connections.map(({ key, accountId, connectionId }) => ({ key, accountId, connectionId }))).toEqual([
+    expect(
+      connections.map(({ key, accountId, connectionId }) => ({ key, accountId, connectionId })),
+    ).toEqual([
       { key: 'account:legacy-a', accountId: 'legacy-a', connectionId: undefined },
       { key: 'account:legacy-b', accountId: 'legacy-b', connectionId: undefined },
     ])
