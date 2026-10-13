@@ -12,7 +12,7 @@ set -uo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 FRONTEND_DIR="${REPO_DIR}/frontend"
 BRANCH="${1:-$(git -C "${REPO_DIR}" rev-parse --abbrev-ref HEAD)}"
-INTERVAL="${INTERVAL:-360}"
+INTERVAL="${INTERVAL:-3600}"
 CHECKPOINT_MSG_PREFIX="${AUTO_GITPULL_MESSAGE:-chore: dev-watcher checkpoint}"
 HOOK_FIX_MSG_PREFIX="${AUTO_GITPULL_HOOK_MESSAGE:-chore: dev-watcher hook fixes}"
 RUN_FRONTEND_FORMAT="${RUN_FRONTEND_FORMAT:-1}"
