@@ -6,7 +6,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
+| TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | In Progress | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-004-transactions-action-workbench.md) |
@@ -29,4 +29,4 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 ## Blockers
 
-None.
+None. TP-20261007-009 is In Progress: code-level pass landed; remaining work is a real-browser breakpoint/focus/theme audit and Cypress runs (see the packet's progress report).

@@ -1,54 +1,328 @@
-# Documentation Index
-
-All documentation lives in Markdown under `docs/` and mirrors the backend structure for easy lookup.
-
-## Core
-
-- [Backend](../backend/) – server-side code and features
-- [Frontend](../frontend/) – client-side components
-- [Architecture](../architecture/) – system design overview
-- [Process](../process/) – development workflows
-- [Maintenance](../maintenance/) – operations and upkeep
-- [Maps](../maps/) – diagrams and visual references
-- [Roadmaps](../roadmaps/) – active product planning and workstream status
-- [Account Balance History Roadmap](../roadmaps/account-balance-history.md) – phased delivery plan for history correctness, caching, API/UI integration, and rollout validation.
-
-## Additional Resources
-
-- [Dataflow](../dataflow/) – data movement and transformations
-- [Forecast](../forecast/) – financial forecasting docs
-- [Integrations](../integrations/) – third-party connections
-- [Stake Cleanup Audit](../integrations/stake_cleanup.md) – confirmation that the legacy Stake integration has no remaining code paths
-- [Devnotes](../devnotes/) – working notes and scratch references
-- [Task Packet Index](../task-packets/INDEX.md) – canonical catalog for executable implementation packets.
-- [Task Packet Tracker](../task-packets/TRACKER.md) – live packet status, priority, dependencies, and blockers.
-- [Task Packet Authoring & Execution Rules](../task-packets/README.md) – hardened location, naming, lifecycle, execution, and packet-writing conventions.
-- [Plaid Connection Health Reconnect Task Packet](../task-packets/completed/TP-20261001-001-plaid-connection-health-reconnect.md) – persistent Item-scoped reconnect detection, update-mode repair, UI exposure, and test coverage.
-- [Safe-to-Spend Reliability Task Packet](../task-packets/completed/TP-20261002-001-safe-to-spend-reliability.md) – schema reconciliation, provider-aware cashflow signs, transaction ownership, visible API errors, and regression coverage.
-- [Elevation vs Border Contrast](../devnotes/elevation-vs-border-contrast.md) – dashboard depth and framing rules for consistent panel hierarchy.
-- [Frontend Theme System](../devnotes/theme-system.md) – persistent palettes, semantic theme tokens, and site-wide accent policy.
-- [Radius Rollout Visual QA Checklist](../devnotes/radius-rollout-visual-qa.md) – required before/after capture protocol and review checklist for corner, border, spacing, and focus.
-- [Codex](../codex/) – exploratory reports
-- [Latest](../latest/) – recent drafts and experiments
-- [Financial Summary Detailed](../frontend/FINANCIAL_SUMMARY_DETAILED.md) – DailyNetChart + FinancialSummary wiring details
-- [Safe to Spend Dashboard Widget](../frontend/safe-to-spend.md) – daily spend guardrail API, placement, and next-version horizons.
-- [Component Migration Guide](../frontend/component-migration.md) – frontend component organization strategy
-- [Tailwind + Vite Style Reference](../frontend/tailwind-vite-style-reference.md) – CSS utilities and build notes
-- [Corner Radius Migration Guide](../frontend/corner-radius-migration-guide.md) – token scale and allowed corner usage by component type.
-- [Radius/Depth Rollout Plan](../frontend/radius-rollout-phases.md) – three-phase rollout for tokens, core surfaces, and secondary surfaces with required captures and QA gates.
-- [Forecast Frontend Components](../frontend/src/components/forecast/ForecastComponent.md) – forecast layout, summary, chart, and adjustment component docs.
-- [Environment Reference](../ENVIRONMENT_REFERENCE.md) – env vars, setup, troubleshooting
-
-## High-Traffic Backend References
-
-- [Transactions API](../backend/app/routes/transactions.md) – primary CRUD surface for accounts and transactions.
-- [Investments API](../backend/app/routes/investments.md) – investment accounts, holdings, and transaction query contracts.
-- [Plaid Source History and Reconciliation](../backend/app/services/plaid_audit.md) – immutable provider events, ingestion integrity, and database repair.
-- [Transactions Service](../backend/app/services/transactions.md) – ingestion and reconciliation logic powering the Transactions API.
-- [Transaction Tags](../backend/features/transaction_tags.md) – tag data model and default serialization behavior.
-- [Archived Alembic Revisions](../backend/migrations/versions_archived.md) – historical references for archived migration files.
-- [Path Utilities](../backend/app/helpers/path_utils.md) – safe path resolution helpers for backend file access.
-- [Forecast Engine Helpers](../backend/forecast/engine.md) – deterministic projection helpers for forecast timelines.
-- [Forecast Response Models](../backend/forecast/models.md) – forecast payload structures for timeline, cashflows, and summary data.
-- [API Reference](../backend/api-reference.md) – routing conventions and shared API definitions.
-- [Transactions Performance Playbook](../backend/performance/transactions.md) – caching, prefetch, and performance notes.
+* ./requirements-dev.txt - Stale: Yes | Metadata: Missing
+* ./README.md - Stale: No | Metadata: Missing
+* ./requirements-slim.txt - Stale: Yes | Metadata: Missing
+* ./requirements.txt - Stale: Yes | Metadata: Missing
+* ./CONTRIBUTING.md - Stale: Yes | Metadata: Missing
+* ./AGENTS.md - Stale: No | Metadata: Missing
+* ./docs/README.md - Stale: Yes | Metadata: Missing
+* ./docs/ENVIRONMENT_REFERENCE.md - Stale: Yes | Metadata: Missing
+* ./docs/AGENTS.md - Stale: Yes | Metadata: Missing
+* ./docs/PRIORITY_CHANGES.md - Stale: Yes | Metadata: Missing
+* ./docs/codex/review-and-refactor-backend-routes-and-sql-logic_1-of-3.md - Stale: Yes | Metadata: Missing
+* ./docs/codex/codebase-report.md - Stale: Yes | Metadata: Missing
+* ./docs/forecast/FORECAST_PURPOSE.md - Stale: Yes | Metadata: Missing
+* ./docs/forecast/notes.md - Stale: Yes | Metadata: Missing
+* ./docs/forecast/RECURRING_TRANSACTIONS.md - Stale: No | Metadata: Missing
+* ./docs/forecast/backend-status.md - Stale: Yes | Metadata: Missing
+* ./docs/forecast/FORECAST_ROADMAP.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/root-docs-inventory.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/codex-reference.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/new-todo.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/markdown-audit-2025-05-17.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/file-consolidation-inventory.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/cleanup_checklist.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/widget-improvements.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/open_processes_index.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/ACCOUNT_SNAPSHOT_FIXES.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/export-claude-session-log.txt - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/symbol_map.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/todo.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/route-cleanup-issues.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/claude-reference.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/deprecated/backend-routing-plan.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/tasklogs/routing-refactor-2025-05-16.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/tasklogs/exchange-token-refactor.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/CODEX_RECC-MIGRATION.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/CustomSDK_Prompt1.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/Investments_Integration-Summary_Overview.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Summary_Overview.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Component_Responsibilities_Pt2.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Architecture_Dependencies.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Component_Responsibilities_Pt3.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Service_Components.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Component_Responsibilities.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Component_Responsibilities-Final_Summary.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Phase1.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transactions-Refactor_plaid_transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Final_Summary_Overview.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Architecture_Dependencies_Pt2.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Phase2.md - Stale: Yes | Metadata: Missing
+* ./docs/maintenance/organize/routing_refactor/TxRoutes/Transaction_Integration-Phase3.md - Stale: Yes | Metadata: Missing
+* ./docs/ui/planning.md - Stale: Yes | Metadata: Missing
+* ./docs/task-packets/README.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/TRACKER.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/INDEX.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/archived/README.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-003-dashboard-decision-first-recomposition.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/README.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-004-transactions-action-workbench.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-007-planning-workflow-reauthor.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261001-001-plaid-connection-health-reconnect.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261012-001-link-account-modal-visibility.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-001-local-schema-head-activation.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-008-investments-portfolio-hierarchy.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261002-001-safe-to-spend-reliability.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-006-forecast-explainable-decision-surface.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md - Stale: No | Metadata: Missing
+* ./docs/index/INDEX.md - Stale: No | Metadata: Missing
+* ./docs/frontend/PageHeader.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/INSTITUTIONS_PAGE.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/dashboard-sections.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/tailwind-vite-style-reference.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/corner-radius-migration-guide.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/accounts-component-spec.md - Stale: No | Metadata: Missing
+* ./docs/frontend/category-breakdown-component-review.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/CURRENCY_FORMAT_GUIDE.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/DASHBOARD_MODAL_GUIDE.md - Stale: No | Metadata: Missing
+* ./docs/frontend/phase-1-audit-details.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/Consolidated_TODO.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/FINANCIAL_SUMMARY_DETAILED.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/INVESTMENTS_PAGE.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/component-migration.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/component-review-tracker.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/planning-view.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/accounts-development-plan.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/transactions-actions-sidebar.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/safe-to-spend.md - Stale: No | Metadata: Missing
+* ./docs/frontend/TAILWIND_SETUP.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/THEMING_GUIDE.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/sparklines.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/dashboard-component-spec.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/PageLayout.md - Stale: No | Metadata: Missing
+* ./docs/frontend/PRODUCT_UI_HIERARCHY.md - Stale: No | Metadata: Missing
+* ./docs/frontend/PHASES.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/radius-rollout-phases.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/transactions-ui.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/duplicate-component-review.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/LoadingErrorComponents.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/DAILY_NET_CHART.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/chart-components.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forms/PlaidProductScopeSelector.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/accounts/LinkedAccountsSection.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastBreakdown.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastChart.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastSummaryPanel.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastAdjustmentsForm.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastLayout.md - Stale: Yes | Metadata: Missing
+* ./docs/frontend/src/components/forecast/ForecastComponent.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/load_transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/DATABASE_OVERVIEW.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/SQL_DATABASE_CHANGES.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/run.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/api-reference.md - Stale: No | Metadata: Missing
+* ./docs/backend/POSTGRE_CHEAT_SHEET.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/cron_balance_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/cron_sync.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/forecast/models.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/forecast/engine.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/features/transaction_tags.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/features/transaction_rules.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/performance/transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/backend-ToDo/ForecastingToDo.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions_archived.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/8f2b541c2d5a_ondelete_rules.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/6b0f2c9d1a34_add_planning_persistence_tables.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/b1f9c2a6c57f_add_transaction_pagination_indexes.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/9d3f4c21a7b9_schema_hardening_and_normalization.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/1f2a3b4c5d6e_fix_sequences_after_pg_migration.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/c2f8d9a4e1b7_add_canonical_transaction_categories.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/a7c1d9e2f4b8_add_transaction_merchant_slug.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/55d16a2ff3e7_add_transaction_tags.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/e6a9c2f4b8d1_plaid_source_audit_and_category_identity.md - Stale: No | Metadata: Missing
+* ./docs/backend/migrations/versions/7c1e9f4a2b6d_transactions_date_to_calendar_date.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/c6e1f4b0d2a3_create_transaction_rules_table.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/8d2f0a5b3c7e_plaid_metadata_datetimes_timezone_aware.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/f3d2c4a1b6e7_remove_teller_integration.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/7343a4630d46_add_plaid_sync_cursor_webhook_log.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/d4a7b2e9c1f3_add_transfer_type_to_transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/e7b9f1c2a4d3_add_investment_account_flags.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/migrations/versions/2c4d6e8f9a10_add_apr_to_accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/scripts/map_component_use.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/scripts/delete_plaid_from_backup.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/extensions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/models.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/__init__.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/log_setup.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/plaid_config.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/paths.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/environment.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/constants.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/config.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/config/__init__.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/refresh_metadata.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/account_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/forecast_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/investments_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/sequence_utils.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/dialect_utils.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/manual_import_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/recurring_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/transactions_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/category_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/planning_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/index.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/export_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/transaction_rules_logic.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/Transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/PlaidWebhookLog.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/Category.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/AccountHistory.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/Account.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/TransactionRule.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/sql/models/RecurringTransaction.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/utils/finance_utils.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/utils/category_display.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/utils/merchant_normalization.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/utils/category_canonical.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/utils/normalization.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/scripts/plaid-link-from-token.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/path_utils.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/refresh_dispatcher.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/account_history_helper.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/normalize.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/account_refresh_dispatcher.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/import_helpers.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/helpers/plaid_helpers.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/database/raw_payload_storage.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/database/schema.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/codex_exec.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/summary.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/forecast.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/rules.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/export.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/dashboard.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/routes/rsa_monitor.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/plaid_transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/planning.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/plaid_investments.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/goals.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/investments.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/plaid_webhook.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/routes/institutions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/categories.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/recurring.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/docs.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/charts.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/frontend.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/index.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/manual_io.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/routes/transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/forecast_balance.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/codex_exec_service.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/recurring_detection.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/forecast_orchestrator.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/llm_settings.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/forecast_engine.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/rsa_monitor.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/safe_to_spend.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/account_groups.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/enhanced_account_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/balance_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/account_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/arbit_metrics.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/sync_service.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/plaid_audit.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/forecast_stat_model.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/accounts_service.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/dashboard_activity_status.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/plaid_sync.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/planning_service.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/index.md - Stale: No | Metadata: Missing
+* ./docs/backend/app/services/recurring_bridge.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/account_snapshot.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/services/transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/import_plaid_accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/import_plaid_tokens.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/sync.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/import_accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/backfill_plaid_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/debug_plaid_history.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/plaid.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/app/cli/seed_dev.md - Stale: Yes | Metadata: Missing
+* ./docs/process/legacy-migration.md - Stale: Yes | Metadata: Missing
+* ./docs/process/pr-templates.md - Stale: Yes | Metadata: Missing
+* ./docs/process/migration-plan.md - Stale: Yes | Metadata: Missing
+* ./docs/process/contributor-guide.md - Stale: Yes | Metadata: Missing
+* ./docs/process/execution-plan.md - Stale: Yes | Metadata: Missing
+* ./docs/process/github-templates.md - Stale: Yes | Metadata: Missing
+* ./docs/process/repo_organization.md - Stale: Yes | Metadata: Missing
+* ./docs/process/ORGANIZATION.md - Stale: Yes | Metadata: Missing
+* ./docs/dataflow/plaid_link_request_flow.md - Stale: Yes | Metadata: Missing
+* ./docs/dataflow/investment_sync_pipeline.md - Stale: Yes | Metadata: Missing
+* ./docs/dataflow/account_history_aggregation.md - Stale: Yes | Metadata: Missing
+* ./docs/latest/recent_transactions_feature.md - Stale: Yes | Metadata: Missing
+* ./docs/latest/net_changes_feature.md - Stale: Yes | Metadata: Missing
+* ./docs/latest/merchant-modal-feature.md - Stale: Yes | Metadata: Missing
+* ./docs/architecture/arch_ux_02.md - Stale: Yes | Metadata: Missing
+* ./docs/architecture/architecture_notes.md - Stale: Yes | Metadata: Missing
+* ./docs/architecture/01_DEV-ArchitectureChecks.md - Stale: Yes | Metadata: Missing
+* ./docs/architecture/Plaid_Helpers_Design.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/README.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/product_scoped_accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/accounts.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/ai-llm-features.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/planning.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/investments.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/account-balance-history.md - Stale: Yes | Metadata: Missing
+* ./docs/roadmaps/transactions.md - Stale: Yes | Metadata: Missing
+* ./docs/integrations/plaid_error_remediation.md - Stale: No | Metadata: Missing
+* ./docs/integrations/stake_cleanup.md - Stale: Yes | Metadata: Missing
+* ./docs/integrations/plaid_refresh_resilience.md - Stale: Yes | Metadata: Missing
+* ./docs/integrations/plaid_investments.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/Dev_ForecastReference.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/radius-rollout-visual-qa.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/plaid-connection-health-reconnect-task-packet.md - Stale: No | Metadata: Missing
+* ./docs/devnotes/elevation-vs-border-contrast.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/FUCK_CODE.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/theme-system.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/safe-to-spend-reliability-task-packet.md - Stale: No | Metadata: Missing
+* ./docs/devnotes/Retrospective_Mapping.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/daily-net-chart.md - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/DevelopingForecast.txt - Stale: Yes | Metadata: Missing
+* ./docs/devnotes/refresh_route_reviewer.md - Stale: Yes | Metadata: Missing
+* ./docs/maps/link_account_products_map.md - Stale: Yes | Metadata: Missing
+* ./docs/maps/repository_map.md - Stale: Yes | Metadata: Missing
+* ./scripts/README-CADDY.md - Stale: Yes | Metadata: Missing
+* ./frontend/README.md - Stale: Yes | Metadata: Missing
+* ./frontend/frontend_lint.txt - Stale: Yes | Metadata: Missing
+* ./frontend/ANIMATIONS_GUIDE.md - Stale: Yes | Metadata: Missing
+* ./frontend/AGENTS.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/views/Mock/DashboardMockLayout.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/views/Mock/DashboardMock.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/views/Mock/MockDataCanvas.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/accounts/LinkAccountsSection.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/forecast/03REF_Development_Planning.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/forecast/01REF_Architecture_Design.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/forecast/00REF_ForecastDev_Checklist.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/forecast/02REF_API_Integration.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/recurring/01REF_Specification_Architecture.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/recurring/01REF_UserInterface.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/components/recurring/00_Recurring_FeatureAudit.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/services/MIGRATE_API_SERVICE.md - Stale: Yes | Metadata: Missing
+* ./frontend/src/api/MIGRATIONS_CHECKLIST.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/investments-transactions-filters.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/transactions-table.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/accounts-data-loading.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/forecast-data-contract.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/typography-spacing-guide.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/THEMING_GUIDE.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/dashboard-greeting-status.md - Stale: Yes | Metadata: Missing
+* ./frontend/docs/account-snapshot.md - Stale: Yes | Metadata: Missing
+* ./backend/requirements.txt - Stale: Yes | Metadata: Missing
+* ./backend/AGENTS.md - Stale: Yes | Metadata: Missing
+* ./backend/docs/postgres-migration.md - Stale: Yes | Metadata: Missing
+* ./backend/app/services/FORECAST_RECURRING_ROADMAP.md - Stale: Yes | Metadata: Missing
+* ./backend/app/data/imports/README.md - Stale: Yes | Metadata: Missing
+* ./backend/app/static/README.md - Stale: Yes | Metadata: Missing
+* ./backend/app/archive/item_log.txt - Stale: Yes | Metadata: Missing
+* ./backend/app/archive/api_json/ufb-raw.txt - Stale: Yes | Metadata: Missing
+* ./backend/app/archive/api_json/capitalone-raw.txt - Stale: Yes | Metadata: Missing
+* ./backend/app/archive/api_json/wellsfargo-raw.txt - Stale: Yes | Metadata: Missing
+* ./.omx/context/pynance-rsa-monitor-20260530T173930Z.md - Stale: Yes | Metadata: Missing
+* ./.omx/plans/autopilot-spec.md - Stale: Yes | Metadata: Missing
+* ./.omx/plans/autopilot-impl.md - Stale: Yes | Metadata: Missing
+* ./.pytest_cache/README.md - Stale: Yes | Metadata: Missing
+* ./.github/PULL_REQUEST_TEMPLATE.md - Stale: Yes | Metadata: Missing

@@ -69,4 +69,24 @@ describe('Settings.vue', () => {
     })
     expect(wrapper.get('[data-testid="llm-settings-feedback"]').text()).toContain('saved')
   })
+
+  it('keeps local command execution in a collapsed Advanced disclosure after normal preferences', () => {
+    const wrapper = shallowMount(SettingsView, {
+      global: {
+        stubs: { RefreshPlaidControls: true, BasePageLayout: { template: '<div><slot /></div>' } },
+      },
+    })
+    const advanced = wrapper.get('[data-testid="advanced-settings"]')
+    expect(advanced.element.tagName).toBe('DETAILS')
+    expect(advanced.attributes('open')).toBeUndefined()
+    expect(advanced.find('[data-testid="command-submit"]').exists()).toBe(true)
+
+    const html = wrapper.html()
+    expect(html.indexOf('Connected Accounts')).toBeLessThan(
+      html.indexOf('data-testid="advanced-settings"'),
+    )
+    expect(html.indexOf('Dashboard AI message')).toBeLessThan(
+      html.indexOf('data-testid="advanced-settings"'),
+    )
+  })
 })

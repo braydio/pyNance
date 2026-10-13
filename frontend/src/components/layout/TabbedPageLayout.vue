@@ -1,15 +1,21 @@
 <template>
   <BasePageLayout>
     <slot name="header" />
-    <div class="flex gap-8">
-      <div class="flex-1">
+    <div class="flex flex-col gap-8 lg:flex-row">
+      <div class="min-w-0 flex-1">
         <nav
           class="tabbed-nav ui-radius-3 border border-subtle bg-surface-2"
           data-testid="tabbed-nav"
         >
-          <ul class="tabbed-nav__list">
-            <li v-for="tab in normalizedTabs" :key="tab.slot">
+          <ul class="tabbed-nav__list" role="tablist" aria-label="Page sections">
+            <li v-for="tab in normalizedTabs" :key="tab.slot" role="presentation">
               <UiButton
+                :id="`tab-${tab.slot}`"
+                role="tab"
+                :aria-selected="activeTab === tab.slot"
+                :aria-controls="`tabpanel-${tab.slot}`"
+                :tabindex="activeTab === tab.slot ? 0 : -1"
+                @keydown="onTabKeydown($event, tab.slot)"
                 :variant="activeTab === tab.slot ? 'primary' : 'outline'"
                 :pill="false"
                 class="tabbed-nav__button ui-radius-2"
@@ -21,9 +27,15 @@
             </li>
           </ul>
         </nav>
-        <slot :name="activeTab" />
+        <div :id="`tabpanel-${activeTab}`" role="tabpanel" :aria-labelledby="`tab-${activeTab}`">
+          <slot :name="activeTab" />
+        </div>
       </div>
-      <aside v-if="$slots.sidebar" :class="[sidebarWidthClass, 'flex-shrink-0 relative z-10']">
+      <aside
+        v-if="$slots.sidebar"
+        :class="[sidebarWidthClass, 'max-lg:w-full flex-shrink-0 relative z-10']"
+        data-testid="tabbed-sidebar"
+      >
         <!-- Ensure sidebar actions stay clickable above main content -->
         <slot name="sidebar" />
       </aside>
@@ -85,6 +97,28 @@ function selectTab(tabSlot) {
     return
   }
   activeTab.value = tabSlot
+}
+
+/**
+ * Arrow/Home/End keyboard navigation between enabled tabs (roving tabindex).
+ *
+ * @param {KeyboardEvent} event
+ * @param {string} tabSlot - Slot of the tab that received the key event.
+ */
+function onTabKeydown(event, tabSlot) {
+  const keys = ['ArrowLeft', 'ArrowRight', 'Home', 'End']
+  if (!keys.includes(event.key)) return
+  const enabled = normalizedTabs.value.filter((tab) => !tab.disabled)
+  const index = enabled.findIndex((tab) => tab.slot === tabSlot)
+  if (index === -1) return
+  event.preventDefault()
+  let next = index
+  if (event.key === 'ArrowRight') next = (index + 1) % enabled.length
+  if (event.key === 'ArrowLeft') next = (index - 1 + enabled.length) % enabled.length
+  if (event.key === 'Home') next = 0
+  if (event.key === 'End') next = enabled.length - 1
+  selectTab(enabled[next].slot)
+  document.getElementById(`tab-${enabled[next].slot}`)?.focus()
 }
 
 const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')

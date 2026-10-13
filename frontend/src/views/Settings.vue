@@ -88,8 +88,17 @@
     </section>
 
     <section class="settings-panel">
-      <h2 class="settings-panel-title">Command</h2>
-      <p class="settings-panel-copy">Choose a command template and provide task-specific input.</p>
+      <div class="settings-panel-header">
+        <h2 class="settings-panel-title">Connected Accounts</h2>
+        <p class="settings-panel-copy">Refresh Plaid activity without leaving settings.</p>
+      </div>
+      <RefreshPlaidControls />
+    </section>
+    <details class="settings-panel settings-advanced" data-testid="advanced-settings">
+      <summary class="settings-advanced__summary">Advanced: local commands</summary>
+      <p class="settings-panel-copy">
+        Operator tools for running maintenance commands. Most people never need these.
+      </p>
       <div class="settings-command-fields">
         <label for="command-template" class="settings-label">Template</label>
         <BaseSelect
@@ -143,15 +152,7 @@
           commandOutput
         }}</pre>
       </div>
-    </section>
-
-    <section class="settings-panel">
-      <div class="settings-panel-header">
-        <h2 class="settings-panel-title">Connected Accounts</h2>
-        <p class="settings-panel-copy">Refresh Plaid activity without leaving settings.</p>
-      </div>
-      <RefreshPlaidControls />
-    </section>
+    </details>
   </BasePageLayout>
 </template>
 
@@ -215,6 +216,11 @@ onMounted(loadLlmSettings)
 </script>
 
 <style scoped>
+.settings-advanced__summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
 .settings-panel {
   display: flex;
   flex-direction: column;

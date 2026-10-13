@@ -1,7 +1,7 @@
 # TP-20261007-009: Cross-App Readability + Responsive + Accessibility Closure
 
 **Packet ID:** TP-20261007-009  
-**Status:** Ready  
+**Status:** In Progress  
 **Created:** 2026-10-07  
 **Last updated:** 2026-10-07  
 **Repository:** braydio/pyNance  
@@ -183,3 +183,20 @@ python scripts/doc_cleaner.py
 ## Completion report
 
 Report audited pages/breakpoints, accessibility fixes, residual known issues, removed dead UI, full validation results, and any deviation from the locked hierarchy.
+
+---
+
+## Progress report (2026-10-13) — code-level pass done; browser audit outstanding
+
+Done:
+- `TabbedPageLayout.vue`: row is `flex-col lg:flex-row`; sidebar gets `max-lg:w-full` so it stacks below content under 1024px (previously fixed `w-64`/`w-72 md:w-80` beside narrow content); tablist/tab/tabpanel semantics with `aria-selected`, roving `tabindex`, and Arrow/Home/End navigation that skips disabled tabs. New `TabbedPageLayout.spec.ts`.
+- `Settings.vue`: order is Appearance → AI → Connected Accounts → collapsed "Advanced: local commands" `<details>` holding the command executor; test added.
+- `FinancialSummaryDetailed.vue`: real `PageHeader` identity, date selector kept with the analysis. `Institutions.vue`: `PageHeader` with "Operator view" subtitle (replaces a bespoke centered accent h1); not promoted into nav.
+- Heading audit: Dashboard keeps the single sr-only `h1`; the hero `h1` was already removed in TP-20261007-003. `PageHeader` provides the `h1` elsewhere.
+- Validation: Vitest 50 files / 224 tests pass; lint 0 errors; build OK; `check_docs.py --changed-since origin/main` reports nothing to verify; `doc_cleaner.py` regenerated `docs/index/INDEX.md`.
+
+Not done (why this packet stays open):
+- No real-browser audit at 360/768/1024/1440, so overflow, clipped popovers, focus-visible in both themes, and tab order are unverified.
+- Cypress targets for Dashboard/Accounts/Transactions/Planning were not run (need a dev server/backend; two Accounts component specs already fail locally for a missing router).
+- Unified loading/empty/error state grammar and `RsaMonitor`/`FinancialSummaryDetailed` visual consistency were not swept; no dead-code removal beyond what 003-008 did.
+- Resume condition: run the app, check each primary view at the four widths in both themes, fix findings, then complete.

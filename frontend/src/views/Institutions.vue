@@ -1,10 +1,10 @@
 <!-- Institutions.vue - Overview of linked institutions and accounts. -->
 <template>
   <BasePageLayout>
-    <div class="text-center p-4 rounded-lg shadow-md bg-[var(--color-bg)]">
-      <h1 class="text-3xl font-bold text-[var(--color-accent-cyan)]">Institutions</h1>
-      <p class="text-sm text-muted">Overview of all linked providers and accounts</p>
-    </div>
+    <PageHeader :icon="Landmark">
+      <template #title>Institutions</template>
+      <template #subtitle>Operator view of linked providers and accounts</template>
+    </PageHeader>
   </BasePageLayout>
   <BasePageLayout>
     <section>
@@ -16,6 +16,8 @@
 <script setup>
 // Basic institutions page showing existing InstitutionTable
 // Advanced analytics and management features will be added incrementally.
+import { Landmark } from 'lucide-vue-next'
+import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import InstitutionTable from '@/components/tables/InstitutionTable.vue'
 </script>
