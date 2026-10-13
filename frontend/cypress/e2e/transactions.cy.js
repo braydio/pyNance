@@ -1,22 +1,12 @@
 // transactions.cy.js - tests for transactions view
 
 describe('Transactions View', () => {
-  it('toggles internal transfer scanner', () => {
+  it('shows the scanner only in the Scanner tab', () => {
     cy.visit('/transactions')
 
-    // Scanner hidden by default
-    cy.contains('Internal Transfer Scanner')
-    cy.contains('button', 'Show').should('exist')
-    cy.contains('Scan').should('not.exist')
-
-    // Show scanner
-    cy.contains('button', 'Show').click()
-    cy.contains('button', 'Hide').should('exist')
+    cy.contains('Internal Transfer Scanner').should('not.exist')
+    cy.get('[data-testid="tabbed-nav"]').contains('Scanner').click()
     cy.contains('Scan').should('exist')
-
-    // Hide again
-    cy.contains('button', 'Hide').click()
-    cy.contains('Scan').should('not.exist')
   })
 
   it('applies filters to API calls and resets pagination', () => {

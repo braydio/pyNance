@@ -1,96 +1,56 @@
 <!-- Transactions.vue - View and manage transactions using tabbed layout. -->
 <template>
-  <TabbedPageLayout
-    class="transactions-page"
-    :tabs="tabs"
-    v-model="activeTab"
-    padding="px-4 sm:px-6 lg:px-8 py-8"
-  >
+  <TabbedPageLayout class="transactions-page" :tabs="tabs" v-model="activeTab">
     <!-- Header -->
     <template #header>
       <PageHeader :icon="CreditCard">
-        <template #title>
-          <span class="page-title">Transactions</span>
-        </template>
-        <template #subtitle>
-          <span class="page-subtitle">View and manage your transactions</span>
-        </template>
+        <template #title>Transactions</template>
+        <template #subtitle>Search, review, and export your activity</template>
       </PageHeader>
     </template>
-    <!-- Internal Transfer Scanner (moved to top) -->
-    <Card class="p-6 ui-radius-3 card-surface">
-      <div class="flex items-center justify-between">
-        <div>
-          <p class="eyebrow">Automation</p>
-          <h2 class="text-xl font-semibold text-[var(--color-text-light)]">
-            Internal Transfer Scanner
-          </h2>
-          <p class="text-sm text-[var(--color-text-muted)]">
-            Quickly spot and link matching transfers.
-          </p>
-        </div>
-        <button class="btn btn-outline px-3 py-1 text-sm" @click="toggleScanner">
-          {{ showScanner ? 'Hide' : 'Show' }}
-        </button>
-      </div>
-      <div class="mt-4" v-if="showScanner">
-        <InternalTransferScanner />
-      </div>
-    </Card>
-
-    <!-- Top Controls -->
-    <Card v-if="showControls" id="top-controls" class="ui-panel p-6 ui-radius-3 space-y-4">
-      <div class="flex flex-wrap items-start justify-between gap-4 border-b border-subtle pb-4">
-        <div class="space-y-1">
-          <p class="eyebrow">Controls</p>
-          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
-            Import &amp; quick search
-          </h3>
-          <p class="text-sm text-[var(--color-text-muted)]">
-            Upload transactions and instantly narrow the view.
-          </p>
-        </div>
-        <span class="pill">Transactions</span>
-      </div>
-      <div class="grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(260px,1fr)]">
-        <div class="ui-radius-2 border border-dashed border-subtle bg-surface-1 p-4 shadow-inner">
-          <ImportFileSelector />
+    <!-- Activity Tab -->
+    <template #Activity>
+      <!-- One compact toolbar: search + filters + import + export -->
+      <div id="activity-toolbar" class="activity-toolbar surface-quiet p-3 md:p-4">
+        <div class="activity-toolbar__row">
+          <label class="activity-toolbar__search" for="transactions-search">
+            <span class="sr-only">Search transactions</span>
+            <Search class="activity-toolbar__search-icon w-4 h-4" aria-hidden="true" />
+            <input
+              id="transactions-search"
+              v-model="searchQuery"
+              type="text"
+              placeholder="Search transactions"
+              class="input ui-control-input w-full pl-9 pr-3 py-2 search-input"
+            />
+          </label>
+          <button
+            type="button"
+            class="btn btn-outline activity-toolbar__filters-toggle"
+            data-testid="filters-toggle"
+            aria-controls="activity-filters"
+            :aria-expanded="filtersOpen"
+            @click="filtersOpen = !filtersOpen"
+          >
+            Filters<span v-if="activeFilterChips.length"> ({{ activeFilterChips.length }})</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline"
+            data-testid="import-toggle"
+            aria-controls="activity-import"
+            :aria-expanded="importOpen"
+            @click="importOpen = !importOpen"
+          >
+            Import
+          </button>
         </div>
         <div
-          class="relative ui-radius-2 border border-dashed border-subtle bg-surface-1 shadow-inner"
+          id="activity-filters"
+          class="activity-toolbar__filters"
+          :class="{ 'is-open': filtersOpen }"
+          data-testid="activity-filters"
         >
-          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-            <Search class="w-4 h-4" />
-          </span>
-          <input
-            v-model="searchQuery"
-            type="text"
-            placeholder="Search transactions..."
-            class="input ui-control-input w-full border-none bg-transparent pl-10 pr-4 py-3 text-secondary focus:ring-2 focus:ring-[var(--color-accent-purple)] search-input"
-          />
-        </div>
-      </div>
-    </Card>
-
-    <!-- Filter Controls -->
-    <Card class="ui-panel p-6 ui-radius-3 space-y-4">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p class="eyebrow">Filters</p>
-          <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
-            Refine the transaction view
-          </h3>
-          <p class="text-sm text-[var(--color-text-muted)]">
-            Adjust time range, account, and transaction type.
-          </p>
-        </div>
-        <div class="flex items-center gap-2 text-xs text-[var(--color-text-muted)]">
-          <span class="h-2 w-2 rounded-full bg-[var(--color-accent-purple)] shadow-glow"></span>
-          Live updates
-        </div>
-      </div>
-      <div class="grid w-full gap-3 md:grid-cols-3">
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <DateRangeSelector
             :start-date="startDate"
             :end-date="endDate"
@@ -98,112 +58,23 @@
             @update:startDate="startDate = $event"
             @update:endDate="endDate = $event"
           />
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <AccountFilter v-model="accountFilter" />
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
           <TypeSelector v-model="txType" />
         </div>
+        <div v-if="importOpen" id="activity-import" class="activity-toolbar__import">
+          <ImportFileSelector />
+        </div>
       </div>
-    </Card>
 
-    <Card
-      v-if="hasActiveFilters && !isLoading && !error"
-      class="ui-panel p-6 ui-radius-3 space-y-4"
-      data-testid="filter-summary"
-    >
-      <div>
-        <p class="eyebrow">Summary</p>
-        <h3 class="text-lg font-semibold text-[var(--color-text-light)]">
-          Selected filter overview
-        </h3>
-      </div>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Transactions</p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ filterSummary.transactionCount }}
-          </p>
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Total amount</p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ formatCurrency(filterSummary.totalAmount) }}
-          </p>
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique categories</p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ filterSummary.uniqueCounts.categories }}
-          </p>
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique merchants</p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ filterSummary.uniqueCounts.merchants }}
-          </p>
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">Unique accounts</p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ filterSummary.uniqueCounts.accounts }}
-          </p>
-        </div>
-        <div class="ui-card ui-radius-2 px-4 py-3 shadow-inner">
-          <p class="text-xs font-semibold uppercase tracking-wide text-muted">
-            Unique institutions
-          </p>
-          <p class="text-2xl font-semibold text-primary">
-            {{ filterSummary.uniqueCounts.institutions }}
-          </p>
-        </div>
-      </div>
-    </Card>
-
-    <!-- Main Table -->
-    <Card class="p-6 space-y-4 ui-radius-3 card-surface">
-      <div class="flex items-center justify-between">
-        <h2 class="section-title">Recent Transactions</h2>
-        <div class="flex items-center gap-2">
-          <button
-            class="pill md:text-sm"
-            data-testid="transactions-export-csv"
-            :disabled="isExporting || isLoading"
-            @click="exportFilteredTransactionsCsv"
-          >
-            {{ isExporting ? 'Exporting CSV...' : 'Export CSV (All Filtered Rows)' }}
-          </button>
-          <span class="pill pill-subtle">Updated feed</span>
-        </div>
-      </div>
-      <transition name="fade-in-up" mode="out-in">
-        <SkeletonCard v-if="isLoading" key="loading" />
-        <RetryError
-          v-else-if="error"
-          key="error"
-          :message="errorMessage"
-          @retry="fetchTransactions"
-        />
-        <UpdateTransactionsTable
-          v-else
-          :transactions="filteredTransactions"
-          :current-page="currentPage"
-          :page-size="initialPageSize"
-          :sort-key="sortKey"
-          :sort-order="sortOrder"
-          :auto-edit-transaction-id="targetTransactionId"
-          @sort="setSort"
-          @editRecurringFromTransaction="prefillRecurringFromTransaction"
-        />
-      </transition>
-    </Card>
-
-    <!-- Activity Tab -->
-    <template #Activity>
-      <Card class="p-6 space-y-4 ui-radius-3 card-surface">
-        <div class="flex items-center justify-between">
-          <h2 class="section-title">Recent Transactions</h2>
+      <!-- Table is the dominant surface -->
+      <Card class="p-4 md:p-6 space-y-3 ui-radius-3 card-surface">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h2 class="section-title">
+            Transactions
+            <span v-if="!isLoading && !error" class="result-count" data-testid="result-count">
+              · {{ filterSummary.transactionCount }} shown
+            </span>
+          </h2>
           <button
             class="pill md:text-sm"
             data-testid="transactions-export-csv-activity"
@@ -211,6 +82,28 @@
             @click="exportFilteredTransactionsCsv"
           >
             {{ isExporting ? 'Exporting CSV...' : 'Export CSV (All Filtered Rows)' }}
+          </button>
+        </div>
+        <div
+          v-if="hasActiveFilters && !isLoading && !error"
+          class="filter-summary"
+          data-testid="filter-summary"
+        >
+          <span class="filter-summary__total">
+            Total {{ formatCurrency(filterSummary.totalAmount) }}
+          </span>
+          <ul class="filter-summary__chips" aria-label="Active filters">
+            <li v-for="chip in activeFilterChips" :key="chip" class="pill pill-subtle">
+              {{ chip }}
+            </li>
+          </ul>
+          <button
+            type="button"
+            class="filter-summary__clear"
+            data-testid="clear-filters"
+            @click="clearFilters"
+          >
+            Clear filters
           </button>
         </div>
         <transition name="fade-in-up" mode="out-in">
@@ -280,6 +173,7 @@ import InternalTransferScanner from '@/components/transactions/InternalTransferS
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import AccountFilter from '@/components/AccountFilter.vue'
 import TypeSelector from '@/components/TypeSelector.vue'
+import ImportFileSelector from '@/components/forms/ImportFileSelector.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import RetryError from '@/components/errors/RetryError.vue'
 import PaginationControls from '@/components/tables/PaginationControls.vue'
@@ -296,6 +190,7 @@ export default {
     DateRangeSelector,
     AccountFilter,
     TypeSelector,
+    ImportFileSelector,
     SkeletonCard,
     RetryError,
     PaginationControls,
@@ -328,8 +223,8 @@ export default {
     const initialPromoteId = coerceQueryValue(route.query?.promote || route.query?.promote_txid)
     const promotedTransactionId = ref(initialPromoteId)
     const targetTransactionId = ref(txidParam)
-    const showScanner = ref(false)
-    const showControls = ref(true)
+    const filtersOpen = ref(false)
+    const importOpen = ref(false)
     const isExporting = ref(false)
 
     /**
@@ -474,11 +369,23 @@ export default {
       }).format(value)
     }
 
-    /**
-     * Toggle the visibility of the internal transfer scanner widget.
-     */
-    function toggleScanner() {
-      showScanner.value = !showScanner.value
+    /** Human-readable chips for each active top-level filter. */
+    const activeFilterChips = computed(() => {
+      const chips = []
+      if (startDate.value || endDate.value) {
+        chips.push(`${startDate.value || '…'} – ${endDate.value || '…'}`)
+      }
+      if (accountFilter.value) chips.push('Account')
+      if (txType.value) chips.push(`Type: ${txType.value}`)
+      return chips
+    })
+
+    /** Reset all top-level filters (search is cleared separately by the user). */
+    function clearFilters() {
+      startDate.value = ''
+      endDate.value = ''
+      accountFilter.value = ''
+      txType.value = ''
     }
 
     function prefillRecurringFromTransaction(tx) {
@@ -632,9 +539,10 @@ export default {
       accountFilter,
       txType,
       targetTransactionId,
-      showScanner,
-      toggleScanner,
-      showControls,
+      filtersOpen,
+      importOpen,
+      activeFilterChips,
+      clearFilters,
       isExporting,
       exportFilteredTransactionsCsv,
       hasActiveFilters,
@@ -697,16 +605,86 @@ export default {
   color: var(--color-text-light);
 }
 
-.page-title {
-  font-size: 2.25rem;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--color-text-light);
+.activity-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
 
-.page-subtitle {
-  font-size: 1rem;
+.activity-toolbar__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.activity-toolbar__search {
+  position: relative;
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.activity-toolbar__search-icon {
+  position: absolute;
+  left: 0.75rem;
+  top: 50%;
+  transform: translateY(-50%);
   color: var(--color-text-muted);
+}
+
+.activity-toolbar__filters {
+  display: none;
+  gap: 0.75rem;
+  flex-direction: column;
+}
+
+.activity-toolbar__filters.is-open {
+  display: flex;
+}
+
+.result-count {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.filter-summary__total {
+  font-weight: 600;
+}
+
+.filter-summary__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.filter-summary__clear {
+  text-decoration: underline;
+  color: var(--color-text-muted);
+}
+
+@media (min-width: 768px) {
+  .activity-toolbar__filters {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .activity-toolbar__filters-toggle {
+    display: none;
+  }
 }
 
 .section-title {

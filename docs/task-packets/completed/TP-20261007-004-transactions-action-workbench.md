@@ -1,12 +1,12 @@
 # TP-20261007-004: Transactions Action Workbench
 
 **Packet ID:** TP-20261007-004  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-004-transactions-action-workbench.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-004-transactions-action-workbench.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-002  
 **Priority:** High  
@@ -170,3 +170,14 @@ npm run build
 ## Completion report
 
 Report removed duplicate surfaces, new toolbar structure, mobile filter behavior, preserved workflows, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **Finding that changed the diagnosis:** `TabbedPageLayout` renders only the `header`, active-tab and `sidebar` slots, never the default slot. The scanner/controls/filter/summary/duplicate-table cards in `Transactions.vue` sat in the default slot, so in the real app they were not rendered at all (only the unit test's stub rendered them). The Activity tab therefore had no search or filters. Moving the toolbar into `#Activity` restores them.
+- **Removed:** the page-top Internal Transfer Scanner card plus `showScanner`/`toggleScanner`/`showControls`; the duplicated default-slot table card; the six-tile filter summary; Top Controls and Filter Controls cards. Scanner now exists only in the Scanner tab.
+- **New Activity structure:** one `#activity-toolbar` (search, Filters toggle with active count, Import toggle revealing `ImportFileSelector`) → collapsible filters (date range, account, type; always visible at md+, disclosure below md via `aria-expanded`/`aria-controls`) → table card with "Transactions · N shown", Export CSV, inline summary (total, active-filter chips, Clear filters) → pagination.
+- **Preserved:** filter payload/query-param sync, CSV export logic, pagination, row editing, Recurring tab. `filterSummary` unique-count computed retained but unrendered.
+- **Tests:** `Transactions.spec.js` rewritten for summary, clear, scanner-once, toggles; `cypress/e2e/transactions.cy.js` scanner test replaced with a Scanner-tab check (not run, needs dev server). Vitest 49 files / 210 tests pass; lint 0 errors; build OK. Not viewed in a browser.
+- **Deviations:** `Transactions.cy.js` component test not modified/run. Export button label unchanged.

@@ -71,7 +71,7 @@ describe('Transactions.vue', () => {
           RecurringTransactionSection: true,
           TabbedPageLayout: {
             template:
-              '<div><slot name="header" /><slot /><slot name="Activity" /><slot name="Recurring" /><slot name="Scanner" /></div>',
+              '<div><slot name="header" /><slot name="Activity" /><slot name="Recurring" /><slot name="Scanner" /></div>',
           },
           TypeSelector: true,
           UiButton: {
@@ -151,20 +151,47 @@ describe('Transactions.vue', () => {
 
     const summary = wrapper.find('[data-testid="filter-summary"]')
     expect(summary.exists()).toBe(true)
-    expect(summary.classes()).toContain('ui-panel')
-    expect(summary.classes()).toContain('ui-radius-3')
-    expect(summary.find('.text-muted').exists()).toBe(true)
-    expect(summary.find('.text-primary').exists()).toBe(true)
     const text = summary.text()
+    expect(text).toContain('Total $19.00')
+    expect(text).toContain('Type: debit')
+    expect(wrapper.get('[data-testid="result-count"]').text()).toContain('3 shown')
+    expect(wrapper.get('[data-testid="filters-toggle"]').text()).toContain('(1)')
+    expect(text).not.toContain('Unique categories')
+  })
 
-    expect(text).toContain('Transactions')
-    expect(text).toContain('3')
-    expect(text).toContain('$19.00')
-    expect(text).toContain('Unique categories')
-    expect(text).toContain('2')
-    expect(text).toContain('Unique merchants')
-    expect(text).toContain('Unique accounts')
-    expect(text).toContain('Unique institutions')
+  it('clears active filters from the inline summary', async () => {
+    const { wrapper } = mountView({
+      query: { tx_type: 'debit' },
+      filtered: [{ transaction_id: 'tx-1', amount: 1 }],
+    })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="clear-filters"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="filter-summary"]').exists()).toBe(false)
+  })
+
+  it('renders the scanner only in the Scanner tab and the table without opening tools', async () => {
+    const { wrapper } = mountView({ filtered: [{ transaction_id: 'tx-1', amount: 12 }] })
+    await flushPromises()
+
+    expect(wrapper.html().split('<internal-transfer-scanner-stub').length - 1).toBe(1)
+    expect(wrapper.find('update-transactions-table-stub').exists()).toBe(true)
+    expect(wrapper.find('#activity-import').exists()).toBe(false)
+  })
+
+  it('discloses filters and import with accessible toggles', async () => {
+    const { wrapper } = mountView()
+    await flushPromises()
+
+    const filters = wrapper.get('[data-testid="filters-toggle"]')
+    expect(filters.attributes('aria-expanded')).toBe('false')
+    await filters.trigger('click')
+    expect(filters.attributes('aria-expanded')).toBe('true')
+    expect(wrapper.get('#activity-filters').classes()).toContain('is-open')
+
+    await wrapper.get('[data-testid="import-toggle"]').trigger('click')
+    expect(wrapper.find('#activity-import').exists()).toBe(true)
   })
 
   it('hides summary metrics when no filter is active', async () => {
@@ -175,19 +202,5 @@ describe('Transactions.vue', () => {
     await flushPromises()
 
     expect(wrapper.find('[data-testid="filter-summary"]').exists()).toBe(false)
-  })
-
-  it('uses tokenized panel and surface classes for top controls', async () => {
-    const { wrapper } = mountView({ filtered: [{ transaction_id: 'tx-1', amount: 12 }] })
-
-    await flushPromises()
-
-    const controls = wrapper.find('#top-controls')
-    expect(controls.exists()).toBe(true)
-    expect(controls.classes()).toContain('ui-panel')
-    expect(controls.classes()).toContain('ui-radius-3')
-    expect(wrapper.find('#top-controls .bg-surface-1').exists()).toBe(true)
-    expect(wrapper.find('#top-controls .border-subtle').exists()).toBe(true)
-    expect(wrapper.find('#top-controls .text-muted').exists()).toBe(true)
   })
 })
