@@ -1,16 +1,22 @@
+import { defineComponent, h, ref } from 'vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
 
 describe('PlaidProductScopeSelector', () => {
   it('renders helper text and toggles product selection', () => {
-    cy.mount({
-      components: { PlaidProductScopeSelector },
-      template: '<PlaidProductScopeSelector v-model="modelValue" />',
-      data() {
-        return {
-          modelValue: [],
-        }
-      },
-    })
+    cy.mount(
+      defineComponent({
+        setup() {
+          const modelValue = ref([])
+          return () =>
+            h(PlaidProductScopeSelector, {
+              modelValue: modelValue.value,
+              'onUpdate:modelValue': (v) => {
+                modelValue.value = v
+              },
+            })
+        },
+      }),
+    )
 
     cy.contains('Choose what data to share').should('be.visible')
     cy.get('legend').should('have.text', 'Choose what data to share')
@@ -26,6 +32,7 @@ describe('PlaidProductScopeSelector', () => {
     cy.contains('Liabilities').should('be.visible')
     cy.contains('Enables loan and credit detail tracking for debt monitoring.').should('be.visible')
 
+    cy.contains('button', 'Transactions').focus().should('have.css', 'outline-style', 'solid')
     cy.contains('button', 'Transactions').click().should('have.attr', 'aria-pressed', 'true')
     cy.contains('button', 'Transactions').click().should('have.attr', 'aria-pressed', 'false')
   })

@@ -1,12 +1,12 @@
 # TP-20261012-001: Link Account Modal Visibility + Overlay Readability
 
 **Packet ID:** TP-20261012-001  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-12  
-**Last updated:** 2026-10-12  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261012-001-link-account-modal-visibility.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261012-001-link-account-modal-visibility.md`  
 **Workstream size:** One independently testable frontend repair packet  
 **Depends on:** None; coordinate with TP-20261007-005 and TP-20261007-009  
 **Priority:** High  
@@ -161,3 +161,16 @@ Adjust the Cypress `--spec` command to the actual project runner conventions if 
 ## Completion report
 
 Start with `Workstream: TP-20261012-001`. Include confirmed root cause, files changed, before/after geometry/breakpoints/themes, keyboard/accessibility checks, focused/full validation results, scoped deferrals to 005/009, final commit SHA + GitHub link, whether `origin/main` and the local checkout are synchronized, and **Authoring chat:** exact user-supplied URL when one is available (never invent one). State any blocker plainly. 
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261012-001
+
+- **Fix:** `LinkAccount.vue` now renders the backdrop/dialog through `<Teleport to="body">`, so it is no longer a descendant of the `backdrop-filter` Card. Backdrop owns the single scroll area (`overflow-y: auto`, `overscroll-behavior: contain`); dialog has no inner `max-height`/scroll and centers via `margin: auto`. `inheritAttrs: false` + `v-bind="$attrs"` on the Card preserves the previous attr/listener fallthrough now that the root is a fragment.
+- **Selector:** `PlaidProductScopeSelector.vue` gains `:focus-visible` outline and `min-width: 0` on the options grid.
+- **Root cause:** filtered-ancestor hypothesis NOT browser-measured pre-fix (no before-measurements captured); the new body-attachment test encodes it and would fail on the old in-Card structure by construction.
+- **Tests:** `LinkAccount.cy.js` rewritten (old spec used stale copy): CTA gating, launcher error/retry, teleport-outside-filtered-card, geometry at 360x640/390x844/768x1024/1440x900/1280x600, Escape/focus restore/body overflow, unmount-while-open. 10/10 pass. `PlaidProductScopeSelector.cy.js` (template-string mount was broken without runtime compiler) fixed + focus ring check: 1/1 pass. Not done: both themes' geometry, 200% zoom, Tab/Shift+Tab containment assertions (focus-trap code unchanged; not covered by tests).
+- **Validation:** `npm run lint` 0 errors (2104 pre-existing warnings); `npm run build` OK; vitest 49 files / 206 tests pass.
+- **Adjacent audit:** `TabbedPageLayout.vue`, `AccountActionsSidebar.vue`, `Modal.vue`, `PageHeader.vue` — not reproduced / not inspected in a browser; any sidebar reflow deferred to TP-20261007-005/009.

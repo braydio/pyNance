@@ -84,6 +84,7 @@ function toggle(product) {
 
 .scope-options {
   display: grid;
+  min-width: 0;
   gap: 0.75rem;
 }
 
@@ -107,6 +108,11 @@ function toggle(product) {
 
 .scope-card:hover {
   border-color: var(--color-accent-purple);
+}
+
+.scope-card:focus-visible {
+  outline: 2px solid var(--color-accent-cyan);
+  outline-offset: 2px;
 }
 
 .scope-card.is-selected {

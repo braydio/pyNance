@@ -1,5 +1,5 @@
 <template>
-  <Card class="w-full max-w-2xl">
+  <Card v-bind="$attrs" class="w-full max-w-2xl">
     <div class="flex items-center justify-between gap-3">
       <div>
         <p class="text-xs uppercase tracking-wide text-muted">New Account</p>
@@ -13,7 +13,9 @@
         Link Account
       </UiButton>
     </div>
-
+  </Card>
+  <!-- Teleport escapes the glass Card (backdrop-filter traps fixed descendants). -->
+  <Teleport to="body">
     <transition name="fade">
       <div v-if="showDialog" class="link-dialog-backdrop" @click.self="closeDialog">
         <div
@@ -106,7 +108,7 @@
         </div>
       </div>
     </transition>
-  </Card>
+  </Teleport>
 </template>
 
 <script setup>
@@ -115,6 +117,8 @@ import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import PlaidProductScopeSelector from '@/components/forms/PlaidProductScopeSelector.vue'
 import LinkProviderLauncher from '@/components/forms/LinkProviderLauncher.vue'
+
+defineOptions({ inheritAttrs: false })
 
 const props = defineProps({
   selectedProducts: {
@@ -258,17 +262,18 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 50;
   display: flex;
-  align-items: center;
-  justify-content: center;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
   padding: 1rem;
   background: rgba(0, 0, 0, 0.45);
 }
 
 .link-dialog {
   width: min(560px, 100%);
-  max-height: min(85vh, 44rem);
-  overflow-y: auto;
+  box-sizing: border-box;
+  margin: auto;
+  flex: none;
   background: var(--color-bg);
   color: var(--color-text-light);
   border: 1px solid var(--divider);
@@ -278,12 +283,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-height: 760px) {
-  .link-dialog-backdrop {
-    align-items: flex-start;
-  }
-
   .link-dialog {
-    max-height: calc(100vh - 2rem);
     padding: 1rem;
   }
 }
