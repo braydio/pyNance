@@ -239,4 +239,34 @@ describe('Investments.vue transaction filters', () => {
     expect(wrapper.text()).toContain('AAA')
     expect(wrapper.text()).toContain('Alpha')
   })
+
+  it('shows the portfolio summary before maintenance and keeps refresh/link reachable', async () => {
+    apiMocks.fetchHoldings.mockResolvedValue({
+      data: [{ account_id: 'acc-1', security_id: 's1', institution_value: 150, quantity: 1 }],
+    })
+    const wrapper = mountInvestments()
+    await flushPromises()
+
+    const html = wrapper.html()
+    expect(html.indexOf('data-testid="portfolio-summary"')).toBeLessThan(
+      html.indexOf('id="maintenance"'),
+    )
+    expect(html.indexOf('id="holdings"')).toBeLessThan(html.indexOf('id="maintenance"'))
+    expect(wrapper.get('[data-testid="portfolio-summary"]').text()).toContain('$150.00')
+    expect(wrapper.text()).toContain('Refresh Investments')
+    expect(wrapper.text()).toContain('Link New Investments Account')
+
+    const labels = wrapper.findAll('.section-subnav__link').map((node) => node.text())
+    expect(labels).toEqual(['Portfolio', 'Holdings', 'Performance', 'Activity', 'Manage'])
+  })
+
+  it('collapses transaction filters behind a disclosure with an active count', async () => {
+    const wrapper = mountInvestments()
+    await flushPromises()
+
+    const disclosure = wrapper.get('[data-testid="tx-filters-disclosure"]')
+    expect(disclosure.attributes('open')).toBeUndefined()
+    await wrapper.get('[data-testid="tx-filter-type"]').setValue('buy')
+    expect(disclosure.get('summary').text()).toContain('(1)')
+  })
 })

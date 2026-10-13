@@ -1,12 +1,12 @@
 # TP-20261007-008: Investments Portfolio Hierarchy
 
 **Packet ID:** TP-20261007-008  
-**Status:** In Progress  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-008-investments-portfolio-hierarchy.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-008-investments-portfolio-hierarchy.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-002  
 **Priority:** Normal  
@@ -145,3 +145,13 @@ npm run build
 ## Completion report
 
 Report new section order, any component extraction, maintenance-action placement, responsive behavior, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **New order:** header → compact underlined sub-nav (Portfolio / Holdings / Performance / Activity / Manage; replaces the large gradient button card) → Portfolio summary (`surface-primary`: total value as lead metric, accounts, holdings, securities) → Holdings (account summary rows with expandable security detail, unchanged) → Performance (allocation chart) → Recent Investment Transactions (filters in a collapsed `Filters (n)` disclosure; pagination unchanged) → Manage investment connections (`surface-quiet`: date range, Refresh Investments, Link New Investments Account).
+- **Maintenance placement:** link and refresh moved from before the portfolio data to the end of the page, reachable from the "Manage" sub-nav item. Behavior/handlers (`refreshAll`, `onLinked`) unchanged.
+- **Preserved:** holdings valuation (`holdingValue`), filter persistence, request params, pagination, aggregate-vs-detail holdings. No performance/return metrics were invented.
+- **Tests:** Investments.spec adds summary-before-maintenance + sub-nav labels + disclosure count; existing 4 pass. Vitest 49 files / 220 tests pass; lint 0 errors; build OK. Not viewed in a browser.
+- **Deviations:** no component extraction (kept in one file; no split with clear ownership was warranted in this pass). Holdings filters left inline (two selects) rather than disclosed.

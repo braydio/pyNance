@@ -6,50 +6,31 @@
       <template #subtitle> Monitor performance across your linked investment accounts </template>
     </PageHeader>
 
-    <Card class="section-nav" aria-label="Investments page navigation">
-      <nav class="section-nav__buttons">
-        <button
-          v-for="item in sectionNavItems"
-          :key="item.key"
-          type="button"
-          :aria-controls="item.target"
-          :class="[
-            'section-nav__button gradient-toggle-btn',
-            { 'is-active': activeSection === item.key },
-          ]"
-          @click="scrollToSection(item.key)"
-        >
-          {{ item.label }}
-        </button>
-      </nav>
-    </Card>
+    <nav class="section-subnav" aria-label="Investments page navigation">
+      <button
+        v-for="item in sectionNavItems"
+        :key="item.key"
+        type="button"
+        :aria-controls="item.target"
+        :aria-current="activeSection === item.key ? 'true' : undefined"
+        :class="['section-subnav__link', { 'is-active': activeSection === item.key }]"
+        @click="scrollToSection(item.key)"
+      >
+        {{ item.label }}
+      </button>
+    </nav>
 
-    <section id="portfolio-overview" ref="overviewSection">
-      <h2 class="text-xl font-semibold mb-2">Portfolio Overview</h2>
-      <div class="link-box">
-        <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
-        <LinkProviderLauncher
-          :selected-products="['investments']"
-          :user-id="plaidUserId"
-          @refresh="onLinked"
-        />
-      </div>
-      <div class="controls">
-        <label>
-          <span>Start</span>
-          <input v-model="startDate" type="date" />
-        </label>
-        <label>
-          <span>End</span>
-          <input v-model="endDate" type="date" />
-        </label>
-        <button class="btn" :disabled="refreshing" @click="refreshAll">
-          {{ refreshing ? 'Refreshing…' : 'Refresh Investments' }}
-        </button>
-        <span v-if="refreshMsg" class="msg">{{ refreshMsg }}</span>
-      </div>
+    <section id="portfolio-overview" ref="overviewSection" class="surface-primary p-4 md:p-5">
+      <h2 class="text-xl font-semibold mb-3">Portfolio</h2>
       <div v-if="loading" class="text-muted">Loading…</div>
-      <div v-else class="overview-grid">
+      <div v-else class="overview-grid" data-testid="portfolio-summary">
+        <div class="metric metric--lead">
+          <span class="k">Total value</span
+          ><span class="v">{{ formatCurrency(portfolioTotal) }}</span>
+        </div>
+        <div class="metric">
+          <span class="k">Accounts</span><span class="v">{{ accounts.length }}</span>
+        </div>
         <div class="metric">
           <span class="k">Holdings</span><span class="v">{{ holdings.length }}</span>
         </div>
@@ -205,37 +186,42 @@
 
     <section id="investment-transactions" ref="transactionsSection">
       <h2 class="text-xl font-semibold mb-2">Recent Investment Transactions</h2>
-      <div class="filters">
-        <label>
-          <span>Account</span>
-          <select v-model="txAccountId" data-testid="tx-filter-account">
-            <option value="">All</option>
-            <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
-              {{ accDisplay(acc) }}
-            </option>
-          </select>
-        </label>
-        <label>
-          <span>Security ID</span>
-          <input v-model="txSecurityId" data-testid="tx-filter-security-id" type="text" />
-        </label>
-        <label>
-          <span>Type</span>
-          <input v-model="txType" data-testid="tx-filter-type" type="text" />
-        </label>
-        <label>
-          <span>Subtype</span>
-          <input v-model="txSubtype" data-testid="tx-filter-subtype" type="text" />
-        </label>
-        <label>
-          <span>Start Date</span>
-          <input v-model="txStartDate" data-testid="tx-filter-start-date" type="date" />
-        </label>
-        <label>
-          <span>End Date</span>
-          <input v-model="txEndDate" data-testid="tx-filter-end-date" type="date" />
-        </label>
-      </div>
+      <details class="filters-disclosure" data-testid="tx-filters-disclosure">
+        <summary>
+          Filters<span v-if="activeTxFilterCount"> ({{ activeTxFilterCount }})</span>
+        </summary>
+        <div class="filters">
+          <label>
+            <span>Account</span>
+            <select v-model="txAccountId" data-testid="tx-filter-account">
+              <option value="">All</option>
+              <option v-for="acc in accounts" :key="acc.account_id" :value="acc.account_id">
+                {{ accDisplay(acc) }}
+              </option>
+            </select>
+          </label>
+          <label>
+            <span>Security ID</span>
+            <input v-model="txSecurityId" data-testid="tx-filter-security-id" type="text" />
+          </label>
+          <label>
+            <span>Type</span>
+            <input v-model="txType" data-testid="tx-filter-type" type="text" />
+          </label>
+          <label>
+            <span>Subtype</span>
+            <input v-model="txSubtype" data-testid="tx-filter-subtype" type="text" />
+          </label>
+          <label>
+            <span>Start Date</span>
+            <input v-model="txStartDate" data-testid="tx-filter-start-date" type="date" />
+          </label>
+          <label>
+            <span>End Date</span>
+            <input v-model="txEndDate" data-testid="tx-filter-end-date" type="date" />
+          </label>
+        </div>
+      </details>
       <div v-if="txLoading" class="text-muted">Loading transactions…</div>
       <div v-else>
         <div v-if="txData.length === 0" class="text-muted">No transactions found.</div>
@@ -282,12 +268,36 @@
         </div>
       </div>
     </section>
+    <section id="maintenance" ref="maintenanceSection" class="surface-quiet p-4 md:p-5">
+      <h2 class="text-lg font-semibold mb-2">Manage investment connections</h2>
+      <div class="controls">
+        <label>
+          <span>Start</span>
+          <input v-model="startDate" type="date" />
+        </label>
+        <label>
+          <span>End</span>
+          <input v-model="endDate" type="date" />
+        </label>
+        <button class="btn" :disabled="refreshing" @click="refreshAll">
+          {{ refreshing ? 'Refreshing…' : 'Refresh Investments' }}
+        </button>
+        <span v-if="refreshMsg" class="msg">{{ refreshMsg }}</span>
+      </div>
+      <div class="link-box">
+        <h3 class="text-md font-medium mb-1">Link New Investments Account</h3>
+        <LinkProviderLauncher
+          :selected-products="['investments']"
+          :user-id="plaidUserId"
+          @refresh="onLinked"
+        />
+      </div>
+    </section>
   </BasePageLayout>
 </template>
 
 <script setup>
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
-import Card from '@/components/ui/Card.vue'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import { ref, onMounted, computed, onBeforeUnmount, watch } from 'vue'
 import {
@@ -312,21 +322,24 @@ const endDate = ref(today)
 const plaidUserId = import.meta.env.VITE_USER_ID_PLAID || import.meta.env.VITE_USER_ID || ''
 
 const sectionNavItems = [
-  { key: 'overview', label: 'Portfolio Overview', target: 'portfolio-overview' },
+  { key: 'overview', label: 'Portfolio', target: 'portfolio-overview' },
   { key: 'holdings', label: 'Holdings', target: 'holdings' },
   { key: 'performance', label: 'Performance', target: 'performance' },
-  { key: 'transactions', label: 'Transactions', target: 'investment-transactions' },
+  { key: 'transactions', label: 'Activity', target: 'investment-transactions' },
+  { key: 'maintenance', label: 'Manage', target: 'maintenance' },
 ]
 const activeSection = ref(sectionNavItems[0].key)
 const overviewSection = ref(null)
 const holdingsSection = ref(null)
 const performanceSection = ref(null)
 const transactionsSection = ref(null)
+const maintenanceSection = ref(null)
 const sectionRefs = {
   overview: overviewSection,
   holdings: holdingsSection,
   performance: performanceSection,
   transactions: transactionsSection,
+  maintenance: maintenanceSection,
 }
 
 function scrollToSection(key) {
@@ -517,6 +530,11 @@ const txStartDate = ref('')
 const txEndDate = ref('')
 const TX_FILTER_STORAGE_KEY = 'investments.transactionFilters'
 const txFilterRestoreInProgress = ref(false)
+const activeTxFilterCount = computed(
+  () =>
+    [txAccountId, txSecurityId, txType, txSubtype, txStartDate, txEndDate].filter((f) => f.value)
+      .length,
+)
 const txTotalPages = computed(() => Math.max(1, Math.ceil(txTotal.value / txPageSize)))
 
 /**
@@ -662,42 +680,38 @@ function onLinked() {
   color: var(--theme-fg);
   min-height: 100vh;
 }
-.section-nav {
-  background:
-    radial-gradient(circle at top left, rgba(6, 182, 212, 0.12), transparent 55%),
-    radial-gradient(circle at bottom right, rgba(225, 29, 72, 0.12), transparent 60%),
-    var(--themed-bg);
-  border: 1px solid var(--divider);
-  border-radius: 1.25rem;
-  padding: 1rem 1.25rem;
-  box-shadow: 0 12px 30px -16px rgba(15, 118, 110, 0.45);
-}
-.section-nav__buttons {
+.section-subnav {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--divider);
 }
-.section-nav__button {
-  border-radius: 9999px;
-  font-size: 0.95rem;
+.section-subnav__link {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  border-bottom: 2px solid transparent;
+}
+.section-subnav__link.is-active {
+  color: var(--color-text-light);
   font-weight: 600;
-  letter-spacing: 0.01em;
-  padding-inline: 1.15rem;
-  padding-block: 0.6rem;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  border-bottom-color: var(--accent-primary);
 }
-.section-nav__button:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 24px -18px rgba(6, 182, 212, 0.85);
-}
-.section-nav__button.is-active {
-  box-shadow: 0 10px 24px -12px rgba(88, 28, 135, 0.55);
-}
-.section-nav__button:focus-visible {
+.section-subnav__link:focus-visible {
   outline: 2px solid var(--color-accent-cyan);
   outline-offset: 2px;
+}
+.filters-disclosure > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-bottom: 0.5rem;
+}
+.metric--lead .v {
+  font-size: 1.75rem;
 }
 .overview-grid {
   display: grid;

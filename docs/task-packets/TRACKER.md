@@ -6,7 +6,6 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261007-008 | Investments Portfolio Hierarchy | In Progress | Normal | TP-20261007-002 | main | 2026-10-07 | [packet](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | Normal | TP-20261007-003, 004, 005, 006, 007, 008 | main | 2026-10-07 | [packet](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
@@ -14,6 +13,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261007-005 | Accounts Portfolio + Connection Hierarchy | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md) |
 | TP-20261007-007 | Planning Workflow Reauthor | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-007-planning-workflow-reauthor.md) |
 | TP-20261007-006 | Forecast Explainable Decision Surface | Complete | Normal | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-006-forecast-explainable-decision-surface.md) |
+| TP-20261007-008 | Investments Portfolio Hierarchy | Complete | Normal | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-001 | main | 2026-10-13 | [packet](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Complete | High | TP-20261002-001 | main | 2026-10-09 | [packet](completed/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | High | None | main | 2026-10-07 | [packet](completed/TP-20261002-001-safe-to-spend-reliability.md) |
