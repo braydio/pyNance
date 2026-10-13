@@ -64,6 +64,7 @@ frontend/cypress/downloads/
 npm-debug.log*
 yarn-error.log*
 frontend/src/auto-imports.d.ts
+frontend/src/components.d.ts
 
 # Databases and data
 *.db
