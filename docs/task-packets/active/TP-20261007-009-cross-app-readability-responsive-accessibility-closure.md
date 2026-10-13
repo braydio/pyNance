@@ -200,3 +200,21 @@ Not done (why this packet stays open):
 - Cypress targets for Dashboard/Accounts/Transactions/Planning were not run (need a dev server/backend; two Accounts component specs already fail locally for a missing router).
 - Unified loading/empty/error state grammar and `RsaMonitor`/`FinancialSummaryDetailed` visual consistency were not swept; no dead-code removal beyond what 003-008 did.
 - Resume condition: run the app, check each primary view at the four widths in both themes, fix findings, then complete.
+
+---
+
+## Progress report 2 (2026-10-13): breakpoint audit
+
+**Done**
+- Ran 10 routes (Dashboard, Accounts, Transactions, Forecast, Planning, Investments, Settings, Summary, Institutions, RSA Monitor) at 360/768/1024/1440 px in both themes (80 combinations) in Cypress's browser with `/api/**` stubbed empty. Measured page and element horizontal overflow and reviewed screenshots.
+- Fixed root cause of missing page gutters and dead Tailwind spacing utilities: `main.css` re-imported `tailwindcss/preflight` and `tailwindcss/utilities` after `@import 'tailwindcss'`, which let the preflight reset (`padding: 0; margin: 0`) beat utilities such as `px-4`. Removed the duplicate imports.
+- Fixed Forecast horizontal scroll at <1280 px (hidden tooltips widened the page; now anchored to the panel) and the 7-column adjustments form at narrow widths.
+- Fixed Investments overview grid at <1024 px (2 columns) and <480 px (1 column).
+- Result: no horizontal overflow in any of the 80 combinations.
+
+**Not done (packet stays In Progress)**
+- Manual focus-visible and tab-order check in both themes.
+- Cypress e2e/component specs for primary views against a real backend.
+- Unified loading/empty/error state grammar.
+- Secondary-view sweep with seeded data (audit used empty responses) and dead-code removal.
+- Noted, unfixed: Transactions search icon overlaps the placeholder text at 360 px.

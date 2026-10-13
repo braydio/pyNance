@@ -501,6 +501,24 @@ function toggleExcluded(accountId) {
     transform 0.15s ease;
 }
 
+/* Below xl the panel is the positioning context so hidden tooltips cannot widen the page. */
+@media (max-width: 1279px) {
+  .summary-panel {
+    position: relative;
+  }
+
+  .tooltip-affordance {
+    position: static;
+  }
+
+  .tooltip-content {
+    left: 0;
+    top: auto;
+    margin-top: 0.4rem;
+    width: min(18rem, calc(100% - 1rem));
+  }
+}
+
 .tooltip-affordance:hover .tooltip-content,
 .tooltip-affordance:focus-within .tooltip-content {
   opacity: 1;

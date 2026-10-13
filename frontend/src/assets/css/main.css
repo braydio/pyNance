@@ -3,10 +3,6 @@
 @import './theme.css';
 @import '../../styles/animations.css';
 
-/* Tailwind Directives */
-@import 'tailwindcss/preflight';
-@import 'tailwindcss/utilities';
-
 /* Base styles */
 @layer base {
   :root {

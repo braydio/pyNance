@@ -78,7 +78,19 @@ function submitAdjustment() {
   gap: 0.5rem;
 }
 
+@media (max-width: 1279px) {
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-grid > :first-child,
+  .submit-button {
+    grid-column: 1 / -1;
+  }
+}
+
 .input {
+  min-width: 0;
   padding: 0.5rem;
   font-size: 0.875rem;
   border: 1px solid var(--divider);

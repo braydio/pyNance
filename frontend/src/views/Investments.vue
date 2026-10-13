@@ -718,6 +718,16 @@ function onLinked() {
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0.75rem;
 }
+@media (max-width: 1023px) {
+  .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 479px) {
+  .overview-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
 .metric {
   background: var(--themed-bg);
   border: 1px solid var(--divider);
