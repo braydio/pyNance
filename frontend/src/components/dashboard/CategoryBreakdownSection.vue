@@ -6,7 +6,7 @@
   <BasePanel
     tag="div"
     class="md:col-span-2 w-full flex flex-col gap-4 overflow-hidden"
-    border-tone="accent-yellow"
+    border-tone="default"
     surface="secondary"
     radius="lg"
     padding="md"
@@ -14,7 +14,7 @@
   >
     <div class="flex items-center justify-between mb-2">
       <div class="flex flex-col">
-        <h2 class="text-xl font-bold text-[var(--color-accent-yellow)]">
+        <h2 class="text-lg font-semibold">
           Spending by
           {{ breakdownType === 'merchant' ? 'Merchant' : 'Category' }}
         </h2>
@@ -62,13 +62,9 @@
         </template>
       </ChartWidgetTopBar>
     </div>
-    <div v-if="storyCards.length" class="breakdown-story-grid">
-      <article v-for="card in storyCards" :key="card.label" class="breakdown-story-card">
-        <div class="breakdown-story-label">{{ card.label }}</div>
-        <div class="breakdown-story-value">{{ card.value }}</div>
-        <p class="breakdown-story-copy">{{ card.copy }}</p>
-      </article>
-    </div>
+    <p v-if="leadInsight" class="breakdown-lead-insight" data-testid="breakdown-lead-insight">
+      <strong>{{ leadInsight.value }}</strong> is the top driver · {{ leadInsight.copy }}
+    </p>
     <CategoryBreakdownChart
       :start-date="startDate"
       :end-date="endDate"
@@ -157,6 +153,8 @@ const totalVisibleAmount = computed(() =>
 
 const topRow = computed(() => visibleRows.value[0] || null)
 
+const leadInsight = computed(() => storyCards.value[0] || null)
+
 const storyCards = computed(() => {
   if (!visibleRows.value.length) return []
 
@@ -197,6 +195,11 @@ function shareOfTotal(amount) {
 </script>
 
 <style scoped>
+.breakdown-lead-insight {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
 .breakdown-story-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

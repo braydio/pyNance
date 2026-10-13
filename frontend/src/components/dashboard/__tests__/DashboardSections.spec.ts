@@ -131,8 +131,13 @@ describe('Dashboard section components', () => {
       payload: { amount_cents: 4200, status: 'caution' },
       selectedMode: 'today',
     })
-    expect(wrapper.find('.net-overview-review-status').text()).toContain(
+    expect(wrapper.find('[data-testid="needs-attention"]').text()).toContain(
       '12 transactions to review',
+    )
+    expect(wrapper.findAll('.net-overview-review-status')).toHaveLength(1)
+    const html = wrapper.html()
+    expect(html.indexOf('data-testid="now-tier"')).toBeLessThan(
+      html.indexOf('data-testid="daily-net-timeframe-toggle"'),
     )
 
     const timeframeButtons = wrapper.findAll(
@@ -170,9 +175,10 @@ describe('Dashboard section components', () => {
       },
     })
 
-    const reviewStatus = wrapper.get('.net-overview-review-status')
-    expect(reviewStatus.text()).toContain('1 transaction to review')
-    await reviewStatus.trigger('click')
+    expect(wrapper.get('[data-testid="needs-attention"]').text()).toContain(
+      '1 transaction to review',
+    )
+    await wrapper.get('.net-overview-review-status').trigger('click')
 
     expect(wrapper.emitted('open-review')).toHaveLength(1)
   })

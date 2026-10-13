@@ -33,6 +33,8 @@
           :review-count="reviewCount"
           :review-count-loading="reviewCountLoading"
           :review-count-error="reviewCountError"
+          :review-tag-filter="reviewTagFilter"
+          @update:review-tag-filter="reviewTagFilter = $event"
           @update:start-date="dateRange.start = $event"
           @update:end-date="dateRange.end = $event"
           @update:zoomed-out="zoomedOut = $event"
@@ -106,140 +108,21 @@
       </Suspense>
     </InsightsRow>
 
-    <!-- REVIEW TRANSACTIONS CARD -->
-    <div class="review-cta-card dashboard-panel p-6 md:p-7">
-      <div class="dashboard-panel-header gap-6">
-        <div class="space-y-3">
-          <div class="dashboard-panel-kicker">Review Workflow</div>
-          <div class="flex flex-wrap items-center gap-3">
-            <h2 class="dashboard-panel-title">Review Transactions</h2>
-            <span class="dashboard-status-pill">
-              <span class="dashboard-status-dot" />
-              {{ reviewCountLabel }}
-            </span>
-          </div>
-          <p class="dashboard-panel-copy">
-            Step through transactions in batches of 10, approve quickly, or edit in place without
-            leaving the dashboard.
-          </p>
-        </div>
-        <div class="review-cta-meta">
-          <span class="review-cta-meta-label">Workflow</span>
-          <span class="review-cta-meta-value">Batch / inline edits / tag filter</span>
-        </div>
-      </div>
-      <div class="review-cta-grid">
-        <div class="mt-1 flex flex-col gap-2 max-w-sm">
-          <label class="text-xs uppercase tracking-[0.2em] text-[var(--color-text-muted)]">
-            Tag filter
-          </label>
-          <input
-            v-model="reviewTagFilter"
-            class="input review-filter-input"
-            type="text"
-            placeholder="Optional tag (e.g., #groceries)"
-          />
-        </div>
-        <div class="review-cta-action-wrap">
-          <button class="btn btn-outline review-start-btn" @click="openReviewModal">
-            Start Review
-          </button>
-        </div>
-      </div>
+    <!-- TIER 3: ACCOUNT SNAPSHOT -->
+    <div class="surface-normal p-4 md:p-5" data-testid="account-snapshot">
+      <TopAccountSnapshot />
     </div>
 
-    <!-- RESERVED TABLES PANEL -->
-    <div
-      data-testid="tables-panel"
-      class="dashboard-panel tables-panel-shell relative min-h-[55vh] sm:min-h-[60vh] lg:min-h-[65vh] overflow-hidden"
-    >
-      <transition name="accordion">
-        <div
-          v-if="!accountsExpanded && !transactionsExpanded"
-          data-testid="tables-panel-cta"
-          class="flex h-full w-full flex-col justify-center gap-8 p-6 sm:p-10 lg:p-12"
-        >
-          <div class="dashboard-panel-header gap-4">
-            <div class="space-y-2">
-              <div class="dashboard-panel-kicker">Drill Down</div>
-              <h2 class="dashboard-panel-title">Choose a lower dashboard surface</h2>
-              <p class="dashboard-panel-copy mb-0">
-                Open either the account ledger or the transaction queue from the same panel shell.
-              </p>
-            </div>
-          </div>
-          <div class="tables-panel-grid">
-            <button
-              class="tables-panel-option tables-panel-option--accounts"
-              @click="expandAccounts"
-            >
-              <div class="tables-panel-option-header">
-                <Wallet class="w-7 h-7" />
-                <span>Accounts</span>
-              </div>
-              <p>Balances, linked institutions, and account-level drill downs.</p>
-            </button>
-            <button
-              class="tables-panel-option tables-panel-option--transactions"
-              @click="expandTransactions"
-            >
-              <div class="tables-panel-option-header">
-                <CreditCard class="w-7 h-7" />
-                <span>Transactions</span>
-              </div>
-              <p>Searchable activity history, pagination, and review handoff.</p>
-            </button>
-          </div>
-        </div>
-      </transition>
-      <transition name="modal-fade-slide">
-        <Suspense v-if="accountsExpanded">
-          <template #default>
-            <AccountsSection @close="collapseTables" />
-          </template>
-          <template #fallback>
-            <section
-              data-testid="accounts-skeleton"
-              class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
-              aria-busy="true"
-            >
-              <div class="h-6 w-48 bg-[var(--divider)] rounded mb-4" />
-              <div class="h-[55vh] bg-[var(--divider)] rounded" />
-            </section>
-          </template>
-        </Suspense>
-      </transition>
-      <transition name="modal-fade-slide">
-        <Suspense v-if="transactionsExpanded">
-          <template #default>
-            <TransactionsSection
-              :transactions="filteredTransactions"
-              :sort-key="sortKey"
-              :sort-order="sortOrder"
-              :search="searchQuery"
-              :current-page="currentPage"
-              :total-pages="totalPages"
-              :page-size="pageSize"
-              :total-count="totalCount"
-              @sort="setSort"
-              @change-page="changePage"
-              @set-page="setPage"
-              @close="collapseTables"
-            />
-          </template>
-          <template #fallback>
-            <section
-              data-testid="transactions-skeleton"
-              class="absolute inset-0 p-6 sm:p-8 bg-[var(--color-bg-sec)] animate-pulse"
-              aria-busy="true"
-            >
-              <div class="h-6 w-56 bg-[var(--divider)] rounded mb-4" />
-              <div class="h-[55vh] bg-[var(--divider)] rounded" />
-            </section>
-          </template>
-        </Suspense>
-      </transition>
-    </div>
+    <!-- TIER 4: DRILL DOWN -->
+    <nav class="explore-details" aria-label="Explore details" data-testid="explore-details">
+      <span class="explore-details__label">Explore details</span>
+      <router-link to="/accounts" class="btn btn-outline explore-details__link">
+        <Wallet class="w-4 h-4" aria-hidden="true" /> Accounts
+      </router-link>
+      <router-link to="/transactions" class="btn btn-outline explore-details__link">
+        <CreditCard class="w-4 h-4" aria-hidden="true" /> Transactions
+      </router-link>
+    </nav>
 
     <TransactionModal
       :show="showDailyModal"
@@ -278,6 +161,7 @@ import { Wallet, CreditCard } from 'lucide-vue-next'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import TransactionModal from '@/components/modals/TransactionModal.vue'
 import TransactionReviewModal from '@/components/transactions/TransactionReviewModal.vue'
+import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import SkeletonCard from '@/components/ui/SkeletonCard.vue'
 import api from '@/services/api'
 import { uniqueReconnectConnections } from '@/utils/plaidConnectionStatus'
@@ -301,28 +185,10 @@ const CategoryBreakdownSection = defineAsyncComponent(
   () => import('@/components/dashboard/CategoryBreakdownSection.vue'),
 )
 const InsightsRow = defineAsyncComponent(() => import('@/components/dashboard/InsightsRow.vue'))
-const AccountsSection = defineAsyncComponent(
-  () => import('@/components/dashboard/AccountsSection.vue'),
-)
-const TransactionsSection = defineAsyncComponent(
-  () => import('@/components/dashboard/TransactionsSection.vue'),
-)
 
 // Transactions and user
 const pageSize = 15
-const {
-  searchQuery,
-  currentPage,
-  totalPages,
-  totalCount,
-  filteredTransactions,
-  sortKey,
-  sortOrder,
-  setSort,
-  setPage,
-  changePage,
-  fetchTransactions: loadTransactions,
-} = useTransactions(pageSize)
+const { fetchTransactions: loadTransactions } = useTransactions(pageSize)
 // Modal manager
 const { openModal, closeModal, isVisible } = useDashboardModals()
 const showDailyModal = isVisible('daily')
@@ -450,13 +316,6 @@ const reviewFilters = computed(() => {
     filters.tags = normalizedReviewTag.value
   }
   return filters
-})
-
-const reviewCountLabel = computed(() => {
-  if (reviewCountLoading.value) return 'Loading…'
-  if (reviewCountError.value) return 'Count unavailable'
-  const noun = reviewCount.value === 1 ? 'transaction' : 'transactions'
-  return `${reviewCount.value} ${noun} to review`
 })
 
 async function loadReviewCount(filters = reviewFilters.value) {
@@ -588,18 +447,6 @@ async function loadDashboardData(range = debouncedRange.value) {
     console.error('Failed to load dashboard data:', error)
     loadErrorMessage.value = fallback
   }
-}
-
-const accountsExpanded = isVisible('accounts')
-const transactionsExpanded = isVisible('transactions')
-function expandAccounts() {
-  openModal('accounts')
-}
-function expandTransactions() {
-  openModal('transactions')
-}
-function collapseTables() {
-  closeModal()
 }
 
 /**
@@ -824,182 +671,26 @@ watch(reviewFilters, (filters) => loadReviewCount(filters), { immediate: true })
 </script>
 
 <style scoped>
-.review-cta-card {
-  background: linear-gradient(
-    150deg,
-    color-mix(in srgb, var(--color-accent-purple) 18%, var(--color-bg-sec)) 0%,
-    color-mix(in srgb, var(--color-accent-cyan) 10%, var(--color-bg-sec)) 100%
-  );
-}
-
 .dashboard-skeleton-panel {
   box-shadow: var(--depth-inner-glow), var(--depth-shadow-resting);
 }
 
-.review-cta-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-  align-items: end;
-  margin-top: 1.25rem;
-}
-
-.review-cta-meta {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  min-width: 15rem;
-  padding: 0.9rem 1rem;
-  border-radius: 1rem;
-  border: 1px solid color-mix(in srgb, var(--color-accent-cyan) 28%, var(--divider));
-  background: color-mix(in srgb, var(--color-bg-dark) 76%, transparent);
-}
-
-.review-cta-meta-label {
-  font-family: var(--font-display);
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-accent-cyan);
-}
-
-.review-cta-meta-value {
-  color: color-mix(in srgb, var(--color-text-light) 78%, var(--color-text-muted));
-  font-size: 0.85rem;
-}
-
-.review-cta-action-wrap {
+.explore-details {
   display: flex;
-  align-items: end;
-  justify-content: flex-start;
-}
-
-.review-filter-input {
-  min-height: 2.4rem;
-  border-color: color-mix(in srgb, var(--color-accent-purple) 38%, var(--divider));
-  background: color-mix(in srgb, var(--color-bg-dark) 88%, transparent);
-}
-
-.review-filter-input:focus {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-accent-purple) 55%, transparent);
-}
-
-.review-start-btn {
-  min-width: 9.75rem;
-  min-height: 3rem;
-  justify-content: center;
-  border-radius: 1rem;
-  border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--color-accent-purple));
-  color: var(--color-accent-cyan);
-}
-
-.review-start-btn:hover {
-  background: linear-gradient(
-    135deg,
-    color-mix(in srgb, var(--color-accent-cyan) 78%, var(--color-accent-purple)) 0%,
-    var(--color-accent-purple) 100%
-  );
-  color: var(--color-bg-dark);
-}
-
-.tables-panel-shell {
-  min-height: 55vh;
-}
-
-.tables-panel-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1rem;
-}
-
-.tables-panel-option {
-  display: flex;
-  min-height: 13rem;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 1rem;
-  border-radius: 1.25rem;
-  border: 1px solid var(--divider);
-  padding: 1.5rem;
-  text-align: left;
-  transition:
-    transform 0.22s ease,
-    border-color 0.22s ease,
-    box-shadow 0.22s ease,
-    background-color 0.22s ease;
-}
-
-.tables-panel-option:hover {
-  transform: translateY(-2px);
-}
-
-.tables-panel-option p {
-  margin: 0;
-  color: color-mix(in srgb, var(--color-text-light) 76%, var(--color-text-muted));
-  font-size: 0.9rem;
-  line-height: 1.65;
-}
-
-.tables-panel-option-header {
-  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.8rem;
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  gap: 0.5rem;
 }
 
-.tables-panel-option--accounts {
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--color-accent-cyan) 18%, var(--color-bg-dark)) 0%,
-    color-mix(in srgb, var(--color-bg-sec) 88%, transparent) 100%
-  );
-  border-color: color-mix(in srgb, var(--color-accent-cyan) 55%, var(--divider));
-  color: var(--color-accent-cyan);
+.explore-details__label {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin-right: 0.25rem;
 }
 
-.tables-panel-option--accounts:hover {
-  box-shadow: 0 16px 32px rgba(14, 31, 44, 0.44);
-}
-
-.tables-panel-option--transactions {
-  background: linear-gradient(
-    145deg,
-    color-mix(in srgb, var(--color-accent-red) 16%, var(--color-bg-dark)) 0%,
-    color-mix(in srgb, var(--color-bg-sec) 88%, transparent) 100%
-  );
-  border-color: color-mix(in srgb, var(--color-accent-red) 52%, var(--divider));
-  color: var(--color-accent-red);
-}
-
-.tables-panel-option--transactions:hover {
-  box-shadow: 0 16px 32px rgba(44, 14, 20, 0.42);
-}
-
-@media (min-width: 768px) {
-  .review-cta-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
-
-  .review-cta-action-wrap {
-    justify-content: flex-end;
-  }
-
-  .tables-panel-shell {
-    min-height: 60vh;
-  }
-
-  .tables-panel-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .tables-panel-shell {
-    min-height: 65vh;
-  }
+.explore-details__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 </style>

@@ -62,7 +62,9 @@
 
       <div class="safe-spend-card__footer">
         <span>{{ horizonLabel }}</span>
-        <span class="safe-spend-card__confidence">{{ confidenceLabel }}</span>
+        <span v-if="payload.confidence" class="safe-spend-card__confidence">{{
+          confidenceLabel
+        }}</span>
       </div>
     </template>
     <div v-else class="safe-spend-card__empty">No spend guidance is available yet.</div>

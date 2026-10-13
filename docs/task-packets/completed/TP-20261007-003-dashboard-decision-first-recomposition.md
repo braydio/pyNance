@@ -1,12 +1,12 @@
 # TP-20261007-003: Dashboard Decision-First Recomposition
 
 **Packet ID:** TP-20261007-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-003-dashboard-decision-first-recomposition.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-003-dashboard-decision-first-recomposition.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-001, TP-20261007-002  
 **Priority:** High  
@@ -214,3 +214,15 @@ npm run build
 ## Completion report
 
 Report before/after hierarchy, removed duplicate surfaces, resulting component order, preserved interactions, responsive behavior, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **Order now:** compact context strip → Tier 1 (Safe to Spend `surface-primary`, single "Needs attention" review module with optional tag filter behind a toggle, cash-direction summary) → Daily Net panel (DateRangeSelector + chart controls now inside it) → FinancialSummary (quiet) → category breakdown → account snapshot → "Explore details" links to `/accounts` and `/transactions`.
+- **Removed:** 4xl/5xl welcome hero, angular dividers, duplicate Review Workflow card, `tables-panel` embedded Accounts/Transactions workbenches and their expand/collapse functions and CSS.
+- **Preserved:** `openReviewModal`/`TransactionReviewModal`, tag filter state (`reviewTagFilter` now lives behind the module's toggle via `update:review-tag-filter`), chart-click modals, Safe-to-Spend error display.
+- **Category section:** three story cards replaced by one lead-insight line; heading de-accented.
+- **SafeToSpendCard:** confidence line omitted when the payload has none (existing "Confidence: ready" test still passes).
+- **Tests:** Dashboard.spec and DashboardSections.spec updated (single review source, order, no embedded workbench, explore links). Vitest 49 files / 208 tests pass; lint 0 errors; build OK. `cypress/e2e/dashboard.cy.js` has no selectors for removed UI, not run. Not verified in a browser.
+- **Deviations:** `loadTransactions` initial fetch left in `loadDashboardData` (now unused by UI) to avoid changing load-flow tests; candidate for cleanup. Safe-to-spend component breakdown not collapsed.

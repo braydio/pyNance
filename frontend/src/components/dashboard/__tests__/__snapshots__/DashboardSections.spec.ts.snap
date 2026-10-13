@@ -2,42 +2,45 @@
 
 exports[`Dashboard section components > renders net overview content and forwards slot content 1`] = `
 "<section data-v-26cbed55="" class="flex flex-col gap-6">
-  <div data-v-26cbed55="" class="angular-divider mb-2" aria-hidden="true"><span data-v-26cbed55="" class="angular-divider__rule"></span><span data-v-26cbed55="" class="angular-divider__step"></span></div>
-  <div data-v-26cbed55="" class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] ui-radius-2 p-6 md:p-7 flex flex-col items-center gap-2">
-    <h1 data-v-26cbed55="" class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"> Welcome, <span data-v-26cbed55="" class="username">Casey</span>! </h1>
-    <p data-v-26cbed55="" class="text-lg text-muted">Today is January 1, 2025</p>
-    <p data-v-26cbed55="" class="italic text-muted">In the black</p><button data-v-26cbed55="" class="dashboard-status-pill net-overview-review-status mt-3" type="button" aria-label="12 transactions to review. Open transaction review workflow."><span data-v-26cbed55="" class="dashboard-status-dot" aria-hidden="true"></span> 12 transactions to review</button>
-  </div>
-  <div data-v-26cbed55="" class="angular-divider mb-2" aria-hidden="true"><span data-v-26cbed55="" class="angular-divider__rule"></span><span data-v-26cbed55="" class="angular-divider__step"></span></div>
-  <div data-v-26cbed55="" class="flex justify-end mb-4">
-    <div data-v-26cbed55="" class="date-range-stub"></div>
-  </div>
-  <div data-v-26cbed55="" class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
-    <div data-v-26cbed55="" class="col-span-1 flex flex-col gap-6">
-      <div data-v-26cbed55="" class="net-overview-panel net-overview-panel--accent-green bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col">
-        <top-account-snapshot-stub data-v-26cbed55="" accountsubtype="" usespectrum="false" iseditinggroups="false"></top-account-snapshot-stub>
-      </div>
-      <div data-v-26cbed55="" class="net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"><button data-v-26cbed55="" class="safe-spend-stub">Safe Spend</button></div>
+  <header data-v-26cbed55="" class="net-overview-context" data-testid="net-overview-context">
+    <h2 data-v-26cbed55="" class="net-overview-context__title"> Welcome, <span data-v-26cbed55="" class="username">Casey</span></h2>
+    <p data-v-26cbed55="" class="net-overview-context__meta">January 1, 2025<span data-v-26cbed55=""> · In the black</span></p>
+  </header><!-- Tier 1: Now -->
+  <div data-v-26cbed55="" class="grid grid-cols-1 gap-4 lg:grid-cols-3 items-stretch" data-testid="now-tier">
+    <div data-v-26cbed55="" class="surface-primary p-4 md:p-5 flex flex-col lg:col-span-1"><button data-v-26cbed55="" class="safe-spend-stub">Safe Spend</button></div>
+    <div data-v-26cbed55="" class="surface-normal p-4 md:p-5 flex flex-col gap-3 surface-attention" data-testid="needs-attention">
+      <h3 data-v-26cbed55="" class="text-sm font-semibold">Needs attention</h3>
+      <p data-v-26cbed55="" class="net-overview-review-status-text" role="status">12 transactions to review</p>
+      <div data-v-26cbed55="" class="flex flex-wrap items-center gap-2 mt-auto"><button data-v-26cbed55="" class="btn btn-primary net-overview-review-status" type="button" aria-label="12 transactions to review. Open transaction review workflow."> Review </button><button data-v-26cbed55="" class="net-overview-refine-toggle" type="button" aria-expanded="false">Filter by tag</button></div>
+      <!--v-if-->
     </div>
-    <div data-v-26cbed55="" class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6 flex flex-col gap-3 relative">
-      <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd">
-        <div class="daily-net-chart__title-shell">
-          <div data-v-26cbed55="" class="daily-net-chart-title-block">
-            <h2 data-v-26cbed55="" class="daily-net-chart-title"><span data-v-26cbed55="" class="title-text">Net Income</span><span data-v-26cbed55="" class="title-subtitle">(Daily)</span></h2>
-            <p data-v-26cbed55="" class="daily-net-chart-totals"> Income $10.00 · Expenses $1.00</p>
-          </div>
-        </div>
-        <div class="daily-net-chart__controls-shell">
-          <div data-v-26cbed55="" class="daily-net-chart-controls">
-            <div data-v-26cbed55="" class="daily-net-chart-toolbar angular-chart-container"><button data-v-26cbed55="" class="chart-details-sidebar__toggle accent-toggle-btn chart-details-sidebar--inline" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date">Overlays</button>
-              <div data-v-26cbed55="" class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle"><button data-v-26cbed55="" class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn accent-toggle-btn--active angular-chart-chip--active" type="button" aria-pressed="true"> MTD </button><button data-v-26cbed55="" class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn" type="button" aria-pressed="false"> Rolling 30 </button></div>
-            </div>
-          </div>
+    <div data-v-26cbed55="" class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
+      <h3 data-v-26cbed55="" class="text-sm font-semibold">Cash direction</h3>
+      <p data-v-26cbed55="" class="net-overview-net is-positive">▲ $9.00 <span data-v-26cbed55="" class="net-overview-net__label">net this period</span></p>
+      <p data-v-26cbed55="" class="text-xs text-muted"> Income $10.00 · Expenses $1.00</p>
+    </div>
+  </div><!-- Tier 2: Trend -->
+  <div data-v-26cbed55="" class="daily-net-chart-panel net-overview-panel surface-normal p-5 md:p-6 flex flex-col gap-3 relative">
+    <div data-v-26cbed55="" class="flex justify-end">
+      <div data-v-26cbed55="" class="date-range-stub"></div>
+    </div>
+    <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd">
+      <div class="daily-net-chart__title-shell">
+        <div data-v-26cbed55="" class="daily-net-chart-title-block">
+          <h2 data-v-26cbed55="" class="daily-net-chart-title"><span data-v-26cbed55="" class="title-text">Net Income</span><span data-v-26cbed55="" class="title-subtitle">(Daily)</span></h2>
+          <p data-v-26cbed55="" class="daily-net-chart-totals"> Income $10.00 · Expenses $1.00</p>
         </div>
       </div>
+      <div class="daily-net-chart__controls-shell">
+        <div data-v-26cbed55="" class="daily-net-chart-controls">
+          <div data-v-26cbed55="" class="daily-net-chart-toolbar angular-chart-container"><button data-v-26cbed55="" class="chart-details-sidebar__toggle accent-toggle-btn chart-details-sidebar--inline" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date">Overlays</button>
+            <div data-v-26cbed55="" class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle"><button data-v-26cbed55="" class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn accent-toggle-btn--active angular-chart-chip--active" type="button" aria-pressed="true"> MTD </button><button data-v-26cbed55="" class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn" type="button" aria-pressed="false"> Rolling 30 </button></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-  <div data-v-26cbed55="" class="net-overview-summary-panel net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6">
+  <div data-v-26cbed55="" class="net-overview-summary-panel surface-quiet p-4 md:p-5">
     <div class="summary-slot">Custom Summary</div>
   </div>
 </section>"

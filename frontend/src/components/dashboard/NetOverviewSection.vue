@@ -4,143 +4,163 @@
 -->
 <template>
   <section class="flex flex-col gap-6">
-    <div class="angular-divider mb-2" aria-hidden="true">
-      <span class="angular-divider__rule"></span>
-      <span class="angular-divider__step"></span>
-    </div>
-    <div
-      class="net-overview-hero w-full mb-8 bg-[var(--color-bg-sec)] ui-radius-2 p-6 md:p-7 flex flex-col items-center gap-2"
-    >
-      <h1
-        class="text-4xl md:text-5xl font-extrabold tracking-wide text-[var(--color-accent-cyan)] mb-2 drop-shadow"
-      >
-        Welcome, <span class="username">{{ userName }}</span
-        >!
-      </h1>
-      <p class="text-lg text-muted">Today is {{ currentDate }}</p>
-      <p class="italic text-muted">{{ netWorthMessage }}</p>
-      <button
-        class="dashboard-status-pill net-overview-review-status mt-3"
-        type="button"
-        :disabled="reviewCountLoading"
-        :aria-label="reviewCountAriaLabel"
-        @click="emit('open-review')"
-      >
-        <span class="dashboard-status-dot" aria-hidden="true" />
-        {{ reviewCountLabel }}
-      </button>
-    </div>
-    <div class="angular-divider mb-2" aria-hidden="true">
-      <span class="angular-divider__rule"></span>
-      <span class="angular-divider__step"></span>
-    </div>
-    <div class="flex justify-end mb-4">
-      <DateRangeSelector
-        :start-date="dateRange.start"
-        :end-date="dateRange.end"
-        :zoomed-out="zoomedOut"
-        @update:start-date="emit('update:start-date', $event)"
-        @update:end-date="emit('update:end-date', $event)"
-        @update:zoomed-out="emit('update:zoomed-out', $event)"
-      />
-    </div>
-    <div class="grid grid-cols-1 gap-6 md:grid-cols-3 items-stretch">
-      <div class="col-span-1 flex flex-col gap-6">
-        <div
-          class="net-overview-panel net-overview-panel--accent-green bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
-        >
-          <TopAccountSnapshot />
-        </div>
-        <div
-          class="net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-4 flex flex-col"
-        >
-          <SafeToSpendCard
-            :payload="safeToSpend"
-            :loading="safeToSpendLoading"
-            :error="safeToSpendError"
-            :selected-mode="safeToSpendMode"
-            @update:mode="emit('update:safe-to-spend-mode', $event)"
-          />
-        </div>
+    <header class="net-overview-context" data-testid="net-overview-context">
+      <h2 class="net-overview-context__title">
+        Welcome, <span class="username">{{ userName }}</span>
+      </h2>
+      <p class="net-overview-context__meta">
+        {{ currentDate }}<span v-if="netWorthMessage"> · {{ netWorthMessage }}</span>
+      </p>
+    </header>
+
+    <!-- Tier 1: Now -->
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-3 items-stretch" data-testid="now-tier">
+      <div class="surface-primary p-4 md:p-5 flex flex-col lg:col-span-1">
+        <SafeToSpendCard
+          :payload="safeToSpend"
+          :loading="safeToSpendLoading"
+          :error="safeToSpendError"
+          :selected-mode="safeToSpendMode"
+          @update:mode="emit('update:safe-to-spend-mode', $event)"
+        />
       </div>
       <div
-        class="daily-net-chart-panel net-overview-panel net-overview-panel--accent-cyan md:col-span-2 bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6 flex flex-col gap-3 relative"
+        class="surface-normal p-4 md:p-5 flex flex-col gap-3"
+        :class="{ 'surface-attention': reviewCount > 0 && !reviewCountError }"
+        data-testid="needs-attention"
       >
-        <DailyNetChart
-          :start-date="activeRange.start"
-          :end-date="activeRange.end"
-          :zoomed-out="zoomedOut"
-          :show7-day="show7Day"
-          :show30-day="show30Day"
-          :show-avg-income="showAvgIncome"
-          :show-avg-expenses="showAvgExpenses"
-          :show-comparison-overlay="showComparisonOverlay"
-          :comparison-mode="comparisonMode"
-          :timeframe="netTimeframe"
-          @summary-change="emit('net-summary-change', $event)"
-          @data-change="emit('net-data-change', $event)"
-          @bar-click="emit('net-bar-click', $event)"
+        <h3 class="text-sm font-semibold">Needs attention</h3>
+        <p class="net-overview-review-status-text" role="status">{{ reviewCountLabel }}</p>
+        <div class="flex flex-wrap items-center gap-2 mt-auto">
+          <button
+            class="btn btn-primary net-overview-review-status"
+            type="button"
+            :disabled="reviewCountLoading"
+            :aria-label="reviewCountAriaLabel"
+            @click="emit('open-review')"
+          >
+            Review
+          </button>
+          <button
+            class="net-overview-refine-toggle"
+            type="button"
+            :aria-expanded="showTagFilter"
+            @click="showTagFilter = !showTagFilter"
+          >
+            {{ showTagFilter ? 'Hide filter' : 'Filter by tag' }}
+          </button>
+        </div>
+        <input
+          v-if="showTagFilter"
+          :value="reviewTagFilter"
+          class="input review-filter-input"
+          type="text"
+          aria-label="Review tag filter"
+          placeholder="Optional tag (e.g., #groceries)"
+          @input="emit('update:review-tag-filter', $event.target.value)"
+        />
+      </div>
+      <div class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
+        <h3 class="text-sm font-semibold">Cash direction</h3>
+        <p
+          class="net-overview-net"
+          :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
         >
-          <template #title>
-            <div class="daily-net-chart-title-block">
-              <h2 class="daily-net-chart-title">
-                <span class="title-text">Net Income</span>
-                <span class="title-subtitle">(Daily)</span>
-              </h2>
-              <p class="daily-net-chart-totals">
-                Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
-                {{ formatAmount(netSummary.totalExpenses) }}
-              </p>
-            </div>
-          </template>
-          <template #controls>
-            <div class="daily-net-chart-controls">
-              <div class="daily-net-chart-toolbar angular-chart-container">
-                <ChartDetailsSidebar
-                  class="chart-details-sidebar--inline"
-                  v-model:show7-day="show7DayModel"
-                  v-model:show30-day="show30DayModel"
-                  v-model:show-avg-income="showAvgIncomeModel"
-                  v-model:show-avg-expenses="showAvgExpensesModel"
-                  v-model:show-comparison-overlay="showComparisonOverlayModel"
-                  v-model:comparison-mode="comparisonModeModel"
-                />
-                <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
-                  <button
-                    class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
-                    :class="{
-                      'accent-toggle-btn--active angular-chart-chip--active':
-                        netTimeframe === 'mtd',
-                    }"
-                    type="button"
-                    :aria-pressed="netTimeframe === 'mtd'"
-                    @click="emit('update:net-timeframe', 'mtd')"
-                  >
-                    MTD
-                  </button>
-                  <button
-                    class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
-                    :class="{
-                      'accent-toggle-btn--active angular-chart-chip--active':
-                        netTimeframe === 'rolling_30',
-                    }"
-                    type="button"
-                    :aria-pressed="netTimeframe === 'rolling_30'"
-                    @click="emit('update:net-timeframe', 'rolling_30')"
-                  >
-                    Rolling 30
-                  </button>
-                </div>
-              </div>
-            </div>
-          </template>
-        </DailyNetChart>
+          {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
+          <span class="net-overview-net__label">net this period</span>
+        </p>
+        <p class="text-xs text-muted">
+          Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
+          {{ formatAmount(netSummary.totalExpenses) }}
+        </p>
       </div>
     </div>
 
+    <!-- Tier 2: Trend -->
     <div
-      class="net-overview-summary-panel net-overview-panel net-overview-panel--accent-cyan bg-[var(--color-bg-sec)] ui-radius-2 p-5 md:p-6"
+      class="daily-net-chart-panel net-overview-panel surface-normal p-5 md:p-6 flex flex-col gap-3 relative"
     >
+      <div class="flex justify-end">
+        <DateRangeSelector
+          :start-date="dateRange.start"
+          :end-date="dateRange.end"
+          :zoomed-out="zoomedOut"
+          @update:start-date="emit('update:start-date', $event)"
+          @update:end-date="emit('update:end-date', $event)"
+          @update:zoomed-out="emit('update:zoomed-out', $event)"
+        />
+      </div>
+      <DailyNetChart
+        :start-date="activeRange.start"
+        :end-date="activeRange.end"
+        :zoomed-out="zoomedOut"
+        :show7-day="show7Day"
+        :show30-day="show30Day"
+        :show-avg-income="showAvgIncome"
+        :show-avg-expenses="showAvgExpenses"
+        :show-comparison-overlay="showComparisonOverlay"
+        :comparison-mode="comparisonMode"
+        :timeframe="netTimeframe"
+        @summary-change="emit('net-summary-change', $event)"
+        @data-change="emit('net-data-change', $event)"
+        @bar-click="emit('net-bar-click', $event)"
+      >
+        <template #title>
+          <div class="daily-net-chart-title-block">
+            <h2 class="daily-net-chart-title">
+              <span class="title-text">Net Income</span>
+              <span class="title-subtitle">(Daily)</span>
+            </h2>
+            <p class="daily-net-chart-totals">
+              Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
+              {{ formatAmount(netSummary.totalExpenses) }}
+            </p>
+          </div>
+        </template>
+        <template #controls>
+          <div class="daily-net-chart-controls">
+            <div class="daily-net-chart-toolbar angular-chart-container">
+              <ChartDetailsSidebar
+                class="chart-details-sidebar--inline"
+                v-model:show7-day="show7DayModel"
+                v-model:show30-day="show30DayModel"
+                v-model:show-avg-income="showAvgIncomeModel"
+                v-model:show-avg-expenses="showAvgExpensesModel"
+                v-model:show-comparison-overlay="showComparisonOverlayModel"
+                v-model:comparison-mode="comparisonModeModel"
+              />
+              <div class="daily-net-timeframe-toggle" data-testid="daily-net-timeframe-toggle">
+                <button
+                  class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
+                  :class="{
+                    'accent-toggle-btn--active angular-chart-chip--active': netTimeframe === 'mtd',
+                  }"
+                  type="button"
+                  :aria-pressed="netTimeframe === 'mtd'"
+                  @click="emit('update:net-timeframe', 'mtd')"
+                >
+                  MTD
+                </button>
+                <button
+                  class="accent-toggle-btn angular-chart-chip daily-net-timeframe-btn"
+                  :class="{
+                    'accent-toggle-btn--active angular-chart-chip--active':
+                      netTimeframe === 'rolling_30',
+                  }"
+                  type="button"
+                  :aria-pressed="netTimeframe === 'rolling_30'"
+                  @click="emit('update:net-timeframe', 'rolling_30')"
+                >
+                  Rolling 30
+                </button>
+              </div>
+            </div>
+          </div>
+        </template>
+      </DailyNetChart>
+    </div>
+
+    <div class="net-overview-summary-panel surface-quiet p-4 md:p-5">
       <slot name="summary">
         <FinancialSummary
           :summary="netSummary"
@@ -158,11 +178,10 @@
 /**
  * Net overview section displaying welcome messaging, date controls, and net income charts.
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import ChartDetailsSidebar from '@/components/charts/ChartDetailsSidebar.vue'
 import DateRangeSelector from '@/components/DateRangeSelector.vue'
-import TopAccountSnapshot from '@/components/widgets/TopAccountSnapshot.vue'
 import SafeToSpendCard from '@/components/dashboard/SafeToSpendCard.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 import { formatAmount } from '@/utils/format'
@@ -204,6 +223,7 @@ const props = defineProps({
   reviewCount: { type: Number, default: 0 },
   reviewCountLoading: { type: Boolean, default: false },
   reviewCountError: { type: Boolean, default: false },
+  reviewTagFilter: { type: String, default: '' },
 })
 
 const emit = defineEmits([
@@ -222,7 +242,10 @@ const emit = defineEmits([
   'net-data-change',
   'net-bar-click',
   'open-review',
+  'update:review-tag-filter',
 ])
+
+const showTagFilter = ref(false)
 
 const reviewCountLabel = computed(() => {
   if (props.reviewCountLoading) return 'Loading review queue…'
@@ -271,9 +294,7 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 <style scoped>
 .username {
   color: var(--color-accent-cyan);
-  font-size: 1.125rem;
   font-weight: 600;
-  text-shadow: 2px 6px 8px var(--bar-gradient-end);
 }
 
 .text-muted {
@@ -297,17 +318,44 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
   isolation: isolate;
 }
 
-.net-overview-hero {
-  border: 2px solid var(--edge-contrast-accent-cyan);
-  box-shadow: var(--depth-inner-glow), var(--depth-shadow-raised);
+.net-overview-context__title {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.net-overview-context__meta {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.net-overview-review-status-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.net-overview-refine-toggle {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+}
+
+.net-overview-net {
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.net-overview-net.is-negative {
+  color: var(--color-danger, #dc2626);
+}
+
+.net-overview-net__label {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--color-text-muted);
 }
 
 .net-overview-review-status {
   cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    box-shadow 160ms ease,
-    transform 160ms ease;
 }
 
 .net-overview-review-status:hover:not(:disabled),
@@ -345,33 +393,6 @@ const activeRange = computed(() => props.netRange || props.debouncedRange)
 .net-overview-summary-panel {
   position: relative;
   z-index: 1;
-}
-
-.angular-divider {
-  position: relative;
-  height: 0.65rem;
-}
-
-.angular-divider__rule {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    color-mix(in srgb, var(--color-accent-cyan) 75%, transparent) 0%,
-    color-mix(in srgb, var(--color-accent-purple) 80%, transparent) 45%,
-    color-mix(in srgb, var(--color-accent-magenta) 74%, transparent) 100%
-  );
-}
-
-.angular-divider__step {
-  position: absolute;
-  right: 0;
-  bottom: 0;
-  width: 5.5rem;
-  height: 0.45rem;
-  clip-path: polygon(0 100%, 18% 0, 100% 0, 82% 100%);
-  background: color-mix(in srgb, var(--color-accent-cyan) 38%, transparent);
 }
 
 .daily-net-chart-controls {

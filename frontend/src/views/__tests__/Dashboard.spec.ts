@@ -861,8 +861,8 @@ describe('Dashboard.vue', () => {
     const source = DASHBOARD_SOURCE
     expect(source.includes('data-testid="net-overview-skeleton"')).toBe(true)
     expect(source.includes('data-testid="breakdown-skeleton"')).toBe(true)
-    expect(source.includes('data-testid="accounts-skeleton"')).toBe(true)
-    expect(source.includes('data-testid="transactions-skeleton"')).toBe(true)
+    expect(source.includes('data-testid="accounts-skeleton"')).toBe(false)
+    expect(source.includes('data-testid="transactions-skeleton"')).toBe(false)
   })
 
   it('delivers dashboard state into async sections once loaded', async () => {
@@ -886,100 +886,39 @@ describe('Dashboard.vue', () => {
       groupOthers: true,
       selectedCategoryIds: [],
     })
-
-    wrapper.vm.expandTransactions()
-    await resolveAsyncSections(wrapper)
-
-    expect(transactionsSectionProps).toMatchObject({
-      transactions: [],
-      sortKey: null,
-      sortOrder: 1,
-      search: '',
-      currentPage: 1,
-      totalPages: 1,
-      pageSize: 15,
-      totalCount: 0,
-    })
   })
 
-  it('uses responsive layout for the tables call-to-action on small screens', async () => {
-    setViewportWidth(360)
+  it('replaces the embedded workbenches with links to the dedicated routes', async () => {
     const wrapper = createWrapper({ asyncSections: true })
     await resolveAsyncSections(wrapper)
 
-    const tablesPanel = wrapper.find('[data-testid="tables-panel"]')
-    expect(tablesPanel.exists()).toBe(true)
-    expect(tablesPanel.classes()).toEqual(
-      expect.arrayContaining(['min-h-[55vh]', 'sm:min-h-[60vh]']),
-    )
-
-    const ctaRow = wrapper.find('[data-testid="tables-panel-cta"]')
-    expect(ctaRow.exists()).toBe(true)
-    expect(ctaRow.classes()).toEqual(
-      expect.arrayContaining(['flex-col', 'justify-center', 'gap-8', 'p-6', 'sm:p-10', 'lg:p-12']),
-    )
-
-    ctaRow.element.style.width = '320px'
-    Object.defineProperty(ctaRow.element, 'clientWidth', {
-      configurable: true,
-      value: 320,
-    })
-    Object.defineProperty(ctaRow.element, 'scrollWidth', {
-      configurable: true,
-      value: 320,
-    })
-    expect(ctaRow.element.scrollWidth).toBeLessThanOrEqual(ctaRow.element.clientWidth)
-
-    const buttons = ctaRow.findAll('button')
-    expect(buttons).toHaveLength(2)
-    buttons.forEach((btn) => {
-      expect(btn.classes()).toEqual(expect.arrayContaining(['tables-panel-option']))
-      expect(
-        btn
-          .classes()
-          .some(
-            (cls) =>
-              cls === 'tables-panel-option--accounts' ||
-              cls === 'tables-panel-option--transactions',
-          ),
-      ).toBe(true)
-    })
-  })
-
-  it('applies viewport-based sizing and responsive grids across dashboard widgets', async () => {
+    expect(wrapper.find('[data-testid="tables-panel"]').exists()).toBe(false)
     const source = DASHBOARD_SOURCE
-    expect(source.includes('data-testid="tables-panel"')).toBe(true)
-    expect(source.includes('min-h-[55vh]')).toBe(true)
-    expect(source.includes('sm:min-h-[60vh]')).toBe(true)
-    expect(source.includes('lg:min-h-[65vh]')).toBe(true)
+    expect(source.includes('min-h-[55vh]')).toBe(false)
+    expect(source).toContain('to="/accounts"')
+    expect(source).toContain('to="/transactions"')
+    expect(source).toContain('data-testid="explore-details"')
+    expect(source).not.toContain('Review Workflow')
+    expect(source).not.toContain('Start Review')
   })
 
-  it('keeps overlays mutually exclusive between tables and modals', async () => {
+  it('places Safe to Spend (net overview) before the category analysis', () => {
+    const source = DASHBOARD_SOURCE
+    expect(source.indexOf('<NetOverviewSection')).toBeLessThan(
+      source.indexOf('<CategoryBreakdownSection'),
+    )
+    expect(source.indexOf('<CategoryBreakdownSection')).toBeLessThan(
+      source.indexOf('data-testid="explore-details"'),
+    )
+  })
+
+  it('keeps overlays mutually exclusive between modals', async () => {
     const wrapper = createWrapper()
     await nextTick()
 
-    wrapper.vm.expandAccounts()
-    await nextTick()
-    expect(wrapper.vm.accountsExpanded).toBe(true)
-    expect(wrapper.vm.transactionsExpanded).toBe(false)
-    expect(wrapper.vm.showDailyModal).toBe(false)
-
     await wrapper.vm.onNetBarClick('2024-06-11')
     await nextTick()
-    expect(wrapper.vm.accountsExpanded).toBe(false)
-    expect(wrapper.vm.transactionsExpanded).toBe(false)
     expect(wrapper.vm.showDailyModal).toBe(true)
-
-    wrapper.vm.expandTransactions()
-    await nextTick()
-    expect(wrapper.vm.transactionsExpanded).toBe(true)
-    expect(wrapper.vm.showDailyModal).toBe(false)
-
-    wrapper.vm.collapseTables()
-    await nextTick()
-    expect(wrapper.vm.accountsExpanded).toBe(false)
-    expect(wrapper.vm.transactionsExpanded).toBe(false)
-    expect(wrapper.vm.showDailyModal).toBe(false)
   })
 
   it('switches between transaction modals without overlapping overlays', async () => {
