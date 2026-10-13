@@ -1,10 +1,9 @@
 <template>
   <section class="space-y-6">
     <header class="space-y-1">
-      <h3 class="text-lg font-semibold">Allocation targets</h3>
+      <h3 class="text-lg font-semibold">Where remaining money is assigned</h3>
       <p class="text-sm text-muted">
-        Distribute the planning balance across savings and goals. Keep the total under 100% to stay
-        on budget.
+        Split your planning balance across savings and goals. The total can't go over 100%.
       </p>
     </header>
 

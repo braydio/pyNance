@@ -1,12 +1,12 @@
 # TP-20261007-007: Planning Workflow Reauthor
 
 **Packet ID:** TP-20261007-007  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-007-planning-workflow-reauthor.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-007-planning-workflow-reauthor.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-002  
 **Priority:** High  
@@ -175,3 +175,16 @@ npm run build
 ## Completion report
 
 Report removed placeholder UI, new information order, bill form behavior, allocation readability, preserved contracts, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **Removed:** the entire internal-notes block (including invalid `<p1>` elements) from `Planning.vue`, the header "Create bill" button (duplicate CTA), and the permanently rendered BillForm card.
+- **New order:** header (outcome subtitle, scoped by account when `accountId` is in the query) → `PlanningSummary` full-width lead (planning balance as the large lead value, upcoming bills, allocated, remaining, plus an over-allocation alert) → left: BillForm panel only while creating/editing, then "Upcoming bills" list; right: Allocator.
+- **Bills:** presentation-only sort by due date retained; row now scans date → name (+ Predicted badge only for predicted) → frequency, amount right, Edit/Delete small and secondary. One `Add bill` action (`data-testid="add-bill"`).
+- **Allocator:** heading "Where remaining money is assigned"; existing `formatCategory` humanization, totals, and over-100 error kept; no math or persistence change.
+- **Scenario context:** summary no longer falls back to raw account ID in title/footer.
+- **Contracts preserved:** BillForm props/events, `persistBill`/`removeBill`/`persistScenarioAllocations` flows, `usePlanning` scenario resolution.
+- **Tests:** Planning.spec (no notes, summary first, form hidden until Add bill, single CTA), PlanningSummary.spec (balance leads, no raw ID). Vitest 49 files / 216 tests pass; lint 0 errors; build OK. `Planning.cy.js` not run/modified. Not viewed in a browser.
+- **Deviations:** due-soon warning not added (only over-allocation, which is derivable from current data).

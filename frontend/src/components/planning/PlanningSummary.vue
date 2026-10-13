@@ -3,34 +3,40 @@
     <header class="flex items-start justify-between">
       <div>
         <h3 class="text-lg font-semibold">{{ scenarioName }}</h3>
-        <p class="text-sm text-muted">Snapshot of bills and allocations for this scenario.</p>
+        <p class="text-sm text-muted">Where your planning balance stands right now.</p>
       </div>
       <UiButton variant="outline" @click="emit('refresh')">Refresh</UiButton>
     </header>
 
+    <p
+      v-if="remainingCents < 0"
+      class="summary-warning"
+      role="alert"
+      data-testid="over-allocated-warning"
+    >
+      Bills and allocations exceed your planning balance by {{ overAmountFormatted }}.
+    </p>
+
     <dl class="summary-grid">
-      <div>
-        <dt>Total planned bills</dt>
-        <dd>{{ totalBillsFormatted }}</dd>
-      </div>
-      <div>
+      <div class="summary-grid__lead">
         <dt>Planning balance</dt>
         <dd>{{ planningBalanceFormatted }}</dd>
       </div>
       <div>
-        <dt>Allocated so far</dt>
+        <dt>Upcoming bills</dt>
+        <dd>{{ totalBillsFormatted }}</dd>
+      </div>
+      <div>
+        <dt>Allocated</dt>
         <dd>{{ allocatedFormatted }}</dd>
       </div>
       <div>
-        <dt>Remaining cash</dt>
+        <dt>Remaining</dt>
         <dd :class="{ 'text-error': remainingCents < 0 }">{{ remainingFormatted }}</dd>
       </div>
     </dl>
 
-    <footer class="text-xs text-muted">
-      Updated {{ lastSavedRelative }} · Account
-      {{ accountLabel || activeScenario?.accountId || 'n/a' }}
-    </footer>
+    <footer class="text-xs text-muted">Updated {{ lastSavedRelative }}</footer>
   </section>
 </template>
 
@@ -88,6 +94,9 @@ const allocatedFormatted = computed(() =>
 const remainingFormatted = computed(() =>
   formatCurrency(remainingCents.value / 100, scenarioCurrency.value),
 )
+const overAmountFormatted = computed(() =>
+  formatCurrency(Math.abs(Math.min(remainingCents.value, 0)) / 100, scenarioCurrency.value),
+)
 const planningBalanceFormatted = computed(() =>
   formatCurrency(planningBalanceCents.value / 100, scenarioCurrency.value),
 )
@@ -96,11 +105,11 @@ const accountLabel = computed(() => {
   const accountId = activeScenario.value?.accountId
   if (!accountId) return ''
   const account = accountsById.value[accountId]
-  if (!account) return accountId
+  if (!account) return ''
   if (account.name && account.institution_name) {
     return `${account.name} • ${account.institution_name}`
   }
-  return account.name || account.institution_name || accountId
+  return account.name || account.institution_name || ''
 })
 
 const scenarioName = computed(() => {
@@ -168,13 +177,22 @@ onMounted(loadAccounts)
 
 .summary-grid dt {
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   color: var(--color-muted, #64748b);
 }
 
 .summary-grid dd {
   font-size: 1rem;
+  font-weight: 600;
+}
+
+.summary-grid__lead dd {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.summary-warning {
+  color: #b91c1c;
+  font-size: 0.9rem;
   font-weight: 600;
 }
 

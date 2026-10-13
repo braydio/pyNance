@@ -83,4 +83,13 @@ describe('PlanningSummary', () => {
     expect(headingText).toContain('Plan for Primary Checking')
     expect(headingText).toContain('PyBank')
   })
+
+  it('leads with the planning balance and never shows the raw account ID', async () => {
+    const wrapper = mount(PlanningSummary, { props: { scenarioId: 'scenario-1' } })
+    await flushPromises()
+
+    expect(wrapper.get('dt').text()).toBe('Planning balance')
+    expect(wrapper.text()).not.toContain('acct-123')
+    expect(wrapper.find('[data-testid="over-allocated-warning"]').exists()).toBe(false)
+  })
 })

@@ -73,4 +73,38 @@ describe('Planning.vue', () => {
     expect(summaryStub.props('scenarioId')).toBe('s1')
     expect(planningMocks.ensureScenarioForAccount).toHaveBeenCalledWith('acct-1')
   })
+
+  const mountPlanning = () =>
+    shallowMount(Planning, {
+      global: {
+        stubs: {
+          BasePageLayout: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div><slot name="title" /><slot name="subtitle" /></div>' },
+          UiButton: { template: '<button v-bind="$attrs"><slot /></button>' },
+          Card: { template: '<div v-bind="$attrs"><slot /></div>' },
+          BillList: { template: '<div class="bill-list-marker"><slot name="actions" /></div>' },
+          BillForm: true,
+          Allocator: true,
+          PlanningSummary: true,
+        },
+      },
+    })
+
+  it('does not render internal design notes', () => {
+    const text = mountPlanning().html()
+    expect(text).not.toContain('handful of notes')
+    expect(text).not.toContain('Gamefied')
+    expect(text).not.toContain('<p1')
+  })
+
+  it('leads with the summary and shows BillForm only during an explicit task', async () => {
+    const wrapper = mountPlanning()
+    const html = wrapper.html()
+    expect(html.indexOf('planning-summary-stub')).toBeLessThan(html.indexOf('bill-list-marker'))
+    expect(wrapper.find('[data-testid="bill-form-panel"]').exists()).toBe(false)
+    expect(wrapper.findAll('[data-testid="add-bill"]')).toHaveLength(1)
+
+    await wrapper.get('[data-testid="add-bill"]').trigger('click')
+    expect(wrapper.find('[data-testid="bill-form-panel"]').exists()).toBe(true)
+  })
 })

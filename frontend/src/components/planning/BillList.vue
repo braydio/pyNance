@@ -2,8 +2,8 @@
   <div class="space-y-4">
     <header class="flex items-center justify-between">
       <div>
-        <h3 class="text-lg font-semibold">Scheduled bills</h3>
-        <p class="text-sm text-muted">Track upcoming expenses for the active scenario.</p>
+        <h3 class="text-lg font-semibold">Upcoming bills</h3>
+        <p class="text-sm text-muted">Soonest due first.</p>
       </div>
       <slot name="actions" />
     </header>
@@ -22,18 +22,19 @@
           type="button"
           @click="handleSelect(bill)"
         >
+          <span class="text-xs font-semibold text-muted">{{ formatDueDate(bill.dueDate) }}</span>
           <span class="flex items-center gap-2 font-medium">
             {{ bill.name }}
             <span v-if="bill.origin === 'predicted'" class="predicted-badge"> Predicted </span>
           </span>
-          <span class="text-sm text-muted">
-            {{ formatDueDate(bill.dueDate) }} • {{ bill.frequencyLabel }}
-          </span>
+          <span class="text-sm text-muted">{{ bill.frequencyLabel }}</span>
         </button>
         <div class="flex flex-col items-end gap-2 sm:flex-row sm:items-center">
           <span class="font-semibold">{{ bill.amountLabel }}</span>
-          <UiButton variant="outline" @click.stop="handleEdit(bill)">Edit</UiButton>
-          <UiButton variant="alert" @click.stop="handleDelete(bill.id)">Delete</UiButton>
+          <UiButton variant="outline" class="btn-sm" @click.stop="handleEdit(bill)">Edit</UiButton>
+          <UiButton variant="alert" class="btn-sm" @click.stop="handleDelete(bill.id)"
+            >Delete</UiButton
+          >
         </div>
       </li>
     </ul>

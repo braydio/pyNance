@@ -2,61 +2,21 @@
   <BasePageLayout>
     <PageHeader :icon="Calendar">
       <template #title>Planning</template>
-      <template #subtitle>Manage bills, allocations, and scenario balances. </template>
-      <template #actions>
-        <UiButton variant="primary" @click="startCreating">Create bill</UiButton>
-      </template>
+      <template #subtitle>{{ planningContextLabel }}</template>
     </PageHeader>
+
+    <PlanningSummary
+      :scenario-id="activeScenario?.id"
+      :currency-code="currencyCode"
+      @refresh="refreshSummary"
+    />
 
     <section class="grid gap-6 xl:grid-cols-[2fr,1fr]">
       <div class="space-y-6">
-        <Card class="p-6">
-          <h3 class="text-2xl font-bold">
-            Here are a handful of notes and ideas I have for this page
-          </h3>
-
-          <p1 class="text-xs font-muted"
-            >A different form available to fill in with different fields for each 'type' (bills,
-            allocations, scenarios). Provided examples of a filled out plan where each form type is
-            shown several times over. This demonstrates a complete 'Planning' example of fully
-            utilizing every feature here.</p1
-          >
-          <div></div>
-          <p1 class="text-xs font-muted"
-            >Programmatic generation of bills (forms) based on automatically detected activity.</p1
-          >
-          <div></div>
-          <p1 class="text-xs font-muted">
-            An overall synopsis or 'Profile' as an aggregate of all completed forms and information.
-            A profile can be generated with a description, focus points, upcoming things to watch,
-            reminders, status updates, goal timelines.</p1
-          >
-          <div></div>
-          <p1 class="text-xs font-muted"> Gamefied somehow maybe?</p1>
-          <div></div>
-          <p1 class="text-xs font-muted">
-            I will come back to this. I will not forget this for months.</p1
-          >
-          <div></div>
-          <p1 class="text-xs font-muted"> - Bullet Point</p1>
-          <BillList
-            :bills="billsForScenario"
-            :currency-code="currencyCode"
-            :selected-bill-id="selectedBillId"
-            @delete="handleDeleteBill"
-            @edit="handleEditBill"
-            @select="handleSelectBill"
-          >
-            <template #actions>
-              <UiButton variant="primary" @click="startCreating">Add bill</UiButton>
-            </template>
-          </BillList>
-        </Card>
-
-        <Card class="p-6 space-y-4">
+        <Card v-if="formVisible" class="p-6 space-y-4" data-testid="bill-form-panel">
           <header class="flex items-center justify-between">
             <h3 class="text-lg font-semibold">{{ formHeading }}</h3>
-            <UiButton v-if="formVisible" variant="outline" @click="resetForm">Reset</UiButton>
+            <UiButton variant="outline" @click="resetForm">Reset</UiButton>
           </header>
           <BillForm
             :bill="formBill"
@@ -68,14 +28,26 @@
             @update:bill="handleDraftUpdate"
           />
         </Card>
+
+        <Card class="p-6">
+          <BillList
+            :bills="billsForScenario"
+            :currency-code="currencyCode"
+            :selected-bill-id="selectedBillId"
+            @delete="handleDeleteBill"
+            @edit="handleEditBill"
+            @select="handleSelectBill"
+          >
+            <template #actions>
+              <UiButton variant="primary" data-testid="add-bill" @click="startCreating"
+                >Add bill</UiButton
+              >
+            </template>
+          </BillList>
+        </Card>
       </div>
 
       <div class="space-y-6">
-        <PlanningSummary
-          :scenario-id="activeScenario?.id"
-          :currency-code="currencyCode"
-          @refresh="refreshSummary"
-        />
         <Card class="p-6">
           <Allocator
             v-model="allocationModel"
@@ -169,6 +141,11 @@ const allocationCategories = computed(() => {
 
 const formMode = computed<'create' | 'edit'>(() => (editingBill.value ? 'edit' : 'create'))
 const formBill = computed(() => (formMode.value === 'edit' ? editingBill.value : null))
+const planningContextLabel = computed(() =>
+  accountId.value
+    ? 'Upcoming bills and allocations for this account'
+    : 'Upcoming bills and allocations',
+)
 const formHeading = computed(() => (formMode.value === 'edit' ? 'Edit bill' : 'Create bill'))
 
 watch(
