@@ -269,7 +269,10 @@ describe('Accounts.vue', () => {
     const wrapper = shallowMount(Accounts, {
       global: {
         stubs: {
-          TabbedPageLayout: { template: '<div><slot name="Summary" /></div>' },
+          TabbedPageLayout: {
+            template:
+              '<div><slot name="header" /><slot name="Summary" /><slot name="Connections" /></div>',
+          },
           AccountActionsSidebar: true,
           LinkedAccountsSection: false,
           Card: { template: '<div><slot /></div>' },
@@ -308,5 +311,74 @@ describe('Accounts.vue', () => {
     expect(
       wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid')),
     ).toHaveLength(1)
+  })
+
+  function mountWith(accountsResponse, slots = '<slot name="header" /><slot name="Summary" />') {
+    api.getAccounts.mockResolvedValueOnce({ accounts: accountsResponse })
+    return shallowMount(Accounts, {
+      global: {
+        stubs: {
+          TabbedPageLayout: {
+            props: ['tabs'],
+            template: `<div><b v-for="t in tabs" :key="t.slot" class="tab-label">{{ t.label }}</b>${slots}</div>`,
+          },
+          AccountActionsSidebar: true,
+          LinkedAccountsSection: true,
+          Card: { template: '<div><slot /></div>' },
+          PageHeader: { template: '<div />' },
+          UiButton: { inheritAttrs: true, template: '<button v-bind="$attrs"><slot /></button>' },
+          SkeletonCard: true,
+          RetryError: true,
+          AccountBalanceHistoryChart: true,
+        },
+      },
+    })
+  }
+
+  it('shows selected-account state and net change before cross-account ranking', async () => {
+    const wrapper = mountWith([
+      {
+        account_id: 'acc-1',
+        name: 'Primary Checking',
+        institution_name: 'Bank',
+        mask: '1234',
+        current_balance: 250,
+      },
+    ])
+    await flushPromises()
+
+    const status = wrapper.get('[data-testid="account-status"]')
+    expect(status.text()).toContain('Primary Checking')
+    expect(status.text()).toContain('•••• 1234')
+    expect(status.text()).toContain('Connected')
+    const html = wrapper.html()
+    expect(html.indexOf('account-status')).toBeLessThan(html.indexOf('Net Change Summary'))
+    expect(html.indexOf('Net Change Summary')).toBeLessThan(html.indexOf('Most Active Accounts'))
+    expect(wrapper.findAll('[data-testid="accounts-refresh"]')).toHaveLength(1)
+  })
+
+  it('shows the connection-attention action only when a reconnect is needed', async () => {
+    const healthy = mountWith([{ account_id: 'a', name: 'A' }])
+    await flushPromises()
+    expect(healthy.find('[data-testid="connection-attention"]').exists()).toBe(false)
+
+    const unhealthy = mountWith([
+      {
+        account_id: 'a',
+        name: 'A',
+        connection_status: { provider: 'plaid', requires_reauth: true, connection_id: 3 },
+      },
+    ])
+    await flushPromises()
+    const banner = unhealthy.get('[data-testid="connection-attention"]')
+    expect(banner.text()).toContain('needs to be reconnected')
+    expect(banner.text()).not.toContain('Reconnect with Plaid')
+  })
+
+  it('exposes four task-oriented tabs in order', async () => {
+    const wrapper = mountWith([{ account_id: 'a', name: 'A' }])
+    await flushPromises()
+    const labels = wrapper.findAll('.tab-label').map((node) => node.text())
+    expect(labels).toEqual(['Overview', 'Activity', 'Trends', 'Connections'])
   })
 })

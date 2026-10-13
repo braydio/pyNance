@@ -100,7 +100,7 @@ describe('Accounts retry logic', () => {
     cy.contains('Failed to load history')
     cy.get('table').should('exist')
 
-    cy.contains('button', 'Refresh Overview').click()
+    cy.get('[data-testid="accounts-refresh"]').click()
 
     cy.wait('@net')
     cy.wait('@tx')

@@ -8,7 +8,6 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261007-005 | Accounts Portfolio + Connection Hierarchy | Ready | 2026-10-07 | [active/TP-20261007-005-accounts-portfolio-connection-hierarchy.md](active/TP-20261007-005-accounts-portfolio-connection-hierarchy.md) |
 | TP-20261007-006 | Forecast Explainable Decision Surface | Ready | 2026-10-07 | [active/TP-20261007-006-forecast-explainable-decision-surface.md](active/TP-20261007-006-forecast-explainable-decision-surface.md) |
 | TP-20261007-007 | Planning Workflow Reauthor | Ready | 2026-10-07 | [active/TP-20261007-007-planning-workflow-reauthor.md](active/TP-20261007-007-planning-workflow-reauthor.md) |
 | TP-20261007-008 | Investments Portfolio Hierarchy | Ready | 2026-10-07 | [active/TP-20261007-008-investments-portfolio-hierarchy.md](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
@@ -25,6 +24,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | 2026-10-07 | [completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | 2026-10-07 | [completed/TP-20261007-003-dashboard-decision-first-recomposition.md](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Complete | 2026-10-07 | [completed/TP-20261007-004-transactions-action-workbench.md](completed/TP-20261007-004-transactions-action-workbench.md) |
+| TP-20261007-005 | Accounts Portfolio + Connection Hierarchy | Complete | 2026-10-07 | [completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md](completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md) |
 
 ## Archived
 

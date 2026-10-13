@@ -10,33 +10,73 @@
     <template #header>
       <PageHeader :icon="Wallet">
         <template #title>Accounts</template>
-        <template #subtitle>Link and refresh your accounts</template>
+        <template #subtitle>Balances, activity, and connection health</template>
       </PageHeader>
 
-      <div class="mt-6 h-px w-full rounded-full bg-[var(--themed-border)]" />
+      <div class="accounts-context" data-testid="accounts-context">
+        <div class="accounts-context__row">
+          <label class="sr-only" for="accounts-selector">Viewing account</label>
+          <select
+            id="accounts-selector"
+            class="input w-full sm:w-80"
+            :value="accountId || ''"
+            :disabled="accountsLoading || !hasAccounts"
+            @change="handleAccountSelection"
+          >
+            <option value="" :disabled="hasAccounts">
+              {{ hasAccounts ? 'Select an account' : 'No accounts available' }}
+            </option>
 
-      <div
-        class="mt-4 flex flex-col gap-2 rounded-xl border border-[var(--divider)] bg-[var(--themed-bg)] p-4 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <label class="text-sm font-medium text-muted">Viewing account</label>
+            <option
+              v-for="account in accounts"
+              :key="account.account_id"
+              :value="account.account_id"
+            >
+              {{
+                account.display_name ||
+                (account.mask ? `${account.name} •••• ${account.mask}` : account.name)
+              }}
+            </option>
+          </select>
+          <UiButton
+            variant="primary"
+            class="btn-sm"
+            data-testid="accounts-refresh"
+            :disabled="!canFetchAccountData"
+            @click="refreshSelectedAccountData"
+          >
+            Refresh
+          </UiButton>
+        </div>
 
-        <select
-          class="input w-full sm:w-80"
-          :value="accountId || ''"
-          :disabled="accountsLoading || !hasAccounts"
-          @change="handleAccountSelection"
+        <p
+          v-if="selectedAccountStatus"
+          class="accounts-context__status"
+          data-testid="account-status"
         >
-          <option value="" :disabled="hasAccounts">
-            {{ hasAccounts ? 'Select an account' : 'No accounts available' }}
-          </option>
+          <strong>{{ selectedAccountStatus.name }}</strong>
+          <span v-if="selectedAccountStatus.detail"> · {{ selectedAccountStatus.detail }}</span>
+          <span v-if="selectedAccountStatus.balance"> · {{ selectedAccountStatus.balance }}</span>
+          <span> · {{ selectedAccountStatus.connection }}</span>
+        </p>
 
-          <option v-for="account in accounts" :key="account.account_id" :value="account.account_id">
+        <div
+          v-if="attentionConnectionCount"
+          class="surface-attention accounts-context__attention"
+          role="status"
+          data-testid="connection-attention"
+        >
+          <span>
             {{
-              account.display_name ||
-              (account.mask ? `${account.name} •••• ${account.mask}` : account.name)
+              attentionConnectionCount === 1
+                ? 'A connection needs to be reconnected.'
+                : `${attentionConnectionCount} connections need to be reconnected.`
             }}
-          </option>
-        </select>
+          </span>
+          <UiButton variant="outline" class="btn-sm" @click="activeTab = 'Connections'">
+            Fix connection
+          </UiButton>
+        </div>
       </div>
     </template>
 
@@ -54,10 +94,66 @@
         </Card>
 
         <template v-else>
+          <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
+            <header class="flex justify-between items-center">
+              <div>
+                <h2 class="accounts-panel-title">Net Change Summary</h2>
+                <p class="text-sm text-muted">Performance for the selected date range.</p>
+              </div>
+            </header>
+
+            <SkeletonCard v-if="loadingSummary" />
+            <RetryError
+              v-else-if="summaryError"
+              message="Failed to load summary"
+              @retry="retrySummary"
+            />
+
+            <div v-else class="grid gap-4 md:grid-cols-3">
+              <article
+                v-for="stat in netSummaryStats"
+                :key="stat.key"
+                class="accounts-kpi-card rounded-xl p-4"
+              >
+                <p class="text-xs uppercase text-muted">
+                  {{ stat.label }}
+                </p>
+                <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">
+                  {{ stat.value }}
+                </p>
+              </article>
+            </div>
+          </Card>
+
           <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
+            <div class="flex items-center justify-between">
+              <h2 class="accounts-panel-title">Balance History</h2>
+
+              <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
+                <option v-for="range in ranges" :key="range" :value="range">
+                  {{ range }}
+                </option>
+              </select>
+            </div>
+
+            <SkeletonCard v-if="loadingHistory" />
+            <RetryError
+              v-else-if="historyError"
+              message="Failed to load history"
+              @retry="retryHistory"
+            />
+
+            <AccountBalanceHistoryChart
+              v-else
+              :history-data="accountHistory"
+              :selected-range="selectedRange"
+            />
+          </Card>
+
+          <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 class="accounts-panel-title">Most Active Accounts</h2>
+                <h3 class="accounts-subpanel-title">Most Active Accounts</h3>
                 <p class="text-sm text-muted">
                   Ranked by recent transaction activity in the selected date range.
                 </p>
@@ -110,84 +206,6 @@
               No activity data is available for the selected range.
             </p>
           </Card>
-
-          <Card class="accounts-card accounts-card--primary space-y-6 rounded-2xl p-6 shadow-xl">
-            <header class="flex justify-between items-center">
-              <div>
-                <h2 class="accounts-panel-title">Net Change Summary</h2>
-                <p class="text-sm text-muted">Performance for the selected date range.</p>
-              </div>
-
-              <UiButton
-                variant="outline"
-                class="btn-sm"
-                @click="refreshSelectedAccountData"
-                :disabled="!canFetchAccountData"
-              >
-                Refresh
-              </UiButton>
-            </header>
-
-            <SkeletonCard v-if="loadingSummary" />
-            <RetryError
-              v-else-if="summaryError"
-              message="Failed to load summary"
-              @retry="retrySummary"
-            />
-
-            <div v-else class="grid gap-4 md:grid-cols-3">
-              <article
-                v-for="stat in netSummaryStats"
-                :key="stat.key"
-                class="accounts-kpi-card rounded-xl p-4"
-              >
-                <p class="text-xs uppercase text-muted">
-                  {{ stat.label }}
-                </p>
-                <p class="mt-3 text-3xl font-bold" :class="stat.valueClass">
-                  {{ stat.value }}
-                </p>
-              </article>
-            </div>
-          </Card>
-
-          <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
-            <div class="flex items-center justify-between">
-              <h2 class="accounts-panel-title">Balance History</h2>
-
-              <select v-model="selectedRange" class="input w-32" :disabled="!canFetchAccountData">
-                <option v-for="range in ranges" :key="range" :value="range">
-                  {{ range }}
-                </option>
-              </select>
-            </div>
-
-            <SkeletonCard v-if="loadingHistory" />
-            <RetryError
-              v-else-if="historyError"
-              message="Failed to load history"
-              @retry="retryHistory"
-            />
-
-            <AccountBalanceHistoryChart
-              v-else
-              :history-data="accountHistory"
-              :selected-range="selectedRange"
-            />
-          </Card>
-
-          <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
-            <h2 class="accounts-panel-title">Manage Linked Accounts</h2>
-            <LinkedAccountsSection
-              :accounts="linkedAccounts"
-              :use-demo-fallback="false"
-              :enable-promotion-editor="false"
-              :reconnecting-id="reconnectingId"
-              :connection-messages="reconnectMessage"
-              @add-promotion="handleAddPromotion"
-              @reconnect="reconnectConnection"
-            />
-          </Card>
         </template>
       </section>
     </template>
@@ -198,15 +216,6 @@
         <Card class="accounts-card accounts-card--secondary space-y-6 rounded-2xl p-6 shadow-xl">
           <div class="flex justify-between items-center">
             <h2 class="accounts-panel-title">Activity</h2>
-
-            <UiButton
-              variant="outline"
-              class="btn-sm"
-              @click="retryTransactions"
-              :disabled="!canFetchAccountData"
-            >
-              Refresh
-            </UiButton>
           </div>
 
           <SkeletonCard v-if="loadingTransactions" />
@@ -247,6 +256,24 @@
             <AccountsReorderChart />
           </Card>
         </div>
+      </section>
+    </template>
+
+    <!-- CONNECTIONS TAB -->
+    <template #Connections>
+      <section class="accounts-tab-panel">
+        <Card class="accounts-card accounts-card--tertiary space-y-6 rounded-2xl p-6 shadow-xl">
+          <h2 class="accounts-panel-title">Connections</h2>
+          <LinkedAccountsSection
+            :accounts="linkedAccounts"
+            :use-demo-fallback="false"
+            :enable-promotion-editor="false"
+            :reconnecting-id="reconnectingId"
+            :connection-messages="reconnectMessage"
+            @add-promotion="handleAddPromotion"
+            @reconnect="reconnectConnection"
+          />
+        </Card>
       </section>
     </template>
 
@@ -342,10 +369,31 @@ const linkedAccounts = computed(() =>
 const canFetchAccountData = computed(() => hasAccounts.value && Boolean(accountId.value))
 
 const tabs = computed(() => [
-  'Summary',
-  { label: 'Transactions', slot: 'Transactions', disabled: !canFetchAccountData.value },
-  { label: 'Charts', slot: 'Charts', disabled: !canFetchAccountData.value },
+  { label: 'Overview', slot: 'Summary' },
+  { label: 'Activity', slot: 'Transactions', disabled: !canFetchAccountData.value },
+  { label: 'Trends', slot: 'Charts', disabled: !canFetchAccountData.value },
+  { label: 'Connections', slot: 'Connections' },
 ])
+
+const selectedAccount = computed(
+  () =>
+    accounts.value.find((account) => String(account.account_id) === String(accountId.value)) ||
+    null,
+)
+const attentionConnectionCount = computed(() => uniqueReconnectConnections(accounts.value).length)
+const selectedAccountStatus = computed(() => {
+  const account = selectedAccount.value
+  if (!account) return null
+  const balance = account.current_balance ?? account.balance
+  return {
+    name: account.display_name || account.name || 'Unnamed account',
+    detail: [account.institution_name, account.mask ? `•••• ${account.mask}` : '']
+      .filter(Boolean)
+      .join(' '),
+    balance: balance == null ? '' : formatAmount(balance),
+    connection: account.connection_status?.requires_reauth ? 'Needs reconnect' : 'Connected',
+  }
+})
 
 const netSummaryStats = computed(() => [
   {
@@ -555,6 +603,35 @@ watch(selectedRange, loadData)
 watch(selectedRange, loadActivityBreakdown)
 </script>
 <style scoped>
+.accounts-context {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.accounts-context__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.accounts-context__status {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
+.accounts-context__attention {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9rem;
+}
+
 .accounts-tab-panel {
   margin-top: var(--space-8, 2rem);
   display: flex;

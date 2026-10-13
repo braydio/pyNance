@@ -1,12 +1,12 @@
 # TP-20261007-005: Accounts Portfolio + Connection Hierarchy
 
 **Packet ID:** TP-20261007-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-005-accounts-portfolio-connection-hierarchy.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-002  
 **Priority:** High  
@@ -147,3 +147,14 @@ npm run build
 ## Completion report
 
 Report new hierarchy, tab mapping, connection-health treatment, refresh action ownership, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **New hierarchy:** header (title, outcome subtitle "Balances, activity, and connection health") → compact context bar (account selector + the single primary Refresh + one-line status: name · institution/mask · balance · Connected/Needs reconnect) → one attention banner when `uniqueReconnectConnections(accounts)` is non-empty, with a "Fix connection" button that switches to the Connections tab. Overview: Net Change Summary → Balance History → Most Active Accounts (demoted to a quieter tertiary card).
+- **Tab mapping (slots unchanged):** Overview=`Summary`, Activity=`Transactions`, Trends=`Charts`, Connections=`Connections` (new slot holding `LinkedAccountsSection`, moved out of Summary). Activity/Trends still disabled without a selected account.
+- **Refresh ownership:** removed the two per-card Refresh buttons; the context-bar Refresh calls `refreshSelectedAccountData`. Error-state Retry buttons unchanged. `AccountActionsSidebar` only holds link/token actions (no refresh), left untouched.
+- **Reconnect:** the actual Reconnect-with-Plaid action stays solely in `LinkedAccountsSection` (Connections tab), so it is not duplicated; banner is a pointer.
+- **Tests:** Accounts.spec.js adds order/status, attention-only-when-needed, tab labels; reconnect test stub now renders the Connections slot; snapshot updated. Vitest 49 files / 213 tests pass; lint 0 errors; build OK. `AccountsSummary.cy.js`/`AccountsRetry.cy.js` labels/selectors updated but both component specs fail to run locally with `Cannot read properties of … ('query'/'ce')` (no router in the mount; appears pre-existing, not investigated). Not viewed in a browser.
+- **Deviations:** `accounts.cy.js` e2e not touched/run. `LinkedAccountsSection` internals not changed.

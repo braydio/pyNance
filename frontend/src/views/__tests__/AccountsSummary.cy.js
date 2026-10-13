@@ -105,8 +105,8 @@ describe('Accounts summary', () => {
 
     cy.get('[data-testid="accounts-summary-empty"]').should('contain', 'No accounts linked')
     cy.get('[data-testid="account-context-selector"]').should('be.disabled')
-    cy.get('[data-testid="tabbed-nav"]').contains('Transactions').should('be.disabled')
-    cy.get('[data-testid="tabbed-nav"]').contains('Charts').should('be.disabled')
+    cy.get('[data-testid="tabbed-nav"]').contains('Activity').should('be.disabled')
+    cy.get('[data-testid="tabbed-nav"]').contains('Trends').should('be.disabled')
   })
 
   it('switches account context and syncs route query', () => {
