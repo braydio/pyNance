@@ -1,7 +1,7 @@
 # TP-20261007-008: Investments Portfolio Hierarchy
 
 **Packet ID:** TP-20261007-008  
-**Status:** Ready  
+**Status:** In Progress  
 **Created:** 2026-10-07  
 **Last updated:** 2026-10-07  
 **Repository:** braydio/pyNance  

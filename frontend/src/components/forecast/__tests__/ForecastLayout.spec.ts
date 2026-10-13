@@ -231,4 +231,39 @@ describe('ForecastLayout', () => {
       'No source transactions or events are attached to this forecast item.',
     )
   })
+
+  it('puts the chart before assumptions and advanced controls, collapsed by default', async () => {
+    useForecastDataMock.mockReturnValue(
+      buildUseForecastDataReturn([
+        {
+          label: 'Auto wage income',
+          amount: 1200,
+          date: '2026-03-28',
+          adjustment_type: 'auto_income',
+          metadata: { source_transactions: [{ id: 'txn-1', amount: 1200 }] },
+        },
+      ]),
+    )
+    const wrapper = mount(ForecastLayout, {})
+    await flushPromises()
+
+    const html = wrapper.html()
+    expect(html.indexOf('forecast-chart-stub')).toBeLessThan(
+      html.indexOf('data-testid="assumptions"'),
+    )
+    expect(html.indexOf('data-testid="assumptions"')).toBeLessThan(
+      html.indexOf('data-testid="advanced-controls"'),
+    )
+
+    const advanced = wrapper.get('[data-testid="advanced-controls"]')
+    expect(advanced.attributes('open')).toBeUndefined()
+    expect(advanced.text()).toContain('Graph mode')
+    expect(advanced.text()).toContain('Moving average')
+    expect(wrapper.get('[data-testid="basic-controls"]').text()).toContain('Chart aspect')
+
+    const assumptions = wrapper.get('[data-testid="assumptions"]')
+    expect(assumptions.attributes('open')).toBeUndefined()
+    expect(assumptions.get('summary').text()).toContain('0 manual, 1 auto-detected')
+    expect(assumptions.text()).toContain('View source transactions')
+  })
 })

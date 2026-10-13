@@ -8,8 +8,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261007-006 | Forecast Explainable Decision Surface | Ready | 2026-10-07 | [active/TP-20261007-006-forecast-explainable-decision-surface.md](active/TP-20261007-006-forecast-explainable-decision-surface.md) |
-| TP-20261007-008 | Investments Portfolio Hierarchy | Ready | 2026-10-07 | [active/TP-20261007-008-investments-portfolio-hierarchy.md](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
+| TP-20261007-008 | Investments Portfolio Hierarchy | In Progress | 2026-10-07 | [active/TP-20261007-008-investments-portfolio-hierarchy.md](active/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Ready | 2026-10-07 | [active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md](active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | 2026-10-01 | [completed/TP-20261001-001-plaid-connection-health-reconnect.md](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
@@ -25,6 +24,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261007-004 | Transactions Action Workbench | Complete | 2026-10-07 | [completed/TP-20261007-004-transactions-action-workbench.md](completed/TP-20261007-004-transactions-action-workbench.md) |
 | TP-20261007-005 | Accounts Portfolio + Connection Hierarchy | Complete | 2026-10-07 | [completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md](completed/TP-20261007-005-accounts-portfolio-connection-hierarchy.md) |
 | TP-20261007-007 | Planning Workflow Reauthor | Complete | 2026-10-07 | [completed/TP-20261007-007-planning-workflow-reauthor.md](completed/TP-20261007-007-planning-workflow-reauthor.md) |
+| TP-20261007-006 | Forecast Explainable Decision Surface | Complete | 2026-10-07 | [completed/TP-20261007-006-forecast-explainable-decision-surface.md](completed/TP-20261007-006-forecast-explainable-decision-surface.md) |
 
 ## Archived
 

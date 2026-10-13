@@ -2,9 +2,10 @@
   <section class="summary-panel" aria-label="Forecast summary and account selection">
     <div class="summary-header-row">
       <div>
-        <h3 class="summary-header">Summary</h3>
-        <p class="summary-intro">
-          Adjust baseline inputs and choose which accounts contribute to the forecast.
+        <h3 class="summary-header">Where you're headed</h3>
+        <p class="summary-lead" data-testid="summary-lead">
+          Net change over this horizon: <strong>{{ netDelta }}</strong> · {{ includedSet.size }}
+          accounts included
         </p>
       </div>
       <button
@@ -65,49 +66,55 @@
           ${{ netBalance.toFixed(2) }}
         </button>
       </div>
-      <div class="field-group">
-        <label class="label tooltip-label" for="manual-income-input">
-          Manual Income
-          <span class="tooltip-affordance">
-            <button type="button" class="tooltip-trigger" aria-label="Explain Manual Income">
-              ?
-            </button>
-            <span role="tooltip" class="tooltip-content">
-              {{ tooltipCopy.manualIncome }}
-            </span>
-          </span>
-        </label>
-        <input
-          id="manual-income-input"
-          type="number"
-          class="input"
-          :value="localIncome"
-          inputmode="decimal"
-          @input="handleManualIncomeInput"
-        />
-      </div>
-      <div class="field-group">
-        <label class="label tooltip-label" for="liability-rate-input">
-          Liability Rate
-          <span class="tooltip-affordance">
-            <button type="button" class="tooltip-trigger" aria-label="Explain Liability Rate">
-              ?
-            </button>
-            <span role="tooltip" class="tooltip-content">
-              {{ tooltipCopy.liabilityRate }}
-            </span>
-          </span>
-        </label>
-        <input
-          id="liability-rate-input"
-          type="number"
-          class="input"
-          :value="localRate"
-          inputmode="decimal"
-          @input="handleLiabilityRateInput"
-        />
-      </div>
     </div>
+
+    <details class="manual-inputs" data-testid="manual-inputs">
+      <summary class="manual-inputs__summary">Manual baseline inputs</summary>
+      <div class="summary-grid">
+        <div class="field-group">
+          <label class="label tooltip-label" for="manual-income-input">
+            Manual Income
+            <span class="tooltip-affordance">
+              <button type="button" class="tooltip-trigger" aria-label="Explain Manual Income">
+                ?
+              </button>
+              <span role="tooltip" class="tooltip-content">
+                {{ tooltipCopy.manualIncome }}
+              </span>
+            </span>
+          </label>
+          <input
+            id="manual-income-input"
+            type="number"
+            class="input"
+            :value="localIncome"
+            inputmode="decimal"
+            @input="handleManualIncomeInput"
+          />
+        </div>
+        <div class="field-group">
+          <label class="label tooltip-label" for="liability-rate-input">
+            Liability Rate
+            <span class="tooltip-affordance">
+              <button type="button" class="tooltip-trigger" aria-label="Explain Liability Rate">
+                ?
+              </button>
+              <span role="tooltip" class="tooltip-content">
+                {{ tooltipCopy.liabilityRate }}
+              </span>
+            </span>
+          </label>
+          <input
+            id="liability-rate-input"
+            type="number"
+            class="input"
+            :value="localRate"
+            inputmode="decimal"
+            @input="handleLiabilityRateInput"
+          />
+        </div>
+      </div>
+    </details>
 
     <div v-if="isSelectorOpen" id="forecast-account-selector" class="selector-panel" role="region">
       <p class="selector-title">Account contribution breakdown</p>
@@ -378,6 +385,16 @@ function toggleExcluded(accountId) {
 </script>
 
 <style scoped>
+.summary-lead {
+  font-size: 1.1rem;
+}
+
+.manual-inputs__summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
 @reference "../../assets/css/main.css";
 .summary-panel {
   background: var(--surface);

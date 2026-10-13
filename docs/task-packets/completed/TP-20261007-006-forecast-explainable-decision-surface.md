@@ -1,12 +1,12 @@
 # TP-20261007-006: Forecast Explainable Decision Surface
 
 **Packet ID:** TP-20261007-006  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-006-forecast-explainable-decision-surface.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-006-forecast-explainable-decision-surface.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-002  
 **Priority:** Normal  
@@ -164,3 +164,13 @@ npm run build
 ## Completion report
 
 Report reordered sections, Basic/Advanced split, assumptions disclosure, preserved controls/provenance, tests, and deviations.
+
+---
+
+## Completion report (2026-10-13)
+
+- **Order now:** `ForecastSummaryPanel` (leads with "Where you're headed" + net change and included-account count; Assets/Liabilities/Current Balance stay; Manual Income and Liability Rate moved into a collapsed `Manual baseline inputs` `<details>`) → basic controls row (Chart aspect) → `ForecastChart` → `ForecastBreakdown` → collapsed `Forecast assumptions: N manual, M auto-detected. Review assumptions` `<details>` (manual/realized lists + full Auto-Detected Adjustments with source transactions and matching fields) → collapsed `Advanced model controls` `<details>` (graph mode, moving average, normalize history) → cashflow modal → ForecastAdjustmentsForm.
+- **Copy:** page subtitle now "Projected balances based on your known cash flows and adjustments"; empty state tells the user to select an account in scope or add an adjustment.
+- **Preserved:** all control v-models still feed `useForecastData`; provenance (reason, confidence, source transactions, matching fields) unchanged and reachable inside the assumptions disclosure; native `<details>`, no new dependency.
+- **Tests:** ForecastLayout.spec (chart precedes assumptions precedes advanced; both collapsed; basic control present; summary counts; source toggle reachable), ForecastSummaryPanel.spec (manual disclosure collapsed, lead). Vitest 49 files / 218 tests pass; lint 0 errors; build OK. Not viewed in a browser.
+- **Deviations:** `ForecastChart.spec.ts` not changed (chart untouched). "Major warning if data insufficient" is the existing empty/error state; no new warning derived. Chart aspect left visible as the only basic control beyond scope (which lives in the summary panel's account selector).

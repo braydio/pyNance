@@ -119,4 +119,11 @@ describe('ForecastSummaryPanel', () => {
       'Liability Rate subtracts $65.00 per day from the projection in Year view',
     )
   })
+
+  it('keeps manual baseline inputs in a collapsed disclosure and leads with net change', () => {
+    const wrapper = mount(ForecastSummaryPanel, { props: { netChange: 42 } })
+    expect(wrapper.get('[data-testid="manual-inputs"]').attributes('open')).toBeUndefined()
+    expect(wrapper.find('#manual-income-input').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="summary-lead"]').text()).toContain('Net change')
+  })
 })

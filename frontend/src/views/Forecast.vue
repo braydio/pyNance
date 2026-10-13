@@ -3,7 +3,9 @@
   <BasePageLayout class="forecast-view">
     <PageHeader :icon="LineChart">
       <template #title>Forecast</template>
-      <template #subtitle>With complex voodoo magic</template>
+      <template #subtitle
+        >Projected balances based on your known cash flows and adjustments</template
+      >
     </PageHeader>
     <ForecastLayout />
   </BasePageLayout>
