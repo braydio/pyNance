@@ -58,7 +58,8 @@ and are removed from the variable-spending average. V1 routes (`_auto_wage_adjus
 `simulate_cash_ledger(events=...)`), `streams` (per-stream audit: status, origin, cadence, amount,
 confidence + level, reason, `source_transaction_ids`, `next_dates`), `proposed_rules`,
 `allocation_audit`, `reconciliation` (counts/amounts per bucket, rejected counts), `coverage`
-(history days, confidence, residual model status) and `residual_model`.
+(history days, confidence, residual model status), `residual_model` and `residual_history` (the complete
+daily residual grid used by `v2_uncertainty`). Inferred streams also carry `amount_dispersion`.
 
 ## Adapter
 

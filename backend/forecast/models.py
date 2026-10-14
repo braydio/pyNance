@@ -478,3 +478,94 @@ class ForecastV2Result:
             "accounts": _serialize_value(self.accounts),
             "warnings": _serialize_value(self.warnings),
         }
+
+
+@dataclass
+class ForecastUncertaintyResult:
+    """Seeded Monte Carlo bands and risks around the deterministic V2 baseline.
+
+    ``baseline`` is the deterministic ledger and never depends on the seed. ``bands`` hold
+    liquid-cash percentiles (a lower percentile is less cash). When the history cannot support an
+    estimate, ``uncertainty_available`` is False, ``reason`` says why, ``bands`` carry only the
+    baseline and no percentiles are produced. Percentiles are model output, not guarantees.
+    """
+
+    uncertainty_available: bool
+    reason: Optional[str]
+    model_version: str
+    seed: Optional[int]
+    simulation_count: int
+    horizon_days: int
+    threshold: float
+    history_coverage_days: int
+    baseline: list[dict[str, Any]] = field(default_factory=list)
+    bands: list[dict[str, Any]] = field(default_factory=list)
+    risk: dict[str, Any] = field(default_factory=dict)
+    assumptions: dict[str, Any] = field(default_factory=dict)
+    warnings: list[dict[str, Any]] = field(default_factory=list)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation."""
+        return {
+            "uncertainty_available": self.uncertainty_available,
+            "reason": self.reason,
+            "model_version": self.model_version,
+            "seed": self.seed,
+            "simulation_count": self.simulation_count,
+            "horizon_days": self.horizon_days,
+            "threshold": self.threshold,
+            "history_coverage_days": self.history_coverage_days,
+            "baseline": _serialize_value(self.baseline),
+            "bands": _serialize_value(self.bands),
+            "risk": _serialize_value(self.risk),
+            "assumptions": _serialize_value(self.assumptions),
+            "warnings": _serialize_value(self.warnings),
+        }
+
+
+@dataclass
+class ForecastBacktestReport:
+    """Rolling as-of backtest of the V2 forecast.
+
+    Attributes:
+        model_version: Forecast model identifier.
+        horizons: Evaluated horizons in days.
+        cutoffs_requested: Number of as-of dates requested.
+        folds_evaluated: Folds with usable anchors and at least one truth point.
+        skipped: Skip counts by reason (never treated as zero error). Fold-level reasons count
+            folds; ``missing_truth_horizons`` counts individual horizon samples without truth.
+        balance: Per-horizon ``samples``, ``mae``, ``bias`` (predicted - actual).
+        recurring: Next-occurrence date/amount error summary.
+        negative_cash: Precision/recall of negative-cash prediction, or ``supported: false``.
+        interval_coverage: Per-horizon P10-P90 inclusion rate when uncertainty was evaluated.
+        folds: Per-fold records (predictions are independent of any later data).
+        data_window: First/last cutoff and history coverage.
+    """
+
+    model_version: str
+    horizons: list[int]
+    cutoffs_requested: int
+    folds_evaluated: int
+    skipped: dict[str, int] = field(default_factory=dict)
+    balance: dict[str, Any] = field(default_factory=dict)
+    recurring: dict[str, Any] = field(default_factory=dict)
+    negative_cash: dict[str, Any] = field(default_factory=dict)
+    interval_coverage: dict[str, Any] = field(default_factory=dict)
+    folds: list[dict[str, Any]] = field(default_factory=list)
+    data_window: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation."""
+        return {
+            "model_version": self.model_version,
+            "horizons": list(self.horizons),
+            "cutoffs_requested": self.cutoffs_requested,
+            "folds_evaluated": self.folds_evaluated,
+            "skipped": _serialize_value(self.skipped),
+            "balance": _serialize_value(self.balance),
+            "recurring": _serialize_value(self.recurring),
+            "negative_cash": _serialize_value(self.negative_cash),
+            "interval_coverage": _serialize_value(self.interval_coverage),
+            "folds": _serialize_value(self.folds),
+            "data_window": _serialize_value(self.data_window),
+        }

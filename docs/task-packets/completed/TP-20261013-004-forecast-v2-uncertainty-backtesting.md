@@ -1,12 +1,12 @@
 # TP-20261013-004: Forecast V2 Probabilities + Rolling Backtesting
 
 **Packet ID:** TP-20261013-004  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-13  
 **Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261013-004-forecast-v2-uncertainty-backtesting.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261013-003  
 **Priority:** Normal  
@@ -110,3 +110,32 @@ Next: TP-20261013-005 adds versioned endpoint/frontend and scenario comparison u
 
 Implement from this canonical packet, not old docs. Check the packet tracker and only the listed symbols against latest `main`; mark packet and tracker `In Progress` when starting. On completion, run tests, set `Complete`, move the packet to `completed/`, and update INDEX/TRACKER in the same commit. Keep local/origin `main` synchronized without force-push and report exact tests, deviations, blockers, and commit URL. Do not fabricate the authoring chat URL.
 
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261013-004
+Status: Complete
+
+**Delivered**
+- `backend/forecast/v2_validation.py`: `backtest_v2` (rolling as-of replay at 7/14/30 days) and `history_loaders` (as-of slicing of in-memory history).
+- `backend/forecast/v2_uncertainty.py`: `estimate_residual_uncertainty` and `simulate_v2_paths` (seeded Monte Carlo, P10/P50/P90 liquid-cash bands, path-minimum shortfall risk).
+- `backend/forecast/models.py`: additive `ForecastBacktestReport`, `ForecastUncertaintyResult`.
+- `backend/forecast/v2_sources.py`: now also returns `residual_history` (complete daily residual grid) and per-stream `amount_dispersion`; sources behavior otherwise unchanged.
+- Docs: `docs/backend/forecast/v2_validation.md`, `v2_uncertainty.md`, sources doc and roadmap updated. No API endpoint added; V1 untouched.
+
+**Method and contracts**
+- Uncertain inputs: inferred streams (one shared date shift of -1/0/+1 day with odds `1 - detection confidence`, one shared amount factor within observed dispersion, per path) and residual spend/income (block bootstrap by calendar week from the user's own history, never exceeding observed values). Manual rules, saved rules and adjustments are fixed; every path starts from the baseline's cash.
+- Risk uses each path's minimum balance over the horizon. Missing history (<4 complete weeks) returns `uncertainty_available: false` with a reason and baseline only. Limits: 1..1000 simulations, horizon 1..365, finite non-negative threshold, integer seed, non-empty account scope; 120 cutoffs per backtest.
+- Backtest metrics: MAE and signed bias (predicted - actual) per horizon, recurring date/amount error with matched/missed/unobserved counts, negative-cash precision/recall only when both outcomes exist, P10-P90 empirical coverage when requested, skipped-fold counts by reason (missing truth is never zero).
+
+**Synthetic validation fixture (tests):** one checking account over 10 months with biweekly payroll, monthly rent and fixed weekday spend; cutoffs every 7 days from 2026-08-31. The regular world scores MAE 0.0 / bias 0.0 and zero recurring date and amount error (35 matched streams); the jittered-payroll variant measures nonzero date (0.0857 days) and amount ($11.43) error and balance MAE of $20-$80.
+
+**Verification (commands run)**
+- `.venv/bin/python -m pytest tests/test_forecast_v2_validation.py tests/test_forecast_v2_uncertainty.py tests/test_forecast_v2_core.py tests/test_forecast_v2_sources.py tests/test_forecast_v2_adapters.py tests/test_forecast_engine.py -q` -> 129 passed. Leakage trap: mutating all transactions and snapshots after the cutoff leaves predictions identical. Runtime: 1000 paths x 365 days well under 1 s.
+- Full `pytest -q` still cannot collect (pre-existing); per-file runs show only the same pre-existing failures as a clean checkout. `black`/`ruff` clean.
+
+**Known limitations:** truth comes from recorded snapshots only (no reconstruction from transactions); empirical coverage on a short or perfectly regular history is not informative (the regular fixture covers 100%); bootstrap bands assume the past week-to-week variability repeats; no category-level variance.
+
+**Next packet:** TP-20261013-005 (V2 API, scenarios, frontend integration).

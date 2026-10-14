@@ -302,6 +302,9 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
             detected = _detect_cadence(dates) if len(dates) >= 2 else None
             amounts = [t["_amount"] for t in cluster]
             median = _median(amounts)
+            dispersion = (
+                0.0 if median == 0 else round(min(0.25, float(max(abs(a - median) for a in amounts) / abs(median))), 4)
+            )
             stream: dict[str, Any] = {
                 "stream_id": _stream_id(account_id, merchant, sign, cluster_index),
                 "origin": "inferred",
@@ -309,6 +312,7 @@ def _infer_streams(candidates: list[dict[str, Any]], as_of: date, opts: Mapping[
                 "merchant_key": merchant,
                 "sign": sign,
                 "amount": median,
+                "amount_dispersion": dispersion,
                 "transactions": cluster,
                 "dates": dates,
                 "last_seen": dates[-1],
@@ -385,6 +389,8 @@ def _residual_model(
         "spend_by_weekday": {},
         "income_by_weekday": {},
         "category_totals": {k: float(categories[k]) for k in sorted(categories)},
+        # Complete calendar-day grid (zeros included) for the uncertainty module's bootstrap.
+        "history": [{"date": d.isoformat(), "spend": str(spend[d]), "income": str(income[d])} for d in days],
     }
     if len(days) < int(opts["min_history_days"]):
         model["status"] = "insufficient_history"
@@ -598,6 +604,7 @@ def build_v2_inputs(
                 "metadata": {
                     "stream_id": stream["stream_id"],
                     "origin": stream["origin"],
+                    "amount_dispersion": stream.get("amount_dispersion", 0.0),
                     "label": stream.get("label") or stream.get("merchant_key"),
                     "source_transaction_ids": [t["transaction_id"] for t in stream["transactions"]][-12:],
                 },
@@ -663,6 +670,7 @@ def build_v2_inputs(
                 "merchant_key": stream.get("merchant_key"),
                 "cadence": stream["cadence"],
                 "amount": f"{stream['amount']:.2f}",
+                "amount_dispersion": stream.get("amount_dispersion", 0.0),
                 "confidence": stream["confidence"],
                 "confidence_level": _level(stream["confidence"]),
                 "confidence_note": "heuristic score, not a calibrated probability",
@@ -686,6 +694,7 @@ def build_v2_inputs(
             "as_of_date": as_of.isoformat(),
             "window_start": grid_start.isoformat(),
         },
+        "residual_history": model["history"],
         "residual_model": {
             "status": model["status"],
             "spend_by_weekday": {str(k): float(v) for k, v in sorted(model["spend_by_weekday"].items())},
