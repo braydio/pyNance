@@ -549,7 +549,7 @@ def simulate_cash_ledger(
         """Apply an event; return ``(cash_delta, internal)`` or ``None`` when dropped."""
         kind, amount, src, dst = event.kind, event.amount, event.account_id, event.counterparty_account_id
         if kind in _CASH_EFFECT_KINDS:
-            if src is None and kind in {"adjustment", "residual"}:
+            if src is None:  # no known funding account: consolidated cash only
                 cash["unassigned"] = cash.get("unassigned", zero) + amount
                 return amount, False
             if not is_cash(src):

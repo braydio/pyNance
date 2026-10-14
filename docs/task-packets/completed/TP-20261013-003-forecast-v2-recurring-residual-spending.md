@@ -1,12 +1,12 @@
 # TP-20261013-003: Forecast V2 Spending Intelligence: Recurrence + Residuals
 
 **Packet ID:** TP-20261013-003  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-13  
 **Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261013-003-forecast-v2-recurring-residual-spending.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261013-003-forecast-v2-recurring-residual-spending.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261013-002  
 **Priority:** High  
@@ -112,3 +112,35 @@ Next: TP-20261013-004 (Probabilities + Backtesting). Input is deterministic base
 
 Implement from this canonical packet, not old docs. Check the packet tracker and only the listed symbols against latest `main`; mark packet and tracker `In Progress` when starting. On completion, run tests, set `Complete`, move the packet to `completed/`, and update INDEX/TRACKER in the same commit. Keep local/origin `main` synchronized without force-push and report exact tests, deviations, blockers, and commit URL. Do not fabricate the authoring chat URL.
 
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261013-003
+Status: Complete
+
+**Delivered**
+- `backend/forecast/v2_sources.py` (pure): `build_v2_inputs` classifies posted history into `scheduled | residual | transfer | duplicate | pending | unclassified`, promotes recurring streams (manual > saved rule > inferred) and builds a weekday residual model over the complete calendar-day grid. Output feeds `simulate_cash_ledger(events=...)` directly (no new result type).
+- `backend/app/services/forecast_v2_sources.py`: user-scoped as-of DB adapter (`load_v2_source_data`, `build_user_v2_inputs`); read-only.
+- `backend/forecast/v2_core.py`: small additive change so cash events with no `account_id` (card-funded charges, residuals) apply to consolidated cash (`cash_by_account["unassigned"]`); tested.
+- Docs: `docs/backend/forecast/v2_sources.md` (new), v2_core doc and roadmap updated.
+
+**Replay outcomes (from tests)**
+- $2,000 every 14 days -> one biweekly stream, future paydays 2026-11-13/11-27/12-11, all salary rows `scheduled`, residual income 0.
+- $1,850 monthly rent -> exactly one outflow per month; ledger outflow = scheduled + residual with rent once.
+- Month-end pay (31st, Sep 30, weekend-shifted Oct 30) -> monthly, 2026-11-30 then 2026-12-31; semimonthly 1st/15th detected; amount jitter uses the median; cancelled stream -> `lapsed`.
+- Cash-to-cash transfer and cash-to-card payment -> `transfer` (no household spending); card purchase stays `residual` as the cash-spend proxy.
+- Two same-merchant subscriptions stay separate; repeated `transaction_id` -> `duplicate`; pending with booked equivalent -> `pending`.
+- Sparse history -> `insufficient_history`, no residual events; outlier spike winsorized.
+
+**Double-count / as-of / ownership tests**
+- `test_scheduled_plus_residual_does_not_double_count_in_the_ledger`, `test_every_in_scope_transaction_is_audited_exactly_once_and_reconciles` (audit count and amount sum equal input), `test_future_and_foreign_transactions_cannot_influence_the_forecast`, adapter tests for user scoping, `included_account_ids` narrowing only, as-of snapshots (no today's-balance substitution).
+
+**Commands**
+- `.venv/bin/python -m pytest tests/test_forecast_v2_sources.py tests/test_forecast_v2_adapters.py tests/test_forecast_v2_core.py tests/test_forecast_engine.py -q` -> 94 passed.
+- Full `pytest -q` still cannot collect (pre-existing module-stub collection errors); per-file runs show only the same pre-existing failures as a clean checkout (account_history, refresh_dispatcher, institutions, investments_routes, internal_transfer, model_deletion, model_field_validation, routes_recurring). `black`/`ruff` clean; `check_docs.py` reports no Python/Vue files to verify.
+
+**Remaining gaps:** category-level residuals are reported as totals only (weekday estimates are not split by category); yearly/other cadences from saved rules are reported `unsupported`; no persistent rule-review UI (non-goal). V1 routes unchanged.
+
+**Next packet:** TP-20261013-004 (Probabilities + Backtesting).

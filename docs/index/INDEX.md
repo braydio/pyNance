@@ -55,7 +55,6 @@
 * ./docs/task-packets/active/TP-20261013-003-forecast-v2-recurring-residual-spending.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md - Stale: No | Metadata: Missing
-* ./docs/task-packets/active/TP-20261013-002-forecast-v2-core-event-ledger.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/archived/README.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-003-dashboard-decision-first-recomposition.md - Stale: No | Metadata: Missing
@@ -67,6 +66,7 @@
 * ./docs/task-packets/completed/TP-20261012-001-link-account-modal-visibility.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-001-local-schema-head-activation.md - Stale: No | Metadata: Missing
+* ./docs/task-packets/completed/TP-20261013-002-forecast-v2-core-event-ledger.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-008-investments-portfolio-hierarchy.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261002-001-safe-to-spend-reliability.md - Stale: No | Metadata: Missing
 * ./docs/task-packets/completed/TP-20261007-006-forecast-explainable-decision-surface.md - Stale: No | Metadata: Missing
@@ -120,6 +120,7 @@
 * ./docs/backend/POSTGRE_CHEAT_SHEET.md - Stale: Yes | Metadata: Missing
 * ./docs/backend/cron_balance_history.md - Stale: Yes | Metadata: Missing
 * ./docs/backend/cron_sync.md - Stale: Yes | Metadata: Missing
+* ./docs/backend/forecast/v2_sources.md - Stale: No | Metadata: Missing
 * ./docs/backend/forecast/models.md - Stale: Yes | Metadata: Missing
 * ./docs/backend/forecast/engine.md - Stale: Yes | Metadata: Missing
 * ./docs/backend/forecast/v2_core.md - Stale: No | Metadata: Missing

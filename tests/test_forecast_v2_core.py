@@ -524,3 +524,24 @@ def test_prebuilt_event_objects_are_accepted():
         events=[prebuilt],
     )
     assert result.summary["ending_cash"] == 88.0
+
+
+def test_events_without_a_funding_account_hit_consolidated_cash_only():
+    result = simulate_cash_ledger(
+        start_date=START,
+        horizon_days=2,
+        account_snapshots=[acct("checking", "depository", 100, "checking")],
+        events=[
+            {
+                "date": "2026-11-01",
+                "amount": "-30",
+                "kind": "scheduled_bill",
+                "account_id": None,
+                "source_id": "card-sub",
+            },
+            {"date": "2026-11-02", "amount": "-5", "kind": "residual", "account_id": None, "source_id": "spend"},
+        ],
+    )
+    assert result.summary["ending_cash"] == 65.0
+    assert result.daily[1].cash_by_account["unassigned"] == Decimal("-35.00")
+    assert_invariants(result)

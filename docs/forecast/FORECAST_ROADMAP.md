@@ -115,6 +115,6 @@ base. Execute the packets in `docs/task-packets/` in order; V1 stays the live pa
 | Phase | Packet | Scope | Status |
 | --- | --- | --- | --- |
 | 1 | TP-20261013-002 | Event ledger, liquidity semantics, calendar recurrence (`backend/forecast/v2_core.py`, see `docs/backend/forecast/v2_core.md`) | Implemented |
-| 2 | TP-20261013-003 | Recurring detection and residual spending | Planned |
+| 2 | TP-20261013-003 | Recurring detection and residual spending (`backend/forecast/v2_sources.py`, see `docs/backend/forecast/v2_sources.md`) | Implemented |
 | 3 | TP-20261013-004 | Probabilities and rolling backtesting | Planned |
 | 4 | TP-20261013-005 | V2 API, scenarios, frontend integration | Planned |

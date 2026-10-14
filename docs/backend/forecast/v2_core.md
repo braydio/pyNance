@@ -58,7 +58,7 @@ rejected with `invalid_amount`.
 - Hidden/excluded accounts, accounts without a balance, and (when `owner_id` is passed) accounts of
   another `user_id` are excluded with warnings. The adapter must still pass only the authenticated
   user's accounts and events; `owner_id` is defence in depth.
-- Events must target an included account. Otherwise they are dropped with a warning and never applied.
+- Events must target an included account, or carry no `account_id` (e.g. a card-funded charge with no known funding account), in which case they affect consolidated cash only and appear under `cash_by_account["unassigned"]`. Events naming any other account are dropped with a warning and never applied.
 - Cash-to-cash transfers have no consolidated effect and are excluded from inflows/outflows. Paying a
   liability lowers cash and debt (net worth unchanged; overpayment floors debt at 0 and warns). Credit
   purchases are `liability_charge` events and only hit cash when a later payment is scheduled.
