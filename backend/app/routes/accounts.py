@@ -221,26 +221,29 @@ def _append_refresh_error(error_map: dict, account: Account, err_payload: dict) 
 
     inst = account.institution_name or "Unknown"
     item = _plaid_item_for_account(account)
-    key = (
-        getattr(item, "id", None) if err_payload.get("plaid_error_code") == "ITEM_LOGIN_REQUIRED" else None,
-        inst,
-        err_payload.get("plaid_error_code"),
-        err_payload.get("plaid_error_message"),
-    )
+    code = err_payload.get("plaid_error_code")
+    message = err_payload.get("plaid_error_message")
+    item_id = getattr(item, "id", None)
+    if code == "ITEM_LOGIN_REQUIRED":
+        # One Item needs one reauthentication regardless of message wording. Without a
+        # resolvable Item, keep accounts separate rather than guessing by institution.
+        key = (item_id, inst, code, None) if item_id is not None else (None, inst, code, account.account_id)
+    else:
+        key = (None, inst, code, message)
     if key not in error_map:
         error_map[key] = {
-            "connection_id": getattr(item, "id", None),
+            "connection_id": item_id,
             "institution_name": inst,
             "account_ids": [account.account_id],
             "account_names": [account.name],
-            "plaid_error_code": err_payload.get("plaid_error_code"),
-            "plaid_error_message": err_payload.get("plaid_error_message"),
+            "plaid_error_code": code,
+            "plaid_error_message": message,
             "plaid_error_type": err_payload.get("plaid_error_type"),
             "plaid_error_code_reason": err_payload.get("plaid_error_code_reason"),
             "plaid_request_id": err_payload.get("plaid_request_id"),
             "plaid_documentation_url": err_payload.get("plaid_documentation_url"),
         }
-    else:
+    elif account.account_id not in error_map[key]["account_ids"]:
         error_map[key]["account_ids"].append(account.account_id)
         error_map[key]["account_names"].append(account.name)
 

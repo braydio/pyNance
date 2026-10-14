@@ -578,3 +578,33 @@ def test_sync_endpoint_rolls_back_on_sync_error(client, monkeypatch):
     payload = resp.get_json()
     assert payload == {"status": "error", "message": "boom"}
     assert session_stub.rollbacks == 1
+
+
+def test_generate_update_link_token_connection_without_access_token_is_a_controlled_400(client):
+    DummyPlaidItem._records = {}
+    DummyPlaidItem.query = _DummyPlaidItemQuery()
+    item = DummyPlaidItem(id=21, item_id="no-token-item", user_id="user-1", access_token=None)
+    DummyPlaidItem._records[item.item_id] = item
+    response = client.post("/api/accounts/generate_update_link_token", json={"connection_id": 21})
+    assert response.status_code == 400
+    assert "access token" in response.get_json()["message"]
+    assert "no-token-item" not in response.get_data(as_text=True)
+
+
+def test_generate_update_link_token_connection_id_wins_over_account_id(client, monkeypatch):
+    DummyPlaidItem._records = {}
+    DummyPlaidItem.query = _DummyPlaidItemQuery()
+    item = DummyPlaidItem(id=22, item_id="both-ids-item", user_id="user-1", access_token="secret-token")
+    DummyPlaidItem._records[item.item_id] = item
+    plaid_module.Account.query = QueryStub([])
+    monkeypatch.setattr(
+        plaid_module,
+        "create_update_link_token",
+        lambda user_id, access_token: types.SimpleNamespace(link_token="link-both", expiration=None),
+    )
+    response = client.post(
+        "/api/accounts/generate_update_link_token",
+        json={"connection_id": 22, "account_id": "not-resolved-locally"},
+    )
+    assert response.status_code == 200
+    assert response.get_json()["connection_id"] == 22

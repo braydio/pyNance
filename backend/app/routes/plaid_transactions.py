@@ -376,7 +376,7 @@ def generate_update_link_token():
                 plaid_item = None
             if plaid_item is None:
                 return jsonify({"status": "error", "message": "Plaid connection not found"}), 404
-        if account_id and account is None:
+        if account_id and connection_id is None and account is None:
             return jsonify({"status": "error", "message": "Account not found"}), 404
         if plaid_item is None and account and account.plaid_account:
             plaid_item = PlaidItem.query.filter_by(item_id=account.plaid_account.item_id).first()
@@ -388,12 +388,15 @@ def generate_update_link_token():
                 access_token = getattr(plaid_item, "access_token", None)
 
         if not access_token:
-            logger.warning("Account %s missing Plaid access token", account.account_id)
+            logger.warning(
+                "Plaid update link requested for %s without an access token",
+                f"account {account.account_id}" if account else f"connection {getattr(plaid_item, 'id', None)}",
+            )
             return (
                 jsonify(
                     {
                         "status": "error",
-                        "message": "Account is not linked to Plaid or missing access token",
+                        "message": "Connection is not linked to Plaid or is missing an access token",
                     }
                 ),
                 400,

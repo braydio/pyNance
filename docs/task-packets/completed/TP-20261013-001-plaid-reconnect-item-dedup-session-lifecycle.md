@@ -1,12 +1,12 @@
 # TP-20261013-001: Plaid Reconnect Item Deduplication + Link Session Lifecycle
 
 **Packet ID:** TP-20261013-001  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-13  
 **Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** None (coordinate Settings edits with in-progress TP-20261007-009)  
 **Priority:** High  
@@ -253,3 +253,29 @@ Then run the repo's full available `pytest -q` and `cd frontend && npm run test 
 ## Completion report
 
 Report first line `Workstream: TP-20261013-001`. Include Status, GitHub commit URL, files changed, Item/account scenarios verified, exact commands/results, any unverified browser behavior/blockers, follow-up packet (or None), and the canonical packet path. Keep the workstream in `active/` if implementation is not fully complete and validated. Do not fabricate an authoring-chat URL.
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261013-001
+Status: Complete
+
+**Changed**
+- Backend: `_append_refresh_error` (`backend/app/routes/accounts.py`) aggregates `ITEM_LOGIN_REQUIRED` by Item and code (message excluded), de-duplicates account IDs, and keeps Item-less accounts account-scoped. `generate_update_link_token` (`backend/app/routes/plaid_transactions.py`) returns a controlled 400 for a connection with no access token (no `account.account_id` dereference) and no longer 404s when `connection_id` and an unresolved `account_id` are both sent.
+- Frontend: `reconnectConnectionGroups` in `plaidConnectionStatus.js` (one group per Item, persisted health beats stale refresh errors); `usePlaidReconnect` rewritten as an app-wide single-flight coordinator resolving `verified|cancelled|failed|busy`; Accounts and Settings (`RefreshPlaidControls.vue`) now share it with one Item-level action, "N accounts affected" copy, full-Item refresh and persisted-health verification.
+- `Button.vue` now declares `emits: ['click']`. Previously a parent `@click` ran twice (fall-through plus `$emit`), which also kept the Settings "All Linked Accounts" dropdown from ever opening.
+- Docs: `docs/integrations/plaid_error_remediation.md`.
+
+**Verified (commands run)**
+- `.venv/bin/python -m pytest tests/test_plaid_connection_health.py tests/test_api_plaid_transactions.py` → 22 passed (5 new).
+- `npx vitest run` → 51 files, 249 tests passed (new: lifecycle/grouping in `usePlaidReconnect.spec.js`, 6 Accounts lifecycle tests, new `RefreshPlaidControls.spec.js`).
+- `npx cypress run --component --spec src/components/__tests__/RefreshPlaidControls.cy.js` → 3 passing (fixed its stale `/accounts/...` intercept globs and missing `click-outside` directive; added a one-Item test).
+- `npx vite build` OK. `eslint`: only 2 pre-existing errors in files not touched.
+
+**Not verified / caveats**
+- No real Plaid Link run (needs live credentials and a browser); behavior verified against a fake `window.Plaid`.
+- Full `pytest -q` cannot collect (8 pre-existing module-stub collection errors, identical with and without this change). Run per file, the only failures (account_history, refresh_dispatcher, institutions, investments_routes, internal_transfer, model_deletion, model_field_validation, routes_recurring) are identical on a clean checkout.
+- `check_docs.py` reported no Python/Vue files to verify.
+
+**Follow-up:** None.

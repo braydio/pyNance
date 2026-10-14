@@ -12,7 +12,6 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261013-003 | Forecast V2 Spending Intelligence: Recurrence + Residuals | Ready | 2026-10-13 | [active/TP-20261013-003-forecast-v2-recurring-residual-spending.md](active/TP-20261013-003-forecast-v2-recurring-residual-spending.md) |
 | TP-20261013-004 | Forecast V2 Probabilities + Rolling Backtesting | Ready | 2026-10-13 | [active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md](active/TP-20261013-004-forecast-v2-uncertainty-backtesting.md) |
 | TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Ready | 2026-10-13 | [active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md](active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
-| TP-20261013-001 | Plaid Reconnect Item Deduplication + Link Session Lifecycle | Ready | 2026-10-13 | [active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md](active/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | 2026-10-01 | [completed/TP-20261001-001-plaid-connection-health-reconnect.md](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
 ## Completed
@@ -30,6 +29,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261007-006 | Forecast Explainable Decision Surface | Complete | 2026-10-07 | [completed/TP-20261007-006-forecast-explainable-decision-surface.md](completed/TP-20261007-006-forecast-explainable-decision-surface.md) |
 | TP-20261007-008 | Investments Portfolio Hierarchy | Complete | 2026-10-07 | [completed/TP-20261007-008-investments-portfolio-hierarchy.md](completed/TP-20261007-008-investments-portfolio-hierarchy.md) |
 | TP-20261007-009 | Cross-App Readability + Responsive + Accessibility Closure | Complete | 2026-10-07 | [completed/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md](completed/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md) |
+| TP-20261013-001 | Plaid Reconnect Item Deduplication + Link Session Lifecycle | Complete | 2026-10-13 | [completed/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md](completed/TP-20261013-001-plaid-reconnect-item-dedup-session-lifecycle.md) |
 
 ## Archived
 

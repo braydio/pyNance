@@ -19,11 +19,15 @@
       <p class="text-sm">
         Sign in again with {{ connection.accounts[0]?.institution || 'your institution' }} to resume
         Plaid updates.
+        <span data-testid="connection-account-count"
+          >{{ connection.accounts.length }}
+          {{ connection.accounts.length === 1 ? 'account' : 'accounts' }} affected.</span
+        >
       </p>
       <UiButton
         type="button"
         variant="primary"
-        :disabled="String(reconnectingId) === String(connection.key ?? connection.connectionId)"
+        :disabled="reconnectingId != null"
         @click="emit('reconnect', connection)"
       >
         {{

@@ -159,3 +159,54 @@ def test_bulk_reauth_errors_aggregate_by_item_not_institution(database):
         (accounts[0].account_id,),
         (accounts[1].account_id,),
     }
+
+
+def test_login_required_messages_for_one_item_aggregate_into_one_error(database):
+    _app, item, _links = database
+    accounts = Account.query.order_by(Account.account_id).all()
+    errors = {}
+    _append_refresh_error(
+        errors, accounts[0], {"plaid_error_code": "ITEM_LOGIN_REQUIRED", "plaid_error_message": "First wording"}
+    )
+    _append_refresh_error(
+        errors, accounts[1], {"plaid_error_code": "ITEM_LOGIN_REQUIRED", "plaid_error_message": "Second wording"}
+    )
+    _append_refresh_error(
+        errors, accounts[1], {"plaid_error_code": "ITEM_LOGIN_REQUIRED", "plaid_error_message": "Second wording"}
+    )
+
+    assert len(errors) == 1
+    (error,) = errors.values()
+    assert error["connection_id"] == item.id
+    assert error["account_ids"] == [accounts[0].account_id, accounts[1].account_id]
+    assert error["affected_account_ids"] == [accounts[0].account_id, accounts[1].account_id]
+    assert error["requires_reauth"] is True
+
+
+def test_login_required_without_item_identity_stays_account_scoped(database):
+    _app, _item, links = database
+    accounts = Account.query.order_by(Account.account_id).all()
+    for account in accounts:
+        account.institution_name = "Shared Bank"
+    for link in links:
+        link.plaid_item_id = None
+        link.item_id = None
+        link.access_token = None
+    db.session.commit()
+
+    errors = {}
+    payload = {"plaid_error_code": "ITEM_LOGIN_REQUIRED", "plaid_error_message": "Reauthenticate"}
+    _append_refresh_error(errors, accounts[0], payload)
+    _append_refresh_error(errors, accounts[1], payload)
+
+    assert len(errors) == 2
+    assert {error["connection_id"] for error in errors.values()} == {None}
+
+
+def test_non_reauth_errors_still_group_by_message(database):
+    accounts = Account.query.order_by(Account.account_id).all()
+    errors = {}
+    _append_refresh_error(errors, accounts[0], {"plaid_error_code": "RATE_LIMIT", "plaid_error_message": "slow"})
+    _append_refresh_error(errors, accounts[1], {"plaid_error_code": "RATE_LIMIT", "plaid_error_message": "slow"})
+    _append_refresh_error(errors, accounts[1], {"plaid_error_code": "RATE_LIMIT", "plaid_error_message": "other"})
+    assert len(errors) == 2

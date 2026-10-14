@@ -7,6 +7,10 @@
 <script setup>
 import { computed } from 'vue'
 
+// Declared so a parent's @click is delivered by this emit only. Undeclared, it also
+// fell through to the root <button> and every click handler ran twice.
+defineEmits(['click'])
+
 const props = defineProps({
   variant: {
     type: String,

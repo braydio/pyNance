@@ -38,6 +38,36 @@
       >
     </UiButton>
 
+    <div
+      v-for="group in reconnectGroups"
+      :key="group.key"
+      class="error-details reconnect-group"
+      role="status"
+      :data-testid="`reconnect-${group.key}`"
+    >
+      <div class="error-title">
+        Reconnect {{ group.accounts[0]?.institution_name || 'your institution' }}
+      </div>
+      <div class="reauth-hint" data-testid="reconnect-account-count">
+        {{ group.accountIds.length }}
+        {{ group.accountIds.length === 1 ? 'account' : 'accounts' }} affected. One sign-in repairs
+        them all.
+      </div>
+      <UiButton
+        class="reauth-button"
+        type="button"
+        variant="primary"
+        :disabled="activeKey != null"
+        @click="handleGroupReconnect(group)"
+      >
+        <span v-if="reauthingKey === group.key">Opening Plaid…</span>
+        <span v-else>Reconnect with Plaid</span>
+      </UiButton>
+      <div v-if="reauthMessages[group.key]" class="reauth-status" role="alert">
+        {{ reauthMessages[group.key] }}
+      </div>
+    </div>
+
     <div v-if="detailsOpen && refreshResult" class="details-panel">
       <div v-for="inst in institutionOrder" :key="inst" class="institution-block">
         <div class="institution-header">
@@ -74,24 +104,7 @@
                   Code: {{ errorByAccountId[acct.account_id].plaid_error_code }}
                 </div>
                 <div v-if="errorByAccountId[acct.account_id].requires_reauth" class="reauth-hint">
-                  Re-authentication required. Use Link update mode to resolve.
-                </div>
-                <UiButton
-                  v-if="shouldOfferReconnect(acct)"
-                  class="reauth-button"
-                  type="button"
-                  variant="primary"
-                  :disabled="reauthingAccountId === acct.account_id"
-                  @click.stop="handlePlaidReauth(acct)"
-                >
-                  <span v-if="reauthingAccountId === acct.account_id">Opening Plaid…</span>
-                  <span v-else>Reconnect with Plaid</span>
-                </UiButton>
-                <div
-                  v-if="reauthMessage && reauthingAccountId === acct.account_id"
-                  class="reauth-status"
-                >
-                  {{ reauthMessage }}
+                  Re-authentication required. Use the Reconnect action for this connection above.
                 </div>
               </div>
               <div v-else class="tx-list" :class="{ loading: accountDetailsLoading }">
@@ -131,6 +144,7 @@ import Card from '@/components/ui/Card.vue'
 import UiButton from '@/components/ui/Button.vue'
 import api from '@/services/api'
 import { usePlaidReconnect } from '@/composables/usePlaidReconnect'
+import { reconnectConnectionGroups } from '@/utils/plaidConnectionStatus'
 
 export default {
   name: 'RefreshPlaidControls',
@@ -139,8 +153,8 @@ export default {
     UiButton,
   },
   setup() {
-    const { reconnect } = usePlaidReconnect()
-    return { reconnectWithPlaid: reconnect }
+    const { reconnect, activeKey } = usePlaidReconnect()
+    return { reconnectWithPlaid: reconnect, activeKey }
   },
   data() {
     const today = new Date().toISOString().slice(0, 10)
@@ -161,18 +175,11 @@ export default {
       accountTransactions: {},
       accountDetailsLoading: false,
       openAccountId: null,
-      reauthingAccountId: null,
-      reauthMessage: '',
+      reauthingKey: null,
+      reauthMessages: {},
     }
   },
   methods: {
-    shouldOfferReconnect(acct) {
-      const errorInfo = this.errorByAccountId[acct.account_id]
-      if (!errorInfo?.requires_reauth) return false
-      const targetAccountId =
-        errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
-      return acct.account_id === targetAccountId
-    },
     toggleDropdown() {
       this.dropdownOpen = !this.dropdownOpen
     },
@@ -260,47 +267,50 @@ export default {
         this.isRefreshing = false
       }
     },
-    async handlePlaidReauth(acct) {
-      const errorInfo = this.errorByAccountId[acct.account_id] || {}
-      const accountId =
-        errorInfo.reauth_account_id || errorInfo.affected_account_ids?.[0] || acct.account_id
-      this.reauthingAccountId = acct.account_id
-      this.reauthMessage = 'Preparing Plaid update mode…'
+    setReauthMessage(key, message) {
+      this.reauthMessages = { ...this.reauthMessages, [key]: message }
+    },
+    /**
+     * Reconnect one Plaid Item. Every known account in the Item is refreshed afterwards and
+     * the warning stays until persisted health (not Link success) says the Item is healthy.
+     */
+    async handleGroupReconnect(group) {
+      const key = group.key
+      this.reauthingKey = key
+      this.setReauthMessage(key, 'Preparing Plaid update mode…')
       try {
-        await this.reconnectWithPlaid({
-          connectionId: errorInfo.connection_id,
-          accountId,
+        const result = await this.reconnectWithPlaid({
+          connectionId: group.connectionId,
+          accountId: group.accountId ?? group.accountIds[0],
+          accountCount: group.accountIds.length,
           onSuccess: async () => {
-            this.reauthMessage = 'Plaid reconnect complete. Refreshing activity…'
+            this.setReauthMessage(key, 'Plaid reconnect complete. Refreshing activity…')
             this.refreshResult = await api.refreshAccounts({
               user_id: this.user_id,
-              account_ids: errorInfo.affected_account_ids || [accountId],
+              account_ids: group.accountIds,
             })
-            const health = await api.getAccounts()
-            const stillNeedsReauth = (health?.accounts || []).some(
-              (account) =>
-                String(account.connection_status?.connection_id) ===
-                  String(errorInfo.connection_id) && account.connection_status?.requires_reauth,
-            )
-            this.reauthMessage = stillNeedsReauth
-              ? 'Plaid still reports that this connection needs attention.'
-              : ''
+            await this.loadAccounts()
             this.detailsOpen = true
-            this.reauthingAccountId = null
+            // A persisted-healthy Item suppresses its stale refresh errors in reconnectGroups.
+            const stillNeedsReauth = this.reconnectGroups.some((item) => item.key === key)
+            this.setReauthMessage(
+              key,
+              stillNeedsReauth ? 'Plaid still reports that this connection needs attention.' : '',
+            )
           },
-          onError: (message) => {
-            this.reauthMessage = message
-            this.reauthingAccountId = null
-          },
+          onError: (message) => this.setReauthMessage(key, message),
         })
-      } catch (err) {
-        console.error('Error launching Plaid update mode:', err)
-        this.reauthMessage = 'Unable to open Plaid reconnect. Please try again.'
-        this.reauthingAccountId = null
+        if (result.status === 'busy') this.setReauthMessage(key, result.message)
+        else if (result.status === 'cancelled') this.setReauthMessage(key, '')
+      } finally {
+        this.reauthingKey = null
       }
     },
   },
   computed: {
+    reconnectGroups() {
+      return reconnectConnectionGroups(this.accounts, this.refreshResult?.errors || [])
+    },
     hasErrors() {
       return !!(this.refreshResult?.errors && this.refreshResult.errors.length)
     },

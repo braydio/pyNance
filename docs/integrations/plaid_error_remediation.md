@@ -12,6 +12,18 @@ Plaid API errors occur when account connections become stale due to changed cred
 
 The state is set by an API `ITEM_LOGIN_REQUIRED` failure or an `ITEM:ERROR` webhook carrying that code. It clears only after a successful authenticated Plaid refresh or an `ITEM:LOGIN_REPAIRED` webhook. Link completion alone does not clear the warning. Use `connection_id` in `POST /api/plaid/transactions/generate_update_link_token`; legacy `account_id` remains supported.
 
+## Reconnect sessions: one per Item
+
+A user reauthenticates **once per Plaid Item**, never once per account in it.
+
+- **Identity:** the local `PlaidItem.id` (`connection_id`) is the key. Two separate Items at the same bank are two connections and two deliberate reconnects. Accounts with no resolvable Item stay account-scoped (`account:<id>` fallback) and are never merged by institution name.
+- **Refresh errors:** `_append_refresh_error` aggregates `ITEM_LOGIN_REQUIRED` by Item and error code only, so differing message wording for one Item yields one error with all affected `account_ids`.
+- **Shared grouping:** `reconnectConnectionGroups` (`frontend/src/utils/plaidConnectionStatus.js`) builds one group per Item for both the Accounts page and Settings → Refresh Plaid. Persisted `connection_status` wins over a stale refresh error.
+- **Single-flight Link:** `usePlaidReconnect` allows one open Link window app-wide. A repeat request for the active connection joins it; a different connection gets `{ status: 'busy' }`. `reconnect()` always resolves with `verified`, `cancelled` (clean close, no error text), `failed` or `busy`.
+- **Verification:** Link success only means Plaid finished. The caller refreshes **every** known account in the Item, reloads persisted health, and keeps the warning until the server reports the Item healthy.
+- **Legacy fallback:** `account_id` is still accepted by `/generate_update_link_token`; `connection_id` wins when both are sent. A connection with no stored access token returns a controlled 400.
+- **Diagnostics:** the browser logs launch/exit stages with the local connection key and account count only. No tokens, external Item IDs or credentials.
+
 ## ITEM_LOGIN_REQUIRED Error
 
 ### What it means

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { shallowMount, flushPromises } from '@vue/test-utils'
 import { vi } from 'vitest'
 import { ref } from 'vue'
@@ -311,6 +311,149 @@ describe('Accounts.vue', () => {
     expect(
       wrapper.findAll('button').filter((button) => button.text().includes('Reconnect with Plaid')),
     ).toHaveLength(1)
+  })
+
+  describe('Item reconnect session lifecycle', () => {
+    const child = (account_id, connection_id) => ({
+      account_id,
+      name: account_id,
+      institution_name: 'Bank',
+      connection_status: {
+        provider: 'plaid',
+        state: 'reauth_required',
+        requires_reauth: true,
+        connection_id,
+      },
+    })
+    const reconnectButtons = (wrapper) =>
+      wrapper.findAll('button').filter((b) => /Reconnect with Plaid|Reconnecting/.test(b.text()))
+    async function mountConnections(list) {
+      api.getAccounts.mockReset()
+      api.getAccounts.mockResolvedValue({ accounts: list })
+      api.refreshAccounts.mockClear()
+      api.generatePlaidUpdateLinkToken.mockClear()
+      const wrapper = shallowMount(Accounts, {
+        global: {
+          stubs: {
+            TabbedPageLayout: {
+              template:
+                '<div><slot name="header" /><slot name="Summary" /><slot name="Connections" /></div>',
+            },
+            AccountActionsSidebar: true,
+            LinkedAccountsSection: false,
+            Card: { template: '<div><slot /></div>' },
+            PageHeader: { template: '<div />' },
+            UiButton: { inheritAttrs: true, template: '<button v-bind="$attrs"><slot /></button>' },
+            SkeletonCard: true,
+            RetryError: true,
+            AccountBalanceHistoryChart: true,
+            TransactionsTable: true,
+            NetYearComparisonChart: true,
+            AssetsBarTrended: true,
+            AccountsReorderChart: true,
+          },
+        },
+      })
+      await flushPromises()
+      return wrapper
+    }
+    let openLinks = []
+    afterEach(async () => {
+      // Close any Link left open so the app-wide single-session lock is released.
+      openLinks.forEach((link) => link.handlers?.onExit(null))
+      openLinks = []
+      await flushPromises()
+    })
+    function fakeLink() {
+      const link = { handlers: null, open: vi.fn() }
+      openLinks.push(link)
+      window.Plaid = {
+        create: vi.fn((handlers) => {
+          link.handlers = handlers
+          return { open: link.open }
+        }),
+      }
+      return link
+    }
+
+    it('offers one action for a three-account Item and refreshes all three after Link', async () => {
+      const wrapper = await mountConnections([child('a', 1), child('b', 1), child('c', 1)])
+      expect(reconnectButtons(wrapper)).toHaveLength(1)
+      expect(wrapper.get('[data-testid="connection-account-count"]').text()).toContain('3 accounts')
+      const link = fakeLink()
+      await reconnectButtons(wrapper)[0].trigger('click')
+      await flushPromises()
+      await link.handlers.onSuccess()
+      await flushPromises()
+      expect(api.generatePlaidUpdateLinkToken).toHaveBeenCalledTimes(1)
+      expect(api.refreshAccounts).toHaveBeenCalledWith({ account_ids: ['a', 'b', 'c'] })
+      // Server still reports reauth, so the warning and a usable action remain.
+      expect(reconnectButtons(wrapper)).toHaveLength(1)
+      expect(reconnectButtons(wrapper)[0].text()).toContain('Reconnect with Plaid')
+      expect(wrapper.text()).toContain('still reports')
+    })
+
+    it('shows separate actions for two Items at one institution', async () => {
+      const wrapper = await mountConnections([child('a', 1), child('b', 2)])
+      expect(reconnectButtons(wrapper)).toHaveLength(2)
+    })
+
+    it('keeps the button busy until Link exits and a double click opens one session', async () => {
+      const wrapper = await mountConnections([child('a', 1)])
+      const link = fakeLink()
+      const button = reconnectButtons(wrapper)[0]
+      await button.trigger('click')
+      await button.trigger('click')
+      await flushPromises()
+      expect(api.generatePlaidUpdateLinkToken).toHaveBeenCalledTimes(1)
+      expect(link.open).toHaveBeenCalledTimes(1)
+      expect(reconnectButtons(wrapper)[0].text()).toContain('Reconnecting')
+      expect(reconnectButtons(wrapper)[0].attributes('disabled')).toBeDefined()
+    })
+
+    it('restores the action on cancel without marking the Item healthy', async () => {
+      const wrapper = await mountConnections([child('a', 1)])
+      const link = fakeLink()
+      await reconnectButtons(wrapper)[0].trigger('click')
+      await flushPromises()
+      link.handlers.onExit(null)
+      await flushPromises()
+      const button = reconnectButtons(wrapper)[0]
+      expect(button.text()).toContain('Reconnect with Plaid')
+      expect(button.attributes('disabled')).toBeUndefined()
+      expect(api.refreshAccounts).not.toHaveBeenCalled()
+      expect(wrapper.text()).toContain('needs to be reconnected')
+    })
+
+    it('shows a failed verification and leaves the action usable', async () => {
+      const wrapper = await mountConnections([child('a', 1)])
+      const link = fakeLink()
+      api.refreshAccounts.mockRejectedValueOnce(new Error('Refresh unavailable'))
+      await reconnectButtons(wrapper)[0].trigger('click')
+      await flushPromises()
+      await link.handlers.onSuccess()
+      await flushPromises()
+      expect(wrapper.text()).toContain('Refresh unavailable')
+      expect(reconnectButtons(wrapper)[0].text()).toContain('Reconnect with Plaid')
+    })
+
+    it('clears the warning only after the server reports the Item healthy', async () => {
+      const wrapper = await mountConnections([child('a', 1)])
+      const link = fakeLink()
+      await reconnectButtons(wrapper)[0].trigger('click')
+      await flushPromises()
+      api.getAccounts.mockResolvedValue({
+        accounts: [
+          {
+            ...child('a', 1),
+            connection_status: { provider: 'plaid', state: 'healthy', connection_id: 1 },
+          },
+        ],
+      })
+      await link.handlers.onSuccess()
+      await flushPromises()
+      expect(reconnectButtons(wrapper)).toHaveLength(0)
+    })
   })
 
   function mountWith(accountsResponse, slots = '<slot name="header" /><slot name="Summary" />') {

@@ -459,31 +459,32 @@ async function loadAccounts() {
 async function reconnectConnection(connection) {
   const id = connection.connectionId
   const key = connection.key ?? `connection:${String(id)}`
+  const setMessage = (message) => {
+    reconnectMessage.value = { ...reconnectMessage.value, [key]: message }
+  }
   reconnectingId.value = key
-  reconnectMessage.value = { ...reconnectMessage.value, [key]: '' }
+  setMessage('')
+  const accountIds = connection.accountIds ?? connection.accounts.map((a) => a.account_id)
   try {
-    await reconnect({
+    const result = await reconnect({
       connectionId: id,
-      accountId: connection.accountId ?? connection.accounts[0]?.account_id,
+      accountId: connection.accountId ?? accountIds[0],
+      accountCount: accountIds.length,
       onSuccess: async () => {
-        reconnectMessage.value = { ...reconnectMessage.value, [key]: 'Verifying connection…' }
-        await api.refreshAccounts({
-          account_ids: connection.accounts.map((account) => account.account_id),
-        })
+        setMessage('Verifying connection…')
+        // Refresh every account in the Item, then trust persisted health, not Link success.
+        await api.refreshAccounts({ account_ids: accountIds })
         await loadAccounts()
-        if (uniqueReconnectConnections(accounts.value).some((item) => item.key === key)) {
-          reconnectMessage.value = {
-            ...reconnectMessage.value,
-            [key]: 'Plaid still reports that this connection needs attention.',
-          }
-        }
+        setMessage(
+          uniqueReconnectConnections(accounts.value).some((item) => item.key === key)
+            ? 'Plaid still reports that this connection needs attention.'
+            : '',
+        )
       },
-      onError: (message) => {
-        reconnectMessage.value = { ...reconnectMessage.value, [key]: message }
-      },
+      onError: setMessage,
     })
-  } catch (error) {
-    reconnectMessage.value = { ...reconnectMessage.value, [key]: error.message }
+    if (result.status === 'busy') setMessage(result.message)
+    else if (result.status === 'cancelled') setMessage('')
   } finally {
     reconnectingId.value = null
   }
