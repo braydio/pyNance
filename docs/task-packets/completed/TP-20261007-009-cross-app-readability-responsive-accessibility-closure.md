@@ -1,12 +1,12 @@
 # TP-20261007-009: Cross-App Readability + Responsive + Accessibility Closure
 
 **Packet ID:** TP-20261007-009  
-**Status:** In Progress  
+**Status:** Complete  
 **Created:** 2026-10-07  
-**Last updated:** 2026-10-07  
+**Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261007-009-cross-app-readability-responsive-accessibility-closure.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261007-003, TP-20261007-004, TP-20261007-005, TP-20261007-006, TP-20261007-007, TP-20261007-008  
 **Priority:** Normal  
@@ -218,3 +218,16 @@ Not done (why this packet stays open):
 - Unified loading/empty/error state grammar.
 - Secondary-view sweep with seeded data (audit used empty responses) and dead-code removal.
 - Noted, unfixed: Transactions search icon overlaps the placeholder text at 360 px.
+
+---
+
+## Completion report (2026-10-13)
+
+Closed on owner acceptance after the code-level pass (771286a22) and the 80-combination breakpoint/theme audit (41394e97a): no horizontal overflow at 360/768/1024/1440 in either theme; page gutters and Tailwind spacing utilities restored; Forecast and Investments narrow-width fixes.
+
+**Deferred (not completed, accepted by owner):**
+- Manual focus-visible and tab-order check in both themes.
+- Cypress specs for primary views against a real backend.
+- Unified loading/empty/error state grammar.
+- Seeded-data audit, secondary-view sweep and dead-code removal.
+- Transactions search icon overlaps placeholder at 360 px.
