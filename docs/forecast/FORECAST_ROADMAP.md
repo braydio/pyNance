@@ -106,3 +106,15 @@ Documentation & Cleanup
 Update API reference and service docs with final route usage.
 
 Mark completed tasks in 03REF_Development_Planning.md and the roadmap document.
+
+## Forecast V2 Phases [FORECAST_V2]
+
+Forecast V1 (above) projects one average daily net delta. V2 projects dated events over a liquid-cash
+base. Execute the packets in `docs/task-packets/` in order; V1 stays the live path until phase 4.
+
+| Phase | Packet | Scope | Status |
+| --- | --- | --- | --- |
+| 1 | TP-20261013-002 | Event ledger, liquidity semantics, calendar recurrence (`backend/forecast/v2_core.py`, see `docs/backend/forecast/v2_core.md`) | Implemented |
+| 2 | TP-20261013-003 | Recurring detection and residual spending | Planned |
+| 3 | TP-20261013-004 | Probabilities and rolling backtesting | Planned |
+| 4 | TP-20261013-005 | V2 API, scenarios, frontend integration | Planned |

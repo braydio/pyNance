@@ -328,3 +328,153 @@ class ForecastResult:
             "series": self.series.to_dict(),
             "metadata": _serialize_value(self.metadata),
         }
+
+
+# ---------------------------------------------------------------------------
+# Forecast V2 (event-driven liquid-cash ledger). Independent of the V1 response
+# models above; V1 serialization is unchanged.
+# ---------------------------------------------------------------------------
+
+
+def _cents(value: Decimal) -> float:
+    """Serialize a cent-quantized Decimal as a plain float."""
+    return float(value)
+
+
+@dataclass(frozen=True)
+class ForecastV2Event:
+    """One dated, signed cash/liability effect fed to the V2 ledger.
+
+    Sign convention: for ``scheduled_income`` / ``scheduled_bill`` / ``adjustment`` /
+    ``residual`` the ``amount`` is the signed effect on cash (deposit positive, debit
+    negative). For ``transfer``, ``liability_payment`` and ``liability_charge`` the
+    ``amount`` is a positive magnitude and direction comes from ``account_id`` (source)
+    and ``counterparty_account_id`` (destination). Provider signs must be normalized
+    once at the adapter boundary, never inferred here.
+
+    Attributes:
+        event_id: Stable instance identifier (``source:source_id:YYYY-MM-DD``).
+        date: Calendar day the effect lands on.
+        amount: Cent-quantized Decimal amount (see sign convention).
+        account_id: Cash account affected, or the source account of a transfer.
+        kind: One of ``EVENT_KINDS``.
+        source_id: Identifier of the originating rule/transaction/adjustment.
+        source: Origin family (``recurring``, ``manual``, ``residual`` ...).
+        confidence: Optional 0-1 confidence in the event.
+        counterparty_account_id: Destination account for transfers/payments.
+        override: When True this event replaces another with the same ``event_id``.
+        metadata: JSON-safe provenance.
+    """
+
+    event_id: str
+    date: date
+    amount: Decimal
+    account_id: Optional[str]
+    kind: str
+    source_id: Optional[str] = None
+    source: str = "manual"
+    confidence: Optional[float] = None
+    counterparty_account_id: Optional[str] = None
+    override: bool = False
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary (amount as a fixed 2-decimal string)."""
+        return {
+            "event_id": self.event_id,
+            "date": self.date.isoformat(),
+            "amount": f"{self.amount:.2f}",
+            "account_id": self.account_id,
+            "counterparty_account_id": self.counterparty_account_id,
+            "kind": self.kind,
+            "source_id": self.source_id,
+            "source": self.source,
+            "confidence": self.confidence,
+            "override": self.override,
+            "metadata": _serialize_value(self.metadata),
+        }
+
+
+@dataclass
+class ForecastV2DailyPoint:
+    """One calendar day of the V2 ledger.
+
+    Cash and net worth are separate fields and never share a value.
+    Invariants (cent-exact): ``ending_cash == starting_cash + inflows - outflows +
+    adjustments`` and ``net_worth == ending_cash + other_assets + investment_value -
+    liability_balance``.
+    """
+
+    date: date
+    starting_cash: Decimal
+    inflows: Decimal
+    outflows: Decimal
+    adjustments: Decimal
+    ending_cash: Decimal
+    event_ids: list[str]
+    cash_by_account: dict[str, Decimal]
+    liability_balance: Decimal
+    investment_value: Decimal
+    other_assets: Decimal
+    net_worth: Decimal
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return a JSON-serializable dictionary representation."""
+        return {
+            "date": self.date.isoformat(),
+            "starting_cash": _cents(self.starting_cash),
+            "inflows": _cents(self.inflows),
+            "outflows": _cents(self.outflows),
+            "adjustments": _cents(self.adjustments),
+            "ending_cash": _cents(self.ending_cash),
+            "event_ids": list(self.event_ids),
+            "cash_by_account": {key: _cents(self.cash_by_account[key]) for key in sorted(self.cash_by_account)},
+            "liability_balance": _cents(self.liability_balance),
+            "investment_value": _cents(self.investment_value),
+            "other_assets": _cents(self.other_assets),
+            "net_worth": _cents(self.net_worth),
+        }
+
+
+@dataclass
+class ForecastV2Result:
+    """Deterministic output of the V2 cash ledger.
+
+    Attributes:
+        status: ``ok`` or ``insufficient_data`` (no eligible liquid-cash account).
+        start_date: First projected day (inclusive).
+        end_date: Last projected day (inclusive).
+        horizon_days: Number of projected calendar days.
+        daily: One point per calendar day, including zero-event days.
+        events: Events actually applied, ordered by ``(date, event_id)``.
+        summary: Aggregate metrics (cents as floats, dates as ISO strings).
+        accounts: Included/excluded account ids grouped by bucket.
+        warnings: Data-quality warnings, each ``{"code", "message", ...}``.
+        baseline: Always True; marks this as the no-scenario, no-uncertainty run.
+    """
+
+    status: str
+    start_date: date
+    end_date: date
+    horizon_days: int
+    daily: list[ForecastV2DailyPoint] = field(default_factory=list)
+    events: list[ForecastV2Event] = field(default_factory=list)
+    summary: dict[str, Any] = field(default_factory=dict)
+    accounts: dict[str, Any] = field(default_factory=dict)
+    warnings: list[dict[str, Any]] = field(default_factory=list)
+    baseline: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        """Return the JSON-serializable result; identical inputs give identical output."""
+        return {
+            "status": self.status,
+            "baseline": self.baseline,
+            "start_date": self.start_date.isoformat(),
+            "end_date": self.end_date.isoformat(),
+            "horizon_days": self.horizon_days,
+            "daily": [point.to_dict() for point in self.daily],
+            "events": [event.to_dict() for event in self.events],
+            "summary": _serialize_value(self.summary),
+            "accounts": _serialize_value(self.accounts),
+            "warnings": _serialize_value(self.warnings),
+        }

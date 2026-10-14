@@ -396,3 +396,17 @@ def test_apply_adjustments_distributed_range_spread():
         ],
     )
     assert [point.forecast_balance for point in adjusted] == [90.0, 80.0, 70.0]
+
+
+def test_v1_result_serialization_is_unchanged_by_v2_models():
+    """V2 models are additive; the V1 payload keys must not change."""
+    from forecast.models import ForecastResult
+
+    assert set(ForecastResult().to_dict()) == {
+        "timeline",
+        "summary",
+        "cashflows",
+        "adjustments",
+        "series",
+        "metadata",
+    }

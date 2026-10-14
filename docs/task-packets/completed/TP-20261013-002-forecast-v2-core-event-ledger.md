@@ -1,12 +1,12 @@
 # TP-20261013-002: Forecast V2 Core: Event Ledger + Liquidity Semantics
 
 **Packet ID:** TP-20261013-002  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-13  
 **Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261013-002-forecast-v2-core-event-ledger.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261013-002-forecast-v2-core-event-ledger.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** None (forecast-series phase 1 of 4)  
 **Priority:** High  
@@ -130,3 +130,28 @@ Report as `Workstream: TP-20261013-002`; Status, commit URL, validation results,
 
 Implement from this canonical packet, not old docs. Check the packet tracker and only the listed symbols against latest `main`; mark packet and tracker `In Progress` when starting. On completion, run tests, set `Complete`, move the packet to `completed/`, and update INDEX/TRACKER in the same commit. Keep local/origin `main` synchronized without force-push and report exact tests, deviations, blockers, and commit URL. Do not fabricate the authoring chat URL.
 
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261013-002
+Status: Complete
+
+**Delivered**
+- `backend/forecast/v2_core.py` (pure, no DB/clock): `simulate_cash_ledger`, `expand_scheduled_events`, `classify_forecast_account`, `ForecastV2InputError`.
+- `backend/forecast/models.py`: additive `ForecastV2Event`, `ForecastV2DailyPoint`, `ForecastV2Result` (V1 models/serialization untouched).
+- Docs: `docs/backend/forecast/v2_core.md` (new), V2 phase table appended to `docs/forecast/FORECAST_ROADMAP.md`, index regenerated.
+
+**Contracts**
+- Cent-exact `Decimal` ledger; invariants `ending = start + inflows - outflows + adjustments`, next start = prior end, `net_worth = cash + other_assets + investments - liabilities`, all asserted in tests. One point per calendar day, opening balance = EOD before `start_date`.
+- Cash, debt, investments and net worth are separate fields; unknown/hidden/foreign accounts excluded with warnings; no eligible cash account returns `status: insufficient_data`.
+- Event kinds `scheduled_income|scheduled_bill|adjustment|residual|transfer|liability_payment|liability_charge`; transfers between cash accounts net to zero, liability payments lower cash and debt (net worth neutral), credit purchases are not cash events.
+- Cadences once/daily/weekly/biweekly/semimonthly/monthly with anchor-day clamping (31 -> Feb 28/29 -> Mar 31), effective end dates, stable `event_id` dedupe with override support. Ownership: adapter passes only the user's data; `owner_id` is defence in depth.
+
+**Verification (commands run)**
+- `.venv/bin/python -m pytest tests/test_forecast_v2_core.py tests/test_forecast_engine.py -q` -> 64 passed (50 new V2 tests, 1 new V1 compatibility test).
+- Full `pytest -q` cannot collect in this repo (8 pre-existing module-stub collection errors, identical with and without this change), so test files were run individually: the only failures are the same pre-existing ones recorded under TP-20261013-001.
+- `check_docs.py --changed-since origin/main` reported no Python/Vue files to verify; `ruff` clean.
+
+**Known issues:** none new. **Next packet:** TP-20261013-003 (imports `simulate_cash_ledger`/`expand_scheduled_events`; must not add a parallel result type).
