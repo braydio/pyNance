@@ -1,12 +1,12 @@
 # TP-20261013-005: Forecast V2 API + Scenarios + Frontend Integration
 
 **Packet ID:** TP-20261013-005  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-13  
 **Last updated:** 2026-10-13  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** `docs/task-packets/active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md`  
+**Canonical path:** `docs/task-packets/completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md`  
 **Workstream size:** One implementation packet  
 **Depends on:** TP-20261013-004  
 **Priority:** Normal  
@@ -146,3 +146,34 @@ Fourth and final Forecast V2 packet. Report `Workstream: TP-20261013-005`, statu
 
 Implement from this canonical packet, not old docs. Check the packet tracker and only the listed symbols against latest `main`; mark packet and tracker `In Progress` when starting. On completion, run tests, set `Complete`, move the packet to `completed/`, and update INDEX/TRACKER in the same commit. Keep local/origin `main` synchronized without force-push and report exact tests, deviations, blockers, and commit URL. Do not fabricate the authoring chat URL.
 
+
+---
+
+## Completion report (2026-10-13)
+
+Workstream: TP-20261013-005
+Status: Complete
+
+**Feature flag / default:** V2 is the Forecast page default. Roll back with `VITE_FORECAST_MODEL_VERSION=v1` at build time or the "Forecast model" selector under Advanced model controls. Requests without `model_version` (or with `v1`) return the unchanged V1 response; `GET /api/forecast` and `ForecastOrchestrator` are untouched.
+
+**Backend**
+- `backend/app/services/forecast_v2_service.py` (new): request validation (horizon 1..365, <=5 scenarios, <=1000 simulations, start within 2 years back / 1 year ahead), user-scoped as-of loading via `forecast_v2_sources`, deterministic baseline, optional seeded bands/risk, request-local scenario replay (`residual_spending_multiplier`, `income_multiplier`, `delay_income_days`, dated `adjustments`), V1-compatible keys plus `model_version`, `liquidity`, `net_worth`, `uncertainty`, `drivers`, `data_quality`, `scenarios`.
+- `backend/app/routes/forecast.py::compute_forecast_route`: `model_version` branch (unknown -> 400; 400/403/500 mapping). V1 branch unchanged.
+- `v2_uncertainty.simulate_v2_paths`: now uses per-(seed, path, stream) generators so scenarios share random draws (common random numbers), and accepts fixed `cash_adjustments`.
+- Access: no session auth exists on these routes, so V2 fails closed with 403 for any requested account not owned by the body `user_id` (documented limitation).
+
+**Frontend**
+- `useForecastData.ts`: typed V2 request/response, latest-request-wins with `AbortController`, server error text surfaced; V1 default preserved.
+- `ForecastSummaryPanel.vue` (cash today / end / lowest / shortfall, simulated risk or why unavailable, debt/investments/net worth as a separate note), `ForecastChart.vue` (P10-P90 band, P50, scenario overlays, "Liquid cash" axis), `ForecastBreakdown.vue` (drivers with origin/confidence, data-quality caveats), new `ForecastScenarioComparison.vue` (checkbox presets, comparison table), `ForecastLayout.vue` wiring.
+- Pre-existing bug fixed: `ForecastChart` watcher ran before its `<canvas>` existed, so a chart whose data arrived asynchronously never rendered (verified in a real browser: 0 painted pixels before, 158k after). Now `flush: 'post'`.
+
+**Tested scenarios (backend, seeded SQLite world):** 1/7/30/90-day horizons; two cash accounts + card + investment account (cash $5,000 vs debt $700 vs investments $5,000 kept separate); monthly rent once per month; biweekly payroll; large-bill low-cash probability; foreign/unknown account ids -> 403; paycheck-delay scenario moves ending cash by exactly the income pushed past the horizon; spending-cut scenario moves it by exactly the cents-rounded residual-spend difference; income multiplier and scenario adjustments; zero risk delta for an unchanged scenario with the same seed; past start never anchors to today's balance; future start falls back to current balance with a warning.
+
+**Commands run and results**
+- `.venv/bin/python -m pytest tests/test_forecast_v2_api.py tests/test_forecast_v2_service.py tests/test_forecast_v2_core.py tests/test_forecast_v2_sources.py tests/test_forecast_v2_uncertainty.py tests/test_forecast_v2_validation.py -q` -> 152 passed (plus `test_forecast_v2_adapters.py`, `test_forecast_engine.py` green). Mixing in `tests/test_forecast_route.py` in one process fails collection because that file replaces `sys.modules["app"]` (pre-existing); each file passes on its own.
+- Full `pytest -q` still cannot collect (pre-existing); per-file runs show only the same failures as a clean checkout.
+- `cd frontend`: `npx vitest run` -> 53 files, 271 tests passed; `npx vite build` OK; ESLint: only 3 pre-existing errors in files not touched (`useDashboardModals.spec.ts`, `useDateRange.ts`) - `cypress/e2e/forecast-v2.cy.js` is lint-clean.
+- Browser: `npx cypress run --e2e --config baseUrl=http://localhost:5174 --spec cypress/e2e/forecast-v2.cy.js` against the Vite dev server (`VITE_USER_ID_PLAID` set) with the V2 response mocked -> 4 passing (outcomes + drivers + rendered chart, keyboard-operated scenario request and replayed deltas, 403 error text, no horizontal overflow at 360px). The real backend was not running, so the browser path used mocked responses; the backend contract is covered by the pytest API tests.
+- `check_docs.py --changed-since origin/main`: no Python/Vue files to verify (reports none); docs updated in `docs/backend/app/routes/forecast.md`, `frontend/docs/forecast-data-contract.md`, `docs/forecast/FORECAST_ROADMAP.md`.
+
+**Residual follow-up ideas (not done):** real authentication for the forecast routes; category-level residual variance; persisting scenarios (explicit non-goal); a full-stack browser run against a live backend; the Forecast page still issues two initial compute requests on mount (harmless now that stale responses are ignored).

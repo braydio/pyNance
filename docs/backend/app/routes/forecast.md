@@ -1,6 +1,6 @@
 ---
 Owner: Backend Team
-Last Updated: 2026-04-08
+Last Updated: 2026-10-14
 Status: Active
 ---
 
@@ -104,3 +104,61 @@ Latest snapshot serialization now includes explicit account investment metadata 
   "adjustments": []
 }
 ```
+
+## V2 compute contract (`model_version: "v2"`)
+
+`POST /api/forecast/compute` is versioned on the same URL. Omit `model_version` (or send `"v1"`) for the legacy
+average-delta response, which is unchanged. Any other value except `"v2"` returns 400. V2 is implemented in
+`app/services/forecast_v2_service.py` on top of `forecast/v2_core.py`, `v2_sources.py` and `v2_uncertainty.py`
+(see `docs/backend/forecast/`).
+
+### Request (V2 additions)
+
+```json
+{
+  "model_version": "v2", "user_id": "alice", "start_date": "2026-11-01", "horizon_days": 90,
+  "included_account_ids": ["chk"], "excluded_account_ids": [], "adjustments": [],
+  "simulation": {"enabled": true, "count": 300, "seed": 12345, "cash_threshold": 500},
+  "scenarios": [
+    {"id": "pay-delay", "label": "Paycheck 7 days late", "changes": {"delay_income_days": 7}},
+    {"id": "cut-spend", "label": "Spending down 15%", "changes": {"residual_spending_multiplier": 0.85}}
+  ]
+}
+```
+
+- `start_date` is the first projected day; the opening balance is the end of the previous day. It may be up to two
+  years back (replay) or one year ahead. `horizon_days` 1..365 (default 30).
+- `simulation`: `enabled` defaults to `false`; `count` 1..1000; integer `seed` (default 12345); `cash_threshold` >= 0.
+- `scenarios`: at most 5, request-local, never stored. Allowed `changes`: `residual_spending_multiplier` (0..3),
+  `income_multiplier` (0..3), `delay_income_days` (0..60) and dated `adjustments`. Unknown keys, duplicate ids and
+  changes on the reserved id `baseline` return 400. Each scenario is replayed through the same ledger; probabilistic
+  comparisons share the baseline's random draws, so deltas reflect the scenario rather than RNG noise.
+- `adjustments` keep the V1 shape (`amount`, `date`, optional `frequency`, `distribution`, `range_start`, `range_end`).
+
+### Response (V2)
+
+All V1 keys (`timeline`, `summary`, `cashflows`, `adjustments`, `series`, `metadata`) are kept, with
+`forecast_balance` defined as **liquid cash** (checking, savings, cash only), never net worth. Additional keys:
+`model_version`, `status` (`ok` or `insufficient_data`), `liquidity` (`starting_cash`, `ending_cash`, `min_cash`,
+`min_cash_date`, `first_shortfall_date`), `net_worth` (debt and investments reported separately),
+`uncertainty` (`available`, risks, `sample_count`, `seed`, or `reason` when unavailable), `drivers` (scheduled events
+with `origin` and `confidence_label`), `data_quality` (as-of date, history days, warnings) and `scenarios`.
+Timeline rows only carry `p10`/`p50`/`p90` when a simulation produced them; there are no placeholder percentiles.
+
+### Access and data rules
+
+- This deployment has no session authentication on the forecast routes, so the body `user_id` is not proof of
+  identity. V2 fails closed: any `included_account_ids` entry not owned by that user returns **403** (nothing is
+  silently ignored) and every query is scoped by `user_id`. If real authentication is added, pass the
+  authenticated id into `compute_v2_forecast` at the route.
+- Data is loaded as of `start_date - 1`; later transactions and snapshots are never read. When no snapshot exists on or
+  before that date: a past start returns `insufficient_data` with warnings; a present/future start falls back to the
+  account's current balance and reports `anchored_to_current_balance`.
+- Errors: 400 invalid input, 403 foreign accounts, 500 unexpected failure.
+
+### Rollout and rollback
+
+The Forecast page requests V2 by default. Roll back by building the frontend with `VITE_FORECAST_MODEL_VERSION=v1`
+or by choosing "Legacy average-delta (V1)" under Advanced model controls. V1 code paths and `GET /api/forecast`
+are untouched.
+

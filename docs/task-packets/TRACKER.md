@@ -6,7 +6,6 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Ready | Normal | TP-20261013-004 | main | 2026-10-13 | [packet](active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 | TP-20261012-001 | Link Account Modal Visibility + Overlay Readability | Complete | High | None | main | 2026-10-13 | [packet](completed/TP-20261012-001-link-account-modal-visibility.md) |
 | TP-20261007-002 | UI Hierarchy Foundation + App Shell | Complete | High | TP-20261007-003 | Dashboard Decision-First Recomposition | Complete | High | TP-20261007-001, TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-003-dashboard-decision-first-recomposition.md) |
 | TP-20261007-004 | Transactions Action Workbench | Complete | High | TP-20261007-002 | main | 2026-10-13 | [packet](completed/TP-20261007-004-transactions-action-workbench.md) |
@@ -19,6 +18,7 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 | TP-20261013-002 | Forecast V2 Core: Event Ledger + Liquidity Semantics | Complete | High | None (forecast-series phase 1 of 4) | main | 2026-10-13 | [packet](completed/TP-20261013-002-forecast-v2-core-event-ledger.md) |
 | TP-20261013-003 | Forecast V2 Spending Intelligence: Recurrence + Residuals | Complete | High | TP-20261013-002 | main | 2026-10-13 | [packet](completed/TP-20261013-003-forecast-v2-recurring-residual-spending.md) |
 | TP-20261013-004 | Forecast V2 Probabilities + Rolling Backtesting | Complete | Normal | TP-20261013-003 | main | 2026-10-13 | [packet](completed/TP-20261013-004-forecast-v2-uncertainty-backtesting.md) |
+| TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Complete | Normal | TP-20261013-004 | main | 2026-10-13 | [packet](completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 | TP-20261007-001 | main | 2026-10-13 | [packet](completed/TP-20261007-002-ui-hierarchy-foundation-app-shell.md) |
 | TP-20261007-001 | Local Schema Head Activation + Safe-to-Spend Migration Guard | Complete | High | TP-20261002-001 | main | 2026-10-09 | [packet](completed/TP-20261007-001-local-schema-head-activation.md) |
 | TP-20261002-001 | Safe-to-Spend Reliability + Correct Cashflow Semantics | Complete | High | None | main | 2026-10-07 | [packet](completed/TP-20261002-001-safe-to-spend-reliability.md) |

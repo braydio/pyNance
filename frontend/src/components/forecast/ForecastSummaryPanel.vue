@@ -19,7 +19,48 @@
       </button>
     </div>
 
-    <div class="summary-grid">
+    <div v-if="isV2 && liquidity" class="liquidity-summary" data-testid="liquidity-summary">
+      <dl class="liquidity-grid">
+        <div class="liquidity-cell">
+          <dt>Cash today</dt>
+          <dd data-testid="cash-today">{{ money(liquidity.starting_cash) }}</dd>
+        </div>
+        <div class="liquidity-cell">
+          <dt>Cash at end</dt>
+          <dd data-testid="cash-end">{{ money(liquidity.ending_cash) }}</dd>
+        </div>
+        <div class="liquidity-cell">
+          <dt>Lowest cash</dt>
+          <dd data-testid="cash-min">
+            {{ money(liquidity.min_cash) }}
+            <span class="liquidity-muted">on {{ liquidity.min_cash_date }}</span>
+          </dd>
+        </div>
+        <div class="liquidity-cell">
+          <dt>Projected shortfall</dt>
+          <dd data-testid="shortfall" :class="{ 'liquidity-warn': liquidity.first_shortfall_date }">
+            {{ shortfallCopy }}
+          </dd>
+        </div>
+      </dl>
+      <p v-if="uncertainty?.available" class="risk-copy" data-testid="risk-copy">
+        Simulated chance cash drops below $0 on any day:
+        <strong>{{ percent(uncertainty.risk_below_zero_any_day) }}</strong
+        >; below {{ money(uncertainty.threshold ?? 0) }}:
+        <strong>{{ percent(uncertainty.risk_below_threshold_any_day) }}</strong>
+        ({{ uncertainty.sample_count }} simulations, a model estimate, not a guarantee).
+      </p>
+      <p v-else class="risk-copy" data-testid="risk-unavailable">
+        {{ uncertaintyUnavailableCopy }}
+      </p>
+      <p v-if="netWorth" class="liquidity-muted" data-testid="net-worth-note">
+        Not part of this cash forecast: debt {{ money(netWorth.liabilities.starting) }} ·
+        investments {{ money(netWorth.investments.starting) }} · net worth
+        {{ money(netWorth.starting) }}
+      </p>
+    </div>
+
+    <div v-if="!isV2" class="summary-grid">
       <div class="field-group">
         <p class="label tooltip-label">
           Assets
@@ -243,6 +284,22 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  modelVersion: {
+    type: String,
+    default: 'v1',
+  },
+  liquidity: {
+    type: Object,
+    default: null,
+  },
+  uncertainty: {
+    type: Object,
+    default: null,
+  },
+  netWorth: {
+    type: Object,
+    default: null,
+  },
 })
 
 const emit = defineEmits([
@@ -251,6 +308,23 @@ const emit = defineEmits([
   'update:includedAccountIds',
   'update:excludedAccountIds',
 ])
+
+const isV2 = computed(() => props.modelVersion === 'v2')
+const currency = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })
+const money = (value) => currency.format(Number(value ?? 0))
+const percent = (value) => `${Math.round(Number(value ?? 0) * 100)}%`
+const shortfallCopy = computed(() =>
+  props.liquidity?.first_shortfall_date
+    ? `Cash goes below $0 on ${props.liquidity.first_shortfall_date}`
+    : 'No shortfall projected',
+)
+const uncertaintyUnavailableCopy = computed(() => {
+  const reason = String(props.uncertainty?.reason ?? '')
+  if (reason === 'simulation_disabled') return 'Probability estimates are turned off.'
+  if (reason.startsWith('insufficient_history'))
+    return 'Not enough clean history yet to estimate a range or shortfall probability.'
+  return 'A range and shortfall probability are not available for this forecast.'
+})
 
 const localIncome = toRef(props, 'manualIncome')
 const localRate = toRef(props, 'liabilityRate')
@@ -452,6 +526,45 @@ function toggleExcluded(accountId) {
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
+}
+
+.liquidity-summary {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.liquidity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.liquidity-cell dt {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.liquidity-cell dd {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.liquidity-muted {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.liquidity-warn {
+  color: var(--color-error, #b91c1c);
+}
+
+.risk-copy {
+  font-size: 0.875rem;
+  margin: 0;
 }
 
 .tooltip-affordance {

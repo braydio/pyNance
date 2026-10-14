@@ -92,6 +92,7 @@ def load_v2_source_data(
             "is_hidden": bool(a.is_hidden),
             "user_id": a.user_id,
             "balance": snapshots[a.account_id].balance if a.account_id in snapshots else None,
+            "current_balance": a.balance,
             "as_of": snapshots[a.account_id].date if a.account_id in snapshots else None,
         }
         for a in accounts_rows

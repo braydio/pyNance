@@ -8,7 +8,6 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
-| TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Ready | 2026-10-13 | [active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md](active/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 | TP-20261001-001 | Plaid Item Connection Health + Reconnect UI | Complete | 2026-10-01 | [completed/TP-20261001-001-plaid-connection-health-reconnect.md](completed/TP-20261001-001-plaid-connection-health-reconnect.md) |
 
 ## Completed
@@ -30,6 +29,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261013-002 | Forecast V2 Core: Event Ledger + Liquidity Semantics | Complete | 2026-10-13 | [completed/TP-20261013-002-forecast-v2-core-event-ledger.md](completed/TP-20261013-002-forecast-v2-core-event-ledger.md) |
 | TP-20261013-003 | Forecast V2 Spending Intelligence: Recurrence + Residuals | Complete | 2026-10-13 | [completed/TP-20261013-003-forecast-v2-recurring-residual-spending.md](completed/TP-20261013-003-forecast-v2-recurring-residual-spending.md) |
 | TP-20261013-004 | Forecast V2 Probabilities + Rolling Backtesting | Complete | 2026-10-13 | [completed/TP-20261013-004-forecast-v2-uncertainty-backtesting.md](completed/TP-20261013-004-forecast-v2-uncertainty-backtesting.md) |
+| TP-20261013-005 | Forecast V2 API + Scenarios + Frontend Integration | Complete | 2026-10-13 | [completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md](completed/TP-20261013-005-forecast-v2-api-scenarios-frontend.md) |
 
 ## Archived
 

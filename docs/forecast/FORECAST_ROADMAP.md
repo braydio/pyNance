@@ -110,11 +110,11 @@ Mark completed tasks in 03REF_Development_Planning.md and the roadmap document.
 ## Forecast V2 Phases [FORECAST_V2]
 
 Forecast V1 (above) projects one average daily net delta. V2 projects dated events over a liquid-cash
-base. Execute the packets in `docs/task-packets/` in order; V1 stays the live path until phase 4.
+base. Execute the packets in `docs/task-packets/` in order; The Forecast page now requests V2 by default; V1 and `GET /api/forecast` stay available for rollback.
 
 | Phase | Packet | Scope | Status |
 | --- | --- | --- | --- |
 | 1 | TP-20261013-002 | Event ledger, liquidity semantics, calendar recurrence (`backend/forecast/v2_core.py`, see `docs/backend/forecast/v2_core.md`) | Implemented |
 | 2 | TP-20261013-003 | Recurring detection and residual spending (`backend/forecast/v2_sources.py`, see `docs/backend/forecast/v2_sources.md`) | Implemented |
 | 3 | TP-20261013-004 | Probabilities and rolling backtesting (`v2_uncertainty.py`, `v2_validation.py`; see `docs/backend/forecast/v2_uncertainty.md`, `v2_validation.md`) | Implemented |
-| 4 | TP-20261013-005 | V2 API, scenarios, frontend integration | Planned |
+| 4 | TP-20261013-005 | V2 API, scenarios, frontend integration (`model_version: "v2"` on `/api/forecast/compute`; see `docs/backend/app/routes/forecast.md`) | Implemented; V2 is the Forecast page default, V1 remains a reversible fallback |

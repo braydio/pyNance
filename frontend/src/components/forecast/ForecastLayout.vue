@@ -24,6 +24,10 @@
       :included-account-ids="includedAccountIds"
       :excluded-account-ids="excludedAccountIds"
       :compute-meta="forecastComputeMeta"
+      :model-version="appliedModelVersion"
+      :liquidity="liquidity"
+      :uncertainty="uncertainty"
+      :net-worth="netWorth"
       @update:manualIncome="manualIncome = $event"
       @update:liabilityRate="liabilityRate = $event"
       @update:includedAccountIds="includedAccountIds = $event"
@@ -49,12 +53,25 @@
       :series="series"
       :selected-aspect="selectedAspect"
       :compute-meta="forecastComputeMeta"
+      :model-version="appliedModelVersion"
+      :scenario-lines="scenarioLines"
       @update:viewType="viewType = $event"
+    />
+
+    <ForecastScenarioComparison
+      v-if="appliedModelVersion === 'v2'"
+      v-model:selected-ids="selectedScenarioIds"
+      :presets="SCENARIO_PRESETS"
+      :results="scenarioResults"
+      :loading="isLoading"
     />
 
     <ForecastBreakdown
       :forecast-items="forecastItems"
       :view-type="viewType"
+      :model-version="appliedModelVersion"
+      :drivers="drivers"
+      :data-quality="dataQuality"
       @select-item="openCashflowModal"
     />
 
@@ -80,7 +97,13 @@
             </ul>
           </div>
           <div>
-            <h3 class="adjustments-title">Realized Income Used for Auto-Calculation</h3>
+            <h3 class="adjustments-title">
+              {{
+                appliedModelVersion === 'v2'
+                  ? 'Projected Income Events'
+                  : 'Realized Income Used for Auto-Calculation'
+              }}
+            </h3>
             <p v-if="realizedIncomePoints.length === 0" class="adjustments-empty">
               No realized income points were provided for auto-calculation.
             </p>
@@ -93,7 +116,15 @@
           </div>
         </div>
 
-        <div class="card glass auto-adjustments-card">
+        <p
+          v-if="appliedModelVersion === 'v2'"
+          class="adjustments-empty"
+          data-testid="v2-assumptions-note"
+        >
+          Detected bills and paychecks are listed under “What drives this forecast”. Everyday
+          spending is estimated from your recent history and shown as typical spending.
+        </p>
+        <div v-else class="card glass auto-adjustments-card">
           <div class="auto-adjustments-card__header">
             <div>
               <h3 class="adjustments-title">Auto-Detected Adjustments</h3>
@@ -288,23 +319,40 @@
       <summary class="disclosure-summary">Advanced model controls</summary>
       <div class="control-row advanced-controls__body">
         <label>
-          Graph mode
-          <select v-model="graphMode" class="input ml-2">
-            <option value="combined">Combined</option>
-            <option value="forecast">Forecast only</option>
-            <option value="historical">Historical only</option>
+          Forecast model
+          <select v-model="modelVersion" class="input ml-2" data-testid="model-version-select">
+            <option value="v2">Liquid cash (V2, recommended)</option>
+            <option value="v1">Legacy average-delta (V1)</option>
           </select>
         </label>
-        <label>
-          Moving average
-          <select v-model.number="movingAverageWindow" class="input ml-2">
-            <option :value="7">7 days</option>
-            <option :value="30">30 days</option>
-            <option :value="60">60 days</option>
-            <option :value="90">90 days</option>
-          </select>
-        </label>
-        <label><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label>
+        <template v-if="appliedModelVersion === 'v2'">
+          <label data-testid="simulation-toggle">
+            <input v-model="simulationEnabled" type="checkbox" class="mr-1" /> Show likely range and
+            shortfall chance
+          </label>
+        </template>
+        <template v-else>
+          <label>
+            Graph mode
+            <select v-model="graphMode" class="input ml-2">
+              <option value="combined">Combined</option>
+              <option value="forecast">Forecast only</option>
+              <option value="historical">Historical only</option>
+            </select>
+          </label>
+          <label>
+            Moving average
+            <select v-model.number="movingAverageWindow" class="input ml-2">
+              <option :value="7">7 days</option>
+              <option :value="30">30 days</option>
+              <option :value="60">60 days</option>
+              <option :value="90">90 days</option>
+            </select>
+          </label>
+          <label
+            ><input v-model="normalize" type="checkbox" class="mr-1" /> Normalize history</label
+          >
+        </template>
       </div>
     </details>
 
@@ -406,8 +454,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import ForecastAdjustmentsForm from './ForecastAdjustmentsForm.vue'
+import ForecastScenarioComparison from './ForecastScenarioComparison.vue'
 import {
   type ForecastAdjustmentInput,
+  type ForecastModelVersion,
+  type ForecastScenarioInput,
   type ForecastCashflowItem,
   type ForecastCashflowSource,
   type ForecastGraphMode,
@@ -484,20 +535,30 @@ const graphMode = ref<ForecastGraphMode>('combined')
 const selectedAspect = ref<ForecastAspectSelection>('balances')
 const expandedAdjustmentKeys = ref<string[]>([])
 
+const SCENARIO_PRESETS: Array<ForecastScenarioInput> = [
+  { id: 'pay-delay', label: 'Paycheck 7 days late', changes: { delay_income_days: 7 } },
+  { id: 'cut-spend', label: 'Spending down 15%', changes: { residual_spending_multiplier: 0.85 } },
+  { id: 'more-spend', label: 'Spending up 15%', changes: { residual_spending_multiplier: 1.15 } },
+  { id: 'raise', label: 'Income up 10%', changes: { income_multiplier: 1.1 } },
+]
+const LOW_CASH_LINE = 500
+
+// V2 (liquid cash) is the default. Set VITE_FORECAST_MODEL_VERSION=v1 to roll back, or pick the
+// legacy model under Advanced model controls.
+const modelVersion = ref<ForecastModelVersion>(
+  import.meta.env.VITE_FORECAST_MODEL_VERSION === 'v1' ? 'v1' : 'v2',
+)
+const simulationEnabled = ref(true)
+const selectedScenarioIds = ref<string[]>([])
+const scenarioInputs = computed(() =>
+  SCENARIO_PRESETS.filter((preset) => selectedScenarioIds.value.includes(preset.id)),
+)
+const cashThreshold = ref(LOW_CASH_LINE)
+
 const forecastAspectOptions = computed(() => FORECAST_ASPECT_OPTIONS)
 const { groups: accountSnapshotGroups } = useAccountGroups({ userId: userId.value })
 
-const {
-  timeline,
-  summary,
-  adjustments: appliedAdjustments,
-  cashflows,
-  series,
-  metadata,
-  loading,
-  error,
-  fetchData,
-} = useForecastData({
+const forecastData = useForecastData({
   viewType,
   manualIncome,
   liabilityRate,
@@ -508,7 +569,33 @@ const {
   movingAverageWindow,
   normalize,
   graphMode,
+  modelVersion,
+  simulationEnabled,
+  scenarios: scenarioInputs,
+  cashThreshold,
 })
+const {
+  timeline,
+  summary,
+  adjustments: appliedAdjustments,
+  cashflows,
+  series,
+  metadata,
+  loading,
+  error,
+  fetchData,
+} = forecastData
+// V2 state is optional so a V1 composable (or a test double) still works.
+const appliedModelVersion = computed(() => forecastData.modelVersion?.value ?? 'v1')
+const liquidity = computed(() => forecastData.liquidity?.value ?? null)
+const uncertainty = computed(() => forecastData.uncertainty?.value ?? null)
+const netWorth = computed(() => forecastData.netWorth?.value ?? null)
+const drivers = computed(() => forecastData.drivers?.value ?? [])
+const dataQuality = computed(() => forecastData.dataQuality?.value ?? null)
+const scenarioResults = computed(() => forecastData.scenarioResults?.value ?? [])
+const scenarioLines = computed(() =>
+  scenarioResults.value.filter((scenario) => scenario.id !== 'baseline'),
+)
 
 const assetBalance = computed(() =>
   Number(metadata.value?.asset_balance ?? summary.value?.metadata?.asset_balance ?? 0),
@@ -526,6 +613,9 @@ const seriesEntries = computed(() =>
 const forecastItems = computed(() => cashflows.value ?? [])
 const selectedCashflowItem = ref<ForecastCashflowItem | null>(null)
 const baselineTrendAdjustment = computed<ForecastAdjustmentWithMetadata | null>(() => {
+  if (appliedModelVersion.value === 'v2') {
+    return null
+  }
   const avgDaily = Number(summary.value?.average_daily_change ?? 0)
   if (!Number.isFinite(avgDaily) || avgDaily === 0) {
     return null
@@ -634,6 +724,9 @@ watch(
     movingAverageWindow,
     normalize,
     graphMode,
+    modelVersion,
+    simulationEnabled,
+    selectedScenarioIds,
   ],
   fetchData,
 )

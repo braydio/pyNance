@@ -8,6 +8,11 @@ from app.config import logger
 from app.extensions import db
 from app.models import Account, AccountHistory, Transaction
 from app.services.forecast_orchestrator import ForecastOrchestrator
+from app.services.forecast_v2_service import (
+    ForecastV2AccessError,
+    ForecastV2RequestError,
+    compute_v2_forecast,
+)
 
 forecast = Blueprint("forecast", __name__)
 LOOKBACK_DAYS = 90
@@ -719,11 +724,29 @@ def get_forecast():
 
 @forecast.route("/compute", methods=["POST"])
 def compute_forecast_route():
-    """Compute a forecast result for the requested horizon and adjustments."""
+    """Compute a forecast result for the requested horizon and adjustments.
+
+    ``model_version`` omitted or ``"v1"`` keeps the original average-delta engine. ``"v2"`` uses the
+    event-driven liquid-cash ledger (see ``app.services.forecast_v2_service``).
+    """
     payload = request.get_json(silent=True) or {}
     user_id = payload.get("user_id") or request.args.get("user_id")
     if not user_id:
         return jsonify({"error": "user_id is required."}), 400
+
+    model_version = str(payload.get("model_version") or "v1").strip().lower()
+    if model_version not in {"v1", "v2"}:
+        return jsonify({"error": "model_version must be 'v1' or 'v2'."}), 400
+    if model_version == "v2":
+        try:
+            return jsonify(compute_v2_forecast({**payload, "user_id": user_id})), 200
+        except ForecastV2RequestError as exc:
+            return jsonify({"error": str(exc)}), 400
+        except ForecastV2AccessError as exc:
+            return jsonify({"error": str(exc)}), 403
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error("Forecast V2 compute failed: %s", exc, exc_info=True)
+            return jsonify({"error": "Unable to compute forecast."}), 500
 
     try:
         start_date = _parse_start_date(payload.get("start_date"))

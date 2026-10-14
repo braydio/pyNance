@@ -124,7 +124,20 @@ const props = defineProps({
     type: Object,
     default: () => ({}),
   },
+  modelVersion: {
+    type: String,
+    default: 'v1',
+  },
+  scenarioLines: {
+    type: Array,
+    default: () => [],
+  },
 })
+
+const isV2 = computed(() => props.modelVersion === 'v2')
+const hasBands = computed(() =>
+  props.timeline.some((point) => point.p10 !== undefined && point.p90 !== undefined),
+)
 
 const emit = defineEmits(['update:viewType'])
 
@@ -160,12 +173,21 @@ const axisDates = computed(() => {
 const labels = computed(() => axisDates.value)
 const chartMeta = computed(() => ASPECT_META[props.selectedAspect] || ASPECT_META.balances)
 const chartTitle = computed(() => `${props.viewType} · ${chartMeta.value.label}`)
-const chartSubtitle = computed(() => chartMeta.value.subtitle)
+const chartSubtitle = computed(() =>
+  isV2.value && props.selectedAspect === 'balances'
+    ? hasBands.value
+      ? 'Projected liquid cash (checking, savings and cash). The shaded band is the simulated P10-P90 range; lower means less cash.'
+      : 'Projected liquid cash (checking, savings and cash) from dated bills, paychecks and typical spending.'
+    : chartMeta.value.subtitle,
+)
 
 /**
  * Summarize the compute controls shown above the chart for quick reference.
  */
 const methodologyCopy = computed(() => {
+  if (isV2.value) {
+    return "Starts from today's cash and applies each detected bill and paycheck on its expected date, plus an estimate of everyday spending from your recent history. Debt and investments are shown separately and are not part of this cash line. Ranges come from a simulation of your own past variability and are estimates, not guarantees."
+  }
   const lookbackDays = Number(props.computeMeta?.lookbackDays ?? 0)
   const movingAverageWindow = Number(props.computeMeta?.movingAverageWindow ?? 0)
   const normalizeState = props.computeMeta?.normalize
@@ -254,7 +276,7 @@ function buildBalanceDatasets() {
     })),
   )
 
-  if (!forecastOnly) {
+  if (!forecastOnly && !(isV2.value && props.realizedHistory.length === 0)) {
     datasets.push({
       type: 'line',
       label: 'Historical balance',
@@ -267,10 +289,55 @@ function buildBalanceDatasets() {
     })
   }
 
+  if (!historicalOnly && isV2.value && hasBands.value) {
+    const bound = (key) =>
+      alignSeriesValues(
+        props.timeline
+          .filter((point) => point[key] !== undefined)
+          .map((point) => ({
+            date: point.date || point.label,
+            label: point.label,
+            value: point[key],
+          })),
+      )
+    datasets.push({
+      type: 'line',
+      label: 'P90 (high cash)',
+      data: bound('p90'),
+      borderColor: 'transparent',
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      yAxisID: 'yBalance',
+      spanGaps: true,
+    })
+    datasets.push({
+      type: 'line',
+      label: 'P10-P90 range',
+      data: bound('p10'),
+      borderColor: 'transparent',
+      backgroundColor: toRgba('#3B82F6', 0.18),
+      pointRadius: 0,
+      fill: '-1',
+      yAxisID: 'yBalance',
+      spanGaps: true,
+    })
+    datasets.push({
+      type: 'line',
+      label: 'Median (P50)',
+      data: bound('p50'),
+      borderColor: toRgba('#3B82F6', 0.55),
+      backgroundColor: 'transparent',
+      pointRadius: 0,
+      borderDash: [2, 4],
+      yAxisID: 'yBalance',
+      spanGaps: true,
+    })
+  }
+
   if (!historicalOnly) {
     datasets.push({
       type: 'line',
-      label: 'Forecast balance',
+      label: isV2.value ? 'Liquid cash forecast' : 'Forecast balance',
       data: forecastDataset,
       borderColor: '#3B82F6',
       backgroundColor: toRgba('#3B82F6', 0.15),
@@ -278,6 +345,30 @@ function buildBalanceDatasets() {
       tension: 0.3,
       borderDash: [5, 5],
       spanGaps: true,
+    })
+  }
+
+  if (!historicalOnly && isV2.value) {
+    const palette = ['#F59E0B', '#8B5CF6', '#EF4444', '#14B8A6', '#EC4899']
+    props.scenarioLines.forEach((line, index) => {
+      datasets.push({
+        type: 'line',
+        label: line.label,
+        data: alignSeriesValues(
+          line.timeline.map((point) => ({
+            date: point.date,
+            label: point.date,
+            value: point.liquid_cash,
+          })),
+        ),
+        borderColor: palette[index % palette.length],
+        backgroundColor: 'transparent',
+        pointRadius: 0,
+        borderDash: [8, 3],
+        yAxisID: 'yBalance',
+        tension: 0.2,
+        spanGaps: true,
+      })
     })
   }
 
@@ -359,11 +450,12 @@ function renderChart() {
           beginAtZero: false,
           title: {
             display: true,
-            text: 'Balance',
+            text: isV2.value ? 'Liquid cash' : 'Balance',
           },
         },
         yFlow: {
           type: 'linear',
+          display: !(isV2.value && props.selectedAspect === 'balances'),
           position: 'right',
           grid: { drawOnChartArea: false },
           title: {
@@ -375,6 +467,7 @@ function renderChart() {
       plugins: {
         legend: {
           display: chartDatasets.value.length > 1,
+          labels: { filter: (item) => item.text !== 'P90 (high cash)' },
         },
       },
     },
@@ -390,9 +483,12 @@ watch(
     props.graphMode,
     props.selectedAspect,
     props.series,
+    props.modelVersion,
+    props.scenarioLines,
   ],
   renderChart,
-  { deep: true },
+  // 'post' so the <canvas> (rendered behind v-if="hasData") exists when data first arrives.
+  { deep: true, flush: 'post' },
 )
 </script>
 

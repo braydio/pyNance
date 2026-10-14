@@ -14,7 +14,8 @@ If the history cannot support a variance estimate the result says so (``uncertai
 False) and carries no percentile bands. Percentiles are model output, not guarantees, and are not the
 heuristic detection confidence of a stream.
 
-Randomness is a local ``random.Random(seed)``; no process-global state is touched.
+Randomness comes from call-local ``random.Random`` generators keyed by ``(seed, path, stream)``; no
+process-global state is touched, and scenarios that share a seed share their draws.
 """
 
 from __future__ import annotations
@@ -127,6 +128,7 @@ def simulate_v2_paths(
     scheduled_events: Iterable[ForecastV2Event] = (),
     residual_events: Iterable[ForecastV2Event] = (),
     residual_history: Iterable[Mapping[str, Any]] = (),
+    cash_adjustments: Iterable[Any] = (),
     simulation_count: int = DEFAULT_SIMULATIONS,
     seed: int,
     threshold: Any = 0,
@@ -142,6 +144,7 @@ def simulate_v2_paths(
             are uncertain (shared per-stream date shift and amount factor); the rest are fixed.
         residual_events: Deterministic residual means; used for the baseline only.
         residual_history: Daily residual rows for the weekly block bootstrap.
+        cash_adjustments: V1-style manual adjustments; always fixed (never varied).
         simulation_count: 1..1000 (default 500).
         seed: Integer seed for a call-local RNG.
         threshold: Non-negative cash floor for ``probability_cash_below_threshold_any_day``.
@@ -165,8 +168,14 @@ def simulate_v2_paths(
     start = _to_date(start_date, field_name="start_date")
     scheduled = list(scheduled_events)
     base_events = scheduled + list(residual_events)
+    adjustments = list(cash_adjustments)
     baseline = simulate_cash_ledger(
-        start_date=start, horizon_days=horizon_days, account_snapshots=accounts, events=base_events, owner_id=owner_id
+        start_date=start,
+        horizon_days=horizon_days,
+        account_snapshots=accounts,
+        events=base_events,
+        cash_adjustments=adjustments,
+        owner_id=owner_id,
     )
     common = dict(
         model_version=MODEL_VERSION,
@@ -209,7 +218,12 @@ def simulate_v2_paths(
     uncertain_ids = {e.event_id for e in uncertain}
     fixed = [e for e in scheduled if e.event_id not in uncertain_ids]
     fixed_ledger = simulate_cash_ledger(
-        start_date=start, horizon_days=horizon_days, account_snapshots=accounts, events=fixed, owner_id=owner_id
+        start_date=start,
+        horizon_days=horizon_days,
+        account_snapshots=accounts,
+        events=fixed,
+        cash_adjustments=adjustments,
+        owner_id=owner_id,
     )
     fixed_cash = [_cents(p.ending_cash) for p in fixed_ledger.daily]
     days = [start + timedelta(days=i) for i in range(horizon_days)]
@@ -217,7 +231,6 @@ def simulate_v2_paths(
     for event in uncertain:
         streams.setdefault(str(event.source_id), []).append(event)
 
-    rng = random.Random(seed)
     weeks = estimate["weeks"]
     first_monday = start - timedelta(days=start.weekday())
     block_of_day = [(d - first_monday).days // 7 for d in days]
@@ -225,9 +238,13 @@ def simulate_v2_paths(
     columns: list[list[int]] = [[] for _ in range(horizon_days)]
     minima: list[int] = []
 
-    for _ in range(simulation_count):
+    for path in range(simulation_count):
         delta = [0] * horizon_days
         for stream_id in sorted(streams):
+            # Per-(seed, path, stream) generators are "common random numbers": a scenario that
+            # removes or moves one stream leaves every other draw unchanged, so deltas between
+            # scenarios reflect the scenario rather than RNG noise.
+            rng = random.Random(f"{seed}|{path}|{stream_id}")
             group = streams[stream_id]
             confidence = group[0].confidence if group[0].confidence is not None else 0.5
             shift_odds = min(0.5, max(0.0, 1.0 - confidence))
@@ -239,7 +256,8 @@ def simulate_v2_paths(
                 index = (event.date - start).days + shift
                 if 0 <= index < horizon_days:
                     delta[index] += int(round(_cents(event.amount) * factor))
-        chosen = [rng.randrange(len(weeks)) for _ in range(block_count)]
+        residual_rng = random.Random(f"{seed}|{path}|residual")
+        chosen = [residual_rng.randrange(len(weeks)) for _ in range(block_count)]
         for i, day in enumerate(days):
             delta[i] += weeks[chosen[block_of_day[i]]][day.weekday()]
         running, lowest = 0, None
