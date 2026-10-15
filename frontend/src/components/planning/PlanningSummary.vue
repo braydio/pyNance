@@ -36,7 +36,7 @@
       </div>
     </dl>
 
-    <footer class="text-xs text-muted">Updated {{ lastSavedRelative }}</footer>
+    <footer class="text-sm text-muted">Updated {{ lastSavedRelative }}</footer>
   </section>
 </template>
 
@@ -165,8 +165,8 @@ onMounted(loadAccounts)
   gap: 1.5rem;
   padding: 1.5rem;
   border-radius: 0.75rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background-color: var(--color-surface, #fff);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-1);
 }
 
 .summary-grid {
@@ -176,8 +176,8 @@ onMounted(loadAccounts)
 }
 
 .summary-grid dt {
-  font-size: 0.75rem;
-  color: var(--color-muted, #64748b);
+  font-size: 0.875rem;
+  color: var(--text-muted);
 }
 
 .summary-grid dd {
@@ -191,16 +191,20 @@ onMounted(loadAccounts)
 }
 
 .summary-warning {
-  color: #b91c1c;
-  font-size: 0.9rem;
+  color: var(--text-negative);
+  font-size: 0.9375rem;
   font-weight: 600;
 }
 
 .text-muted {
-  color: var(--color-muted, #64748b);
+  color: var(--text-muted);
 }
 
 .text-error {
-  color: #b91c1c;
+  color: var(--text-negative);
+}
+
+.summary-grid dd {
+  font-variant-numeric: tabular-nums;
 }
 </style>

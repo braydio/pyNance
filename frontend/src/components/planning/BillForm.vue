@@ -7,11 +7,18 @@
         <p class="section-description">
           {{ helperCopy }}
         </p>
+        <p class="required-note">
+          Fields marked <span aria-hidden="true">*</span
+          ><span class="sr-only">with an asterisk</span>
+          are required.
+        </p>
       </header>
 
       <div class="section-grid">
         <div class="form-field form-field--full">
-          <label for="bill-name" class="field-label">Bill name</label>
+          <label for="bill-name" class="field-label"
+            >Bill name <span aria-hidden="true">*</span></label
+          >
           <input
             id="bill-name"
             v-model="form.name"
@@ -19,13 +26,21 @@
             class="form-control"
             name="name"
             autocomplete="off"
+            required
+            aria-required="true"
+            :aria-invalid="errors.name ? 'true' : undefined"
+            :aria-describedby="errors.name ? 'bill-name-error' : undefined"
             @blur="markTouched('name')"
           />
-          <p v-if="errors.name" class="error-message">{{ errors.name }}</p>
+          <p v-if="errors.name" id="bill-name-error" class="error-message" role="alert">
+            {{ errors.name }}
+          </p>
         </div>
 
         <div class="form-field form-field--full">
-          <label for="bill-amount" class="field-label">Amount</label>
+          <label for="bill-amount" class="field-label"
+            >Amount <span aria-hidden="true">*</span></label
+          >
           <div class="input-with-prefix">
             <span class="currency-prefix">
               {{ currencySymbol }}
@@ -38,36 +53,58 @@
               class="form-control has-prefix"
               name="amount"
               autocomplete="off"
+              required
+              aria-required="true"
+              :aria-invalid="errors.amount ? 'true' : undefined"
+              :aria-describedby="
+                errors.amount ? 'bill-amount-preview bill-amount-error' : 'bill-amount-preview'
+              "
               @blur="markTouched('amount')"
             />
           </div>
-          <div class="field-meta">
+          <div id="bill-amount-preview" class="field-meta">
             <span>Formatted: {{ amountPreview }}</span>
             <span v-if="form.amount">{{ centsPreview }}</span>
           </div>
-          <p v-if="errors.amount" class="error-message">{{ errors.amount }}</p>
+          <p v-if="errors.amount" id="bill-amount-error" class="error-message" role="alert">
+            {{ errors.amount }}
+          </p>
         </div>
 
         <div class="form-field">
-          <label for="bill-due-date" class="field-label">Due date</label>
+          <label for="bill-due-date" class="field-label"
+            >Due date <span aria-hidden="true">*</span></label
+          >
           <input
             id="bill-due-date"
             v-model="form.dueDate"
             type="date"
             class="form-control"
             name="dueDate"
+            required
+            aria-required="true"
+            :aria-invalid="errors.dueDate ? 'true' : undefined"
+            :aria-describedby="errors.dueDate ? 'bill-due-date-error' : undefined"
             @blur="markTouched('dueDate')"
           />
-          <p v-if="errors.dueDate" class="error-message">{{ errors.dueDate }}</p>
+          <p v-if="errors.dueDate" id="bill-due-date-error" class="error-message" role="alert">
+            {{ errors.dueDate }}
+          </p>
         </div>
 
         <div class="form-field">
-          <label for="bill-frequency" class="field-label">Frequency</label>
+          <label for="bill-frequency" class="field-label"
+            >Frequency <span aria-hidden="true">*</span></label
+          >
           <select
             id="bill-frequency"
             v-model="form.frequency"
             class="form-control"
             name="frequency"
+            required
+            aria-required="true"
+            :aria-invalid="errors.frequency ? 'true' : undefined"
+            :aria-describedby="errors.frequency ? 'bill-frequency-error' : undefined"
             @blur="markTouched('frequency')"
           >
             <option disabled value="">Select frequency</option>
@@ -75,7 +112,9 @@
               {{ option.label }}
             </option>
           </select>
-          <p v-if="errors.frequency" class="error-message">{{ errors.frequency }}</p>
+          <p v-if="errors.frequency" id="bill-frequency-error" class="error-message" role="alert">
+            {{ errors.frequency }}
+          </p>
         </div>
 
         <div class="form-field form-field--full">
@@ -87,9 +126,13 @@
             class="form-control"
             name="category"
             autocomplete="off"
+            :aria-invalid="errors.category ? 'true' : undefined"
+            :aria-describedby="errors.category ? 'bill-category-error' : undefined"
             @blur="markTouched('category')"
           />
-          <p v-if="errors.category" class="error-message">{{ errors.category }}</p>
+          <p v-if="errors.category" id="bill-category-error" class="error-message" role="alert">
+            {{ errors.category }}
+          </p>
         </div>
       </div>
     </section>
@@ -100,10 +143,18 @@
       </p>
       <div class="button-group">
         <UiButton variant="outline" type="button" @click="handleCancel">Cancel</UiButton>
-        <UiButton :disabled="!isValid" type="submit" variant="primary">
+        <UiButton
+          :disabled="!isValid"
+          type="submit"
+          variant="primary"
+          :aria-describedby="!isValid ? 'bill-disabled-reason' : undefined"
+        >
           {{ submitLabel }}
         </UiButton>
       </div>
+      <p v-if="!isValid" id="bill-disabled-reason" class="error-message" role="status">
+        {{ submitLabel }} is unavailable until you fix: {{ invalidFieldList }}.
+      </p>
     </footer>
   </form>
   <div v-else class="form-placeholder">
@@ -169,6 +220,19 @@ const touched = reactive<Record<EditableField, boolean>>({
   category: false,
 })
 const isValid = computed(() => Object.values(errors).every((message) => !message))
+const FIELD_LABELS: Record<EditableField, string> = {
+  name: 'bill name',
+  amount: 'amount',
+  dueDate: 'due date',
+  frequency: 'frequency',
+  category: 'category',
+}
+const invalidFieldList = computed(() =>
+  (Object.keys(errors) as EditableField[])
+    .filter((field) => errors[field])
+    .map((field) => FIELD_LABELS[field])
+    .join(', '),
+)
 const submitLabel = computed(() => (props.mode === 'edit' ? 'Save changes' : 'Add bill'))
 const helperCopy = computed(() =>
   props.mode === 'edit'
@@ -329,8 +393,13 @@ function handleCancel() {
   gap: 0.5rem;
 }
 
+.required-note {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
 .section-eyebrow {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -372,21 +441,27 @@ function handleCancel() {
 
 .form-control {
   width: 100%;
+  min-width: 0;
+  min-height: var(--control-height);
   border-radius: 0.75rem;
-  border: 1px solid var(--divider);
+  border: 1px solid var(--control-border);
   background-color: var(--input-bg);
   color: var(--text-primary);
-  font-size: 0.95rem;
-  padding: 0.75rem 0.9rem;
+  font-size: 1rem;
+  padding: 0.6rem 0.9rem;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
 }
 
-.form-control:focus {
+.form-control:focus-visible {
   outline: none;
-  border-color: var(--color-accent-cyan);
-  box-shadow: 0 0 0 3px rgba(99, 205, 207, 0.18);
+  border-color: var(--accent-primary);
+  box-shadow: var(--control-focus-ring);
+}
+
+.form-control[aria-invalid='true'] {
+  border-color: var(--text-negative);
 }
 
 .input-with-prefix {
@@ -411,13 +486,15 @@ function handleCancel() {
 .field-meta {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
+  gap: 0.5rem;
+  font-size: 0.875rem;
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .error-message {
-  font-size: 0.85rem;
-  color: var(--color-error);
+  font-size: 0.875rem;
+  color: var(--text-negative);
   font-weight: 500;
 }
 

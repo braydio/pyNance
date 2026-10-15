@@ -15,11 +15,13 @@
     </div>
 
     <div v-else class="space-y-5">
-      <div v-for="category in categories" :key="category" class="space-y-2">
-        <div class="flex items-center justify-between text-sm">
-          <span class="font-medium">{{ formatCategory(category) }}</span>
-          <span class="text-muted">{{ allocations[category] ?? 0 }}%</span>
-        </div>
+      <div
+        v-for="category in categories"
+        :key="category"
+        class="allocator-row"
+        :data-testid="`allocator-row-${category}`"
+      >
+        <span class="allocator-row__name font-medium">{{ formatCategory(category) }}</span>
         <input
           :aria-label="`Allocation for ${formatCategory(category)}`"
           :max="100"
@@ -30,14 +32,34 @@
           type="range"
           @input="onSliderInput(category, $event)"
         />
-        <div class="flex items-center justify-between text-xs text-muted">
-          <span>{{ formatCurrencyAmount(allocations[category] ?? 0) }}</span>
-          <span>{{ 100 - (allocations[category] ?? 0) }}% unallocated</span>
-        </div>
+        <label class="allocator-row__percent">
+          <span class="sr-only">Percent for {{ formatCategory(category) }}</span>
+          <input
+            :max="100"
+            :min="0"
+            :value="allocations[category] ?? 0"
+            class="input allocator-number"
+            inputmode="numeric"
+            step="1"
+            type="number"
+            :data-testid="`allocator-number-${category}`"
+            @input="onSliderInput(category, $event)"
+          />
+          <span aria-hidden="true">%</span>
+        </label>
+        <span class="allocator-row__amount">{{
+          formatCurrencyAmount(allocations[category] ?? 0)
+        }}</span>
       </div>
     </div>
 
-    <footer class="allocation-summary" :class="{ 'is-invalid': !isValid }">
+    <footer
+      class="allocation-summary"
+      :class="{ 'is-invalid': !isValid }"
+      role="status"
+      aria-live="polite"
+      data-testid="allocation-summary"
+    >
       <div>
         <strong>{{ totalPercent }}%</strong>
         of the balance allocated
@@ -45,6 +67,7 @@
       </div>
       <div>
         <span :class="remainingClass">{{ remainingCopy }}</span>
+        <span class="text-muted"> · {{ remainingCurrencyLabel }} unassigned</span>
       </div>
     </footer>
 
@@ -144,6 +167,12 @@ const remainingClass = computed(() => (isValid.value ? 'text-success' : 'text-er
 const totalCurrencyLabel = computed(() =>
   formatCurrency(totalAllocatedCents.value / 100, props.currencyCode),
 )
+const remainingCurrencyLabel = computed(() =>
+  formatCurrency(
+    Math.max(props.availableCents - totalAllocatedCents.value, 0) / 100,
+    props.currencyCode,
+  ),
+)
 
 function onSliderInput(category: string, event: Event) {
   const target = event.target as HTMLInputElement
@@ -166,23 +195,69 @@ function formatCurrencyAmount(percent: number) {
 
 <style scoped>
 .text-muted {
-  color: var(--color-muted, #64748b);
+  color: var(--text-muted);
 }
 
 .text-error {
-  color: #b91c1c;
+  color: var(--text-negative);
 }
 
 .text-success {
-  color: #047857;
+  color: var(--text-positive);
 }
 
 .border-muted {
-  border-color: rgba(148, 163, 184, 0.3);
+  border-color: var(--border-subtle);
+}
+
+.allocator-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'name amount'
+    'slider percent';
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.allocator-row__name {
+  grid-area: name;
+  overflow-wrap: anywhere;
+}
+
+.allocator-row__amount {
+  grid-area: amount;
+  text-align: right;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .allocator-slider {
+  grid-area: slider;
   width: 100%;
+  min-width: 0;
+  min-height: var(--control-height-sm);
+}
+
+.allocator-row__percent {
+  grid-area: percent;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.allocator-number {
+  width: 4.5rem;
+  min-width: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (min-width: 640px) {
+  .allocator-row {
+    grid-template-columns: minmax(8rem, 1.2fr) minmax(6rem, 2fr) auto minmax(5.5rem, auto);
+    grid-template-areas: 'name slider percent amount';
+  }
 }
 
 .allocation-summary {
@@ -191,11 +266,13 @@ function formatCurrencyAmount(percent: number) {
   gap: 0.5rem;
   padding: 0.75rem 1rem;
   border-radius: 0.5rem;
-  border: 1px solid rgba(148, 163, 184, 0.3);
-  background-color: rgba(15, 118, 110, 0.04);
+  border: 1px solid var(--border-subtle);
+  background-color: var(--surface-2);
+  font-variant-numeric: tabular-nums;
 }
 
 .allocation-summary.is-invalid {
-  background-color: rgba(239, 68, 68, 0.08);
+  border-color: var(--text-negative);
+  background-color: color-mix(in srgb, var(--text-negative) 10%, var(--surface-2));
 }
 </style>

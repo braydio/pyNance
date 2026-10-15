@@ -17,7 +17,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261014-016 | Transactions Data Grid, Filters and Import | Complete | 2026-10-14 | [completed/TP-20261014-016-transactions-workbench-fields.md](completed/TP-20261014-016-transactions-workbench-fields.md) |
 | TP-20261014-017 | Accounts, Institutions and Account Selection UX | Complete | 2026-10-14 | [completed/TP-20261014-017-accounts-institutions-ux.md](completed/TP-20261014-017-accounts-institutions-ux.md) |
 | TP-20261014-018 | Forecast Scenarios and Assumptions UI Density | Complete | 2026-10-14 | [completed/TP-20261014-018-forecast-assumptions-controls.md](completed/TP-20261014-018-forecast-assumptions-controls.md) |
-| TP-20261014-019 | Planning Bill Entry, List and Allocation Controls | Ready | 2026-10-14 | [active/TP-20261014-019-planning-bills-allocator-ui.md](active/TP-20261014-019-planning-bills-allocator-ui.md) |
+| TP-20261014-019 | Planning Bill Entry, List and Allocation Controls | Complete | 2026-10-14 | [completed/TP-20261014-019-planning-bills-allocator-ui.md](completed/TP-20261014-019-planning-bills-allocator-ui.md) |
 | TP-20261014-020 | Investments Filter, Holdings and Expandable Rows | Ready | 2026-10-14 | [active/TP-20261014-020-investments-filter-holdings-ui.md](active/TP-20261014-020-investments-filter-holdings-ui.md) |
 | TP-20261014-021 | Settings, RSA Monitor and Auxiliary Page UX | Ready | 2026-10-14 | [active/TP-20261014-021-settings-system-utility-pages.md](active/TP-20261014-021-settings-system-utility-pages.md) |
 | TP-20261014-022 | Every Route Visual and Keyboard QA Gate | Ready | 2026-10-14 | [active/TP-20261014-022-full-route-visual-regression.md](active/TP-20261014-022-full-route-visual-regression.md) |
