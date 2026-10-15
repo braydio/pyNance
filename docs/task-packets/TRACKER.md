@@ -6,6 +6,19 @@ Controlled statuses and lifecycle rules are defined in [README.md](README.md).
 
 | Packet ID | Title | Status | Priority | Depends on | Target | Last updated | Packet |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| TP-20261014-010 | Theme Contrast and Typography | Ready | High | None | main | 2026-10-14 | [packet](active/TP-20261014-010-theme-contrast-typography.md) |
+| TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Ready | High | TP-20261014-010 | main | 2026-10-14 | [packet](active/TP-20261014-011-shared-controls-geometry.md) |
+| TP-20261014-012 | Dropdowns, Popovers and Expandable State | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-012-popovers-dropdowns-expandables.md) |
+| TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-013-modal-viewport-focus.md) |
+| TP-20261014-014 | Navbar, Responsive Tabs and Shared Spacing | Ready | High | TP-20261014-010, TP-20261014-011 | main | 2026-10-14 | [packet](active/TP-20261014-014-navigation-shell-layout.md) |
+| TP-20261014-015 | Dashboard and Direct Chart Route Detail Polish | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-015-dashboard-charts-standalone-pages.md) |
+| TP-20261014-016 | Transactions Data Grid, Filters and Import | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-013 | main | 2026-10-14 | [packet](active/TP-20261014-016-transactions-workbench-fields.md) |
+| TP-20261014-017 | Accounts, Institutions and Account Selection UX | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-013, TP-20261014-014, TP-20261014-008, TP-20261014-009 | main | 2026-10-14 | [packet](active/TP-20261014-017-accounts-institutions-ux.md) |
+| TP-20261014-018 | Forecast Scenarios and Assumptions UI Density | Ready | High | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-013 | main | 2026-10-14 | [packet](active/TP-20261014-018-forecast-assumptions-controls.md) |
+| TP-20261014-019 | Planning Bill Entry, List and Allocation Controls | Ready | Normal | TP-20261014-010, TP-20261014-011, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-019-planning-bills-allocator-ui.md) |
+| TP-20261014-020 | Investments Filter, Holdings and Expandable Rows | Ready | Normal | TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-020-investments-filter-holdings-ui.md) |
+| TP-20261014-021 | Settings, RSA Monitor and Auxiliary Page UX | Ready | Normal | TP-20261014-010, TP-20261014-011, TP-20261014-013, TP-20261014-014 | main | 2026-10-14 | [packet](active/TP-20261014-021-settings-system-utility-pages.md) |
+| TP-20261014-022 | Every Route Visual and Keyboard QA Gate | Ready | High | TP-20261014-010 through TP-20261014-021 | main | 2026-10-14 | [packet](active/TP-20261014-022-full-route-visual-regression.md) |
 | TP-20261014-005 | Account balance, limit and freshness contract | Complete | High | None | main | 2026-10-14 | [packet](completed/TP-20261014-005-account-balance-limit-contract.md) |
 | TP-20261014-006 | APR provenance and interest inference guardrails | Complete | High | TP-20261014-005 | main | 2026-10-14 | [packet](active/TP-20261014-006-apr-provenance-interest-estimator.md) |
 | TP-20261014-007 | Optional Plaid Liabilities APR and payment metadata | Complete | Normal | TP-20261014-005, TP-20261014-006 | main | 2026-10-14 | [packet](active/TP-20261014-007-plaid-liabilities-enrichment.md) |
