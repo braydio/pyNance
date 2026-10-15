@@ -5,7 +5,7 @@
 <template>
   <BasePanel
     tag="div"
-    class="md:col-span-2 w-full flex flex-col gap-4 overflow-hidden"
+    class="md:col-span-2 w-full flex flex-col gap-4"
     border-tone="default"
     surface="secondary"
     radius="lg"
@@ -65,17 +65,20 @@
     <p v-if="leadInsight" class="breakdown-lead-insight" data-testid="breakdown-lead-insight">
       <strong>{{ leadInsight.value }}</strong> is the top driver · {{ leadInsight.copy }}
     </p>
-    <CategoryBreakdownChart
-      :start-date="startDate"
-      :end-date="endDate"
-      :selected-category-ids="selectedCategoryIds"
-      :group-others="groupOthers"
-      :breakdown-type="breakdownType"
-      @summary-change="emit('summary-change', $event)"
-      @categories-change="emit('categories-change', $event)"
-      @rows-change="visibleRows = $event"
-      @bar-click="emit('bar-click', $event)"
-    />
+    <!-- Clip only the chart canvas region so control popovers above can overflow the panel. -->
+    <div class="breakdown-chart-clip overflow-hidden">
+      <CategoryBreakdownChart
+        :start-date="startDate"
+        :end-date="endDate"
+        :selected-category-ids="selectedCategoryIds"
+        :group-others="groupOthers"
+        :breakdown-type="breakdownType"
+        @summary-change="emit('summary-change', $event)"
+        @categories-change="emit('categories-change', $event)"
+        @rows-change="visibleRows = $event"
+        @bar-click="emit('bar-click', $event)"
+      />
+    </div>
 
     <div v-if="visibleRows.length" class="breakdown-rows-shell">
       <div class="breakdown-rows-header">

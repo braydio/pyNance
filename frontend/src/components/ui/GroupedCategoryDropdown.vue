@@ -1,66 +1,78 @@
 <template>
-  <div class="relative w-full" v-click-outside="close">
-    <!-- Trigger -->
-    <div
-      class="dropdown-trigger input w-full mb-2 cursor-pointer flex items-center px-3 py-2 rounded-lg border border-[var(--divider)] bg-[var(--color-bg-secondary)] shadow transition hover:border-[var(--color-accent-cyan)] focus:border-[var(--color-accent-cyan)]"
+  <div class="relative w-full" v-click-outside="close" @keydown.esc.stop="onEscape">
+    <!-- Trigger: a real button so Enter/Space and focus work natively -->
+    <button
+      ref="triggerRef"
+      type="button"
+      class="dropdown-trigger input w-full mb-2 cursor-pointer flex items-center rounded-lg shadow transition"
+      :aria-expanded="open ? 'true' : 'false'"
+      :aria-controls="menuId"
+      aria-haspopup="true"
       @click="open = !open"
-      @keydown.esc="open = false"
-      tabindex="0"
-      :aria-expanded="open"
-      :aria-haspopup="true"
     >
       <span class="flex-1 truncate text-left text-[var(--color-text-light)]">
-        <span class="text-[var(--color-text-muted)] italic">{{ placeholder }}</span>
+        <span v-if="selectedCount" data-testid="dropdown-selected-count">
+          {{ selectedCount }} selected
+        </span>
+        <span v-else class="text-[var(--color-text-muted)] italic">{{ placeholder }}</span>
       </span>
       <span
         class="ml-2 transition-transform"
         :class="{ 'rotate-180': open }"
         style="font-size: 1.25em"
-        aria-label="Dropdown"
+        aria-hidden="true"
         >▼</span
       >
-    </div>
+    </button>
 
-    <!-- Dropdown menu -->
+    <!-- Dropdown menu: bounded height, scrolls internally, never wider than the viewport -->
     <transition name="fade">
       <div
         v-show="open"
+        :id="menuId"
         class="dropdown-menu w-full absolute left-0 mt-1 z-40 p-2 rounded-2xl border border-[var(--divider)] shadow-xl bg-[var(--color-bg-sec)] backdrop-blur-lg"
-        @mousedown.prevent
+        role="group"
+        aria-label="Category selection"
       >
         <div v-for="(group, idx) in groups" :key="group.id" class="mb-2 last:mb-0 group-block">
-          <label
-            class="flex items-center gap-2 py-1 font-semibold text-[var(--color-accent-cyan)] tracking-tight rounded-lg hover:bg-[var(--color-bg-secondary)] cursor-pointer transition"
-          >
-            <!-- Color dot for group -->
-            <span
-              class="inline-block w-3 h-3 rounded-full border border-[var(--divider)] shadow-sm"
-              :style="`background: ${groupDotColor(idx)}`"
-              aria-hidden="true"
-            ></span>
-            <input
-              type="checkbox"
-              :checked="isGroupAllSelected(group)"
-              :indeterminate.prop="isGroupIndeterminate(group)"
-              @change="toggleGroup(group)"
-              class="accent-[var(--color-accent-cyan)] w-4 h-4 rounded border border-[var(--divider)] shadow focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition"
-            />
-            <span>{{ group.label }}</span>
-            <span
-              class="ml-auto text-xs px-2 py-0.5 rounded bg-[var(--color-accent-cyan)] bg-opacity-20 text-[var(--color-accent-cyan)]"
-              v-if="group.children.length"
+          <div class="flex items-center gap-1">
+            <button
+              type="button"
+              class="group-expand-btn"
+              :aria-expanded="isGroupExpanded(group) ? 'true' : 'false'"
+              :aria-controls="`${menuId}-${group.id}`"
+              :aria-label="`${isGroupExpanded(group) ? 'Collapse' : 'Expand'} ${group.label}`"
+              @click="toggleExpanded(group)"
             >
-              {{ group.children.length }}
-            </span>
-            <span
-              v-if="isGroupExpanded(group)"
-              class="ml-1 text-[var(--color-accent-cyan)] text-base"
-              >▾</span
+              <span aria-hidden="true">{{ isGroupExpanded(group) ? '▾' : '▸' }}</span>
+            </button>
+            <label
+              class="flex flex-1 items-center gap-2 py-1 font-semibold text-[var(--text-link)] tracking-tight rounded-lg hover:bg-[var(--color-bg-secondary)] cursor-pointer transition"
             >
-            <span v-else class="ml-1 text-[var(--color-text-muted)] text-base">▸</span>
-          </label>
+              <!-- Color dot for group -->
+              <span
+                class="inline-block w-3 h-3 rounded-full border border-[var(--divider)] shadow-sm"
+                :style="`background: ${groupDotColor(idx)}`"
+                aria-hidden="true"
+              ></span>
+              <input
+                type="checkbox"
+                :checked="isGroupAllSelected(group)"
+                :indeterminate.prop="isGroupIndeterminate(group)"
+                @change="toggleGroup(group)"
+                class="accent-[var(--color-accent-cyan)] w-4 h-4 rounded border border-[var(--divider)] shadow focus:ring-2 focus:ring-[var(--color-accent-cyan)] transition"
+              />
+              <span>{{ group.label }}</span>
+              <span
+                class="ml-auto text-sm px-2 py-0.5 rounded text-[var(--text-link)]"
+                v-if="group.children.length"
+              >
+                {{ group.children.length }}
+              </span>
+            </label>
+          </div>
           <transition name="slide">
-            <div v-if="isGroupExpanded(group)" class="pl-8 py-1">
+            <div v-if="isGroupExpanded(group)" :id="`${menuId}-${group.id}`" class="pl-8 py-1">
               <label
                 v-for="child in group.children"
                 :key="child.id"
@@ -68,7 +80,7 @@
               >
                 <input
                   type="checkbox"
-                  :checked="selectedIds.has(child.id)"
+                  :checked="selectedIds.has(String(child.id))"
                   @change="toggleChild(group, child)"
                   class="accent-[var(--color-accent-yellow)] w-4 h-4 rounded border border-[var(--divider)] shadow"
                 />
@@ -83,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, useId, watch } from 'vue'
 
 const props = defineProps({
   groups: { type: Array, required: true },
@@ -92,7 +104,11 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue'])
 const open = ref(false)
+const triggerRef = ref(null)
+const menuId = `grouped-dropdown-${useId()}`
+// Expansion is independent of selection; groups with selections start expanded.
 const expanded = ref(new Set())
+const expansionSeeded = ref(false)
 // Normalize to strings so comparisons with API results are consistent
 const selectedIds = ref(new Set((props.modelValue || []).map((x) => String(x))))
 const updatingFromProps = ref(false)
@@ -119,6 +135,22 @@ function groupDotColor(idx) {
   return groupDotPalette[idx % groupDotPalette.length]
 }
 
+const selectedCount = computed(() => selectedIds.value.size)
+
+watch(
+  () => props.groups,
+  (groups) => {
+    if (expansionSeeded.value || !groups?.length) return
+    expansionSeeded.value = true
+    expanded.value = new Set(
+      groups
+        .filter((group) => group.children.some((c) => selectedIds.value.has(String(c.id))))
+        .map((group) => group.id),
+    )
+  },
+  { immediate: true },
+)
+
 watch(
   () => props.modelValue,
   (val) => {
@@ -144,17 +176,19 @@ function toggleGroup(group) {
   if (allSelected) {
     // Remove all children (must create new Set)
     selectedIds.value = new Set([...selectedIds.value].filter((id) => !allChildIds.includes(id)))
-    expanded.value = new Set([...expanded.value].filter((id) => id !== group.id))
   } else {
     // Add all children
     selectedIds.value = new Set([...selectedIds.value, ...allChildIds])
-    expanded.value = new Set(expanded.value).add(group.id)
   }
 }
 function isGroupExpanded(group) {
-  return (
-    expanded.value.has(group.id) || group.children.some((c) => selectedIds.value.has(String(c.id)))
-  )
+  return expanded.value.has(group.id)
+}
+function toggleExpanded(group) {
+  const next = new Set(expanded.value)
+  if (next.has(group.id)) next.delete(group.id)
+  else next.add(group.id)
+  expanded.value = next
 }
 function toggleChild(group, child) {
   const cid = String(child.id)
@@ -162,7 +196,6 @@ function toggleChild(group, child) {
     selectedIds.value = new Set([...selectedIds.value].filter((id) => id !== cid))
   } else {
     selectedIds.value = new Set([...selectedIds.value, cid])
-    expanded.value = new Set(expanded.value).add(group.id)
   }
 }
 function isGroupAllSelected(group) {
@@ -178,4 +211,54 @@ function isGroupIndeterminate(group) {
 function close() {
   open.value = false
 }
+
+/** Escape closes the menu and returns focus to the trigger. */
+function onEscape() {
+  if (!open.value) return
+  open.value = false
+  triggerRef.value?.focus?.()
+}
 </script>
+
+<style scoped>
+.dropdown-trigger {
+  justify-content: space-between;
+  text-align: left;
+}
+
+.dropdown-menu {
+  max-height: min(20rem, 50dvh);
+  overflow-y: auto;
+  max-width: calc(100vw - 1rem);
+  overscroll-behavior: contain;
+}
+
+.group-expand-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  min-height: 2rem;
+  border-radius: 0.375rem;
+  color: var(--text-muted);
+}
+
+.group-expand-btn:hover {
+  background: var(--color-bg-secondary);
+}
+
+.group-expand-btn:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-trigger span,
+  .fade-enter-active,
+  .fade-leave-active,
+  .slide-enter-active,
+  .slide-leave-active {
+    transition: none;
+  }
+}
+</style>
