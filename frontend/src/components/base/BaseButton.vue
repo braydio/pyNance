@@ -46,8 +46,8 @@ const radiusClasses = {
 }
 
 const sizeClasses = {
-  sm: 'px-2.5 py-1 text-xs',
-  md: 'px-3 py-1.5 text-sm',
+  sm: 'min-h-[var(--control-height-sm)] px-3 py-1 text-sm',
+  md: 'min-h-[var(--control-height)] px-4 py-1.5 text-sm',
 }
 
 const toneClasses = {
@@ -94,7 +94,7 @@ const buttonClasses = computed(() => {
   const tone = toneClasses[props.tone]
   const variantClasses = props.active ? tone.active : tone[props.variant]
   return [
-    'inline-flex items-center justify-center gap-1.5 border font-semibold uppercase tracking-wide transition focus-ring disabled:cursor-not-allowed disabled:opacity-60',
+    'inline-flex max-w-full items-center justify-center gap-1.5 border font-semibold uppercase tracking-wide transition focus-ring disabled:cursor-not-allowed disabled:opacity-60',
     radiusClasses[props.radius],
     sizeClasses[props.size],
     variantClasses,

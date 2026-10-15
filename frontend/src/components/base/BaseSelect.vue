@@ -1,5 +1,12 @@
 <template>
-  <select :value="modelValue" :disabled="disabled" :class="selectClasses" @change="handleChange">
+  <select
+    :value="modelValue"
+    :disabled="disabled"
+    :aria-invalid="invalid ? 'true' : undefined"
+    :aria-describedby="describedby || undefined"
+    :class="selectClasses"
+    @change="handleChange"
+  >
     <slot />
   </select>
 </template>
@@ -13,6 +20,8 @@ import { computed } from 'vue'
 const props = defineProps({
   modelValue: { type: [String, Number], default: '' },
   disabled: { type: Boolean, default: false },
+  invalid: { type: Boolean, default: false },
+  describedby: { type: String, default: '' },
   size: {
     type: String,
     default: 'md',
@@ -34,12 +43,13 @@ const selectClasses = computed(() => {
     lg: 'ui-radius-3',
   }
   const size = {
-    sm: 'px-2 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
+    sm: 'min-h-[var(--control-height-sm)] px-3 py-1 text-sm',
+    md: 'min-h-[var(--control-height)] px-3 py-1.5 text-sm',
   }
 
   return [
-    'border bg-surface-1 border-subtle text-secondary focus-ring outline-none disabled:cursor-not-allowed disabled:opacity-70',
+    'block w-full min-w-0 max-w-full border bg-surface-1 border-[color:var(--control-border)] text-primary focus-ring outline-none disabled:cursor-not-allowed disabled:opacity-70',
+    props.invalid && 'border-[color:var(--text-negative)]',
     radius[props.radius],
     size[props.size],
   ]

@@ -9,7 +9,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | Packet ID | Title | Status | Created | Canonical packet |
 | --- | --- | --- | --- | --- |
 | TP-20261014-010 | Theme Contrast and Typography | Complete | 2026-10-14 | [completed/TP-20261014-010-theme-contrast-typography.md](completed/TP-20261014-010-theme-contrast-typography.md) |
-| TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Ready | 2026-10-14 | [active/TP-20261014-011-shared-controls-geometry.md](active/TP-20261014-011-shared-controls-geometry.md) |
+| TP-20261014-011 | Shared Fields, Buttons, Date and Select Geometry | Complete | 2026-10-14 | [completed/TP-20261014-011-shared-controls-geometry.md](completed/TP-20261014-011-shared-controls-geometry.md) |
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Ready | 2026-10-14 | [active/TP-20261014-012-popovers-dropdowns-expandables.md](active/TP-20261014-012-popovers-dropdowns-expandables.md) |
 | TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Ready | 2026-10-14 | [active/TP-20261014-013-modal-viewport-focus.md](active/TP-20261014-013-modal-viewport-focus.md) |
 | TP-20261014-014 | Navbar, Responsive Tabs and Shared Spacing | Ready | 2026-10-14 | [active/TP-20261014-014-navigation-shell-layout.md](active/TP-20261014-014-navigation-shell-layout.md) |

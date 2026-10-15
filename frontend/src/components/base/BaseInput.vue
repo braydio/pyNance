@@ -6,6 +6,8 @@
     :placeholder="placeholder"
     :min="min"
     :max="max"
+    :aria-invalid="invalid ? 'true' : undefined"
+    :aria-describedby="describedby || undefined"
     :class="inputClasses"
     @input="$emit('update:modelValue', $event.target.value)"
     @keyup.enter="$emit('enter', $event)"
@@ -25,6 +27,10 @@ const props = defineProps({
   min: { type: [String, Number], default: undefined },
   max: { type: [String, Number], default: undefined },
   disabled: { type: Boolean, default: false },
+  /** Marks the field invalid (aria-invalid) so the error styling and AT state agree. */
+  invalid: { type: Boolean, default: false },
+  /** id of the element that carries the error/help text (aria-describedby). */
+  describedby: { type: String, default: '' },
   size: {
     type: String,
     default: 'md',
@@ -46,12 +52,13 @@ const inputClasses = computed(() => {
     lg: 'ui-radius-3',
   }
   const size = {
-    sm: 'px-2 py-1 text-xs',
-    md: 'px-3 py-1.5 text-sm',
+    sm: 'min-h-[var(--control-height-sm)] px-3 py-1 text-sm',
+    md: 'min-h-[var(--control-height)] px-3 py-1.5 text-sm',
   }
 
   return [
-    'border bg-surface-1 border-subtle text-primary focus-ring outline-none disabled:cursor-not-allowed disabled:opacity-70',
+    'block w-full min-w-0 max-w-full border bg-surface-1 border-[color:var(--control-border)] text-primary focus-ring outline-none disabled:cursor-not-allowed disabled:opacity-70',
+    props.invalid && 'border-[color:var(--text-negative)]',
     radius[props.radius],
     size[props.size],
   ]

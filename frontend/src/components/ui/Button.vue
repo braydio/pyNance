@@ -1,5 +1,5 @@
 <template>
-  <button :class="computedClass" :disabled="disabled" @click="$emit('click', $event)">
+  <button :type="type" :class="computedClass" :disabled="disabled" @click="$emit('click', $event)">
     <slot />
   </button>
 </template>
@@ -12,6 +12,12 @@ import { computed } from 'vue'
 defineEmits(['click'])
 
 const props = defineProps({
+  // Defaults to a non-submitting button; forms must opt in with type="submit".
+  type: {
+    type: String,
+    default: 'button',
+    validator: (value) => ['button', 'submit', 'reset'].includes(value),
+  },
   variant: {
     type: String,
     default: '', // 'outline', 'primary', 'success', 'alert'

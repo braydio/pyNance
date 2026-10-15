@@ -6,6 +6,18 @@
 /* Base styles */
 @layer base {
   :root {
+    /* Shared control geometry (fields, selects, buttons, date inputs). */
+    --control-height: 2.5rem;
+    --control-height-sm: 2.25rem;
+    --control-padding-x: 0.75rem;
+    --control-padding-y: 0.5rem;
+    --control-radius: var(--radius-2);
+    --control-font-size: 0.875rem;
+    --control-disabled-opacity: 0.6;
+    --control-focus-ring:
+      0 0 0 2px color-mix(in srgb, var(--interactive-focus) 70%, transparent),
+      0 0 0 4px color-mix(in srgb, var(--surface-1) 85%, transparent);
+    color-scheme: dark;
     --accounts-summary-card-bg: linear-gradient(
       135deg,
       color-mix(in srgb, var(--color-accent-cyan) 18%, transparent) 0%,
@@ -496,6 +508,47 @@
   );
 }
 
+/* Base button: variants below (.btn-primary, ...) override colors by source order. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background-color: var(--surface-1);
+  color: var(--text-primary);
+  font-size: var(--control-font-size);
+  font-weight: 600;
+  line-height: 1.25rem;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.btn-outline:hover:not(:disabled),
+.btn:not([class*='btn-']):hover:not(:disabled) {
+  background-color: var(--interactive-hover);
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--control-focus-ring);
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: var(--control-disabled-opacity);
+}
+
+.btn-outline {
+  background-color: transparent;
+}
+
 .btn-primary {
   @apply inline-flex items-center px-4 py-2 border font-semibold;
   border-radius: var(--radius-2);
@@ -592,18 +645,70 @@
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-error) 40%, transparent);
 }
 
-.input {
-  @apply w-full px-2 py-1 border text-sm;
-  border-radius: var(--radius-1);
-  background-color: var(--color-bg-dark);
-  border-color: var(--control-border);
-  color: var(--color-text-light);
-  font-family: var(--font-sans);
+/* Native widgets (date picker icon, select arrow, option list) follow the active theme. */
+:root[data-theme='everforest-light'] {
+  color-scheme: light;
 }
 
-.input:focus {
+select option,
+select optgroup {
+  background-color: var(--surface-1);
+  color: var(--text-primary);
+}
+
+.input,
+.select {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: var(--control-height);
+  padding: var(--control-padding-y) var(--control-padding-x);
+  border: 1px solid var(--control-border);
+  border-radius: var(--control-radius);
+  background-color: var(--color-bg-dark);
+  color: var(--color-text-light);
+  font-family: var(--font-sans);
+  font-size: var(--control-font-size);
+  line-height: 1.25rem;
+}
+
+textarea.input {
+  min-height: 5rem;
+}
+
+.input:disabled,
+.select:disabled {
+  cursor: not-allowed;
+  opacity: var(--control-disabled-opacity);
+}
+
+.input:focus,
+.input:focus-visible,
+.select:focus,
+.select:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 2px var(--color-accent-purple);
+  border-color: var(--accent-primary);
+  box-shadow: var(--control-focus-ring);
+}
+
+.input[aria-invalid='true'],
+.select[aria-invalid='true'] {
+  border-color: var(--text-negative);
+}
+
+.field-error {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  color: var(--text-negative);
+}
+
+.btn-sm {
+  min-height: var(--control-height-sm);
+  padding: 0.35rem 0.65rem;
+}
+
+.btn-pill {
+  border-radius: 9999px;
 }
 
 .glass {
