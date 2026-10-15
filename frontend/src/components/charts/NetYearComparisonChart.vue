@@ -1,18 +1,30 @@
 <template>
   <div class="chart-container card">
     <h2 class="heading-md">{{ chartTypeLabel }} Year Comparison</h2>
-    <div class="toggle-group">
+    <div class="toggle-group" role="group" aria-label="Chart type">
       <button
         v-for="type in chartTypes"
         :key="type.value"
+        type="button"
         class="btn btn-pill"
         :class="{ active: activeChart === type.value }"
+        :aria-pressed="activeChart === type.value ? 'true' : 'false'"
         @click="setChartType(type.value)"
       >
         {{ type.label }}
       </button>
     </div>
-    <div class="chart-wrapper">
+    <p v-if="loading" class="chart-state" role="status" data-testid="year-chart-loading">
+      Loading history…
+    </p>
+    <div v-else-if="loadError" class="chart-state" role="alert" data-testid="year-chart-error">
+      <p>Unable to load balance history.</p>
+      <button type="button" class="btn btn-sm" @click="fetchData">Retry</button>
+    </div>
+    <p v-else-if="!chartData.length" class="chart-state" data-testid="year-chart-empty">
+      No balance history yet. Link an account and let it sync to compare years.
+    </p>
+    <div v-show="!loading && !loadError && chartData.length" class="chart-wrapper">
       <canvas ref="chartCanvas"></canvas>
     </div>
   </div>
@@ -42,6 +54,8 @@ function withAlpha(color, alpha) {
 const chartCanvas = ref(null)
 const chartInstance = ref(null)
 const chartData = ref([])
+const loading = ref(true)
+const loadError = ref(false)
 const activeChart = ref('assets')
 const chartTypeLabel = ref('Assets')
 
@@ -99,14 +113,19 @@ function parseByType(year, key) {
 }
 
 async function fetchData() {
+  loading.value = true
+  loadError.value = false
   try {
     const data = await api.fetchNetAssets()
     const rawPoints = Array.isArray(data?.data) ? data.data : []
     chartData.value = rawPoints.map((point) => normalisePoint(point)).filter(Boolean)
+    loading.value = false
     await nextTick()
     buildChart()
   } catch (e) {
     console.error('Chart fetch failed:', e)
+    loadError.value = true
+    loading.value = false
   }
 }
 
@@ -192,6 +211,13 @@ onMounted(fetchData)
 
 <style scoped>
 @reference "../../assets/css/main.css";
+.chart-state {
+  padding: 1.5rem 0;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-muted);
+}
+
 .chart-container {
   width: 100%;
   padding: 0.75rem;

@@ -12,7 +12,7 @@ exports[`Dashboard section components > renders net overview content and forward
   <!-- Tier 1: Now -->
   <div data-v-26cbed55="" class="grid grid-cols-1 gap-4 lg:grid-cols-3 items-stretch" data-testid="now-tier">
     <div data-v-26cbed55="" class="surface-primary p-4 md:p-5 flex flex-col lg:col-span-1"><button data-v-26cbed55="" class="safe-spend-stub">Safe Spend</button>
-      <p data-v-26cbed55="" class="text-xs text-muted mt-2" data-testid="safe-to-spend-scope"> Current guidance (not filtered by chart dates) </p>
+      <p data-v-26cbed55="" class="text-sm text-muted mt-2" data-testid="safe-to-spend-scope"> Current guidance (not filtered by chart dates) </p>
     </div>
     <div data-v-26cbed55="" class="surface-normal p-4 md:p-5 flex flex-col gap-3" data-testid="transactions-card">
       <h3 data-v-26cbed55="" class="text-sm font-semibold">Transactions</h3>
@@ -22,14 +22,14 @@ exports[`Dashboard section components > renders net overview content and forward
     </div>
     <div data-v-26cbed55="" class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
       <h3 data-v-26cbed55="" class="text-sm font-semibold">Cash direction</h3>
-      <p data-v-26cbed55="" class="text-xs text-muted" data-testid="cash-direction-period">Selected period: Jan 1 – Jan 31, 2025</p>
+      <p data-v-26cbed55="" class="text-sm text-muted" data-testid="cash-direction-period">Selected period: Jan 1 – Jan 31, 2025</p>
       <p data-v-26cbed55="" class="net-overview-net is-positive">▲ $9.00 <span data-v-26cbed55="" class="net-overview-net__label">net in selected period</span></p>
-      <p data-v-26cbed55="" class="text-xs text-muted"> Income $10.00 · Expenses $1.00</p>
+      <p data-v-26cbed55="" class="text-sm text-muted"> Income $10.00 · Expenses $1.00</p>
     </div>
   </div><!-- Tier 2: Trend -->
   <div data-v-26cbed55="" class="daily-net-chart-panel net-overview-panel surface-normal p-5 md:p-6 flex flex-col gap-3 relative">
     <div data-v-26cbed55="" class="flex flex-wrap items-end justify-between gap-2">
-      <p data-v-26cbed55="" class="text-xs text-muted" data-testid="selected-period">Selected period: Jan 1 – Jan 31, 2025</p>
+      <p data-v-26cbed55="" class="text-sm text-muted" data-testid="selected-period">Selected period: Jan 1 – Jan 31, 2025</p>
       <div data-v-26cbed55="" class="date-range-stub"></div>
     </div>
     <div data-v-26cbed55="" class="daily-net-chart" show7-day="false" show30-day="false" show-avg-income="false" show-avg-expenses="false" show-comparison-overlay="false" comparison-mode="prior_month_to_date" timeframe="mtd">

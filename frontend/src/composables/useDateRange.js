@@ -18,6 +18,19 @@ export function getMonthBounds(referenceDate) {
 }
 
 /**
+ * Month-to-date range (first of the month through `now`) as local YYYY-MM-DD strings.
+ *
+ * @param {Date} [now] - Reference date, defaults to the current local date.
+ * @returns {{ start: string; end: string }} Inclusive range that never extends into the future.
+ */
+export function getMonthToDateRange(now = new Date()) {
+  return {
+    start: formatDateInput(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end: formatDateInput(now),
+  }
+}
+
+/**
  * Ensure start and end dates are valid and in chronological order.
  *
  * @param {{ start: string; end: string }} range - Raw date range boundaries.
@@ -49,6 +62,8 @@ function normalizeRange(range) {
  *
  * @param {Object} options - Optional configuration for the range.
  * @param {Date} [options.initialDate] - Starting reference date.
+ * @param {{ start: string; end: string }} [options.initialRange] - Explicit starting range;
+ *   overrides the month-bounds default when supplied.
  * @param {number} [options.debounceMs=200] - Debounce window in milliseconds.
  * @param {(range: { start: string; end: string }) => void} [options.onDebouncedChange] -
  *   Callback invoked after the debounced range updates.
@@ -62,10 +77,14 @@ function normalizeRange(range) {
 export function useDateRange(options = {}) {
   const baseDate = options.initialDate ?? new Date()
   const { start, end } = getMonthBounds(baseDate)
-  const dateRange = ref({
-    start: formatDateInput(start),
-    end: formatDateInput(end),
-  })
+  const dateRange = ref(
+    options.initialRange
+      ? { ...options.initialRange }
+      : {
+          start: formatDateInput(start),
+          end: formatDateInput(end),
+        },
+  )
   const debouncedRange = ref({ ...dateRange.value })
 
   const notifyChange = options.onDebouncedChange ?? (() => {})

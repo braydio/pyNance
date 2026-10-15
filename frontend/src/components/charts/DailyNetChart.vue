@@ -1004,7 +1004,7 @@ onUnmounted(() => chartInstance.value?.destroy())
 }
 
 .daily-net-chart__legend-label {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -1070,7 +1070,7 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__details-date {
   margin: 0;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -1096,13 +1096,13 @@ onUnmounted(() => chartInstance.value?.destroy())
 
 .daily-net-chart__details-metrics dt {
   margin: 0;
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
 .daily-net-chart__details-metrics dd {
   margin: 0;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 
@@ -1110,7 +1110,7 @@ onUnmounted(() => chartInstance.value?.destroy())
   margin-top: 0.4rem;
   padding-top: 0.4rem;
   border-top: 1px solid var(--divider);
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 
@@ -1138,7 +1138,7 @@ onUnmounted(() => chartInstance.value?.destroy())
   border-color: var(--chart-shell-border);
   background: color-mix(in srgb, var(--theme-bg-surface, var(--theme-bg)) 92%, transparent);
   color: var(--color-text-light);
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   transform: translate(-50%, -100%);

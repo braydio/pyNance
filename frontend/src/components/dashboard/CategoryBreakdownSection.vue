@@ -218,7 +218,7 @@ function shareOfTotal(amount) {
 
 .breakdown-story-label {
   font-family: var(--font-display);
-  font-size: 0.68rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -252,7 +252,7 @@ function shareOfTotal(amount) {
   gap: 1rem;
   margin-bottom: 0.7rem;
   font-family: var(--font-display);
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -296,7 +296,7 @@ function shareOfTotal(amount) {
 }
 
 .breakdown-row-parent {
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -313,7 +313,7 @@ function shareOfTotal(amount) {
 }
 
 .breakdown-row-share {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 

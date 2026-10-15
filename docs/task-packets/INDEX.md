@@ -13,7 +13,7 @@ See [README.md](README.md) for naming, lifecycle, execution, and authoring rules
 | TP-20261014-012 | Dropdowns, Popovers and Expandable State | Complete | 2026-10-14 | [completed/TP-20261014-012-popovers-dropdowns-expandables.md](completed/TP-20261014-012-popovers-dropdowns-expandables.md) |
 | TP-20261014-013 | Modal Overlay Focus, Stacking and Scroll | Complete | 2026-10-14 | [completed/TP-20261014-013-modal-viewport-focus.md](completed/TP-20261014-013-modal-viewport-focus.md) |
 | TP-20261014-014 | Navbar, Responsive Tabs and Shared Spacing | Complete | 2026-10-14 | [completed/TP-20261014-014-navigation-shell-layout.md](completed/TP-20261014-014-navigation-shell-layout.md) |
-| TP-20261014-015 | Dashboard and Direct Chart Route Detail Polish | Ready | 2026-10-14 | [active/TP-20261014-015-dashboard-charts-standalone-pages.md](active/TP-20261014-015-dashboard-charts-standalone-pages.md) |
+| TP-20261014-015 | Dashboard and Direct Chart Route Detail Polish | Complete | 2026-10-14 | [completed/TP-20261014-015-dashboard-charts-standalone-pages.md](completed/TP-20261014-015-dashboard-charts-standalone-pages.md) |
 | TP-20261014-016 | Transactions Data Grid, Filters and Import | Ready | 2026-10-14 | [active/TP-20261014-016-transactions-workbench-fields.md](active/TP-20261014-016-transactions-workbench-fields.md) |
 | TP-20261014-017 | Accounts, Institutions and Account Selection UX | Ready | 2026-10-14 | [active/TP-20261014-017-accounts-institutions-ux.md](active/TP-20261014-017-accounts-institutions-ux.md) |
 | TP-20261014-018 | Forecast Scenarios and Assumptions UI Density | Ready | 2026-10-14 | [active/TP-20261014-018-forecast-assumptions-controls.md](active/TP-20261014-018-forecast-assumptions-controls.md) |

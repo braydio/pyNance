@@ -33,6 +33,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { getMonthToDateRange } from '@/composables/useDateRange'
 import { BarChart3 } from 'lucide-vue-next'
 import PageHeader from '@/components/ui/PageHeader.vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
@@ -40,7 +41,8 @@ import DateRangeSelector from '@/components/DateRangeSelector.vue'
 import DailyNetChart from '@/components/charts/DailyNetChart.vue'
 import FinancialSummary from '@/components/statistics/FinancialSummary.vue'
 
-const dateRange = ref({ start: '', end: '' })
+// Month-to-date, as local calendar dates, so the chart and summary have real bounds on load.
+const dateRange = ref(getMonthToDateRange())
 const zoomedOut = ref(false)
 const summary = ref({})
 const chartData = ref([])

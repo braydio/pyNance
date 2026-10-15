@@ -2144,7 +2144,7 @@ defineExpose({
   display: flex;
   flex-direction: column;
   gap: 0.18rem;
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   color: var(--color-text-muted);
 }
 
@@ -2157,13 +2157,13 @@ defineExpose({
 }
 
 .bs-utilization-label {
-  font-size: 0.6rem;
+  font-size: 0.75rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
 .bs-utilization-percent {
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   color: var(--color-accent-red);
 }
 
@@ -2181,7 +2181,7 @@ defineExpose({
 }
 
 .bs-utilization-text {
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   color: var(--color-text-light);
   opacity: 0.85;
   white-space: nowrap;
@@ -2256,7 +2256,7 @@ defineExpose({
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   letter-spacing: 0.03em;
   text-transform: uppercase;
   color: var(--color-text-muted);
@@ -2385,7 +2385,7 @@ defineExpose({
 }
 
 .bs-btn-icon {
-  font-size: 0.7rem;
+  font-size: 0.75rem;
   opacity: 0.8;
   transition: opacity 0.2s;
 }
@@ -2502,11 +2502,11 @@ defineExpose({
   }
 
   .bs-utilization {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 
   .bs-utilization-text {
-    font-size: 0.62rem;
+    font-size: 0.75rem;
   }
 
   .bs-utilization-bar {

@@ -76,3 +76,30 @@ describe('NetYearComparisonChart', () => {
     expect(flattened).toEqual(expect.arrayContaining([800, 1150]))
   })
 })
+
+describe('NetYearComparisonChart states', () => {
+  it('exposes pressed state on the type toggles and a non-submitting button', async () => {
+    const wrapper = mount(NetYearComparisonChart)
+    await flushPromises()
+    const buttons = wrapper.findAll('.toggle-group button')
+    expect(buttons.map((b) => b.attributes('aria-pressed'))).toEqual(['true', 'false', 'false'])
+    expect(buttons[0].attributes('type')).toBe('button')
+    await buttons[1].trigger('click')
+    expect(buttons[1].attributes('aria-pressed')).toBe('true')
+  })
+
+  it('shows an empty state when there is no history and an error with retry on failure', async () => {
+    apiMocks.fetchNetAssets.mockResolvedValueOnce({ status: 'success', data: [] })
+    const empty = mount(NetYearComparisonChart)
+    await flushPromises()
+    expect(empty.get('[data-testid="year-chart-empty"]').text()).toContain('No balance history')
+
+    apiMocks.fetchNetAssets.mockRejectedValueOnce(new Error('down'))
+    const failed = mount(NetYearComparisonChart)
+    await flushPromises()
+    expect(failed.get('[data-testid="year-chart-error"]').text()).toContain('Unable to load')
+    await failed.get('[data-testid="year-chart-error"] button').trigger('click')
+    await flushPromises()
+    expect(failed.find('[data-testid="year-chart-error"]').exists()).toBe(false)
+  })
+})

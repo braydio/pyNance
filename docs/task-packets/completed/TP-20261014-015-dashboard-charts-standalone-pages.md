@@ -1,12 +1,12 @@
 # TP-20261014-015: Dashboard and Direct Chart Route Detail Polish
 
 **Packet ID:** TP-20261014-015  
-**Status:** Ready  
+**Status:** Complete  
 **Created:** 2026-10-14  
 **Last updated:** 2026-10-14  
 **Repository:** braydio/pyNance  
 **Target branch:** main  
-**Canonical path:** docs/task-packets/active/TP-20261014-015-dashboard-charts-standalone-pages.md  
+**Canonical path:** docs/task-packets/completed/TP-20261014-015-dashboard-charts-standalone-pages.md  
 **Depends on:** TP-20261014-010, TP-20261014-011, TP-20261014-012, TP-20261014-014  
 **Priority:** High  
 **Workstream size:** One focused UI packet  
@@ -39,3 +39,13 @@ No duplicate TP-001..004 fixes; no new cashflow math.
 
 ## Completion contract
 Check AGENTS.md and docs/task-packets/README.md, TRACKER and INDEX; validate named paths only. Mark In Progress, implement ordered fixes, run focused tests and lint/build. After completion move packet to completed/, update INDEX/TRACKER atomically, commit to origin/main without force. Report files, browser validation vs static assumptions, exact commands/output and deviations. Coordinate overlapping files with prerequisite packets; no broad refactor.
+
+## Completion report
+
+- Routes: `/charts/cashflow`, `/charts/category` and `/charts/assets/year-comparison` keep their paths and names but now render `views/ChartRoutePage.vue` (route `props.variant`), which supplies a heading (`PageHeader`), a month-to-date range with working `DateRangeSelector` inputs, the category dropdown/selection for the category chart, and the year comparison without a date picker. Bare chart components no longer mount without their required date props.
+- `/summary` (`FinancialSummaryDetailed.vue`) now initializes month-to-date local `YYYY-MM-DD` dates instead of `{start:'',end:''}`.
+- `NetYearComparisonChart.vue`: loading, empty ("No balance history yet...") and error-with-Retry states, `aria-pressed` + `type="button"` on the Assets/Liabilities/Net Worth toggles.
+- Dashboard polish (no logic changes): meaningful small text raised to >= 0.8125rem in `NetOverviewSection`, `DailyNetChart` chips/legends, `ChartDetailsSidebar`, `CategoryBreakdownSection` and `DailySpendingPanel` (>= 0.75rem in the dense `TopAccountSnapshot`); helper text in `NetOverviewSection` uses `text-sm`; popover/chart overflow separation was done in TP-012 (only the chart region clips).
+- **Bug found and fixed:** `composables/useDateRange.js` shadows `useDateRange.ts` (the bundler resolves `.js` first), so the `initialRange` option I added to the `.ts` file in TP-003 was never used and the Dashboard still defaulted to the end of the month. The `.js` file now has `initialRange` and `getMonthToDateRange` too (both files kept in sync), and a new unmocked `composables/__tests__/useDateRange.spec.js` covers it; `Dashboard.spec.ts` mocks this module, which hid the problem.
+- Tests: new `views/__tests__/ChartRoutePage.spec.js` (props, dates, category wiring, route names/paths), `FinancialSummaryDetailed.spec.js`, year-comparison state tests, `useDateRange.spec.js`. Full vitest 65 files / 425 tests, lint 0 errors, build OK.
+- Not run: browser checks of `/`, `/summary`, `/charts/*` at 390/1280 in both themes; `TopAccountSnapshotEditing.spec.js` is not present in the repo (the closest existing coverage ran as part of the suite).

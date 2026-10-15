@@ -603,7 +603,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -619,7 +619,7 @@ onUnmounted(() => {
 
 .panel-subtitle {
   margin: 0.25rem 0 0;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -647,7 +647,7 @@ onUnmounted(() => {
 
 .panel-state {
   margin-top: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -682,7 +682,7 @@ onUnmounted(() => {
 }
 
 .average-breakdown-header {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--color-text-muted);
@@ -706,7 +706,7 @@ onUnmounted(() => {
   grid-template-columns: 1.6rem minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 
@@ -731,7 +731,7 @@ onUnmounted(() => {
 }
 
 .average-breakdown-percent {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -762,7 +762,7 @@ onUnmounted(() => {
 }
 
 .transaction-date {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 

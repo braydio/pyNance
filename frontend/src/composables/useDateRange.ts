@@ -53,6 +53,19 @@ export function getMonthBounds(referenceDate: Date): { start: Date; end: Date } 
   return { start, end }
 }
 
+/**
+ * Month-to-date range (first of the month through `now`) as local YYYY-MM-DD strings.
+ *
+ * @param now - Reference date, defaults to the current local date.
+ * @returns Inclusive start and end dates, never extending into the future.
+ */
+export function getMonthToDateRange(now: Date = new Date()): DateRange {
+  return {
+    start: formatDateInput(new Date(now.getFullYear(), now.getMonth(), 1)),
+    end: formatDateInput(now),
+  }
+}
+
 function normalizeRange(range: DateRange): DateRange {
   const startDate = new Date(range.start)
   const endDate = new Date(range.end)

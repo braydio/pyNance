@@ -185,14 +185,14 @@ onBeforeUnmount(() => {
   gap: 0.5rem;
   padding: 0.3rem 0.65rem;
   border-radius: var(--chart-shell-radius-tight);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   line-height: 1;
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
 }
 
 .chart-details-sidebar--inline .chart-details-sidebar__toggle {
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   padding: 0.2rem 0.55rem;
 }
 
@@ -251,7 +251,7 @@ onBeforeUnmount(() => {
 
 .chart-details-sidebar__description {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.8125rem;
   color: color-mix(in srgb, var(--color-text-light) 75%, transparent);
 }
 
@@ -286,7 +286,7 @@ onBeforeUnmount(() => {
   border: 1px solid var(--chart-shell-border);
   border-radius: var(--chart-shell-radius-tight);
   background: var(--chart-shell-bg-strong);
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--color-text-light);
 }
 

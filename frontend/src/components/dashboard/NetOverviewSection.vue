@@ -50,7 +50,7 @@
           :selected-mode="safeToSpendMode"
           @update:mode="emit('update:safe-to-spend-mode', $event)"
         />
-        <p class="text-xs text-muted mt-2" data-testid="safe-to-spend-scope">
+        <p class="text-sm text-muted mt-2" data-testid="safe-to-spend-scope">
           Current guidance (not filtered by chart dates)
         </p>
       </div>
@@ -88,7 +88,7 @@
       </div>
       <div class="surface-normal p-4 md:p-5 flex flex-col gap-2" data-testid="cash-direction">
         <h3 class="text-sm font-semibold">Cash direction</h3>
-        <p class="text-xs text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
+        <p class="text-sm text-muted" data-testid="cash-direction-period">{{ periodText }}</p>
         <p
           class="net-overview-net"
           :class="netSummary.totalNet < 0 ? 'is-negative' : 'is-positive'"
@@ -96,7 +96,7 @@
           {{ netSummary.totalNet < 0 ? '▼' : '▲' }} {{ formatAmount(netSummary.totalNet) }}
           <span class="net-overview-net__label">net in selected period</span>
         </p>
-        <p class="text-xs text-muted">
+        <p class="text-sm text-muted">
           Income {{ formatAmount(netSummary.totalIncome) }} · Expenses
           {{ formatAmount(netSummary.totalExpenses) }}
         </p>
@@ -108,7 +108,7 @@
       class="daily-net-chart-panel net-overview-panel surface-normal p-5 md:p-6 flex flex-col gap-3 relative"
     >
       <div class="flex flex-wrap items-end justify-between gap-2">
-        <p class="text-xs text-muted" data-testid="selected-period">{{ periodText }}</p>
+        <p class="text-sm text-muted" data-testid="selected-period">{{ periodText }}</p>
         <DateRangeSelector
           :start-date="dateRange.start"
           :end-date="dateRange.end"
@@ -354,12 +354,12 @@ const periodText = computed(() => {
 
 <style scoped>
 .net-overview-context__status {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
 .daily-net-timeframe-custom {
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   padding: 0.2rem 0.6rem;
   border: 1px dashed var(--divider);
   border-radius: var(--chart-shell-radius-tight);
@@ -404,7 +404,7 @@ const periodText = computed(() => {
 }
 
 .net-overview-refine-toggle {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
   text-decoration: underline;
 }
@@ -419,7 +419,7 @@ const periodText = computed(() => {
 }
 
 .net-overview-net__label {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 400;
   color: var(--color-text-muted);
 }
@@ -482,7 +482,7 @@ const periodText = computed(() => {
 
 .daily-net-chart-totals {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
 }
 
@@ -511,7 +511,7 @@ const periodText = computed(() => {
 }
 
 .title-subtitle {
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: var(--color-text-muted);
   font-weight: 500;
   opacity: 0.8;
@@ -524,7 +524,7 @@ const periodText = computed(() => {
 }
 
 .daily-net-timeframe-btn {
-  font-size: 0.65rem;
+  font-size: 0.8125rem;
   padding: 0.2rem 0.6rem;
   border-radius: var(--chart-shell-radius-tight);
   line-height: 1;
