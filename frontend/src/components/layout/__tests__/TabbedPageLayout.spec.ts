@@ -44,4 +44,24 @@ describe('TabbedPageLayout', () => {
     await wrapper.findAll('[role="tab"]')[0].trigger('keydown', { key: 'ArrowRight' })
     expect(wrapper.emitted('update:modelValue')?.[0]).toEqual(['Three'])
   })
+
+  it('shows scroll affordances on the tab row and keeps shrinkable flex children', async () => {
+    const wrapper = mountLayout()
+    const list = wrapper.get('[role="tablist"]')
+    Object.defineProperty(list.element, 'scrollWidth', { configurable: true, value: 800 })
+    Object.defineProperty(list.element, 'clientWidth', { configurable: true, value: 320 })
+    await list.trigger('scroll')
+    expect(list.classes()).toContain('tabbed-nav__list--fade-end')
+    expect(list.classes()).not.toContain('tabbed-nav__list--fade-start')
+    expect(wrapper.get('[data-testid="tabbed-sidebar"]').classes()).toContain('min-w-0')
+    expect(wrapper.get('[data-testid="tabbed-sidebar"]').classes()).not.toContain('z-10')
+  })
+
+  it('keeps the active tab focusable with roving tabindex and aria-controls', () => {
+    const wrapper = mountLayout({ modelValue: 'Three' })
+    const tabs = wrapper.findAll('[role="tab"]')
+    expect(tabs[2].attributes('tabindex')).toBe('0')
+    expect(tabs[0].attributes('tabindex')).toBe('-1')
+    expect(tabs[2].attributes('aria-controls')).toBe('tabpanel-Three')
+  })
 })

@@ -1,7 +1,14 @@
 <template>
   <nav class="menu z-50" aria-label="Primary navigation">
     <div class="container nav-inner">
-      <div class="nav-links">
+      <div
+        ref="linksRef"
+        class="nav-links"
+        :class="{ 'nav-links--fade-start': canScrollStart, 'nav-links--fade-end': canScrollEnd }"
+        data-testid="nav-links"
+        @scroll.passive="updateScrollState"
+        @click="revealActiveLink"
+      >
         <router-link to="/" class="nav-link"> Dashboard </router-link>
         <router-link to="/accounts" class="nav-link"> Accounts </router-link>
         <router-link to="/transactions" class="nav-link"> Transactions </router-link>
@@ -32,7 +39,7 @@
 /**
  * Primary navigation bar with links to top-level routes and a persistent theme toggle.
  */
-import { computed } from 'vue'
+import { computed, getCurrentInstance, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Moon, Settings, Sun } from 'lucide-vue-next'
 import { useTheme } from '@/composables/useTheme'
 
@@ -40,6 +47,37 @@ const { activeTheme, isLightTheme, setTheme } = useTheme()
 const themeToggleLabel = computed(() =>
   isLightTheme.value ? 'Switch to Nightfox dark theme' : 'Switch to Everforest light theme',
 )
+
+const linksRef = ref(null)
+const canScrollStart = ref(false)
+const canScrollEnd = ref(false)
+const instance = getCurrentInstance()
+
+/** Show an edge fade only on the side(s) where more links are hidden by horizontal scroll. */
+function updateScrollState() {
+  const el = linksRef.value
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  canScrollStart.value = el.scrollLeft > 1
+  canScrollEnd.value = max > 1 && el.scrollLeft < max - 1
+}
+
+/** Keep the current destination visible when the row scrolls (small screens). */
+async function revealActiveLink() {
+  await nextTick()
+  const el = linksRef.value
+  const active = el?.querySelector('.router-link-exact-active, [aria-current="page"]')
+  active?.scrollIntoView?.({ inline: 'center', block: 'nearest' })
+  updateScrollState()
+}
+
+onMounted(() => {
+  updateScrollState()
+  revealActiveLink()
+  window.addEventListener('resize', updateScrollState)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateScrollState))
+watch(() => instance?.proxy?.$route?.fullPath, revealActiveLink)
 
 /** Toggle between the two supported application themes. */
 function toggleTheme() {
@@ -63,7 +101,7 @@ function toggleTheme() {
   gap: 0.4rem;
   flex: 0 0 auto;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: 0.875rem;
 }
 
 .menu {
@@ -124,7 +162,7 @@ function toggleTheme() {
   background: var(--surface-2);
   color: var(--text-secondary);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
   transition: 0.2s ease;
@@ -153,10 +191,36 @@ function toggleTheme() {
     min-width: 0;
     flex: 1 1 auto;
     scrollbar-width: none;
+    scroll-padding-inline: 1.5rem;
+    scroll-snap-type: x proximity;
+  }
+
+  .nav-links::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Edge fades cue that more destinations are off-screen in that direction. */
+  .nav-links--fade-end {
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+  }
+
+  .nav-links--fade-start {
+    mask-image: linear-gradient(to right, transparent, #000 1.75rem);
+  }
+
+  .nav-links--fade-start.nav-links--fade-end {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 1.75rem,
+      #000 calc(100% - 1.75rem),
+      transparent
+    );
   }
 
   .nav-link {
     white-space: nowrap;
+    scroll-snap-align: center;
   }
 
   .nav-secondary-label,

@@ -29,4 +29,8 @@ describe('BasePageLayout', () => {
     const wrapper = mount(BasePageLayout, { props: { gap: 'gap-4' } })
     expect(wrapper.classes()).toContain('gap-4')
   })
+
+  it('can shrink inside flex/grid parents', () => {
+    expect(mount(BasePageLayout).classes()).toContain('min-w-0')
+  })
 })

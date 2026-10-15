@@ -7,7 +7,17 @@
           class="tabbed-nav ui-radius-3 border border-subtle bg-surface-2"
           data-testid="tabbed-nav"
         >
-          <ul class="tabbed-nav__list" role="tablist" aria-label="Page sections">
+          <ul
+            ref="tabListRef"
+            class="tabbed-nav__list"
+            :class="{
+              'tabbed-nav__list--fade-start': canScrollStart,
+              'tabbed-nav__list--fade-end': canScrollEnd,
+            }"
+            role="tablist"
+            aria-label="Page sections"
+            @scroll.passive="updateScrollState"
+          >
             <li v-for="tab in normalizedTabs" :key="tab.slot" role="presentation">
               <UiButton
                 :id="`tab-${tab.slot}`"
@@ -33,7 +43,7 @@
       </div>
       <aside
         v-if="$slots.sidebar"
-        :class="[sidebarWidthClass, 'max-lg:w-full flex-shrink-0 relative z-10']"
+        :class="[sidebarWidthClass, 'max-lg:w-full min-w-0 flex-shrink-0 relative']"
         data-testid="tabbed-sidebar"
       >
         <!-- Ensure sidebar actions stay clickable above main content -->
@@ -54,7 +64,7 @@
  *   with optional `disabled` state ({ label, slot, disabled })
  * - modelValue: currently active tab (used with v-model)
  */
-import { computed } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import BasePageLayout from '@/components/layout/BasePageLayout.vue'
 import UiButton from '@/components/ui/Button.vue'
 
@@ -122,6 +132,34 @@ function onTabKeydown(event, tabSlot) {
 }
 
 const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
+
+// Narrow screens: one scrollable row with edge fades and the active tab kept in view.
+const tabListRef = ref(null)
+const canScrollStart = ref(false)
+const canScrollEnd = ref(false)
+
+function updateScrollState() {
+  const el = tabListRef.value
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  canScrollStart.value = el.scrollLeft > 1
+  canScrollEnd.value = max > 1 && el.scrollLeft < max - 1
+}
+
+async function revealActiveTab() {
+  await nextTick()
+  document
+    .getElementById(`tab-${activeTab.value}`)
+    ?.scrollIntoView?.({ inline: 'center', block: 'nearest' })
+  updateScrollState()
+}
+
+onMounted(() => {
+  updateScrollState()
+  window.addEventListener('resize', updateScrollState)
+})
+onBeforeUnmount(() => window.removeEventListener('resize', updateScrollState))
+watch(activeTab, revealActiveTab)
 </script>
 
 <style scoped>
@@ -157,8 +195,59 @@ const sidebarWidthClass = computed(() => props.sidebarWidth || 'w-64')
 }
 
 @media (max-width: 768px) {
+  .tabbed-nav {
+    padding: 0.5rem 0.75rem;
+  }
+
   .tabbed-nav__list {
-    justify-content: center;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0.5rem;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 1.5rem;
+  }
+
+  .tabbed-nav__list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tabbed-nav__list > li {
+    flex: 0 0 auto;
+    scroll-snap-align: center;
+  }
+
+  .tabbed-nav__button {
+    padding: 0.5rem 1rem;
+    white-space: nowrap;
+  }
+
+  .tabbed-nav__list--fade-end {
+    mask-image: linear-gradient(to right, #000 calc(100% - 1.75rem), transparent);
+  }
+
+  .tabbed-nav__list--fade-start {
+    mask-image: linear-gradient(to right, transparent, #000 1.75rem);
+  }
+
+  .tabbed-nav__list--fade-start.tabbed-nav__list--fade-end {
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      #000 1.75rem,
+      #000 calc(100% - 1.75rem),
+      transparent
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tabbed-nav__button {
+    transition: none;
+  }
+
+  .tabbed-nav__button:hover {
+    transform: none;
   }
 }
 </style>

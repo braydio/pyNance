@@ -75,6 +75,8 @@ defineProps({
 }
 
 .page-header__actions {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-wrap: wrap;
   align-items: center;

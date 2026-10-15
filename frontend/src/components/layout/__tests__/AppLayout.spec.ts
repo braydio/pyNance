@@ -36,4 +36,11 @@ describe('AppLayout', () => {
 
     expect(wrapper.find('header').exists()).toBe(false)
   })
+
+  it('owns the only horizontal page gutter and lets content shrink', () => {
+    const wrapper = mount(AppLayout, { slots: { default: '<div>Main</div>' } })
+    const gutter = wrapper.find('main > div')
+    expect(gutter.classes()).toContain('min-w-0')
+    expect(wrapper.find('main').classes()).toContain('min-w-0')
+  })
 })

@@ -5,8 +5,6 @@
       <template #title>Institutions</template>
       <template #subtitle>Operator view of linked providers and accounts</template>
     </PageHeader>
-  </BasePageLayout>
-  <BasePageLayout>
     <section>
       <InstitutionTable />
     </section>

@@ -8,13 +8,13 @@
       </h2>
     </div>
     <!-- Center: Controls -->
-    <div class="flex gap-2 items-center flex-shrink-0">
+    <div class="flex flex-wrap gap-2 items-center min-w-0 max-w-full">
       <slot name="controls"></slot>
     </div>
     <!-- Right: Summary (if present) -->
     <div
       v-if="$slots.summary"
-      class="chart-summary bg-[var(--color-bg-secondary)] px-4 py-2 rounded font-mono text-[var(--color-text-muted)] z-10 text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto min-w-[150px]"
+      class="chart-summary bg-[var(--color-bg-secondary)] px-4 py-2 rounded font-mono text-[var(--color-text-muted)] text-right border-2 border-[var(--divider)] shadow backdrop-blur-sm transition ml-auto max-w-full min-w-0"
     >
       <slot name="summary"></slot>
     </div>
@@ -38,8 +38,15 @@
 @reference "../../assets/css/main.css";
 
 .chart-summary {
-  min-width: 150px;
-  max-width: 100vw;
-  white-space: nowrap;
+  max-width: 100%;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (min-width: 640px) {
+  .chart-summary {
+    min-width: 150px;
+    white-space: nowrap;
+  }
 }
 </style>

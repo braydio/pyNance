@@ -8,7 +8,9 @@
 /**
  * BasePageLayout
  * Vertical flow container for page sections. Global max width and horizontal
- * gutters are owned by AppLayout, so this layer only adds vertical spacing.
+ * gutters are owned by AppLayout, so this layer only adds vertical spacing. Section rhythm
+ * is 16/24/32px via `gap-4` / `gap-6` (default) / `gap-8`. A view renders exactly one
+ * BasePageLayout so vertical padding is never doubled.
  *
  * Props:
  * - padding: Tailwind padding utilities or `false` to disable (default
@@ -31,6 +33,6 @@ const paddingClass = computed(() => {
 })
 
 const classes = computed(() => {
-  return ['w-full', 'flex', 'flex-col', paddingClass.value, props.gap].filter(Boolean)
+  return ['w-full', 'min-w-0', 'flex', 'flex-col', paddingClass.value, props.gap].filter(Boolean)
 })
 </script>
